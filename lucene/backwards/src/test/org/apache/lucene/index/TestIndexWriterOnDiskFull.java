@@ -459,6 +459,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
 
+    _TestUtil.keepFullyDeletedSegments(w);
+
     ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
 
     Document doc = new Document();

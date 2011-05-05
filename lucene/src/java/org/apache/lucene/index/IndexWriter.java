@@ -484,8 +484,7 @@ public class IndexWriter implements Closeable {
 
     private final Map<SegmentInfo,SegmentReader> readerMap = new HashMap<SegmentInfo,SegmentReader>();
 
-    /** Forcefully clear changes for the specified segments,
-     *  and remove from the pool.   This is called on successful merge. */
+    /** Forcefully clear changes for the specified segments.  This is called on successful merge. */
     synchronized void clear(SegmentInfos infos) throws IOException {
       if (infos == null) {
         for (Map.Entry<SegmentInfo,SegmentReader> ent: readerMap.entrySet()) {
@@ -493,8 +492,9 @@ public class IndexWriter implements Closeable {
         }
       } else {
         for (final SegmentInfo info: infos) {
-          if (readerMap.containsKey(info)) {
-            readerMap.get(info).hasChanges = false;
+          final SegmentReader r = readerMap.get(info);
+          if (r != null) {
+            r.hasChanges = false;
           }
         }     
       }
@@ -503,8 +503,8 @@ public class IndexWriter implements Closeable {
     // used only by asserts
     public synchronized boolean infoIsLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
-      assert idx != -1;
-      assert segmentInfos.get(idx) == info;
+      assert idx != -1: "info=" + info + " isn't in pool";
+      assert segmentInfos.get(idx) == info: "info=" + info + " doesn't match live info in segmentInfos";
       return true;
     }
 
@@ -574,6 +574,21 @@ public class IndexWriter implements Closeable {
 
       return false;
     }
+
+    public synchronized void drop(SegmentInfos infos) throws IOException {
+      for(SegmentInfo info : infos) {
+        drop(info);
+      }
+    }
+
+    public synchronized void drop(SegmentInfo info) throws IOException {
+      final SegmentReader sr = readerMap.get(info);
+      if (sr != null) {
+        sr.hasChanges = false;
+        readerMap.remove(info);
+        sr.close();
+      }
+    }
     
     /** Remove all our references to readers, and commits
      *  any pending changes. */
@@ -612,19 +627,18 @@ public class IndexWriter implements Closeable {
      * Commit all segment reader in the pool.
      * @throws IOException
      */
-    synchronized void commit() throws IOException {
+    synchronized void commit(SegmentInfos infos) throws IOException {
 
       // We invoke deleter.checkpoint below, so we must be
       // sync'd on IW:
       assert Thread.holdsLock(IndexWriter.this);
 
-      for (Map.Entry<SegmentInfo,SegmentReader> ent : readerMap.entrySet()) {
+      for (SegmentInfo info : infos) {
 
-        SegmentReader sr = ent.getValue();
-        if (sr.hasChanges) {
-          assert infoIsLive(sr.getSegmentInfo());
+        final SegmentReader sr = readerMap.get(info);
+        if (sr != null && sr.hasChanges) {
+          assert infoIsLive(info);
           sr.doCommit(null);
-
           // Must checkpoint w/ deleter, because this
           // segment reader will have created new _X_N.del
           // file.
@@ -3378,6 +3392,24 @@ public class IndexWriter implements Closeable {
         if (result.anyDeletes) {
           checkpoint();
         }
+        if (!keepFullyDeletedSegments && result.allDeleted != null) {
+          if (infoStream != null) {
+            message("drop 100% deleted segments: " + result.allDeleted);
+          }
+          for(SegmentInfo info : result.allDeleted) {
+            // If a merge has already registered for this
+            // segment, we leave it in the readerPool; the
+            // merge will skip merging it and will then drop
+            // it once it's done:
+            if (!mergingSegments.contains(info)) {
+              segmentInfos.remove(info);
+              if (readerPool != null) {
+                readerPool.drop(info);
+              }
+            }
+          }
+          checkpoint();
+        }
         bufferedDeletesStream.prune(segmentInfos);
         assert !bufferedDeletesStream.any();
         flushControl.clearDeletes();
@@ -3454,8 +3486,12 @@ public class IndexWriter implements Closeable {
       SegmentInfo info = sourceSegments.info(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       int docCount = info.docCount;
-      SegmentReader previousReader = merge.readersClone[i];
-      SegmentReader currentReader = merge.readers[i];
+      final SegmentReader previousReader = merge.readerClones.get(i);
+      if (previousReader == null) {
+        // Reader was skipped because it was 100% deletions
+        continue;
+      }
+      final SegmentReader currentReader = merge.readers.get(i);
       if (previousReader.hasDeletions()) {
 
         // There were deletes on this segment when the merge
@@ -3537,17 +3573,20 @@ public class IndexWriter implements Closeable {
       return false;
     }
 
-    ensureValidMerge(merge);
-
     commitMergedDeletes(merge, mergedReader);
       
     // If the doc store we are using has been closed and
     // is in now compound format (but wasn't when we
     // started), then we will switch to the compound
     // format as well:
-    setMergeDocStoreIsCompoundFile(merge);
 
     assert !segmentInfos.contains(merge.info);
+
+    final boolean allDeleted = mergedReader.numDocs() == 0;
+
+    if (infoStream != null && allDeleted) {
+      message("merged segment " + merge.info + " is 100% deleted" +  (keepFullyDeletedSegments ? "" : "; skipping insert"));
+    }
 
     final Set mergedAway = new HashSet<SegmentInfo>(merge.segments);
     int segIdx = 0;
@@ -3557,7 +3596,7 @@ public class IndexWriter implements Closeable {
     while(segIdx < curSegCount) {
       final SegmentInfo info = segmentInfos.info(segIdx++);
       if (mergedAway.contains(info)) {
-        if (!inserted) {
+        if (!inserted && (!allDeleted || keepFullyDeletedSegments)) {
           segmentInfos.set(segIdx-1, merge.info);
           inserted = true;
           newSegIdx++;
@@ -3566,7 +3605,20 @@ public class IndexWriter implements Closeable {
         segmentInfos.set(newSegIdx++, info);
       }
     }
-    assert newSegIdx == curSegCount - merge.segments.size() + 1;
+
+    // Either we found place to insert segment, or, we did
+    // not, but only because all segments we merged became
+    // deleted while we are merging, in which case it should
+    // be the case that the new segment is also all deleted:
+    if (!inserted) {
+      assert allDeleted;
+      if (keepFullyDeletedSegments) {
+        segmentInfos.add(0, merge.info);
+      } else {
+        readerPool.drop(merge.info);
+      }
+    }
+
     segmentInfos.subList(newSegIdx, segmentInfos.size()).clear();
 
     if (infoStream != null) {
@@ -3588,7 +3640,6 @@ public class IndexWriter implements Closeable {
       // cascade the optimize:
       segmentsToOptimize.add(merge.info);
     }
-
     
     return true;
   }
@@ -3732,8 +3783,9 @@ public class IndexWriter implements Closeable {
     // is running (while synchronized) to avoid race
     // condition where two conflicting merges from different
     // threads, start
-    for(int i=0;i<count;i++)
+    for(int i=0;i<count;i++) {
       mergingSegments.add(merge.segments.info(i));
+    }
 
     // Merge is now registered
     merge.registerDone = true;
@@ -3792,7 +3844,25 @@ public class IndexWriter implements Closeable {
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
+
     if (result.anyDeletes) {
+      checkpoint();
+    }
+
+    if (!keepFullyDeletedSegments && result.allDeleted != null) {
+      if (infoStream != null) {
+        message("drop 100% deleted segments: " + result.allDeleted);
+      }
+      for(SegmentInfo info : result.allDeleted) {
+        segmentInfos.remove(info);
+        if (merge.segments.contains(info)) {
+          mergingSegments.remove(info);
+          merge.segments.remove(info);
+        }
+      }
+      if (readerPool != null) {
+        readerPool.drop(result.allDeleted);
+      }
       checkpoint();
     }
 
@@ -3849,8 +3919,9 @@ public class IndexWriter implements Closeable {
     if (merge.registerDone) {
       final SegmentInfos sourceSegments = merge.segments;
       final int end = sourceSegments.size();
-      for(int i=0;i<end;i++)
+      for(int i=0;i<end;i++) {
         mergingSegments.remove(sourceSegments.info(i));
+      }
       mergingSegments.remove(merge.info);
       merge.registerDone = false;
     }
@@ -3858,47 +3929,30 @@ public class IndexWriter implements Closeable {
     runningMerges.remove(merge);
   }
 
-  private synchronized void setMergeDocStoreIsCompoundFile(MergePolicy.OneMerge merge) {
-    final String mergeDocStoreSegment = merge.info.getDocStoreSegment(); 
-    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
-      final int size = segmentInfos.size();
-      for(int i=0;i<size;i++) {
-        final SegmentInfo info = segmentInfos.info(i);
-        final String docStoreSegment = info.getDocStoreSegment();
-        if (docStoreSegment != null &&
-            docStoreSegment.equals(mergeDocStoreSegment) && 
-            info.getDocStoreIsCompoundFile()) {
-          merge.info.setDocStoreIsCompoundFile(true);
-          break;
-        }
-      }
-    }
-  }
-
   private final synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
-    final int numSegments = merge.segments.size();
+    final int numSegments = merge.readers.size();
     if (suppressExceptions) {
       // Suppress any new exceptions so we throw the
       // original cause
       boolean anyChanges = false;
       for (int i=0;i<numSegments;i++) {
-        if (merge.readers[i] != null) {
+        if (merge.readers.get(i) != null) {
           try {
-            anyChanges |= readerPool.release(merge.readers[i], false);
+            anyChanges |= readerPool.release(merge.readers.get(i), false);
           } catch (Throwable t) {
           }
-          merge.readers[i] = null;
+          merge.readers.set(i, null);
         }
 
-        if (merge.readersClone[i] != null) {
+        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
           try {
-            merge.readersClone[i].close();
+            merge.readerClones.get(i).close();
           } catch (Throwable t) {
           }
           // This was a private clone and we had the
           // only reference
-          assert merge.readersClone[i].getRefCount() == 0: "refCount should be 0 but is " + merge.readersClone[i].getRefCount();
-          merge.readersClone[i] = null;
+          assert merge.readerClones.get(i).getRefCount() == 0: "refCount should be 0 but is " + merge.readerClones.get(i).getRefCount();
+          merge.readerClones.set(i, null);
         }
       }
       if (anyChanges) {
@@ -3906,16 +3960,16 @@ public class IndexWriter implements Closeable {
       }
     } else {
       for (int i=0;i<numSegments;i++) {
-        if (merge.readers[i] != null) {
-          readerPool.release(merge.readers[i], true);
-          merge.readers[i] = null;
+        if (merge.readers.get(i) != null) {
+          readerPool.release(merge.readers.get(i), true);
+          merge.readers.set(i, null);
         }
 
-        if (merge.readersClone[i] != null) {
-          merge.readersClone[i].close();
+        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
+          merge.readerClones.get(i).close();
           // This was a private clone and we had the only reference
-          assert merge.readersClone[i].getRefCount() == 0;
-          merge.readersClone[i] = null;
+          assert merge.readerClones.get(i).getRefCount() == 0;
+          merge.readerClones.set(i, null);
         }
       }
     }
@@ -3934,7 +3988,6 @@ public class IndexWriter implements Closeable {
     int mergedDocCount = 0;
 
     SegmentInfos sourceSegments = merge.segments;
-    final int numSegments = sourceSegments.size();
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
                                              payloadProcessorProvider,
@@ -3944,36 +3997,43 @@ public class IndexWriter implements Closeable {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getHasVectors());
     }
 
+    merge.readers = new ArrayList<SegmentReader>();
+    merge.readerClones = new ArrayList<SegmentReader>();
+
     merge.info.setHasVectors(merger.fieldInfos().hasVectors());
-    merge.readers = new SegmentReader[numSegments];
-    merge.readersClone = new SegmentReader[numSegments];
 
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
     try {
       int totDocCount = 0;
+      int segUpto = 0;
+      while(segUpto < sourceSegments.size()) {
 
-      for (int i = 0; i < numSegments; i++) {
-        final SegmentInfo info = sourceSegments.info(i);
+        final SegmentInfo info = sourceSegments.info(segUpto);
 
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
-        SegmentReader reader = merge.readers[i] = readerPool.get(info, true,
-                                                                 MERGE_READ_BUFFER_SIZE,
-                                                                 -1);
+        final SegmentReader reader = readerPool.get(info, true,
+                                                    MERGE_READ_BUFFER_SIZE,
+                                                    -1);
+        merge.readers.add(reader);
 
         // We clone the segment readers because other
         // deletes may come in while we're merging so we
         // need readers that will not change
-        SegmentReader clone = merge.readersClone[i] = (SegmentReader) reader.clone(true);
-        merger.add(clone);
+        final SegmentReader clone = (SegmentReader) reader.clone(true);
+        merge.readerClones.add(clone);
 
+        if (reader.numDocs() > 0) {
+          merger.add(clone);
+        }
         totDocCount += clone.numDocs();
+        segUpto++;
       }
 
       if (infoStream != null) {
-        message("merge: total "+totDocCount+" docs");
+        message("merge: total " + totDocCount + " docs");
       }
 
       merge.checkAborted(directory);
@@ -3984,11 +4044,13 @@ public class IndexWriter implements Closeable {
       assert mergedDocCount == totDocCount;
 
       if (infoStream != null) {
-        message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + numSegments);
+        message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
 
-      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != numSegments;
+      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != merge.readers.size();
       
+      assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
+
       // Very important to do this before opening the reader
       // because SegmentReader must know if prox was written for
       // this segment:
@@ -4172,6 +4234,10 @@ public class IndexWriter implements Closeable {
     keepFullyDeletedSegments = true;
   }
 
+  boolean getKeepFullyDeletedSegments() {
+    return keepFullyDeletedSegments;
+  }
+
   // called only from assert
   private boolean filesExist(SegmentInfos toSync) throws IOException {
     Collection<String> files = toSync.files(directory, false);
@@ -4227,12 +4293,8 @@ public class IndexWriter implements Closeable {
         if (infoStream != null)
           message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
 
-        readerPool.commit();
-        
+        readerPool.commit(segmentInfos);
         toSync = (SegmentInfos) segmentInfos.clone();
-        if (!keepFullyDeletedSegments) {
-          toSync.pruneDeletedSegments();
-        }
 
         assert filesExist(toSync);
         

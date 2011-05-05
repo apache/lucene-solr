@@ -136,7 +136,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.readOnly = true;
     this.applyAllDeletes = applyAllDeletes;       // saved for reopen
 
-    segmentInfos = (SegmentInfos) infos.clone();// make sure we clone otherwise we share mutable state with IW
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     readerFinishedListeners = writer.getReaderFinishedListeners();
 
@@ -144,23 +143,33 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
     final int numSegments = infos.size();
-    SegmentReader[] readers = new SegmentReader[numSegments];
+
+    List<SegmentReader> readers = new ArrayList<SegmentReader>();
     final Directory dir = writer.getDirectory();
 
+    segmentInfos = (SegmentInfos) infos.clone();
+    int infosUpto = 0;
     for (int i=0;i<numSegments;i++) {
       boolean success = false;
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
-        readers[i] = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
-        readers[i].readerFinishedListeners = readerFinishedListeners;
+        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
+        if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
+          reader.readerFinishedListeners = readerFinishedListeners;
+          readers.add(reader);
+          infosUpto++;
+        } else {
+          reader.close();
+          segmentInfos.remove(infosUpto);
+        }
         success = true;
       } finally {
         if (!success) {
           // Close all readers we had opened:
-          for(i--;i>=0;i--) {
+          for(SegmentReader reader : readers) {
             try {
-              readers[i].close();
+              reader.close();
             } catch (Throwable ignore) {
               // keep going - we want to clean up as much as possible
             }
@@ -171,7 +180,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
     this.writer = writer;
 
-    initialize(readers);
+    initialize(readers.toArray(new SegmentReader[readers.size()]));
   }
 
   /** This constructor is only used for {@link #reopen()} */

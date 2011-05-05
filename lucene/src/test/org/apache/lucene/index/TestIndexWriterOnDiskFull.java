@@ -464,14 +464,14 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             setReaderPooling(true).
             setMergePolicy(newLogMergePolicy(2))
     );
-    //_TestUtil.keepFullyDeletedSegments(w);
+
+    _TestUtil.keepFullyDeletedSegments(w);
 
     ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
 
     Document doc = new Document();
     doc.add(newField("f", "doctor who", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(doc);
-
     w.commit();
 
     w.deleteDocuments(new Term("f", "who"));

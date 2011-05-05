@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util._TestUtil;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
 
@@ -187,6 +188,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertEquals("[just filter] Should find a hit...", 1, docs.totalHits);
 
     // now delete the doc, refresh the reader, and see that it's not there
+    _TestUtil.keepFullyDeletedSegments(writer.w);
     writer.deleteDocuments(new Term("id", "1"));
 
     reader = refreshReader(reader);
