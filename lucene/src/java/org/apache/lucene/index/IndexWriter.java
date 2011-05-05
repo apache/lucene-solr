@@ -4047,7 +4047,7 @@ public class IndexWriter implements Closeable {
         message("merge store matchedCount=" + merger.getMatchedSubReaderCount() + " vs " + merge.readers.size());
       }
 
-      anyNonBulkMerges |= merger.getMatchedSubReaderCount() != merge.readers.size();
+      anyNonBulkMerges |= merger.getAnyNonBulkMerges();
       
       assert mergedDocCount == totDocCount: "mergedDocCount=" + mergedDocCount + " vs " + totDocCount;
 

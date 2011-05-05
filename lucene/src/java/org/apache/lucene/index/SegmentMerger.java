@@ -609,6 +609,11 @@ final class SegmentMerger {
     return df;
   }
 
+  public boolean getAnyNonBulkMerges() {
+    assert matchedCount <= readers.size();
+    return matchedCount != readers.size();
+  }
+
   private void mergeNorms() throws IOException {
     // get needed buffer size by finding the largest segment
     int bufferSize = 0;
