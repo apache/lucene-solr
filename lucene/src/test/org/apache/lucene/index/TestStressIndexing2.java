@@ -153,9 +153,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
                                                                                                   0.1).setMaxBufferedDocs(maxBufferedDocs).setMergePolicy(newLogMergePolicy()));
     w.setInfoStream(VERBOSE ? System.out : null);
     w.commit();
-    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-    lmp.setUseCompoundFile(false);
-    lmp.setMergeFactor(mergeFactor);
+    setUseCompoundFile(w.getConfig().getMergePolicy(), false);
+    setMergeFactor(w.getConfig().getMergePolicy(), mergeFactor);
     /***
         w.setMaxMergeDocs(Integer.MAX_VALUE);
         w.setMaxFieldLength(10000);
@@ -209,9 +208,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
                .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
                .setReaderPooling(doReaderPooling).setMergePolicy(newLogMergePolicy()));
       w.setInfoStream(VERBOSE ? System.out : null);
-      LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-      lmp.setUseCompoundFile(false);
-      lmp.setMergeFactor(mergeFactor);
+      setUseCompoundFile(w.getConfig().getMergePolicy(), false);
+      setMergeFactor(w.getConfig().getMergePolicy(), mergeFactor);
 
       threads = new IndexingThread[nThreads];
       for (int i=0; i<threads.length; i++) {

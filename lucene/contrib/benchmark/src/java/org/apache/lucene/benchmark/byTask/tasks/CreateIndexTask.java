@@ -32,6 +32,7 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 
@@ -145,6 +146,9 @@ public class CreateIndexTask extends PerfTask {
         LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
         logMergePolicy.setUseCompoundFile(isCompound);
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
+      } else if(iwConf.getMergePolicy() instanceof TieredMergePolicy) {
+        TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) iwConf.getMergePolicy();
+        tieredMergePolicy.setUseCompoundFile(isCompound);
       }
     }
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);

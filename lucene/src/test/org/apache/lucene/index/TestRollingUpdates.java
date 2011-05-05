@@ -47,8 +47,8 @@ public class TestRollingUpdates extends LuceneTestCase {
       } else {
         id++;
       }
-      doc.getField("id").setValue(myID);
-      w.updateDocument(new Term("id", myID), doc);
+      doc.getField("docid").setValue(myID);
+      w.updateDocument(new Term("docid", myID), doc);
 
       if (docIter >= SIZE && random.nextInt(50) == 17) {
         if (r != null) {

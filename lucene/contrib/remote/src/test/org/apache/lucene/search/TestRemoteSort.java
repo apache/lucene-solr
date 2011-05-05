@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
@@ -83,8 +82,8 @@ public class TestRemoteSort extends RemoteTestCase {
     indexStore = newDirectory();
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
-        .setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
+                                         .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    setMergeFactor(writer.getConfig().getMergePolicy(), 1000);
     for (int i=0; i<data.length; ++i) {
         Document doc = new Document();
         doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));

@@ -228,10 +228,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy()));
-    LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
-    lmp.setMergeFactor(3);
-    lmp.setUseCompoundFile(true);
+                                     .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy()));
+    setUseCompoundFile(iw.getConfig().getMergePolicy(), true);
+    setMergeFactor(iw.getConfig().getMergePolicy(), 3);
     iw.close();
   }
 

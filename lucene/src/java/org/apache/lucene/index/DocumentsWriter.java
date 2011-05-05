@@ -539,7 +539,7 @@ final class DocumentsWriter {
     SegmentInfo newSegment;
 
     try {
-      assert nextDocID == numDocs;
+      assert nextDocID == numDocs: "nextDocID=" + nextDocID + " numDocs=" + numDocs;
       assert waitQueue.numWaiting == 0;
       assert waitQueue.waitingBytes == 0;
 

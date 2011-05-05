@@ -9,6 +9,15 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-1076: IndexWriter.setInfoStream now throws IOException
+  (Mike McCandless, Shai Erera)
+
+New features
+
+* LUCENE-1076: Added TieredMergePolicy which is able to merge non-contiguous 
+  segments, which means docIDs no longer necessarily stay "in order".
+  (Mike McCandless, Shai Erera)
+
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public

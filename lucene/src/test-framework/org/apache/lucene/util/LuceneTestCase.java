@@ -41,9 +41,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.FieldCache;
@@ -374,6 +376,27 @@ public abstract class LuceneTestCase extends Assert {
     return getClass().getName() + "." + getName();
   }
 
+  public static void setUseCompoundFile(MergePolicy mp, boolean useCompound) {
+    if (mp instanceof LogMergePolicy) {
+      ((LogMergePolicy) mp).setUseCompoundFile(useCompound);
+    } else if (mp instanceof TieredMergePolicy) {
+      ((TieredMergePolicy) mp).setUseCompoundFile(useCompound);
+    } else {
+      fail("MergePolicy (compound-file) not supported " + mp);
+    }
+  }
+
+  public static void setMergeFactor(MergePolicy mp, int mergeFactor) {
+    if (mp instanceof LogMergePolicy) {
+      ((LogMergePolicy) mp).setMergeFactor(mergeFactor);
+    } else if (mp instanceof TieredMergePolicy) {
+      ((TieredMergePolicy) mp).setMaxMergeAtOnce(mergeFactor);
+      ((TieredMergePolicy) mp).setMaxMergeAtOnceExplicit(mergeFactor);
+    } else {
+      fail("MergePolicy not supported " + mp);
+    }
+  }
+
   @After
   public void tearDown() throws Exception {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
@@ -632,8 +655,13 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
-      c.setMergePolicy(new LogDocMergePolicy());
+      c.setMergePolicy(newTieredMergePolicy());
+    } else if (r.nextBoolean()) {
+      c.setMergePolicy(newLogMergePolicy());
+    } else {
+      c.setMergePolicy(new MockRandomMergePolicy(r));
     }
+    
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
@@ -651,8 +679,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
     }
     
-    // TODO: turn this back on after all backports
-    if (false && r.nextBoolean()) {
+    if (r.nextBoolean()) {
       c.setMergePolicy(new MockRandomMergePolicy(r));
     } else {
       c.setMergePolicy(newLogMergePolicy());
@@ -667,6 +694,10 @@ public abstract class LuceneTestCase extends Assert {
     return newLogMergePolicy(random);
   }
 
+  public static TieredMergePolicy newTieredMergePolicy() {
+    return newTieredMergePolicy(random);
+  }
+
   public static LogMergePolicy newLogMergePolicy(Random r) {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
     logmp.setUseCompoundFile(r.nextBoolean());
@@ -677,6 +708,24 @@ public abstract class LuceneTestCase extends Assert {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
     }
     return logmp;
+  }
+
+  public static TieredMergePolicy newTieredMergePolicy(Random r) {
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    if (r.nextInt(3) == 2) {
+      tmp.setMaxMergeAtOnce(2);
+      tmp.setMaxMergeAtOnceExplicit(2);
+    } else {
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 20));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 30));
+    }
+    tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
+    tmp.setExpungeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+    tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+    tmp.setUseCompoundFile(r.nextBoolean());
+    tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    return tmp;
   }
 
   public static LogMergePolicy newLogMergePolicy(boolean useCFS) {

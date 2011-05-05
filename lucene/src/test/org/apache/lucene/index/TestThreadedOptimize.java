@@ -51,12 +51,12 @@ public class TestThreadedOptimize extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, ANALYZER)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
-            merger));
+                        merger).setMergePolicy(newLogMergePolicy()));
 
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;
 
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
+      setMergeFactor(writer.getConfig().getMergePolicy(), 100);
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
@@ -124,10 +124,6 @@ public class TestThreadedOptimize extends LuceneTestCase {
     writer.close();
   }
 
-  /*
-    Run above stress test against RAMDirectory and then
-    FSDirectory.
-  */
   public void testThreadedOptimize() throws Exception {
     Directory directory = newDirectory();
     runTest(random, directory, new SerialMergeScheduler());

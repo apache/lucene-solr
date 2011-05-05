@@ -624,8 +624,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
 
       {
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1));
-        ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1)
+                                                   .setMergePolicy(newLogMergePolicy(10)));
         final int finalI = i;
 
         Thread[] threads = new Thread[NUM_THREAD];

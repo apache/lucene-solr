@@ -209,7 +209,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         .setIndexDeletionPolicy(policy);
     MergePolicy mp = conf.getMergePolicy();
     if (mp instanceof LogMergePolicy) {
-      ((LogMergePolicy) mp).setUseCompoundFile(true);
+      setUseCompoundFile(mp, true);
     }
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.close();
@@ -226,7 +226,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           OpenMode.APPEND).setIndexDeletionPolicy(policy);
       mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(true);
+        setUseCompoundFile(mp, true);
       }
       writer = new IndexWriter(dir, conf);
       for(int j=0;j<17;j++) {
@@ -309,7 +309,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setMergeScheduler(new SerialMergeScheduler());
       MergePolicy mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+        setUseCompoundFile(mp, useCompoundFile);
       }
       IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<107;i++) {
@@ -326,11 +326,10 @@ public class TestDeletionPolicy extends LuceneTestCase {
       if (!isOptimized) {
         conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
                                     new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
-                                                                                              OpenMode.APPEND).setIndexDeletionPolicy(policy)
-          .setMergePolicy(newLogMergePolicy());
+                                                                                              OpenMode.APPEND).setIndexDeletionPolicy(policy);
         mp = conf.getMergePolicy();
         if (mp instanceof LogMergePolicy) {
-          ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+          setUseCompoundFile(mp, true);
         }
         if (VERBOSE) {
           System.out.println("TEST: open writer for optimize");
@@ -421,7 +420,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
     assertTrue(lastCommit != null);
 
     // Now add 1 doc and optimize
-    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(policy));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random)).setIndexDeletionPolicy(policy));
     addDoc(writer);
     assertEquals(11, writer.numDocs());
     writer.optimize();
@@ -512,7 +512,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setMaxBufferedDocs(10);
       MergePolicy mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+        setUseCompoundFile(mp, useCompoundFile);
       }
       IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<107;i++) {
@@ -524,7 +524,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
       mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(true);
+        setUseCompoundFile(mp, true);
       }
       writer = new IndexWriter(dir, conf);
       writer.optimize();
@@ -565,7 +565,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
             .setMaxBufferedDocs(10);
         MergePolicy mp = conf.getMergePolicy();
         if (mp instanceof LogMergePolicy) {
-          ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+          setUseCompoundFile(mp, useCompoundFile);
         }
         IndexWriter writer = new IndexWriter(dir, conf);
         for(int i=0;i<17;i++) {
@@ -624,7 +624,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy).setMergePolicy(newLogMergePolicy());
       MergePolicy mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+        setUseCompoundFile(mp, useCompoundFile);
       }
       IndexWriter writer = new IndexWriter(dir, conf);
       writer.close();
@@ -637,12 +637,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
         }
         conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random))
-            .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
+          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy).setMergePolicy(newLogMergePolicy());
         mp = conf.getMergePolicy();
         if (mp instanceof LogMergePolicy) {
-          ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+          setUseCompoundFile(mp, useCompoundFile);
         }
         writer = new IndexWriter(dir, conf);
+        writer.setInfoStream(VERBOSE ? System.out : null);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
@@ -668,7 +669,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
       mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+        setUseCompoundFile(mp, useCompoundFile);
       }
       IndexReader r = IndexReader.open(dir);
       final boolean wasOptimized = r.isOptimized();
@@ -748,7 +749,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           .setMaxBufferedDocs(10);
       MergePolicy mp = conf.getMergePolicy();
       if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+        setUseCompoundFile(mp, useCompoundFile);
       }
       IndexWriter writer = new IndexWriter(dir, conf);
       writer.close();
@@ -763,7 +764,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
             .setMaxBufferedDocs(10);
         mp = conf.getMergePolicy();
         if (mp instanceof LogMergePolicy) {
-          ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+          setUseCompoundFile(mp, useCompoundFile);
         }
         writer = new IndexWriter(dir, conf);
         for(int j=0;j<17;j++) {

@@ -92,18 +92,7 @@ public class TestNRTThreads extends LuceneTestCase {
     if (VERBOSE) {
       writer.setInfoStream(System.out);
     }
-    MergeScheduler ms = writer.getConfig().getMergeScheduler();
-    if (ms instanceof ConcurrentMergeScheduler) {
-      // try to keep max file open count down
-      ((ConcurrentMergeScheduler) ms).setMaxThreadCount(1);
-      ((ConcurrentMergeScheduler) ms).setMaxMergeCount(1);
-    }
-    /*
-    LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
-    if (lmp.getMergeFactor() > 5) {
-      lmp.setMergeFactor(5);
-    }
-    */
+    _TestUtil.reduceOpenFiles(writer);
 
     final int NUM_INDEX_THREADS = 2;
     final int NUM_SEARCH_THREADS = 3;
@@ -137,22 +126,22 @@ public class TestNRTThreads extends LuceneTestCase {
                 }
                 if (random.nextBoolean()) {
                   if (VERBOSE) {
-                    System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("docid"));
                   }
                   writer.addDocument(doc);
                 } else {
                   // we use update but it never replaces a
                   // prior doc
                   if (VERBOSE) {
-                    System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("docid"));
                   }
-                  writer.updateDocument(new Term("id", doc.get("id")), doc);
+                  writer.updateDocument(new Term("docid", doc.get("docid")), doc);
                 }
                 if (random.nextInt(5) == 3) {
                   if (VERBOSE) {
-                    System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("id"));
+                    System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
                   }
-                  toDeleteIDs.add(doc.get("id"));
+                  toDeleteIDs.add(doc.get("docid"));
                 }
                 if (random.nextInt(50) == 17) {
                   if (VERBOSE) {
@@ -162,7 +151,7 @@ public class TestNRTThreads extends LuceneTestCase {
                     if (VERBOSE) {
                       System.out.println(Thread.currentThread().getName() + ": del term=id:" + id);
                     }
-                    writer.deleteDocuments(new Term("id", id));
+                    writer.deleteDocuments(new Term("docid", id));
                   }
                   final int count = delCount.addAndGet(toDeleteIDs.size());
                   if (VERBOSE) {
@@ -347,18 +336,18 @@ public class TestNRTThreads extends LuceneTestCase {
     final IndexSearcher s = newSearcher(r2);
     boolean doFail = false;
     for(String id : delIDs) {
-      final TopDocs hits = s.search(new TermQuery(new Term("id", id)), 1);
+      final TopDocs hits = s.search(new TermQuery(new Term("docid", id)), 1);
       if (hits.totalHits != 0) {
         System.out.println("doc id=" + id + " is supposed to be deleted, but got docID=" + hits.scoreDocs[0].doc);
         doFail = true;
       }
     }
     
-    final int endID = Integer.parseInt(docs.nextDoc().get("id"));
+    final int endID = Integer.parseInt(docs.nextDoc().get("docid"));
     for(int id=0;id<endID;id++) {
       String stringID = ""+id;
       if (!delIDs.contains(stringID)) {
-        final TopDocs hits = s.search(new TermQuery(new Term("id", stringID)), 1);
+        final TopDocs hits = s.search(new TermQuery(new Term("docid", stringID)), 1);
         if (hits.totalHits != 1) {
           System.out.println("doc id=" + stringID + " is not supposed to be deleted, but got hitCount=" + hits.totalHits);
           doFail = true;

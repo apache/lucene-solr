@@ -99,8 +99,7 @@ public class TestNorms extends LuceneTestCase {
     createIndex(random, dir3);
     IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+                                     .setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
     iw.addIndexes(new Directory[]{dir1,dir2});
     iw.optimize();
     iw.close();
@@ -117,8 +116,7 @@ public class TestNorms extends LuceneTestCase {
     
     // now with optimize
     iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
-        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
