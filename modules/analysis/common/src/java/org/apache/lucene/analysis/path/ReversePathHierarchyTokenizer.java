@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.path;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -29,47 +31,58 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * Take something like:
  *
  * <pre>
- *  /something/something/else
+ * www.site.co.uk
  * </pre>
  *
  * and make:
  *
  * <pre>
- *  /something
- *  /something/something
- *  /something/something/else
+ * www.site.co.uk
+ * site.co.uk
+ * co.uk
+ * uk
  * </pre>
+ *
  */
-public class PathHierarchyTokenizer extends Tokenizer {
+public class ReversePathHierarchyTokenizer extends Tokenizer {
 
-  public PathHierarchyTokenizer(Reader input) {
+  public ReversePathHierarchyTokenizer(Reader input) {
     this(input, DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, int skip) {
+  public ReversePathHierarchyTokenizer(Reader input, int skip) {
     this(input, DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, skip);
   }
 
-  public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter) {
+  public ReversePathHierarchyTokenizer(Reader input, int bufferSize, char delimiter) {
     this(input, bufferSize, delimiter, delimiter, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, char delimiter, char replacement) {
+  public ReversePathHierarchyTokenizer(Reader input, char delimiter, char replacement) {
     this(input, DEFAULT_BUFFER_SIZE, delimiter, replacement, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer(Reader input, char delimiter, char replacement, int skip) {
+  public ReversePathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement) {
+    this(input, bufferSize, delimiter, replacement, DEFAULT_SKIP);
+  }
+
+  public ReversePathHierarchyTokenizer(Reader input, char delimiter, int skip) {
+    this(input, DEFAULT_BUFFER_SIZE, delimiter, delimiter, skip);
+  }
+
+  public ReversePathHierarchyTokenizer(Reader input, char delimiter, char replacement, int skip) {
     this(input, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public PathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
+  public ReversePathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
     super(input);
     termAtt.resizeBuffer(bufferSize);
-
     this.delimiter = delimiter;
     this.replacement = replacement;
     this.skip = skip;
     resultToken = new StringBuilder(bufferSize);
+    resultTokenBuffer = new char[bufferSize];
+    delimiterPositions = new ArrayList<Integer>(bufferSize/10);
   }
 
   private static final int DEFAULT_BUFFER_SIZE = 1024;
@@ -83,95 +96,63 @@ public class PathHierarchyTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
-  private int startPosition = 0;
+  
+  private int endPosition = 0;
   private int finalOffset = 0;
   private int skipped = 0;
-  private boolean endDelimiter = false;
   private StringBuilder resultToken;
 
+  private List<Integer> delimiterPositions;
+  private int delimitersCount = -1;
+  private char[] resultTokenBuffer;
 
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
-    termAtt.append( resultToken );
-    if(resultToken.length() == 0){
+    if(delimitersCount == -1){
+      int length = 0;
+      delimiterPositions.add(0);
+      while (true) {
+        int c = input.read();
+        if( c < 0 ) {
+          break;
+        }
+        length++;
+        if( c == delimiter ) {
+          delimiterPositions.add(length);
+          resultToken.append(replacement);
+        }
+        else{
+          resultToken.append((char)c);
+        }
+      }
+      delimitersCount = delimiterPositions.size();
+      if( delimiterPositions.get(delimitersCount-1) < length ){
+        delimiterPositions.add(length);
+        delimitersCount++;
+      }
+      if( resultTokenBuffer.length < resultToken.length() ){
+        resultTokenBuffer = new char[resultToken.length()];
+      }
+      resultToken.getChars(0, resultToken.length(), resultTokenBuffer, 0);
+      resultToken.setLength(0);
+      endPosition = delimiterPositions.get(delimitersCount-1 - skip);
+      finalOffset = correctOffset(length);
       posAtt.setPositionIncrement(1);
     }
     else{
       posAtt.setPositionIncrement(0);
     }
-    int length = 0;
-    boolean added = false;
-    if( endDelimiter ){
-      termAtt.append(replacement);
-      length++;
-      endDelimiter = false;
-      added = true;
+
+    while( skipped < delimitersCount-skip-1 ){
+      int start = delimiterPositions.get(skipped);
+      termAtt.copyBuffer(resultTokenBuffer, start, endPosition - start);
+      offsetAtt.setOffset(correctOffset(start), correctOffset(endPosition));
+      skipped++;
+      return true;
     }
 
-    while (true) {
-      int c = input.read();
-      if( c < 0 ){
-        if( skipped > skip ) {
-          length += resultToken.length();
-          termAtt.setLength(length);
-          finalOffset = correctOffset(startPosition + length);
-          offsetAtt.setOffset(correctOffset(startPosition), finalOffset);
-          if( added ){
-            resultToken.setLength(0);
-            resultToken.append(termAtt.buffer(), 0, length);
-          }
-          return added;
-        }
-        else{
-          finalOffset = correctOffset(startPosition + length);
-          return false;
-        }
-      }
-      if( !added ){
-        added = true;
-        skipped++;
-        if( skipped > skip ){
-          termAtt.append(c == delimiter ? replacement : (char)c);
-          length++;
-        }
-        else {
-          startPosition++;
-        }
-      }
-      else {
-        if( c == delimiter ){
-          if( skipped > skip ){
-            endDelimiter = true;
-            break;
-          }
-          skipped++;
-          if( skipped > skip ){
-            termAtt.append(replacement);
-            length++;
-          }
-          else {
-            startPosition++;
-          }
-        }
-        else {
-          if( skipped > skip ){
-            termAtt.append((char)c);
-            length++;
-          }
-          else {
-            startPosition++;
-          }
-        }
-      }
-    }
-    length += resultToken.length();
-    termAtt.setLength(length);
-    finalOffset = correctOffset(startPosition + length);
-    offsetAtt.setOffset(correctOffset(startPosition), finalOffset);
-    resultToken.setLength(0);
-    resultToken.append(termAtt.buffer(), 0, length);
-    return true;
+    return false;
   }
 
   @Override
@@ -185,7 +166,8 @@ public class PathHierarchyTokenizer extends Tokenizer {
     super.reset(input);
     resultToken.setLength(0);
     finalOffset = 0;
-    endDelimiter = false;
     skipped = 0;
+    delimitersCount = -1;
+    delimiterPositions.clear();
   }
 }
