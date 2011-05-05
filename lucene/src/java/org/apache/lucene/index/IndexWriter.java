@@ -434,7 +434,7 @@ public class IndexWriter implements Closeable {
 
   IndexReader getReader(int termInfosIndexDivisor, boolean applyAllDeletes) throws IOException {
     ensureOpen();
-
+    
     final long tStart = System.currentTimeMillis();
 
     if (infoStream != null) {

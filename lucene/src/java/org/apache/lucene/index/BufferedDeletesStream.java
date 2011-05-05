@@ -22,7 +22,6 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Map.Entry;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +50,7 @@ import org.apache.lucene.search.Weight;
 class BufferedDeletesStream {
 
   // TODO: maybe linked list?
-  private final List<BufferedDeletes> deletes = new ArrayList<BufferedDeletes>();
+  private final List<FrozenBufferedDeletes> deletes = new ArrayList<FrozenBufferedDeletes>();
 
   // Starts at 1 so that SegmentInfos that have never had
   // deletes applied (whose bufferedDelGen defaults to 0)
@@ -82,13 +81,13 @@ class BufferedDeletesStream {
 
   // Appends a new packet of buffered deletes to the stream,
   // setting its generation:
-  public synchronized void push(BufferedDeletes packet) {
+  public synchronized void push(FrozenBufferedDeletes packet) {
     assert packet.any();
     assert checkDeleteStats();    
-    packet.gen = nextGen++;
+    assert packet.gen < nextGen;
     deletes.add(packet);
-    numTerms.addAndGet(packet.numTermDeletes.get());
-    bytesUsed.addAndGet(packet.bytesUsed.get());
+    numTerms.addAndGet(packet.numTermDeletes);
+    bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream != null) {
       message("push deletes " + packet + " delGen=" + packet.gen + " packetCount=" + deletes.size());
     }
@@ -181,14 +180,14 @@ class BufferedDeletesStream {
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
 
-      final BufferedDeletes packet = delIDX >= 0 ? deletes.get(delIDX) : null;
+      final FrozenBufferedDeletes packet = delIDX >= 0 ? deletes.get(delIDX) : null;
       final SegmentInfo info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
 
       if (packet != null && segGen < packet.gen) {
         //System.out.println("  coalesce");
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes();
+          coalescedDeletes = new BufferedDeletes(true);
         }
         coalescedDeletes.update(packet);
         delIDX--;
@@ -201,25 +200,25 @@ class BufferedDeletesStream {
         int delCount = 0;
         try {
           if (coalescedDeletes != null) {
-            delCount += applyDeletes(coalescedDeletes, reader);
+            //System.out.println("    del coalesced");
+            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), reader);
+            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
           }
-          delCount += applyDeletes(packet, reader);
+          //System.out.println("    del exact");
+          // Don't delete by Term here; DocumentsWriter
+          // already did that on flush:
+          delCount += applyQueryDeletes(packet.queriesIterable(), reader);
         } finally {
           readerPool.release(reader);
         }
         anyNewDeletes |= delCount > 0;
-
-        // We've applied doc ids, and they're only applied
-        // on the current segment
-        bytesUsed.addAndGet(-packet.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
-        packet.clearDocIDs();
 
         if (infoStream != null) {
           message("seg=" + info + " segGen=" + segGen + " segDeletes=[" + packet + "]; coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] delCount=" + delCount);
         }
 
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes();
+          coalescedDeletes = new BufferedDeletes(true);
         }
         coalescedDeletes.update(packet);
         delIDX--;
@@ -235,7 +234,8 @@ class BufferedDeletesStream {
           SegmentReader reader = readerPool.get(info, false);
           int delCount = 0;
           try {
-            delCount += applyDeletes(coalescedDeletes, reader);
+            delCount += applyTermDeletes(coalescedDeletes.termsIterable(), reader);
+            delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
           } finally {
             readerPool.release(reader);
           }
@@ -300,91 +300,91 @@ class BufferedDeletesStream {
         message("pruneDeletes: prune " + count + " packets; " + (deletes.size() - count) + " packets remain");
       }
       for(int delIDX=0;delIDX<count;delIDX++) {
-        final BufferedDeletes packet = deletes.get(delIDX);
-        numTerms.addAndGet(-packet.numTermDeletes.get());
+        final FrozenBufferedDeletes packet = deletes.get(delIDX);
+        numTerms.addAndGet(-packet.numTermDeletes);
         assert numTerms.get() >= 0;
-        bytesUsed.addAndGet(-packet.bytesUsed.get());
+        bytesUsed.addAndGet(-packet.bytesUsed);
         assert bytesUsed.get() >= 0;
       }
       deletes.subList(0, count).clear();
     }
   }
 
-  private synchronized long applyDeletes(BufferedDeletes deletes, SegmentReader reader) throws IOException {
-
+  // Delete by Term
+  private synchronized long applyTermDeletes(Iterable<Term> termsIter, SegmentReader reader) throws IOException {
     long delCount = 0;
-
+        
     assert checkDeleteTerm(null);
     
-    if (deletes.terms.size() > 0) {
-      final TermDocs docs = reader.termDocs();
+    final TermDocs docs = reader.termDocs();
+
+    for (Term term : termsIter) {
         
-      for (Entry<Term,Integer> entry: deletes.terms.entrySet()) {
-        Term term = entry.getKey();
-        // Since we visit terms sorted, we gain performance
-        // by re-using the same TermsEnum and seeking only
-        // forwards
-        assert checkDeleteTerm(term);
-        docs.seek(term);
+      // Since we visit terms sorted, we gain performance
+      // by re-using the same TermsEnum and seeking only
+      // forwards
+      assert checkDeleteTerm(term);
+      docs.seek(term);
           
-        final int limit = entry.getValue();
-        while (docs.next()) {
-          final int docID = docs.doc();
-          if (docID >= limit) {
-            break;
-          }
-          // TODO: we could/should change
-          // reader.deleteDocument to return boolean
-          // true if it did in fact delete, because here
-          // we could be deleting an already-deleted doc
-          // which makes this an upper bound:
-          delCount++;
+      while (docs.next()) {
+        final int docID = docs.doc();
+        reader.deleteDocument(docID);
+        // TODO: we could/should change
+        // reader.deleteDocument to return boolean
+        // true if it did in fact delete, because here
+        // we could be deleting an already-deleted doc
+        // which makes this an upper bound:
+        delCount++;
 
-          reader.deleteDocument(docID);
-        }
-      }
-    }
-
-    // Delete by docID
-    for (Integer docIdInt : deletes.docIDs) {
-      int docID = docIdInt.intValue();
-      reader.deleteDocument(docID);
-      delCount++;
-    }
-
-    // Delete by query
-    if (deletes.queries.size() > 0) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      try {
-        for (Entry<Query, Integer> entry : deletes.queries.entrySet()) {
-          Query query = entry.getKey();
-          int limit = entry.getValue().intValue();
-          Weight weight = query.weight(searcher);
-          Scorer scorer = weight.scorer(reader, true, false);
-          if (scorer != null) {
-            while(true)  {
-              int doc = scorer.nextDoc();
-              if (doc >= limit)
-                break;
-
-              reader.deleteDocument(doc);
-              // TODO: we could/should change
-              // reader.deleteDocument to return boolean
-              // true if it did in fact delete, because here
-              // we could be deleting an already-deleted doc
-              // which makes this an upper bound:
-              delCount++;
-            }
-          }
-        }
-      } finally {
-        searcher.close();
+        reader.deleteDocument(docID);
       }
     }
 
     return delCount;
   }
-  
+
+  public static class QueryAndLimit {
+    public final Query query;
+    public final int limit;
+    public QueryAndLimit(Query query, int limit) {
+      this.query = query;       
+      this.limit = limit;
+    }
+  }
+
+  // Delete by query
+  private synchronized long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, SegmentReader reader) throws IOException {
+    long delCount = 0;
+    IndexSearcher searcher = new IndexSearcher(reader);
+    try {
+      for (QueryAndLimit ent : queriesIter) {
+        Query query = ent.query;
+        int limit = ent.limit;
+        Weight weight = query.weight(searcher);
+        Scorer scorer = weight.scorer(reader, true, false);
+        if (scorer != null) {
+          while(true)  {
+            int doc = scorer.nextDoc();
+            if (doc >= limit)
+              break;
+
+            reader.deleteDocument(doc);
+            // TODO: we could/should change
+            // reader.deleteDocument to return boolean
+            // true if it did in fact delete, because here
+            // we could be deleting an already-deleted doc
+            // which makes this an upper bound:
+            delCount++;
+          }
+        }
+      }
+    } finally {
+      searcher.close();
+    }
+
+    return delCount;
+  }
+
   // used only by assert
   private boolean checkDeleteTerm(Term term) {
     if (term != null) {
@@ -398,9 +398,9 @@ class BufferedDeletesStream {
   private boolean checkDeleteStats() {
     int numTerms2 = 0;
     long bytesUsed2 = 0;
-    for(BufferedDeletes packet : deletes) {
-      numTerms2 += packet.numTermDeletes.get();
-      bytesUsed2 += packet.bytesUsed.get();
+    for(FrozenBufferedDeletes packet : deletes) {
+      numTerms2 += packet.numTermDeletes;
+      bytesUsed2 += packet.bytesUsed;
     }
     assert numTerms2 == numTerms.get(): "numTerms2=" + numTerms2 + " vs " + numTerms.get();
     assert bytesUsed2 == bytesUsed.get(): "bytesUsed2=" + bytesUsed2 + " vs " + bytesUsed;

@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -151,6 +150,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     writer.setInfoStream(VERBOSE ? System.out : null);
     writer.addIndexes(aux);
 

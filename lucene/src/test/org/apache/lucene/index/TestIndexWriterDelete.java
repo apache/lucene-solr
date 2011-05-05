@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -156,8 +155,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       addDoc(modifier, ++id, value);
       assertEquals(0, modifier.getSegmentCount());
-      modifier.commit();
-
       modifier.commit();
 
       IndexReader reader = IndexReader.open(dir, true);

@@ -78,6 +78,14 @@ final class FreqProxFieldMergeState {
     return true;
   }
 
+  public String termText() {
+    int upto = textOffset;
+    while(text[upto] != 0xffff) {
+      upto++;
+    }
+    return new String(text, textOffset, upto-textOffset);
+  }
+
   public boolean nextDoc() throws IOException {
     if (freq.eof()) {
       if (postings.lastDocCodes[currentTermID] != -1) {
