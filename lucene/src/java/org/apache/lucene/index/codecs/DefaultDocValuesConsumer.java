@@ -46,7 +46,6 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
     this.comparator = comparator;
   }
   
-  @Override
   public void close() throws IOException {
   }
 
