@@ -107,8 +107,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     createIndex(random, dir3);
     IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+                                     .setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
     iw.addIndexes(new Directory[] { dir1, dir2 });
     iw.optimize();
     iw.close();
@@ -125,8 +124,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
     // now with optimize
     iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
-        anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
+                                                     anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5).setMergePolicy(newLogMergePolicy(3)));
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -230,7 +228,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
+        .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -282,7 +280,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-            .setMaxBufferedDocs(5).setSimilarity(similarityOne);
+      .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy());
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);

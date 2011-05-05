@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Reader;
@@ -35,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -1345,9 +1343,9 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
       writer.setInfoStream(VERBOSE ? System.out : null);
-      LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
-      lmp.setMergeFactor(2);
-      lmp.setUseCompoundFile(false);
+      //LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
+      //lmp.setMergeFactor(2);
+      //lmp.setUseCompoundFile(false);
       Document doc = new Document();
       String contents = "aa bb cc dd ee ff gg hh ii jj kk";
 
@@ -1404,7 +1402,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       IndexWriterConfig conf = newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE)
-          .setMaxBufferedDocs(2);
+          .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
       if (pass == 2) {
         conf.setMergeScheduler(new SerialMergeScheduler());
       }
@@ -1580,8 +1578,8 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
         TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
-            IndexWriterConfig.DISABLE_AUTO_FLUSH));
-
+                                                  IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    writer.setInfoStream(VERBOSE ? System.out : null);
     Document document = new Document();
 
     document = new Document();
@@ -2634,11 +2632,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  // both start & end are inclusive
-  private final int getInt(Random r, int start, int end) {
-    return start + r.nextInt(1+end-start);
-  }
-
   public void testDeleteUnusedFiles() throws Exception {
 
     for(int iter=0;iter<2;iter++) {
@@ -2827,6 +2820,8 @@ public class TestIndexWriter extends LuceneTestCase {
                                          .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
     String[] files = dir.listAll();
 
+    writer.setInfoStream(VERBOSE ? System.out : null);
+
     // Creating over empty dir should not create any files,
     // or, at most the write.lock file
     final int extraFileCount;
@@ -2848,9 +2843,10 @@ public class TestIndexWriter extends LuceneTestCase {
     doc = new Document();
     doc.add(newField("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
+
     // The second document should cause a flush.
-    assertTrue("flush should have occurred and files created", dir.listAll().length > 5 + extraFileCount);
-   
+    assertTrue("flush should have occurred and files should have been created", dir.listAll().length > 5 + extraFileCount);
+
     // After rollback, IW should remove all files
     writer.rollback();
     assertEquals("no files should exist in the directory after rollback", 0, dir.listAll().length);

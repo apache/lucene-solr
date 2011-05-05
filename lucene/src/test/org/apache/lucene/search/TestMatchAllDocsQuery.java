@@ -40,7 +40,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2));
+                                                               TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
     addDoc("three four", iw, 300f);

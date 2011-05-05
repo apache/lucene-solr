@@ -598,7 +598,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random);
 
-    RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);
+    RandomIndexWriter w  = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
     Field f = newField("f", "", Field.Store.NO, Field.Index.ANALYZED);

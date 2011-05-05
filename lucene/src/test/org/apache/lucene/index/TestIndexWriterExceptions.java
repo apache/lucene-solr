@@ -286,6 +286,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionDocumentsWriterInit() throws IOException {
     Directory dir = newDirectory();
     MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "a field", Field.Store.YES,
                       Field.Index.ANALYZED));
@@ -357,7 +358,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionOnMergeInit() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
-      .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
+      .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy());
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
     MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
     w.doFail = true;
@@ -521,7 +522,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         System.out.println("TEST: cycle i=" + i);
       }
       MockDirectoryWrapper dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
       writer.setInfoStream(VERBOSE ? System.out : null);
 
       // don't allow a sudden merge to clean up the deleted

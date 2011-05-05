@@ -19,7 +19,6 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
@@ -102,7 +101,6 @@ public class FunctionTestSetup extends LuceneTestCase {
     anlzr = new MockAnalyzer(random);
     IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, iwc);
-
     if (doMultiSegment) {
       iw.w.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
     }

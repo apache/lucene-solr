@@ -75,8 +75,11 @@ public class TestSearch extends LuceneTestCase {
       Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
-      lmp.setUseCompoundFile(useCompoundFile);
+      MergePolicy mp = conf.getMergePolicy();
+      if (mp instanceof LogMergePolicy) {
+        ((LogMergePolicy) mp).setUseCompoundFile(useCompoundFile);
+      }
+      
       IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {
@@ -91,6 +94,7 @@ public class TestSearch extends LuceneTestCase {
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(newField("contents", docs[j], Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField("id", ""+j, Field.Index.NOT_ANALYZED_NO_NORMS));
         writer.addDocument(d);
       }
       writer.close();
@@ -107,18 +111,17 @@ public class TestSearch extends LuceneTestCase {
       };
       ScoreDoc[] hits = null;
 
+      Sort sort = new Sort(new SortField[] {
+          SortField.FIELD_SCORE,
+          new SortField("id", SortField.INT)});
+
       QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "contents", analyzer);
       parser.setPhraseSlop(4);
       for (int j = 0; j < queries.length; j++) {
         Query query = parser.parse(queries[j]);
         out.println("Query: " + query.toString("contents"));
 
-      //DateFilter filter =
-      //  new DateFilter("modified", Time(1997,0,1), Time(1998,0,1));
-      //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
-      //System.out.println(filter);
-
-        hits = searcher.search(query, null, 1000).scoreDocs;
+        hits = searcher.search(query, null, 1000, sort).scoreDocs;
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {

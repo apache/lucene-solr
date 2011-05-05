@@ -18,19 +18,17 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import java.io.*;
+import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.util.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Scorer.ScorerVisitor;
 import org.apache.lucene.store.*;
-
-import java.util.*;
-import java.io.*;
-
-import org.junit.Test;
+import org.apache.lucene.util.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestSubScorerFreqs extends LuceneTestCase {
 

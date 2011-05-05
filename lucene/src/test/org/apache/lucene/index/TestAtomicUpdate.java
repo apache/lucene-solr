@@ -20,7 +20,6 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 
 import java.util.Random;
 import java.io.File;
@@ -132,6 +131,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
         .setMaxBufferedDocs(7);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(3);
     IndexWriter writer = new MockIndexWriter(directory, conf);
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {

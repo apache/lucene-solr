@@ -102,6 +102,10 @@ public final class SegmentInfo {
   // afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
   private String version;
+
+  // NOTE: only used in-RAM by IW to track buffered deletes;
+  // this is never written to/read from the Directory
+  private long bufferedDeletesGen;
   
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
                      boolean hasProx, boolean hasVectors) { 
@@ -856,5 +860,12 @@ public final class SegmentInfo {
   public String getVersion() {
     return version;
   }
-  
+
+  long getBufferedDeletesGen() {
+    return bufferedDeletesGen;
+  }
+
+  void setBufferedDeletesGen(long v) {
+    bufferedDeletesGen = v;
+  }
 }

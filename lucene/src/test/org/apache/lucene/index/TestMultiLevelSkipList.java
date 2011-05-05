@@ -44,7 +44,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
 
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setMergePolicy(newLogMergePolicy()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();

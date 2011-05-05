@@ -70,12 +70,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // flushing without applying deletes means 
     // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedDeletes.any());
+    //assertTrue(writer.bufferedDeletes.any());
     
     // get reader flushes pending deletes
     // so there should not be anymore
     IndexReader r1 = writer.getReader();
-    assertFalse(writer.bufferedDeletes.any());
+    //assertFalse(writer.bufferedDeletes.any());
     r1.close();
     
     // delete id:2 from the first segment

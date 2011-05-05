@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -169,7 +168,8 @@ public class TestPayloads extends LuceneTestCase {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
-            .setOpenMode(OpenMode.CREATE));
+            .setOpenMode(OpenMode.CREATE)
+            .setMergePolicy(newLogMergePolicy()));
         
         // should be in sync with value in TermInfosWriter
         final int skipInterval = 16;

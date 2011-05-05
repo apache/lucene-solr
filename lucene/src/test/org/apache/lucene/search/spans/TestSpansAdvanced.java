@@ -56,7 +56,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     mDirectory = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
         mDirectory, newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new StandardAnalyzer(TEST_VERSION_CURRENT)));
+                                         new StandardAnalyzer(TEST_VERSION_CURRENT)).setMergePolicy(newLogMergePolicy()));
 
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");

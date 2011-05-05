@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -131,8 +130,6 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
       int minCount = 0;
       int maxCount = 0;
-
-      _TestUtil.reduceOpenFiles(writer.w);
 
       for (int d = minId; d <= maxId; d++) {
         idField.setValue(pad(d));

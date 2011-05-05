@@ -401,10 +401,10 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           // required is at most 2X total input size of
           // indices so let's make sure:
           assertTrue("max free Directory space required exceeded 1X the total input index sizes during " + methodName +
-              ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes; " +
-              "starting disk usage = " + startDiskUsage + " bytes; " +
-              "input index disk usage = " + inputDiskUsage + " bytes",
-              (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
+                     ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes vs limit=" + (2*(startDiskUsage + inputDiskUsage)) +
+                     "; starting disk usage = " + startDiskUsage + " bytes; " +
+                     "input index disk usage = " + inputDiskUsage + " bytes",
+                     (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
         }
         
         // Make sure we don't hit disk full during close below:

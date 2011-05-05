@@ -31,8 +31,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
@@ -43,6 +41,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.BooleanQuery;
@@ -652,15 +651,11 @@ public abstract class LuceneTestCase extends Assert {
       c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
     }
     
-    if (c.getMergePolicy() instanceof LogMergePolicy) {
-      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
-      logmp.setUseCompoundFile(r.nextBoolean());
-      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-      if (r.nextInt(3) == 2) {
-        logmp.setMergeFactor(2);
-      } else {
-        logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
-      }
+    // TODO: turn this back on after all backports
+    if (false && r.nextBoolean()) {
+      c.setMergePolicy(new MockRandomMergePolicy(r));
+    } else {
+      c.setMergePolicy(newLogMergePolicy());
     }
     
     c.setReaderPooling(r.nextBoolean());

@@ -42,7 +42,6 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	  super.setUp();
 		directory = newDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");
 		addDoc(writer, "jonathan smith","2");

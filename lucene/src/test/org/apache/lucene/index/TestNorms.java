@@ -23,7 +23,6 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -145,7 +144,7 @@ public class TestNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
+        .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -189,7 +188,7 @@ public class TestNorms extends LuceneTestCase {
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
+        .setMaxBufferedDocs(5).setSimilarity(similarityOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);

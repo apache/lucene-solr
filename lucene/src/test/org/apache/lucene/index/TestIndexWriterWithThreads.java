@@ -153,11 +153,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     for(int iter=0;iter<7;iter++) {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler());
+        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy(4));
       // We expect AlreadyClosedException
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       IndexWriter writer = new IndexWriter(dir, conf);
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 
@@ -212,11 +211,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT,
-          new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler());
+                                                     new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy(4));
       // We expect disk full exceptions in the merge threads
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       IndexWriter writer = new IndexWriter(dir, conf);
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 
