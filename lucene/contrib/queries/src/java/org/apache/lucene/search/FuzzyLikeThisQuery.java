@@ -213,17 +213,15 @@ public class FuzzyLikeThisQuery extends Query
                   BoostAttribute boostAtt =
                     fe.attributes().addAttribute(BoostAttribute.class);
                   while ((possibleMatch = fe.next()) != null) {
-                      if (possibleMatch!=null) {
-                        numVariants++;
-                        totalVariantDocFreqs+=fe.docFreq();
-                        float score=boostAtt.getBoost();
-                        if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-                          ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), new BytesRef(possibleMatch)),score,startTerm);                    
-                          variantsQ.insertWithOverflow(st);
-                          minScore = variantsQ.top().score; // maintain minScore
-                        }
-                        maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+                      numVariants++;
+                      totalVariantDocFreqs+=fe.docFreq();
+                      float score=boostAtt.getBoost();
+                      if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
+                        ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), new BytesRef(possibleMatch)),score,startTerm);                    
+                        variantsQ.insertWithOverflow(st);
+                        minScore = variantsQ.top().score; // maintain minScore
                       }
+                      maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
                     }
 
                   if(numVariants>0)
