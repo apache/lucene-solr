@@ -18,6 +18,9 @@ New features
   segments, which means docIDs no longer necessarily stay "in order".
   (Mike McCandless, Shai Erera)
 
+* LUCENE-3071: Adding ReversePathHierarchyTokenizer, added skip parameter to 
+  PathHierarchyTokenizer (Olivier Favre via ryan)
+
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public

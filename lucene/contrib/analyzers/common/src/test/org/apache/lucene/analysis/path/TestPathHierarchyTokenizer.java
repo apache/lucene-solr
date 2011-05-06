@@ -33,7 +33,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"/a", "/a/b", "/a/b/c"},
         new int[]{0, 0, 0},
         new int[]{2, 4, 6},
-        new int[]{1, 0, 0});
+        new int[]{1, 0, 0},
+        path.length());
   }
 
   public void testEndOfDelimiter() throws Exception {
@@ -43,7 +44,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"/a", "/a/b", "/a/b/c", "/a/b/c/"},
         new int[]{0, 0, 0, 0},
         new int[]{2, 4, 6, 7},
-        new int[]{1, 0, 0, 0});
+        new int[]{1, 0, 0, 0},
+        path.length());
   }
 
   public void testStartOfChar() throws Exception {
@@ -53,7 +55,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"a", "a/b", "a/b/c"},
         new int[]{0, 0, 0},
         new int[]{1, 3, 5},
-        new int[]{1, 0, 0});
+        new int[]{1, 0, 0},
+        path.length());
   }
 
   public void testStartOfCharEndOfDelimiter() throws Exception {
@@ -63,7 +66,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"a", "a/b", "a/b/c", "a/b/c/"},
         new int[]{0, 0, 0, 0},
         new int[]{1, 3, 5, 6},
-        new int[]{1, 0, 0, 0});
+        new int[]{1, 0, 0, 0},
+        path.length());
   }
 
   public void testOnlyDelimiter() throws Exception {
@@ -73,7 +77,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"/"},
         new int[]{0},
         new int[]{1},
-        new int[]{1});
+        new int[]{1},
+        path.length());
   }
 
   public void testOnlyDelimiters() throws Exception {
@@ -83,7 +88,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"/", "//"},
         new int[]{0, 0},
         new int[]{1, 2},
-        new int[]{1, 0});
+        new int[]{1, 0},
+        path.length());
   }
 
   public void testReplace() throws Exception {
@@ -93,7 +99,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"\\a", "\\a\\b", "\\a\\b\\c"},
         new int[]{0, 0, 0},
         new int[]{2, 4, 6},
-        new int[]{1, 0, 0});
+        new int[]{1, 0, 0},
+        path.length());
   }
 
   public void testWindowsPath() throws Exception {
@@ -103,7 +110,8 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"c:", "c:\\a", "c:\\a\\b", "c:\\a\\b\\c"},
         new int[]{0, 0, 0, 0},
         new int[]{2, 4, 6, 8},
-        new int[]{1, 0, 0, 0});
+        new int[]{1, 0, 0, 0},
+        path.length());
   }
 
   public void testNormalizeWinDelimToLinuxDelim() throws Exception {
@@ -116,6 +124,73 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new String[]{"c:", "c:/a", "c:/a/b", "c:/a/b/c"},
         new int[]{0, 0, 0, 0},
         new int[]{2, 4, 6, 8},
-        new int[]{1, 0, 0, 0});
+        new int[]{1, 0, 0, 0},
+        path.length());
+  }
+
+  public void testBasicSkip() throws Exception {
+    String path = "/a/b/c";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c"},
+        new int[]{2, 2},
+        new int[]{4, 6},
+        new int[]{1, 0},
+        path.length());
+  }
+
+  public void testEndOfDelimiterSkip() throws Exception {
+    String path = "/a/b/c/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c", "/b/c/"},
+        new int[]{2, 2, 2},
+        new int[]{4, 6, 7},
+        new int[]{1, 0, 0},
+        path.length());
+  }
+
+  public void testStartOfCharSkip() throws Exception {
+    String path = "a/b/c";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c"},
+        new int[]{1, 1},
+        new int[]{3, 5},
+        new int[]{1, 0},
+        path.length());
+  }
+
+  public void testStartOfCharEndOfDelimiterSkip() throws Exception {
+    String path = "a/b/c/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c", "/b/c/"},
+        new int[]{1, 1, 1},
+        new int[]{3, 5, 6},
+        new int[]{1, 0, 0},
+        path.length());
+  }
+
+  public void testOnlyDelimiterSkip() throws Exception {
+    String path = "/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{},
+        new int[]{},
+        new int[]{},
+        new int[]{},
+        path.length());
+  }
+
+  public void testOnlyDelimitersSkip() throws Exception {
+    String path = "//";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/"},
+        new int[]{1},
+        new int[]{2},
+        new int[]{1},
+        path.length());
   }
 }
