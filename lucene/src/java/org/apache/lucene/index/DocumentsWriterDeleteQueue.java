@@ -359,7 +359,7 @@ final class DocumentsWriterDeleteQueue {
 
   private boolean forceApplyGlobalSlice() {
     globalBufferLock.lock();
-    final Node currentTail = tail;
+    final Node<?> currentTail = tail;
     try {
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
