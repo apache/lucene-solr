@@ -63,9 +63,9 @@ import org.apache.lucene.search.Query;
  */
 final class DocumentsWriterDeleteQueue {
 
-  private volatile Node tail;
+  private volatile Node<?> tail;
   
-  private static final AtomicReferenceFieldUpdater<DocumentsWriterDeleteQueue, Node> tailUpdater = AtomicReferenceFieldUpdater
+  private static final AtomicReferenceFieldUpdater<DocumentsWriterDeleteQueue,Node> tailUpdater = AtomicReferenceFieldUpdater
       .newUpdater(DocumentsWriterDeleteQueue.class, Node.class, "tail");
 
   private final DeleteSlice globalSlice;
@@ -90,7 +90,7 @@ final class DocumentsWriterDeleteQueue {
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.
      */
-    tail = new Node(null); // sentinel
+    tail = new Node<Object>(null); // sentinel
     globalSlice = new DeleteSlice(tail);
   }
 
@@ -126,14 +126,14 @@ final class DocumentsWriterDeleteQueue {
     // we can do it just every n times or so?
   }
 
-  void add(Node item) {
+  void add(Node<?> item) {
     /*
      * this non-blocking / 'wait-free' linked list add was inspired by Apache
      * Harmony's ConcurrentLinkedQueue Implementation.
      */
     while (true) {
-      final Node currentTail = this.tail;
-      final Node tailNext = currentTail.next;
+      final Node<?> currentTail = this.tail;
+      final Node<?> tailNext = currentTail.next;
       if (tail == currentTail) {
         if (tailNext != null) {
           /*
@@ -196,7 +196,7 @@ final class DocumentsWriterDeleteQueue {
      * deletes in the queue and reset the global slice to let the GC prune the
      * queue.
      */
-    final Node currentTail = tail; // take the current tail make this local any
+    final Node<?> currentTail = tail; // take the current tail make this local any
     // Changes after this call are applied later
     // and not relevant here
     if (callerSlice != null) {
@@ -232,10 +232,10 @@ final class DocumentsWriterDeleteQueue {
 
   static class DeleteSlice {
     // No need to be volatile, slices are thread captive (only accessed by one thread)!
-    Node sliceHead; // we don't apply this one
-    Node sliceTail;
+    Node<?> sliceHead; // we don't apply this one
+    Node<?> sliceTail;
 
-    DeleteSlice(Node currentTail) {
+    DeleteSlice(Node<?> currentTail) {
       assert currentTail != null;
       /*
        * Initially this is a 0 length slice pointing to the 'current' tail of
@@ -256,7 +256,7 @@ final class DocumentsWriterDeleteQueue {
        * tail in this slice are not equal then there will be at least one more
        * non-null node in the slice!
        */
-      Node current = sliceHead;
+      Node<?> current = sliceHead;
       do {
         current = current.next;
         assert current != null : "slice property violated between the head on the tail must not be a null node";
@@ -290,7 +290,7 @@ final class DocumentsWriterDeleteQueue {
   void clear() {
     globalBufferLock.lock();
     try {
-      final Node currentTail = tail;
+      final Node<?> currentTail = tail;
       globalSlice.sliceHead = globalSlice.sliceTail = currentTail;
       globalBufferedDeletes.clear();
     } finally {
@@ -298,27 +298,27 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
-  private static class Node {
-    volatile Node next;
-    final Object item;
+  private static class Node<T> {
+    volatile Node<?> next;
+    final T item;
 
-    private Node(Object item) {
+    Node(T item) {
       this.item = item;
     }
 
-    static final AtomicReferenceFieldUpdater<Node, Node> nextUpdater = AtomicReferenceFieldUpdater
+    static final AtomicReferenceFieldUpdater<Node,Node> nextUpdater = AtomicReferenceFieldUpdater
         .newUpdater(Node.class, Node.class, "next");
 
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
       assert false : "sentinel item must never be applied";
     }
 
-    boolean casNext(Node cmp, Node val) {
+    boolean casNext(Node<?> cmp, Node<?> val) {
       return nextUpdater.compareAndSet(this, cmp, val);
     }
   }
 
-  private static final class TermNode extends Node {
+  private static final class TermNode extends Node<Term> {
 
     TermNode(Term term) {
       super(term);
@@ -326,33 +326,31 @@ final class DocumentsWriterDeleteQueue {
 
     @Override
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
-      bufferedDeletes.addTerm((Term) item, docIDUpto);
+      bufferedDeletes.addTerm(item, docIDUpto);
     }
   }
 
-  private static final class QueryArrayNode extends Node {
+  private static final class QueryArrayNode extends Node<Query[]> {
     QueryArrayNode(Query[] query) {
       super(query);
     }
 
     @Override
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
-      final Query[] queries = (Query[]) item;
-      for (Query query : queries) {
+      for (Query query : item) {
         bufferedDeletes.addQuery(query, docIDUpto);  
       }
     }
   }
   
-  private static final class TermArrayNode extends Node {
+  private static final class TermArrayNode extends Node<Term[]> {
     TermArrayNode(Term[] term) {
       super(term);
     }
 
     @Override
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
-      final Term[] terms = (Term[]) item;
-      for (Term term : terms) {
+      for (Term term : item) {
         bufferedDeletes.addTerm(term, docIDUpto);  
       }
     }
