@@ -21,8 +21,6 @@ import org.apache.lucene.util.PriorityQueue;
 
 final class HitQueue extends PriorityQueue<ScoreDoc> {
 
-  private boolean prePopulate;
-
   /**
    * Creates a new instance with <code>size</code> elements. If
    * <code>prePopulate</code> is set to true, the queue will pre-populate itself
