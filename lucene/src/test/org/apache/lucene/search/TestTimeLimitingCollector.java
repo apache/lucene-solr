@@ -75,7 +75,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry pizza",
     };
     directory = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, directory);
+    RandomIndexWriter iw = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
