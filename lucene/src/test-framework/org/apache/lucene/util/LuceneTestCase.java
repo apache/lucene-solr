@@ -137,6 +137,8 @@ public abstract class LuceneTestCase extends Assert {
   // tests)
   /** Gets the codec to run tests with. */
   public static final String TEST_CODEC = System.getProperty("tests.codec", "randomPerField");
+  /** Gets the codecprovider to run tests with */
+  public static final String TEST_CODECPROVIDER = System.getProperty("tests.codecprovider", "random");
   /** Gets the locale to run tests with */
   public static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
@@ -329,15 +331,38 @@ public abstract class LuceneTestCase extends Assert {
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     savedCodecProvider = CodecProvider.getDefault();
-    if ("randomPerField".equals(TEST_CODEC)) {
-      if (random.nextInt(4) == 0) { // preflex-only setup
-        codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
-      } else { // per-field setup
-        CodecProvider.setDefault(new RandomCodecProvider(random));
+    if ("random".equals(TEST_CODECPROVIDER)) {
+      if ("randomPerField".equals(TEST_CODEC)) {
+        if (random.nextInt(4) == 0) { // preflex-only setup
+          codec = installTestCodecs("PreFlex", CodecProvider.getDefault());
+        } else { // per-field setup
+          CodecProvider.setDefault(new RandomCodecProvider(random));
+          codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
+        }
+      } else { // ordinary setup
         codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
       }
-    } else { // ordinary setup
-      codec = installTestCodecs(TEST_CODEC, CodecProvider.getDefault());
+    } else {
+      // someone specified their own codecprovider by class
+      try {
+        Class<? extends CodecProvider> cpClazz = Class.forName(TEST_CODECPROVIDER).asSubclass(CodecProvider.class);
+        CodecProvider cp = cpClazz.newInstance();
+        String codecName;
+        if (TEST_CODEC.startsWith("random")) { // TODO: somehow do random per-field?!
+          Set<String> codecSet = cp.listAll();
+          String availableCodecs[] = codecSet.toArray(new String[codecSet.size()]);
+          codecName = availableCodecs[random.nextInt(availableCodecs.length)];
+        } else {
+          codecName = TEST_CODEC;
+        }
+        
+        codec = cp.lookup(codecName);
+        cp.setDefaultFieldCodec(codecName);
+        CodecProvider.setDefault(cp);
+      } catch (Exception e) {
+        System.err.println("Could not instantiate CodecProvider: " + TEST_CODECPROVIDER);
+        throw new RuntimeException(e);
+      }
     }
     savedLocale = Locale.getDefault();
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
@@ -360,16 +385,13 @@ public abstract class LuceneTestCase extends Assert {
     String codecDescription;
     CodecProvider cp = CodecProvider.getDefault();
 
-    if ("randomPerField".equals(TEST_CODEC)) {
-      if (cp instanceof RandomCodecProvider)
-        codecDescription = cp.toString();
-      else
-        codecDescription = "PreFlex";
+    if ("randomPerField".equals(TEST_CODEC) && cp instanceof RandomCodecProvider) {
+      codecDescription = cp.toString();
     } else {
       codecDescription = codec.toString();
     }
 
-    if (CodecProvider.getDefault() == savedCodecProvider)
+    if ("random".equals(TEST_CODECPROVIDER) && CodecProvider.getDefault() == savedCodecProvider)
       removeTestCodecs(codec, CodecProvider.getDefault());
     CodecProvider.setDefault(savedCodecProvider);
     Locale.setDefault(savedLocale);

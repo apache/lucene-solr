@@ -171,6 +171,7 @@
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
+      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
       <sysproperty key="tests.locale" value="${tests.locale}"/>
       <sysproperty key="tests.timezone" value="${tests.timezone}"/>
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
@@ -231,6 +232,7 @@
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
       <sysproperty key="tests.locale" value="${tests.locale}"/>
       <sysproperty key="tests.timezone" value="${tests.timezone}"/>
