@@ -65,6 +65,7 @@ final class DocumentsWriterDeleteQueue {
 
   private volatile Node<?> tail;
   
+  @SuppressWarnings("rawtypes")
   private static final AtomicReferenceFieldUpdater<DocumentsWriterDeleteQueue,Node> tailUpdater = AtomicReferenceFieldUpdater
       .newUpdater(DocumentsWriterDeleteQueue.class, Node.class, "tail");
 
@@ -306,6 +307,7 @@ final class DocumentsWriterDeleteQueue {
       this.item = item;
     }
 
+    @SuppressWarnings("rawtypes")
     static final AtomicReferenceFieldUpdater<Node,Node> nextUpdater = AtomicReferenceFieldUpdater
         .newUpdater(Node.class, Node.class, "next");
 
