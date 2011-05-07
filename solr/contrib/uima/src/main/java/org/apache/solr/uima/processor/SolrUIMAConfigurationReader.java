@@ -68,12 +68,17 @@ public class SolrUIMAConfigurationReader {
     NamedList fieldMappings = (NamedList) args.get("fieldMappings");
     /* iterate over UIMA types */
     for (int i = 0; i < fieldMappings.size(); i++) {
-      NamedList mapping = (NamedList) fieldMappings.get("mapping", i);
-      String typeName = (String) mapping.get("type");
-      String featureName = (String) mapping.get("feature");
-      String mappedFieldName = (String) mapping.get("field");
+      NamedList type = (NamedList) fieldMappings.get("type", i);
+      String typeName = (String)type.get("name");
+
       Map<String, String> subMap = new HashMap<String, String>();
-      subMap.put(featureName, mappedFieldName);
+      /* iterate over mapping definitions */
+      for(int j = 0; j < type.size() - 1; j++){
+        NamedList mapping = (NamedList) type.get("mapping", j + 1);
+        String featureName = (String) mapping.get("feature");
+        String mappedFieldName = (String) mapping.get("field");
+        subMap.put(featureName, mappedFieldName);
+      }
       map.put(typeName, subMap);
     }
     return map;
