@@ -3,7 +3,7 @@
 <head>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.8">
+<meta name="Forrest-version" content="0.9">
 <meta name="Forrest-skin-name" content="lucene">
 <title>
             Apache Lucene - Index File Formats
@@ -429,10 +429,15 @@ document.write("Last Published: " + document.lastModified);
             Additionally segments track explicitly whether or
             not they have term vectors. See LUCENE-2811 for details.
            </p>
+<p>
+            In version 3.2, numeric fields are written as natively
+            to stored fields file, previously they were stored in
+            text format only.
+           </p>
 </div>
 
         
-<a name="N10037"></a><a name="Definitions"></a>
+<a name="N1003A"></a><a name="Definitions"></a>
 <h2 class="boxed">Definitions</h2>
 <div class="section">
 <p>
@@ -473,7 +478,7 @@ document.write("Last Published: " + document.lastModified);
                 strings, the first naming the field, and the second naming text
                 within the field.
             </p>
-<a name="N10057"></a><a name="Inverted Indexing"></a>
+<a name="N1005A"></a><a name="Inverted Indexing"></a>
 <h3 class="boxed">Inverted Indexing</h3>
 <p>
                     The index stores statistics about terms in order
@@ -483,7 +488,7 @@ document.write("Last Published: " + document.lastModified);
                     it.  This is the inverse of the natural relationship, in which
                     documents list terms.
                 </p>
-<a name="N10063"></a><a name="Types of Fields"></a>
+<a name="N10066"></a><a name="Types of Fields"></a>
 <h3 class="boxed">Types of Fields</h3>
 <p>
                     In Lucene, fields may be <i>stored</i>, in which
@@ -497,7 +502,7 @@ document.write("Last Published: " + document.lastModified);
                     to be indexed literally.
                 </p>
 <p>See the <a href="api/core/org/apache/lucene/document/Field.html">Field</a> java docs for more information on Fields.</p>
-<a name="N10080"></a><a name="Segments"></a>
+<a name="N10083"></a><a name="Segments"></a>
 <h3 class="boxed">Segments</h3>
 <p>
                     Lucene indexes may be composed of multiple sub-indexes, or
@@ -523,7 +528,7 @@ document.write("Last Published: " + document.lastModified);
                     Searches may involve multiple segments and/or multiple indexes, each
                     index potentially composed of a set of segments.
                 </p>
-<a name="N1009E"></a><a name="Document Numbers"></a>
+<a name="N100A1"></a><a name="Document Numbers"></a>
 <h3 class="boxed">Document Numbers</h3>
 <p>
                     Internally, Lucene refers to documents by an integer <i>document
@@ -578,7 +583,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N100C5"></a><a name="Overview"></a>
+<a name="N100C8"></a><a name="Overview"></a>
 <h2 class="boxed">Overview</h2>
 <div class="section">
 <p>
@@ -677,7 +682,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10108"></a><a name="File Naming"></a>
+<a name="N1010B"></a><a name="File Naming"></a>
 <h2 class="boxed">File Naming</h2>
 <div class="section">
 <p>
@@ -704,7 +709,7 @@ document.write("Last Published: " + document.lastModified);
             </p>
 </div>
       
-<a name="N10117"></a><a name="file-names"></a>
+<a name="N1011A"></a><a name="file-names"></a>
 <h2 class="boxed">Summary of File Extensions</h2>
 <div class="section">
 <p>The following table summarizes the names and extensions of the files in Lucene:
@@ -846,10 +851,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10201"></a><a name="Primitive Types"></a>
+<a name="N10204"></a><a name="Primitive Types"></a>
 <h2 class="boxed">Primitive Types</h2>
 <div class="section">
-<a name="N10206"></a><a name="Byte"></a>
+<a name="N10209"></a><a name="Byte"></a>
 <h3 class="boxed">Byte</h3>
 <p>
                     The most primitive type
@@ -857,7 +862,7 @@ document.write("Last Published: " + document.lastModified);
                     other data types are defined as sequences
                     of bytes, so file formats are byte-order independent.
                 </p>
-<a name="N1020F"></a><a name="UInt32"></a>
+<a name="N10212"></a><a name="UInt32"></a>
 <h3 class="boxed">UInt32</h3>
 <p>
                     32-bit unsigned integers are written as four
@@ -867,7 +872,7 @@ document.write("Last Published: " + document.lastModified);
                     UInt32    --&gt; &lt;Byte&gt;<sup>4</sup>
                 
 </p>
-<a name="N1021E"></a><a name="Uint64"></a>
+<a name="N10221"></a><a name="Uint64"></a>
 <h3 class="boxed">Uint64</h3>
 <p>
                     64-bit unsigned integers are written as eight
@@ -876,7 +881,7 @@ document.write("Last Published: " + document.lastModified);
 <p>UInt64    --&gt; &lt;Byte&gt;<sup>8</sup>
                 
 </p>
-<a name="N1022D"></a><a name="VInt"></a>
+<a name="N10230"></a><a name="VInt"></a>
 <h3 class="boxed">VInt</h3>
 <p>
                     A variable-length format for positive integers is
@@ -1426,13 +1431,13 @@ document.write("Last Published: " + document.lastModified);
                     This provides compression while still being
                     efficient to decode.
                 </p>
-<a name="N10512"></a><a name="Chars"></a>
+<a name="N10515"></a><a name="Chars"></a>
 <h3 class="boxed">Chars</h3>
 <p>
                     Lucene writes unicode
                     character sequences as UTF-8 encoded bytes.
                 </p>
-<a name="N1051B"></a><a name="String"></a>
+<a name="N1051E"></a><a name="String"></a>
 <h3 class="boxed">String</h3>
 <p>
 		    Lucene writes strings as UTF-8 encoded bytes.
@@ -1445,10 +1450,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10528"></a><a name="Compound Types"></a>
+<a name="N1052B"></a><a name="Compound Types"></a>
 <h2 class="boxed">Compound Types</h2>
 <div class="section">
-<a name="N1052D"></a><a name="MapStringString"></a>
+<a name="N10530"></a><a name="MapStringString"></a>
 <h3 class="boxed">Map&lt;String,String&gt;</h3>
 <p>
 		    In a couple places Lucene stores a Map
@@ -1461,13 +1466,13 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1053D"></a><a name="Per-Index Files"></a>
+<a name="N10540"></a><a name="Per-Index Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>
                 The files in this section exist one-per-index.
             </p>
-<a name="N10545"></a><a name="Segments File"></a>
+<a name="N10548"></a><a name="Segments File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>
                     The active segments in the index are stored in the
@@ -1640,7 +1645,7 @@ document.write("Last Published: " + document.lastModified);
 <p> HasVectors is 1 if this segment stores term vectors,
             else it's 0.
                 </p>
-<a name="N105D0"></a><a name="Lock File"></a>
+<a name="N105D3"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1654,14 +1659,14 @@ document.write("Last Published: " + document.lastModified);
                     documents).  This lock file ensures that only one
                     writer is modifying the index at a time.
                 </p>
-<a name="N105D9"></a><a name="Deletable File"></a>
+<a name="N105DC"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     A writer dynamically computes
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N105E2"></a><a name="Compound Files"></a>
+<a name="N105E5"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1688,14 +1693,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1060A"></a><a name="Per-Segment Files"></a>
+<a name="N1060D"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N10612"></a><a name="Fields"></a>
+<a name="N10615"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1868,13 +1873,29 @@ document.write("Last Published: " + document.lastModified);
 <li>third bit is one for fields with compression option enabled
                                     (if compression is enabled, the algorithm used is ZLIB),
                                     only available for indexes until Lucene version 2.9.x</li>
+                                
+<li>4th to 6th bits (mask: 0x7&lt;&lt;3) define the type of a
+                                numeric field: <ul>
+                                  
+<li>all bits in mask are cleared if no numeric field at all</li>
+                                  
+<li>1&lt;&lt;3: Value is Int</li>
+                                  
+<li>2&lt;&lt;3: Value is Long</li>
+                                  
+<li>3&lt;&lt;3: Value is Int as Float (as of Integer.intBitsToFloat)</li>
+                                  
+<li>4&lt;&lt;3: Value is Long as Double (as of Double.longBitsToDouble)</li>
+                                
+</ul>
+</li>
                             
 </ul>
                         
 </p>
                         
 <p>Value --&gt;
-                            String | BinaryValue (depending on Bits)
+                            String | BinaryValue | Int | Long (depending on Bits)
                         </p>
                         
 <p>BinaryValue --&gt;
@@ -1889,7 +1910,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106B9"></a><a name="Term Dictionary"></a>
+<a name="N106D0"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -2081,7 +2102,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1073D"></a><a name="Frequencies"></a>
+<a name="N10754"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2209,7 +2230,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N107C5"></a><a name="Positions"></a>
+<a name="N107DC"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2279,7 +2300,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N10801"></a><a name="Normalization Factors"></a>
+<a name="N10818"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a single .nrm file containing all norms:
                 </p>
@@ -2359,7 +2380,7 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10852"></a><a name="Term Vectors"></a>
+<a name="N10869"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2495,7 +2516,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N108EE"></a><a name="Deleted Documents"></a>
+<a name="N10905"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2559,7 +2580,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10928"></a><a name="Limitations"></a>
+<a name="N1093F"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>

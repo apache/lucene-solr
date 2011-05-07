@@ -472,10 +472,28 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+Changes in runtime behavior
+
+* LUCENE-3065: When a NumericField is retrieved from a Document loaded
+  from IndexReader (or IndexSearcher), it will now come back as
+  NumericField not as a Field with a string-ified version of the
+  numeric value you had indexed.  Note that this only applies for
+  newly-indexed Documents; older indices will still return Field
+  with the string-ified numeric value. If you call Document.get(),
+  the value comes still back as String, but Document.getFieldable()
+  returns NumericField instances. (Uwe Schindler, Ryan McKinley,
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
   on empty or one-element lists/arrays.  (Uwe Schindler)
+
+API Changes
+
+* LUCENE-3065: Document.getField() was deprecated, as it throws
+  ClassCastException when loading lazy fields or NumericFields.
+  (Uwe Schindler, Ryan McKinley, Mike McCandless)
 
 Bug fixes
 

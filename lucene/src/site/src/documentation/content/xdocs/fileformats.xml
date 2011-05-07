@@ -94,6 +94,11 @@
             Additionally segments track explicitly whether or
             not they have term vectors. See LUCENE-2811 for details.
            </p>
+        <p>
+            In version 3.2, numeric fields are written as natively
+            to stored fields file, previously they were stored in
+            text format only.
+           </p>
         </section>
 
         <section id="Definitions"><title>Definitions</title>
@@ -1300,10 +1305,18 @@
                                 <li>third bit is one for fields with compression option enabled
                                     (if compression is enabled, the algorithm used is ZLIB),
                                     only available for indexes until Lucene version 2.9.x</li>
+                                <li>4th to 6th bits (mask: 0x7&lt;&lt;3) define the type of a
+                                numeric field: <ul>
+                                  <li>all bits in mask are cleared if no numeric field at all</li>
+                                  <li>1&lt;&lt;3: Value is Int</li>
+                                  <li>2&lt;&lt;3: Value is Long</li>
+                                  <li>3&lt;&lt;3: Value is Int as Float (as of Integer.intBitsToFloat)</li>
+                                  <li>4&lt;&lt;3: Value is Long as Double (as of Double.longBitsToDouble)</li>
+                                </ul></li>
                             </ul>
                         </p>
                         <p>Value --&gt;
-                            String | BinaryValue (depending on Bits)
+                            String | BinaryValue | Int | Long (depending on Bits)
                         </p>
                         <p>BinaryValue --&gt;
                             ValueSize, &lt;Byte&gt;^ValueSize
