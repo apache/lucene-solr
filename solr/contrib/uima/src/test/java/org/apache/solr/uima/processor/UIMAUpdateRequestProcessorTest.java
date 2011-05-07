@@ -33,6 +33,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,6 +67,26 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
             .getFactories()[0];
     assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+  }
+
+  @Test
+  public void testMultiMap() {
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uima-multi-map");
+    assertNotNull(chained);
+    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
+            .getFactories()[0];
+    assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+    SolrUIMAConfiguration conf = ((UIMAUpdateRequestProcessor)processor).solrUIMAConfiguration;
+    Map<String, Map<String, String>> map = conf.getTypesFeaturesFieldsMapping();
+    Map<String, String> subMap = map.get("a-type-which-can-have-multiple-features");
+    assertEquals(2, subMap.size());
+    assertEquals("1", subMap.get("A"));
+    assertEquals("2", subMap.get("B"));
   }
 
   @Test

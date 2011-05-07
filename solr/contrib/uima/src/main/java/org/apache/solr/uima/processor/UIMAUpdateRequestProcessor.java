@@ -39,7 +39,7 @@ import org.apache.uima.resource.ResourceInitializationException;
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
-  private SolrUIMAConfiguration solrUIMAConfiguration;
+  SolrUIMAConfiguration solrUIMAConfiguration;
 
   private AEProvider aeProvider;
 
