@@ -37,20 +37,26 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
           </arr>
         </lst>
         <lst name="fieldMappings">
-          <lst name="mapping">
-            <str name="type">org.apache.uima.alchemy.ts.concept.ConceptFS</str>
-            <str name="feature">text</str>
-            <str name="field">concept</str>
+          <lst name="type">
+            <str name="name">org.apache.uima.alchemy.ts.concept.ConceptFS</str>
+            <lst name="mapping">
+              <str name="feature">text</str>
+              <str name="field">concept</str>
+            </lst>
           </lst>
-          <lst name="mapping">
-            <str name="type">org.apache.uima.alchemy.ts.language.LanguageFS</str>
-            <str name="feature">language</str>
-            <str name="field">language</str>
+          <lst name="type">
+            <str name="name">org.apache.uima.alchemy.ts.language.LanguageFS</str>
+            <lst name="mapping">
+              <str name="feature">language</str>
+              <str name="field">language</str>
+            </lst>
           </lst>
-          <lst name="mapping">
-            <str name="type">org.apache.uima.SentenceAnnotation</str>
-            <str name="feature">coveredText</str>
-            <str name="field">sentence</str>
+          <lst name="type">
+            <str name="name">org.apache.uima.SentenceAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">coveredText</str>
+              <str name="field">sentence</str>
+            </lst>
           </lst>
         </lst>
       </lst>
