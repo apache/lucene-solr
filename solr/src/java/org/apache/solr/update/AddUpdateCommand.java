@@ -72,7 +72,7 @@ public class AddUpdateCommand extends UpdateCommand {
        if (sf != null) {
          if (doc != null) {
            schema.getUniqueKeyField();
-           Fieldable storedId = doc.getField(sf.getName());
+           Fieldable storedId = doc.getFieldable(sf.getName());
            indexedId = sf.getType().storedToIndexed(storedId);
          }
          if (solrDoc != null) {
