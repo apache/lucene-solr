@@ -476,8 +476,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public File createIndex(Random random, String dirName, boolean doCFS) throws IOException {
-
-    File indexDir = _TestUtil.getTempDir(dirName);
+    // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
+    File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10);
