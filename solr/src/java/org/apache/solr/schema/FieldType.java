@@ -225,7 +225,7 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
@@ -258,7 +258,7 @@ public abstract class FieldType extends FieldProperties {
    * @param boost The boost value
    * @return the {@link org.apache.lucene.document.Field}.
    */
-  protected Field createField(String name, String val, Field.Store storage, Field.Index index,
+  protected Fieldable createField(String name, String val, Field.Store storage, Field.Index index,
                                     Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
     Field f = new Field(name,
                         val,
@@ -282,7 +282,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #isPolyField()
    */
   public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    Field f = createField( field, externalVal, boost);
+    Fieldable f = createField( field, externalVal, boost);
     return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 

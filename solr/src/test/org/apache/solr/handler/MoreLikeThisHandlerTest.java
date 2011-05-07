@@ -88,7 +88,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     params.put(CommonParams.Q, new String[]{"id:42"});
     params.put(MoreLikeThisParams.MLT, new String[]{"true"});
-    params.put(MoreLikeThisParams.SIMILARITY_FIELDS, new String[]{"name,subword,foo_ti"});
+    params.put(MoreLikeThisParams.SIMILARITY_FIELDS, new String[]{"name,subword"});
     params.put(MoreLikeThisParams.INTERESTING_TERMS,new String[]{"details"});
     params.put(MoreLikeThisParams.MIN_TERM_FREQ,new String[]{"1"});
     params.put(MoreLikeThisParams.MIN_DOC_FREQ,new String[]{"1"});

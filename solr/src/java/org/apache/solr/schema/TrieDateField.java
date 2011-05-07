@@ -17,191 +17,119 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.analysis.CharFilterFactory;
-import org.apache.solr.analysis.TokenFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.analysis.TrieTokenizerFactory;
-import org.apache.solr.search.function.*;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.NumericTokenStream;
 
 import java.util.Map;
 import java.util.Date;
 import java.io.IOException;
 
 public class TrieDateField extends DateField {
-  protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
-  protected int precisionStep = precisionStepArg;     // normalized
+
+  final TrieField wrappedField = new TrieField() {{
+    type = TrieTypes.DATE;
+  }};
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    String p = args.remove("precisionStep");
-    if (p != null) {
-       precisionStepArg = Integer.parseInt(p);
-    }
-    // normalize the precisionStep
-    precisionStep = precisionStepArg;
-    if (precisionStep<=0 || precisionStep>=64) precisionStep=Integer.MAX_VALUE;
-
-    CharFilterFactory[] filterFactories = new CharFilterFactory[0];
-    TokenFilterFactory[] tokenFilterFactories = new TokenFilterFactory[0];
-    analyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(TrieField.TrieTypes.DATE, precisionStep), tokenFilterFactories);
-    // for query time we only need one token, so we use the biggest possible precisionStep:
-    queryAnalyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(TrieField.TrieTypes.DATE, Integer.MAX_VALUE), tokenFilterFactories);
+    wrappedField.init(schema, args);
+    analyzer = wrappedField.analyzer;
+    queryAnalyzer = wrappedField.queryAnalyzer;
   }
 
   @Override
   public Date toObject(Fieldable f) {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,TrieField.badFieldString(f));
-    return new Date(TrieField.toLong(arr));
+    return (Date) wrappedField.toObject(f);
   }
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-    return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+    return wrappedField.getSortField(field, top);
   }
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    field.checkFieldCacheSource(parser);
-    return new TrieDateFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
-
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      xmlWriter.writeStr(name, TrieField.badFieldString(f));
-      return;
-    }
-
-    xmlWriter.writeDate(name,new Date(TrieField.toLong(arr)));
-  }
-
-  @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      writer.writeStr(name, TrieField.badFieldString(f),true);
-      return;
-    }
-
-    writer.writeDate(name,new Date(TrieField.toLong(arr)));
-  }
-
-  @Override
-  public boolean isTokenized() {
-    return true;
+    return wrappedField.getValueSource(field, parser);
   }
 
   /**
    * @return the precisionStep used to index values into the field
    */
   public int getPrecisionStep() {
-    return precisionStepArg;
+    return wrappedField.getPrecisionStep();
   }
 
+  @Override
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
+    wrappedField.write(xmlWriter, name, f);
+  }
 
+  @Override
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    wrappedField.write(writer, name, f);
+  }
+
+  @Override
+  public boolean isTokenized() {
+    return wrappedField.isTokenized();
+  }
+
+  @Override
+  public boolean multiValuedFieldCache() {
+    return wrappedField.multiValuedFieldCache();
+  }
 
   @Override
   public String storedToReadable(Fieldable f) {
-    return toExternal(f);
+    return wrappedField.storedToReadable(f);
   }
 
   @Override
   public String readableToIndexed(String val) {  
-    return NumericUtils.longToPrefixCoded(super.parseMath(null, val).getTime());
+    return wrappedField.readableToIndexed(val);
   }
 
   @Override
   public String toInternal(String val) {
-    return readableToIndexed(val);
+    return wrappedField.toInternal(val);
   }
 
   @Override
   public String toExternal(Fieldable f) {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) return TrieField.badFieldString(f);
-     return super.toExternal(new Date(TrieField.toLong(arr)));
+    return wrappedField.toExternal(f);
   }
 
   @Override
   public String indexedToReadable(String indexedForm) {
-    return super.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+    return wrappedField.indexedToReadable(indexedForm);
   }
 
   @Override
   public String storedToIndexed(Fieldable f) {
-    // TODO: optimize to remove redundant string conversion
-    return readableToIndexed(storedToReadable(f));
+    return wrappedField.storedToIndexed(f);
   }
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
-    boolean indexed = field.indexed();
-    boolean stored = field.stored();
-
-    if (!indexed && !stored) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
-      return null;
-    }
-
-    int ps = precisionStep;
-
-    byte[] arr=null;
-    TokenStream ts=null;
-
-    long time = super.parseMath(null, externalVal).getTime();
-    if (stored) arr = TrieField.toArr(time);
-    if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
-
-    Field f;
-    if (stored) {
-      f = new Field(field.getName(), arr);
-      if (indexed) f.setTokenStream(ts);
-    } else {
-      f = new Field(field.getName(), ts);
-    }
-
-    // term vectors aren't supported
-
-    f.setOmitNorms(field.omitNorms());
-    f.setOmitTermFreqAndPositions(field.omitTf());
-    f.setBoost(boost);
-    return f;
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+    return wrappedField.createField(field, externalVal, boost);
   }
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    return getRangeQuery(parser, field,
-            min==null ? null : super.parseMath(null,min),
-            max==null ? null : super.parseMath(null,max),
-            minInclusive, maxInclusive);
+    return wrappedField.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
   }
   
   @Override
   public Query getRangeQuery(QParser parser, SchemaField sf, Date min, Date max, boolean minInclusive, boolean maxInclusive) {
-    int ps = precisionStep;
-    Query query = NumericRangeQuery.newLongRange(sf.getName(), ps,
+    return NumericRangeQuery.newLongRange(sf.getName(), wrappedField.precisionStep,
               min == null ? null : min.getTime(),
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
-
-    return query;
   }
 }

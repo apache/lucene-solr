@@ -100,6 +100,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "29.nocfs",
                              "30.cfs",
                              "30.nocfs",
+                             "31.cfs",
+                             "31.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {

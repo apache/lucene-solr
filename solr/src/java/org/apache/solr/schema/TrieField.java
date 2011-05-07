@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,17 +36,17 @@ import java.util.Map;
 import java.util.Date;
 
 /**
- * Provides field types to support for Lucene's Trie Range Queries.
+ * Provides field types to support for Lucene's {@link NumericField}.
  * See {@link org.apache.lucene.search.NumericRangeQuery} for more details.
  * It supports integer, float, long, double and date types.
  * <p/>
  * For each number being added to this field, multiple terms are generated as per the algorithm described in the above
- * link. The possible number of terms increases dramatically with higher precision steps (factor 2^precisionStep). For
+ * link. The possible number of terms increases dramatically with lower precision steps. For
  * the fast range search to work, trie fields must be indexed.
  * <p/>
  * Trie fields are sortable in numerical order and can be used in function queries.
  * <p/>
- * Note that if you use a precisionStep of 32 for int/float and 64 for long/double, then multiple terms will not be
+ * Note that if you use a precisionStep of 32 for int/float and 64 for long/double/date, then multiple terms will not be
  * generated, range search will be no faster than any other number field, but sorting will still be possible.
  *
  * @version $Id$
@@ -94,21 +95,28 @@ public class TrieField extends FieldType {
 
   @Override
   public Object toObject(Fieldable f) {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) return badFieldString(f);
-    switch (type) {
-      case INTEGER:
-        return toInt(arr);
-      case FLOAT:
-        return toFloat(arr);
-      case LONG:
-        return toLong(arr);
-      case DOUBLE:
-        return toDouble(arr);
-      case DATE:
-        return new Date(toLong(arr));
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+    if (f instanceof NumericField) {
+      final Number val = ((NumericField) f).getNumericValue();
+      if (val==null) return badFieldString(f);
+      return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
+    } else {
+      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
+      final byte[] arr = f.getBinaryValue();
+      if (arr==null) return badFieldString(f);
+      switch (type) {
+        case INTEGER:
+          return toInt(arr);
+        case FLOAT:
+          return Float.intBitsToFloat(toInt(arr));
+        case LONG:
+          return toLong(arr);
+        case DOUBLE:
+          return Double.longBitsToDouble(toLong(arr));
+        case DATE:
+          return new Date(toLong(arr));
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+      }
     }
   }
 
@@ -152,59 +160,12 @@ public class TrieField extends FieldType {
 
   @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      xmlWriter.writeStr(name, badFieldString(f));
-      return;
-    }
-
-    switch (type) {
-      case INTEGER:
-        xmlWriter.writeInt(name,toInt(arr));
-        break;
-      case FLOAT:
-        xmlWriter.writeFloat(name,toFloat(arr));
-        break;
-      case LONG:
-        xmlWriter.writeLong(name,toLong(arr));
-        break;
-      case DOUBLE:
-        xmlWriter.writeDouble(name,toDouble(arr));
-        break;
-      case DATE:
-        xmlWriter.writeDate(name,new Date(toLong(arr)));
-        break;
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-    }
+    xmlWriter.writeVal(name, toObject(f));
   }
 
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) {
-      writer.writeStr(name, badFieldString(f),true);
-      return;
-    }
-    switch (type) {
-      case INTEGER:
-        writer.writeInt(name,toInt(arr));
-        break;
-      case FLOAT:
-        writer.writeFloat(name,toFloat(arr));
-        break;
-      case LONG:
-        writer.writeLong(name,toLong(arr));
-        break;
-      case DOUBLE:
-        writer.writeDouble(name,toDouble(arr));
-        break;
-      case DATE:
-        writer.writeDate(name,new Date(toLong(arr)));
-        break;
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-    }
+    writer.writeVal(name, toObject(f));
   }
 
   @Override
@@ -273,55 +234,17 @@ public class TrieField extends FieldType {
     return query;
   }
 
-
+  @Deprecated
   static int toInt(byte[] arr) {
     return (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
   }
   
+  @Deprecated
   static long toLong(byte[] arr) {
     int high = (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
     int low = (arr[4]<<24) | ((arr[5]&0xff)<<16) | ((arr[6]&0xff)<<8) | (arr[7]&0xff);
     return (((long)high)<<32) | (low&0x0ffffffffL);
   }
-
-  static float toFloat(byte[] arr) {
-    return Float.intBitsToFloat(toInt(arr));
-  }
-
-  static double toDouble(byte[] arr) {
-    return Double.longBitsToDouble(toLong(arr));
-  }
-
-  static byte[] toArr(int val) {
-    byte[] arr = new byte[4];
-    arr[0] = (byte)(val>>>24);
-    arr[1] = (byte)(val>>>16);
-    arr[2] = (byte)(val>>>8);
-    arr[3] = (byte)(val);
-    return arr;
-  }
-
-  static byte[] toArr(long val) {
-    byte[] arr = new byte[8];
-    arr[0] = (byte)(val>>>56);
-    arr[1] = (byte)(val>>>48);
-    arr[2] = (byte)(val>>>40);
-    arr[3] = (byte)(val>>>32);
-    arr[4] = (byte)(val>>>24);
-    arr[5] = (byte)(val>>>16);
-    arr[6] = (byte)(val>>>8);
-    arr[7] = (byte)(val);
-    return arr;
-  }
-
-  static byte[] toArr(float val) {
-    return toArr(Float.floatToRawIntBits(val));
-  }
-
-  static byte[] toArr(double val) {
-    return toArr(Double.doubleToRawLongBits(val));
-  }
-
 
   @Override
   public String storedToReadable(Fieldable f) {
@@ -346,7 +269,6 @@ public class TrieField extends FieldType {
     }
   }
 
-
   @Override
   public String toInternal(String val) {
     return readableToIndexed(val);
@@ -360,22 +282,9 @@ public class TrieField extends FieldType {
 
   @Override
   public String toExternal(Fieldable f) {
-    byte[] arr = f.getBinaryValue();
-    if (arr==null) return badFieldString(f);
-    switch (type) {
-      case INTEGER:
-        return Integer.toString(toInt(arr));
-      case FLOAT:
-        return Float.toString(toFloat(arr));
-      case LONG:
-        return Long.toString(toLong(arr));
-      case DOUBLE:
-        return Double.toString(toDouble(arr));
-      case DATE:
-        return dateField.formatDate(new Date(toLong(arr)));
-      default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-    }
+    return (type == TrieTypes.DATE)
+      ? dateField.toExternal((Date) toObject(f)) 
+      : toObject(f).toString();
   }
 
   @Override
@@ -390,7 +299,7 @@ public class TrieField extends FieldType {
       case DOUBLE:
         return Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
       case DATE:
-        return dateField.formatDate( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+        return dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
@@ -398,12 +307,58 @@ public class TrieField extends FieldType {
 
   @Override
   public String storedToIndexed(Fieldable f) {
-    // TODO: optimize to remove redundant string conversion
-    return readableToIndexed(storedToReadable(f));
+    if (f instanceof NumericField) {
+      final Number val = ((NumericField) f).getNumericValue();
+      if (val==null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
+      switch (type) {
+        case INTEGER:
+          return NumericUtils.intToPrefixCoded(val.intValue());
+        case FLOAT:
+          return NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(val.floatValue()));
+        case LONG: //fallthrough!
+        case DATE:
+          return NumericUtils.longToPrefixCoded(val.longValue());
+        case DOUBLE:
+          return NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(val.doubleValue()));
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+      }
+    } else {
+      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
+      final byte[] arr = f.getBinaryValue();
+      if (arr==null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
+      switch (type) {
+        case INTEGER:
+          return NumericUtils.intToPrefixCoded(toInt(arr));
+        case FLOAT: {
+          // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
+          // copied from NumericUtils to not convert to/from float two times
+          // code in next 2 lines is identical to: int v = NumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
+          int v = toInt(arr);
+          if (v<0) v ^= 0x7fffffff;
+          return NumericUtils.intToPrefixCoded(v);
+        }
+        case LONG: //fallthrough!
+        case DATE:
+          return NumericUtils.longToPrefixCoded(toLong(arr));
+        case DOUBLE: {
+          // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
+          // copied from NumericUtils to not convert to/from double two times
+          // code in next 2 lines is identical to: long v = NumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
+          long v = toLong(arr);
+          if (v<0) v ^= 0x7fffffffffffffffL;
+          return NumericUtils.longToPrefixCoded(v);
+        }
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+      }
+    }
   }
 
   @Override
-  public Field createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, String externalVal, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
 
@@ -413,51 +368,26 @@ public class TrieField extends FieldType {
       return null;
     }
 
-    int ps = precisionStep;
-
-    byte[] arr=null;
-    TokenStream ts=null;
-    // String indexedVal = indexed && precisionStep==0 ? readableToIndexed(externalVal) : null;
-
+    final NumericField f = new NumericField(field.getName(), precisionStep, stored ? Field.Store.YES : Field.Store.NO, indexed);
     switch (type) {
       case INTEGER:
-        int i = Integer.parseInt(externalVal);
-        if (stored) arr = toArr(i);
-        if (indexed) ts = new NumericTokenStream(ps).setIntValue(i);
+        f.setIntValue(Integer.parseInt(externalVal));
         break;
       case FLOAT:
-        float f = Float.parseFloat(externalVal);
-        if (stored) arr = toArr(f);
-        if (indexed) ts = new NumericTokenStream(ps).setFloatValue(f);
+        f.setFloatValue(Float.parseFloat(externalVal));
         break;
       case LONG:
-        long l = Long.parseLong(externalVal);
-        if (stored) arr = toArr(l);
-        if (indexed) ts = new NumericTokenStream(ps).setLongValue(l);
+        f.setLongValue(Long.parseLong(externalVal));
         break;
       case DOUBLE:
-        double d = Double.parseDouble(externalVal);
-        if (stored) arr = toArr(d);
-        if (indexed) ts = new NumericTokenStream(ps).setDoubleValue(d);
+        f.setDoubleValue(Double.parseDouble(externalVal));
         break;
       case DATE:
-        long time = dateField.parseMath(null, externalVal).getTime();
-        if (stored) arr = toArr(time);
-        if (indexed) ts = new NumericTokenStream(ps).setLongValue(time);
+        f.setLongValue(dateField.parseMath(null, externalVal).getTime());
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
-
-    Field f;
-    if (stored) {
-      f = new Field(field.getName(), arr);
-      if (indexed) f.setTokenStream(ts);
-    } else {
-      f = new Field(field.getName(), ts);
-    }
-
-    // term vectors aren't supported
 
     f.setOmitNorms(field.omitNorms());
     f.setOmitTermFreqAndPositions(field.omitTf());
@@ -482,14 +412,12 @@ public class TrieField extends FieldType {
    * that indexes multiple precisions per value.
    */
   public static String getMainValuePrefix(FieldType ft) {
-    if (ft instanceof TrieDateField) {
-      int step = ((TrieDateField)ft).getPrecisionStep();
-      if (step <= 0 || step >=64) return null;
-      return LONG_PREFIX;
-    } else if (ft instanceof TrieField) {
-      TrieField trie = (TrieField)ft;
-      if (trie.precisionStep  == Integer.MAX_VALUE) return null;
-
+    if (ft instanceof TrieDateField)
+      ft = ((TrieDateField) ft).wrappedField;
+    if (ft instanceof TrieField) {
+      final TrieField trie = (TrieField)ft;
+      if (trie.precisionStep  == Integer.MAX_VALUE)
+        return null;
       switch (trie.type) {
         case INTEGER:
         case FLOAT:

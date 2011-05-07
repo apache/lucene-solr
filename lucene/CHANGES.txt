@@ -12,6 +12,18 @@ Changes in backwards compatibility policy
 * LUCENE-1076: IndexWriter.setInfoStream now throws IOException
   (Mike McCandless, Shai Erera)
 
+Changes in runtime behavior
+
+* LUCENE-3065: When a NumericField is retrieved from a Document loaded
+  from IndexReader (or IndexSearcher), it will now come back as
+  NumericField not as a Field with a string-ified version of the
+  numeric value you had indexed.  Note that this only applies for
+  newly-indexed Documents; older indices will still return Field
+  with the string-ified numeric value. If you call Document.get(),
+  the value comes still back as String, but Document.getFieldable()
+  returns NumericField instances. (Uwe Schindler, Ryan McKinley,
+  Mike McCandless)
+
 New features
 
 * LUCENE-1076: Added TieredMergePolicy which is able to merge non-contiguous 
@@ -26,6 +38,10 @@ API Changes
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
   (though @lucene.experimental), allowing for custom MergeScheduler 
   implementations. (Shai Erera)
+
+* LUCENE-3065: Document.getField() was deprecated, as it throws
+  ClassCastException when loading lazy fields or NumericFields.
+  (Uwe Schindler, Ryan McKinley, Mike McCandless)
 
 Optimizations
 

@@ -12,7 +12,7 @@
 
             <p>
                 This document defines the index file formats used
-                in Lucene version 3.1. If you are using a different
+                in Lucene version 3.2. If you are using a different
                 version of Lucene, please consult the copy of
                 <code>docs/fileformats.html</code>
                 that was distributed
@@ -27,7 +27,7 @@
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
-                complete and independent definition of the Apache Lucene 3.1 file
+                complete and independent definition of the Apache Lucene 3.2 file
                 formats.
             </p>
 
@@ -93,6 +93,11 @@
             
             Additionally segments track explicitly whether or
             not they have term vectors. See LUCENE-2811 for details.
+           </p>
+        <p>
+            In version 3.2, numeric fields are written as natively
+            to stored fields file, previously they were stored in
+            text format only.
            </p>
         </section>
 
@@ -1300,10 +1305,18 @@
                                 <li>third bit is one for fields with compression option enabled
                                     (if compression is enabled, the algorithm used is ZLIB),
                                     only available for indexes until Lucene version 2.9.x</li>
+                                <li>4th to 6th bits (mask: 0x7&lt;&lt;3) define the type of a
+                                numeric field: <ul>
+                                  <li>all bits in mask are cleared if no numeric field at all</li>
+                                  <li>1&lt;&lt;3: Value is Int</li>
+                                  <li>2&lt;&lt;3: Value is Long</li>
+                                  <li>3&lt;&lt;3: Value is Int as Float (as of Integer.intBitsToFloat)</li>
+                                  <li>4&lt;&lt;3: Value is Long as Double (as of Double.longBitsToDouble)</li>
+                                </ul></li>
                             </ul>
                         </p>
                         <p>Value --&gt;
-                            String | BinaryValue (depending on Bits)
+                            String | BinaryValue | Int | Long (depending on Bits)
                         </p>
                         <p>BinaryValue --&gt;
                             ValueSize, &lt;Byte&gt;^ValueSize

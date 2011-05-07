@@ -127,18 +127,18 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
- * <p><b>NOTE:</b> This class is only used during
- * indexing. When retrieving the stored field value from a
- * {@link Document} instance after search, you will get a
- * conventional {@link Fieldable} instance where the numeric
- * values are returned as {@link String}s (according to
- * <code>toString(value)</code> of the used data type).
- *
  * @since 2.9
  */
 public final class NumericField extends AbstractField {
 
-  private final NumericTokenStream numericTS;
+  /** Data type of the value in {@link NumericField}.
+   * @since 3.2
+   */
+  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
+
+  private transient NumericTokenStream numericTS;
+  private DataType type;
+  private final int precisionStep;
 
   /**
    * Creates a field for numeric values using the default <code>precisionStep</code>
@@ -158,8 +158,8 @@ public final class NumericField extends AbstractField {
    * a numeric value, before indexing a document containing this field,
    * set a value using the various set<em>???</em>Value() methods.
    * @param name the field name
-   * @param store if the field should be stored in plain text form
-   *  (according to <code>toString(value)</code> of the used data type)
+   * @param store if the field should be stored, {@link Document#getFieldable}
+   * then returns {@code NumericField} instances on search results.
    * @param index if the field should be indexed using {@link NumericTokenStream}
    */
   public NumericField(String name, Field.Store store, boolean index) {
@@ -186,19 +186,43 @@ public final class NumericField extends AbstractField {
    * set a value using the various set<em>???</em>Value() methods.
    * @param name the field name
    * @param precisionStep the used <a href="../search/NumericRangeQuery.html#precisionStepDesc">precision step</a>
-   * @param store if the field should be stored in plain text form
-   *  (according to <code>toString(value)</code> of the used data type)
+   * @param store if the field should be stored, {@link Document#getFieldable}
+   * then returns {@code NumericField} instances on search results.
    * @param index if the field should be indexed using {@link NumericTokenStream}
    */
   public NumericField(String name, int precisionStep, Field.Store store, boolean index) {
     super(name, store, index ? Field.Index.ANALYZED_NO_NORMS : Field.Index.NO, Field.TermVector.NO);
+    this.precisionStep = precisionStep;
     setOmitTermFreqAndPositions(true);
-    numericTS = new NumericTokenStream(precisionStep);
   }
 
   /** Returns a {@link NumericTokenStream} for indexing the numeric value. */
   public TokenStream tokenStreamValue()   {
-    return isIndexed() ? numericTS : null;
+    if (!isIndexed())
+      return null;
+    if (numericTS == null) {
+      // lazy init the TokenStream as it is heavy to instantiate (attributes,...),
+      // if not needed (stored field loading)
+      numericTS = new NumericTokenStream(precisionStep);
+      // initialize value in TokenStream
+      if (fieldsData != null) {
+        assert type != null;
+        final Number val = (Number) fieldsData;
+        switch (type) {
+          case INT:
+            numericTS.setIntValue(val.intValue()); break;
+          case LONG:
+            numericTS.setLongValue(val.longValue()); break;
+          case FLOAT:
+            numericTS.setFloatValue(val.floatValue()); break;
+          case DOUBLE:
+            numericTS.setDoubleValue(val.doubleValue()); break;
+          default:
+            assert false : "Should never get here";
+        }
+      }
+    }
+    return numericTS;
   }
   
   /** Returns always <code>null</code> for numeric fields */
@@ -212,7 +236,10 @@ public final class NumericField extends AbstractField {
     return null;
   }
     
-  /** Returns the numeric value as a string (how it is stored, when {@link Field.Store#YES} is chosen). */
+  /** Returns the numeric value as a string. This format is also returned if you call {@link Document#get(String)}
+   * on search results. It is recommended to use {@link Document#getFieldable} instead
+   * that returns {@code NumericField} instances. You can then use {@link #getNumericValue}
+   * to return the stored value. */
   public String stringValue()   {
     return (fieldsData == null) ? null : fieldsData.toString();
   }
@@ -224,7 +251,14 @@ public final class NumericField extends AbstractField {
   
   /** Returns the precision step. */
   public int getPrecisionStep() {
-    return numericTS.getPrecisionStep();
+    return precisionStep;
+  }
+  
+  /** Returns the data type of the current value, {@code null} if not yet set.
+   * @since 3.2
+   */
+  public DataType getDataType() {
+    return type;
   }
   
   /**
@@ -234,8 +268,9 @@ public final class NumericField extends AbstractField {
    * <code>document.add(new NumericField(name, precisionStep).setLongValue(value))</code>
    */
   public NumericField setLongValue(final long value) {
-    numericTS.setLongValue(value);
+    if (numericTS != null) numericTS.setLongValue(value);
     fieldsData = Long.valueOf(value);
+    type = DataType.LONG;
     return this;
   }
   
@@ -246,8 +281,9 @@ public final class NumericField extends AbstractField {
    * <code>document.add(new NumericField(name, precisionStep).setIntValue(value))</code>
    */
   public NumericField setIntValue(final int value) {
-    numericTS.setIntValue(value);
+    if (numericTS != null) numericTS.setIntValue(value);
     fieldsData = Integer.valueOf(value);
+    type = DataType.INT;
     return this;
   }
   
@@ -258,8 +294,9 @@ public final class NumericField extends AbstractField {
    * <code>document.add(new NumericField(name, precisionStep).setDoubleValue(value))</code>
    */
   public NumericField setDoubleValue(final double value) {
-    numericTS.setDoubleValue(value);
+    if (numericTS != null) numericTS.setDoubleValue(value);
     fieldsData = Double.valueOf(value);
+    type = DataType.DOUBLE;
     return this;
   }
   
@@ -270,8 +307,9 @@ public final class NumericField extends AbstractField {
    * <code>document.add(new NumericField(name, precisionStep).setFloatValue(value))</code>
    */
   public NumericField setFloatValue(final float value) {
-    numericTS.setFloatValue(value);
+    if (numericTS != null) numericTS.setFloatValue(value);
     fieldsData = Float.valueOf(value);
+    type = DataType.FLOAT;
     return this;
   }
 

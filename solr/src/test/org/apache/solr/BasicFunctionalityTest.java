@@ -27,6 +27,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -370,7 +371,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
-    Field luf; // Lucene field
+    Fieldable luf; // Lucene field
 
     f = ischema.getField("test_basictv");
     luf = f.createField("test", 0f);
@@ -573,7 +574,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocList dl = (DocList) rsp.getValues().get("response");
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
-    // ensure field is not lazy
+    // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
     assertTrue( d.getFieldable("title") instanceof Field );
     req.close();
