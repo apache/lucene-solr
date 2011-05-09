@@ -19,6 +19,8 @@
   <field name="id">VA902B</field>
   <field name="name">ViewSonic VA902B - flat panel display - TFT - 19"</field>
   <field name="manu">ViewSonic Corp.</field>
+  <!-- Join -->
+  <field name="manu_id_s">viewsonic</field>
   <field name="cat">electronics</field>
   <field name="cat">monitor</field>
   <field name="features">19" TFT active matrix LCD, 8ms response time, 1280 x 1024 native resolution</field>

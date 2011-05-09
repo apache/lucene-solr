@@ -19,6 +19,8 @@
   <field name="id">9885A004</field>
   <field name="name">Canon PowerShot SD500</field>
   <field name="manu">Canon Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">canon</field>
   <field name="cat">electronics</field>
   <field name="cat">camera</field>
   <field name="features">3x zoop, 7.1 megapixel Digital ELPH</field>
