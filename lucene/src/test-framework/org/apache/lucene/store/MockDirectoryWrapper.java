@@ -32,7 +32,9 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -68,6 +70,7 @@ public class MockDirectoryWrapper extends Directory {
   private Set<String> createdFiles;
   Set<String> openFilesForWrite = new HashSet<String>();
   volatile boolean crashed;
+  private ThrottledIndexOutput throttledOutput;
 
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
@@ -112,6 +115,10 @@ public class MockDirectoryWrapper extends Directory {
    *  file is opened by createOutput, ever. */
   public void setPreventDoubleWrite(boolean value) {
     preventDoubleWrite = value;
+  }
+  
+  public void setThrottledIndexOutput(ThrottledIndexOutput throttledOutput) {
+    this.throttledOutput = throttledOutput;
   }
 
   @Override
@@ -347,7 +354,7 @@ public class MockDirectoryWrapper extends Directory {
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
     openFileHandles.put(io, new RuntimeException("unclosed IndexOutput"));
     openFilesForWrite.add(name);
-    return io;
+    return throttledOutput == null ? io : throttledOutput.newFromDelegate(io);
   }
 
   @Override
@@ -419,10 +426,28 @@ public class MockDirectoryWrapper extends Directory {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
     }
     open = false;
-    if (checkIndexOnClose && IndexReader.indexExists(this)) {
-      _TestUtil.checkIndex(this);
+    if (checkIndexOnClose) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
+      } 
+      if (codecProvider != null) {
+        if (IndexReader.indexExists(this, codecProvider)) {
+          _TestUtil.checkIndex(this, codecProvider);
+        }
+      } else {
+        if (IndexReader.indexExists(this)) {
+          _TestUtil.checkIndex(this);
+        }
+      }
     }
     delegate.close();
+  }
+
+  private CodecProvider codecProvider;
+
+  // We pass this CodecProvider to checkIndex when dir is closed...
+  public void setCodecProvider(CodecProvider cp) {
+    codecProvider = cp;
   }
 
   boolean open = true;
@@ -559,4 +584,5 @@ public class MockDirectoryWrapper extends Directory {
     maybeYield();
     delegate.copy(to, src, dest);
   }
+  
 }

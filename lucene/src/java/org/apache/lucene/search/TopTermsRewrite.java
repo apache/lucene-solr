@@ -134,7 +134,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     final Term placeholderTerm = new Term(query.field);
     final Q q = getTopLevelQuery();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
-    ArrayUtil.quickSort(scoreTerms, scoreTermSortByTermComp);
+    ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
     for (final ScoreTerm st : scoreTerms) {
       final Term term = placeholderTerm.createTerm(st.bytes);
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq();

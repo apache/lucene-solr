@@ -210,6 +210,13 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, new SimpleAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, new StopAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }
 
 final class PayloadSetter extends TokenFilter {

@@ -61,6 +61,7 @@
   </condition>
 
   <property name="tests.multiplier" value="1" />
+  <property name="tests.codecprovider" value="random" />
   <property name="tests.codec" value="randomPerField" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />

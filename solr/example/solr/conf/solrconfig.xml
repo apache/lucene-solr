@@ -774,6 +774,7 @@
        <str name="q.alt">*:*</str>
        <str name="rows">10</str>
        <str name="fl">*,score</str>
+
        <str name="mlt.qf">
          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
        </str>
@@ -792,6 +793,8 @@
        <int name="facet.range.start">0</int>
        <int name="facet.range.end">600</int>
        <int name="facet.range.gap">50</int>
+       <str name="facet.range">popularity</str>
+       <int name="f.popularity.facet.range.gap">3</int>
        <str name="facet.range.other">after</str>
        <str name="facet.date">manufacturedate_dt</str>
        <str name="facet.date.start">NOW/YEAR-10YEARS</str>
@@ -841,7 +844,7 @@
       -->
     <!--
        <lst name="defaults">
-         <str name="update.processor">dedupe</str>
+         <str name="update.chain">dedupe</str>
        </lst>
        -->
     </requestHandler>

@@ -27,14 +27,16 @@
         #end
       #end
     </div>
+    <div class="parsed_query_header">
      #if($request.params.get('debugQuery'))
-        <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle parsed query</a>
-        <pre style="display:none">$response.response.debug.parsedquery</pre>
+        <a href="#" onclick='jQuery(this).siblings("div").toggle(); return false;'>toggle parsed query</a>
+        <div class="parsed_query" style="display:none">$response.response.debug.parsedquery</div>
       #end
       #set($queryOpts = $request.params.get("queryOpts"))
       #if($queryOpts && $queryOpts != "")
         <input type="hidden" name="queryOpts" value="$queryOpts"/>
       #end
+    </div>
   </form>
 
 </div>

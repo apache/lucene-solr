@@ -95,7 +95,7 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r944541.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1099557.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-collections-3.2.1.jar"/>

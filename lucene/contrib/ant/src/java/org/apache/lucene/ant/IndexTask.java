@@ -39,7 +39,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -285,9 +285,9 @@ public class IndexTask extends Task {
       IndexWriterConfig conf = new IndexWriterConfig(
           Version.LUCENE_CURRENT, analyzer).setOpenMode(
           create ? OpenMode.CREATE : OpenMode.APPEND);
-      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
-      lmp.setUseCompoundFile(useCompoundIndex);
-      lmp.setMergeFactor(mergeFactor);
+      TieredMergePolicy tmp = (TieredMergePolicy) conf.getMergePolicy();
+      tmp.setUseCompoundFile(useCompoundIndex);
+      tmp.setMaxMergeAtOnce(mergeFactor);
       IndexWriter writer = new IndexWriter(dir, conf);
       int totalFiles = 0;
       int totalIndexed = 0;

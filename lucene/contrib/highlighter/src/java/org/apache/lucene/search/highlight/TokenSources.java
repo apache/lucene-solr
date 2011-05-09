@@ -231,7 +231,7 @@ public class TokenSources {
     if (unsortedTokens != null) {
       tokensInOriginalOrder = unsortedTokens.toArray(new Token[unsortedTokens
           .size()]);
-      ArrayUtil.quickSort(tokensInOriginalOrder, new Comparator<Token>() {
+      ArrayUtil.mergeSort(tokensInOriginalOrder, new Comparator<Token>() {
         public int compare(Token t1, Token t2) {
           if (t1.startOffset() == t2.startOffset())
             return t1.endOffset() - t2.endOffset();

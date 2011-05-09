@@ -45,4 +45,9 @@ public class TestSwedishLightStemFilter extends BaseTokenStreamTestCase {
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("svlighttestdata.zip"), "svlight.txt");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -41,7 +41,7 @@ public class SingleFieldTestDb {
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(
           Version.LUCENE_CURRENT,
-          new MockAnalyzer()));
+          new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.ANALYZED));

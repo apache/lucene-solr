@@ -190,7 +190,7 @@ public class NearSpansOrdered extends Spans {
 
   /** Advance the subSpans to the same document */
   private boolean toSameDoc() throws IOException {
-    ArrayUtil.quickSort(subSpansByDoc, spanDocComparator);
+    ArrayUtil.mergeSort(subSpansByDoc, spanDocComparator);
     int firstIndex = 0;
     int maxDoc = subSpansByDoc[subSpansByDoc.length - 1].doc();
     while (subSpansByDoc[firstIndex].doc() != maxDoc) {

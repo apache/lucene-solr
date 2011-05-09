@@ -17,6 +17,8 @@
 
 package org.apache.solr.analysis;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +27,8 @@ import java.util.Map;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.ResourceLoader;
+
 
 public class TestSynonymMap extends LuceneTestCase {
 
@@ -256,6 +260,43 @@ public class TestSynonymMap extends LuceneTestCase {
     assertTokIncludes( getSubSynonymMap( getSubSynonymMap( synMap, "ab" ), "bc" ), "cd", "fg" );
     assertTokIncludes( getSubSynonymMap( getSubSynonymMap( synMap, "ab" ), "bc" ), "cd", "gh" );
   }
+  
+
+  public void testLoadRules() throws Exception {
+    Map<String, String> args = new HashMap<String, String>();
+    args.put( "synonyms", "something.txt" );
+    SynonymFilterFactory ff = new SynonymFilterFactory();
+    ff.init(args);
+    ff.inform( new ResourceLoader() {
+      @Override
+      public List<String> getLines(String resource) throws IOException {
+        if( !"something.txt".equals(resource) ) {
+          throw new RuntimeException( "should not get a differnt resource" );
+        }
+        List<String> rules = new ArrayList<String>();
+        rules.add( "a,b" );
+        return rules;
+      }
+
+      @Override
+      public Object newInstance(String cname, String... subpackages) {
+        throw new RuntimeException("stub");
+      }
+
+      @Override
+      public InputStream openResource(String resource) throws IOException {
+        throw new RuntimeException("stub");
+      }
+    });
+    
+    SynonymMap synMap = ff.getSynonymMap();
+    assertEquals( 2, synMap.submap.size() );
+    assertTokIncludes( synMap, "a", "a" );
+    assertTokIncludes( synMap, "a", "b" );
+    assertTokIncludes( synMap, "b", "a" );
+    assertTokIncludes( synMap, "b", "b" );
+  }
+  
   
   private void assertTokIncludes( SynonymMap map, String src, String exp ) throws Exception {
     Token[] tokens = map.submap.get( src ).synonyms;

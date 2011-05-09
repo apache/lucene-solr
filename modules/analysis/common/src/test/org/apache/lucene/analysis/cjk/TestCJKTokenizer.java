@@ -270,4 +270,9 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
         newToken("test", 0, 4, CJKTokenizer.SINGLE_TOKEN_TYPE),
         newToken("あい", 4, 6, CJKTokenizer.DOUBLE_TOKEN_TYPE) });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new CJKAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

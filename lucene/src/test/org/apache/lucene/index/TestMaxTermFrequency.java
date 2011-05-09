@@ -47,7 +47,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-                                                    new MockAnalyzer(MockTokenizer.SIMPLE, true)).setMergePolicy(newInOrderLogMergePolicy());
+                                                    new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
     config.setSimilarityProvider(new DefaultSimilarityProvider() {
       @Override
       public Similarity get(String field) {

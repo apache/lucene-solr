@@ -21,7 +21,13 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
@@ -49,12 +55,12 @@ import org.apache.lucene.util.CollectionUtil;
  * (IndexDeletionPolicy) is consulted on creation (onInit)
  * and once per commit (onCommit), to decide when a commit
  * should be removed.
- * 
+ *
  * It is the business of the IndexDeletionPolicy to choose
  * when to delete commit points.  The actual mechanics of
  * file deletion, retrying, etc, derived from the deletion
  * of commit points is the business of the IndexFileDeleter.
- * 
+ *
  * The current default deletion policy is {@link
  * KeepOnlyLastCommitDeletionPolicy}, which removes all
  * prior commits when a new commit has completed.  This
@@ -72,7 +78,7 @@ final class IndexFileDeleter {
    * so we will retry them again later: */
   private List<String> deletable;
 
-  /* Reference count for all files in the index.  
+  /* Reference count for all files in the index.
    * Counts how many existing commits reference a file.
    **/
   private Map<String, RefCount> refCounts = new HashMap<String, RefCount>();
@@ -88,7 +94,7 @@ final class IndexFileDeleter {
    * non-commit checkpoint: */
   private List<Collection<String>> lastFiles = new ArrayList<Collection<String>>();
 
-  /* Commits that the IndexDeletionPolicy have decided to delete: */ 
+  /* Commits that the IndexDeletionPolicy have decided to delete: */
   private List<CommitPoint> commitsToDelete = new ArrayList<CommitPoint>();
 
   private PrintStream infoStream;
@@ -108,7 +114,7 @@ final class IndexFileDeleter {
       message("setInfoStream deletionPolicy=" + policy);
     }
   }
-  
+
   private void message(String message) {
     infoStream.println("IFD [" + new Date() + "; " + Thread.currentThread().getName() + "]: " + message);
   }
@@ -139,12 +145,12 @@ final class IndexFileDeleter {
     // counts:
     long currentGen = segmentInfos.getGeneration();
     indexFilenameFilter = new IndexFileNameFilter(codecs);
-    
+
     CommitPoint currentCommitPoint = null;
     String[] files = null;
     try {
       files = directory.listAll();
-    } catch (NoSuchDirectoryException e) {  
+    } catch (NoSuchDirectoryException e) {
       // it means the directory is empty, so ignore it.
       files = new String[0];
     }
@@ -152,7 +158,7 @@ final class IndexFileDeleter {
     for (String fileName : files) {
 
       if ((indexFilenameFilter.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
-        
+
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
 
@@ -233,7 +239,7 @@ final class IndexFileDeleter {
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
     // IndexWriter.
-    for(Map.Entry<String, RefCount> entry : refCounts.entrySet() ) {  
+    for(Map.Entry<String, RefCount> entry : refCounts.entrySet() ) {
       RefCount rc = entry.getValue();
       final String fileName = entry.getKey();
       if (0 == rc.count) {
@@ -253,7 +259,7 @@ final class IndexFileDeleter {
     // Always protect the incoming segmentInfos since
     // sometime it may not be the most recent commit
     checkpoint(segmentInfos, false);
-    
+
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
@@ -327,7 +333,7 @@ final class IndexFileDeleter {
       segmentPrefix1 = null;
       segmentPrefix2 = null;
     }
-    
+
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
@@ -379,7 +385,7 @@ final class IndexFileDeleter {
       deleteCommits();
     }
   }
-  
+
   public void deletePendingFiles() throws IOException {
     if (deletable != null) {
       List<String> oldDeletable = deletable;
@@ -397,7 +403,7 @@ final class IndexFileDeleter {
   /**
    * For definition of "check point" see IndexWriter comments:
    * "Clarification: Check Points (and commits)".
-   * 
+   *
    * Writer calls this when it has made a "consistent
    * change" to the index, meaning new files are written to
    * the index and the in-memory SegmentInfos have been
@@ -417,7 +423,7 @@ final class IndexFileDeleter {
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
 
     if (infoStream != null) {
-      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
+      message("now checkpoint \"" + segmentInfos + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
     // Try again now to delete any previously un-deletable

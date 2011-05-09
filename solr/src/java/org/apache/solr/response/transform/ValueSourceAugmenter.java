@@ -90,9 +90,10 @@ public class ValueSourceAugmenter extends DocTransformer
       }
 
       int localId = docid - rcontext.docBase;
-      float val = values.floatVal(localId);  // TODO: handle all types -- see: SOLR-2443
-
-      doc.setField( name, val );
+      Object val = values.objectVal(localId);
+      if (val != null) {
+        doc.setField( name, val );
+      }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception at docid " + docid + " for valuesource " + valueSource, e, false);
     }

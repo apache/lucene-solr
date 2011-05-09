@@ -28,11 +28,11 @@ may wish to skip sections.
 
 <ul>
 	<li><a href="demo.html">About the command-line Lucene demo and its usage</a>.  This section
-	is intended for anyone who wants to use the command-line Lucene demo.</li> <p/>
+	is intended for anyone who wants to use the command-line Lucene demo.</li>
 
 	<li><a href="demo2.html">About the sources and implementation for the command-line Lucene
 	demo</a>.  This section walks through the implementation details (sources) of the
-	command-line Lucene demo.  This section is intended for developers.</li> <p/>
+	command-line Lucene demo.  This section is intended for developers.</li>
 </ul>
 </section>
 

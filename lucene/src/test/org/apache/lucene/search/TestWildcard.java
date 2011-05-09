@@ -268,7 +268,7 @@ public class TestWildcard
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random));
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",
@@ -299,8 +299,8 @@ public class TestWildcard
     // prepare the index
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setMergePolicy(newInOrderLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));

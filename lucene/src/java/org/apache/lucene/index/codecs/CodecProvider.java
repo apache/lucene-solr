@@ -70,6 +70,11 @@ public class CodecProvider {
       }
     }
   }
+  
+  /** @lucene.internal */
+  public synchronized Set<String> listAll() {
+    return codecs.keySet();
+  }
 
   public Collection<String> getAllExtensions() {
     return knownExtensions;

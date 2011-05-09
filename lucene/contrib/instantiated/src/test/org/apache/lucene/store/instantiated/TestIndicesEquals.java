@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -65,7 +66,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
@@ -88,10 +89,13 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     Directory dir = newDirectory();
     InstantiatedIndex ii = new InstantiatedIndex();
-
+    
+    // we need to pass the "same" random to both, so they surely index the same payload data.
+    long seed = random.nextLong();
+    
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
-                                                                        TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+                                                                        TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed))).setMergePolicy(newLogMergePolicy()));
     indexWriter.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
       System.out.println("TEST: make test index");
@@ -104,7 +108,7 @@ public class TestIndicesEquals extends LuceneTestCase {
     indexWriter.close();
 
     // test ii writer
-    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new MockAnalyzer(), true);
+    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new MockAnalyzer(new Random(seed)), true);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

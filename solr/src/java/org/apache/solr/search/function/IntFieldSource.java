@@ -51,9 +51,9 @@ public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final IntValues vals = cache.getInts(readerContext.reader, field, creator);
     final int[] arr = vals.values;
-	final Bits valid = vals.valid;
+    final Bits valid = vals.valid;
     
-    return new DocValues() {
+    return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();
       
       @Override
@@ -79,6 +79,16 @@ public class IntFieldSource extends NumericFieldCacheSource<IntValues> {
       @Override
       public String strVal(int doc) {
         return Float.toString(arr[doc]);
+      }
+
+      @Override
+      public Object objectVal(int doc) {
+        return valid.get(doc) ? arr[doc] : null;
+      }
+
+      @Override
+      public boolean exists(int doc) {
+        return valid.get(doc);
       }
 
       @Override

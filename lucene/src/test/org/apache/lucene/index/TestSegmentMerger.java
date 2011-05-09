@@ -47,13 +47,13 @@ public class TestSegmentMerger extends LuceneTestCase {
     merge1Dir = newDirectory();
     merge2Dir = newDirectory();
     DocHelper.setupDoc(doc1);
-    SegmentInfo info1 = DocHelper.writeDoc(merge1Dir, doc1);
+    SegmentInfo info1 = DocHelper.writeDoc(random, merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
-    SegmentInfo info2 = DocHelper.writeDoc(merge2Dir, doc2);
+    SegmentInfo info2 = DocHelper.writeDoc(random, merge2Dir, doc2);
     reader1 = SegmentReader.get(true, info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     reader2 = SegmentReader.get(true, info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader1.close();
@@ -71,8 +71,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(reader1 != null);
     assertTrue(reader2 != null);
   }
-  
-  public void testMerge() throws IOException {                             
+
+  public void testMerge() throws IOException {
     SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, CodecProvider.getDefault(), null, new FieldInfos());
     merger.add(reader1);
     merger.add(reader2);
@@ -83,7 +83,6 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false, fieldInfos.hasProx(),
                                                                                      merger.getSegmentCodecs(), fieldInfos.hasVectors(), fieldInfos),
                                                    BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);
@@ -93,19 +92,19 @@ public class TestSegmentMerger extends LuceneTestCase {
     Document newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    
+
     DocsEnum termDocs = MultiFields.getTermDocsEnum(mergedReader,
                                                     MultiFields.getDeletedDocs(mergedReader),
                                                     DocHelper.TEXT_FIELD_2_KEY,
                                                     new BytesRef("field"));
     assertTrue(termDocs != null);
     assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
-    
+
     Collection<String> stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
     assertTrue(stored != null);
     //System.out.println("stored size: " + stored.size());
     assertTrue("We do not have 3 fields that were indexed with term vector",stored.size() == 3);
-    
+
     TermFreqVector vector = mergedReader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
     BytesRef [] terms = vector.getTerms();
@@ -116,7 +115,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(freqs != null);
     //System.out.println("Freqs size: " + freqs.length);
     assertTrue(vector instanceof TermPositionVector == true);
-    
+
     for (int i = 0; i < terms.length; i++) {
       String term = terms[i].utf8ToString();
       int freq = freqs[i];
@@ -127,5 +126,5 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     TestSegmentReader.checkNorms(mergedReader);
     mergedReader.close();
-  }    
+  }
 }

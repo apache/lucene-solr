@@ -337,6 +337,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     @Override
     public boolean incrementToken() throws IOException {
       if (tokenIterator.hasNext()) {
+        clearAttributes();
         AttributeSource next = tokenIterator.next();
         Iterator<Class<? extends Attribute>> atts = next.getAttributeClassesIterator();
         while (atts.hasNext()) // make sure all att impls in the token exist here

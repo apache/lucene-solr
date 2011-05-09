@@ -18,13 +18,19 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -64,12 +70,53 @@ public class TestBasics extends LuceneTestCase {
   private static IndexReader reader;
   private static Directory directory;
 
+  static final class SimplePayloadFilter extends TokenFilter {
+    String fieldName;
+    int pos;
+    final PayloadAttribute payloadAttr;
+    final CharTermAttribute termAttr;
+
+    public SimplePayloadFilter(TokenStream input, String fieldName) {
+      super(input);
+      this.fieldName = fieldName;
+      pos = 0;
+      payloadAttr = input.addAttribute(PayloadAttribute.class);
+      termAttr = input.addAttribute(CharTermAttribute.class);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        payloadAttr.setPayload(new Payload(("pos: " + pos).getBytes()));
+        pos++;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      pos = 0;
+    }
+  }
+  
+  static final Analyzer simplePayloadAnalyzer = new Analyzer() {
+
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new SimplePayloadFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true), fieldName);
+    }
+    
+  };
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, true))
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newInOrderLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)
+                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();

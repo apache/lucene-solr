@@ -43,7 +43,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	public void setUp() throws Exception {
     super.setUp();
 		directory = newDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");

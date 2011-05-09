@@ -141,14 +141,6 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
   <target name="javadocs" depends="compile-core">
    	<sequential>
        <mkdir dir="${javadoc.dir}/contrib-${name}"/>
-       <path id="javadoc.classpath">
-         <path refid="classpath"/>
-         <pathelement location="${ant.home}/lib/ant.jar"/>
-         <fileset dir=".">
-           <exclude name="build/**/*.jar"/>
-           <include name="**/lib/*.jar"/>
-         </fileset>
-       </path>
        <invoke-javadoc
          destdir="${javadoc.dir}/contrib-${name}"
        	 title="${Name} ${version} contrib-${name} API">

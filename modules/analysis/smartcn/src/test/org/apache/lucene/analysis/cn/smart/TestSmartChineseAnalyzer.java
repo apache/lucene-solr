@@ -17,8 +17,11 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
@@ -165,5 +168,36 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "我", "购买", "了", "道具", "和", "服装" },
         new int[] { 0, 1, 3, 4, 6, 7 },
         new int[] { 1, 3, 4, 6, 7, 9 });
+  }
+  
+  // LUCENE-3026
+  public void testLargeDocument() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 5000; i++) {
+      sb.append("我购买了道具和服装。");
+    }
+    Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
+    TokenStream stream = analyzer.reusableTokenStream("", new StringReader(sb.toString()));
+    stream.reset();
+    while (stream.incrementToken()) {
+    }
+  }
+  
+  // LUCENE-3026
+  public void testLargeSentence() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 5000; i++) {
+      sb.append("我购买了道具和服装");
+    }
+    Analyzer analyzer = new SmartChineseAnalyzer(TEST_VERSION_CURRENT);
+    TokenStream stream = analyzer.reusableTokenStream("", new StringReader(sb.toString()));
+    stream.reset();
+    while (stream.incrementToken()) {
+    }
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new SmartChineseAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
 }

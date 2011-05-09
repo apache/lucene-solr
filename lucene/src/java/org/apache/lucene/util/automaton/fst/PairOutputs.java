@@ -43,7 +43,7 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
       this.output2 = output2;
     }
 
-    @Override @SuppressWarnings("unchecked")
+    @Override @SuppressWarnings("rawtypes")
     public boolean equals(Object other) {
       if (other == this) {
         return true;

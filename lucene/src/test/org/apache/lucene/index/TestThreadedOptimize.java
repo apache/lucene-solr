@@ -32,7 +32,7 @@ import java.util.Random;
 
 public class TestThreadedOptimize extends LuceneTestCase {
   
-  private static final Analyzer ANALYZER = new MockAnalyzer(MockTokenizer.SIMPLE, true);
+  private static final Analyzer ANALYZER = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
 
   private final static int NUM_THREADS = 3;
   //private final static int NUM_THREADS = 5;

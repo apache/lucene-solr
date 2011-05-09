@@ -424,8 +424,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
-      boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+                                                     boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
+                                                     boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
@@ -567,6 +567,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
     for (FieldInfo fi : this) {
+      assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -607,6 +608,14 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
+
+      // LUCENE-3027: past indices were able to write
+      // storePayloads=true when omitTFAP is also true,
+      // which is invalid.  We correct that, here:
+      if (omitTermFreqAndPositions) {
+        storePayloads = false;
+      }
+
       final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
       addInternal.setCodecId(codecId);
     }

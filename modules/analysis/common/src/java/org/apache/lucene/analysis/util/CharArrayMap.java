@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.CharacterUtils;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 
 

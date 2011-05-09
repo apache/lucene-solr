@@ -51,7 +51,7 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DoubleValues vals = cache.getDoubles(readerContext.reader, field, creator);
     final double[] arr = vals.values;
-	final Bits valid = vals.valid;
+    final Bits valid = vals.valid;
     
     return new DocValues() {
       @Override
@@ -77,6 +77,11 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
       @Override
       public String strVal(int doc) {
         return Double.toString(arr[doc]);
+      }
+
+      @Override
+      public Object objectVal(int doc) {
+        return valid.get(doc) ? arr[doc] : null;
       }
 
       @Override

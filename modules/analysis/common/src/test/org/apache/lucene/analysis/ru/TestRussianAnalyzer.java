@@ -64,4 +64,9 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
      
     }
+    
+    /** blast some random strings through the analyzer */
+    public void testRandomStrings() throws Exception {
+      checkRandomData(random, new RussianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+    }
 }

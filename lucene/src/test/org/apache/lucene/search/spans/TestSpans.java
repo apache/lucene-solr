@@ -55,7 +55,7 @@ public class TestSpans extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -481,7 +481,7 @@ public class TestSpans extends LuceneTestCase {
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

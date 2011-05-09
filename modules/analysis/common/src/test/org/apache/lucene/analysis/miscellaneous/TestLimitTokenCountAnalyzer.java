@@ -51,7 +51,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     Directory dir = newDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new LimitTokenCountAnalyzer(new MockAnalyzer(), 100000)));
+        TEST_VERSION_CURRENT, new LimitTokenCountAnalyzer(new MockAnalyzer(random), 100000)));
 
     Document doc = new Document();
     StringBuilder b = new StringBuilder();

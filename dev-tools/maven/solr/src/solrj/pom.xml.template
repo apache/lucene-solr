@@ -85,7 +85,7 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}</outputDirectory>
+    <outputDirectory>${build-directory}/classes</outputDirectory>
     <sourceDirectory>.</sourceDirectory>
     <testResources/>
     <plugins>

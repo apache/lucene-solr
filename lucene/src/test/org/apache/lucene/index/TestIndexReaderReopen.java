@@ -173,8 +173,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
     IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
-                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newInOrderLogMergePolicy()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(
+                                                              OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(newLogMergePolicy()));
     iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);
     try {
@@ -700,7 +700,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final Directory dir = newDirectory();
     final int n = 30 * RANDOM_MULTIPLIER;
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
@@ -721,7 +721,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           modifier.close();
         } else {
           IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-              TEST_VERSION_CURRENT, new MockAnalyzer()));
+              TEST_VERSION_CURRENT, new MockAnalyzer(random)));
           modifier.addDocument(createDocument(n + i, 6));
           modifier.close();
         }
@@ -937,7 +937,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   public static void createIndex(Random random, Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
     IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random,
-        TEST_VERSION_CURRENT, new MockAnalyzer())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMergePolicy(new LogDocMergePolicy()));
     
     for (int i = 0; i < 100; i++) {
@@ -984,7 +984,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: modify index");
         }
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         w.setInfoStream(VERBOSE ? System.out : null);
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
@@ -1001,13 +1001,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 2: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         w.optimize();
         w.close();
         break;
       }
       case 3: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         w.addDocument(createDocument(101, 4));
         w.optimize();
         w.addDocument(createDocument(102, 4));
@@ -1024,7 +1024,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 5: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         w.addDocument(createDocument(101, 4));
         w.close();
         break;
@@ -1090,7 +1090,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    indexDir = new File(TEMP_DIR, "IndexReaderReopen");
+    indexDir = _TestUtil.getTempDir("IndexReaderReopen");
   }
   
   public void testCloseOrig() throws Throwable {
@@ -1188,7 +1188,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setIndexDeletionPolicy(new KeepAllCommits()).
             setMaxBufferedDocs(-1).
             setMergePolicy(newLogMergePolicy(10))

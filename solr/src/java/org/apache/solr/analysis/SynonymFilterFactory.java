@@ -61,6 +61,16 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       tokFactory = loadTokenizerFactory( loader, tf, args );
     }
 
+    Iterable<String> wlist=loadRules( synonyms, loader );
+    
+    synMap = new SynonymMap(ignoreCase);
+    parseRules(wlist, synMap, "=>", ",", expand,tokFactory);
+  }
+  
+  /**
+   * @return a list of all rules
+   */
+  protected Iterable<String> loadRules( String synonyms, ResourceLoader loader ) {
     List<String> wlist=null;
     try {
       File synonymFile = new File(synonyms);
@@ -77,13 +87,12 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    synMap = new SynonymMap(ignoreCase);
-    parseRules(wlist, synMap, "=>", ",", expand,tokFactory);
+    return wlist;
   }
 
   private SynonymMap synMap;
 
-  static void parseRules(List<String> rules, SynonymMap map, String mappingSep,
+  static void parseRules(Iterable<String> rules, SynonymMap map, String mappingSep,
     String synSep, boolean expansion, TokenizerFactory tokFactory) {
     int count=0;
     for (String rule : rules) {

@@ -33,7 +33,8 @@ public enum LicenseType {
   MPL("Mozilla Public License", false), //NOT SURE on the required notice
   PD("Public Domain", false),
   //SUNBCLA("Sun Binary Code License Agreement"),
-  SUN("Sun Open Source License", false)
+  SUN("Sun Open Source License", false),
+  FAKE("FAKE license - not needed", false)
           ;
 
   private String display;

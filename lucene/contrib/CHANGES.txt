@@ -42,10 +42,37 @@ API Changes
    Instead, use SimilarityProvider to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
+   
+Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
 
 ======================= Lucene 3.x (not yet released) =======================
 
-(No changes)
+Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
+
+ * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
+   on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
+   
+ * LUCENE-2939: Highlighter should try and use maxDocCharsToAnalyze in 
+   WeightedSpanTermExtractor when adding a new field to MemoryIndex as well as 
+   when using CachingTokenStream. This can be a significant performance bug for
+   large documents. (Mark Miller)
+
+ * LUCENE-3043: GermanStemmer threw IndexOutOfBoundsException if it encountered
+   a zero-length token.  (Robert Muir)
+   
+ * LUCENE-3044: ThaiWordFilter didn't reset its cached state correctly, this only
+   caused a problem if you consumed a tokenstream, then reused it, added different
+   attributes to it, and consumed it again.  (Robert Muir, Uwe Schindler)
+
+New Features
+
+ * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
 
 ======================= Lucene 3.1.0 =======================
 

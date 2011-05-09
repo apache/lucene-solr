@@ -41,7 +41,7 @@ public class TestMultiMMap extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
       super.setUp();
-      workDir = new File(TEMP_DIR, "TestMultiMMap");
+      workDir = _TestUtil.getTempDir("TestMultiMMap");
       workDir.mkdirs();
   }
   
@@ -59,7 +59,7 @@ public class TestMultiMMap extends LuceneTestCase {
     // we will map a lot, try to turn on the unmap hack
     if (MMapDirectory.UNMAP_SUPPORTED)
       dir.setUseUnmap(true);
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field docid = newField("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
     Field junk = newField("junk", "", Field.Store.YES, Field.Index.NOT_ANALYZED);

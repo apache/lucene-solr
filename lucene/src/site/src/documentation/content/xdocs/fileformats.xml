@@ -90,6 +90,14 @@
         <p>
             In version 3.1, segments records the code version
             that created them. See LUCENE-2720 for details.
+            
+            Additionally segments track explicitly whether or
+            not they have term vectors. See LUCENE-2811 for details.
+           </p>
+        <p>
+            In version 3.2, numeric fields are written as natively
+            to stored fields file, previously they were stored in
+            text format only.
            </p>
         </section>
 
@@ -935,7 +943,7 @@
                     <b>3.1</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegVersion, SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
-                    IsCompoundFile, DeletionCount, HasProx, Diagnostics&gt;<sup>SegCount</sup>, CommitUserData, Checksum
+                    IsCompoundFile, DeletionCount, HasProx, Diagnostics, HasVectors&gt;<sup>SegCount</sup>, CommitUserData, Checksum
                 </p>
 
                 <p>
@@ -957,7 +965,7 @@
 
                 <p>
                     IsCompoundFile, HasSingleNormFile,
-                    DocStoreIsCompoundFile, HasProx --&gt; Int8
+                    DocStoreIsCompoundFile, HasProx, HasVectors --&gt; Int8
                 </p>
 
 		<p>
@@ -1082,6 +1090,10 @@
 		    it creates.  It includes metadata like the current
 		    Lucene version, OS, Java version, why the segment
 		    was created (merge, flush, addIndexes), etc.
+                </p>
+         
+        <p> HasVectors is 1 if this segment stores term vectors,
+            else it's 0.
                 </p>
 
             </section>
@@ -1293,10 +1305,18 @@
                                 <li>third bit is one for fields with compression option enabled
                                     (if compression is enabled, the algorithm used is ZLIB),
                                     only available for indexes until Lucene version 2.9.x</li>
+                                <li>4th to 6th bits (mask: 0x7&lt;&lt;3) define the type of a
+                                numeric field: <ul>
+                                  <li>all bits in mask are cleared if no numeric field at all</li>
+                                  <li>1&lt;&lt;3: Value is Int</li>
+                                  <li>2&lt;&lt;3: Value is Long</li>
+                                  <li>3&lt;&lt;3: Value is Int as Float (as of Integer.intBitsToFloat)</li>
+                                  <li>4&lt;&lt;3: Value is Long as Double (as of Double.longBitsToDouble)</li>
+                                </ul></li>
                             </ul>
                         </p>
                         <p>Value --&gt;
-                            String | BinaryValue (depending on Bits)
+                            String | BinaryValue | Int | Long (depending on Bits)
                         </p>
                         <p>BinaryValue --&gt;
                             ValueSize, &lt;Byte&gt;^ValueSize

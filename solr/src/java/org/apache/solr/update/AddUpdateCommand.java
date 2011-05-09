@@ -18,7 +18,7 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -74,7 +74,7 @@ public class AddUpdateCommand extends UpdateCommand {
        if (sf != null) {
          if (doc != null) {
            schema.getUniqueKeyField();
-           Field storedId = doc.getField(sf.getName());
+           Fieldable storedId = doc.getFieldable(sf.getName());
            indexedId = sf.getType().storedToIndexed(storedId);
          }
          if (solrDoc != null) {

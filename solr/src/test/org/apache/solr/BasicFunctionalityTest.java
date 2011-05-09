@@ -561,7 +561,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
-    // ensure field is not lazy
+    // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
     assertTrue( d.getFieldable("title") instanceof Field );
     req.close();

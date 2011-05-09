@@ -40,7 +40,7 @@ final class NodeHash<T> {
       return false;
     }
     for(int arcUpto=0;arcUpto<node.numArcs;arcUpto++) {
-      final Builder.Arc arc = node.arcs[arcUpto];
+      final Builder.Arc<T> arc = node.arcs[arcUpto];
       if (arc.label != scratchArc.label ||
           !arc.output.equals(scratchArc.output) ||
           ((Builder.CompiledNode) arc.target).address != scratchArc.target ||

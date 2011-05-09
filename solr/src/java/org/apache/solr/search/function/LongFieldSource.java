@@ -52,41 +52,30 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
     return Long.parseLong(extVal);
   }
 
+  public Object longToObject(long val) {
+    return val;
+  }
+
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final LongValues vals = cache.getLongs(readerContext.reader, field, creator);
     final long[] arr = vals.values;
-	final Bits valid = vals.valid;
+    final Bits valid = vals.valid;
     
-    return new DocValues() {
-      @Override
-      public float floatVal(int doc) {
-        return (float) arr[doc];
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return (int) arr[doc];
-      }
-
+    return new LongDocValues(this) {
       @Override
       public long longVal(int doc) {
         return arr[doc];
       }
 
       @Override
-      public double doubleVal(int doc) {
-        return arr[doc];
+      public boolean exists(int doc) {
+        return valid.get(doc);
       }
 
       @Override
-      public String strVal(int doc) {
-        return Long.toString(arr[doc]);
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + longVal(doc);
+      public Object objectVal(int doc) {
+        return valid.get(doc) ? longToObject(arr[doc]) : null;
       }
 
       @Override
@@ -141,8 +130,6 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
           }
         };
       }
-
-
 
     };
   }

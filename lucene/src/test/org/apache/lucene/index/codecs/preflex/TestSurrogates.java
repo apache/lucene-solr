@@ -275,7 +275,7 @@ public class TestSurrogates extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random,
                                                 dir,
                                                 newIndexWriterConfig( TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
+                                                                      new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
 
     final int numField = _TestUtil.nextInt(random, 2, 5);
 

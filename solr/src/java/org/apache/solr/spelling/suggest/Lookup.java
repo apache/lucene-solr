@@ -12,13 +12,12 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TermFreqIterator;
 
 public abstract class Lookup {
-  
   /**
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
-    String key;
-    float value;
+    public final String key;
+    public final float value;
     
     public LookupResult(String key, float value) {
       this.key = key;

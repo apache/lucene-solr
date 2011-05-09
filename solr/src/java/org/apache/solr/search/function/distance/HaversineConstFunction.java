@@ -198,22 +198,7 @@ public class HaversineConstFunction extends ValueSource {
     final double lonCenterRad = this.lonCenter * DistanceUtils.DEGREES_TO_RADIANS;
     final double latCenterRad_cos = this.latCenterRad_cos;
 
-    return new DocValues() {
-      @Override
-      public float floatVal(int doc) {
-        return (float) doubleVal(doc);
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return (int) doubleVal(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long) doubleVal(doc);
-      }
-
+    return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
         double latRad = latVals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
@@ -226,12 +211,6 @@ public class HaversineConstFunction extends ValueSource {
                 (latCenterRad_cos * Math.cos(latRad) * hsinY * hsinY);
         return (EARTH_MEAN_DIAMETER * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
       }
-
-      @Override
-      public String strVal(int doc) {
-        return Double.toString(doubleVal(doc));
-      }
-
       @Override
       public String toString(int doc) {
         return name() + '(' + latVals.toString(doc) + ',' + lonVals.toString(doc) + ',' + latCenter + ',' + lonCenter + ')';

@@ -90,12 +90,10 @@ public class ReturnFields
         parseFieldList( new String[]{fl}, req);
       }
     }
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   public ReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
@@ -162,7 +160,7 @@ public class ReturnFields
         char ch = sp.ch();
 
         if (field != null) {
-          if (sp.opt('=')) {
+          if (sp.opt(':')) {
             // this was a key, not a field name
             key = field;
             field = null;
@@ -180,7 +178,7 @@ public class ReturnFields
         }
 
         if (key != null) {
-          // we read "key = "
+          // we read "key : "
           field = sp.getId(null);
           ch = sp.ch();
           if (field != null && (ch==' ' || ch == ',' || ch==0)) {

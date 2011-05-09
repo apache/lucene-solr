@@ -80,7 +80,7 @@
 	<strong>Output Type</strong>
   </td>
   <td>
-	<input name="wt" type="text" value="standard">
+	<input name="wt" type="text" value="">
   </td>
 </tr>
 <tr>
@@ -121,7 +121,7 @@
   <td>
   </td>
   <td>
-    <input class="stdbutton" type="submit" value="search" onclick="if (queryForm.q.value.length==0) { alert('no empty queries, please'); return false; } else { queryForm.submit(); } ">
+    <input class="stdbutton" type="submit" value="search" onclick="if (queryForm.q.value.length==0) { alert('no empty queries, please'); return false; } else { queryForm.submit(); return false;} ">
   </td>
 </tr>
 </table>

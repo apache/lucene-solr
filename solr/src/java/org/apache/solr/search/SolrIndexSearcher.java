@@ -1603,14 +1603,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     DocIterator iter = set.iterator();
     int base=0;
     int end=0;
-    int readerIndex = -1;
-    
-    AtomicReaderContext leaf = null;
+    int readerIndex = 0;
 
-    for (int i = 0; i < leafContexts.length; i++) {
+    while (iter.hasNext()) {
       int doc = iter.nextDoc();
       while (doc>=end) {
-        leaf = leafContexts[i++];
+        AtomicReaderContext leaf = leafContexts[readerIndex++];
         base = leaf.docBase;
         end = base + leaf.reader.maxDoc();
         topCollector.setNextReader(leaf);

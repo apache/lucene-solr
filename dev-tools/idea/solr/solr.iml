@@ -18,18 +18,18 @@
       <excludeFolder url="file://$MODULE_DIR$/lucene-libs" />
       <excludeFolder url="file://$MODULE_DIR$/package" />
     </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Solr library" level="project" />
+    <orderEntry type="library" name="Solr example library" level="project" />
     <orderEntry type="module" module-name="spatial" />
     <orderEntry type="module" module-name="highlighter" />
-    <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="icu" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="phonetic" />
     <orderEntry type="module" module-name="spellchecker" />
+    <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="lucene" />
-    <orderEntry type="inheritedJdk" />
-    <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Solr library" level="project" />
-    <orderEntry type="library" name="Solr example library" level="project" />
   </component>
 </module>

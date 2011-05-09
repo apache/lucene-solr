@@ -39,7 +39,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	public void setUp() throws Exception {
 	  super.setUp();
 		directory = newDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
 		addDoc(writer, "admin guest", "010", "20040101","Y");

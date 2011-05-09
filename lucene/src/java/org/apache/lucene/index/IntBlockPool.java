@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.util.Arrays;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,24 +24,24 @@ final class IntBlockPool {
   public int[][] buffers = new int[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
-  public int intUpto = DocumentsWriter.INT_BLOCK_SIZE;             // Where we are in head buffer
+  public int intUpto = DocumentsWriterPerThread.INT_BLOCK_SIZE;             // Where we are in head buffer
 
   public int[] buffer;                              // Current head buffer
-  public int intOffset = -DocumentsWriter.INT_BLOCK_SIZE;          // Current head offset
+  public int intOffset = -DocumentsWriterPerThread.INT_BLOCK_SIZE;          // Current head offset
 
-  final private DocumentsWriter docWriter;
+  final private DocumentsWriterPerThread docWriter;
 
-  public IntBlockPool(DocumentsWriter docWriter) {
+  public IntBlockPool(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
   }
 
   public void reset() {
     if (bufferUpto != -1) {
-      if (bufferUpto > 0)
-        // Recycle all but the first buffer
-        docWriter.recycleIntBlocks(buffers, 1, 1+bufferUpto);
-
       // Reuse first buffer
+      if (bufferUpto > 0) {
+        docWriter.recycleIntBlocks(buffers, 1, bufferUpto-1);
+        Arrays.fill(buffers, 1, bufferUpto, null);
+      }
       bufferUpto = 0;
       intUpto = 0;
       intOffset = 0;
@@ -57,7 +59,7 @@ final class IntBlockPool {
     bufferUpto++;
 
     intUpto = 0;
-    intOffset += DocumentsWriter.INT_BLOCK_SIZE;
+    intOffset += DocumentsWriterPerThread.INT_BLOCK_SIZE;
   }
 }
 

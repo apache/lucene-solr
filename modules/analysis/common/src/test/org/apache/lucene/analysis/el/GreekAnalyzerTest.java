@@ -87,4 +87,9 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
   }
-	}
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new GreekAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+}
