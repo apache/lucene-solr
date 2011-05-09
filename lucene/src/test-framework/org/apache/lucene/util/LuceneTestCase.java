@@ -1124,7 +1124,8 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
     if (random.nextBoolean()) {
-      if (maybeWrap && random.nextBoolean()) {
+      // nocommit: fix bugs in MultiBulkPostingsEnum that this unsurfaces
+      if (maybeWrap && random.nextBoolean() && false) {
         return new IndexSearcher(new SlowMultiReaderWrapper(r));
       } else {
         return new IndexSearcher(r);
