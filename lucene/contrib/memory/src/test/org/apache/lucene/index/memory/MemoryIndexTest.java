@@ -98,8 +98,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       builder.append(content);
     }
     content = builder.toString();
-    index.addField(fieldName, content, new MockAnalyzer(
-        MockTokenizer.WHITESPACE, true, false));
+    index.addField(fieldName, content, new MockAnalyzer(random,
+        MockTokenizer.WHITESPACE, true));
     IndexSearcher searcher = index.createSearcher();
     AtomicReaderContext leaf = ReaderUtil
         .leaves(searcher.getTopReaderContext())[0];
