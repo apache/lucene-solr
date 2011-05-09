@@ -58,7 +58,7 @@
   </doc>
   <doc>
     <field name="id">maxtor</field>
-    <field name="name">Maxtor Corporation</field>
+    <field name="compName_s">Maxtor Corporation</field>
     <field name="address_s">920 Disc Drive Scotts Valley, CA 95066</field>
   </doc>
   <doc>
