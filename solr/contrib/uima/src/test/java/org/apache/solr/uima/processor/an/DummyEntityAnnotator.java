@@ -34,6 +34,12 @@ public class DummyEntityAnnotator extends JCasAnnotator_ImplBase{
         EntityAnnotation entityAnnotation = new EntityAnnotation(jcas);
         entityAnnotation.setBegin(annotation.getBegin());
         entityAnnotation.setEnd(annotation.getEnd());
+        String entityString = annotation.getCoveredText();
+        entityAnnotation.setEntity(entityString);
+        String name = "OTHER"; // "OTHER" makes no sense. In practice, "PERSON", "COUNTRY", "E-MAIL", etc.
+        if(entityString.equals("Apache"))
+          name = "ORGANIZATION";
+        entityAnnotation.setName(name);
         entityAnnotation.addToIndexes();
       }
     }
