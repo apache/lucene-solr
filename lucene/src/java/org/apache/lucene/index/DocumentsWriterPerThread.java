@@ -163,7 +163,7 @@ public class DocumentsWriterPerThread {
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
   private FieldInfos fieldInfos;
-  private final PrintStream infoStream;
+  private PrintStream infoStream;
   private int numDocsInRAM;
   private int flushedDocCount;
   DocumentsWriterDeleteQueue deleteQueue;
@@ -493,4 +493,9 @@ public class DocumentsWriterPerThread {
     }
     
   };
+  
+  void setInfoStream(PrintStream infoStream) {
+    this.infoStream = infoStream;
+    docState.infoStream = infoStream;
+  }
 }
