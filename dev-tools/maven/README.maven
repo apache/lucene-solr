@@ -45,8 +45,7 @@ B. How to generate Lucene Maven artifacts
       The above command will create an internal Maven repository under
       lucene/dist/maven/, including POMs, binary .jars, source .jars,
       and javadoc .jars, for Lucene Core, for the Lucene test framework,
-      for each contrib, and for each module under the top-level modules/
-      directory.
+      and for each contrib.
 
 
 C. How to generate Solr Maven artifacts
