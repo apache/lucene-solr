@@ -4,7 +4,7 @@
   #if($request.params.get('debugQuery'))
   <a href="#url_for_home?#q#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end">disable debug</a>
   #else
-  <a href="#url_for_lens&debugQuery=true">enable debug</a>
+  <a href="#url_for_lens&debugQuery=true&fl=*,score">enable debug</a>
   #end
   #if($annotate)
   <a href="#url_for_home?#q#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#boostPrice">disable annotation</a>
