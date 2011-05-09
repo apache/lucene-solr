@@ -57,6 +57,7 @@
 	<classpathentry kind="src" path="solr/src/webapp/src"/>
 	<classpathentry kind="src" path="solr/src/common"/>
 	<classpathentry kind="src" path="solr/src/solrj"/>
+	<classpathentry kind="src" path="solr/src/test-framework"/>
 	<classpathentry kind="src" path="solr/src/test"/>
 	<classpathentry kind="src" path="solr/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
@@ -90,7 +91,7 @@
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-collections-3.1.jar"/>
-	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.0.jar"/>
+	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.1.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>

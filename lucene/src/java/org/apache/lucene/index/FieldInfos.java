@@ -17,15 +17,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+
+import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
+import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.*;
 
 /** Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -34,8 +44,160 @@ import java.util.*;
  *  accessing this object.
  *  @lucene.experimental
  */
-public final class FieldInfos {
+public final class FieldInfos implements Iterable<FieldInfo> {
+  static final class FieldNumberBiMap {
+    
+    final static String CODEC_NAME = "GLOBAL_FIELD_MAP";
+    
+    // Initial format
+    private static final int VERSION_START = 0;
 
+    private static final int VERSION_CURRENT = VERSION_START;
+
+    private final Map<Integer,String> numberToName;
+    private final Map<String,Integer> nameToNumber;
+    private int lowestUnassignedFieldNumber = -1;
+    private long lastVersion = 0;
+    private long version = 0;
+    
+    FieldNumberBiMap() {
+      this.nameToNumber = new HashMap<String, Integer>();
+      this.numberToName = new HashMap<Integer, String>();
+    }
+    
+    /**
+     * Returns the global field number for the given field name. If the name
+     * does not exist yet it tries to add it with the given preferred field
+     * number assigned if possible otherwise the first unassigned field number
+     * is used as the field number.
+     */
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber) {
+      Integer fieldNumber = nameToNumber.get(fieldName);
+      if (fieldNumber == null) {
+        final Integer preferredBoxed = Integer.valueOf(preferredFieldNumber);
+
+        if (preferredFieldNumber != -1 && !numberToName.containsKey(preferredBoxed)) {
+            // cool - we can use this number globally
+            fieldNumber = preferredBoxed;
+        } else {
+          // find a new FieldNumber
+          while (numberToName.containsKey(++lowestUnassignedFieldNumber)) {
+            // might not be up to date - lets do the work once needed
+          }
+          fieldNumber = lowestUnassignedFieldNumber;
+        }
+        
+        version++;
+        numberToName.put(fieldNumber, fieldName);
+        nameToNumber.put(fieldName, fieldNumber);
+        
+      }
+
+      return fieldNumber.intValue();
+    }
+
+    /**
+     * Sets the given field number and name if not yet set. 
+     */
+    synchronized void setIfNotSet(int fieldNumber, String fieldName) {
+      final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
+      if (!numberToName.containsKey(boxedFieldNumber)
+          && !nameToNumber.containsKey(fieldName)) {
+        version++;
+        numberToName.put(boxedFieldNumber, fieldName);
+        nameToNumber.put(fieldName, boxedFieldNumber);
+      } else {
+        assert containsConsistent(boxedFieldNumber, fieldName);
+      }
+    }
+    
+    /**
+     * Writes this {@link FieldNumberBiMap} to the given output and returns its
+     * version.
+     */
+    public synchronized long write(IndexOutput output) throws IOException{
+      Set<Entry<String, Integer>> entrySet = nameToNumber.entrySet();
+      CodecUtil.writeHeader(output, CODEC_NAME, VERSION_CURRENT); 
+      output.writeVInt(entrySet.size());
+      for (Entry<String, Integer> entry : entrySet) {
+        output.writeVInt(entry.getValue().intValue());
+        output.writeString(entry.getKey());
+      }
+      return version;
+    }
+
+    /**
+     * Reads the {@link FieldNumberBiMap} from the given input and resets the
+     * version to 0.
+     */
+    public synchronized void read(IndexInput input) throws IOException{
+      CodecUtil.checkHeader(input, CODEC_NAME,
+          VERSION_START,
+          VERSION_CURRENT);
+      final int size = input.readVInt();
+      for (int i = 0; i < size; i++) {
+        final int num = input.readVInt();
+        final String name = input.readString();
+        setIfNotSet(num, name);
+      }
+      version = lastVersion = 0;
+    }
+    
+    /**
+     * Returns a new {@link FieldInfos} instance with this as the global field
+     * map
+     * 
+     * @return a new {@link FieldInfos} instance with this as the global field
+     *         map
+     */
+    public FieldInfos newFieldInfos(SegmentCodecsBuilder segmentCodecsBuilder) {
+      return new FieldInfos(this, segmentCodecsBuilder);
+    }
+
+    /**
+     * Returns <code>true</code> iff the last committed version differs from the
+     * current version, otherwise <code>false</code>
+     * 
+     * @return <code>true</code> iff the last committed version differs from the
+     *         current version, otherwise <code>false</code>
+     */
+    public synchronized boolean isDirty() {
+      return lastVersion != version;
+    }
+    
+    /**
+     * commits the given version if the given version is greater than the previous committed version
+     * 
+     * @param version
+     *          the version to commit
+     * @return <code>true</code> iff the version was successfully committed otherwise <code>false</code>
+     * @see #write(IndexOutput)
+     */
+    public synchronized boolean commitLastVersion(long version) {
+      if (version > lastVersion) {
+        lastVersion = version;
+        return true;
+      }
+      return false;
+    }
+    
+    // just for testing
+    Set<Entry<String, Integer>> entries() {
+      return new HashSet<Entry<String, Integer>>(nameToNumber.entrySet());
+    }
+    
+    // used by assert
+    synchronized boolean containsConsistent(Integer number, String name) {
+      return name.equals(numberToName.get(number))
+          && number.equals(nameToNumber.get(name));
+    }
+  }
+  
+  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final FieldNumberBiMap globalFieldNumbers;
+  private final SegmentCodecsBuilder segmentCodecsBuilder;
+  
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
   public static final int FORMAT_PER_FIELD_CODEC = -3;
@@ -52,22 +214,55 @@ public final class FieldInfos {
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
-  
-  private final ArrayList<FieldInfo> byNumber = new ArrayList<FieldInfo>();
-  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+
   private int format;
 
+  /**
+   * Creates a new {@link FieldInfos} instance with a private
+   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} and a default {@link SegmentCodecsBuilder}
+   * initialized with {@link CodecProvider#getDefault()}.
+   * <p>
+   * Note: this ctor should not be used during indexing use
+   * {@link FieldInfos#FieldInfos(FieldInfos)} or
+   * {@link FieldInfos#FieldInfos(FieldNumberBiMap,org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder)}
+   * instead.
+   */
   public FieldInfos() {
+    this(new FieldNumberBiMap(), SegmentCodecsBuilder.create(CodecProvider.getDefault()));
+  }
+  
+  /**
+   * Creates a new {@link FieldInfo} instance from the given instance. If the given instance is
+   * read-only this instance will be read-only too.
+   * 
+   * @see #isReadOnly()
+   */
+  FieldInfos(FieldInfos other) {
+    this(other.globalFieldNumbers, other.segmentCodecsBuilder);
+  }
+  
+  /**
+   * Creates a new FieldInfos instance with the given {@link FieldNumberBiMap}. 
+   * If the {@link FieldNumberBiMap} is <code>null</code> this instance will be read-only.
+   * @see #isReadOnly()
+   */
+  FieldInfos(FieldNumberBiMap globalFieldNumbers, SegmentCodecsBuilder segmentCodecsBuilder) {
+    this.globalFieldNumbers = globalFieldNumbers;
+    this.segmentCodecsBuilder = segmentCodecsBuilder;
   }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
-   * IndexInput
+   * IndexInput. 
+   * <p>
+   * Note: The created instance will be read-only
+   * 
    * @param d The directory to open the IndexInput from
    * @param name The name of the file to open the IndexInput from in the Directory
    * @throws IOException
    */
   public FieldInfos(Directory d, String name) throws IOException {
+    this((FieldNumberBiMap)null, null); // use null here to make this FIs Read-Only
     IndexInput input = d.openInput(name);
     try {
       read(input, name);
@@ -75,36 +270,45 @@ public final class FieldInfos {
       input.close();
     }
   }
+  
+  /**
+   * adds the given field to this FieldInfos name / number mapping. The given FI
+   * must be present in the global field number mapping before this method it
+   * called
+   */
+  private void putInternal(FieldInfo fi) {
+    assert !byNumber.containsKey(fi.number);
+    assert !byName.containsKey(fi.name);
+    assert globalFieldNumbers == null || globalFieldNumbers.containsConsistent(Integer.valueOf(fi.number), fi.name);
+    byNumber.put(fi.number, fi);
+    byName.put(fi.name, fi);
+  }
+  
+  private int nextFieldNumber(String name, int preferredFieldNumber) {
+    // get a global number for this field
+    final int fieldNumber = globalFieldNumbers.addOrGet(name,
+        preferredFieldNumber);
+    assert byNumber.get(fieldNumber) == null : "field number " + fieldNumber
+        + " already taken";
+    return fieldNumber;
+  }
 
   /**
    * Returns a deep clone of this FieldInfos instance.
    */
   @Override
   synchronized public Object clone() {
-    FieldInfos fis = new FieldInfos();
-    final int numField = byNumber.size();
-    for(int i=0;i<numField;i++) {
-      FieldInfo fi = (FieldInfo) ( byNumber.get(i)).clone();
-      fis.byNumber.add(fi);
-      fis.byName.put(fi.name, fi);
+    FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentCodecsBuilder);
+    for (FieldInfo fi : this) {
+      FieldInfo clone = (FieldInfo) (fi).clone();
+      fis.putInternal(clone);
     }
     return fis;
   }
 
-  /** Adds field info for a Document. */
-  synchronized public void add(Document doc) {
-    List<Fieldable> fields = doc.getFields();
-    for (Fieldable field : fields) {
-      add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
-    }
-  }
-
   /** Returns true if any fields do not omitTermFreqAndPositions */
   public boolean hasProx() {
-    final int numFields = byNumber.size();
-    for(int i=0;i<numFields;i++) {
-      final FieldInfo fi = fieldInfo(i);
+    for (FieldInfo fi : this) {
       if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
         return true;
       }
@@ -113,17 +317,17 @@ public final class FieldInfos {
   }
   
   /**
-   * Add fields that are indexed. Whether they have termvectors has to be specified.
+   * Adds or updates fields that are indexed. Whether they have termvectors has to be specified.
    * 
    * @param names The names of the fields
    * @param storeTermVectors Whether the fields store term vectors or not
    * @param storePositionWithTermVector true if positions should be stored.
    * @param storeOffsetWithTermVector true if offsets should be stored
    */
-  synchronized public void addIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
+  synchronized public void addOrUpdateIndexed(Collection<String> names, boolean storeTermVectors, boolean storePositionWithTermVector, 
                          boolean storeOffsetWithTermVector) {
     for (String name : names) {
-      add(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
+      addOrUpdate(name, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
     }
   }
 
@@ -133,11 +337,11 @@ public final class FieldInfos {
    * @param names The names of the fields
    * @param isIndexed Whether the fields are indexed or not
    * 
-   * @see #add(String, boolean)
+   * @see #addOrUpdate(String, boolean)
    */
-  synchronized public void add(Collection<String> names, boolean isIndexed) {
+  synchronized public void addOrUpdate(Collection<String> names, boolean isIndexed) {
     for (String name : names) {
-      add(name, isIndexed);
+      addOrUpdate(name, isIndexed);
     }
   }
 
@@ -146,10 +350,10 @@ public final class FieldInfos {
    * 
    * @param name The name of the Fieldable
    * @param isIndexed true if the field is indexed
-   * @see #add(String, boolean, boolean, boolean, boolean)
+   * @see #addOrUpdate(String, boolean, boolean, boolean, boolean)
    */
-  synchronized public void add(String name, boolean isIndexed) {
-    add(name, isIndexed, false, false, false, false);
+  synchronized public void addOrUpdate(String name, boolean isIndexed) {
+    addOrUpdate(name, isIndexed, false, false, false, false);
   }
 
   /**
@@ -159,8 +363,8 @@ public final class FieldInfos {
    * @param isIndexed  true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector){
-    add(name, isIndexed, storeTermVector, false, false, false);
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector){
+    addOrUpdate(name, isIndexed, storeTermVector, false, false, false);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -174,10 +378,10 @@ public final class FieldInfos {
    * @param storePositionWithTermVector true if the term vector with positions should be stored
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
 
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
+    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
   }
 
     /** If the field is not yet known, adds it. If it is known, checks to make
@@ -192,9 +396,9 @@ public final class FieldInfos {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    */
-  synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
-    add(name, isIndexed, storeTermVector, storePositionWithTermVector,
+    addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector,
         storeOffsetWithTermVector, omitNorms, false, false);
   }
   
@@ -212,33 +416,56 @@ public final class FieldInfos {
    * @param storePayloads true if payloads should be stored for this field
    * @param omitTermFreqAndPositions true if term freqs should be omitted for this field
    */
-  synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
+  synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
                        boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+    return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
+                               storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+  }
+
+  synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
+      boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
+      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+    if (globalFieldNumbers == null) {
+      throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
+    }
+    assert segmentCodecsBuilder != null : "SegmentCodecsBuilder is set to null but FieldInfos is not read-only";
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
+      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
       fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    }
+    if (fi.isIndexed && fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
+      segmentCodecsBuilder.tryAddAndSet(fi);
     }
     return fi;
   }
 
   synchronized public FieldInfo add(FieldInfo fi) {
-    return add(fi.name, fi.isIndexed, fi.storeTermVector,
+    // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
+    return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
                fi.omitTermFreqAndPositions);
   }
-
-  private FieldInfo addInternal(String name, boolean isIndexed,
+  
+  /*
+   * NOTE: if you call this method from a public method make sure you check if we are modifiable and throw an exception otherwise
+   */
+  private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+    // don't check modifiable here since we use that to initially build up FIs
     name = StringHelper.intern(name);
-    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
+    if (globalFieldNumbers != null) {
+      globalFieldNumbers.setIfNotSet(fieldNumber, name);
+    } 
+    final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-    byNumber.add(fi);
-    byName.put(name, fi);
+
+    putInternal(fi);
     return fi;
   }
 
@@ -248,7 +475,7 @@ public final class FieldInfos {
   }
 
   public FieldInfo fieldInfo(String fieldName) {
-    return  byName.get(fieldName);
+    return byName.get(fieldName);
   }
 
   /**
@@ -259,8 +486,8 @@ public final class FieldInfos {
    * with the given number doesn't exist.
    */  
   public String fieldName(int fieldNumber) {
-	FieldInfo fi = fieldInfo(fieldNumber);
-	return (fi != null) ? fi.name : "";
+  	FieldInfo fi = fieldInfo(fieldNumber);
+  	return (fi != null) ? fi.name : "";
   }
 
   /**
@@ -273,13 +500,18 @@ public final class FieldInfos {
 	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
+  public Iterator<FieldInfo> iterator() {
+    return byNumber.values().iterator();
+  }
+
   public int size() {
+    assert byNumber.size() == byName.size();
     return byNumber.size();
   }
 
   public boolean hasVectors() {
-    for (int i = 0; i < size(); i++) {
-      if (fieldInfo(i).storeTermVector) {
+    for (FieldInfo fi : this) {
+      if (fi.storeTermVector) {
         return true;
       }
     }
@@ -287,12 +519,28 @@ public final class FieldInfos {
   }
 
   public boolean hasNorms() {
-    for (int i = 0; i < size(); i++) {
-      if (!fieldInfo(i).omitNorms) {
+    for (FieldInfo fi : this) {
+      if (!fi.omitNorms) {
         return true;
       }
     }
     return false;
+  }
+  
+  /**
+   * Builds the {@link SegmentCodecs} mapping for this {@link FieldInfos} instance.
+   * @param clearBuilder <code>true</code> iff the internal {@link SegmentCodecsBuilder} must be cleared otherwise <code>false</code>
+   */
+  public SegmentCodecs buildSegmentCodecs(boolean clearBuilder) {
+    if (globalFieldNumbers == null) {
+      throw new IllegalStateException("FieldInfos are read-only no SegmentCodecs available");
+    }
+    assert segmentCodecsBuilder != null;
+    final SegmentCodecs segmentCodecs = segmentCodecsBuilder.build();
+    if (clearBuilder) {
+      segmentCodecsBuilder.clear();
+    }
+    return segmentCodecs;
   }
 
   public void write(Directory d, String name) throws IOException {
@@ -303,12 +551,22 @@ public final class FieldInfos {
       output.close();
     }
   }
+  
+  /**
+   * Returns <code>true</code> iff this instance is not backed by a
+   * {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap}. Instances read from a directory via
+   * {@link FieldInfos#FieldInfos(Directory, String)} will always be read-only
+   * since no {@link org.apache.lucene.index.FieldInfos.FieldNumberBiMap} is supplied, otherwise 
+   * <code>false</code>.
+   */
+  public final boolean isReadOnly() {
+    return globalFieldNumbers == null;
+  }
 
   public void write(IndexOutput output) throws IOException {
     output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
-    for (int i = 0; i < size(); i++) {
-      FieldInfo fi = fieldInfo(i);
+    for (FieldInfo fi : this) {
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -318,7 +576,8 @@ public final class FieldInfos {
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
       if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
       output.writeString(fi.name);
-      output.writeInt(fi.codecId);
+      output.writeInt(fi.number);
+      output.writeInt(fi.getCodecId());
       output.writeByte(bits);
     }
   }
@@ -338,6 +597,7 @@ public final class FieldInfos {
     for (int i = 0; i < size; i++) {
       String name = StringHelper.intern(input.readString());
       // if this is a previous format codec 0 will be preflex!
+      final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
       final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
@@ -347,8 +607,8 @@ public final class FieldInfos {
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
-      final FieldInfo addInternal = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-      addInternal.codecId = codecId;
+      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      addInternal.setCodecId(codecId);
     }
 
     if (input.getFilePointer() != input.length()) {

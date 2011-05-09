@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -58,7 +59,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * The default poly field separator.
    *
-   * @see #createFields(SchemaField, String, float)
+   * @see #createFields(SchemaField, Object, float)
    * @see #isPolyField()
    */
   public static final String POLY_FIELD_SEPARATOR = "___";
@@ -83,11 +84,16 @@ public abstract class FieldType extends FieldProperties {
   public boolean isMultiValued() {
     return (properties & MULTIVALUED) != 0;
   }
+  
+  /** Check if a property is set */
+  protected boolean hasProperty( int p ) {
+    return (properties & p) != 0;
+  }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
+   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
    * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
-   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method may return more than one field
+   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
    */
   public boolean isPolyField(){
     return false;
@@ -223,17 +229,18 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Fieldable createField(SchemaField field, String externalVal, float boost) {
+  public Fieldable createField(SchemaField field, Object value, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
       return null;
     }
+    
     String val;
     try {
-      val = toInternal(externalVal);
+      val = toInternal(value.toString());
     } catch (RuntimeException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
     }
     if (val==null) return null;
 
@@ -272,15 +279,15 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
-   * @param externalVal The value to add to the field
+   * @param value The value to add to the field
    * @param boost The boost to apply
    * @return An array of {@link org.apache.lucene.document.Fieldable}
    *
-   * @see #createField(SchemaField, String, float)
+   * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    Fieldable f = createField( field, externalVal, boost);
+  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+    Fieldable f = createField( field, value, boost);
     return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 
@@ -502,6 +509,34 @@ public abstract class FieldType extends FieldProperties {
     throw e;
   }
 
+  /** @lucene.internal */
+  protected Similarity similarity;
+  
+  /**
+   * Gets the Similarity used when scoring fields of this type
+   * 
+   * <p>
+   * The default implementation returns null, which means this type
+   * has no custom similarity associated with it.
+   * </p>
+   * 
+   * This method exists to internally support SolrSimilarityProvider. 
+   * Custom application code interested in a field's Similarity should
+   * instead query via the searcher's SimilarityProvider.
+   * @lucene.internal
+   */
+  public Similarity getSimilarity() {
+    return similarity;
+  }
+  
+  /**
+   * Sets the Similarity used when scoring fields of this type
+   * @lucene.internal
+   */
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
+  }
+  
   /**
    * calls back to TextResponseWriter to write the field value
    */

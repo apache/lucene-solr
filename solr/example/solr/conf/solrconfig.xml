@@ -1183,12 +1183,10 @@
 
        http://wiki.apache.org/solr/ClusteringComponent
 
-       This relies on third party jars which are notincluded in the
-       release.  To use this component (and the "/clustering" handler)
-       Those jars will need to be downloaded, and you'll need to set
-       the solr.cluster.enabled system property when running solr...
+       You'll need to set the solr.cluster.enabled system property 
+       when running solr to run with clustering enabled:
 
-          java -Dsolr.clustering.enabled=true -jar start.jar
+       java -Dsolr.clustering.enabled=true -jar start.jar
     -->
   <searchComponent name="clustering" 
                    enable="${solr.clustering.enabled:false}"
@@ -1496,6 +1494,28 @@
      <valueSourceParser name="myfunc" 
                         class="com.mycompany.MyValueSourceParser" />
     -->
+    
+  
+  <!-- Document Transformers
+       http://wiki.apache.org/solr/DocTransformers
+    -->
+  <!--
+     Could be something like:
+     <transformer name="db" class="com.mycompany.LoadFromDatabaseTransformer" >
+       <int name="connection">jdbc://....</int>
+     </transformer>
+     
+     To add a constant value to all docs, use:
+     <transformer name="mytrans2" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+       <int name="value">5</int>
+     </transformer>
+     
+     If you want the user to still be able to change it with _value:something_ use this:
+     <transformer name="mytrans3" class="org.apache.solr.response.transform.ValueAugmenterFactory" >
+       <double name="defaultValue">5</double>
+     </transformer>
+    -->
+    
 
   <!-- Legacy config for the admin interface -->
   <admin>

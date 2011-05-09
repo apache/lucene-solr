@@ -77,8 +77,16 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   // *** TermToBytesRefAttribute interface ***
-  public int toBytesRef(BytesRef target) {
-    return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, target);
+  private BytesRef bytes = new BytesRef(MIN_BUFFER_SIZE);
+
+  // not until java 6 @Override
+  public int fillBytesRef() {
+    return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, bytes);
+  }
+
+  // not until java 6 @Override
+  public BytesRef getBytesRef() {
+    return bytes;
   }
   
   // *** CharSequence interface ***
@@ -205,6 +213,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     // Do a deep clone
     t.termBuffer = new char[this.termLength];
     System.arraycopy(this.termBuffer, 0, t.termBuffer, 0, this.termLength);
+    t.bytes = new BytesRef(bytes);
     return t;
   }
   
@@ -246,9 +255,8 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   @Override
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(CharTermAttribute.class, "term", toString());
-    final BytesRef bytes = new BytesRef();
-    toBytesRef(bytes);
-    reflector.reflect(TermToBytesRefAttribute.class, "bytes", bytes);
+    fillBytesRef();
+    reflector.reflect(TermToBytesRefAttribute.class, "bytes", new BytesRef(bytes));
   }
   
   @Override

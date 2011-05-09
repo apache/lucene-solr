@@ -93,16 +93,16 @@ public final class SchemaField extends FieldProperties {
   boolean isBinary() { return (properties & BINARY)!=0; }
 
 
-  public Fieldable createField(String val, float boost) {
+  public Fieldable createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }
   
-  public Fieldable[] createFields(String val, float boost) {
+  public Fieldable[] createFields(Object val, float boost) {
     return type.createFields(this,val,boost);
   }
 
   /**
-   * If true, then use {@link #createFields(String, float)}, else use {@link #createField} to save an extra allocation
+   * If true, then use {@link #createFields(Object, float)}, else use {@link #createField} to save an extra allocation
    * @return true if this field is a poly field
    */
   public boolean isPolyField(){

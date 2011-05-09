@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -35,8 +34,6 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
   
   final boolean primary;
   final DocumentsWriter.DocState docState;
-  // Used by perField to obtain terms from the analysis chain
-  final BytesRef termBytesRef = new BytesRef(10);
 
   public TermsHashPerThread(DocInverterPerThread docInverterPerThread, final TermsHash termsHash, final TermsHash nextTermsHash, final TermsHashPerThread primaryPerThread) {
     docState = docInverterPerThread.docState;

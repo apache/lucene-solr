@@ -97,7 +97,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       searcher = newSearcher(reader);
       
       // set a similarity that does not normalize our boost away
-      searcher.setSimilarityProvider(new DefaultSimilarity() {
+      searcher.setSimilarityProvider(new DefaultSimilarityProvider() {
         @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f;

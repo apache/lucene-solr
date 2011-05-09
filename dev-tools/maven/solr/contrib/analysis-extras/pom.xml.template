@@ -44,9 +44,8 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>solr-core</artifactId>
+      <artifactId>solr-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -78,12 +77,16 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -95,7 +98,7 @@
     <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>test-files</directory>
+        <directory>src/test-files</directory>
       </testResource>
       <testResource>
         <directory>../../src/test-files</directory>

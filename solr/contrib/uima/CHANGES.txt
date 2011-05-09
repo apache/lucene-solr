@@ -18,3 +18,14 @@ AlchemyAPIAnnotator v2.3.1-SNAPSHOT rev. 1062868
 WhitespaceTokenizer v2.3.1-SNAPSHOT rev. 1076132
 
 $Id$
+
+==================  3.2.0-dev ==================
+
+Test Cases:
+
+ * SOLR-2387: add mock annotators for improved testing,
+   (Tommaso Teofili via rmuir)
+
+==================  3.1.0-dev ==================
+
+Initial Release

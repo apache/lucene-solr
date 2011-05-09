@@ -59,6 +59,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
     out.writeInt(FORMAT_CURRENT); // write FORMAT
     out.writeLong(infos.version);
     out.writeInt(infos.counter); // write counter
+    out.writeLong(infos.getGlobalFieldMapVersion());
     out.writeInt(infos.size()); // write infos
     for (SegmentInfo si : infos) {
       si.write(out);

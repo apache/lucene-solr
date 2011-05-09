@@ -73,7 +73,12 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
   }
   
-  public SimilarityProvider sim = new TestSimilarity();
+  public SimilarityProvider sim = new DefaultSimilarityProvider() {
+    @Override
+    public Similarity get(String field) {
+      return new TestSimilarity();
+    }
+  };
   public Directory index;
   public IndexReader r;
   public IndexSearcher s;

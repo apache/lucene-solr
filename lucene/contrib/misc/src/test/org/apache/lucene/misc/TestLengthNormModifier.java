@@ -31,8 +31,10 @@ import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -47,12 +49,17 @@ public class TestLengthNormModifier extends LuceneTestCase {
     public Directory store;
 
     /** inverts the normal notion of lengthNorm */
-    public static SimilarityProvider s = new DefaultSimilarity() {
-        @Override
-        public float computeNorm(FieldInvertState state) {
-          return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
-        }
-      };
+    public static SimilarityProvider s = new DefaultSimilarityProvider() {
+      @Override
+      public Similarity get(String field) {
+        return new DefaultSimilarity() {
+          @Override
+          public float computeNorm(FieldInvertState state) {
+            return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
+          }
+        };
+      }
+    };
     
     @Override
     public void setUp() throws Exception {
@@ -163,12 +170,18 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	}
 
 	// override the norms to be inverted
-	SimilarityProvider s = new DefaultSimilarity() {
-            @Override
-            public float computeNorm(FieldInvertState state) {
-              return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
-            }
-          };
+  SimilarityProvider s = new DefaultSimilarityProvider() {
+    @Override
+    public Similarity get(String field) {
+      return new DefaultSimilarity() {
+        @Override
+        public float computeNorm(FieldInvertState state) {
+          return state.getBoost() * (discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength());
+        }
+      };
+    }
+  };
+
 	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	fnm.reSetNorms("field");
 

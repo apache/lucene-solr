@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ExternalPaths;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -37,7 +38,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   @Override
   public String getSolrHome() {
-    return SolrJettyTestBase.EXAMPLE_MULTICORE_HOME;
+    return ExternalPaths.EXAMPLE_MULTICORE_HOME;
   }
 
   @Override

@@ -38,6 +38,8 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 This product includes the HSQL Database (HSQLDB) 1.8.0.10 jar: http://hsqldb.org/
 License: http://hsqldb.org/web/hsqlLicense.html
 
+This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 
 =========================================================================
 ==  Apache Lucene Notice                                               ==
@@ -240,6 +242,12 @@ Copyright (c) 2003-2005, www.fontbox.org
 Copyright (c) 1995-2005 International Business Machines Corporation and others
 
 Copyright (c) 2000-2005 INRIA, France Telecom
+
+Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
+
+Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
+
+Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
  
 
 =========================================================================

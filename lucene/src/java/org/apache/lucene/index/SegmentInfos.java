@@ -17,25 +17,27 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Vector;
+
+import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.SegmentInfosReader;
-import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.util.ThreadInterruptedException;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Vector;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A collection of segmentInfo objects with methods for operating on
@@ -64,6 +66,11 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * starting with the current time in milliseconds forces to create unique version numbers.
    */
   public long version = System.currentTimeMillis();
+  
+  private long globalFieldMapVersion = 0; // version of the GFNM for the next commit
+  private long lastGlobalFieldMapVersion = 0; // version of the GFNM file we last successfully read or wrote
+  private long pendingMapVersion = -1; // version of the GFNM itself that we have last successfully written
+                                       // or -1 if we it was not written. This is set during prepareCommit 
 
   private long generation = 0;     // generation of the "segments_N" for the next commit
   private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
@@ -75,6 +82,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   private CodecProvider codecs;
 
   private int format;
+  
+  private FieldNumberBiMap globalFieldNumberMap; // this segments global field number map - lazy loaded on demand
 
   /**
    * If non-null, information about loading segments_N files
@@ -171,6 +180,15 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
                                                  "",
                                                  lastGeneration);
   }
+  
+  private String getGlobalFieldNumberName(long version) {
+    /*
+     * This creates a file name ${version}.fnx without a leading underscore
+     * since this file might belong to more than one segment (global map) and
+     * could otherwise easily be confused with a per-segment file.
+     */
+    return IndexFileNames.segmentFileName(""+ version, "", IndexFileNames.GLOBAL_FIELD_NUM_MAP_EXTENSION);
+  }
 
   /**
    * Parse the generation off the segments file name and
@@ -261,6 +279,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         return null;
       }
     }.run();
+    // either we are on 4.0 or we don't have a lastGlobalFieldMapVersion i.e. its still set to 0
+    assert DefaultSegmentInfosWriter.FORMAT_4_0 <= format || (DefaultSegmentInfosWriter.FORMAT_4_0 > format && lastGlobalFieldMapVersion == 0); 
   }
 
   // Only non-null after prepareCommit has been called and
@@ -270,15 +290,24 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   private void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
-
+    final String globalFieldMapFile;
+    if (globalFieldNumberMap != null && globalFieldNumberMap.isDirty()) {
+      globalFieldMapFile = getGlobalFieldNumberName(++globalFieldMapVersion);
+      pendingMapVersion = writeGlobalFieldMap(globalFieldNumberMap, directory, globalFieldMapFile);
+    } else {
+      globalFieldMapFile = null;
+    }
+    
+    
     // Always advance the generation on write:
     if (generation == -1) {
       generation = 1;
     } else {
       generation++;
     }
-
+    
     IndexOutput segnOutput = null;
+    
 
     boolean success = false;
 
@@ -304,6 +333,16 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         } catch (Throwable t) {
           // Suppress so we keep throwing the original exception
         }
+        if (globalFieldMapFile != null) { // delete if written here
+          try {
+            // Try not to leave global field map in
+            // the index:
+            directory.deleteFile(globalFieldMapFile);
+          } catch (Throwable t) {
+            // Suppress so we keep throwing the original exception
+          }
+        }
+        pendingMapVersion = -1;
       }
     }
   }
@@ -719,6 +758,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
     generation = other.generation;
+    lastGlobalFieldMapVersion = other.lastGlobalFieldMapVersion;
+    globalFieldMapVersion = other.globalFieldMapVersion;
   }
 
   final void rollbackCommit(Directory dir) throws IOException {
@@ -742,6 +783,16 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         // in our caller
       }
       pendingSegnOutput = null;
+      if (pendingMapVersion != -1) {
+        try {
+          final String fieldMapName = getGlobalFieldNumberName(globalFieldMapVersion--);
+          dir.deleteFile(fieldMapName);
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
+          // in our caller
+        }
+        pendingMapVersion = -1;
+      }
     }
   }
 
@@ -760,6 +811,40 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       throw new IllegalStateException("prepareCommit was already called");
     write(dir);
   }
+  
+  private final long writeGlobalFieldMap(FieldNumberBiMap map, Directory dir, String name) throws IOException {
+    final IndexOutput output = dir.createOutput(name);
+    boolean success = false;
+    long version;
+    try {
+      version = map.write(output);
+      success = true;
+    } finally {
+      try {
+        output.close();
+      } catch (Throwable t) {
+        // throw orig excp
+      }
+      if (!success) {
+        try {
+          dir.deleteFile(name);
+        } catch (Throwable t) {
+          // throw orig excp
+        }
+      }
+    }
+    return version;
+  }
+  
+  private void readGlobalFieldMap(FieldNumberBiMap map, Directory dir) throws IOException {
+    final String name = getGlobalFieldNumberName(lastGlobalFieldMapVersion);
+    final IndexInput input = dir.openInput(name);
+    try {
+      map.read(input);
+    } finally {
+      input.close();
+    }
+  }
 
   /** Returns all file names referenced by SegmentInfo
    *  instances matching the provided Directory (ie files
@@ -769,7 +854,17 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   public Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
     HashSet<String> files = new HashSet<String>();
     if (includeSegmentsFile) {
-      files.add(getCurrentSegmentFileName());
+      final String segmentFileName = getCurrentSegmentFileName();
+      if (segmentFileName != null) {
+        /*
+         * TODO: if lastGen == -1 we get might get null here it seems wrong to
+         * add null to the files set
+         */
+        files.add(segmentFileName);
+      }
+      if (lastGlobalFieldMapVersion > 0) {
+        files.add(getGlobalFieldNumberName(lastGlobalFieldMapVersion));
+      }
     }
     final int size = size();
     for(int i=0;i<size;i++) {
@@ -821,6 +916,17 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     }
 
     lastGeneration = generation;
+    if (pendingMapVersion != -1) {
+      /*
+       * TODO is it possible that the commit does not succeed here? if another
+       * commit happens at the same time and we lost the race between the
+       * prepareCommit and finishCommit the latest version is already
+       * incremented.
+       */
+      globalFieldNumberMap.commitLastVersion(pendingMapVersion);
+      pendingMapVersion = -1;
+      lastGlobalFieldMapVersion = globalFieldMapVersion;
+    }
 
     try {
       IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN);
@@ -848,6 +954,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     prepareCommit(dir);
     finishCommit(dir);
   }
+  
 
   public synchronized String toString(Directory directory) {
     StringBuilder buffer = new StringBuilder();
@@ -883,6 +990,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     clear();
     addAll(other);
     lastGeneration = other.lastGeneration;
+    lastGlobalFieldMapVersion = other.lastGlobalFieldMapVersion;
+    format = other.format;
   }
 
   /** Returns sum of all segment's docCounts.  Note that
@@ -899,5 +1008,50 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    *  segments. */
   public void changed() {
     version++;
+  }
+  
+  /**
+   * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
+   * If this {@link SegmentInfos} has no global field number map the returned instance is empty
+   */
+  synchronized FieldNumberBiMap getOrLoadGlobalFieldNumberMap(Directory dir) throws IOException {
+    if (globalFieldNumberMap != null) {
+      return globalFieldNumberMap;
+    }
+    final FieldNumberBiMap map  = new FieldNumberBiMap();
+    
+    if (lastGlobalFieldMapVersion > 0) {
+      // if we don't have a global map or this is a SI from a earlier version we just return the empty map;
+      readGlobalFieldMap(map, dir);
+    }
+    if (size() > 0) {
+      if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
+        assert lastGlobalFieldMapVersion == 0;
+        // build the map up if we open a pre 4.0 index
+        for (SegmentInfo info : this) {
+          final FieldInfos segFieldInfos = info.getFieldInfos();
+          for (FieldInfo fi : segFieldInfos) {
+            map.addOrGet(fi.name, fi.number);
+          }
+        }
+      }
+    }
+    return globalFieldNumberMap = map;
+  }
+
+  /**
+   * Called by {@link SegmentInfosReader} when reading the global field map version
+   */
+  public void setGlobalFieldMapVersion(long version) {
+    lastGlobalFieldMapVersion = globalFieldMapVersion = version;
+  }
+
+  public long getGlobalFieldMapVersion() {
+    return globalFieldMapVersion;
+  }
+  
+  // for testing
+  long getLastGlobalFieldMapVersion() {
+    return lastGlobalFieldMapVersion;
   }
 }

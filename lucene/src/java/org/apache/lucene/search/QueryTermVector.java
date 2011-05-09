@@ -66,10 +66,10 @@ public class QueryTermVector implements TermFreqVector {
           final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
 
           hasMoreTokens = stream.incrementToken();
+          BytesRef bytes = termAtt.getBytesRef();
           while (hasMoreTokens) {
-            BytesRef bytes = new BytesRef();
-            termAtt.toBytesRef(bytes);
-            terms.add(bytes);
+            termAtt.fillBytesRef();
+            terms.add(new BytesRef(bytes));
             hasMoreTokens = stream.incrementToken();
           }
           processTerms(terms.toArray(new BytesRef[terms.size()]));

@@ -733,6 +733,29 @@ public class CheckIndex {
               throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
             }
           }
+
+          // Test skipping
+          if (docFreq >= 16) {
+            for(int idx=0;idx<7;idx++) {
+              final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+              docs = terms.docs(delDocs, docs);
+              final int docID = docs.advance(skipDocID);
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              } else {
+                if (docID < skipDocID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+                }
+                final int nextDocID = docs.nextDoc();
+                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                  break;
+                }
+                if (nextDocID <= docID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
+                }
+              }
+            }
+          }
         }
 
         if (sumTotalTermFreq != 0) {

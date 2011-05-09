@@ -20,9 +20,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.lang.reflect.Constructor;
 
 /**
@@ -54,20 +52,32 @@ public class NewAnalyzerTask extends PerfTask {
   public int doLogic() throws IOException {
     String className = null;
     try {
-      if (current >= analyzerClassNames.size())
-      {
+      if (current >= analyzerClassNames.size()) {
         current = 0;
       }
       className = analyzerClassNames.get(current++);
-      if (className == null || className.equals(""))
-      {
-        className = "org.apache.lucene.analysis.standard.StandardAnalyzer"; 
+      Analyzer analyzer = null;
+      if (null == className || 0 == className.length()) {
+        className = "org.apache.lucene.analysis.standard.StandardAnalyzer";
       }
-      if (className.indexOf(".") == -1  || className.startsWith("standard."))//there is no package name, assume o.a.l.analysis
-      {
-        className = "org.apache.lucene.analysis." + className;
+      if (-1 == className.indexOf(".")) {
+        try {
+          // If no package, first attempt to instantiate a core analyzer
+          String coreClassName = "org.apache.lucene.analysis.core." + className;
+          analyzer = createAnalyzer(coreClassName);
+          className = coreClassName;
+        } catch (ClassNotFoundException e) {
+          // If not a core analyzer, try the base analysis package 
+          className = "org.apache.lucene.analysis." + className;
+          analyzer = createAnalyzer(className);
+        }
+      } else {
+        if (className.startsWith("standard.")) {
+          className = "org.apache.lucene.analysis." + className;
+        }
+        analyzer = createAnalyzer(className);
       }
-      getRunData().setAnalyzer(createAnalyzer(className));
+      getRunData().setAnalyzer(analyzer);
       System.out.println("Changed Analyzer to: " + className);
     } catch (Exception e) {
       throw new RuntimeException("Error creating Analyzer: " + className, e);

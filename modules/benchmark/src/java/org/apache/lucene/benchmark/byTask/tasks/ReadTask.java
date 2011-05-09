@@ -30,6 +30,7 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.MultiTermQuery;
@@ -95,9 +96,9 @@ public abstract class ReadTask extends PerfTask {
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
-      Bits delDocs = reader.getDeletedDocs();
+      Bits delDocs = MultiFields.getDeletedDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
-        if (!delDocs.get(m)) {
+        if (null == delDocs || ! delDocs.get(m)) {
           doc = reader.document(m);
           res += (doc == null ? 0 : 1);
         }

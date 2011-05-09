@@ -25,10 +25,4 @@ abstract class TermsHashConsumer {
   abstract TermsHashConsumerPerThread addThread(TermsHashPerThread perThread);
   abstract void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException;
   abstract void abort();
-
-  FieldInfos fieldInfos;
-
-  void setFieldInfos(FieldInfos fieldInfos) {
-    this.fieldInfos = fieldInfos;
   }
-}

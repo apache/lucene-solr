@@ -43,9 +43,9 @@ public class OverridingParamsAEProvider implements AEProvider {
 
   private AnalysisEngine cachedAE;
 
-  private Map<String, String> runtimeParameters;
+  private Map<String, Object> runtimeParameters;
 
-  public OverridingParamsAEProvider(String aeFilePath, Map<String, String> runtimeParameters) {
+  public OverridingParamsAEProvider(String aeFilePath, Map<String, Object> runtimeParameters) {
     this.aeFilePath = aeFilePath;
     this.runtimeParameters = runtimeParameters;
   }
@@ -63,9 +63,11 @@ public class OverridingParamsAEProvider implements AEProvider {
 
         /* iterate over each AE (to set runtime parameters) */
         for (String attributeName : runtimeParameters.keySet()) {
+          Object val = getRuntimeValue(desc, attributeName);
           desc.getAnalysisEngineMetaData().getConfigurationParameterSettings().setParameterValue(
-                  attributeName, runtimeParameters.get(attributeName));
-          log.info(new StringBuilder("setting ").append(attributeName).append(" : ").append(
+                  attributeName, val);
+          if (log.isDebugEnabled())
+            log.debug(new StringBuilder("setting ").append(attributeName).append(" : ").append(
                   runtimeParameters.get(attributeName)).toString());
         }
         // create AE here
@@ -84,6 +86,32 @@ public class OverridingParamsAEProvider implements AEProvider {
       throw new ResourceInitializationException(e);
     }
     return cachedAE;
+  }
+
+  /* create the value to inject in the runtime parameter depending on its declared type */
+  private Object getRuntimeValue(AnalysisEngineDescription desc, String attributeName)
+          throws ClassNotFoundException {
+    String type = desc.getAnalysisEngineMetaData().getConfigurationParameterDeclarations().
+                    getConfigurationParameter(null, attributeName).getType();
+    // TODO : do it via reflection ? i.e. Class paramType = Class.forName(type)...
+    Object val = null;
+    Object runtimeValue = runtimeParameters.get(attributeName);
+    if (runtimeValue!=null) {
+      if ("String".equals(type)) {
+        val = String.valueOf(runtimeValue);
+      }
+      else if ("Integer".equals(type)) {
+        val = Integer.valueOf(runtimeValue.toString());
+      }
+      else if ("Boolean".equals(type)) {
+        val = Boolean.valueOf(runtimeValue.toString());
+      }
+      else if ("Float".equals(type)) {
+        val = Float.valueOf(runtimeValue.toString());
+      }
+    }
+
+    return val;
   }
 
 }

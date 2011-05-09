@@ -23,14 +23,14 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
+import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -80,7 +80,7 @@ public class TestCodecs extends LuceneTestCase {
     public FieldData(final String name, final FieldInfos fieldInfos, final TermData[] terms, final boolean omitTF, final boolean storePayloads) {
       this.omitTF = omitTF;
       this.storePayloads = storePayloads;
-      fieldInfos.add(name, true);
+      fieldInfos.addOrUpdate(name, true);
       fieldInfo = fieldInfos.fieldInfo(name);
       fieldInfo.omitTermFreqAndPositions = omitTF;
       fieldInfo.storePayloads = storePayloads;
@@ -238,8 +238,9 @@ public class TestCodecs extends LuceneTestCase {
     final FieldData[] fields = new FieldData[] {field};
 
     final Directory dir = newDirectory();
+    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos.hasVectors(), clonedFieldInfos);
     si.setHasProx(false);
 
     final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
@@ -289,8 +290,10 @@ public class TestCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now write postings");
     }
+
+    FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, SegmentCodecs.build(fieldInfos, CodecProvider.getDefault()), fieldInfos.hasVectors());
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true,  clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos.hasVectors(), clonedFieldInfos);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
@@ -439,8 +442,8 @@ public class TestCodecs extends LuceneTestCase {
       for(int iter=0;iter<NUM_TEST_ITER;iter++) {
         final FieldData field = fields[TestCodecs.random.nextInt(fields.length)];
         final TermsEnum termsEnum = termsDict.terms(field.fieldInfo.name).iterator();
-
-        if (si.getSegmentCodecs().codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
+        assertTrue(field.fieldInfo.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID);
+        if (si.getSegmentCodecs().codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
           // code below expects unicode sort order
           continue;
         }
@@ -588,13 +591,14 @@ public class TestCodecs extends LuceneTestCase {
   private void write(final FieldInfos fieldInfos, final Directory dir, final FieldData[] fields, boolean allowPreFlex) throws Throwable {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
-    final SegmentCodecs codecInfo = SegmentCodecs.build(fieldInfos, CodecProvider.getDefault());
+    final SegmentCodecs codecInfo =  fieldInfos.buildSegmentCodecs(false);
     final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null);
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);
     for (final FieldData field : fields) {
-      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.codecId] instanceof PreFlexCodec) {
+      assertTrue(field.fieldInfo.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID);
+      if (!allowPreFlex && codecInfo.codecs[field.fieldInfo.getCodecId()] instanceof PreFlexCodec) {
         // code below expects unicode sort order
         continue;
       }

@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.util.ByteUtils;
 
 import org.apache.noggit.CharArr;
 
@@ -141,12 +140,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     final Set<BytesRef> tokens = new HashSet<BytesRef>();
     final TokenStream tokenStream = analyzer.tokenStream("", new StringReader(query));
     final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+    final BytesRef bytes = bytesAtt.getBytesRef();
     try {
       tokenStream.reset();
       while (tokenStream.incrementToken()) {
-        final BytesRef bytes = new BytesRef();
-        bytesAtt.toBytesRef(bytes);
-        tokens.add(bytes);
+        bytesAtt.fillBytesRef();
+        tokens.add(new BytesRef(bytes));
       }
     } catch (IOException ioe) {
       throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
@@ -236,12 +235,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     FieldType fieldType = context.getFieldType();
 
-    final BytesRef rawBytes = new BytesRef();
     final CharArr textBuf = new CharArr();
     for (int i = 0, c = tokens.size(); i < c; i++) {
       AttributeSource token = tokens.get(i);
       final NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
-      token.getAttribute(TermToBytesRefAttribute.class).toBytesRef(rawBytes);
+      final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
+      BytesRef rawBytes = termAtt.getBytesRef();
+      termAtt.fillBytesRef();
 
       textBuf.reset();
       fieldType.indexedToReadable(rawBytes, textBuf);

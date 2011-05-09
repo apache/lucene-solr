@@ -21,6 +21,7 @@ import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
@@ -33,15 +34,23 @@ import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 public class Algorithm {
   
   private TaskSequence sequence;
+  private final String[] taskPackages;
   
   /**
    * Read algorithm from file
+   * Property examined: alt.tasks.packages == comma separated list of 
+   * alternate package names where tasks would be searched for, when not found 
+   * in the default package (that of {@link PerfTask}{@link #getClass()}).
+   * If the same task class appears in more than one package, the package 
+   * indicated first in this list will be used.
    * @param runData perf-run-data used at running the tasks.
    * @throws Exception if errors while parsing the algorithm 
    */
   @SuppressWarnings("fallthrough")
   public Algorithm (PerfRunData runData) throws Exception {
-    String algTxt = runData.getConfig().getAlgorithmText();
+    Config config = runData.getConfig();
+    taskPackages = initTasksPackages(config);
+    String algTxt = config.getAlgorithmText();
     sequence = new TaskSequence(runData,null,null,false);
     TaskSequence currSequence = sequence;
     PerfTask prevTask = null;
@@ -55,14 +64,13 @@ public class Algorithm {
     boolean colonOk = false; 
     boolean isDisableCountNextTask = false; // only for primitive tasks
     currSequence.setDepth(0);
-    String taskPackage = PerfTask.class.getPackage().getName() + ".";
     
     while (stok.nextToken() != StreamTokenizer.TT_EOF) { 
       switch(stok.ttype) {
   
         case StreamTokenizer.TT_WORD:
           String s = stok.sval;
-          Constructor<? extends PerfTask> cnstr = Class.forName(taskPackage+s+"Task")
+          Constructor<? extends PerfTask> cnstr = taskClass(config,s)
             .asSubclass(PerfTask.class).getConstructor(PerfRunData.class);
           PerfTask task = cnstr.newInstance(runData);
           task.setDisableCounting(isDisableCountNextTask);
@@ -248,9 +256,33 @@ public class Algorithm {
     }
   }
 
-  /* (non-Javadoc)
-   * @see java.lang.Object#toString()
-   */
+  private String[] initTasksPackages(Config config) {
+    String alts = config.get("alt.tasks.packages", null);
+    String dfltPkg = PerfTask.class.getPackage().getName();
+    if (alts==null) {
+      return new String[]{ dfltPkg };
+    }
+    ArrayList<String> pkgs = new ArrayList<String>();
+    pkgs.add(dfltPkg);
+    for (String alt : alts.split(",")) {
+      pkgs.add(alt);
+    }
+    return pkgs.toArray(new String[0]);
+  }
+
+  private Class<?> taskClass(Config config, String taskName)
+      throws ClassNotFoundException {
+    for (String pkg : taskPackages) {
+      try {
+        return Class.forName(pkg+'.'+taskName+"Task");
+      } catch (ClassNotFoundException e) {
+        // failed in this package, might succeed in the next one... 
+      }
+    }
+    // can only get here if failed to instantiate
+    throw new ClassNotFoundException(taskName+" not found in packages "+Arrays.toString(taskPackages));
+  }
+
   @Override
   public String toString() {
     String newline = System.getProperty("line.separator");

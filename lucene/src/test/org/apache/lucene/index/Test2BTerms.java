@@ -74,12 +74,14 @@ public class Test2BTerms extends LuceneTestCase {
     }
 
     private final static class MyTermAttributeImpl extends AttributeImpl implements TermToBytesRefAttribute {
-      public int toBytesRef(BytesRef bs) {
-        bs.bytes = bytes.bytes;
-        bs.offset = bytes.offset;
-        bs.length = bytes.length;
+      public int fillBytesRef() {
         return bytes.hashCode();
       }
+      
+      public BytesRef getBytesRef() {
+        return bytes;
+      }
+
       @Override
       public void clear() {
       }

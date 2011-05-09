@@ -26,6 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrJettyTestBase;
+import org.apache.solr.util.ExternalPaths;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
@@ -47,13 +48,13 @@ public class JettyWebappTest extends LuceneTestCase
   public void setUp() throws Exception 
   {
     super.setUp();
-    System.setProperty("solr.solr.home", SolrJettyTestBase.EXAMPLE_HOME);
+    System.setProperty("solr.solr.home", ExternalPaths.EXAMPLE_HOME);
     
     File dataDir = new File(SolrTestCaseJ4.TEMP_DIR,
         getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
-    String path = SolrJettyTestBase.WEBAPP_HOME;
+    String path = ExternalPaths.WEBAPP_HOME;
 
     server = new Server(port);
     // insecure: only use for tests!!!!

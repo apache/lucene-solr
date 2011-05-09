@@ -38,17 +38,16 @@ import org.apache.lucene.store.IndexOutput;
  * {@link SegmentWriteState} for each flush and is maintained in the
  * corresponding {@link SegmentInfo} until it is committed.
  * <p>
- * {@link SegmentCodecs#build(FieldInfos, CodecProvider)} should be used to
- * create a {@link SegmentCodecs} instance during {@link IndexWriter} sessions
- * which creates the ordering of distinct codecs and assigns the
- * {@link FieldInfo#codecId} or in other words, the ord of the codec maintained
- * inside {@link SegmentCodecs}, to the {@link FieldInfo}. This ord is valid
- * only until the current segment is flushed and {@link FieldInfos} for that
- * segment are written including the ord for each field. This ord is later used
- * to get the right codec when the segment is opened in a reader. The
- * {@link Codec} returned from {@link SegmentCodecs#codec()} in turn uses
- * {@link SegmentCodecs} internal structure to select and initialize the right
- * codec for a fields when it is written.
+ * During indexing {@link FieldInfos} uses {@link SegmentCodecsBuilder} to incrementally
+ * build the {@link SegmentCodecs} mapping. Once a segment is flushed
+ * DocumentsWriter creates a {@link SegmentCodecs} instance from
+ * {@link FieldInfos#buildSegmentCodecs(boolean)} The {@link FieldInfo#codecId}
+ * assigned by {@link SegmentCodecsBuilder} refers to the codecs ordinal
+ * maintained inside {@link SegmentCodecs}. This ord is later used to get the
+ * right codec when the segment is opened in a reader.The {@link Codec} returned
+ * from {@link SegmentCodecs#codec()} in turn uses {@link SegmentCodecs}
+ * internal structure to select and initialize the right codec for a fields when
+ * it is written.
  * <p>
  * Once a flush succeeded the {@link SegmentCodecs} is maintained inside the
  * {@link SegmentInfo} for the flushed segment it was created for.
@@ -64,36 +63,17 @@ final class SegmentCodecs implements Cloneable {
    * internal structure to map codecs to fields - don't modify this from outside
    * of this class!
    */
-  Codec[] codecs;
+  final Codec[] codecs;
   final CodecProvider provider;
   private final Codec codec = new PerFieldCodecWrapper(this);
-
+  
+  SegmentCodecs(CodecProvider provider, IndexInput input) throws IOException {
+    this(provider, read(input, provider));
+  }
+  
   SegmentCodecs(CodecProvider provider, Codec... codecs) {
     this.provider = provider;
     this.codecs = codecs;
-  }
-
-  static SegmentCodecs build(FieldInfos infos, CodecProvider provider) {
-    final int size = infos.size();
-    final Map<Codec, Integer> codecRegistry = new IdentityHashMap<Codec, Integer>();
-    final ArrayList<Codec> codecs = new ArrayList<Codec>();
-
-    for (int i = 0; i < size; i++) {
-      final FieldInfo info = infos.fieldInfo(i);
-      if (info.isIndexed) {
-        final Codec fieldCodec = provider.lookup(provider
-            .getFieldCodec(info.name));
-        Integer ord = codecRegistry.get(fieldCodec);
-        if (ord == null) {
-          ord = Integer.valueOf(codecs.size());
-          codecRegistry.put(fieldCodec, ord);
-          codecs.add(fieldCodec);
-        }
-        info.codecId = ord.intValue();
-      }
-    }
-    return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));
-
   }
 
   Codec codec() {
@@ -107,7 +87,7 @@ final class SegmentCodecs implements Cloneable {
     }
   }
 
-  void read(IndexInput in) throws IOException {
+  private static Codec[] read(IndexInput in, CodecProvider provider) throws IOException {
     final int size = in.readVInt();
     final ArrayList<Codec> list = new ArrayList<Codec>();
     for (int i = 0; i < size; i++) {
@@ -115,7 +95,7 @@ final class SegmentCodecs implements Cloneable {
       final Codec lookup = provider.lookup(codecName);
       list.add(i, lookup);
     }
-    codecs = list.toArray(Codec.EMPTY);
+    return list.toArray(Codec.EMPTY);
   }
 
   void files(Directory dir, SegmentInfo info, Set<String> files)
@@ -130,5 +110,59 @@ final class SegmentCodecs implements Cloneable {
   @Override
   public String toString() {
     return "SegmentCodecs [codecs=" + Arrays.toString(codecs) + ", provider=" + provider + "]";
+  }
+  
+  /**
+   * Used in {@link FieldInfos} to incrementally build the codec ID mapping for
+   * {@link FieldInfo} instances.
+   * <p>
+   * Note: this class is not thread-safe
+   * </p>
+   * @see FieldInfo#getCodecId()
+   */
+  final static class SegmentCodecsBuilder {
+    private final Map<Codec, Integer> codecRegistry = new IdentityHashMap<Codec, Integer>();
+    private final ArrayList<Codec> codecs = new ArrayList<Codec>();
+    private final CodecProvider provider;
+
+    private SegmentCodecsBuilder(CodecProvider provider) {
+      this.provider = provider;
+    }
+    
+    static SegmentCodecsBuilder create(CodecProvider provider) {
+      return new SegmentCodecsBuilder(provider);
+    }
+    
+    SegmentCodecsBuilder tryAddAndSet(FieldInfo fi) {
+      if (fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
+        final Codec fieldCodec = provider.lookup(provider
+            .getFieldCodec(fi.name));
+        Integer ord = codecRegistry.get(fieldCodec);
+        if (ord == null) {
+          ord = Integer.valueOf(codecs.size());
+          codecRegistry.put(fieldCodec, ord);
+          codecs.add(fieldCodec);
+        }
+        fi.setCodecId(ord.intValue());
+      }
+      return this;
+    }
+    
+    SegmentCodecsBuilder addAll(FieldInfos infos) {
+      for (FieldInfo fieldInfo : infos) {
+        tryAddAndSet(fieldInfo);
+      }
+      return this;
+    }
+    
+    SegmentCodecs build() {
+      return new SegmentCodecs(provider, codecs.toArray(Codec.EMPTY));
+    }
+    
+    SegmentCodecsBuilder clear() {
+      codecRegistry.clear();
+      codecs.clear();
+      return this;
+    }
   }
 }

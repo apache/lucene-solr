@@ -42,6 +42,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.schema.IndexSchema;
@@ -558,7 +559,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get("response");
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
@@ -580,7 +581,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get("response");
+    DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     DocIterator di = dl.iterator();    
     org.apache.lucene.document.Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy

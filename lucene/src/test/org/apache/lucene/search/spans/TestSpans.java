@@ -17,11 +17,13 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -410,10 +412,14 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < leaves.length; i++) {
       
      
-      final SimilarityProvider sim = new DefaultSimilarity() {
-        @Override
-        public float sloppyFreq(int distance) {
-          return 0.0f;
+      final SimilarityProvider sim = new DefaultSimilarityProvider() {
+        public Similarity get(String field) {
+          return new DefaultSimilarity() {
+            @Override
+            public float sloppyFreq(int distance) {
+              return 0.0f;
+            }
+          };
         }
       };
   

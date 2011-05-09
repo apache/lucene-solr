@@ -27,6 +27,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.transform.TransformerFactory;
 
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
@@ -190,6 +191,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(QParserPlugin.class,"queryParser",true, true);
      loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",true, true);
      loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
+     loadPluginInfo(TransformerFactory.class,"transformer",true, true);
      loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
      loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
 
@@ -396,7 +398,7 @@ public class SolrConfig extends Config {
    * @param type The key is FQN of the plugin class there are a few  known types : SolrFormatter, SolrFragmenter
    * SolrRequestHandler,QParserPlugin, QueryResponseWriter,ValueSourceParser,
    * SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
-   * IndexDeletionPolicy, IndexReaderFactory
+   * IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
   public List<PluginInfo> getPluginInfos(String  type){
     List<PluginInfo> result = pluginStore.get(type);

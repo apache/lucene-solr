@@ -389,7 +389,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
       gotExpectedException = true;
     }
     assertTrue("Should have gotten NoMoreDataException!", gotExpectedException);
-    assertEquals("Wrong numbre of documents created by osurce!",5,n);
+    assertEquals("Wrong number of documents created by source!",5,n);
     assertTrue("Did not see all types!",unseenTypes.isEmpty());
   }
 

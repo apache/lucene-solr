@@ -27,7 +27,8 @@ abstract class DocConsumerPerThread {
    *  DocumentsWriter.DocWriter and return it.
    *  DocumentsWriter then calls finish() on this object
    *  when it's its turn. */
-  abstract DocumentsWriter.DocWriter processDocument() throws IOException;
+  abstract DocumentsWriter.DocWriter processDocument(FieldInfos fieldInfos) throws IOException;
 
+  abstract void doAfterFlush();
   abstract void abort();
 }

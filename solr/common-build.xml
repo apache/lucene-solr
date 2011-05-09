@@ -22,6 +22,7 @@
   </description>
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
+  <import file="${common-solr.dir}/../common-build.xml"/>
   
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
   <property name="tests.luceneMatchVersion" value="4.0"/>
@@ -34,7 +35,7 @@
   <property name="name" value="${ant.project.name}"/>
 
   <property name="dev-tools.dir" value="${solr-path}/../dev-tools"/>
-  <property name="prettify.dir" value="${dev-tools.dir}/prettify"/>
+  <property name="prettify.dir" value="${solr-path}/../lucene/src/tools/prettify"/>
   <property name="package.dir" location="package"/>
 
   <tstamp>
@@ -81,6 +82,7 @@
     default PATH. (this is useful for Hudson)
   -->
   <property name="svnversion.exe" value="svnversion" />
+  <property name="svn.exe" value="svn" />
 
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.6" />
@@ -328,6 +330,7 @@
     </sequential>
   </macrodef>
 
+  <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
     <attribute name="destdir"/>
@@ -337,6 +340,7 @@
       <copy todir="@{destdir}/prettify" overwrite="false">
         <fileset dir="${prettify.dir}"/>
       </copy>
+      <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           packagenames="org.apache.solr.*"
           failonerror="true"
@@ -371,6 +375,24 @@
 
         <classpath refid="javadoc.classpath"/>
       </javadoc>
+      <record name="@{destdir}/log_javadoc.txt" action="stop"/>
+
+      <delete>
+        <fileset file="@{destdir}/log_javadoc.txt">
+          <not>
+           <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*[\s]*warning"/>
+          </not>
+        </fileset>
+      </delete>
+
+      <fail message="Javadocs warnings were found!" >
+        <condition>
+          <and>
+            <available file="@{destdir}/log_javadoc.txt"/>
+            <istrue value="${failonjavadocwarning}"/>
+          </and>
+        </condition>
+      </fail>
    </sequential>
   </macrodef>
 
@@ -412,6 +434,8 @@
     </sequential>
   </macrodef>
 
+  <property name="gpg.exe" value="gpg" />
+  <property name="gpg.key" value="CODE SIGNING KEY" />
   <macrodef name="sign-artifact" description="Signs the artifact">
     <attribute name="input.file"/>
     <attribute name="output.file" default="@{input.file}.asc"/>
@@ -419,10 +443,13 @@
     <sequential>
       <echo >Signing @{input.file} Sig File: @{output.file}</echo>
 
-      <exec executable="gpg" >
+      <exec executable="${gpg.exe}" >
+        <arg value="--batch"/>
         <arg value="--armor"/>
         <arg value="--output"/>
         <arg value="@{output.file}"/>
+        <arg value="--default-key"/>
+        <arg value="${gpg.key}"/>
         <arg value="--passphrase"/>
         <arg value="@{gpg.passphrase}"/>
         <arg value="--detach-sig"/>
@@ -560,13 +587,52 @@
   </target>
 
   <target name="maven.ant.tasks-check">
-    <fail unless="maven.ant.tasks.present">
-      ##################################################################
+    <fail unless="maven.ant.tasks.present">#
+    ##########################################################################
       Maven ant tasks not found.
-      Please make sure the maven-ant-tasks jar is in ANT_HOME/lib, or made
-      available to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
+
+      Please download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar)
+      from http://maven.apache.org/ant-tasks/download.html and add it to your
+      $$HOME/.ant/lib/ directory, or to your $$ANT_HOME/lib/ directory, or
+      to your $$CLASSPATH, or add "-lib /path/to/maven-ant-tasks-2.1.1.jar"
+      to the ant command.
+    ##########################################################################
     </fail>
+  </target>
+  <!-- Validation -->
+  <target name="validate" depends="validate-solr"/>
+  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>
+
+  <target name="check-legal-solr" depends="compile-tools">
+    <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
+      <classpath>
+        <path refid="tools.runtime.classpath" />
+      </classpath>
+      <!-- TODO: it might be better to just automatically find all directories that contain jar files, but that could take a
+       long time.  This should be faster, but we could miss a directory
+       -->
+      <!-- Solr -->
+      <arg value="-c" />
+      <arg value="${basedir}/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/analysis-extras/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/clustering/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/dataimporthandler/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/extraction/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/contrib/uima/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example-DIH/solr/db/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example-DIH/solr/mail/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/example/example/lib" />
+      <arg value="-c" />
+      <arg value="${basedir}/src/test-files/solr/lib" />
+    </java>
   </target>
 
 </project>

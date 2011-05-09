@@ -283,7 +283,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
     int numTestPoints = 100;
     int numThreads = _TestUtil.nextInt(random, 3, 5);
     final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
-    BytesRef spare = new BytesRef();
     
     // create a map<String,SortKey> up front.
     // then with multiple threads, generate sort keys for all the keys in the map
@@ -292,12 +291,13 @@ public abstract class CollationTestBase extends LuceneTestCase {
     for (int i = 0; i < numTestPoints; i++) {
       String term = randomString();
       TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
-      TermToBytesRefAttribute bytes = ts.addAttribute(TermToBytesRefAttribute.class);
+      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+      BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
       assertTrue(ts.incrementToken());
-      bytes.toBytesRef(spare);
+      termAtt.fillBytesRef();
       // ensure we make a copy of the actual bytes too
-      map.put(term, new BytesRef(spare));
+      map.put(term, new BytesRef(bytes));
     }
     
     Thread threads[] = new Thread[numThreads];
@@ -306,16 +306,16 @@ public abstract class CollationTestBase extends LuceneTestCase {
         @Override
         public void run() {
           try {
-            BytesRef spare = new BytesRef();
             for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
               String term = mapping.getKey();
               BytesRef expected = mapping.getValue();
               TokenStream ts = analyzer.reusableTokenStream("fake", new StringReader(term));
-              TermToBytesRefAttribute bytes = ts.addAttribute(TermToBytesRefAttribute.class);
+              TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+              BytesRef bytes = termAtt.getBytesRef();
               ts.reset();
               assertTrue(ts.incrementToken());
-              bytes.toBytesRef(spare);
-              assertEquals(expected, spare);
+              termAtt.fillBytesRef();
+              assertEquals(expected, bytes);
             }
           } catch (IOException e) {
             throw new RuntimeException(e);

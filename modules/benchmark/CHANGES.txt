@@ -2,6 +2,55 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+03/31/2011
+  Updated ReadTask to the new method for obtaining a top-level deleted docs
+  bitset.  Also checking the bitset for null, when there are no deleted docs.
+  (Steve Rowe, Mike McCandless)
+
+  Updated NewAnalyzerTask and NewShingleAnalyzerTask to handle analyzers
+  in the new org.apache.lucene.analysis.core package (KeywordAnalyzer,
+  SimpleAnalyzer, etc.) (Steve Rowe, Robert Muir)
+  
+  Updated ReadTokensTask to convert tokens to their indexed forms
+  (char[]->byte[]), just as the indexer does.  This allows measurement
+  of the conversion process, which is important for analysis components
+  that customize it, e.g. (ICU)CollationKeyFilter.  As a result,
+  benchmarks that incorporate this task will no longer be directly
+  comparable between 3.X and 4.0. (Robert Muir, Steve Rowe)
+
+03/24/2011
+  LUCENE-2977: WriteLineDocTask now automatically detects how to write -
+  GZip or BZip2 or Plain-text - according to the output file extension.
+  Property bzip.compression of WriteLineDocTask was canceled. (Doron Cohen)
+  
+03/23/2011
+  LUCENE-2980: Benchmark's ContentSource no more requires lower case file suffixes 
+  for detecting file type (gzip/bzip2/text). As part of this fix worked around an 
+  issue with gzip input streams which were remaining open (See COMPRESS-127).
+  (Doron Cohen) 
+
+03/22/2011
+  LUCENE-2978: Upgrade benchmark's commons-compress from 1.0 to 1.1 as 
+  the move of gzip decompression in LUCENE-1540 from Java's GZipInputStream
+  to commons-compress 1.0 made it 15 times slower. In 1.1 no such slow-down
+  is observed. (Doron Cohen)   
+  
+03/21/2011
+  LUCENE-2958: WriteLineDocTask improvements - allow to emit line docs also for empty
+  docs, and be flexible about which fields are added to the line file. For this, a header
+  line was added to the line file. That header is examined by LineDocSource. Old line
+  files which have no header line are handled as before, imposing the default header.
+  (Doron Cohen, Shai Erera, Mike McCandless)
+  
+03/21/2011
+  LUCENE-2964: Allow benchmark tasks from alternative packages,
+  specified through a new property "alt.tasks.packages".
+  (Doron Cohen, Shai Erera)
+  
+03/20/2011
+  LUCENE-2963: Easier way to run benchmark, by calling Benmchmark.exec(alg-file).
+  (Doron Cohen)
+  
 03/10/2011
   LUCENE-2961: Removed lib/xml-apis.jar, since JVM 1.5+ already contains the
   JAXP 1.3 interface classes it provides.

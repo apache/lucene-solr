@@ -191,7 +191,7 @@ public class TestFSTs extends LuceneTestCase {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(random, 97, 102);
+      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
     }
     return new String(buffer, 0, end);
   }
@@ -1122,6 +1122,9 @@ public class TestFSTs extends LuceneTestCase {
           System.exit(0);
         }
 
+        if (dirOut == null)
+          return;
+
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
           Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
@@ -1138,7 +1141,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("Saved FST to fst.bin.");
 
         if (!verify) {
-          System.exit(0);
+          return;
         }
 
         System.out.println("\nNow verify...");
@@ -1183,40 +1186,53 @@ public class TestFSTs extends LuceneTestCase {
 
   // java -cp build/classes/test:build/classes/java:lib/junit-4.7.jar org.apache.lucene.util.automaton.fst.TestFSTs /x/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
-    final String wordsFileIn = args[0];
-    final String dirOut = args[1];
-    int idx = 2;
     int prune = 0;
     int limit = Integer.MAX_VALUE;
     int inputMode = 0;                             // utf8
     boolean storeOrds = false;
     boolean storeDocFreqs = false;
     boolean verify = true;
-    while(idx < args.length) {
+    
+    String wordsFileIn = null;
+    String dirOut = null;
+
+    int idx = 0;
+    while (idx < args.length) {
       if (args[idx].equals("-prune")) {
-        prune = Integer.valueOf(args[1+idx]);
+        prune = Integer.valueOf(args[1 + idx]);
         idx++;
-      }
-      if (args[idx].equals("-limit")) {
-        limit = Integer.valueOf(args[1+idx]);
+      } else if (args[idx].equals("-limit")) {
+        limit = Integer.valueOf(args[1 + idx]);
         idx++;
-      }
-      if (args[idx].equals("-utf8")) {
+      } else if (args[idx].equals("-utf8")) {
         inputMode = 0;
-      }
-      if (args[idx].equals("-utf32")) {
+      } else if (args[idx].equals("-utf32")) {
         inputMode = 1;
-      }
-      if (args[idx].equals("-docFreq")) {
+      } else if (args[idx].equals("-docFreq")) {
         storeDocFreqs = true;
-      }
-      if (args[idx].equals("-ords")) {
+      } else if (args[idx].equals("-ords")) {
         storeOrds = true;
-      }
-      if (args[idx].equals("-noverify")) {
+      } else if (args[idx].equals("-noverify")) {
         verify = false;
+      } else if (args[idx].startsWith("-")) {
+        System.err.println("Unrecognized option: " + args[idx]);
+        System.exit(-1);
+      } else {
+        if (wordsFileIn == null) {
+          wordsFileIn = args[idx];
+        } else if (dirOut == null) {
+          dirOut = args[idx];
+        } else {
+          System.err.println("Too many arguments, expected: input [output]");
+          System.exit(-1);
+        }
       }
       idx++;
+    }
+    
+    if (wordsFileIn == null) {
+      System.err.println("No input file.");
+      System.exit(-1);
     }
 
     // ord benefits from share, docFreqs don't:

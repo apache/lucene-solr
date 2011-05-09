@@ -33,7 +33,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -780,7 +782,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
       }
     }
-
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
     assertTrue(failure.didFail);
     failure.clearDoFail();
@@ -794,53 +795,79 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   
   private static class FailOnlyInCommit extends MockDirectoryWrapper.Failure {
 
-    boolean fail1, fail2;
+    boolean failOnCommit, failOnDeleteFile;
+    private final boolean dontFailDuringGlobalFieldMap;
+    private static final String PREPARE_STAGE = "prepareCommit";
+    private static final String FINISH_STAGE = "finishCommit";
+    private final String stage;
+    
+    public FailOnlyInCommit(boolean dontFailDuringGlobalFieldMap, String stage) {
+      this.dontFailDuringGlobalFieldMap = dontFailDuringGlobalFieldMap;
+      this.stage = stage;
+    }
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       StackTraceElement[] trace = new Exception().getStackTrace();
       boolean isCommit = false;
       boolean isDelete = false;
+      boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "prepareCommit".equals(trace[i].getMethodName()))
+        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
           isCommit = true;
         if ("org.apache.lucene.store.MockDirectoryWrapper".equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
           isDelete = true;
+        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName()))
+          isInGlobalFieldMap = true;
+          
       }
-
+      if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
+        isCommit = false;
+      }
       if (isCommit) {
         if (!isDelete) {
-          fail1 = true;
+          failOnCommit = true;
           throw new RuntimeException("now fail first");
         } else {
-          fail2 = true;
+          failOnDeleteFile = true;
           throw new IOException("now fail during delete");
         }
       }
     }
   }
   
-  // LUCENE-1214
   public void testExceptionsDuringCommit() throws Throwable {
-    MockDirectoryWrapper dir = newDirectory();
-    FailOnlyInCommit failure = new FailOnlyInCommit();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-    Document doc = new Document();
-    doc.add(newField("field", "a field", Field.Store.YES,
-                      Field.Index.ANALYZED));
-    w.addDocument(doc);
-    dir.failOn(failure);
-    try {
-      w.close();
-      fail();
-    } catch (IOException ioe) {
-      fail("expected only RuntimeException");
-    } catch (RuntimeException re) {
-      // Expected
+    FailOnlyInCommit[] failures = new FailOnlyInCommit[] {
+        // LUCENE-1214
+        new FailOnlyInCommit(false, FailOnlyInCommit.PREPARE_STAGE), // fail during global field map is written
+        new FailOnlyInCommit(true, FailOnlyInCommit.PREPARE_STAGE), // fail after global field map is written
+        new FailOnlyInCommit(false, FailOnlyInCommit.FINISH_STAGE)  // fail while running finishCommit    
+    };
+    
+    for (FailOnlyInCommit failure : failures) {
+      MockDirectoryWrapper dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()));
+      Document doc = new Document();
+      doc.add(newField("field", "a field", Field.Store.YES,
+          Field.Index.ANALYZED));
+      w.addDocument(doc);
+      dir.failOn(failure);
+      try {
+        w.close();
+        fail();
+      } catch (IOException ioe) {
+        fail("expected only RuntimeException");
+      } catch (RuntimeException re) {
+        // Expected
+      }
+      assertTrue(dir.fileExists("1.fnx"));
+      assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
+      w.rollback();
+      assertFalse(dir.fileExists("1.fnx"));
+      // FIXME: on windows, this often fails! assertEquals(0, dir.listAll().length);
+      dir.close();
     }
-    assertTrue(failure.fail1 && failure.fail2);
-    w.rollback();
-    dir.close();
   }
   
   public void testOptimizeExceptions() throws IOException {

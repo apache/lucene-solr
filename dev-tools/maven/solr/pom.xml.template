@@ -35,6 +35,7 @@
     <module>src</module>
     <module>src/solrj</module>
     <module>src/webapp</module>
+    <module>src/test-framework</module>
     <module>contrib</module>
   </modules>
   <properties>

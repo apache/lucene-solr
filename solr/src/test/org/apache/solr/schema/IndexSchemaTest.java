@@ -81,11 +81,11 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSimilarityFactory() {
+  public void testSimilarityProviderFactory() {
     SolrCore core = h.getCore();
-    SimilarityProvider similarity = core.getSchema().getSimilarityProvider();
-    assertTrue("wrong class", similarity instanceof MockConfigurableSimilarity);
-    assertEquals("is there an echo?", ((MockConfigurableSimilarity)similarity).getPassthrough());
+    SimilarityProvider similarityProvider = core.getSchema().getSimilarityProvider();
+    assertTrue("wrong class", similarityProvider instanceof MockConfigurableSimilarityProvider);
+    assertEquals("is there an echo?", ((MockConfigurableSimilarityProvider)similarityProvider).getPassthrough());
   }
   
   @Test

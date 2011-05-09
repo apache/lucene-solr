@@ -529,10 +529,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
-      for(int i=0;i<fieldInfos.size();i++) {
-        FieldInfo fi = fieldInfos.fieldInfo(i);
+      for (FieldInfo fi : fieldInfos) {
         if (fi.name.equals("content")) {
-          contentFieldIndex = i;
+          contentFieldIndex = fi.number;
           break;
         }
       }
@@ -544,7 +543,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",
-                               "segments.gen"};
+                               "segments.gen",
+                               "1.fnx"};
 
       String[] actual = dir.listAll();
       Arrays.sort(expected);

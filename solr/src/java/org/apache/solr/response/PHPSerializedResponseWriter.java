@@ -17,23 +17,23 @@
 
 package org.apache.solr.response;
 
-import java.io.Writer;
 import java.io.IOException;
-import java.util.*;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.search.ReturnFields;
+
+
 /**
  * A description of the PHP serialization format can be found here:
  * http://www.hurring.com/scott/code/perl/serialize/
@@ -80,126 +80,53 @@ class PHPSerializedWriter extends JSONWriter {
     writeNamedListAsMapMangled(name,val);
   }
   
-  @Override
-  public void writeDoc(String name, Collection<Fieldable> fields, Set<String> returnFields, Map pseudoFields) throws IOException {
-    ArrayList<Fieldable> single = new ArrayList<Fieldable>();
-    LinkedHashMap<String, MultiValueField> multi 
-      = new LinkedHashMap<String, MultiValueField>();
-
-    for (Fieldable ff : fields) {
-      String fname = ff.name();
-      if (returnFields!=null && !returnFields.contains(fname)) {
-        continue;
-      }
-      // if the field is multivalued, it may have other values further on... so
-      // build up a list for each multi-valued field.
-      SchemaField sf = schema.getField(fname);
-      if (sf.multiValued()) {
-        MultiValueField mf = multi.get(fname);
-        if (mf==null) {
-          mf = new MultiValueField(sf, ff);
-          multi.put(fname, mf);
-        } else {
-          mf.fields.add(ff);
-        }
-      } else {
-        single.add(ff);
-      }
-    }
-
-    // obtain number of fields in doc
-    writeArrayOpener(single.size() + multi.size() + ((pseudoFields!=null) ? pseudoFields.size() : 0));
-
-    // output single value fields
-    for(Fieldable ff : single) {
-      SchemaField sf = schema.getField(ff.name());
-      writeKey(ff.name(),true);
-      sf.write(this, ff.name(), ff);
-    }
-    
-    // output multi value fields
-    for(MultiValueField mvf : multi.values()) {
-      writeKey(mvf.sfield.getName(), true);
-      writeArrayOpener(mvf.fields.size());
-      int i = 0;
-      for (Fieldable ff : mvf.fields) {
-        writeKey(i++, false);
-        mvf.sfield.write(this, null, ff);
-      }
-      writeArrayCloser();
-    }
-
-    // output pseudo fields
-    if (pseudoFields !=null && pseudoFields.size()>0) {
-      writeMap(null,pseudoFields,true,false);
-    }
-    writeArrayCloser();
-  }
   
-  @Override
-  public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
-    boolean includeScore=false;
-    
-    if (fields!=null) {
-      includeScore = fields.contains("score");
-      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
-        fields=null;  // null means return all stored fields
-      }
-    }
 
-    int sz=ids.size();
-
-    writeMapOpener(includeScore ? 4 : 3);
+  public void writeStartDocumentList(String name, 
+      long start, int size, long numFound, Float maxScore) throws IOException
+  {
+    writeMapOpener((maxScore==null) ? 3 : 4);
     writeKey("numFound",false);
-    writeInt(null,ids.matches());
+    writeLong(null,numFound);
     writeKey("start",false);
-    writeInt(null,ids.offset());
+    writeLong(null,start);
 
-    if (includeScore) {
+    if (maxScore!=null) {
       writeKey("maxScore",false);
-      writeFloat(null,ids.maxScore());
+      writeFloat(null,maxScore);
     }
     writeKey("docs",false);
-    writeArrayOpener(sz);
+    writeArrayOpener(size);
+  }
 
-    SolrIndexSearcher searcher = req.getSearcher();
-    DocIterator iterator = ids.iterator();
-    for (int i=0; i<sz; i++) {
-      int id = iterator.nextDoc();
-      Document doc = searcher.doc(id, fields);
-      writeKey(i, false);
-      writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
-    }
-    writeMapCloser();
-
-    if (otherFields !=null) {
-      writeMap(null, otherFields, true, false);
-    }
-
+  public void writeEndDocumentList() throws IOException
+  {
+    writeArrayCloser(); // doc list
     writeMapCloser();
   }
   
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException 
+  {
+    writeKey(idx, false);
+    
     LinkedHashMap <String,Object> single = new LinkedHashMap<String, Object>();
     LinkedHashMap <String,Object> multi = new LinkedHashMap<String, Object>();
-    int pseudoSize = pseudoFields != null ? pseudoFields.size() : 0;
 
     for (String fname : doc.getFieldNames()) {
-      if(returnFields != null && !returnFields.contains(fname)){
+      if(!returnFields.wantsField(fname)){
         continue;
       }
 
       Object val = doc.getFieldValue(fname);
-      SchemaField sf = schema.getFieldOrNull(fname);
-      if (sf != null && sf.multiValued()) {
+      if (val instanceof Collection) {
         multi.put(fname, val);
       }else{
         single.put(fname, val);
       }
     }
 
-    writeMapOpener(single.size() + multi.size() + pseudoSize);
+    writeMapOpener(single.size() + multi.size());
     for(String fname: single.keySet()){
       Object val = single.get(fname);
       writeKey(fname, true);
@@ -220,51 +147,7 @@ class PHPSerializedWriter extends JSONWriter {
         writeVal(fname, val);
       }
     }
-
-    if (pseudoSize > 0) {
-      writeMap(null,pseudoFields,true, false);
-    }
-    writeMapCloser();
-  }
-
-
-  @Override
-  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
-    boolean includeScore=false;
-    if (fields!=null) {
-      includeScore = fields.contains("score");
-      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
-        fields=null;  // null means return all stored fields
-      }
-    }
-
-    int sz = docs.size();
-
-    writeMapOpener(includeScore ? 4 : 3);
-
-    writeKey("numFound",false);
-    writeLong(null,docs.getNumFound());
-
-    writeKey("start",false);
-    writeLong(null,docs.getStart());
-
-    if (includeScore && docs.getMaxScore() != null) {
-      writeKey("maxScore",false);
-      writeFloat(null,docs.getMaxScore());
-    }
-
-    writeKey("docs",false);
-
-    writeArrayOpener(sz);
-    for (int i=0; i<sz; i++) {
-      writeKey(i, false);
-      writeSolrDocument(null, docs.get(i), fields, otherFields);
-    }
-    writeArrayCloser();
-
-    if (otherFields !=null) {
-      writeMap(null, otherFields, true, false);
-    }
+    
     writeMapCloser();
   }
 

@@ -80,6 +80,9 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeVInt(int)
    */
   public int readVInt() throws IOException {
+    /* This is the original code of this method,
+     * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
+     * readByte() is inlined. So the loop was unwinded!
     byte b = readByte();
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
@@ -87,6 +90,22 @@ public abstract class DataInput implements Cloneable {
       i |= (b & 0x7F) << shift;
     }
     return i;
+    */
+    byte b = readByte();
+    int i = b & 0x7F;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7F) << 7;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7F) << 14;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7F) << 21;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    assert (b & 0x80) == 0;
+    return i | ((b & 0x7F) << 28);
   }
 
   /** Reads eight bytes and returns a long.
@@ -100,6 +119,9 @@ public abstract class DataInput implements Cloneable {
    * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported. */
   public long readVLong() throws IOException {
+    /* This is the original code of this method,
+     * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
+     * readByte() is inlined. So the loop was unwinded!
     byte b = readByte();
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
@@ -107,6 +129,34 @@ public abstract class DataInput implements Cloneable {
       i |= (b & 0x7FL) << shift;
     }
     return i;
+    */
+    byte b = readByte();
+    long i = b & 0x7FL;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 7;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 14;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 21;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 28;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 35;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 42;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    i |= (b & 0x7FL) << 49;
+    if ((b & 0x80) == 0) return i;
+    b = readByte();
+    assert (b & 0x80) == 0;
+    return i | ((b & 0x7FL) << 56);
   }
 
   /** Reads a string.
