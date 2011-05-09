@@ -40,7 +40,9 @@ public abstract class CodecTestCase extends LuceneTestCase {
     final int[] input = new int[LIST_SIZE];
 
     for (int i = minBits; i <= maxBits; i++) {
-      System.out.println("TEST bits=" + i);
+      if (VERBOSE) {
+        System.out.println("TEST bits=" + i);
+      }
 
       final long min = i == 1 ? 0 : (1L << (i - 1));
       final long max = ((1L << i) - 1);
