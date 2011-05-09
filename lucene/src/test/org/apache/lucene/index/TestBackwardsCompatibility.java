@@ -66,26 +66,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   // oldNames array.
 
   /*
-  public void testCreatePreLocklessCFS() throws IOException {
-    createIndex("index.cfs", true);
-  }
-
-  public void testCreatePreLocklessNoCFS() throws IOException {
-    createIndex("index.nocfs", false);
-  }
-  */
-
-/*
   public void testCreateCFS() throws IOException {
-    String dirName = "testindex.cfs";
-    createIndex(dirName, true);
-    rmDir(dirName);
+    createIndex("index.cfs", true, false);
   }
 
   public void testCreateNoCFS() throws IOException {
-    String dirName = "testindex.nocfs";
-    createIndex(dirName, true);
-    rmDir(dirName);
+    createIndex("index.nocfs", false, false);
+  }
+  */
+  
+/*
+  // These are only needed for the special upgrade test to verify
+  // that also optimized indexes are correctly upgraded by IndexUpgrader.
+  // You don't need them to be build for non-3.1 (the test is happy with just one
+  // "old" segment format, version is unimportant:
+  
+  public void testCreateOptimizedCFS() throws IOException {
+    createIndex("index.optimized.cfs", true, true);
+  }
+
+  public void testCreateOptimizedNoCFS() throws IOException {
+    createIndex("index.optimized.nocfs", false, true);
   }
 
 */  
@@ -454,7 +455,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public File createIndex(Random random, String dirName, boolean doCFS) throws IOException {
+  public File createIndex(String dirName, boolean doCFS, boolean optimized) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
     _TestUtil.rmDir(indexDir);
@@ -468,24 +469,30 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       addDoc(writer, i);
     }
     assertEquals("wrong doc count", 35, writer.maxDoc());
+    if (optimized) {
+      writer.optimize();
+    }
     writer.close();
 
-    // open fresh writer so we get no prx file in the added segment
-    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
-    writer = new IndexWriter(dir, conf);
-    addNoProxDoc(writer);
-    writer.close();
+    if (!optimized) {
+      // open fresh writer so we get no prx file in the added segment
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
+      ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
+      writer = new IndexWriter(dir, conf);
+      addNoProxDoc(writer);
+      writer.close();
 
-    // Delete one doc so we get a .del file:
-    IndexReader reader = IndexReader.open(dir, false);
-    Term searchTerm = new Term("id", "7");
-    int delCount = reader.deleteDocuments(searchTerm);
-    assertEquals("didn't delete the right number of documents", 1, delCount);
+      // Delete one doc so we get a .del file:
+      IndexReader reader = IndexReader.open(dir, false);
+      Term searchTerm = new Term("id", "7");
+      int delCount = reader.deleteDocuments(searchTerm);
+      assertEquals("didn't delete the right number of documents", 1, delCount);
 
-    // Set one norm so we get a .s0 file:
-    reader.setNorm(21, "content", conf.getSimilarityProvider().get("content").encodeNormValue(1.5f));
-    reader.close();
+      // Set one norm so we get a .s0 file:
+      reader.setNorm(21, "content", conf.getSimilarityProvider().get("content").encodeNormValue(1.5f));
+      reader.close();
+    }
+    
     dir.close();
     
     return indexDir;
