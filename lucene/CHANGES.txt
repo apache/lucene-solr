@@ -484,6 +484,12 @@ Changes in runtime behavior
   returns NumericField instances. (Uwe Schindler, Ryan McKinley,
   Mike McCandless)
 
+New features
+
+* LUCENE-3082: Added index upgrade tool oal.index.IndexUpgrader
+  that allows to upgrade all segments to last recent supported index
+  format without fully optimizing.  (Uwe Schindler, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
