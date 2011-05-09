@@ -995,8 +995,9 @@
           <lst name="type">
             <str name="name">org.apache.solr.uima.ts.EntityAnnotation</str>
             <lst name="mapping">
-              <str name="feature">coveredText</str>
-              <str name="field">entity</str>
+              <str name="feature">entity</str>
+              <str name="fieldNameFeature">name</str>
+              <str name="dynamicField">*_sm</str>
             </lst>
           </lst>
         </lst>
