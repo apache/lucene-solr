@@ -26,6 +26,10 @@ Changes in runtime behavior
 
 New features
 
+* LUCENE-3082: Added index upgrade tool oal.index.IndexUpgrader
+  that allows to upgrade all segments to last recent supported index
+  format without fully optimizing.  (Uwe Schindler, Mike McCandless)
+
 * LUCENE-1076: Added TieredMergePolicy which is able to merge non-contiguous 
   segments, which means docIDs no longer necessarily stay "in order".
   (Mike McCandless, Shai Erera)

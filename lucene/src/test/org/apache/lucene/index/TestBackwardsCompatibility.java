@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -40,9 +41,11 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.Constants;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -102,6 +105,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "30.nocfs",
                              "31.cfs",
                              "31.nocfs",
+  };
+  
+  final String[] oldOptimizedNames = {"31.optimized.cfs",
+                                      "31.optimized.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
@@ -169,7 +176,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void testOptimizeOldIndex() throws IOException {
+  public void testUpgrade29Compression() throws IOException {
     int hasTested29 = 0;
     
     for(int i=0;i<oldNames.length;i++) {
@@ -182,10 +189,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         hasTested29++;
       }
 
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-      w.optimize();
-      w.close();
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+        .upgrade();
 
       _TestUtil.checkIndex(dir);
       
@@ -691,6 +696,99 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       searcher.close();
       dir.close();
       _TestUtil.rmDir(oldIndexDir);
+    }
+  }
+  
+  private int checkAllSegmentsUpgraded(Directory dir) throws IOException {
+    final SegmentInfos infos = new SegmentInfos();
+    infos.read(dir);
+    if (VERBOSE) {
+      System.out.println("checkAllSegmentsUpgraded: " + infos);
+    }
+    for (SegmentInfo si : infos) {
+      assertEquals(Constants.LUCENE_MAIN_VERSION, si.getVersion());
+    }
+    return infos.size();
+  }
+  
+  private int getNumberOfSegments(Directory dir) throws IOException {
+    final SegmentInfos infos = new SegmentInfos();
+    infos.read(dir);
+    return infos.size();
+  }
+
+  public void testUpgradeOldIndex() throws Exception {
+    List<String> names = new ArrayList<String>(oldNames.length + oldOptimizedNames.length);
+    names.addAll(Arrays.asList(oldNames));
+    names.addAll(Arrays.asList(oldOptimizedNames));
+    for(String name : names) {
+      if (VERBOSE) {
+        System.out.println("testUpgradeOldIndex: index=" +name);
+      }
+      File oldIndxeDir = _TestUtil.getTempDir(name);
+      _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
+      Directory dir = newFSDirectory(oldIndxeDir);
+
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+        .upgrade();
+
+      checkAllSegmentsUpgraded(dir);
+
+      _TestUtil.checkIndex(dir);
+      
+      dir.close();
+      _TestUtil.rmDir(oldIndxeDir);
+    }
+  }
+
+  public void testUpgradeOldOptimizedIndexWithAdditions() throws Exception {
+    for (String name : oldOptimizedNames) {
+      if (VERBOSE) {
+        System.out.println("testUpgradeOldOptimizedIndexWithAdditions: index=" +name);
+      }
+      File oldIndxeDir = _TestUtil.getTempDir(name);
+      _TestUtil.unzip(getDataFile("index." + name + ".zip"), oldIndxeDir);
+      Directory dir = newFSDirectory(oldIndxeDir);
+
+      assertEquals("Original index must be optimized", 1, getNumberOfSegments(dir));
+
+      // create a bunch of dummy segments
+      int id = 40;
+      RAMDirectory ramDir = new RAMDirectory();
+      for (int i = 0; i < 3; i++) {
+        // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
+        MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
+        IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+          .setMergePolicy(mp);
+        IndexWriter w = new IndexWriter(ramDir, iwc);
+        // add few more docs:
+        for(int j = 0; j < RANDOM_MULTIPLIER * random.nextInt(30); j++) {
+          addDoc(w, id++);
+        }
+        w.close(false);
+      }
+      
+      // add dummy segments (which are all in current version) to optimized index
+      MergePolicy mp = random.nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
+      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null)
+        .setMergePolicy(mp);
+      IndexWriter w = new IndexWriter(dir, iwc);
+      w.setInfoStream(VERBOSE ? System.out : null);
+      w.addIndexes(ramDir);
+      w.close(false);
+      
+      // determine count of segments in modified index
+      final int origSegCount = getNumberOfSegments(dir);
+      
+      new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
+        .upgrade();
+
+      final int segCount = checkAllSegmentsUpgraded(dir);
+      assertEquals("Index must still contain the same number of segments, as only one segment was upgraded and nothing else merged",
+        origSegCount, segCount);
+      
+      dir.close();
+      _TestUtil.rmDir(oldIndxeDir);
     }
   }
 
