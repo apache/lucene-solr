@@ -144,11 +144,8 @@ public class FixedPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public Object clone() {
-      FixedTermState other = (FixedTermState) super.clone();
-      other.docIndex = (IntIndexInput.Index) docIndex.clone();
-      if (posIndex != null) {
-        other.posIndex = (IntIndexInput.Index) posIndex.clone();
-      }
+      FixedTermState other = new FixedTermState();
+      other.copyFrom(this);
       return other;
     }
 
@@ -156,9 +153,19 @@ public class FixedPostingsReaderImpl extends PostingsReaderBase {
     public void copyFrom(TermState _other) {
       super.copyFrom(_other);
       FixedTermState other = (FixedTermState) _other;
-      docIndex.set(other.docIndex);
-      if (posIndex != null && other.posIndex != null) {
-        posIndex.set(other.posIndex);
+      if (docIndex == null) {
+        docIndex = (IntIndexInput.Index) other.docIndex.clone();
+      } else {
+        docIndex.set(other.docIndex);
+      }
+      if (other.posIndex != null) {
+        if (posIndex == null) {
+          posIndex = (IntIndexInput.Index) other.posIndex.clone();
+        } else {
+          posIndex.set(other.posIndex);
+        }
+      } else {
+        posIndex = null;
       }
       payloadFP = other.payloadFP;
       skipFP = other.skipFP;
