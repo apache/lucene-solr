@@ -20,7 +20,9 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.Constants;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /** This {@link MergePolicy} is used for upgrading all existing segments of
@@ -101,7 +103,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
       if (verbose())
         message("findMergesForOptimize: " +  base.getClass().getSimpleName() +
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
-      final SegmentInfos newInfos = new SegmentInfos();
+      final List<SegmentInfo> newInfos = new ArrayList<SegmentInfo>();
       for (final SegmentInfo si : segmentInfos) {
         if (oldSegments.contains(si)) {
           newInfos.add(si);

@@ -135,8 +135,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       final MergePolicy.OneMerge m1 = t1.getCurrentMerge();
       final MergePolicy.OneMerge m2 = t2.getCurrentMerge();
       
-      final int c1 = m1 == null ? Integer.MAX_VALUE : m1.segments.totalDocCount();
-      final int c2 = m2 == null ? Integer.MAX_VALUE : m2.segments.totalDocCount();
+      final int c1 = m1 == null ? Integer.MAX_VALUE : m1.totalDocCount;
+      final int c2 = m2 == null ? Integer.MAX_VALUE : m2.totalDocCount;
 
       return c2 - c1;
     }

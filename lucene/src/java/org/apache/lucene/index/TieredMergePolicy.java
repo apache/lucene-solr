@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Comparator;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  *  Merges segments of approximately equal size, subject to
@@ -249,7 +251,7 @@ public class TieredMergePolicy extends MergePolicy {
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
     final Collection<SegmentInfo> toBeMerged = new HashSet<SegmentInfo>();
 
-    final SegmentInfos infosSorted = new SegmentInfos();
+    final List<SegmentInfo> infosSorted = new ArrayList<SegmentInfo>();
     infosSorted.addAll(infos);
 
     Collections.sort(infosSorted, segmentByteSizeDescending);
@@ -277,7 +279,7 @@ public class TieredMergePolicy extends MergePolicy {
     // If we have too-large segments, grace them out
     // of the maxSegmentCount:
     int tooBigCount = 0;
-    while (tooBigCount < infosSorted.size() && size(infosSorted.info(tooBigCount)) >= maxMergedSegmentBytes/2.0) {
+    while (tooBigCount < infosSorted.size() && size(infosSorted.get(tooBigCount)) >= maxMergedSegmentBytes/2.0) {
       totIndexBytes -= size(infosSorted.get(tooBigCount));
       tooBigCount++;
     }
@@ -310,7 +312,7 @@ public class TieredMergePolicy extends MergePolicy {
       // Gather eligible segments for merging, ie segments
       // not already being merged and not already picked (by
       // prior iteration of this loop) for merging:
-      final SegmentInfos eligible = new SegmentInfos();
+      final List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
       for(int idx = tooBigCount; idx<infosSorted.size(); idx++) {
         final SegmentInfo info = infosSorted.get(idx);
         if (merging.contains(info)) {
@@ -332,7 +334,7 @@ public class TieredMergePolicy extends MergePolicy {
 
         // OK we are over budget -- find best merge!
         MergeScore bestScore = null;
-        SegmentInfos best = null;
+        List<SegmentInfo> best = null;
         boolean bestTooLarge = false;
         long bestMergeBytes = 0;
 
@@ -341,10 +343,10 @@ public class TieredMergePolicy extends MergePolicy {
 
           long totAfterMergeBytes = 0;
 
-          final SegmentInfos candidate = new SegmentInfos();
+          final List<SegmentInfo> candidate = new ArrayList<SegmentInfo>();
           boolean hitTooLarge = false;
           for(int idx = startIdx;idx<eligible.size() && candidate.size() < maxMergeAtOnce;idx++) {
-            final SegmentInfo info = eligible.info(idx);
+            final SegmentInfo info = eligible.get(idx);
             final long segBytes = size(info);
 
             if (totAfterMergeBytes + segBytes > maxMergedSegmentBytes) {
@@ -398,7 +400,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   /** Expert: scores one merge; subclasses can override. */
-  protected MergeScore score(SegmentInfos candidate, boolean hitTooLarge, long mergingBytes) throws IOException {
+  protected MergeScore score(List<SegmentInfo> candidate, boolean hitTooLarge, long mergingBytes) throws IOException {
     long totBeforeMergeBytes = 0;
     long totAfterMergeBytes = 0;
     long totAfterMergeBytesFloored = 0;
@@ -420,7 +422,7 @@ public class TieredMergePolicy extends MergePolicy {
       // over time:
       skew = 1.0/maxMergeAtOnce;
     } else {
-      skew = ((double) floorSize(size(candidate.info(0))))/totAfterMergeBytesFloored;
+      skew = ((double) floorSize(size(candidate.get(0))))/totAfterMergeBytesFloored;
     }
 
     // Strongly favor merges with less skew (smaller
@@ -458,7 +460,8 @@ public class TieredMergePolicy extends MergePolicy {
     if (verbose()) {
       message("findMergesForOptimize maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToOptimize=" + segmentsToOptimize);
     }
-    SegmentInfos eligible = new SegmentInfos();
+
+    List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
     boolean optimizeMergeRunning = false;
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
     for(SegmentInfo info : infos) {
@@ -499,7 +502,7 @@ public class TieredMergePolicy extends MergePolicy {
       if (spec == null) {
         spec = new MergeSpecification();
       }
-      final OneMerge merge = new OneMerge(eligible.range(end-maxMergeAtOnceExplicit, end));
+      final OneMerge merge = new OneMerge(eligible.subList(end-maxMergeAtOnceExplicit, end));
       if (verbose()) {
         message("add merge=" + writer.get().segString(merge.segments));
       }
@@ -510,7 +513,7 @@ public class TieredMergePolicy extends MergePolicy {
     if (spec == null && !optimizeMergeRunning) {
       // Do final merge
       final int numToMerge = end - maxSegmentCount + 1;
-      final OneMerge merge = new OneMerge(eligible.range(end-numToMerge, end));
+      final OneMerge merge = new OneMerge(eligible.subList(end-numToMerge, end));
       if (verbose()) {
         message("add final merge=" + merge.segString(writer.get().getDirectory()));
       }
@@ -527,7 +530,7 @@ public class TieredMergePolicy extends MergePolicy {
     if (verbose()) {
       message("findMergesToExpungeDeletes infos=" + writer.get().segString(infos) + " expungeDeletesPctAllowed=" + expungeDeletesPctAllowed);
     }
-    final SegmentInfos eligible = new SegmentInfos();
+    final List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
     for(SegmentInfo info : infos) {
       double pctDeletes = 100.*((double) writer.get().numDeletedDocs(info))/info.docCount;
@@ -580,7 +583,7 @@ public class TieredMergePolicy extends MergePolicy {
         spec = new MergeSpecification();
       }
 
-      final OneMerge merge = new OneMerge(eligible.range(start, upto));
+      final OneMerge merge = new OneMerge(eligible.subList(start, upto));
       if (verbose()) {
         message("add merge=" + writer.get().segString(merge.segments));
       }
