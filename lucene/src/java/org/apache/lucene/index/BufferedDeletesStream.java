@@ -121,9 +121,9 @@ class BufferedDeletesStream {
     public final long gen;
 
     // If non-null, contains segments that are 100% deleted
-    public final SegmentInfos allDeleted;
+    public final List<SegmentInfo> allDeleted;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen, SegmentInfos allDeleted) {
+    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentInfo> allDeleted) {
       this.anyDeletes = anyDeletes;
       this.gen = gen;
       this.allDeleted = allDeleted;
@@ -153,7 +153,7 @@ class BufferedDeletesStream {
   /** Resolves the buffered deleted Term/Query/docIDs, into
    *  actual deleted docIDs in the deletedDocs BitVector for
    *  each SegmentReader. */
-  public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, SegmentInfos infos) throws IOException {
+  public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfo> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
 
     if (infos.size() == 0) {
@@ -171,7 +171,7 @@ class BufferedDeletesStream {
       message("applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
     }
 
-    SegmentInfos infos2 = new SegmentInfos();
+    List<SegmentInfo> infos2 = new ArrayList<SegmentInfo>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortByDelGen);
 
@@ -181,7 +181,7 @@ class BufferedDeletesStream {
     int infosIDX = infos2.size()-1;
     int delIDX = deletes.size()-1;
 
-    SegmentInfos allDeleted = null;
+    List<SegmentInfo> allDeleted = null;
 
     while (infosIDX >= 0) {
       //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
@@ -223,7 +223,7 @@ class BufferedDeletesStream {
 
         if (segAllDeletes) {
           if (allDeleted == null) {
-            allDeleted = new SegmentInfos();
+            allDeleted = new ArrayList<SegmentInfo>();
           }
           allDeleted.add(info);
         }
@@ -260,7 +260,7 @@ class BufferedDeletesStream {
 
           if (segAllDeletes) {
             if (allDeleted == null) {
-              allDeleted = new SegmentInfos();
+              allDeleted = new ArrayList<SegmentInfo>();
             }
             allDeleted.add(info);
           }

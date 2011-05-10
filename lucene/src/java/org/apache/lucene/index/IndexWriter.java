@@ -485,7 +485,7 @@ public class IndexWriter implements Closeable {
     private final Map<SegmentInfo,SegmentReader> readerMap = new HashMap<SegmentInfo,SegmentReader>();
 
     /** Forcefully clear changes for the specified segments.  This is called on successful merge. */
-    synchronized void clear(SegmentInfos infos) throws IOException {
+    synchronized void clear(List<SegmentInfo> infos) throws IOException {
       if (infos == null) {
         for (Map.Entry<SegmentInfo,SegmentReader> ent: readerMap.entrySet()) {
           ent.getValue().hasChanges = false;
@@ -575,7 +575,7 @@ public class IndexWriter implements Closeable {
       return false;
     }
 
-    public synchronized void drop(SegmentInfos infos) throws IOException {
+    public synchronized void drop(List<SegmentInfo> infos) throws IOException {
       for(SegmentInfo info : infos) {
         drop(info);
       }
@@ -3477,7 +3477,7 @@ public class IndexWriter implements Closeable {
 
     assert testPoint("startCommitMergeDeletes");
 
-    final SegmentInfos sourceSegments = merge.segments;
+    final List<SegmentInfo> sourceSegments = merge.segments;
 
     if (infoStream != null)
       message("commitMergeDeletes " + merge.segString(directory));
@@ -3489,7 +3489,7 @@ public class IndexWriter implements Closeable {
     long minGen = Long.MAX_VALUE;
 
     for(int i=0; i < sourceSegments.size(); i++) {
-      SegmentInfo info = sourceSegments.info(i);
+      SegmentInfo info = sourceSegments.get(i);
       minGen = Math.min(info.getBufferedDeletesGen(), minGen);
       int docCount = info.docCount;
       final SegmentReader previousReader = merge.readerClones.get(i);
@@ -3937,7 +3937,7 @@ public class IndexWriter implements Closeable {
     // It's possible we are called twice, eg if there was an
     // exception inside mergeInit
     if (merge.registerDone) {
-      final SegmentInfos sourceSegments = merge.segments;
+      final List<SegmentInfo> sourceSegments = merge.segments;
       for(SegmentInfo info : sourceSegments) {
         mergingSegments.remove(info);
       }
@@ -4008,7 +4008,7 @@ public class IndexWriter implements Closeable {
     
     int mergedDocCount = 0;
 
-    SegmentInfos sourceSegments = merge.segments;
+    List<SegmentInfo> sourceSegments = merge.segments;
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
                                              payloadProcessorProvider,
@@ -4031,7 +4031,7 @@ public class IndexWriter implements Closeable {
       int segUpto = 0;
       while(segUpto < sourceSegments.size()) {
 
-        final SegmentInfo info = sourceSegments.info(segUpto);
+        final SegmentInfo info = sourceSegments.get(segUpto);
 
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
@@ -4223,14 +4223,14 @@ public class IndexWriter implements Closeable {
   }
 
   /** @lucene.internal */
-  public synchronized String segString(SegmentInfos infos) throws IOException {
+  public synchronized String segString(List<SegmentInfo> infos) throws IOException {
     StringBuilder buffer = new StringBuilder();
     final int count = infos.size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {
         buffer.append(' ');
       }
-      buffer.append(segString(infos.info(i)));
+      buffer.append(segString(infos.get(i)));
     }
     return buffer.toString();
   }

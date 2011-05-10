@@ -1251,47 +1251,6 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
-  // Just intercepts all merges & verifies that we are never
-  // merging a segment with >= 20 (maxMergeDocs) docs
-  private class MyMergeScheduler extends MergeScheduler {
-    @Override
-    synchronized public void merge(IndexWriter writer)
-      throws CorruptIndexException, IOException {
-
-      while(true) {
-        MergePolicy.OneMerge merge = writer.getNextMerge();
-        if (merge == null)
-          break;
-        for(int i=0;i<merge.segments.size();i++)
-          assert merge.segments.info(i).docCount < 20;
-        writer.merge(merge);
-      }
-    }
-
-    @Override
-    public void close() {}
-  }
-
-  // LUCENE-1013
-  public void testSetMaxMergeDocs() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
-        .setMergeScheduler(new MyMergeScheduler()).setMaxBufferedDocs(2);
-    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
-    lmp.setMaxMergeDocs(20);
-    lmp.setMergeFactor(2);
-    IndexWriter iw = new IndexWriter(dir, conf);
-    Document document = new Document();
-    document.add(newField("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
-                           Field.TermVector.YES));
-    for(int i=0;i<177;i++)
-      iw.addDocument(document);
-    iw.close();
-    dir.close();
-  }
-
-
   public void testVariableSchema() throws Exception {
     Directory dir = newDirectory();
     int delID = 0;

@@ -18,7 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -58,7 +60,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       SegmentInfos segmentInfos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
     throws CorruptIndexException, IOException {
 
-    final SegmentInfos eligibleSegments = new SegmentInfos();
+    final List<SegmentInfo> eligibleSegments = new ArrayList<SegmentInfo>();
     for(SegmentInfo info : segmentInfos) {
       if (segmentsToOptimize.contains(info)) {
         eligibleSegments.add(info);
@@ -76,7 +78,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       while(upto < eligibleSegments.size()) {
         int max = Math.min(10, eligibleSegments.size()-upto);
         int inc = max <= 2 ? max : _TestUtil.nextInt(random, 2, max);
-        mergeSpec.add(new OneMerge(eligibleSegments.range(upto, upto+inc)));
+        mergeSpec.add(new OneMerge(eligibleSegments.subList(upto, upto+inc)));
         upto += inc;
       }
     }

@@ -576,7 +576,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         } else if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          final SegmentInfos mergeInfos = new SegmentInfos();
+          final List<SegmentInfo> mergeInfos = new ArrayList<SegmentInfo>();
           for(int i=start;i<end;i++) {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);

@@ -75,15 +75,21 @@ public abstract class MergePolicy implements java.io.Closeable {
     long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
     List<SegmentReader> readerClones;   // used by IndexWriter
-    public final SegmentInfos segments;
+    public final List<SegmentInfo> segments;
+    public final int totalDocCount;
     boolean aborted;
     Throwable error;
     boolean paused;
 
-    public OneMerge(SegmentInfos segments) {
+    public OneMerge(List<SegmentInfo> segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
       this.segments = segments;
+      int count = 0;
+      for(SegmentInfo info : segments) {
+        count += info.docCount;
+      }
+      totalDocCount = count;
     }
 
     /** Record that an exception occurred while executing
@@ -147,7 +153,7 @@ public abstract class MergePolicy implements java.io.Closeable {
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
         if (i > 0) b.append(' ');
-        b.append(segments.info(i).toString(dir, 0));
+        b.append(segments.get(i).toString(dir, 0));
       }
       if (info != null)
         b.append(" into ").append(info.name);
