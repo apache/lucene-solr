@@ -111,11 +111,11 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     d1 = newDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw1 = new IndexWriter(d1, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setMergePolicy(newLogMergePolicy()));
     addCollection1(iw1);
     iw1.close();
     d2 = newDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw2 = new IndexWriter(d2, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setMergePolicy(newLogMergePolicy()));
     addCollection2(iw2);
     iw2.close();
 
@@ -126,7 +126,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
 
     // create IndexSearcher which contains all documents
     d = newDirectory();
-    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setMergePolicy(newLogMergePolicy()));
     addCollection1(iw);
     addCollection2(iw);
     iw.close();
