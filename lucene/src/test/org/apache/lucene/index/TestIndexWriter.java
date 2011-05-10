@@ -1301,10 +1301,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       while(true) {
         MergePolicy.OneMerge merge = writer.getNextMerge();
-        if (merge == null)
+        if (merge == null) {
           break;
-        for(int i=0;i<merge.segments.size();i++)
-          assert merge.segments.info(i).docCount < 20;
+        }
+        for(int i=0;i<merge.segments.size();i++) {
+          assert merge.segments.get(i).docCount < 20;
+        }
         writer.merge(merge);
       }
     }
@@ -2348,6 +2350,7 @@ public class TestIndexWriter extends LuceneTestCase {
           while(true) {
             if (w != null) {
               w.close();
+              w = null;
             }
             IndexWriterConfig conf = newIndexWriterConfig( 
                                                           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
@@ -2393,10 +2396,12 @@ public class TestIndexWriter extends LuceneTestCase {
       if (!failed) {
         // clear interrupt state:
         Thread.interrupted();
-        try {
-          w.rollback();
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
+        if (w != null) {
+          try {
+            w.rollback();
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+          }
         }
 
         try {
