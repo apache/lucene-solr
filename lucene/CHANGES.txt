@@ -472,6 +472,14 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-1076: IndexWriter.setInfoStream now throws IOException
+  (Mike McCandless, Shai Erera)
+
+* LUCENE-3084: MergePolicy.OneMerge.segments was changed from
+  SegmentInfos to a List<SegmentInfo>; this is actually a minor change
+  because SegmentInfos itself extends Vector<SegmentInfo>.  (Uwe
+  Schindler, Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-3065: When a NumericField is retrieved from a Document loaded
