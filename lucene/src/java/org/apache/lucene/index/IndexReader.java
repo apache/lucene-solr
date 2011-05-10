@@ -1129,7 +1129,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
 
-  // nocommit jdocs
+  /** Get {@link BulkPostingsEnum} for the specified field
+   *  & term. This may return null, if either the field or
+   *  term does not exist.
+   */
   public BulkPostingsEnum bulkTermPostingsEnum(String field, BytesRef term, boolean doFreqs, boolean doPositions) throws IOException {
     assert field != null;
     assert term != null;
@@ -1145,6 +1148,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
   
+  /** Get {@link BulkPostingsEnum} for the specified field
+   *  & term. This may return null, if either the field or
+   *  term does not exist or the {@link TermState} is invalid
+   *  for the underlying implementation.
+   */
   public BulkPostingsEnum bulkTermPostingsEnum(String field, BytesRef term, TermState termState, boolean doFreqs, boolean doPositions) throws IOException {
     assert field != null;
     assert term != null;

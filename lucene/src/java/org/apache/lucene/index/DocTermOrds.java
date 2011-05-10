@@ -673,6 +673,12 @@ public class DocTermOrds {
     }
 
     @Override
+    public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse,
+        boolean doFreqs, boolean doPositions) throws IOException {
+      return termsEnum.bulkPostings(reuse, doFreqs, doPositions);
+    }
+
+    @Override
     public BytesRef term() {
       return term;
     }

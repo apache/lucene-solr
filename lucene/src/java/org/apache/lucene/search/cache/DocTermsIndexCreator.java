@@ -20,6 +20,7 @@ package org.apache.lucene.search.cache;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -332,6 +333,11 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs, boolean doPositions) throws IOException {
         throw new UnsupportedOperationException();
       }
 

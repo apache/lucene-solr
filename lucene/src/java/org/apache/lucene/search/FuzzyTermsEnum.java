@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.BulkPostingsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
@@ -262,6 +263,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return actualEnum.docsAndPositions(skipDocs, reuse);
   }
   
+  @Override
+  public BulkPostingsEnum bulkPostings(BulkPostingsEnum reuse, boolean doFreqs,
+      boolean doPositions) throws IOException {
+    return actualEnum.bulkPostings(reuse, doFreqs, doPositions);
+  }
+
   @Override
   public void seek(BytesRef term, TermState state) throws IOException {
     actualEnum.seek(term, state);
