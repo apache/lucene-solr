@@ -26,7 +26,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -81,13 +83,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   public void testParsing() throws Exception
   {
     SolrQueryRequest req = req();
-    Reader reader = new StringReader(input);
-    
+    SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( p );
-    
-    loader.processUpdate(req,  p, new JSONParser(reader) );
-    
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(input));
+
     assertEquals( 2, p.addCommands.size() );
     
     AddUpdateCommand add = p.addCommands.get(0);
@@ -133,7 +133,66 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     req.close();
   }
+
+
+  public void testSimpleFormat() throws Exception
+  {
+    String str = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
+    SolrQueryRequest req = req("commitWithin","100", "overwrite","false");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+
+    assertEquals( 2, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    assertEquals(add.commitWithin, 100);
+    assertEquals(add.overwrite, false);
+
+    add = p.addCommands.get(1);
+    d = add.solrDoc;
+    f = d.getField( "id" );
+    assertEquals("2", f.getValue());
+    assertEquals(add.commitWithin, 100);
+    assertEquals(add.overwrite, false);
+
+    req.close();
+  }
+
+  public void testSimpleFormatInAdd() throws Exception
+  {
+    String str = "{'add':[{'id':'1'},{'id':'2'}]}".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+
+    assertEquals( 2, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    assertEquals(add.commitWithin, -1);
+    assertEquals(add.overwrite, true);
+
+    add = p.addCommands.get(1);
+    d = add.solrDoc;
+    f = d.getField( "id" );
+    assertEquals("2", f.getValue());
+    assertEquals(add.commitWithin, -1);
+    assertEquals(add.overwrite, true);
+
+    req.close();
+  }
+
 }
+
 
 class BufferingRequestProcessor extends UpdateRequestProcessor
 {

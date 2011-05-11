@@ -270,6 +270,12 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-2496: Add ability to specify overwrite and commitWithin as request
+  parameters (e.g. specified in the URL) when using the JSON update format,
+  and added a simplified format for specifying multiple documents.
+  Example: [{"id":"doc1"},{"id":"doc2"}] 
+  (yonik)
+
 Optimizations
 ----------------------
 
