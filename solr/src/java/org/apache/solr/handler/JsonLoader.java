@@ -23,6 +23,7 @@ import java.util.Stack;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.noggit.JSONParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ContentStream;
@@ -38,15 +39,23 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * @since solr 1.4
+ * @since solr 4.0
  */
 class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
   
-  protected UpdateRequestProcessor processor;
+  protected final UpdateRequestProcessor processor;
+  protected final SolrQueryRequest req;
+  protected JSONParser parser;
+  protected final int commitWithin;
+  protected final boolean overwrite;
 
-  public JsonLoader(UpdateRequestProcessor processor) {
+  public JsonLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
+    this.req = req;
+
+    commitWithin = req.getParams().getInt(XmlUpdateRequestHandler.COMMIT_WITHIN, -1);
+    overwrite = req.getParams().getBool(XmlUpdateRequestHandler.OVERWRITE, true);
   }
 
   @Override
@@ -55,53 +64,65 @@ class JsonLoader extends ContentStreamLoader {
     Reader reader = null;
     try {
       reader = stream.getReader();
-      if (XmlUpdateRequestHandler.log.isTraceEnabled()) {
+      if (log.isTraceEnabled()) {
         String body = IOUtils.toString(reader);
-        XmlUpdateRequestHandler.log.trace("body", body);
+        log.trace("body", body);
         reader = new StringReader(body);
       }
 
-      JSONParser parser = new JSONParser(reader);
-      this.processUpdate(processor, parser);
+      parser = new JSONParser(reader);
+      this.processUpdate();
     }
     finally {
       IOUtils.closeQuietly(reader);
     }
   }
 
-  void processUpdate(UpdateRequestProcessor processor, JSONParser parser) throws IOException 
+  @SuppressWarnings("fallthrough")
+  void processUpdate() throws IOException
   {
     int ev = parser.nextEvent();
     while( ev != JSONParser.EOF ) {
       
       switch( ev )
       {
+        case JSONParser.ARRAY_START:
+          handleAdds();
+          break;
+
       case JSONParser.STRING:
         if( parser.wasKey() ) {
           String v = parser.getString();
           if( v.equals( XmlUpdateRequestHandler.ADD ) ) {
-            processor.processAdd( parseAdd( parser ) );
+            int ev2 = parser.nextEvent();
+            if (ev2 == JSONParser.OBJECT_START) {
+              processor.processAdd( parseAdd() );
+            } else if (ev2 == JSONParser.ARRAY_START) {
+              handleAdds();
+            } else {
+              assertEvent(ev2, JSONParser.OBJECT_START);
+            }
           }
           else if( v.equals( XmlUpdateRequestHandler.COMMIT ) ) {
-            CommitUpdateCommand cmd = new CommitUpdateCommand( false );
+            CommitUpdateCommand cmd = new CommitUpdateCommand(false);
             cmd.waitFlush = cmd.waitSearcher = true;
-            parseCommitOptions( parser, cmd );
+            parseCommitOptions( cmd );
             processor.processCommit( cmd );
           }
           else if( v.equals( XmlUpdateRequestHandler.OPTIMIZE ) ) {
-            CommitUpdateCommand cmd = new CommitUpdateCommand( true );
+            CommitUpdateCommand cmd = new CommitUpdateCommand(true);
             cmd.waitFlush = cmd.waitSearcher = true;
-            parseCommitOptions( parser, cmd );
+            parseCommitOptions( cmd );
             processor.processCommit( cmd );
           }
           else if( v.equals( XmlUpdateRequestHandler.DELETE ) ) {
-            processor.processDelete( parseDelete( parser ) );
+            processor.processDelete( parseDelete() );
           }
           else if( v.equals( XmlUpdateRequestHandler.ROLLBACK ) ) {
-            processor.processRollback( parseRollback( parser ) );
+            processor.processRollback( parseRollback() );
           }
           else {
-            throw new IOException( "Unknown command: "+v+" ["+parser.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: "+v+" ["+parser.getPosition()+"]" );
           }
           break;
         }
@@ -116,12 +137,11 @@ class JsonLoader extends ContentStreamLoader {
         
       case JSONParser.OBJECT_START:
       case JSONParser.OBJECT_END:
-      case JSONParser.ARRAY_START:
       case JSONParser.ARRAY_END:
         break;
         
       default:
-        System.out.println("UNKNOWN_EVENT_ID:"+ev);
+        log.info("Noggit UNKNOWN_EVENT_ID:"+ev);
         break;
       }
       // read the next event
@@ -129,191 +149,214 @@ class JsonLoader extends ContentStreamLoader {
     }
   }
 
-  DeleteUpdateCommand parseDelete(JSONParser js) throws IOException {
-    assertNextEvent( js, JSONParser.OBJECT_START );
+  DeleteUpdateCommand parseDelete() throws IOException {
+    assertNextEvent( JSONParser.OBJECT_START );
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
-    cmd.fromCommitted = cmd.fromPending = true; // TODO? enable this?
-    
+
     while( true ) {
-      int ev = js.nextEvent();
+      int ev = parser.nextEvent();
       if( ev == JSONParser.STRING ) {
-        String key = js.getString();
-        if( js.wasKey() ) {
+        String key = parser.getString();
+        if( parser.wasKey() ) {
           if( "id".equals( key ) ) {
-            cmd.id = js.getString();
+            cmd.id = parser.getString();
           }
           else if( "query".equals(key) ) {
-            cmd.query = js.getString();
+            cmd.query = parser.getString();
           }
           else {
-            throw new IOException( "Unknown key: "+key+" ["+js.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
           }
         }
         else {
-          throw new IOException( 
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "invalid string: " + key 
-              +" at ["+js.getPosition()+"]" );
+              +" at ["+parser.getPosition()+"]" );
         }
       }
       else if( ev == JSONParser.OBJECT_END ) {
         if( cmd.id == null && cmd.query == null ) {
-          throw new IOException( "Missing id or query for delete ["+js.getPosition()+"]" );          
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete ["+parser.getPosition()+"]" );
         }
         return cmd;
       }
       else {
-        throw new IOException( 
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Got: "+JSONParser.getEventString( ev  )
-            +" at ["+js.getPosition()+"]" );
+            +" at ["+parser.getPosition()+"]" );
       }
     }
   }
   
-  RollbackUpdateCommand parseRollback(JSONParser js) throws IOException {
-    assertNextEvent( js, JSONParser.OBJECT_START );
-    assertNextEvent( js, JSONParser.OBJECT_END );
+  RollbackUpdateCommand parseRollback() throws IOException {
+    assertNextEvent( JSONParser.OBJECT_START );
+    assertNextEvent( JSONParser.OBJECT_END );
     return new RollbackUpdateCommand();
   }
 
-  void parseCommitOptions( JSONParser js, CommitUpdateCommand cmd ) throws IOException
+  void parseCommitOptions(CommitUpdateCommand cmd ) throws IOException
   {
-    assertNextEvent( js, JSONParser.OBJECT_START );
+    assertNextEvent( JSONParser.OBJECT_START );
 
     while( true ) {
-      int ev = js.nextEvent();
+      int ev = parser.nextEvent();
       if( ev == JSONParser.STRING ) {
-        String key = js.getString();
-        if( js.wasKey() ) {
+        String key = parser.getString();
+        if( parser.wasKey() ) {
           if( XmlUpdateRequestHandler.WAIT_SEARCHER.equals( key ) ) {
-            cmd.waitSearcher = js.getBoolean();
+            cmd.waitSearcher = parser.getBoolean();
           }
           else if( XmlUpdateRequestHandler.WAIT_FLUSH.equals( key ) ) {
-            cmd.waitFlush = js.getBoolean();
+            cmd.waitFlush = parser.getBoolean();
           }
           else {
-            throw new IOException( "Unknown key: "+key+" ["+js.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
           }
         }
         else {
-          throw new IOException( 
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "invalid string: " + key 
-              +" at ["+js.getPosition()+"]" );
+              +" at ["+parser.getPosition()+"]" );
         }
       }
       else if( ev == JSONParser.OBJECT_END ) {
         return;
       }
       else {
-        throw new IOException( 
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Got: "+JSONParser.getEventString( ev  )
-            +" at ["+js.getPosition()+"]" );
+            +" at ["+parser.getPosition()+"]" );
       }
     }
   }
   
-  AddUpdateCommand parseAdd( JSONParser js ) throws IOException
+  AddUpdateCommand parseAdd() throws IOException
   {
-    assertNextEvent( js, JSONParser.OBJECT_START );
     AddUpdateCommand cmd = new AddUpdateCommand();
-    cmd.allowDups = false;
+    cmd.commitWithin = commitWithin;
+    cmd.overwriteCommitted = cmd.overwritePending = overwrite;
+    cmd.allowDups = !overwrite;
+
     float boost = 1.0f;
     
     while( true ) {
-      int ev = js.nextEvent();
+      int ev = parser.nextEvent();
       if( ev == JSONParser.STRING ) {
-        if( js.wasKey() ) {
-          String key = js.getString();
+        if( parser.wasKey() ) {
+          String key = parser.getString();
           if( "doc".equals( key ) ) {
             if( cmd.solrDoc != null ) {
-              throw new IOException( "multiple docs in same add command" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "multiple docs in same add command" );
             }
-            ev = assertNextEvent( js, JSONParser.OBJECT_START );
-            cmd.solrDoc = parseDoc( ev, js );
+            ev = assertNextEvent( JSONParser.OBJECT_START );
+            cmd.solrDoc = parseDoc( ev );
           }
           else if( XmlUpdateRequestHandler.OVERWRITE.equals( key ) ) {
-            cmd.allowDups = !js.getBoolean(); // reads next boolean
+            cmd.allowDups = !parser.getBoolean(); // reads next boolean
+            cmd.overwriteCommitted = cmd.overwritePending = !cmd.allowDups;
           }
           else if( XmlUpdateRequestHandler.COMMIT_WITHIN.equals( key ) ) {
-            cmd.commitWithin = (int)js.getLong(); 
+            cmd.commitWithin = (int)parser.getLong();
           }
           else if( "boost".equals( key ) ) {
-            boost = Float.parseFloat( js.getNumberChars().toString() ); 
+            boost = Float.parseFloat( parser.getNumberChars().toString() );
           }
           else {
-            throw new IOException( "Unknown key: "+key+" ["+js.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );
           }
         }
         else {
-          throw new IOException( 
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Should be a key "
-              +" at ["+js.getPosition()+"]" );
+              +" at ["+parser.getPosition()+"]" );
         }
       }
       else if( ev == JSONParser.OBJECT_END ) {
         if( cmd.solrDoc == null ) {
-          throw new IOException("missing solr document. "+js.getPosition() );
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"missing solr document. "+parser.getPosition() );
         }
         cmd.solrDoc.setDocumentBoost( boost ); 
-        cmd.overwriteCommitted = !cmd.allowDups;
-        cmd.overwritePending = !cmd.allowDups;
         return cmd;
       }
       else {
-        throw new IOException( 
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Got: "+JSONParser.getEventString( ev  )
-            +" at ["+js.getPosition()+"]" );
+            +" at ["+parser.getPosition()+"]" );
       }
     }
   }
-  
-  int assertNextEvent( JSONParser parser, int ev ) throws IOException
+
+
+  void handleAdds() throws IOException
+  {
+    while( true ) {
+      AddUpdateCommand cmd = new AddUpdateCommand();
+      cmd.commitWithin = commitWithin;
+      cmd.overwriteCommitted = cmd.overwritePending = overwrite;
+      cmd.allowDups = !overwrite;
+
+      int ev = parser.nextEvent();
+      if (ev == JSONParser.ARRAY_END) break;
+
+      assertEvent(ev, JSONParser.OBJECT_START);
+      cmd.solrDoc = parseDoc(ev);
+      processor.processAdd(cmd);
+    }
+  }
+
+
+  int assertNextEvent(int expected ) throws IOException
   {
     int got = parser.nextEvent();
-    if( ev != got ) {
-      throw new IOException( 
-          "Expected: "+JSONParser.getEventString( ev  )
-          +" but got "+JSONParser.getEventString( got )
-          +" at ["+parser.getPosition()+"]" );
-    }
+    assertEvent(got, expected);
     return got;
   }
+
+  void assertEvent(int ev, int expected) {
+    if( ev != expected ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected: "+JSONParser.getEventString( expected  )
+          +" but got "+JSONParser.getEventString( ev )
+          +" at ["+parser.getPosition()+"]" );
+    }
+  }
   
-  SolrInputDocument parseDoc( int ev, JSONParser js ) throws IOException
+  SolrInputDocument parseDoc(int ev) throws IOException
   {
     Stack<Object> stack = new Stack<Object>();
     Object obj = null;
     boolean inArray = false;
     
     if( ev != JSONParser.OBJECT_START ) {
-      throw new IOException( "object should already be started" );
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "object should already be started" );
     }
     
     while( true ) {
-      //System.out.println( ev + "["+JSONParser.getEventString(ev)+"] "+js.wasKey() ); //+ js.getString() );
+      //System.out.println( ev + "["+JSONParser.getEventString(ev)+"] "+parser.wasKey() ); //+ parser.getString() );
 
       switch (ev) {
         case JSONParser.STRING:
-          if( js.wasKey() ) {
+          if( parser.wasKey() ) {
             obj = stack.peek();
-            String v = js.getString();
+            String v = parser.getString();
             if( obj instanceof SolrInputField ) {
               SolrInputField field = (SolrInputField)obj;
               if( "boost".equals( v ) ) {
-                ev = js.nextEvent();
+                ev = parser.nextEvent();
                 if( ev != JSONParser.NUMBER &&
                     ev != JSONParser.LONG &&  
                     ev != JSONParser.BIGNUMBER ) {
-                  throw new IOException( "boost should have number! "+JSONParser.getEventString(ev) );
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boost should have number! "+JSONParser.getEventString(ev) );
                 }
-                field.setBoost( Float.valueOf( js.getNumberChars().toString() ) );
+                field.setBoost( Float.valueOf( parser.getNumberChars().toString() ) );
               }
               else if( "value".equals( v  ) ) {
                 // nothing special...
                 stack.push( field ); // so it can be popped
               }
               else {
-                throw new IOException( "invalid key: "+v + " ["+js.getPosition()+"]" );
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid key: "+v + " ["+ parser.getPosition()+"]" );
               }
             }
             else if( obj instanceof SolrInputDocument ) {
@@ -326,22 +369,22 @@ class JsonLoader extends ContentStreamLoader {
               stack.push( f );
             }
             else {
-              throw new IOException( "hymmm ["+js.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "hymmm ["+ parser.getPosition()+"]" );
             }
           }
           else {
-            addValToField(stack, js.getString(), inArray, js);
+            addValToField(stack, parser.getString(), inArray, parser);
           }
           break;
 
         case JSONParser.LONG:
         case JSONParser.NUMBER:
         case JSONParser.BIGNUMBER:
-          addValToField(stack, js.getNumberChars().toString(), inArray, js);
+          addValToField(stack, parser.getNumberChars().toString(), inArray, parser);
           break;
           
         case JSONParser.BOOLEAN:
-          addValToField(stack, js.getBoolean(),inArray, js);
+          addValToField(stack, parser.getBoolean(),inArray, parser);
           break;
           
         case JSONParser.OBJECT_START:
@@ -354,7 +397,7 @@ class JsonLoader extends ContentStreamLoader {
               // should alreay be pushed...
             }
             else {
-              throw new IOException( "should not start new object with: "+obj + " ["+js.getPosition()+"]" );
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should not start new object with: "+obj + " ["+ parser.getPosition()+"]" );
             }
           }
           break;
@@ -368,7 +411,7 @@ class JsonLoader extends ContentStreamLoader {
             // should already be pushed...
           }
           else {
-            throw new IOException( "should not start new object with: "+obj + " ["+js.getPosition()+"]" );
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should not start new object with: "+obj + " ["+ parser.getPosition()+"]" );
           }
           break;
 
@@ -386,18 +429,18 @@ class JsonLoader extends ContentStreamLoader {
           break;
       }
 
-      ev = js.nextEvent();
+      ev = parser.nextEvent();
       if( ev == JSONParser.EOF ) {
-        throw new IOException( "should finish doc first!" );
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should finish doc first!" );
       }
     }
   }
   
-  static void addValToField( Stack stack, Object val, boolean inArray, JSONParser js ) throws IOException
+  static void addValToField( Stack stack, Object val, boolean inArray, JSONParser parser ) throws IOException
   {
     Object obj = stack.peek();
     if( !(obj instanceof SolrInputField) ) {
-      throw new IOException( "hymmm ["+js.getPosition()+"]" );
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "hymmm ["+parser.getPosition()+"]" );
     }
     
     SolrInputField f = inArray

@@ -23,16 +23,25 @@ import java.util.List;
 
 import org.apache.noggit.JSONParser;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.junit.BeforeClass;
 
-public class JsonLoaderTest extends LuceneTestCase {
-
+public class JsonLoaderTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+  
   static String input = ("{\n" +
       "\n" +
       "'add': {\n" +
@@ -73,13 +82,12 @@ public class JsonLoaderTest extends LuceneTestCase {
 
   public void testParsing() throws Exception
   {
-    Reader reader = new StringReader(input);
-    
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    JsonLoader loader = new JsonLoader( p );
-    
-    loader.processUpdate( p, new JSONParser(reader) );
-    
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(input));
+
     assertEquals( 2, p.addCommands.size() );
     
     AddUpdateCommand add = p.addCommands.get(0);
@@ -94,7 +102,7 @@ public class JsonLoaderTest extends LuceneTestCase {
     f = d.getField( "f1" );
     assertEquals(2, f.getValues().size());
     assertEquals(3.45f, d.getDocumentBoost());
-    assertEquals(true, add.allowDups);
+    assertEquals(false, !add.allowDups);
     
 
     // parse the commit commands
@@ -122,8 +130,69 @@ public class JsonLoaderTest extends LuceneTestCase {
 
     // ROLLBACK COMMANDS
     assertEquals( 1, p.rollbackCommands.size() );
+
+    req.close();
   }
+
+
+  public void testSimpleFormat() throws Exception
+  {
+    String str = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
+    SolrQueryRequest req = req("commitWithin","100", "overwrite","false");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+
+    assertEquals( 2, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    assertEquals(add.commitWithin, 100);
+    assertEquals(!add.allowDups, false);
+
+    add = p.addCommands.get(1);
+    d = add.solrDoc;
+    f = d.getField( "id" );
+    assertEquals("2", f.getValue());
+    assertEquals(add.commitWithin, 100);
+    assertEquals(!add.allowDups, false);
+
+    req.close();
+  }
+
+  public void testSimpleFormatInAdd() throws Exception
+  {
+    String str = "{'add':[{'id':'1'},{'id':'2'}]}".replace('\'', '"');
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader( req, p );
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str));
+
+    assertEquals( 2, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    assertEquals(add.commitWithin, -1);
+    assertEquals(!add.allowDups, true);
+
+    add = p.addCommands.get(1);
+    d = add.solrDoc;
+    f = d.getField( "id" );
+    assertEquals("2", f.getValue());
+    assertEquals(add.commitWithin, -1);
+    assertEquals(!add.allowDups, true);
+
+    req.close();
+  }
+
 }
+
 
 class BufferingRequestProcessor extends UpdateRequestProcessor
 {
