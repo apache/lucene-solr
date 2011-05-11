@@ -19,11 +19,13 @@ package org.apache.lucene.analysis.it;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.fr.ElisionFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -38,6 +40,14 @@ import org.tartarus.snowball.ext.ItalianStemmer;
 
 /**
  * {@link Analyzer} for Italian.
+ * <p>
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating ItalianAnalyzer:
+ * <ul>
+ *   <li> As of 3.2, ElisionFilter with a set of Italian 
+ *        contractions is used by default.
+ * </ul>
  */
 public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   private final Set<?> stemExclusionSet;
@@ -45,6 +55,13 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Italian stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "italian_stop.txt";
   
+  private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
+      new CharArraySet(Version.LUCENE_CURRENT, 
+          Arrays.asList(
+          "c", "l", "all", "dall", "dell", "nell", "sull", "coll", "pell", 
+          "gl", "agl", "dagl", "degl", "negl", "sugl", "un", "m", "t", "s", "v", "d"
+          ), true));
+
   /**
    * Returns an unmodifiable instance of the default stop words set.
    * @return default stop words set.
@@ -112,7 +129,7 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
@@ -121,6 +138,9 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
+    if (matchVersion.onOrAfter(Version.LUCENE_32)) {
+      result = new ElisionFilter(matchVersion, result, DEFAULT_ARTICLES);
+    }
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
