@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -54,5 +55,19 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new ItalianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
+  /** test that the elisionfilter is working */
+  public void testContractions() throws IOException {
+    Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT);
+    assertAnalyzesTo(a, "dell'Italia", new String[] { "ital" });
+    assertAnalyzesTo(a, "l'Italiano", new String[] { "ital" });
+  }
+  
+  /** test that we don't enable this before 3.2*/
+  public void testContractionsBackwards() throws IOException {
+    Analyzer a = new ItalianAnalyzer(Version.LUCENE_31);
+    assertAnalyzesTo(a, "dell'Italia", new String[] { "dell'ital" });
+    assertAnalyzesTo(a, "l'Italiano", new String[] { "l'ital" });
   }
 }
