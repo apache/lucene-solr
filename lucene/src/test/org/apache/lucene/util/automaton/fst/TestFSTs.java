@@ -288,6 +288,36 @@ public class TestFSTs extends LuceneTestCase {
       }
       new FSTTester<IntsRef>(random, dir, inputMode, pairs, outputs).doTest();
     }
+
+    // Up to two positive ints, shared, generally but not
+    // monotonically increasing
+    {
+      if (VERBOSE) {
+        System.out.println("TEST: now test UpToTwoPositiveIntOutputs");
+      }
+      final UpToTwoPositiveIntOutputs outputs = UpToTwoPositiveIntOutputs.getSingleton(true);
+      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
+      long lastOutput = 0;
+      for(int idx=0;idx<terms.length;idx++) {
+        // Sometimes go backwards
+        long value = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+        while(value < 0) {
+          value = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+        }
+        final Object output;
+        if (random.nextInt(5) == 3) {
+          long value2 = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+          while(value2 < 0) {
+            value2 = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+          }
+          output = outputs.get(value, value2);
+        } else {
+          output = outputs.get(value);
+        }
+        pairs.add(new FSTTester.InputOutput<Object>(terms[idx], output));
+      }
+      new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest();
+    }
   }
 
   private static class FSTTester<T> {
@@ -328,11 +358,13 @@ public class TestFSTs extends LuceneTestCase {
       // no pruning
       doTest(0, 0);
 
-      // simple pruning
-      doTest(_TestUtil.nextInt(random, 1, 1+pairs.size()), 0);
-
-      // leafy pruning
-      doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()));
+      if (!(outputs instanceof UpToTwoPositiveIntOutputs)) {
+        // simple pruning
+        doTest(_TestUtil.nextInt(random, 1, 1+pairs.size()), 0);
+        
+        // leafy pruning
+        doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()));
+      }
     }
 
     // runs the term, returning the output, or null if term
@@ -421,7 +453,14 @@ public class TestFSTs extends LuceneTestCase {
                                                 prune1==0 && prune2==0, outputs);
 
       for(InputOutput<T> pair : pairs) {
-        builder.add(pair.input, pair.output);
+        if (pair.output instanceof UpToTwoPositiveIntOutputs.TwoLongs) {
+          final UpToTwoPositiveIntOutputs _outputs = (UpToTwoPositiveIntOutputs) outputs;
+          final UpToTwoPositiveIntOutputs.TwoLongs twoLongs = (UpToTwoPositiveIntOutputs.TwoLongs) pair.output;
+          ((Builder<Object>) builder).add(pair.input, (Object) _outputs.get(twoLongs.first));
+          ((Builder<Object>) builder).add(pair.input, (Object) _outputs.get(twoLongs.second));
+        } else {
+          builder.add(pair.input, pair.output);
+        }
       }
       FST<T> fst = builder.finish();
 

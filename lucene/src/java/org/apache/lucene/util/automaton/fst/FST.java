@@ -231,10 +231,13 @@ public class FST<T> {
   }
 
   void setEmptyOutput(T v) throws IOException {
-    if (emptyOutput != null && !emptyOutput.equals(v)) {
-      throw new IllegalStateException("empty output is already set: " + outputs.outputToString(emptyOutput) + " vs " + outputs.outputToString(v));
+    if (emptyOutput != null) {
+      if (!emptyOutput.equals(v)) {
+        emptyOutput = outputs.merge(emptyOutput, v);
+      }
+    } else {
+      emptyOutput = v;
     }
-    emptyOutput = v;
 
     // TODO: this is messy -- replace with sillyBytesWriter; maybe make
     // bytes private

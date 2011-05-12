@@ -261,9 +261,12 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
+  /** It's OK to add the same input twice in a row with
+   *  different outputs, as long as outputs impls the merge
+   *  method. */
   public void add(IntsRef input, T output) throws IOException {
     //System.out.println("\nFST ADD: input=" + input + " output=" + fst.outputs.outputToString(output));
-    assert lastInput.length == 0 || input.compareTo(lastInput) > 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
+    assert lastInput.length == 0 || input.compareTo(lastInput) >= 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
     assert validOutput(output);
 
     //System.out.println("\nadd: " + input);
@@ -347,8 +350,15 @@ public class Builder<T> {
       assert validOutput(output);
     }
 
-    // push remaining output:
-    frontier[prefixLenPlus1-1].setLastOutput(input.ints[input.offset + prefixLenPlus1-1], output);
+    if (lastInput.length == input.length && prefixLenPlus1 == 1+input.length) {
+      // same input more than 1 time in a row, mapping to
+      // multiple outputs
+      lastNode.output = fst.outputs.merge(lastNode.output, output);
+    } else {
+      // this new arc is private to this new input; set its
+      // arc output to the leftover output:
+      frontier[prefixLenPlus1-1].setLastOutput(input.ints[input.offset + prefixLenPlus1-1], output);
+    }
 
     // save last input
     lastInput.copy(input);
