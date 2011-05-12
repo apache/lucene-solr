@@ -36,7 +36,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -86,12 +89,12 @@ public class TokenSourcesTest extends LuceneTestCase {
     public void reset() {
       this.i = -1;
       this.tokens = new Token[] {
-          new Token(new char[] { 't', 'h', 'e' }, 0, 3, 0, 3),
-          new Token(new char[] { '{', 'f', 'o', 'x', '}' }, 0, 5, 0, 7),
-          new Token(new char[] { 'f', 'o', 'x' }, 0, 3, 4, 7),
-          new Token(new char[] { 'd', 'i', 'd' }, 0, 3, 8, 11),
-          new Token(new char[] { 'n', 'o', 't' }, 0, 3, 12, 15),
-          new Token(new char[] { 'j', 'u', 'm', 'p' }, 0, 4, 16, 20) };
+          new Token(new char[] {'t', 'h', 'e'}, 0, 3, 0, 3),
+          new Token(new char[] {'{', 'f', 'o', 'x', '}'}, 0, 5, 0, 7),
+          new Token(new char[] {'f', 'o', 'x'}, 0, 3, 4, 7),
+          new Token(new char[] {'d', 'i', 'd'}, 0, 3, 8, 11),
+          new Token(new char[] {'n', 'o', 't'}, 0, 3, 12, 15),
+          new Token(new char[] {'j', 'u', 'm', 'p'}, 0, 4, 16, 20)};
       this.tokens[1].setPositionIncrement(0);
     }
   }
@@ -173,6 +176,99 @@ public class TokenSourcesTest extends LuceneTestCase {
         final Highlighter highlighter = new Highlighter(
             new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
             new QueryScorer(query));
+        final TokenStream tokenStream = TokenSources
+            .getTokenStream(
+                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                false);
+        assertEquals("<B>the fox</B> did not jump",
+            highlighter.getBestFragment(tokenStream, TEXT));
+      } finally {
+        indexSearcher.close();
+      }
+    } finally {
+      indexReader.close();
+      directory.close();
+    }
+  }
+
+  public void testOverlapWithOffsetExactPhrase() throws CorruptIndexException,
+      LockObtainFailedException, IOException, InvalidTokenOffsetsException {
+    final String TEXT = "the fox did not jump";
+    final Directory directory = newDirectory();
+    final IndexWriter indexWriter = new IndexWriter(directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+    try {
+      final Document document = new Document();
+      document.add(new Field(FIELD, new TokenStreamOverlap(),
+          TermVector.WITH_OFFSETS));
+      indexWriter.addDocument(document);
+    } finally {
+      indexWriter.close();
+    }
+    final IndexReader indexReader = IndexReader.open(directory, true);
+    try {
+      assertEquals(1, indexReader.numDocs());
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
+      try {
+        // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+        // query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
+        // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+            new SpanTermQuery(new Term(FIELD, "the")),
+            new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+
+        TopDocs hits = indexSearcher.search(phraseQuery, 1);
+        assertEquals(1, hits.totalHits);
+        final Highlighter highlighter = new Highlighter(
+            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+            new QueryScorer(phraseQuery));
+        final TokenStream tokenStream = TokenSources
+            .getTokenStream(
+                (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
+                false);
+        assertEquals("<B>the fox</B> did not jump",
+            highlighter.getBestFragment(tokenStream, TEXT));
+      } finally {
+        indexSearcher.close();
+      }
+    } finally {
+      indexReader.close();
+      directory.close();
+    }
+  }
+
+  public void testOverlapWithPositionsAndOffsetExactPhrase()
+      throws CorruptIndexException, LockObtainFailedException, IOException,
+      InvalidTokenOffsetsException {
+    final String TEXT = "the fox did not jump";
+    final Directory directory = newDirectory();
+    final IndexWriter indexWriter = new IndexWriter(directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
+    try {
+      final Document document = new Document();
+      document.add(new Field(FIELD, new TokenStreamOverlap(),
+          TermVector.WITH_POSITIONS_OFFSETS));
+      indexWriter.addDocument(document);
+    } finally {
+      indexWriter.close();
+    }
+    final IndexReader indexReader = IndexReader.open(directory, true);
+    try {
+      assertEquals(1, indexReader.numDocs());
+      final IndexSearcher indexSearcher = newSearcher(indexReader);
+      try {
+        // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
+        // query.add(new SpanTermQuery(new Term(FIELD, "the")));
+        // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
+        final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+            new SpanTermQuery(new Term(FIELD, "the")),
+            new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+
+        TopDocs hits = indexSearcher.search(phraseQuery, 1);
+        assertEquals(1, hits.totalHits);
+        final Highlighter highlighter = new Highlighter(
+            new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
+            new QueryScorer(phraseQuery));
         final TokenStream tokenStream = TokenSources
             .getTokenStream(
                 (TermPositionVector) indexReader.getTermFreqVector(0, FIELD),
