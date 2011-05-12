@@ -65,16 +65,14 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
-  private final CodecProvider codecs;
   private Codec codec;
   private SegmentWriteState segmentWriteState;
 
   private PayloadProcessorProvider payloadProcessorProvider;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
-    this.codecs = codecs;
     segment = name;
     this.fieldInfos = fieldInfos;
     if (merge != null) {

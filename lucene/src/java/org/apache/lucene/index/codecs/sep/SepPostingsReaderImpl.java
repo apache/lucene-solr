@@ -85,7 +85,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, String codecId, Collection<String> files) {
+  public static void files(SegmentInfo segmentInfo, String codecId, Collection<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.DOC_EXTENSION));
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.SKIP_EXTENSION));
 

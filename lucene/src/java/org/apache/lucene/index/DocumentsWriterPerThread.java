@@ -235,6 +235,7 @@ public class DocumentsWriterPerThread {
           // mark document as deleted
           deleteDocID(docState.docID);
           numDocsInRAM++;
+          fieldInfos.revertUncommitted();
         } else {
           abort();
         }
@@ -377,15 +378,12 @@ public class DocumentsWriterPerThread {
     boolean success = false;
 
     try {
-
-      SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, fieldInfos.hasProx(), flushState.segmentCodecs, false, fieldInfos);
       consumer.flush(flushState);
       pendingDeletes.terms.clear();
-      newSegment.setHasVectors(flushState.hasVectors);
-
+      final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos.asReadOnly());
       if (infoStream != null) {
         message("new segment has " + (flushState.deletedDocs == null ? 0 : flushState.deletedDocs.count()) + " deleted docs");
-        message("new segment has " + (flushState.hasVectors ? "vectors" : "no vectors"));
+        message("new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
       }
@@ -433,10 +431,6 @@ public class DocumentsWriterPerThread {
 
   long bytesUsed() {
     return bytesUsed.get() + pendingDeletes.bytesUsed.get();
-  }
-
-  FieldInfos getFieldInfos() {
-    return fieldInfos;
   }
 
   void message(String message) {
@@ -498,4 +492,5 @@ public class DocumentsWriterPerThread {
     this.infoStream = infoStream;
     docState.infoStream = infoStream;
   }
+  
 }

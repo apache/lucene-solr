@@ -2355,7 +2355,7 @@ public class IndexWriter implements Closeable {
 
       String mergedName = newSegmentName();
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
-                                               mergedName, null, codecs, payloadProcessorProvider,
+                                               mergedName, null, payloadProcessorProvider,
                                                globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
 
       for (IndexReader reader : readers)      // add new indexes
@@ -2365,8 +2365,7 @@ public class IndexWriter implements Closeable {
 
       final FieldInfos fieldInfos = merger.fieldInfos();
       SegmentInfo info = new SegmentInfo(mergedName, docCount, directory,
-                                         false, fieldInfos.hasProx(), merger.getSegmentCodecs(),
-                                         fieldInfos.hasVectors(),
+                                         false, merger.getSegmentCodecs(),
                                          fieldInfos);
       setDiagnostics(info, "addIndexes(IndexReader...)");
 
@@ -3041,7 +3040,16 @@ public class IndexWriter implements Closeable {
     // is running (while synchronized) to avoid race
     // condition where two conflicting merges from different
     // threads, start
-    message("registerMerge merging=" + mergingSegments);
+    if (infoStream != null) {
+      StringBuilder builder = new StringBuilder("registerMerge merging= [");
+      for (SegmentInfo info : mergingSegments) {
+        builder.append(info.name).append(", ");  
+      }
+      builder.append("]");
+      // don't call mergingSegments.toString() could lead to ConcurrentModException
+      // since merge updates the segments FieldInfos
+      message(builder.toString());  
+    }
     for(SegmentInfo info : merge.segments) {
       message("registerMerge info=" + info);
       mergingSegments.add(info);
@@ -3094,7 +3102,7 @@ public class IndexWriter implements Closeable {
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
-    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, false, null, false, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
+    merge.info = new SegmentInfo(newSegmentName(), 0, directory, false, null, globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
 
     // Lock order: IW -> BD
     final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, merge.segments);
@@ -3258,16 +3266,14 @@ public class IndexWriter implements Closeable {
     List<SegmentInfo> sourceSegments = merge.segments;
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
-                                             codecs, payloadProcessorProvider,
-                                             merge.info.getFieldInfos());
+                                             payloadProcessorProvider, merge.info.getFieldInfos());
 
     if (infoStream != null) {
-      message("merging " + merge.segString(directory) + " mergeVectors=" + merger.fieldInfos().hasVectors());
+      message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());
     }
 
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
-
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -3309,8 +3315,6 @@ public class IndexWriter implements Closeable {
 
       // Record which codec was used to write the segment
       merge.info.setSegmentCodecs(merger.getSegmentCodecs());
-      // Record if we have merged vectors
-      merge.info.setHasVectors(merger.fieldInfos().hasVectors());
 
       if (infoStream != null) {
         message("merge segmentCodecs=" + merger.getSegmentCodecs());
@@ -3324,13 +3328,11 @@ public class IndexWriter implements Closeable {
       // because codec must know if prox was written for
       // this segment:
       //System.out.println("merger set hasProx=" + merger.hasProx() + " seg=" + merge.info.name);
-      merge.info.setHasProx(merger.fieldInfos().hasProx());
-
       boolean useCompoundFile;
       synchronized (this) { // Guard segmentInfos
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, merge.info);
       }
-
+      
       if (useCompoundFile) {
         success = false;
         final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
@@ -3532,6 +3534,7 @@ public class IndexWriter implements Closeable {
 
   // called only from assert
   private boolean filesExist(SegmentInfos toSync) throws IOException {
+    
     Collection<String> files = toSync.files(directory, false);
     for(final String fileName: files) {
       assert directory.fileExists(fileName): "file " + fileName + " does not exist";
