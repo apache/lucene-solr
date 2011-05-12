@@ -111,7 +111,6 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);
-        streams.result.reset(); // reset the SynonymTokenFilter
       }
       return streams.result;
     }

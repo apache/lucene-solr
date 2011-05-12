@@ -1093,6 +1093,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testMaxSizeHighlight() throws Exception {
+    final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    // we disable MockTokenizer checks because we will forcefully limit the 
+    // tokenstream and call end() before incrementToken() returns false.
+    analyzer.setEnableChecks(false);
     TestHighlightRunner helper = new TestHighlightRunner() {
 
       @Override
@@ -1122,7 +1126,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         String goodWord = "goodtoken";
         CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("stoppedtoken"));
-
+        // we disable MockTokenizer checks because we will forcefully limit the 
+        // tokenstream and call end() before incrementToken() returns false.
+        final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true);
+        analyzer.setEnableChecks(false);
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
         String match;
@@ -1134,13 +1141,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           sb.append("stoppedtoken");
         }
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        Highlighter hg = getHighlighter(query, "data", new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true).tokenStream(
+        Highlighter hg = getHighlighter(query, "data", analyzer.tokenStream(
             "data", new StringReader(sb.toString())), fm);// new Highlighter(fm,
         // new
         // QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(100);
-        match = hg.getBestFragment(new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true), "data", sb.toString());
+        match = hg.getBestFragment(analyzer, "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocCharsToAnalyze());
 
@@ -1151,7 +1158,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // + whitespace)
         sb.append(" ");
         sb.append(goodWord);
-        match = hg.getBestFragment(new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true), "data", sb.toString());
+        match = hg.getBestFragment(analyzer, "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocCharsToAnalyze());
       }
@@ -1726,6 +1733,11 @@ final class SynonymAnalyzer extends Analyzer {
     stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
+    try {
+      stream.reset();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return new SynonymTokenizer(stream, synonyms);
   }
 }

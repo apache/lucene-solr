@@ -192,6 +192,7 @@ public class FuzzyLikeThisQuery extends Query
         int corpusNumDocs=reader.numDocs();
         Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet<String> processedTerms=new HashSet<String>();
+        ts.reset();
         while (ts.incrementToken()) 
         {
                 String term = termAtt.toString();
@@ -244,7 +245,9 @@ public class FuzzyLikeThisQuery extends Query
 	                }                            
                 }
         	}
-        }     
+        }
+        ts.end();
+        ts.close();
     }
             
     @Override

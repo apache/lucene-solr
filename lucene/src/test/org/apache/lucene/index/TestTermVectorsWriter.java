@@ -121,7 +121,9 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    TokenStream stream = new CachingTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
+    TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd   "));
+    stream.reset(); // TODO: wierd to reset before wrapping with CachingTokenFilter... correct?
+    stream = new CachingTokenFilter(stream);
     Field f = new Field("field", stream, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
     doc.add(f);

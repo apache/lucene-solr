@@ -28,32 +28,38 @@ import org.apache.lucene.analysis.TokenStream;
 public class OffsetLimitTokenFilterTest extends BaseTokenStreamTestCase {
   
   public void testFilter() throws Exception {
-    TokenStream stream = new MockTokenizer(new StringReader(
+    // we disable MockTokenizer checks because we will forcefully limit the 
+    // tokenstream and call end() before incrementToken() returns false.
+    MockTokenizer stream = new MockTokenizer(new StringReader(
         "short toolong evenmuchlongertext a ab toolong foo"),
         MockTokenizer.WHITESPACE, false);
+    stream.setEnableChecks(false);
     OffsetLimitTokenFilter filter = new OffsetLimitTokenFilter(stream, 10);
     assertTokenStreamContents(filter, new String[] {"short", "toolong"});
     
     stream = new MockTokenizer(new StringReader(
     "short toolong evenmuchlongertext a ab toolong foo"),
     MockTokenizer.WHITESPACE, false);
+    stream.setEnableChecks(false);
     filter = new OffsetLimitTokenFilter(stream, 12);
     assertTokenStreamContents(filter, new String[] {"short", "toolong"});
     
     stream = new MockTokenizer(new StringReader(
         "short toolong evenmuchlongertext a ab toolong foo"),
         MockTokenizer.WHITESPACE, false);
+    stream.setEnableChecks(false);
     filter = new OffsetLimitTokenFilter(stream, 30);
     assertTokenStreamContents(filter, new String[] {"short", "toolong",
         "evenmuchlongertext"});
     
-    
+    // TODO: This is not actually testing reuse! (reusableTokenStream is not implemented)
     checkOneTermReuse(new Analyzer() {
       
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new OffsetLimitTokenFilter(new MockTokenizer(reader,
-            MockTokenizer.WHITESPACE, false), 10);
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false);
+        return new OffsetLimitTokenFilter(tokenizer, 10);
       }
     }, "llenges", "llenges");
   }

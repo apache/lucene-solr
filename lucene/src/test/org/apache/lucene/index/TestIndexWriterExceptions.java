@@ -155,7 +155,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     MockDirectoryWrapper dir = newDirectory();
 
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    MockAnalyzer analyzer = new MockAnalyzer(random);
+    analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
         .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
@@ -201,7 +203,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testRandomExceptionsThreads() throws Throwable {
     MockDirectoryWrapper dir = newDirectory();
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    MockAnalyzer analyzer = new MockAnalyzer(random);
+    analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
         .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
@@ -321,7 +325,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 
@@ -390,7 +396,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true)) {
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new TokenFilter(tokenizer) {
           private int count = 0;
 
           @Override
@@ -522,7 +530,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 
@@ -621,7 +631,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 

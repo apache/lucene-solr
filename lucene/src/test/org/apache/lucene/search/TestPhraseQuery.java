@@ -626,11 +626,14 @@ public class TestPhraseQuery extends LuceneTestCase {
           }
           TokenStream ts = analyzer.reusableTokenStream("ignore", new StringReader(term));
           CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+          ts.reset();
           while(ts.incrementToken()) {
             String text = termAttr.toString();
             doc.add(text);
             sb.append(text).append(' ');
           }
+          ts.end();
+          ts.close();
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));

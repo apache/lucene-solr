@@ -64,6 +64,7 @@ public class TermsFilterBuilder implements FilterBuilder
 		{
 			Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
+      ts.reset();
 	      while (ts.incrementToken()) {
 	        termAtt.fillBytesRef();
 				if (term == null)
@@ -76,6 +77,8 @@ public class TermsFilterBuilder implements FilterBuilder
 				}
 				tf.addTerm(term);
 			}
+	    ts.end();
+	    ts.close();
 		} 
 		catch (IOException ioe)
 		{

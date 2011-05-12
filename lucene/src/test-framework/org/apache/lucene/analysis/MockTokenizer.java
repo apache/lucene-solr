@@ -50,11 +50,27 @@ public class MockTokenizer extends Tokenizer {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   int off = 0;
 
+  // TODO: "register" with LuceneTestCase to ensure all streams are closed() ?
+  // currently, we can only check that the lifecycle is correct if someone is reusing,
+  // but not for "one-offs".
+  private static enum State { 
+    SETREADER,       // consumer set a reader input either via ctor or via reset(Reader)
+    RESET,           // consumer has called reset()
+    INCREMENT,       // consumer is consuming, has called incrementToken() == true
+    INCREMENT_FALSE, // consumer has called incrementToken() which returned false
+    END,             // consumer has called end() to perform end of stream operations
+    CLOSE            // consumer has called close() to release any resources
+  };
+  
+  private State streamState = State.CLOSE;
+  private boolean enableChecks = true;
+  
   public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
     super(factory, input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
+    this.streamState = State.SETREADER;
   }
 
   public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
@@ -62,10 +78,13 @@ public class MockTokenizer extends Tokenizer {
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
+    this.streamState = State.SETREADER;
   }
   
   @Override
   public final boolean incrementToken() throws IOException {
+    assert !enableChecks || (streamState == State.RESET || streamState == State.INCREMENT) 
+                            : "incrementToken() called while in wrong state: " + streamState;
     clearAttributes();
     for (;;) {
       int startOffset = off;
@@ -82,9 +101,11 @@ public class MockTokenizer extends Tokenizer {
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
         offsetAtt.setOffset(startOffset, endOffset);
+        streamState = State.INCREMENT;
         return true;
       }
     }
+    streamState = State.INCREMENT_FALSE;
     return false;
   }
 
@@ -126,11 +147,42 @@ public class MockTokenizer extends Tokenizer {
     super.reset();
     state = runAutomaton.getInitialState();
     off = 0;
+    assert !enableChecks || streamState != State.RESET : "double reset()";
+    streamState = State.RESET;
+  }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    // in some exceptional cases (e.g. TestIndexWriterExceptions) a test can prematurely close()
+    // these tests should disable this check, by default we check the normal workflow.
+    // TODO: investigate the CachingTokenFilter "double-close"... for now we ignore this
+    assert !enableChecks || streamState == State.END || streamState == State.CLOSE : "close() called in wrong state: " + streamState;
+    streamState = State.CLOSE;
+  }
+
+  @Override
+  public void reset(Reader input) throws IOException {
+    super.reset(input);
+    assert !enableChecks || streamState == State.CLOSE : "setReader() called in wrong state: " + streamState;
+    streamState = State.SETREADER;
   }
 
   @Override
   public void end() throws IOException {
     int finalOffset = correctOffset(off);
     offsetAtt.setOffset(finalOffset, finalOffset);
+    // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.
+    // these tests should disable this check (in general you should consume the entire stream)
+    assert !enableChecks || streamState == State.INCREMENT_FALSE : "end() called before incrementToken() returned false!";
+    streamState = State.END;
+  }
+
+  /** 
+   * Toggle consumer workflow checking: if your test consumes tokenstreams normally you
+   * should leave this enabled.
+   */
+  public void setEnableChecks(boolean enableChecks) {
+    this.enableChecks = enableChecks;
   }
 }

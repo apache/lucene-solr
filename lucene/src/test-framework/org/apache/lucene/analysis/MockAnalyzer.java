@@ -36,6 +36,7 @@ public final class MockAnalyzer extends Analyzer {
   private int positionIncrementGap;
   private final Random random;
   private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
+  private boolean enableChecks = true;
 
   /**
    * Creates a new MockAnalyzer.
@@ -75,6 +76,7 @@ public final class MockAnalyzer extends Analyzer {
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     MockTokenizer tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
+    tokenizer.setEnableChecks(enableChecks);
     TokenFilter filt = new MockTokenFilter(tokenizer, filter, enablePositionIncrements);
     filt = maybePayload(filt, fieldName);
     return filt;
@@ -98,13 +100,13 @@ public final class MockAnalyzer extends Analyzer {
     if (saved == null) {
       saved = new SavedStreams();
       saved.tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
+      saved.tokenizer.setEnableChecks(enableChecks);
       saved.filter = new MockTokenFilter(saved.tokenizer, filter, enablePositionIncrements);
       saved.filter = maybePayload(saved.filter, fieldName);
       map.put(fieldName, saved);
       return saved.filter;
     } else {
       saved.tokenizer.reset(reader);
-      saved.filter.reset();
       return saved.filter;
     }
   }
@@ -138,5 +140,13 @@ public final class MockAnalyzer extends Analyzer {
   @Override
   public int getPositionIncrementGap(String fieldName){
     return positionIncrementGap;
+  }
+  
+  /** 
+   * Toggle consumer workflow checking: if your test consumes tokenstreams normally you
+   * should leave this enabled.
+   */
+  public void setEnableChecks(boolean enableChecks) {
+    this.enableChecks = enableChecks;
   }
 }
