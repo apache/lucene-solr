@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
@@ -157,10 +158,13 @@ public class TokenSources {
 
       OffsetAttribute offsetAtt;
 
+      PositionIncrementAttribute posincAtt;
+
       StoredTokenStream(Token tokens[]) {
         this.tokens = tokens;
         termAtt = addAttribute(CharTermAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
+        posincAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
       }
 
       @Override
@@ -172,6 +176,10 @@ public class TokenSources {
         clearAttributes();
         termAtt.setEmpty().append(token);
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
+        posincAtt
+            .setPositionIncrement(currentToken <= 1
+                || tokens[currentToken - 1].startOffset() > tokens[currentToken - 2]
+                    .startOffset() ? 1 : 0);
         return true;
       }
     }
@@ -179,7 +187,6 @@ public class TokenSources {
     String[] terms = tpv.getTerms();
     int[] freq = tpv.getTermFrequencies();
     int totalTokens = 0;
-
     for (int t = 0; t < freq.length; t++) {
       totalTokens += freq[t];
     }
@@ -188,7 +195,8 @@ public class TokenSources {
     for (int t = 0; t < freq.length; t++) {
       TermVectorOffsetInfo[] offsets = tpv.getOffsets(t);
       if (offsets == null) {
-        throw new IllegalArgumentException("Required TermVector Offset information was not found");
+        throw new IllegalArgumentException(
+            "Required TermVector Offset information was not found");
       }
 
       int[] pos = null;
@@ -232,10 +240,9 @@ public class TokenSources {
           .size()]);
       ArrayUtil.mergeSort(tokensInOriginalOrder, new Comparator<Token>() {
         public int compare(Token t1, Token t2) {
-          if (t1.startOffset() == t2.startOffset())
-            return t1.endOffset() - t2.endOffset();
-          else
-            return t1.startOffset() - t2.startOffset();
+          if (t1.startOffset() == t2.startOffset()) return t1.endOffset()
+              - t2.endOffset();
+          else return t1.startOffset() - t2.startOffset();
         }
       });
     }
