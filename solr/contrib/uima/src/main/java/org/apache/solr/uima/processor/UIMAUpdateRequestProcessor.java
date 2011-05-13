@@ -20,7 +20,9 @@ package org.apache.solr.uima.processor;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.solr.uima.processor.ae.AEProvider;
@@ -58,12 +60,15 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    String text = null;
     try {
       /* get Solr document */
       SolrInputDocument solrInputDocument = cmd.getSolrInputDocument();
 
       /* get the fields to analyze */
-      for (String text : getTextsToAnalyze(solrInputDocument)) {
+      String[] texts = getTextsToAnalyze(solrInputDocument);
+      for (int i = 0; i < texts.length; i++) {
+        text = texts[i];
         if (text != null && !"".equals(text)) {
           /* process the text value */
           JCas jcas = processText(text);
@@ -79,7 +84,21 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
         }
       }
     } catch (UIMAException e) {
-      throw new RuntimeException(e);
+      String logField = solrUIMAConfiguration.getLogField();
+      String optionalFieldInfo = logField == null ? "." :
+        new StringBuilder(". ").append(logField).append("=")
+        .append((String)cmd.getSolrInputDocument().getField(logField).getValue())
+        .append(", ").toString();
+      if (solrUIMAConfiguration.isIgnoreErrors())
+        log.warn(new StringBuilder("skip the text processing due to ")
+          .append(e.getLocalizedMessage()).append(optionalFieldInfo)
+          .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString());
+      else{
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            new StringBuilder("processing error: ")
+              .append(e.getLocalizedMessage()).append(optionalFieldInfo)
+              .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString(), e);
+      }
     }
     super.processAdd(cmd);
   }

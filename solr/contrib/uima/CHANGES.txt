@@ -33,6 +33,9 @@ New Features
 
 * SOLR-2503: extend mapping function to map feature value to dynamicField. (koji)
 
+* SOLR-2512: add ignoreErrors flag so that users can ignore exceptions in AE.
+  (Tommaso Teofili, koji)
+
 Test Cases:
 ----------------------
 
