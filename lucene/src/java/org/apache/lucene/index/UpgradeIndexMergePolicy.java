@@ -40,6 +40,11 @@ import java.util.Set;
   *  w.optimize();
   *  w.close();
   * </pre>
+  * <p><b>Warning:</b> This merge policy may reorder documents if the index was partially
+  * upgraded before calling optimize (e.g., documents were added). If your application relies
+  * on &quot;monotonicity&quot; of doc IDs (which means that the order in which the documents
+  * were added to the index is preserved), do a full optimize instead. Please note, the
+  * delegate {@code MergePolicy} may also reorder documents.
   * @lucene.experimental
   * @see IndexUpgrader
   */
