@@ -30,6 +30,13 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
           <str name="oc_licenseID">VALID_OPENCALAIS_KEY</str>
         </lst>
         <str name="analysisEngine">/org/apache/uima/desc/OverridingParamsExtServicesAE.xml</str>
+        <!-- Set to true if you want to continue indexing even if text processing fails.
+             Default is false. That is, Solr throws RuntimeException and
+             never indexed documents entirely in your session. -->
+        <bool name="ignoreErrors">true</bool>
+        <!-- This is optional. It is used for logging when text processing fails.
+             Usually, set uniqueKey field name -->
+        <str name="logField">id</str>
         <lst name="analyzeFields">
           <bool name="merge">false</bool>
           <arr name="fields">

@@ -36,14 +36,20 @@ public class SolrUIMAConfiguration {
 
   private Map<String, Object> runtimeParameters;
 
+  private boolean ignoreErrors;
+  
+  private String logField;
+
   public SolrUIMAConfiguration(String aePath, String[] fieldsToAnalyze, boolean fieldsMerging,
           Map<String, Map<String, MapField>> typesFeaturesFieldsMapping,
-          Map<String, Object> runtimeParameters) {
+          Map<String, Object> runtimeParameters, boolean ignoreErrors, String logField) {
     this.aePath = aePath;
     this.fieldsToAnalyze = fieldsToAnalyze;
     this.fieldsMerging = fieldsMerging;
     this.runtimeParameters = runtimeParameters;
     this.typesFeaturesFieldsMapping = typesFeaturesFieldsMapping;
+    this.ignoreErrors = ignoreErrors;
+    this.logField = logField;
   }
 
   public String[] getFieldsToAnalyze() {
@@ -64,6 +70,14 @@ public class SolrUIMAConfiguration {
 
   public Map<String, Object> getRuntimeParameters() {
     return runtimeParameters;
+  }
+
+  public boolean isIgnoreErrors() {
+    return ignoreErrors;
+  }
+  
+  public String getLogField(){
+    return logField;
   }
   
   static final class MapField {

@@ -1003,7 +1003,6 @@
         </lst>
       </lst>
     </processor>
-    <processor class="solr.LogUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
@@ -1035,6 +1034,48 @@
         </lst>
       </lst>
     </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="uima-not-ignoreErrors">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestExceptionAE.xml</str>
+        <bool name="ignoreErrors">false</bool>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings"/>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="uima-ignoreErrors">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestExceptionAE.xml</str>
+        <bool name="ignoreErrors">true</bool>
+        <!-- This is optional. It is used for logging when text processing fails. Usually, set uniqueKey field name -->
+        <str name="logField">id</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings"/>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <!--
