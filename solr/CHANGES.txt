@@ -241,6 +241,11 @@ Other Changes
 * SOLR-2461: QuerySenderListener and AbstractSolrEventListener are 
   now public (hossman)
 
+* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
+  tolerance delta used in numeric equalities.  This allows for slight 
+  variance in asserting score comparisons in unit tests.
+  (David Smiley, Chris Hostetter)
+
 Documentation
 ----------------------
 
