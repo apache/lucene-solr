@@ -456,8 +456,9 @@ public class TestFSTs extends LuceneTestCase {
         if (pair.output instanceof UpToTwoPositiveIntOutputs.TwoLongs) {
           final UpToTwoPositiveIntOutputs _outputs = (UpToTwoPositiveIntOutputs) outputs;
           final UpToTwoPositiveIntOutputs.TwoLongs twoLongs = (UpToTwoPositiveIntOutputs.TwoLongs) pair.output;
-          ((Builder<Object>) builder).add(pair.input, (Object) _outputs.get(twoLongs.first));
-          ((Builder<Object>) builder).add(pair.input, (Object) _outputs.get(twoLongs.second));
+          @SuppressWarnings("unchecked") final Builder<Object> builderObject = (Builder<Object>) builder;
+          builderObject.add(pair.input, _outputs.get(twoLongs.first));
+          builderObject.add(pair.input, _outputs.get(twoLongs.second));
         } else {
           builder.add(pair.input, pair.output);
         }
