@@ -55,9 +55,9 @@ public class TermsQueryBuilder implements QueryBuilder {
  		
 		BooleanQuery bq=new BooleanQuery(DOMUtils.getAttribute(e,"disableCoord",false));
 		bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e,"minimumNumberShouldMatch",0));
-		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
 		try
 		{
+	    TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
 		  TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
 			Term term = null;
       BytesRef bytes = termAtt.getBytesRef();

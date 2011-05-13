@@ -79,6 +79,11 @@ New Features
 
  * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
 
+Optimizations
+
+ * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
+   over to reusableTokenStream().  (Robert Muir)
+
 ======================= Lucene 3.1.0 =======================
 
 Changes in backwards compatibility policy
