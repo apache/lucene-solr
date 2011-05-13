@@ -47,23 +47,23 @@ import java.util.*;
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
   private transient static Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
-  private SolrInputDocument document;
+  protected SolrInputDocument document;
 
-  private Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
+  protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
 
-  private Metadata metadata;
-  private SolrParams params;
-  private StringBuilder catchAllBuilder = new StringBuilder(2048);
-  private IndexSchema schema;
-  private Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
+  protected Metadata metadata;
+  protected SolrParams params;
+  protected StringBuilder catchAllBuilder = new StringBuilder(2048);
+  protected IndexSchema schema;
+  protected Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
   private LinkedList<StringBuilder> bldrStack = new LinkedList<StringBuilder>();
 
-  private boolean captureAttribs;
-  private boolean lowerNames;
-  private String contentFieldName = "content";
+  protected boolean captureAttribs;
+  protected boolean lowerNames;
+  protected String contentFieldName = "content";
 
-  private String unknownFieldPrefix = "";
-  private String defaultField = "";
+  protected String unknownFieldPrefix = "";
+  protected String defaultField = "";
 
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     this(metadata, params, schema, DateUtil.DEFAULT_DATE_FORMATS);
@@ -99,16 +99,57 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    * The base implementation adds the metadata as fields, allowing for potential remapping.
    *
    * @return The {@link org.apache.solr.common.SolrInputDocument}.
+   *
+   * @see #addMetadata()
+   * @see #addCapturedContent()
+   * @see #addContent()
+   * @see #addLiterals()
    */
   public SolrInputDocument newDocument() {
     float boost = 1.0f;
     //handle the metadata extracted from the document
-    for (String name : metadata.names()) {
-      String[] vals = metadata.getValues(name);
-      addField(name, null, vals);
-    }
+    addMetadata();
 
     //handle the literals from the params
+    addLiterals();
+
+
+    //add in the content
+    addContent();
+
+    //add in the captured content
+    addCapturedContent();
+
+    if (log.isDebugEnabled()) {
+      log.debug("Doc: {}", document);
+    }
+    return document;
+  }
+
+  /**
+   * Add the per field captured content to the Solr Document.  Default implementation uses the
+   * {@link #fieldBuilders} info
+   */
+  protected void addCapturedContent() {
+    for (Map.Entry<String, StringBuilder> entry : fieldBuilders.entrySet()) {
+      if (entry.getValue().length() > 0) {
+        addField(entry.getKey(), entry.getValue().toString(), null);
+      }
+    }
+  }
+
+  /**
+   * Add in the catch all content to the field.  Default impl. uses the {@link #contentFieldName}
+   * and the {@link #catchAllBuilder}
+   */
+  protected void addContent() {
+    addField(contentFieldName, catchAllBuilder.toString(), null);
+  }
+
+  /**
+   * Add in the literals to the document using the {@link #params} and the {@link #LITERALS_PREFIX}.
+   */
+  protected void addLiterals() {
     Iterator<String> paramNames = params.getParameterNamesIterator();
     while (paramNames.hasNext()) {
       String pname = paramNames.next();
@@ -117,28 +158,23 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       String name = pname.substring(LITERALS_PREFIX.length());
       addField(name, null, params.getParams(pname));
     }
+  }
 
-
-    //add in the content
-    addField(contentFieldName, catchAllBuilder.toString(), null);
-
-    //add in the captured content
-    for (Map.Entry<String, StringBuilder> entry : fieldBuilders.entrySet()) {
-      if (entry.getValue().length() > 0) {
-        addField(entry.getKey(), entry.getValue().toString(), null);
-      }
+  /**
+   * Add in any metadata using {@link #metadata} as the source.
+   */
+  protected void addMetadata() {
+    for (String name : metadata.names()) {
+      String[] vals = metadata.getValues(name);
+      addField(name, null, vals);
     }
-    if (log.isDebugEnabled()) {
-      log.debug("Doc: " + document);
-    }
-    return document;
   }
 
   // Naming rules:
   // 1) optionally map names to nicenames (lowercase+underscores)
   // 2) execute "map" commands
   // 3) if resulting field is unknown, map it to a common prefix
-  private void addField(String fname, String fval, String[] vals) {
+  protected void addField(String fname, String fval, String[] vals) {
     if (lowerNames) {
       StringBuilder sb = new StringBuilder();
       for (int i=0; i<fname.length(); i++) {
