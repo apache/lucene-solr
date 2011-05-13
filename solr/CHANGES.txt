@@ -115,7 +115,11 @@ Other Changes
 	
 * SOLR-2485: Deprecate BaseResponseWriter, GenericBinaryResponseWriter, and 
   GenericTextResponseWriter.  These classes will be removed in 4.0.  (ryan)
-	
+
+* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
+  tolerance delta used in numeric equalities.  This allows for slight 
+  variance in asserting score comparisons in unit tests.
+  (David Smiley, Chris Hostetter)
 
 Build
 ----------------------
