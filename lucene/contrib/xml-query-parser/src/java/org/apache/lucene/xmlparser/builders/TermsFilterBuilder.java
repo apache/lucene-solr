@@ -56,11 +56,11 @@ public class TermsFilterBuilder implements FilterBuilder
 		TermsFilter tf = new TermsFilter();
 		String text = DOMUtils.getNonBlankTextOrFail(e);
 		String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
 		try
 		{
+	    TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+	    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			Term term = null;
       ts.reset();
 	      while (ts.incrementToken()) {

@@ -55,7 +55,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 		try
 		{
 			ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
-			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
+			TokenStream ts=analyzer.reusableTokenStream(fieldName,new StringReader(value));
 			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			
       ts.reset();

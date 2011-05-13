@@ -54,10 +54,10 @@ public class TermsQueryBuilder implements QueryBuilder {
  		
 		BooleanQuery bq=new BooleanQuery(DOMUtils.getAttribute(e,"disableCoord",false));
 		bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e,"minimumNumberShouldMatch",0));
-		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
 		try
 		{
-		  CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+	    TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			Term term = null;
       ts.reset();
 			while (ts.incrementToken()) {

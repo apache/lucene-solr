@@ -121,9 +121,9 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       String text = fieldNode.getTextAsString();
       String field = fieldNode.getFieldAsString();
 
-      TokenStream source = this.analyzer.tokenStream(field, new StringReader(
-          text));
+      TokenStream source;
       try {
+        source = this.analyzer.reusableTokenStream(field, new StringReader(text));
         source.reset();
       } catch (IOException e1) {
         throw new RuntimeException(e1);

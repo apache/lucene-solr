@@ -890,7 +890,7 @@ public final class MoreLikeThis {
 	private void addTermFrequencies(Reader r, Map<String,Int> termFreqMap, String fieldName)
 		throws IOException
 	{
-		   TokenStream ts = analyzer.tokenStream(fieldName, r);
+		   TokenStream ts = analyzer.reusableTokenStream(fieldName, r);
 			int tokenCount=0;
 			// for every token
 			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
