@@ -24,12 +24,14 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.LoadFirstFieldSelector;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -511,4 +513,69 @@ public class TestFieldsReader extends LuceneTestCase {
     }
 
   }
+  
+  public void testNumericField() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final int numDocs = _TestUtil.nextInt(random, 500, 1000) * RANDOM_MULTIPLIER;
+    final Number[] answers = new Number[numDocs];
+    final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
+    for(int id=0;id<numDocs;id++) {
+      Document doc = new Document();
+      NumericField nf = new NumericField("nf", Field.Store.YES, false);
+      doc.add(nf);
+      final Number answer;
+      final NumericField.DataType typeAnswer;
+      if (random.nextBoolean()) {
+        // float/double
+        if (random.nextBoolean()) {
+          final float f = random.nextFloat();
+          nf.setFloatValue(f);
+          answer = Float.valueOf(f);
+          typeAnswer = NumericField.DataType.FLOAT;
+        } else {
+          final double d = random.nextDouble();
+          nf.setDoubleValue(d);
+          answer = Double.valueOf(d);
+          typeAnswer = NumericField.DataType.DOUBLE;
+        }
+      } else {
+        // int/long
+        if (random.nextBoolean()) {
+          final int i = random.nextInt();
+          nf.setIntValue(i);
+          answer = Integer.valueOf(i);
+          typeAnswer = NumericField.DataType.INT;
+        } else {
+          final long l = random.nextLong();
+          nf.setLongValue(l);
+          answer = Long.valueOf(l);
+          typeAnswer = NumericField.DataType.LONG;
+        }
+      }
+      answers[id] = answer;
+      typeAnswers[id] = typeAnswer;
+      doc.add(new NumericField("id", Integer.MAX_VALUE, Field.Store.NO, true).setIntValue(id));
+      w.addDocument(doc);
+    }
+    final IndexReader r = w.getReader();
+    w.close();
+    
+    assertEquals(numDocs, r.numDocs());
+
+    for(IndexReader sub : r.getSequentialSubReaders()) {
+      final int[] ids = FieldCache.DEFAULT.getInts(sub, "id");
+      for(int docID=0;docID<sub.numDocs();docID++) {
+        final Document doc = sub.document(docID);
+        final Fieldable f = doc.getFieldable("nf");
+        assertTrue("got f=" + f, f instanceof NumericField);
+        final NumericField nf = (NumericField) f;
+        assertEquals(answers[ids[docID]], nf.getNumericValue());
+        assertSame(typeAnswers[ids[docID]], nf.getDataType());
+      }
+    }
+    r.close();
+    dir.close();
+  }
+  
 }

@@ -61,6 +61,7 @@ public class TermsQueryBuilder implements QueryBuilder {
 		  TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
 			Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
+      ts.reset();
 			while (ts.incrementToken()) {
         termAtt.fillBytesRef();
 				if (term == null)
@@ -73,6 +74,8 @@ public class TermsQueryBuilder implements QueryBuilder {
 				}
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}
+			ts.end();
+			ts.close();
 		} 
 		catch (IOException ioe)
 		{

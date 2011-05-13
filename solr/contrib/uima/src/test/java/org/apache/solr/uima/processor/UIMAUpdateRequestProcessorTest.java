@@ -33,6 +33,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,6 +68,26 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
             .getFactories()[0];
     assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+  }
+
+  @Test
+  public void testMultiMap() {
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uima-multi-map");
+    assertNotNull(chained);
+    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
+            .getFactories()[0];
+    assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+    SolrUIMAConfiguration conf = ((UIMAUpdateRequestProcessor)processor).solrUIMAConfiguration;
+    Map<String, Map<String, MapField>> map = conf.getTypesFeaturesFieldsMapping();
+    Map<String, MapField> subMap = map.get("a-type-which-can-have-multiple-features");
+    assertEquals(2, subMap.size());
+    assertEquals("1", subMap.get("A").getFieldName(null));
+    assertEquals("2", subMap.get("B").getFieldName(null));
   }
 
   @Test
@@ -83,7 +105,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("sentence:*"), "//*[@numFound='1']");
     assertQ(req("sentiment:*"), "//*[@numFound='0']");
-    assertQ(req("entity:Prague"), "//*[@numFound='1']");
+    assertQ(req("OTHER_sm:Prague"), "//*[@numFound='1']");
   }
 
   @Test
@@ -103,7 +125,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     assertQ(req("sentence:*"), "//*[@numFound='2']");
 
     assertQ(req("sentiment:positive"), "//*[@numFound='1']");
-    assertQ(req("entity:Apache"), "//*[@numFound='2']");
+    assertQ(req("ORGANIZATION_sm:Apache"), "//*[@numFound='2']");
   }
 
   private void addDoc(String doc) throws Exception {

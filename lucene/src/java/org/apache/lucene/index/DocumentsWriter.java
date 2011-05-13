@@ -188,7 +188,7 @@ final class DocumentsWriter {
     this.infoStream = infoStream;
     final Iterator<ThreadState> it = perThreadPool.getAllPerThreadsIterator();
     while (it.hasNext()) {
-      it.next().perThread.docState.infoStream = infoStream;
+      it.next().perThread.setInfoStream(infoStream);
     }
   }
 

@@ -135,6 +135,7 @@ public class TestBytesRefHash extends LuceneTestCase {
   public void testCompact() {
     BytesRef ref = new BytesRef();
     for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+      int numEntries = 0;
       final int size = 797;
       BitSet bits = new BitSet(size);
       for (int i = 0; i < size; i++) {
@@ -143,13 +144,21 @@ public class TestBytesRefHash extends LuceneTestCase {
           str = _TestUtil.randomRealisticUnicodeString(random, 1000);
         } while (str.length() == 0);
         ref.copy(str);
-        bits.set(hash.add(ref));
-
+        final int key = hash.add(ref);
+        if (key < 0) {
+          assertTrue(bits.get((-key)-1));
+        } else {
+          assertFalse(bits.get(key));
+          bits.set(key);
+          numEntries++;
+        }
       }
       assertEquals(hash.size(), bits.cardinality());
+      assertEquals(numEntries, bits.cardinality());
+      assertEquals(numEntries, hash.size());
       int[] compact = hash.compact();
-      assertTrue(size < compact.length);
-      for (int i = 0; i < size; i++) {
+      assertTrue(numEntries < compact.length);
+      for (int i = 0; i < numEntries; i++) {
         bits.set(compact[i], false);
       }
       assertEquals(0, bits.cardinality());

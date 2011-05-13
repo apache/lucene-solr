@@ -1,7 +1,9 @@
-package org.apache.lucene.util;
+package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.io.Reader;
+
+import org.apache.lucene.util.Version;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

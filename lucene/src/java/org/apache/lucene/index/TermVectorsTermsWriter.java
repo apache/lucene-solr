@@ -63,7 +63,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       }
 
       lastDocID = 0;
-      state.hasVectors = hasVectors;
       hasVectors = false;
     }
 
@@ -121,8 +120,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     fill(docState.docID);
 
     // Append term vectors to the real outputs:
-    long pointer = tvd.getFilePointer();
-    tvx.writeLong(pointer);
+    tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
     tvd.writeVInt(numVectorFields);
     if (numVectorFields > 0) {
@@ -136,6 +134,8 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         tvd.writeVLong(pos-lastPos);
         lastPos = pos;
         perFields[i].finishDocument();
+        // commit the termVectors once successful success - FI will otherwise reset them
+        perFields[i].fieldInfo.commitVectors();
       }
     }
 

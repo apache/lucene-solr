@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,10 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
+
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 
 
 /**
@@ -42,7 +46,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     // internal buffer size is 1024 make sure we have a surrogate pair right at the border
     builder.insert(1023, "\ud801\udc1c");
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString()), MockTokenizer.SIMPLE, true);
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
     assertTokenStreamContents(tokenizer, builder.toString().toLowerCase().split(" "));
   }
   
@@ -59,7 +63,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         builder.append("a");
       }
       builder.append("\ud801\udc1cabc");
-      MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString()), MockTokenizer.SIMPLE, true);
+      Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
       assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase()});
     }
   }
@@ -73,7 +77,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     for (int i = 0; i < 255; i++) {
       builder.append("A");
     }
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString() + builder.toString()), MockTokenizer.SIMPLE, true);
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
   }
   
@@ -87,7 +91,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       builder.append("A");
     }
     builder.append("\ud801\udc1c");
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString() + builder.toString()), MockTokenizer.SIMPLE, true);
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
   }
 }

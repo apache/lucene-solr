@@ -231,10 +231,13 @@ public class FST<T> {
   }
 
   void setEmptyOutput(T v) throws IOException {
-    if (emptyOutput != null && !emptyOutput.equals(v)) {
-      throw new IllegalStateException("empty output is already set: " + outputs.outputToString(emptyOutput) + " vs " + outputs.outputToString(v));
+    if (emptyOutput != null) {
+      if (!emptyOutput.equals(v)) {
+        emptyOutput = outputs.merge(emptyOutput, v);
+      }
+    } else {
+      emptyOutput = v;
     }
-    emptyOutput = v;
 
     // TODO: this is messy -- replace with sillyBytesWriter; maybe make
     // bytes private
@@ -446,25 +449,17 @@ public class FST<T> {
     // reverse bytes in-place; we do this so that the
     // "BIT_TARGET_NEXT" opto can work, ie, it reads the
     // node just before the current one
-    final int endAddress = writer.posWrite;
-    final int stopAt = (endAddress - startAddress)/2;
-    int upto = 0;
-    while (upto < stopAt) {
-      final byte b = bytes[startAddress+upto];
-      bytes[startAddress+upto] = bytes[endAddress-upto-1];
-      bytes[endAddress-upto-1] = b;
-      upto++;
+    final int endAddress = lastFrozenNode = writer.posWrite - 1;
+
+    int left = startAddress;
+    int right = endAddress;
+    while (left < right) {
+      final byte b = bytes[left];
+      bytes[left++] = bytes[right];
+      bytes[right--] = b;
     }
 
-    lastFrozenNode = endAddress - 1;
-    /*
-    System.out.println("  return node addr=" + (endAddress-1));
-    for(int i=endAddress-1;i>=startAddress;i--) {
-      System.out.println("    bytes[" + i + "]=" + bytes[i]);
-    }
-    */
-
-    return endAddress-1;
+    return endAddress;
   }
 
   /** Fills virtual 'start' arc, ie, an empty incoming arc to

@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.solr.uima.processor.ae.AEProvider;
 import org.apache.solr.uima.processor.ae.AEProviderFactory;
 import org.apache.solr.update.AddUpdateCommand;
@@ -39,7 +40,7 @@ import org.apache.uima.resource.ResourceInitializationException;
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
-  private SolrUIMAConfiguration solrUIMAConfiguration;
+  SolrUIMAConfiguration solrUIMAConfiguration;
 
   private AEProvider aeProvider;
 
@@ -69,7 +70,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
           UIMAToSolrMapper uimaToSolrMapper = new UIMAToSolrMapper(solrInputDocument, jcas);
           /* get field mapping from config */
-          Map<String, Map<String, String>> typesAndFeaturesFieldsMap = solrUIMAConfiguration
+          Map<String, Map<String, MapField>> typesAndFeaturesFieldsMap = solrUIMAConfiguration
                   .getTypesFeaturesFieldsMapping();
           /* map type features on fields */
           for (String typeFQN : typesAndFeaturesFieldsMap.keySet()) {

@@ -472,12 +472,62 @@ Changes in backwards compatibility policy
   a method getHeapArray() was added to retrieve the internal heap array as a
   non-generic Object[].  (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-1076: IndexWriter.setInfoStream now throws IOException
+  (Mike McCandless, Shai Erera)
+
+* LUCENE-3084: MergePolicy.OneMerge.segments was changed from
+  SegmentInfos to a List<SegmentInfo>; this is actually a minor change
+  because SegmentInfos itself extends Vector<SegmentInfo>.  (Uwe
+  Schindler, Mike McCandless)
+
+Changes in runtime behavior
+
+* LUCENE-3065: When a NumericField is retrieved from a Document loaded
+  from IndexReader (or IndexSearcher), it will now come back as
+  NumericField not as a Field with a string-ified version of the
+  numeric value you had indexed.  Note that this only applies for
+  newly-indexed Documents; older indices will still return Field
+  with the string-ified numeric value. If you call Document.get(),
+  the value comes still back as String, but Document.getFieldable()
+  returns NumericField instances. (Uwe Schindler, Ryan McKinley,
+  Mike McCandless)
+
+New features
+
+* LUCENE-3082: Added index upgrade tool oal.index.IndexUpgrader
+  that allows to upgrade all segments to last recent supported index
+  format without fully optimizing.  (Uwe Schindler, Mike McCandless)
+
+* LUCENE-1076: Added TieredMergePolicy which is able to merge non-contiguous 
+  segments, which means docIDs no longer necessarily stay "in order".
+  (Mike McCandless, Shai Erera)
+
+* LUCENE-3071: Adding ReversePathHierarchyTokenizer, added skip parameter to 
+  PathHierarchyTokenizer (Olivier Favre via ryan)
+
+API Changes
+
+* LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
+  (though @lucene.experimental), allowing for custom MergeScheduler 
+  implementations. (Shai Erera)
+
+* LUCENE-3065: Document.getField() was deprecated, as it throws
+  ClassCastException when loading lazy fields or NumericFields.
+  (Uwe Schindler, Ryan McKinley, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early
   on empty or one-element lists/arrays.  (Uwe Schindler)
 
+* LUCENE-2897: Apply deleted terms while flushing a segment.  We still
+  buffer deleted terms to later apply to past segments.  (Mike McCandless)
+
 Bug fixes
+
+* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
+  indexes, causing existing deletions to be applied on the incoming indexes as 
+  well. (Shai Erera, Mike McCandless)
 
 * LUCENE-3024: Index with more than 2.1B terms was hitting AIOOBE when
   seeking TermEnum (eg used by Solr's faceting) (Tom Burton-West, Mike
@@ -490,6 +540,17 @@ Bug fixes
   may not do this on the newly added Attribute. This bug affected only
   very special use cases of the TokenStream-API, most users would not
   have recognized it.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-3054: PhraseQuery can in some cases stack overflow in
+  SorterTemplate.quickSort(). This fix also adds an optimization to
+  PhraseQuery as term with lower doc freq will also have less positions.
+  (Uwe Schindler, Robert Muir, Otis Gospodnetic)
+
+Test Cases
+
+* LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
+  stop iterating if at least 'tests.iter.min' ran and a failure occured. 
+  (Shai Erera, Chris Hostetter)
 
 ======================= Lucene 3.1.0 =======================
 
@@ -1471,6 +1532,10 @@ Bug fixes
   SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
   that warming is free to do whatever it needs to.  (Earwin Burrfoot
   via Mike McCandless)
+
+* LUCENE-3029: Fix corner case when MultiPhraseQuery is used with zero
+  position-increment tokens that would sometimes assign different
+  scores to identical docs.  (Mike McCandless)
 
 * LUCENE-2486: Fixed intermittent FileNotFoundException on doc store
   files when a mergedSegmentWarmer is set on IndexWriter.  (Mike

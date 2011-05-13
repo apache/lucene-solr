@@ -806,6 +806,7 @@ public abstract class QueryParserBase {
     }
       
     try {
+      source.end();
       source.close();
     } catch (IOException ignored) {}
     

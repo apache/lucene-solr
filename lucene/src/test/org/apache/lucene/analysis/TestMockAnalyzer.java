@@ -107,6 +107,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       // consume
     }
     stream.end();
+    stream.close();
     
     assertAnalyzesToReuse(analyzer, testString, new String[] { "t" });
   }

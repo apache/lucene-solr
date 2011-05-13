@@ -122,13 +122,13 @@ public final class DocumentsWriterFlushControl {
         // is super important since we can not address more than 2048 MB per DWPT
         setFlushPending(perThread);
         if (fullFlush) {
-          DocumentsWriterPerThread toBlock = internalTryCheckOutForFlush(perThread, false);
+          DocumentsWriterPerThread toBlock = internalTryCheckOutForFlush(perThread);
           assert toBlock != null;
           blockedFlushes.add(toBlock);
         }
       }
     }
-    final DocumentsWriterPerThread flushingDWPT = tryCheckoutForFlush(perThread, false);
+    final DocumentsWriterPerThread flushingDWPT = tryCheckoutForFlush(perThread);
     healthiness.updateStalled(this);
     return flushingDWPT;
   }
@@ -189,18 +189,15 @@ public final class DocumentsWriterFlushControl {
   }
 
   synchronized DocumentsWriterPerThread tryCheckoutForFlush(
-      ThreadState perThread, boolean setPending) {
+      ThreadState perThread) {
     if (fullFlush) {
       return null;
     }
-    return internalTryCheckOutForFlush(perThread, setPending);
+    return internalTryCheckOutForFlush(perThread);
   }
 
   private DocumentsWriterPerThread internalTryCheckOutForFlush(
-      ThreadState perThread, boolean setPending) {
-    if (setPending && !perThread.flushPending) {
-      setFlushPending(perThread);
-    }
+      ThreadState perThread) {
     if (perThread.flushPending) {
       // We are pending so all memory is already moved to flushBytes
       if (perThread.tryLock()) {
@@ -245,7 +242,7 @@ public final class DocumentsWriterFlushControl {
       while (allActiveThreads.hasNext() && numPending > 0) {
         ThreadState next = allActiveThreads.next();
         if (next.flushPending) {
-          final DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next, false);
+          final DocumentsWriterPerThread dwpt = tryCheckoutForFlush(next);
           if (dwpt != null) {
             return dwpt;
           }
@@ -330,7 +327,12 @@ public final class DocumentsWriterFlushControl {
         }
         if (next.perThread.getNumDocsInRAM() > 0 ) {
           final DocumentsWriterPerThread dwpt = next.perThread; // just for assert
-          final DocumentsWriterPerThread flushingDWPT = internalTryCheckOutForFlush(next, true);
+          synchronized (this) {
+            if (!next.flushPending) {
+              setFlushPending(next);
+            }
+          }
+          final DocumentsWriterPerThread flushingDWPT = internalTryCheckOutForFlush(next);
           assert flushingDWPT != null : "DWPT must never be null here since we hold the lock and it holds documents";
           assert dwpt == flushingDWPT : "flushControl returned different DWPT";
           toFlush.add(flushingDWPT);

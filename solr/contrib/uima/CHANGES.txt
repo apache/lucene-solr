@@ -28,6 +28,11 @@ Upgrading from Solr 3.1
   It should move to UIMAUpdateRequestProcessorFactory setting.
   See contrib/uima/README.txt for more details. (SOLR-2436)
 
+New Features
+----------------------
+
+* SOLR-2503: extend mapping function to map feature value to dynamicField. (koji)
+
 Test Cases:
 ----------------------
 

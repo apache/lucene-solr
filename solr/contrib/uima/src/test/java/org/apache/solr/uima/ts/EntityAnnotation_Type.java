@@ -1,5 +1,5 @@
 
-/* First created by JCasGen Fri Mar 04 12:48:08 CET 2011 */
+/* First created by JCasGen Sat May 07 22:33:38 JST 2011 */
 package org.apache.solr.uima.ts;
 
 import org.apache.uima.jcas.JCas;
@@ -9,10 +9,12 @@ import org.apache.uima.cas.impl.FSGenerator;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.impl.TypeImpl;
 import org.apache.uima.cas.Type;
+import org.apache.uima.cas.impl.FeatureImpl;
+import org.apache.uima.cas.Feature;
 import org.apache.uima.jcas.tcas.Annotation_Type;
 
 /** 
- * Updated by JCasGen Fri Mar 04 12:50:14 CET 2011
+ * Updated by JCasGen Sat May 07 22:33:38 JST 2011
  * @generated */
 public class EntityAnnotation_Type extends Annotation_Type {
   /** @generated */
@@ -38,6 +40,42 @@ public class EntityAnnotation_Type extends Annotation_Type {
   /** @generated 
      @modifiable */
   public final static boolean featOkTst = JCasRegistry.getFeatOkTst("org.apache.solr.uima.ts.EntityAnnotation");
+ 
+  /** @generated */
+  final Feature casFeat_name;
+  /** @generated */
+  final int     casFeatCode_name;
+  /** @generated */ 
+  public String getName(int addr) {
+        if (featOkTst && casFeat_name == null)
+      jcas.throwFeatMissing("name", "org.apache.solr.uima.ts.EntityAnnotation");
+    return ll_cas.ll_getStringValue(addr, casFeatCode_name);
+  }
+  /** @generated */    
+  public void setName(int addr, String v) {
+        if (featOkTst && casFeat_name == null)
+      jcas.throwFeatMissing("name", "org.apache.solr.uima.ts.EntityAnnotation");
+    ll_cas.ll_setStringValue(addr, casFeatCode_name, v);}
+    
+  
+ 
+  /** @generated */
+  final Feature casFeat_entity;
+  /** @generated */
+  final int     casFeatCode_entity;
+  /** @generated */ 
+  public String getEntity(int addr) {
+        if (featOkTst && casFeat_entity == null)
+      jcas.throwFeatMissing("entity", "org.apache.solr.uima.ts.EntityAnnotation");
+    return ll_cas.ll_getStringValue(addr, casFeatCode_entity);
+  }
+  /** @generated */    
+  public void setEntity(int addr, String v) {
+        if (featOkTst && casFeat_entity == null)
+      jcas.throwFeatMissing("entity", "org.apache.solr.uima.ts.EntityAnnotation");
+    ll_cas.ll_setStringValue(addr, casFeatCode_entity, v);}
+    
+  
 
 
 
@@ -46,6 +84,14 @@ public class EntityAnnotation_Type extends Annotation_Type {
   public EntityAnnotation_Type(JCas jcas, Type casType) {
     super(jcas, casType);
     casImpl.getFSClassRegistry().addGeneratorForType((TypeImpl)this.casType, getFSGenerator());
+
+ 
+    casFeat_name = jcas.getRequiredFeatureDE(casType, "name", "uima.cas.String", featOkTst);
+    casFeatCode_name  = (null == casFeat_name) ? JCas.INVALID_FEATURE_CODE : ((FeatureImpl)casFeat_name).getCode();
+
+ 
+    casFeat_entity = jcas.getRequiredFeatureDE(casType, "entity", "uima.cas.String", featOkTst);
+    casFeatCode_entity  = (null == casFeat_entity) ? JCas.INVALID_FEATURE_CODE : ((FeatureImpl)casFeat_entity).getCode();
 
   }
 }

@@ -32,7 +32,7 @@ final class MergeDocIDRemapper {
 
   public MergeDocIDRemapper(SegmentInfos infos, int[][] docMaps, int[] delCounts, MergePolicy.OneMerge merge, int mergedDocCount) {
     this.docMaps = docMaps;
-    SegmentInfo firstSegment = merge.segments.info(0);
+    SegmentInfo firstSegment = merge.segments.get(0);
     int i = 0;
     while(true) {
       SegmentInfo info = infos.info(i);
@@ -45,7 +45,7 @@ final class MergeDocIDRemapper {
     int numDocs = 0;
     for(int j=0;j<docMaps.length;i++,j++) {
       numDocs += infos.info(i).docCount;
-      assert infos.info(i).equals(merge.segments.info(j));
+      assert infos.info(i).equals(merge.segments.get(j));
     }
     maxDocID = minDocID + numDocs;
 
@@ -55,7 +55,7 @@ final class MergeDocIDRemapper {
     starts[0] = minDocID;
     newStarts[0] = minDocID;
     for(i=1;i<docMaps.length;i++) {
-      final int lastDocCount = merge.segments.info(i-1).docCount;
+      final int lastDocCount = merge.segments.get(i-1).docCount;
       starts[i] = starts[i-1] + lastDocCount;
       newStarts[i] = newStarts[i-1] + lastDocCount - delCounts[i-1];
     }
@@ -69,7 +69,7 @@ final class MergeDocIDRemapper {
     // assert docShift > 0;
 
     // Make sure it all adds up:
-    assert docShift == maxDocID - (newStarts[docMaps.length-1] + merge.segments.info(docMaps.length-1).docCount - delCounts[docMaps.length-1]);
+    assert docShift == maxDocID - (newStarts[docMaps.length-1] + merge.segments.get(docMaps.length-1).docCount - delCounts[docMaps.length-1]);
   }
 
   public int remap(int oldDocID) {

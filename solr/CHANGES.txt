@@ -198,6 +198,9 @@ Bug Fixes
   initialization if the schema.xml contains an analyzer configuration
   for a fieldType that does not use TextField.  (hossman) 
 
+* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
+  are logged properly.  (hossman)
+
 Other Changes
 ----------------------
 
@@ -267,6 +270,12 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-2496: Add ability to specify overwrite and commitWithin as request
+  parameters (e.g. specified in the URL) when using the JSON update format,
+  and added a simplified format for specifying multiple documents.
+  Example: [{"id":"doc1"},{"id":"doc2"}] 
+  (yonik)
+
 Optimizations
 ----------------------
 
@@ -308,6 +317,13 @@ Bug Fixes
 * SOLR-2474: The helper TokenStreams in analysis.jsp and AnalysisRequestHandlerBase
   did not clear all attributes so they displayed incorrect attribute values for tokens
   in later filter stages. (uschindler, rmuir, yonik)
+
+* SOLR-2493: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each
+  instantiation which is a huge slowdown.  (Stephane Bailliez via uschindler)
+
+* SOLR-2495: The JSON parser could hang on corrupted input and could fail
+  to detect numbers that were too large to fit in a long.  (yonik)
+
 
 Other Changes
 ----------------------

@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer; // javadoc @link
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;

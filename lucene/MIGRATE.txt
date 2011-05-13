@@ -312,6 +312,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+    - o.a.l.analysis.CharTokenizer -> o.a.l.analysis.util.CharTokenizer
+    - o.a.l.util.CharacterUtils -> o.a.l.analysis.util.CharacterUtils
 
 * LUCENE-2514: The option to use a Collator's order (instead of binary order) for
   sorting and range queries has been moved to contrib/queries.

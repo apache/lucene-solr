@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 
 /**
  * Read configuration for Solr-UIMA integration
@@ -62,18 +63,31 @@ public class SolrUIMAConfigurationReader {
   }
 
   @SuppressWarnings("rawtypes")
-  private Map<String, Map<String, String>> readTypesFeaturesFieldsMapping() {
-    Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
+  private Map<String, Map<String, MapField>> readTypesFeaturesFieldsMapping() {
+    Map<String, Map<String, MapField>> map = new HashMap<String, Map<String, MapField>>();
 
     NamedList fieldMappings = (NamedList) args.get("fieldMappings");
     /* iterate over UIMA types */
     for (int i = 0; i < fieldMappings.size(); i++) {
-      NamedList mapping = (NamedList) fieldMappings.get("mapping", i);
-      String typeName = (String) mapping.get("type");
-      String featureName = (String) mapping.get("feature");
-      String mappedFieldName = (String) mapping.get("field");
-      Map<String, String> subMap = new HashMap<String, String>();
-      subMap.put(featureName, mappedFieldName);
+      NamedList type = (NamedList) fieldMappings.get("type", i);
+      String typeName = (String)type.get("name");
+
+      Map<String, MapField> subMap = new HashMap<String, MapField>();
+      /* iterate over mapping definitions */
+      for(int j = 0; j < type.size() - 1; j++){
+        NamedList mapping = (NamedList) type.get("mapping", j + 1);
+        String featureName = (String) mapping.get("feature");
+        String fieldNameFeature = null;
+        String mappedFieldName = (String) mapping.get("field");
+        if(mappedFieldName == null){
+          fieldNameFeature = (String) mapping.get("fieldNameFeature");
+          mappedFieldName = (String) mapping.get("dynamicField");
+        }
+        if(mappedFieldName == null)
+          throw new RuntimeException("either of field or dynamicField should be defined for feature " + featureName);
+        MapField mapField = new MapField(mappedFieldName, fieldNameFeature);
+        subMap.put(featureName, mapField);
+      }
       map.put(typeName, subMap);
     }
     return map;

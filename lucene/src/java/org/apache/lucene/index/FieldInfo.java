@@ -22,7 +22,6 @@ import org.apache.lucene.index.values.Type;
 /** @lucene.experimental */
 public final class FieldInfo {
   public static final int UNASSIGNED_CODEC_ID = -1;
-
   public final String name;
   public final int number;
 
@@ -113,7 +112,6 @@ public final class FieldInfo {
     }
     assert !this.omitTermFreqAndPositions || !this.storePayloads;
   }
-
   void setDocValues(Type v) {
     if (docValues == null) {
       docValues = v;
@@ -126,5 +124,30 @@ public final class FieldInfo {
 
   public Type getDocValues() {
     return docValues;
+  }
+  
+  private boolean vectorsCommitted;
+ 
+  /**
+   * Reverts all uncommitted changes on this {@link FieldInfo}
+   * @see #commitVectors()
+   */
+  void revertUncommitted() {
+    if (storeTermVector && !vectorsCommitted) {
+      storeOffsetWithTermVector = false;
+      storePositionWithTermVector = false;
+      storeTermVector = false;  
+    }
+  }
+
+  /**
+   * Commits term vector modifications. Changes to term-vectors must be
+   * explicitly committed once the necessary files are created. If those changes
+   * are not committed subsequent {@link #revertUncommitted()} will reset the
+   * all term-vector flags before the next document.
+   */
+  void commitVectors() {
+    assert storeTermVector;
+    vectorsCommitted = true;
   }
 }

@@ -131,8 +131,13 @@ public final class Document {
   /** Returns a field with the given name if any exist in this document, or
    * null.  If multiple fields exists with this name, this method returns the
    * first value added.
-   * Do not use this method with lazy loaded fields.
+   * Do not use this method with lazy loaded fields or {@link NumericField}.
+   * @deprecated use {@link #getFieldable} instead and cast depending on
+   * data type.
+   * @throws ClassCastException if you try to retrieve a numerical or
+   * lazy loaded field.
    */
+  @Deprecated
   public final Field getField(String name) {
     return (Field) getFieldable(name);
   }
@@ -154,6 +159,8 @@ public final class Document {
    * this document, or null.  If multiple fields exist with this name, this
    * method returns the first value added. If only binary fields with this name
    * exist, returns null.
+   * For {@link NumericField} it returns the string value of the number. If you want
+   * the actual {@code NumericField} instance back, use {@link #getFieldable}.
    */
   public final String get(String name) {
    for (Fieldable field : fields) {
@@ -177,13 +184,18 @@ public final class Document {
   
   /**
    * Returns an array of {@link Field}s with the given name.
-   * Do not use with lazy loaded fields.
    * This method returns an empty array when there are no
    * matching fields.  It never returns null.
+   * Do not use this method with lazy loaded fields or {@link NumericField}.
    *
    * @param name the name of the field
    * @return a <code>Field[]</code> array
+   * @deprecated use {@link #getFieldable} instead and cast depending on
+   * data type.
+   * @throws ClassCastException if you try to retrieve a numerical or
+   * lazy loaded field.
    */
+   @Deprecated
    public final Field[] getFields(String name) {
      List<Field> result = new ArrayList<Field>();
      for (Fieldable field : fields) {
@@ -230,6 +242,8 @@ public final class Document {
    * Returns an array of values of the field specified as the method parameter.
    * This method returns an empty array when there are no
    * matching fields.  It never returns null.
+   * For {@link NumericField}s it returns the string value of the number. If you want
+   * the actual {@code NumericField} instances back, use {@link #getFieldables}.
    * @param name the name of the field
    * @return a <code>String[]</code> of field values
    */

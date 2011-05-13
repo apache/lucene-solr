@@ -19,6 +19,8 @@
   <field name="id">MA147LL/A</field>
   <field name="name">Apple 60 GB iPod with Video Playback Black</field>
   <field name="manu">Apple Computer Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">apple</field>
   <field name="cat">electronics</field>
   <field name="cat">music</field>
   <field name="features">iTunes, Podcasts, Audiobooks</field>

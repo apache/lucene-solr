@@ -54,4 +54,8 @@ public abstract class Outputs<T> {
   public abstract T getNoOutput();
 
   public abstract String outputToString(T output);
+
+  public T merge(T first, T second) {
+    throw new UnsupportedOperationException();
+  }
 }

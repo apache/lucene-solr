@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,12 +20,13 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.CharacterUtils;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.CharacterUtils.CharacterBuffer;
+import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 
 /**
  * An abstract base class for simple, character-oriented tokenizers. 

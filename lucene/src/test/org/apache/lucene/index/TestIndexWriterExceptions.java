@@ -33,9 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -155,7 +153,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
     MockDirectoryWrapper dir = newDirectory();
 
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    MockAnalyzer analyzer = new MockAnalyzer(random);
+    analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
         .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
@@ -201,7 +201,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testRandomExceptionsThreads() throws Throwable {
     MockDirectoryWrapper dir = newDirectory();
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
+    MockAnalyzer analyzer = new MockAnalyzer(random);
+    analyzer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer)
         .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
@@ -321,7 +323,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 
@@ -390,7 +394,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true)) {
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new TokenFilter(tokenizer) {
           private int count = 0;
 
           @Override
@@ -522,7 +528,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 
@@ -621,7 +629,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+        MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new CrashingFilter(fieldName, tokenizer);
       }
     };
 
@@ -1166,5 +1176,106 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // close
       writer.close();
       dir.close();
+  }
+
+  public void testTermVectorExceptions() throws IOException {
+    FailOnTermVectors[] failures = new FailOnTermVectors[] {
+        new FailOnTermVectors(FailOnTermVectors.AFTER_INIT_STAGE),
+        new FailOnTermVectors(FailOnTermVectors.INIT_STAGE), };
+    for (int j = 0; j < 3 * RANDOM_MULTIPLIER; j++) {
+      for (FailOnTermVectors failure : failures) {
+        MockDirectoryWrapper dir = newDirectory();
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+            TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        dir.failOn(failure);
+        int numDocs = 10 + random.nextInt(30);
+        for (int i = 0; i < numDocs; i++) {
+          Document doc = new Document();
+          Field field = newField(random, "field", "a field", Field.Store.YES,
+              Field.Index.ANALYZED);
+          doc.add(field);
+          // random TV
+          try {
+            w.addDocument(doc);
+            assertFalse(field.isTermVectorStored());
+          } catch (RuntimeException e) {
+            assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
+          }
+          if (random.nextInt(20) == 0) {
+            w.commit();
+            _TestUtil.checkIndex(dir);
+          }
+            
+        }
+        Document document = new Document();
+        document.add(new Field("field", "a field", Field.Store.YES,
+            Field.Index.ANALYZED));
+        w.addDocument(document);
+
+        for (int i = 0; i < numDocs; i++) {
+          Document doc = new Document();
+          Field field = newField(random, "field", "a field", Field.Store.YES,
+              Field.Index.ANALYZED);
+          doc.add(field);
+          // random TV
+          try {
+            w.addDocument(doc);
+            assertFalse(field.isTermVectorStored());
+          } catch (RuntimeException e) {
+            assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
+          }
+          if (random.nextInt(20) == 0) {
+            w.commit();
+            _TestUtil.checkIndex(dir);
+          }
+        }
+        document = new Document();
+        document.add(new Field("field", "a field", Field.Store.YES,
+            Field.Index.ANALYZED));
+        w.addDocument(document);
+        w.close();
+        IndexReader reader = IndexReader.open(dir);
+        assertTrue(reader.numDocs() > 0);
+        reader.close();
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir);
+        for (SegmentInfo segmentInfo : sis) {
+          assertFalse(segmentInfo.getHasVectors());
+        }
+        dir.close();
+        
+      }
+    }
+  }
+  
+  private static class FailOnTermVectors extends MockDirectoryWrapper.Failure {
+
+    private static final String INIT_STAGE = "initTermVectorsWriter";
+    private static final String AFTER_INIT_STAGE = "finishDocument";
+    private static final String EXC_MSG = "FOTV";
+    private final String stage;
+    
+    public FailOnTermVectors(String stage) {
+      this.stage = stage;
+    }
+
+    @Override
+    public void eval(MockDirectoryWrapper dir)  throws IOException {
+      StackTraceElement[] trace = new Exception().getStackTrace();
+      boolean failOnInit = false;
+      boolean failOnfinish = false;
+      for (int i = 0; i < trace.length; i++) {
+        if ("org.apache.lucene.index.TermVectorsTermsWriter".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
+          failOnInit = true;
+        if ("org.apache.lucene.index.TermVectorsTermsWriter".equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName()))
+          failOnfinish = true;
+      }
+      
+      if (failOnInit) {
+        throw new RuntimeException(EXC_MSG + " fail on init");
+      } else if (failOnfinish) {
+        throw new RuntimeException(EXC_MSG + " fail on finishDoc");
+      }
+    }
   }
 }

@@ -241,8 +241,7 @@ public class TestCodecs extends LuceneTestCase {
     final Directory dir = newDirectory();
     FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, true);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos.hasVectors(), clonedFieldInfos);
-    si.setHasProx(false);
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos);
 
     final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
@@ -294,7 +293,7 @@ public class TestCodecs extends LuceneTestCase {
 
     FieldInfos clonedFieldInfos = (FieldInfos) fieldInfos.clone();
     this.write(fieldInfos, dir, fields, false);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true,  clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos.hasVectors(), clonedFieldInfos);
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos);
 
     if (VERBOSE) {
       System.out.println("TEST: now read postings");

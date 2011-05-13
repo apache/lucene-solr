@@ -49,6 +49,7 @@ public class TestLongPostings extends LuceneTestCase {
       final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef termBytes = termAtt.getBytesRef();
       int count = 0;
+      ts.reset();
       while(ts.incrementToken()) {
         termAtt.fillBytesRef();
         if (count == 0 && !termBytes.utf8ToString().equals(s)) {

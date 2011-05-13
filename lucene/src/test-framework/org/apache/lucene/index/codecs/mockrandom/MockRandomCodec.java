@@ -146,6 +146,9 @@ public class MockRandomCodec extends Codec {
     out.close();
 
     final Random random = new Random(seed);
+    
+    random.nextInt(); // consume a random for buffersize
+    
     PostingsWriterBase postingsWriter;
 
     if (random.nextBoolean()) {
@@ -244,16 +247,22 @@ public class MockRandomCodec extends Codec {
     in.close();
 
     final Random random = new Random(seed);
+    
+    int readBufferSize = _TestUtil.nextInt(random, 1, 4096);
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
+    }
+
     PostingsReaderBase postingsReader;
 
     if (random.nextBoolean()) {
       postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-                                                 state.readBufferSize, new MockIntStreamFactory(random), state.codecId);
+                                                 readBufferSize, new MockIntStreamFactory(random), state.codecId);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
       }
-      postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+      postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, readBufferSize, state.codecId);
     }
 
     if (random.nextBoolean()) {
@@ -318,7 +327,7 @@ public class MockRandomCodec extends Codec {
                                                 state.fieldInfos,
                                                 state.segmentInfo.name,
                                                 postingsReader,
-                                                state.readBufferSize,
+                                                readBufferSize,
                                                 termsCacheSize,
                                                 state.codecId);
       success = true;

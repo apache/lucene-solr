@@ -55,7 +55,7 @@ abstract class PhraseScorer extends Scorer {
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
     for (int i = 0; i < postings.length; i++) {
-      PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position);
+      PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i);
       if (last != null) {			  // add next to end of list
         last.next = pp;
       } else {

@@ -50,6 +50,11 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) =======================
 
+Changes in runtime behavior
+
+ * LUCENE-3086: ItalianAnalyzer now uses ElisionFilter with a set of Italian
+   contractions by default.  (Robert Muir)
+
 Bug Fixes
 
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
@@ -182,6 +187,10 @@ Bug fixes
 
  * LUCENE-2943: Fix thread-safety issues with ICUCollationKeyFilter.
    (Robert Muir)
+
+ * LUCENE-3087: Highlighter: fix case that was preventing highlighting
+   of exact phrase when tokens overlap. (Pierre Gossé via Mike
+   McCandless)
 
 API Changes
 

@@ -123,6 +123,11 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
       TokenStream source = this.analyzer.tokenStream(field, new StringReader(
           text));
+      try {
+        source.reset();
+      } catch (IOException e1) {
+        throw new RuntimeException(e1);
+      }
       CachingTokenFilter buffer = new CachingTokenFilter(source);
 
       PositionIncrementAttribute posIncrAtt = null;

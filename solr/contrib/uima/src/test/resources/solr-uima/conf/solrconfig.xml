@@ -978,26 +978,63 @@
           </arr>
         </lst>
         <lst name="fieldMappings">
-          <lst name="mapping">
-            <str name="type">org.apache.uima.SentenceAnnotation</str>
-            <str name="feature">coveredText</str>
-            <str name="field">sentence</str>
+          <lst name="type">
+            <str name="name">org.apache.uima.SentenceAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">coveredText</str>
+              <str name="field">sentence</str>
+            </lst>
           </lst>
-          <lst name="mapping">
-            <str name="type">org.apache.solr.uima.ts.SentimentAnnotation</str>
-            <str name="feature">mood</str>
-            <str name="field">sentiment</str>
+          <lst name="type">
+            <str name="name">org.apache.solr.uima.ts.SentimentAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">mood</str>
+              <str name="field">sentiment</str>
+            </lst>
           </lst>
-          <lst name="mapping">
-            <str name="type">org.apache.solr.uima.ts.EntityAnnotation</str>
-            <str name="feature">coveredText</str>
-            <str name="field">entity</str>
+          <lst name="type">
+            <str name="name">org.apache.solr.uima.ts.EntityAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">entity</str>
+              <str name="fieldNameFeature">name</str>
+              <str name="dynamicField">*_sm</str>
+            </lst>
           </lst>
         </lst>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="uima-multi-map">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestAE.xml</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings">
+          <lst name="type">
+            <str name="name">a-type-which-can-have-multiple-features</str>
+            <lst name="mapping">
+              <str name="feature">A</str>
+              <str name="field">1</str>
+            </lst>
+            <lst name="mapping">
+              <str name="feature">B</str>
+              <str name="field">2</str>
+            </lst>
+          </lst>
+        </lst>
+      </lst>
+    </processor>
   </updateRequestProcessorChain>
 
   <!--

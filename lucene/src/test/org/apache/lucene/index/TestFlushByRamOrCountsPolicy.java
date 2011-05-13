@@ -233,8 +233,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       MockDirectoryWrapper dir = newDirectory();
       // mock a very slow harddisk here so that flushing is very slow
-      dir.setThrottledIndexOutput(new ThrottledIndexOutput(ThrottledIndexOutput
-          .mBitsToBytes(40 + random.nextInt(10)), 5 + random.nextInt(5), null));
+      dir.setThrottling(MockDirectoryWrapper.Throttling.ALWAYS);
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);

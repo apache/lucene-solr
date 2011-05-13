@@ -20,6 +20,8 @@
   <field name="id">TWINX2048-3200PRO</field>
   <field name="name">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</field>
   <field name="manu">Corsair Microsystems Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
   <field name="features">CAS latency 2,	2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>
@@ -38,6 +40,8 @@
   <field name="id">VS1GB400C3</field>
   <field name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</field>
   <field name="manu">Corsair Microsystems Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
   <field name="price">74.99</field>
@@ -54,6 +58,8 @@
   <field name="id">VDBDB1A16</field>
   <field name="name">A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM</field>
   <field name="manu">A-DATA Technology Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
   <field name="features">CAS latency 3,	 2.7v</field>

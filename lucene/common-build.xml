@@ -73,6 +73,7 @@
   </condition>
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="randomPerField" />
+  <property name="tests.codecprovider" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
@@ -499,6 +500,8 @@
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
               <!-- set the codec tests should run with -->
 	      <sysproperty key="tests.codec" value="${tests.codec}"/>
+              <!-- set the codec provider tests should run with -->
+	      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
               <!-- set the locale tests should run with -->
 	      <sysproperty key="tests.locale" value="${tests.locale}"/>
               <!-- set the timezone tests should run with -->

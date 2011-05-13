@@ -86,6 +86,7 @@ final class MockPayloadFilter extends TokenFilter {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     i = 0;
     pos = 0;
   }

@@ -401,13 +401,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   
   private void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,
       int docId, Document doc, String fieldName ) throws IOException {
+    final SolrIndexSearcher searcher = req.getSearcher();
+    final IndexSchema schema = searcher.getSchema();
+    
+    // TODO: Currently in trunk highlighting numeric fields is broken (Lucene) -
+    // so we disable them until fixed (see LUCENE-3080)!
+    // BEGIN: Hack
+    final SchemaField schemaField = schema.getFieldOrNull(fieldName);
+    if (schemaField != null && (
+      (schemaField.getType() instanceof org.apache.solr.schema.TrieField) ||
+      (schemaField.getType() instanceof org.apache.solr.schema.TrieDateField)
+    )) return;
+    // END: Hack
+    
     SolrParams params = req.getParams(); 
     String[] docTexts = doc.getValues(fieldName);
     // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
     if (docTexts.length == 0) return;
     
-    SolrIndexSearcher searcher = req.getSearcher();
-    IndexSchema schema = searcher.getSchema();
     TokenStream tstream = null;
     int numFragments = getMaxSnippets(fieldName, params);
     boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);

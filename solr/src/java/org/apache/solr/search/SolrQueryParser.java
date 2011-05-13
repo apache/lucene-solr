@@ -67,7 +67,7 @@ public class SolrQueryParser extends QueryParser {
   }
 
   public SolrQueryParser(QParser parser, String defaultField, Analyzer analyzer) {
-    super(parser.getReq().getCore().getSolrConfig().getLuceneVersion("luceneMatchVersion", Version.LUCENE_30), defaultField, analyzer);
+    super(parser.getReq().getCore().getSolrConfig().luceneMatchVersion, defaultField, analyzer);
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
     this.defaultField = defaultField;

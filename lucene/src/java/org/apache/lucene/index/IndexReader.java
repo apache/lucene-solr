@@ -1428,7 +1428,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.listAll();
-      ArrayUtil.quickSort(files);   // sort the array of filename so that the output is more readable
+      ArrayUtil.mergeSort(files);   // sort the array of filename so that the output is more readable
 
       for (int i = 0; i < files.length; ++i) {
         long len = cfr.fileLength(files[i]);
