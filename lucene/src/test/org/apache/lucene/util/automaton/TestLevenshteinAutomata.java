@@ -39,6 +39,11 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     assertCharVectors(2);
   }
   
+  // LUCENE-3094
+  public void testNoWastedStates() throws Exception {
+    AutomatonTestUtil.assertNoDetachedStates(new LevenshteinAutomata("abc").toAutomaton(1));
+  }
+  
   /** 
    * Tests all possible characteristic vectors for some n
    * This exhaustively tests the parametric transitions tables.
@@ -66,6 +71,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       assertNotNull(automata[n]);
       assertTrue(automata[n].isDeterministic());
       assertTrue(SpecialOperations.isFinite(automata[n]));
+      AutomatonTestUtil.assertNoDetachedStates(automata[n]);
       // check that the dfa for n-1 accepts a subset of the dfa for n
       if (n > 0) {
         assertTrue(automata[n-1].subsetOf(automata[n]));
