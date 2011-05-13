@@ -58,10 +58,13 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
 			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			
+      ts.reset();
 	    while (ts.incrementToken()) {
 			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, termAtt.toString()));
 			    clausesList.add(stq);
 			}
+	    ts.end();
+	    ts.close();
 			SpanOrQuery soq=new SpanOrQuery(clausesList.toArray(new SpanQuery[clausesList.size()]));
 			soq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 			return soq;

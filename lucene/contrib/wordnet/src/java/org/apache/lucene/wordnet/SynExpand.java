@@ -118,12 +118,14 @@ public final class SynExpand {
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
 		CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-		
+		ts.reset();
 		while (ts.incrementToken()) {
 		  String word = termAtt.toString();
 			if ( already.add( word))
 				top.add( word);
 		}
+		ts.end();
+		ts.close();
 		final BooleanQuery tmp = new BooleanQuery();
 		
 		// [2] form query

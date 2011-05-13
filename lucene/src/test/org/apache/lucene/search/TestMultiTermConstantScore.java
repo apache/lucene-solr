@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -60,7 +61,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     small = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, small, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-            new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMergePolicy(newLogMergePolicy()));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();

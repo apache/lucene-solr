@@ -62,6 +62,7 @@ public class TermsFilterBuilder implements FilterBuilder
 		try
 		{
 			Term term = null;
+      ts.reset();
 	      while (ts.incrementToken()) {
 				if (term == null)
 				{
@@ -73,6 +74,8 @@ public class TermsFilterBuilder implements FilterBuilder
 				}
 				tf.addTerm(term);
 			}
+	    ts.end();
+	    ts.close();
 		} 
 		catch (IOException ioe)
 		{

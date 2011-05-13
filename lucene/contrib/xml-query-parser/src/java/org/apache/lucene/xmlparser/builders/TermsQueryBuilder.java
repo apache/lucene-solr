@@ -59,6 +59,7 @@ public class TermsQueryBuilder implements QueryBuilder {
 		{
 		  CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			Term term = null;
+      ts.reset();
 			while (ts.incrementToken()) {
 				if (term == null)
 				{
@@ -70,6 +71,8 @@ public class TermsQueryBuilder implements QueryBuilder {
 				}
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}
+			ts.end();
+			ts.close();
 		} 
 		catch (IOException ioe)
 		{

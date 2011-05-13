@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.junit.AfterClass;
@@ -38,7 +39,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
   public static void setUpClass() throws Exception {
     dir = newDirectory();
     writer = new IndexWriter(dir, newIndexWriterConfig(random,
-       TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false))
+       TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
    indexDocs(writer);
    reader = IndexReader.open(dir, true);

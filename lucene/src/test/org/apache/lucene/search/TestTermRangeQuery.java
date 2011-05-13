@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -314,7 +315,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values) throws IOException {
-    initializeIndex(values, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    initializeIndex(values, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
@@ -328,7 +329,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
     writer.close();
   }

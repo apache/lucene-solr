@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -128,7 +129,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(random, MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(a);
     qp.setDefaultOperator(Operator.OR);
@@ -174,7 +175,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(random, MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(a);
     qp.setDefaultOperator(Operator.AND);
@@ -249,7 +250,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -484,7 +485,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
 
     assertQueryEquals("a\\-b:c", a, "a-b:c");
     assertQueryEquals("a\\+b:c", a, "a+b:c");
@@ -579,7 +580,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      getParser(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).parse("one two three", "field");
+      getParser(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("one two three", "field");
       fail("ParseException expected due to too many boolean clauses");
     } catch (QueryNodeException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -588,7 +589,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   
   // LUCENE-792
   public void testNOT() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     assertQueryEquals("NOT foo AND bar", a, "-foo +bar");
   }
 
@@ -597,7 +598,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
    * issue has been corrected.
    */
   public void testPrecedence() throws Exception {
-    PrecedenceQueryParser parser = getParser(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    PrecedenceQueryParser parser = getParser(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     Query query1 = parser.parse("A AND B OR C AND D", "field");
     Query query2 = parser.parse("(A AND B) OR (C AND D)", "field");
     assertEquals(query1, query2);

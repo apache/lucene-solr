@@ -51,6 +51,7 @@ public class TestLongPostings extends LuceneTestCase {
       final TokenStream ts = a.tokenStream("foo", new StringReader(s));
       final TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
       int count = 0;
+      ts.reset();
       while(ts.incrementToken()) {
         if (count == 0 && !termAtt.term().equals(s)) {
           break;

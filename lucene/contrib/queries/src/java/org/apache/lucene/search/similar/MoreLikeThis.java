@@ -894,7 +894,7 @@ public final class MoreLikeThis {
 			int tokenCount=0;
 			// for every token
 			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-			
+			ts.reset();
 			while (ts.incrementToken()) {
 				String word = termAtt.toString();
 				tokenCount++;
@@ -915,6 +915,8 @@ public final class MoreLikeThis {
 					cnt.x++;
 				}
 			}
+			ts.end();
+			ts.close();
 	}
 	
 	

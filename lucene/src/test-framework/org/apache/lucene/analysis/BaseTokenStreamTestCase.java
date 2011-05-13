@@ -262,6 +262,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         tokens.add(termAtt.toString());
         // TODO: we could collect offsets etc here for better checking that reset() really works.
       }
+      ts.end();
       ts.close();
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
       if (!tokens.isEmpty())

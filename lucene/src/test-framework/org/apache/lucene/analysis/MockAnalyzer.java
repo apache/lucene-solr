@@ -17,58 +17,79 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
+
 /**
  * Analyzer for testing
  */
-public final class MockAnalyzer extends Analyzer {
-  private boolean lowerCase;
-  public static final int KEYWORD = 0;
-  public static final int WHITESPACE = 1;
-  public static final int SIMPLE = 2;
-  private int tokenizer;
+public final class MockAnalyzer extends Analyzer { 
+  private final int pattern;
+  private final boolean lowerCase;
+  private final CharArraySet filter;
+  private final boolean enablePositionIncrements;
+  private int positionIncrementGap;
   private final Random random;
   private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
-  
-  public MockAnalyzer(Random random) {
-    this(random, WHITESPACE, true);
-  }
-  
-  public MockAnalyzer(Random random, int tokenizer, boolean lowercase) {
-    this.tokenizer = tokenizer;
-    this.lowerCase = lowercase;
+  private boolean enableChecks = true;
+
+  /**
+   * Creates a new MockAnalyzer.
+   * 
+   * @param random Random for payloads behavior
+   * @param pattern pattern constant describing how tokenization should happen
+   * @param lowerCase true if the tokenizer should lowercase terms
+   * @param filter CharArraySet describing how terms should be filtered (set of stopwords, etc)
+   * @param enablePositionIncrements true if position increments should reflect filtered terms.
+   */
+  public MockAnalyzer(Random random, int pattern, boolean lowerCase, CharArraySet filter, boolean enablePositionIncrements) {
     this.random = random;
+    this.pattern = pattern;
+    this.lowerCase = lowerCase;
+    this.filter = filter;
+    this.enablePositionIncrements = enablePositionIncrements;
+  }
+
+  /**
+   * Calls {@link #MockAnalyzer(Random, int, boolean, CharArraySet, boolean) 
+   * MockAnalyzer(random, pattern, lowerCase, CharArraySet.EMPTY_STOPSET, false}).
+   */
+  public MockAnalyzer(Random random, int pattern, boolean lowerCase) {
+    this(random, pattern, lowerCase, CharArraySet.EMPTY_SET, false);
+  }
+
+  /** 
+   * Create a Whitespace-lowercasing analyzer with no stopwords removal.
+   * <p>
+   * Calls {@link #MockAnalyzer(Random, int, boolean) 
+   * MockAnalyzer(random, MockTokenizer.WHITESPACE, true)}.
+   */
+  public MockAnalyzer(Random random) {
+    this(random, MockTokenizer.WHITESPACE, true);
   }
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result;
-    if (tokenizer == KEYWORD)
-      result = new KeywordTokenizer(reader);
-    else if (tokenizer == SIMPLE)
-      result = new LetterTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-    else
-      result = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-    if (lowerCase)
-      result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
-    result = maybePayload(result, fieldName);
-    return result;
+    MockTokenizer tokenizer = new MockTokenizer(reader, pattern, lowerCase);
+    tokenizer.setEnableChecks(enableChecks);
+    StopFilter filt = new StopFilter(LuceneTestCase.TEST_VERSION_CURRENT, tokenizer, filter);
+    filt.setEnablePositionIncrements(enablePositionIncrements);
+    return maybePayload(filt, fieldName);
   }
 
   private class SavedStreams {
-    Tokenizer upstream;
-    TokenStream filter;
+    MockTokenizer tokenizer;
+    TokenFilter filter;
   }
 
   @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
     @SuppressWarnings("unchecked") Map<String,SavedStreams> map = (Map) getPreviousTokenStream();
     if (map == null) {
       map = new HashMap<String,SavedStreams>();
@@ -76,29 +97,23 @@ public final class MockAnalyzer extends Analyzer {
     }
     
     SavedStreams saved = map.get(fieldName);
-    if (saved == null){
+    if (saved == null) {
       saved = new SavedStreams();
-      if (tokenizer == KEYWORD)
-        saved.upstream = new KeywordTokenizer(reader);
-      else if (tokenizer == SIMPLE)
-        saved.upstream = new LetterTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-      else
-        saved.upstream = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-      saved.filter = saved.upstream;
-      if (lowerCase)
-        saved.filter = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, saved.filter);
-
+      saved.tokenizer = new MockTokenizer(reader, pattern, lowerCase);
+      saved.tokenizer.setEnableChecks(enableChecks);
+      StopFilter filt = new StopFilter(LuceneTestCase.TEST_VERSION_CURRENT, saved.tokenizer, filter);
+      filt.setEnablePositionIncrements(enablePositionIncrements);
+      saved.filter = filt;
       saved.filter = maybePayload(saved.filter, fieldName);
       map.put(fieldName, saved);
       return saved.filter;
     } else {
-      saved.upstream.reset(reader);
-      saved.filter.reset();
+      saved.tokenizer.reset(reader);
       return saved.filter;
-    }                         
+    }
   }
   
-  private synchronized TokenStream maybePayload(TokenStream stream, String fieldName) {
+  private synchronized TokenFilter maybePayload(TokenFilter stream, String fieldName) {
     Integer val = previousMappings.get(fieldName);
     if (val == null) {
       switch(random.nextInt(3)) {
@@ -118,5 +133,22 @@ public final class MockAnalyzer extends Analyzer {
       return new MockVariableLengthPayloadFilter(random, stream);
     else
       return new MockFixedLengthPayloadFilter(random, stream, val);
+  }
+  
+  public void setPositionIncrementGap(int positionIncrementGap){
+    this.positionIncrementGap = positionIncrementGap;
+  }
+  
+  @Override
+  public int getPositionIncrementGap(String fieldName){
+    return positionIncrementGap;
+  }
+  
+  /** 
+   * Toggle consumer workflow checking: if your test consumes tokenstreams normally you
+   * should leave this enabled.
+   */
+  public void setEnableChecks(boolean enableChecks) {
+    this.enableChecks = enableChecks;
   }
 }

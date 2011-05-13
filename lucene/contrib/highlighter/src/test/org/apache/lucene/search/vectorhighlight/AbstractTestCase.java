@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -86,9 +87,9 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzerW = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    analyzerW = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
-    analyzerK = new MockAnalyzer(random, MockAnalyzer.KEYWORD, false);
+    analyzerK = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
     dir = newDirectory();

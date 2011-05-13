@@ -25,6 +25,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -223,7 +224,7 @@ class DocHelper {
    */ 
   public static SegmentInfo writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
-    return writeDoc(random, dir, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false), null, doc);
+    return writeDoc(random, dir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), null, doc);
   }
 
   /**

@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -301,7 +302,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testConstantScoreAutoRewrite() throws Exception {
-    StandardQueryParser qp = new StandardQueryParser(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    StandardQueryParser qp = new StandardQueryParser(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     Query q = qp.parse("foo*bar", "field");
     assertTrue(q instanceof WildcardQuery);
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((MultiTermQuery) q).getRewriteMethod());
@@ -384,9 +385,9 @@ public class TestQPHelper extends LuceneTestCase {
   public void testSimple() throws Exception {
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("t�rm term term", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false),
+    assertQueryEquals("t�rm term term", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false),
         "t�rm term term");
-    assertQueryEquals("�mlaut", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false), "�mlaut");
+    assertQueryEquals("�mlaut", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), "�mlaut");
 
     assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
     assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
@@ -443,7 +444,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -464,7 +465,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -781,7 +782,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
 
     /*
      * assertQueryEquals("\\[brackets", a, "\\[brackets");
@@ -880,7 +881,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testQueryStringEscaping() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
 
     assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
     assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
@@ -995,7 +996,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).parse("a?t", "contents");
+      new QPTestParser(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("a?t", "contents");
       fail("Wildcard queries should not be allowed");
     } catch (QueryNodeException expected) {
       // expected exception
@@ -1004,7 +1005,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).parse("xunit~", "contents");
+      new QPTestParser(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("xunit~", "contents");
       fail("Fuzzy queries should not be allowed");
     } catch (QueryNodeException expected) {
       // expected exception
@@ -1015,7 +1016,7 @@ public class TestQPHelper extends LuceneTestCase {
     BooleanQuery.setMaxClauseCount(2);
     try {
       StandardQueryParser qp = new StandardQueryParser();
-      qp.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+      qp.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
       qp.parse("one two three", "field");
       fail("ParseException expected due to too many boolean clauses");
     } catch (QueryNodeException expected) {
@@ -1028,7 +1029,7 @@ public class TestQPHelper extends LuceneTestCase {
    */
   public void testPrecedence() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    qp.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
 
     Query query1 = qp.parse("A AND B OR C AND D", "field");
     Query query2 = qp.parse("+A +B +C +D", "field");
@@ -1164,7 +1165,7 @@ public class TestQPHelper extends LuceneTestCase {
 
   public void testMatchAllDocs() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    qp.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
 
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*", "field"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)", "field"));
@@ -1176,7 +1177,7 @@ public class TestQPHelper extends LuceneTestCase {
   private void assertHits(int expected, String query, IndexSearcher is)
       throws IOException, QueryNodeException {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    qp.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     qp.setLocale(Locale.ENGLISH);
 
     Query q = qp.parse(query, "date");

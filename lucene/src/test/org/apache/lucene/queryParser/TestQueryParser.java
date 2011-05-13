@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -148,7 +149,7 @@ public class TestQueryParser extends LuceneTestCase {
 
   public QueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(random, MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", a);
     qp.setDefaultOperator(QueryParser.OR_OPERATOR);
     return qp;
@@ -218,7 +219,7 @@ public class TestQueryParser extends LuceneTestCase {
   public Query getQueryDOA(String query, Analyzer a)
     throws Exception {
     if (a == null)
-      a = new MockAnalyzer(random, MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", a);
     qp.setDefaultOperator(QueryParser.AND_OPERATOR);
     return qp.parse(query);
@@ -371,7 +372,7 @@ public class TestQueryParser extends LuceneTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -391,7 +392,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, true);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, true);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -516,7 +517,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.SIMPLE, true));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
     
@@ -639,7 +640,7 @@ public class TestQueryParser extends LuceneTestCase {
     final String defaultField = "default";
     final String monthField = "month";
     final String hourField = "hour";
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.SIMPLE, true));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
     
     // Don't set any date resolution and verify if DateField is used
     assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
@@ -680,7 +681,7 @@ public class TestQueryParser extends LuceneTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     
     /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
@@ -774,7 +775,7 @@ public class TestQueryParser extends LuceneTestCase {
   }
 
   public void testQueryStringEscaping() throws Exception {
-    Analyzer a = new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false);
+    Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
 
     assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
     assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
@@ -903,7 +904,7 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).parse("a?t");
+      new QPTestParser("contents", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("a?t");
       fail("Wildcard queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -912,7 +913,7 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).parse("xunit~");
+      new QPTestParser("contents", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("xunit~");
       fail("Fuzzy queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -922,7 +923,7 @@ public class TestQueryParser extends LuceneTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+      QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
       qp.parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
@@ -934,7 +935,7 @@ public class TestQueryParser extends LuceneTestCase {
    * This test differs from TestPrecedenceQueryParser
    */
   public void testPrecedence() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     Query query1 = qp.parse("A AND B OR C AND D");
     Query query2 = qp.parse("+A +B +C +D");
     assertEquals(query1, query2);
@@ -960,7 +961,7 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)) {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)) {
       @Override
       protected Query getWildcardQuery(String field, String termStr) throws ParseException {
         // override error checking of superclass
@@ -1052,7 +1053,7 @@ public class TestQueryParser extends LuceneTestCase {
   }
 
   public void testMatchAllDocs() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)"));
     BooleanQuery bq = (BooleanQuery)qp.parse("+*:* -*:*");
@@ -1061,7 +1062,7 @@ public class TestQueryParser extends LuceneTestCase {
   }
   
   private void assertHits(int expected, String query, IndexSearcher is) throws ParseException, IOException {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "date", new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "date", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     qp.setLocale(Locale.ENGLISH);
     Query q = qp.parse(query);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;

@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -155,6 +156,46 @@ public class TestIndexWriter extends LuceneTestCase {
 
       if (!Arrays.equals(startFiles, endFiles)) {
         fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
+      }
+    }
+
+    private static class StringSplitAnalyzer extends Analyzer {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new StringSplitTokenizer(reader);
+      }
+    }
+
+    private static class StringSplitTokenizer extends Tokenizer {
+      private final String[] tokens;
+      private int upto = 0;
+      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+      public StringSplitTokenizer(Reader r) {
+        try {
+          final StringBuilder b = new StringBuilder();
+          final char[] buffer = new char[1024];
+          int n;
+          while((n = r.read(buffer)) != -1) {
+            b.append(buffer, 0, n);
+          }
+          tokens = b.toString().split(" ");
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+
+      @Override
+      public final boolean incrementToken() throws IOException {
+        clearAttributes();      
+        if (upto < tokens.length) {
+          termAtt.setEmpty();
+          termAtt.append(tokens[upto]);
+          upto++;
+          return true;
+        } else {
+          return false;
+        }
       }
     }
 
@@ -1804,7 +1845,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-510
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new StringSplitAnalyzer()));
     Document doc = new Document();
 
     final int count = utf8Data.length/2;

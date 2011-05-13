@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
@@ -587,14 +588,14 @@ public class TestPayloads extends LuceneTestCase {
   public void testAcrossFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-                                                     new MockAnalyzer(random, MockAnalyzer.WHITESPACE, true));
+                                                     new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     Document doc = new Document();
     doc.add(new Field("hasMaybepayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
     writer = new RandomIndexWriter(random, dir,
-                                   new MockAnalyzer(random, MockAnalyzer.WHITESPACE, true));
+                                   new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     doc = new Document();
     doc.add(new Field("hasMaybepayload2", "here we go", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);

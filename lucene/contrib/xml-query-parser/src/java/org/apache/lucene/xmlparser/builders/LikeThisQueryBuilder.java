@@ -80,9 +80,12 @@ public class LikeThisQueryBuilder implements QueryBuilder {
                 CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
                 try
                 {
+                  ts.reset();
 	                while(ts.incrementToken()) {
 	                    stopWordsSet.add(termAtt.toString());
 	                }
+	                ts.end();
+	                ts.close();
                 }
                 catch(IOException ioe)
                 {

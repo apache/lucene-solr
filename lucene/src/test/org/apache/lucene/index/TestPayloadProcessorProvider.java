@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -138,7 +139,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
       throws IOException {
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).
             setMergePolicy(newLogMergePolicy(10))
     );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
@@ -197,7 +198,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
     IndexReader[] readers = new IndexReader[dirs.length];
@@ -251,7 +252,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     // won't get processed.
     Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockAnalyzer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.optimize();
     writer.close();
