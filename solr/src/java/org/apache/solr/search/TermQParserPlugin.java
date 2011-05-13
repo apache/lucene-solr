@@ -23,29 +23,38 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 
 /**
- * Create a term query from the input value without any text analysis or transformation whatsoever.
- * This is useful in debugging, or when raw terms are returned from the terms component (this is not the default).
+ * Create a single term query from the input value equivalent to readableToIndexed().
+ * This is useful for generating filter queries from the external human readable terms returned by the
+ * faceting or terms components.
  *
- * <br>For easy filter construction to drill down in faceting, the {@link TermQParserPlugin} is recommended.
- * <br>For full analysis on all fields, including text fields, see the {@link FieldQParserPlugin}. 
+ * <p>
+ * For text fields, no analysis is done since raw terms are already returned from the faceting
+ * and terms components, and not all text analysis is idempotent.
+ * To apply analysis to text fields as well, see the {@link FieldQParserPlugin}.
+ * <br>
+ * If no analysis or transformation is desired for any type of field, see the {@link RawQParserPlugin}.
  *
- * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>{!raw f=myfield}Foo Bar</code> creates <code>TermQuery(Term("myfield","Foo Bar"))</code>
+ * <p>Other parameters: <code>f</code>, the field
+ * <br>Example: <code>{!term f=weight}1.5</code>
  */
-public class RawQParserPlugin extends QParserPlugin {
-  public static String NAME = "raw";
+public class TermQParserPlugin extends QParserPlugin {
+  public static String NAME = "term";
 
   public void init(NamedList args) {
   }
 
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
-      @Override
       public Query parse() throws ParseException {
-        return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
+        String fname = localParams.get(QueryParsing.F);
+        FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
+        String val = localParams.get(QueryParsing.V);
+
+        return new TermQuery(new Term(fname, 
+                                      null == ft ? val : ft.readableToIndexed(val)));
       }
     };
   }

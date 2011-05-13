@@ -51,6 +51,11 @@ New Features
   Example: [{"id":"doc1"},{"id":"doc2"}] 
   (yonik)
 
+* SOLR-2113: Add TermQParserPlugin, registered as "term".  This is useful
+  when generating filter queries from terms returned from field faceting or
+  the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
+
+
 Optimizations
 ----------------------
 

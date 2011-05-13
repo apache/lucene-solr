@@ -134,6 +134,8 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","{!raw f=v_t}hello")
             ,"//result[@numFound='2']"
             );
+
+    // no analysis is done, so these should match nothing
     assertQ("test raw query",
             req("q","{!raw f=v_t}Hello")
             ,"//result[@numFound='0']"
@@ -142,6 +144,23 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","{!raw f=v_f}1.5")
             ,"//result[@numFound='0']"
             );
+
+    // test "term" qparser, which should only do readableToIndexed
+    assertQ(
+            req("q","{!term f=v_f}1.5")
+            ,"//result[@numFound='1']"
+            );
+    
+    // text fields are *not* analyzed since they may not be idempotent
+    assertQ(
+           req("q","{!term f=v_t}Hello")
+           ,"//result[@numFound='0']"
+           );
+     assertQ(
+           req("q","{!term f=v_t}hello")
+           ,"//result[@numFound='2']"
+           );
+
 
     //
     // test escapes in quoted strings
