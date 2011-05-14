@@ -3485,6 +3485,7 @@ public class IndexWriter implements Closeable {
     return buffer.toString();
   }
 
+  /** @lucene.internal */
   public synchronized String segString(SegmentInfo info) throws IOException {
     StringBuilder buffer = new StringBuilder();
     SegmentReader reader = readerPool.getIfExists(info);
