@@ -105,6 +105,7 @@ public class MockTokenizer extends Tokenizer {
     if (ch < 0) {
       return ch;
     } else {
+      assert ch != 0xffff; /* only on 3.x */
       assert !Character.isLowSurrogate((char) ch);
       off++;
       if (Character.isHighSurrogate((char) ch)) {

@@ -2596,7 +2596,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testEmbeddedFFFF() throws Throwable {
 
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new StringSplitAnalyzer()));
     Document doc = new Document();
     doc.add(newField("field", "a a\uffffb", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
