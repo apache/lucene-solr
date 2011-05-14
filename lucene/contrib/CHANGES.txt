@@ -79,6 +79,12 @@ New Features
 
  * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
 
+ * LUCENE-1421: create new grouping contrib module, enabling search
+   results to be grouped by a single-valued indexed field.  This
+   module was factored out of Solr's grouping implementation, but
+   it cannot group by function queries nor arbitrary queries.  (Mike
+   McCandless)
+
 Optimizations
 
  * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
