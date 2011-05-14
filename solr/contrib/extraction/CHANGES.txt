@@ -22,11 +22,12 @@ to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequ
 
 Current Version: Tika 0.8 (released 11/07/2010)
 
-$Id:$
+$Id$
 
 ================== Release 3.2-dev ==================
 
-(No Changes)
+* SOLR-2480: Add ignoreTikaException flag so that users can ignore TikaException but index
+  meta data. (Shinichiro Abe, koji)
 
 ================== Release 3.1-dev ==================
 

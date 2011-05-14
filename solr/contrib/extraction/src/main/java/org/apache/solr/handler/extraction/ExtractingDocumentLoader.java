@@ -16,20 +16,27 @@
  */
 package org.apache.solr.handler.extraction;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.Locale;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
@@ -38,25 +45,28 @@ import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
 import org.apache.tika.exception.TikaException;
-import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.BaseMarkupSerializer;
-import org.apache.xml.serialize.XMLSerializer;
+import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.TextSerializer;
+import org.apache.xml.serialize.XMLSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.apache.tika.mime.MediaType;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-
 
 /**
  * The class responsible for loading extracted content into Solr.
  *
  **/
 public class ExtractingDocumentLoader extends ContentStreamLoader {
+
+  private static final Logger log = LoggerFactory.getLogger(ExtractingDocumentLoader.class);
+
   /**
    * Extract Only supported format
    */
@@ -74,6 +84,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   final IndexSchema schema;
   final SolrParams params;
   final UpdateRequestProcessor processor;
+  final boolean ignoreTikaException;
   protected AutoDetectParser autoDetectParser;
 
   private final AddUpdateCommand templateAdd;
@@ -106,6 +117,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     //this is lightweight
     autoDetectParser = new AutoDetectParser(config);
     this.factory = factory;
+    
+    ignoreTikaException = params.getBool(ExtractingParams.IGNORE_TIKA_EXCEPTION, false);
   }
 
 
@@ -191,9 +204,17 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           parsingHandler = new MatchingContentHandler(handler, matcher);
         } //else leave it as is
 
-        //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
-        ParseContext context = new ParseContext();//TODO: should we design a way to pass in parse context?
-        parser.parse(inputStream, parsingHandler, metadata, context);
+        try{
+          //potentially use a wrapper handler for parsing, but we still need the SolrContentHandler for getting the document.
+          ParseContext context = new ParseContext();//TODO: should we design a way to pass in parse context?
+          parser.parse(inputStream, parsingHandler, metadata, context);
+        } catch (TikaException e) {
+          if(ignoreTikaException)
+            log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
+                .append(". metadata=").append(metadata.toString()).toString());
+          else
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
         if (extractOnly == false) {
           addDoc(handler);
         } else {
@@ -212,8 +233,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           rsp.add(stream.getName() + "_metadata", metadataNL);
         }
       } catch (SAXException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (TikaException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
         IOUtils.closeQuietly(inputStream);
