@@ -79,7 +79,7 @@ public abstract class Similarity {
 
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
    * This value is summed for each sloppy phrase match in a document to form
-   * the frequency that is passed to {@link #tf(float)}.
+   * the frequency to be used in scoring instead of the exact term count.
    *
    * <p>A phrase match with a small edit distance to a document passage more
    * closely matches the document, so implementations of this method usually

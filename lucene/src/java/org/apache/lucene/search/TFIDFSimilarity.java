@@ -578,9 +578,8 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
    * is inaccurate, so is {@link IndexSearcher#maxDoc()}, and in the same direction.
    * In addition, {@link IndexSearcher#maxDoc()} is more efficient to compute
    *   
-   * @param term the term in question
+   * @param stats statistics of the term in question
    * @param searcher the document collection being searched
-   * @param docFreq externally computed docFreq for this term
    * @return an IDFExplain object that includes both an idf score factor 
              and an explanation for the term.
    * @throws IOException
@@ -608,7 +607,7 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
    * The default implementation sums the idf factor for
    * each term in the phrase.
    * 
-   * @param terms the terms in the phrase
+   * @param stats statistics of the terms in the phrase
    * @param searcher the document collection being searched
    * @return an IDFExplain object that includes both an idf 
    *         score factor for the phrase and an explanation 
