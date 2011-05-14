@@ -36,6 +36,7 @@
     <module>benchmark</module>
     <module>db</module>
     <module>demo</module>
+    <module>grouping</module>
     <module>highlighter</module>
     <module>icu</module>
     <module>instantiated</module>
