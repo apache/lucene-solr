@@ -233,6 +233,7 @@
           <packageset dir="contrib/ant/src/java"/>
           <packageset dir="contrib/benchmark/src/java"/>
           <packageset dir="contrib/demo/src/java"/>
+          <packageset dir="contrib/grouping/src/java"/>
           <packageset dir="contrib/icu/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
@@ -263,6 +264,7 @@
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
+          <group title="contrib: Grouping" packages="org.apache.lucene.search.grouping*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Lucli" packages="lucli*"/>
