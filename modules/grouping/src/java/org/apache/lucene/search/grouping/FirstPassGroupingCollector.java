@@ -229,7 +229,9 @@ public class FirstPassGroupingCollector extends Collector {
       // We already tested that the document is competitive, so replace
       // the bottom group with this new group.
 
-      final CollectedSearchGroup bottomGroup = orderedGroups.pollLast();
+      // java 6-only: final CollectedSearchGroup bottomGroup = orderedGroups.pollLast();
+      final CollectedSearchGroup bottomGroup = orderedGroups.last();
+      orderedGroups.remove(bottomGroup);
       assert orderedGroups.size() == topNGroups -1;
 
       groupMap.remove(bottomGroup.groupValue);
