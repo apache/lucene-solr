@@ -133,10 +133,15 @@ public final class IndexWriterConfig implements Cloneable {
 
   /**
    * Creates a new config that with defaults that match the specified
-   * {@link Version} as well as the default {@link Analyzer}. {@link Version} is
-   * a placeholder for future changes. The default settings are relevant to 3.1
-   * and before. In the future, if different settings will apply to different
-   * versions, they will be documented here.
+   * {@link Version} as well as the default {@link
+   * Analyzer}. If matchVersion is >= {@link
+   * Version#LUCENE_32}, {@link TieredMergePolicy} is used
+   * for merging; else {@link LogByteSizeMergePolicy}.
+   * Note that {@link TieredMergePolicy} is free to select
+   * non-contiguous merges, which means docIDs may not
+   * remain montonic over time.  If this is a problem you
+   * should switch to {@link LogByteSizeMergePolicy} or
+   * {@link LogDocMergePolicy}.
    */
   public IndexWriterConfig(Version matchVersion, Analyzer analyzer) {
     this.matchVersion = matchVersion;
@@ -154,7 +159,11 @@ public final class IndexWriterConfig implements Cloneable {
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     mergedSegmentWarmer = null;
     codecProvider = CodecProvider.getDefault();
-    mergePolicy = new TieredMergePolicy();
+    if (matchVersion.onOrAfter(Version.LUCENE_32)) {
+      mergePolicy = new TieredMergePolicy();
+    } else {
+      mergePolicy = new LogByteSizeMergePolicy();
+    }
     readerPooling = DEFAULT_READER_POOLING;
     indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool();
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
