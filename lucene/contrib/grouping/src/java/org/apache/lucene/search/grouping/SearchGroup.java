@@ -18,7 +18,7 @@ package org.apache.lucene.search.grouping;
  */
 
 /** @lucene.experimental */
-class SearchGroup {
+public class SearchGroup {
   public String groupValue;
   public Comparable[] sortValues;
 }
