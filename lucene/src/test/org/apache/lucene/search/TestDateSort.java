@@ -81,7 +81,7 @@ public class TestDateSort extends LuceneTestCase {
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, new MockAnalyzer());
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, new MockAnalyzer(random));
     Query query = queryParser.parse("Document");
 
     // Execute the search and process the search results.

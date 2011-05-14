@@ -60,7 +60,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.solr.home", SolrTestCaseJ4.TEST_HOME);
+    System.setProperty("solr.solr.home", SolrTestCaseJ4.TEST_HOME());
   }
   
   @Override

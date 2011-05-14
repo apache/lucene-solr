@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -34,13 +33,11 @@ import org.apache.lucene.util.ReaderUtil;
 
 public class TestDocsAndPositions extends LuceneTestCase {
   private String fieldName;
-  private boolean usePayload;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     fieldName = "field" + random.nextInt();
-    usePayload = random.nextBoolean();
   }
 
   /**
@@ -49,8 +46,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-            MockTokenizer.WHITESPACE, true, usePayload)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
       doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
@@ -75,7 +71,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
         final int advance = docsAndPosEnum.advance(random.nextInt(atomicReaderContext.reader.maxDoc()));
         do {
           String msg = "Advanced to: " + advance + " current doc: "
-              + docsAndPosEnum.docID() + " usePayloads: " + usePayload;
+              + docsAndPosEnum.docID(); // TODO: + " usePayloads: " + usePayload;
           assertEquals(msg, 4, docsAndPosEnum.freq());
           assertEquals(msg, 0, docsAndPosEnum.nextPosition());
           assertEquals(msg, 4, docsAndPosEnum.freq());
@@ -115,8 +111,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testRandomPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-            MockTokenizer.WHITESPACE, true, usePayload)).setMergePolicy(newInOrderLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     int numDocs = 131;
     int max = 1051;
     int term = random.nextInt(max);
@@ -176,8 +171,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
           for (int j = 0; j < howMany; j++) {
             assertEquals("iteration: " + i + " initDoc: " + initDoc + " doc: "
                 + docID + " base: " + atomicReaderContext.docBase
-                + " positions: " + Arrays.toString(pos) + " usePayloads: "
-                + usePayload, pos[j].intValue(), docsAndPosEnum.nextPosition());
+                + " positions: " + Arrays.toString(pos) /* TODO: + " usePayloads: "
+                + usePayload*/, pos[j].intValue(), docsAndPosEnum.nextPosition());
           }
 
           if (random.nextInt(10) == 0) { // once is a while advance
@@ -196,8 +191,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testRandomDocs() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-                                                                    MockTokenizer.WHITESPACE, true, usePayload)).setMergePolicy(newInOrderLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     int numDocs = 499;
     int max = 15678;
     int term = random.nextInt(max);
@@ -275,8 +269,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testLargeNumberOfPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
-            MockTokenizer.WHITESPACE, true, usePayload)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     int howMany = 1000;
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
@@ -315,8 +308,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
         } else {
           initDoc = docsAndPosEnum.advance(random.nextInt(maxDoc));
         }
-        String msg = "Iteration: " + i + " initDoc: " + initDoc + " payloads: "
-            + usePayload;
+        String msg = "Iteration: " + i + " initDoc: " + initDoc; // TODO: + " payloads: " + usePayload;
         assertEquals(howMany / 2, docsAndPosEnum.freq());
         for (int j = 0; j < howMany; j += 2) {
           assertEquals("position missmatch index: " + j + " with freq: "

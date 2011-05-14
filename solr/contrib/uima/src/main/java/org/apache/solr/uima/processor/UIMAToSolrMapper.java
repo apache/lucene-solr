@@ -20,6 +20,7 @@ package org.apache.solr.uima.processor;
 import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.uima.cas.FSIterator;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
@@ -53,7 +54,7 @@ public class UIMAToSolrMapper {
    *          name of UIMA type to map
    * @param featureFieldsmapping
    */
-  public void map(String typeName, Map<String, String> featureFieldsmapping) {
+  public void map(String typeName, Map<String, MapField> featureFieldsmapping) {
     try {
       FeatureStructure fsMock = (FeatureStructure) Class.forName(typeName).getConstructor(
               JCas.class).newInstance(cas);
@@ -62,7 +63,11 @@ public class UIMAToSolrMapper {
               .hasNext();) {
         FeatureStructure fs = iterator.next();
         for (String featureName : featureFieldsmapping.keySet()) {
-          String fieldName = featureFieldsmapping.get(featureName);
+          MapField mapField = featureFieldsmapping.get(featureName);
+          String fieldNameFeature = mapField.getFieldNameFeature();
+          String fieldNameFeatureValue = fieldNameFeature == null ? null :
+            fs.getFeatureValueAsString(type.getFeatureByBaseName(fieldNameFeature));
+          String fieldName = mapField.getFieldName(fieldNameFeatureValue);
           log.info(new StringBuffer("mapping ").append(typeName).append("@").append(featureName)
                   .append(" to ").append(fieldName).toString());
           String featureValue = null;

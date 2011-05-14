@@ -61,7 +61,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
-                                                                     TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+                                                                     TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();

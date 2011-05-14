@@ -31,7 +31,6 @@ public class SegmentWriteState {
   public final String segmentName;
   public final FieldInfos fieldInfos;
   public final int numDocs;
-  public boolean hasVectors;
 
   // Deletes to apply while we are flushing the segment.  A
   // Term is enrolled in here if it was deleted at one

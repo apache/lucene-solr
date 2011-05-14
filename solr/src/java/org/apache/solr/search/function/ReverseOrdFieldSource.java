@@ -66,46 +66,10 @@ public class ReverseOrdFieldSource extends ValueSource {
     final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(topReader, field);
     final int end = sindex.numOrd();
 
-    return new DocValues() {
-      @Override
-      public float floatVal(int doc) {
-        return (float)(end - sindex.getOrd(doc+off));
-      }
-
-      @Override
+    return new IntDocValues(this) {
+     @Override
       public int intVal(int doc) {
         return (end - sindex.getOrd(doc+off));
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)(end - sindex.getOrd(doc+off));
-      }
-
-      @Override
-      public int ordVal(int doc) {
-        return (end - sindex.getOrd(doc+off));
-      }
-
-      @Override
-      public int numOrd() {
-        return end;
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)(end - sindex.getOrd(doc+off));
-      }
-
-      @Override
-      public String strVal(int doc) {
-        // the string value of the ordinal, not the string itself
-        return Integer.toString((end - sindex.getOrd(doc+off)));
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + strVal(doc);
       }
     };
   }

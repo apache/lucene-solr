@@ -45,7 +45,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public static final String INDEX_PATH = "test.snapshots";
   
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {
-    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random));
     if (dp != null) {
       conf.setIndexDeletionPolicy(dp);
     }
@@ -106,7 +106,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(dp)
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
     writer.commit();
     

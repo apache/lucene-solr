@@ -28,11 +28,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
-  final TermVectorsTermsWriterPerThread perThread;
   final TermsHashPerField termsHashPerField;
   final TermVectorsTermsWriter termsWriter;
   final FieldInfo fieldInfo;
-  final DocumentsWriter.DocState docState;
+  final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
 
   boolean doVectors;
@@ -41,11 +40,10 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
   int maxNumPostings;
   OffsetAttribute offsetAttribute = null;
-  
-  public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriterPerThread perThread, FieldInfo fieldInfo) {
+
+  public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriter termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
-    this.perThread = perThread;
-    this.termsWriter = perThread.termsWriter;
+    this.termsWriter = termsWriter;
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
@@ -72,22 +70,12 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     if (doVectors) {
-      if (perThread.doc == null) {
-        perThread.doc = termsWriter.getPerDoc();
-        perThread.doc.docID = docState.docID;
-        assert perThread.doc.numVectorFields == 0;
-        assert 0 == perThread.doc.perDocTvf.length();
-        assert 0 == perThread.doc.perDocTvf.getFilePointer();
-      }
-
-      assert perThread.doc.docID == docState.docID;
-
+      termsWriter.hasVectors = true;
       if (termsHashPerField.bytesHash.size() != 0) {
         // Only necessary if previous doc hit a
         // non-aborting exception while writing vectors in
         // this field:
         termsHashPerField.reset();
-        perThread.termsHashPerThread.reset(false);
       }
     }
 
@@ -95,42 +83,42 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     //perThread.postingsCount = 0;
 
     return doVectors;
-  }     
+  }
 
   public void abort() {}
 
   /** Called once per field per document if term vectors
    *  are enabled, to write the vectors to
    *  RAMOutputStream, which is then quickly flushed to
-   *  the real term vectors files in the Directory. */
-  @Override
+   *  the real term vectors files in the Directory. */  @Override
   void finish() throws IOException {
+    if (!doVectors || termsHashPerField.bytesHash.size() == 0)
+      return;
 
+    termsWriter.addFieldToFlush(this);
+  }
+
+  void finishDocument() throws IOException {
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
 
     final int numPostings = termsHashPerField.bytesHash.size();
 
-    final BytesRef flushTerm = perThread.flushTerm;
+    final BytesRef flushTerm = termsWriter.flushTerm;
 
     assert numPostings >= 0;
 
-    if (!doVectors || numPostings == 0)
-      return;
-
     if (numPostings > maxNumPostings)
       maxNumPostings = numPostings;
-
-    final IndexOutput tvf = perThread.doc.perDocTvf;
 
     // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
     // our hash into the DocWriter.
 
     assert fieldInfo.storeTermVector;
-    assert perThread.vectorFieldsInOrder(fieldInfo);
+    assert termsWriter.vectorFieldsInOrder(fieldInfo);
 
-    perThread.doc.addField(termsHashPerField.fieldInfo.number);
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    final IndexOutput tvf = termsWriter.tvf;
 
     // TODO: we may want to make this sort in same order
     // as Codec's terms dict?
@@ -140,21 +128,21 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     byte bits = 0x0;
     if (doVectorPositions)
       bits |= TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
-    if (doVectorOffsets) 
+    if (doVectorOffsets)
       bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
     tvf.writeByte(bits);
 
     int lastLen = 0;
     byte[] lastBytes = null;
     int lastStart = 0;
-      
-    final ByteSliceReader reader = perThread.vectorSliceReader;
-    final ByteBlockPool termBytePool = perThread.termsHashPerThread.termBytePool;
+
+    final ByteSliceReader reader = termsWriter.vectorSliceReader;
+    final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
 
     for(int j=0;j<numPostings;j++) {
       final int termID = termIDs[j];
       final int freq = postings.freqs[termID];
-          
+
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
 
@@ -192,20 +180,13 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     termsHashPerField.reset();
-
-    // NOTE: we clear, per-field, at the thread level,
-    // because term vectors fully write themselves on each
-    // field; this saves RAM (eg if large doc has two large
-    // fields w/ term vectors on) because we recycle/reuse
-    // all RAM after each field:
-    perThread.termsHashPerThread.reset(false);
   }
 
   void shrinkHash() {
     termsHashPerField.shrinkHash(maxNumPostings);
     maxNumPostings = 0;
   }
-  
+
   @Override
   void start(Fieldable f) {
     if (doVectorOffsets) {
@@ -225,7 +206,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
-      
+
       termsHashPerField.writeVInt(1, startOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       postings.lastOffsets[termID] = endOffset;
@@ -243,13 +224,13 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
 
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
-    
+
     postings.freqs[termID]++;
 
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
-      
+
       termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       postings.lastOffsets[termID] = endOffset;
@@ -280,7 +261,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     int[] freqs;                                       // How many times this term occurred in the current doc
     int[] lastOffsets;                                 // Last offset we saw
     int[] lastPositions;                               // Last position where this term occurred
-    
+
     @Override
     ParallelPostingsArray newInstance(int size) {
       return new TermVectorsPostingsArray(size);

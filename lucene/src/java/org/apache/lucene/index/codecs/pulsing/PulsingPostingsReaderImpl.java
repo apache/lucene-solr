@@ -68,15 +68,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public Object clone() {
-      PulsingTermState clone;
-      clone = (PulsingTermState) super.clone();
-      if (postingsSize != -1) {
-        clone.postings = new byte[postingsSize];
-        System.arraycopy(postings, 0, clone.postings, 0, postingsSize);
-      } else {
-        assert wrappedTermState != null;
-        clone.wrappedTermState = (BlockTermState) wrappedTermState.clone();
-      }
+      PulsingTermState clone = new PulsingTermState();
+      clone.copyFrom(this);
       return clone;
     }
 
@@ -90,8 +83,10 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           postings = new byte[ArrayUtil.oversize(other.postingsSize, 1)];
         }
         System.arraycopy(other.postings, 0, postings, 0, other.postingsSize);
-      } else {
+      } else if (wrappedTermState != null) {
         wrappedTermState.copyFrom(other.wrappedTermState);
+      } else {
+        wrappedTermState = (BlockTermState) other.wrappedTermState.clone();
       }
 
       // NOTE: we do not copy the
@@ -233,6 +228,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     private Bits skipDocs;
     private int docID;
     private int freq;
+    private int payloadLength;
 
     public PulsingDocsEnum(FieldInfo fieldInfo) {
       omitTF = fieldInfo.omitTermFreqAndPositions;
@@ -246,6 +242,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
       postings.reset(bytes);
       docID = 0;
+      payloadLength = 0;
       freq = 1;
       this.skipDocs = skipDocs;
       return this;
@@ -277,7 +274,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
           // Skip positions
           if (storePayloads) {
-            int payloadLength = -1;
             for(int pos=0;pos<freq;pos++) {
               final int posCode = postings.readVInt();
               if ((posCode & 1) != 0) {
@@ -352,6 +348,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       postings.reset(bytes);
       this.skipDocs = skipDocs;
       payloadLength = 0;
+      posPending = 0;
       docID = 0;
       //System.out.println("PR d&p reset storesPayloads=" + storePayloads + " bytes=" + bytes.length + " this=" + this);
       return this;
@@ -359,7 +356,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      //System.out.println("PR d&p nextDoc this=" + this);
+      //System.out.println("PR.nextDoc this=" + this);
 
       while(true) {
         //System.out.println("  cycle skip posPending=" + posPending);
@@ -367,15 +364,16 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         skipPositions();
 
         if (postings.eof()) {
-          //System.out.println("PR   END");
+          //System.out.println("  END");
           return docID = NO_MORE_DOCS;
         }
-
+        //System.out.println("  read doc code");
         final int code = postings.readVInt();
         docID += code >>> 1;            // shift off low bit
         if ((code & 1) != 0) {          // if low bit is set
           freq = 1;                     // freq is one
         } else {
+          //System.out.println("  read freq");
           freq = postings.readVInt();     // else read freq
         }
         posPending = freq;
@@ -400,10 +398,12 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
+      //System.out.println("PR.advance target=" + target);
       int doc;
       while((doc=nextDoc()) != NO_MORE_DOCS) {
+        //System.out.println("  nextDoc got doc=" + doc);
         if (doc >= target) {
-          return doc;
+          return docID = doc;
         }
       }
       return docID = NO_MORE_DOCS;
@@ -411,7 +411,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      //System.out.println("PR d&p nextPosition posPending=" + posPending + " vs freq=" + freq);
+      //System.out.println("PR.nextPosition posPending=" + posPending + " vs freq=" + freq);
       
       assert posPending > 0;
       posPending--;
@@ -421,6 +421,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           //System.out.println("PR     skip payload=" + payloadLength);
           postings.skipBytes(payloadLength);
         }
+        //System.out.println("  read pos code");
         final int code = postings.readVInt();
         //System.out.println("PR     code=" + code);
         if ((code & 1) != 0) {
@@ -433,16 +434,17 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         position += postings.readVInt();
       }
 
-      //System.out.println("PR d&p nextPos return pos=" + position + " this=" + this);
+      //System.out.println("  return pos=" + position + " hasPayload=" + !payloadRetrieved + " posPending=" + posPending + " this=" + this);
       return position;
     }
 
     private void skipPositions() throws IOException {
+      //System.out.println("PR.skipPositions: posPending=" + posPending);
       while(posPending != 0) {
         nextPosition();
       }
       if (storePayloads && !payloadRetrieved) {
-        //System.out.println("  skip payload len=" + payloadLength);
+        //System.out.println("  skip last payload len=" + payloadLength);
         postings.skipBytes(payloadLength);
         payloadRetrieved = true;
       }

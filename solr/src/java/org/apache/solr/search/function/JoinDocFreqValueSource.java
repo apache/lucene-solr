@@ -54,7 +54,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     final DocTerms terms = cache.getTerms(readerContext.reader, field, true );
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader;
     
-    return new DocValues() {
+    return new IntDocValues(this) {
       BytesRef ref = new BytesRef();
 
       @Override
@@ -69,31 +69,6 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
         catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in function "+description()+" : doc="+doc, e);
         }
-      }
-
-      @Override
-      public float floatVal(int doc) {
-        return (float)intVal(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)intVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)intVal(doc);
-      }
-
-      @Override
-      public String strVal(int doc) {
-        return intVal(doc) + "";
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + intVal(doc);
       }
     };
   }

@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.index.codecs.CodecProvider;
 
 
@@ -60,10 +61,10 @@ public class TestDoc extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: setUp");
         }
-        workDir = new File(TEMP_DIR,"TestDoc");
+        workDir = _TestUtil.getTempDir("TestDoc");
         workDir.mkdirs();
 
-        indexDir = new File(workDir, "testIndex");
+        indexDir = _TestUtil.getTempDir("testIndex");
         indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);
@@ -114,7 +115,7 @@ public class TestDoc extends LuceneTestCase {
       Directory directory = newFSDirectory(indexDir);
       IndexWriter writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -148,7 +149,7 @@ public class TestDoc extends LuceneTestCase {
       directory = newFSDirectory(indexDir);
       writer = new IndexWriter(
           directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(-1).
               setMergePolicy(newLogMergePolicy(10))
@@ -195,7 +196,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
       SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, CodecProvider.getDefault(), null, new FieldInfos());
+      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, null, new FieldInfos());
 
       merger.add(r1);
       merger.add(r2);
@@ -204,8 +205,7 @@ public class TestDoc extends LuceneTestCase {
       r2.close();
       final FieldInfos fieldInfos =  merger.fieldInfos();
       final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
-                                               false, fieldInfos.hasProx(), merger.getSegmentCodecs(),
-                                               fieldInfos.hasVectors(), fieldInfos);
+                                               false, merger.getSegmentCodecs(), fieldInfos);
       
       if (useCompoundFile) {
         Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info);

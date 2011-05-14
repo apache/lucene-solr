@@ -150,6 +150,12 @@ class SortableLongFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public Object objectVal(int doc) {
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? null  : NumberUtils.SortableStr2long(termsIndex.lookup(ord, spare));
+      }
+
+      @Override
       public String toString(int doc) {
         return description() + '=' + longVal(doc);
       }

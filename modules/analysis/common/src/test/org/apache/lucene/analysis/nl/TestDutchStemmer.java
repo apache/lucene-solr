@@ -185,4 +185,9 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTerm(new DutchAnalyzer(TEST_VERSION_CURRENT), input, expected); 
   }
   
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new DutchAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
+  
 }

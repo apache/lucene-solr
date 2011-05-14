@@ -116,7 +116,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     Directory ramDir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();

@@ -47,7 +47,7 @@ public class TestNormsSum extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(MockTokenizer.SIMPLE, true));
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
     config.setSimilarityProvider(new DefaultSimilarityProvider() {
       public Similarity get(String field) {
         return new TestSimilarity();

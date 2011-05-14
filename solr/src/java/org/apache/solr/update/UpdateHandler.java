@@ -21,7 +21,6 @@ package org.apache.solr.update;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
@@ -125,7 +124,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
   protected final String getIndexedIdOptional(Document doc) {
     if (idField == null) return null;
-    Field f = doc.getField(idField.getName());
+    Fieldable f = doc.getFieldable(idField.getName());
     if (f == null) return null;
     return idFieldType.storedToIndexed(f);
   }

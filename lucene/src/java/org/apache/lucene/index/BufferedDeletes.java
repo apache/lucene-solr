@@ -72,13 +72,18 @@ class BufferedDeletes {
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
-  final AtomicLong bytesUsed = new AtomicLong();
+  final AtomicLong bytesUsed;
 
   private final static boolean VERBOSE_DELETES = false;
 
   long gen;
-
   public BufferedDeletes(boolean sortTerms) {
+    this(sortTerms, new AtomicLong());
+  }
+
+  BufferedDeletes(boolean sortTerms, AtomicLong bytesUsed) {
+    assert bytesUsed != null;
+    this.bytesUsed = bytesUsed;
     if (sortTerms) {
       terms = new TreeMap<Term,Integer>();
     } else {

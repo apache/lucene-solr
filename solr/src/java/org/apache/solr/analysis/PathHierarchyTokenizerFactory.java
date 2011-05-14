@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
+import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
 
 
 /**
@@ -37,6 +38,8 @@ public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
   
   private char delimiter;
   private char replacement;
+  private boolean reverse = false;
+  private int skip =  PathHierarchyTokenizer.DEFAULT_SKIP;
   
   /**
    * Require a configured pattern
@@ -70,10 +73,23 @@ public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
     else{
       replacement = delimiter;
     }
+    
+    v = args.get( "reverse" );
+    if( v != null ){
+      reverse = "true".equals( v );
+    }
+
+    v = args.get( "skip" );
+    if( v != null ){
+      skip = Integer.parseInt( v );
+    }
   }
 
   public Tokenizer create(Reader input) {
-    return new PathHierarchyTokenizer(input, delimiter, replacement);
+    if( reverse ) {
+      return new ReversePathHierarchyTokenizer(input, delimiter, replacement, skip);
+    }
+    return new PathHierarchyTokenizer(input, delimiter, replacement, skip);
   }
 }
 

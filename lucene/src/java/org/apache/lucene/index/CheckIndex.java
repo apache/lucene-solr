@@ -661,10 +661,13 @@ public class CheckIndex {
           status.termCount++;
 
           final DocsEnum docs2;
+          final boolean hasPositions;
           if (postings != null) {
             docs2 = postings;
+            hasPositions = true;
           } else {
             docs2 = docs;
+            hasPositions = false;
           }
 
           int lastDoc = -1;
@@ -731,6 +734,67 @@ public class CheckIndex {
             sumTotalTermFreq += totalTermFreq;
             if (totalTermFreq != totalTermFreq2) {
               throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
+            }
+          }
+
+          // Test skipping
+          if (docFreq >= 16) {
+            if (hasPositions) {
+              for(int idx=0;idx<7;idx++) {
+                final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+                postings = terms.docsAndPositions(delDocs, postings);
+                final int docID = postings.advance(skipDocID);
+                if (docID == DocsEnum.NO_MORE_DOCS) {
+                  break;
+                } else {
+                  if (docID < skipDocID) {
+                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+                  }
+                  final int freq = postings.freq();
+                  if (freq <= 0) {
+                    throw new RuntimeException("termFreq " + freq + " is out of bounds");
+                  }
+                  int lastPosition = -1;
+                  for(int posUpto=0;posUpto<freq;posUpto++) {
+                    final int pos = postings.nextPosition();
+                    if (pos < 0) {
+                      throw new RuntimeException("position " + pos + " is out of bounds");
+                    }
+                    if (pos <= lastPosition) {
+                      throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
+                    }
+                    lastPosition = pos;
+                  } 
+
+                  final int nextDocID = postings.nextDoc();
+                  if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                    break;
+                  }
+                  if (nextDocID <= docID) {
+                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
+                  }
+                }
+              }
+            } else {
+              for(int idx=0;idx<7;idx++) {
+                final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+                docs = terms.docs(delDocs, docs);
+                final int docID = docs.advance(skipDocID);
+                if (docID == DocsEnum.NO_MORE_DOCS) {
+                  break;
+                } else {
+                  if (docID < skipDocID) {
+                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+                  }
+                  final int nextDocID = docs.nextDoc();
+                  if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                    break;
+                  }
+                  if (nextDocID <= docID) {
+                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
+                  }
+                }
+              }
             }
           }
         }

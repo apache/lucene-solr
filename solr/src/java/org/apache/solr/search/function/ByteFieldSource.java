@@ -88,6 +88,11 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
         return description() + '=' + byteVal(doc);
       }
 
+      @Override
+      public Object objectVal(int doc) {
+        return arr[doc];  // TODO: valid?
+      }
+
     };
   }
 }

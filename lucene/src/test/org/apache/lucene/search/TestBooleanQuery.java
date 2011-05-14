@@ -143,7 +143,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     IndexReader reader2 = iw2.getReader();
     iw2.close();
     
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     
     MultiReader multireader = new MultiReader(reader1, reader2);

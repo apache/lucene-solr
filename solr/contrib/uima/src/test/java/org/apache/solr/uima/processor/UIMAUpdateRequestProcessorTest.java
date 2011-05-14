@@ -33,6 +33,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,12 +68,32 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
             .getFactories()[0];
     assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+  }
+
+  @Test
+  public void testMultiMap() {
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uima-multi-map");
+    assertNotNull(chained);
+    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
+            .getFactories()[0];
+    assertNotNull(factory);
+    UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
+    assertTrue(processor instanceof UIMAUpdateRequestProcessor);
+    SolrUIMAConfiguration conf = ((UIMAUpdateRequestProcessor)processor).solrUIMAConfiguration;
+    Map<String, Map<String, MapField>> map = conf.getTypesFeaturesFieldsMapping();
+    Map<String, MapField> subMap = map.get("a-type-which-can-have-multiple-features");
+    assertEquals(2, subMap.size());
+    assertEquals("1", subMap.get("A").getFieldName(null));
+    assertEquals("2", subMap.get("B").getFieldName(null));
   }
 
   @Test
   public void testProcessing() throws Exception {
 
-    addDoc(adoc(
+    addDoc("uima", adoc(
             "id",
             "2312312321312",
             "text",
@@ -83,19 +105,19 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("sentence:*"), "//*[@numFound='1']");
     assertQ(req("sentiment:*"), "//*[@numFound='0']");
-    assertQ(req("entity:Prague"), "//*[@numFound='1']");
+    assertQ(req("OTHER_sm:Prague"), "//*[@numFound='1']");
   }
 
   @Test
   public void testTwoUpdates() throws Exception {
 
-    addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
+    addDoc("uima", adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
             + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
             + "Hemisphere!"));
     assertU(commit());
     assertQ(req("sentence:*"), "//*[@numFound='1']");
 
-    addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
+    addDoc("uima", adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
             + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
             + " attendee-driven, facilitated by members of the Apache community and will "
             + "focus on the Apache..."));
@@ -103,12 +125,44 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     assertQ(req("sentence:*"), "//*[@numFound='2']");
 
     assertQ(req("sentiment:positive"), "//*[@numFound='1']");
-    assertQ(req("entity:Apache"), "//*[@numFound='2']");
+    assertQ(req("ORGANIZATION_sm:Apache"), "//*[@numFound='2']");
   }
 
-  private void addDoc(String doc) throws Exception {
+  @Test
+  public void testErrorHandling() throws Exception {
+
+    try{
+      addDoc("uima-not-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes. \n  "
+                    + "Add support for specifying Spelling SuggestWord Comparator to Lucene spell "
+                    + "checkers for SpellCheckComponent. Issue SOLR-2053 is already fixed, patch is"
+                    + " attached if you need it, but it is also committed to trunk and 3_x branch."
+                    + " Last Lucene European Conference has been held in Prague."));
+      fail("exception shouldn't be ignored");
+    }
+    catch(RuntimeException expected){}
+    assertU(commit());
+    assertQ(req("*:*"), "//*[@numFound='0']");
+
+    addDoc("uima-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes. \n  "
+                    + "Add support for specifying Spelling SuggestWord Comparator to Lucene spell "
+                    + "checkers for SpellCheckComponent. Issue SOLR-2053 is already fixed, patch is"
+                    + " attached if you need it, but it is also committed to trunk and 3_x branch."
+                    + " Last Lucene European Conference has been held in Prague."));
+    assertU(commit());
+    assertQ(req("*:*"), "//*[@numFound='1']");
+  }
+
+  private void addDoc(String chain, String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
-    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { "uima" });
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {
     };

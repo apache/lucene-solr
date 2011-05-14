@@ -54,6 +54,7 @@ public class QueryScorer implements Scorer {
   private IndexReader reader;
   private boolean skipInitExtractor;
   private boolean wrapToCaching = true;
+  private int maxCharsToAnalyze;
 
   /**
    * @param query Query to use for highlighting
@@ -209,7 +210,7 @@ public class QueryScorer implements Scorer {
   private TokenStream initExtractor(TokenStream tokenStream) throws IOException {
     WeightedSpanTermExtractor qse = defaultField == null ? new WeightedSpanTermExtractor()
         : new WeightedSpanTermExtractor(defaultField);
-
+    qse.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
     qse.setExpandMultiTermQuery(expandMultiTermQuery);
     qse.setWrapIfNotCachingTokenFilter(wrapToCaching);
     if (reader == null) {
@@ -264,5 +265,9 @@ public class QueryScorer implements Scorer {
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
+  }
+
+  public void setMaxDocCharsToAnalyze(int maxDocCharsToAnalyze) {
+    this.maxCharsToAnalyze = maxDocCharsToAnalyze;
   }
 }

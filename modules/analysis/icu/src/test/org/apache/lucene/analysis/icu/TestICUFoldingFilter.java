@@ -29,15 +29,14 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
  * Tests ICUFoldingFilter
  */
 public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
+  Analyzer a = new Analyzer() {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new ICUFoldingFilter(
+          new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+    }
+  };
   public void testDefaults() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new ICUFoldingFilter(
-            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
-      }
-    };
-
     // case folding
     assertAnalyzesTo(a, "This is a test", new String[] { "this", "is", "a", "test" });
 
@@ -75,5 +74,10 @@ public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
     
     // handling of decomposed combining-dot-above
     assertAnalyzesTo(a, "eli\u0307f", new String[] { "elif" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);
   }
 }

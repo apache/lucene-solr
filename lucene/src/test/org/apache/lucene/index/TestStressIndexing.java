@@ -114,7 +114,7 @@ public class TestStressIndexing extends LuceneTestCase {
   */
   public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
     IndexWriter modifier = new IndexWriter(directory, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer())
+        TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergeScheduler(
             mergeScheduler));
     modifier.commit();

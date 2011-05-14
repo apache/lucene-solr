@@ -177,6 +177,7 @@ class SepSkipListReader extends MultiLevelSkipListReader {
   @Override
   protected int readSkipData(int level, IndexInput skipStream) throws IOException {
     int delta;
+    assert !omitTF || !currentFieldStoresPayloads;
     if (currentFieldStoresPayloads) {
       // the current field stores payloads.
       // if the doc delta is odd then we have

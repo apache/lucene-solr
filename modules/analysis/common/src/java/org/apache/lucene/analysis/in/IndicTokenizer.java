@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.in;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.CharTokenizer;
+import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 

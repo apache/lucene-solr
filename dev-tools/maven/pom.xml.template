@@ -133,6 +133,11 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>r05</version>
+      </dependency>
+      <dependency>
         <groupId>com.sleepycat</groupId>
         <artifactId>berkeleydb</artifactId>
         <version>4.7.25</version>
@@ -694,7 +699,7 @@
                   <artifactId>solr-noggit</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r944541.jar</file>
+                  <file>solr/lib/apache-solr-noggit-r1099557.jar</file>
                 </configuration>  
               </execution>
               <execution>

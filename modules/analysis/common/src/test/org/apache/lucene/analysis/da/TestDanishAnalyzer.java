@@ -50,4 +50,9 @@ public class TestDanishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "undersøgelse", "undersøgelse");
     checkOneTermReuse(a, "undersøg", "undersøg");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new DanishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

@@ -2,13 +2,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
+import java.lang.reflect.Method;
 
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
@@ -166,7 +167,7 @@ public class QueryUtils {
     throws IOException {
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       for (int i = 0; i < numDeletedDocs; i++) {
         w.addDocument(new Document());
       }
@@ -309,7 +310,7 @@ public class QueryUtils {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
           final IndexReader previousReader = lastReader[0];
-          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           Weight w = q.weight(indexSearcher);
           Scorer scorer = w.scorer((AtomicReaderContext)previousReader.getTopReaderContext(), ScorerContext.def());
           if (scorer != null) {

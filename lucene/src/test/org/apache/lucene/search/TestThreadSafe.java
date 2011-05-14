@@ -104,7 +104,7 @@ public class TestThreadSafe extends LuceneTestCase {
 
   void buildDir(Directory dir, int nDocs, int maxFields, int maxFieldLen) throws IOException {
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     for (int j=0; j<nDocs; j++) {
       Document d = new Document();
       int nFields = random.nextInt(maxFields);

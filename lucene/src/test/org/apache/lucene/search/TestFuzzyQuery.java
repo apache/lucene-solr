@@ -386,7 +386,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    MockAnalyzer analyzer = new MockAnalyzer();
+    MockAnalyzer analyzer = new MockAnalyzer(random);
     Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, index);
 
@@ -423,7 +423,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
   
   public void testDistanceAsEditsParsing() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     FuzzyQuery q = (FuzzyQuery) qp.parse("foobar~2");
     assertEquals(2f, q.getMinSimilarity(), 0.0001f);
   }
@@ -437,7 +437,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
     w.close();
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     
     FuzzyQuery q = (FuzzyQuery) qp.parse("fouba~2");
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;

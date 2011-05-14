@@ -34,17 +34,17 @@ public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     addDocument(iw, "Hello, world!");
     addDocument(iw, "All work and no play makes jack a dull boy");
     iw.close();
 
-    iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     addDocument(iw, "Hello, tellus!");
     addDocument(iw, "All work and no play makes danny a dull boy");
     iw.close();
 
-    iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     addDocument(iw, "Hello, earth!");
     addDocument(iw, "All work and no play makes wendy a dull girl");
     iw.close();

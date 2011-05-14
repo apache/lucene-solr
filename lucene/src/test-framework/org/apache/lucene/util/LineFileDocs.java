@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.InputStream;
-import java.io.BufferedInputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.Random;
@@ -79,8 +78,7 @@ public class LineFileDocs implements Closeable {
       size *= 2.8;
     }
 
-    final InputStream in = new BufferedInputStream(is, BUFFER_SIZE);
-    reader = new BufferedReader(new InputStreamReader(in, "UTF-8"), BUFFER_SIZE);
+    reader = new BufferedReader(new InputStreamReader(is, "UTF-8"), BUFFER_SIZE);
 
     // Override sizes for currently "known" line files:
     if (path.equals("europarl.lines.txt.gz")) {
@@ -128,7 +126,7 @@ public class LineFileDocs implements Closeable {
       body = new Field("body", "", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
       doc.add(body);
 
-      id = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      id = new Field("docid", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       doc.add(id);
 
       date = new Field("date", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);

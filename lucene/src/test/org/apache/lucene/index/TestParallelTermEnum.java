@@ -38,7 +38,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         super.setUp();
         Document doc;
         rd1 = newDirectory();
-        IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
         doc = new Document();
         doc.add(newField("field1", "the quick brown fox jumps", Store.YES,
@@ -50,7 +50,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw1.close();
         rd2 = newDirectory();
-        IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
         doc = new Document();
         doc.add(newField("field0", "", Store.NO, Index.ANALYZED));

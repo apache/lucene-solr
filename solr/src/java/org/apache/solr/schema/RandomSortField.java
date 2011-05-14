@@ -28,6 +28,7 @@ import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.IntDocValues;
 import org.apache.solr.search.function.ValueSource;
 
 /**
@@ -157,36 +158,11 @@ public class RandomSortField extends FieldType {
 
     @Override
     public DocValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
-      return new DocValues() {
+      return new IntDocValues(this) {
           private final int seed = getSeed(field, readerContext);
-          @Override
-          public float floatVal(int doc) {
-            return (float)hash(doc+seed);
-          }
-
           @Override
           public int intVal(int doc) {
             return hash(doc+seed);
-          }
-
-          @Override
-          public long longVal(int doc) {
-            return (long)hash(doc+seed);
-          }
-
-          @Override
-          public double doubleVal(int doc) {
-            return (double)hash(doc+seed);
-          }
-
-          @Override
-          public String strVal(int doc) {
-            return Integer.toString(hash(doc+seed));
-          }
-
-          @Override
-          public String toString(int doc) {
-            return description() + '=' + intVal(doc);
           }
         };
     }

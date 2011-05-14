@@ -17,6 +17,7 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -29,10 +30,19 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  */
 public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
 
+  private NamedList<Object> args;
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+    this.args = (NamedList<Object>) args.get("uimaConfig");
+  }
+
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp,
           UpdateRequestProcessor next) {
-    return new UIMAUpdateRequestProcessor(next, req.getCore());
+    return new UIMAUpdateRequestProcessor(next, req.getCore(),
+            new SolrUIMAConfigurationReader(args).readSolrUIMAConfiguration());
   }
 
 }

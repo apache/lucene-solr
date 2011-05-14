@@ -10,9 +10,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src/java/tools" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
     </content>
-    <orderEntry type="module" module-name="lucene" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
+    <orderEntry type="module" module-name="lucene" />
   </component>
 </module>

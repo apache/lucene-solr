@@ -68,7 +68,7 @@ public class TestNorms extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     similarityProviderOne = new SimilarityProviderOne();
-    anlzr = new MockAnalyzer();
+    anlzr = new MockAnalyzer(random);
   }
 
   /**
@@ -158,7 +158,7 @@ public class TestNorms extends LuceneTestCase {
   private void createIndex(Random random, Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
-                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newInOrderLogMergePolicy()));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
@@ -203,7 +203,7 @@ public class TestNorms extends LuceneTestCase {
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newInOrderLogMergePolicy()));
+                                     .setMaxBufferedDocs(5).setSimilarityProvider(similarityProviderOne).setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
@@ -266,7 +266,7 @@ public class TestNorms extends LuceneTestCase {
   // LUCENE-1260
   public void testCustomEncoder() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     config.setSimilarityProvider(new DefaultSimilarityProvider() {
       @Override
       public Similarity get(String field) {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -30,6 +31,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 class DocHelper {
@@ -218,9 +221,9 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Directory dir, Document doc) throws IOException
+  public static SegmentInfo writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
-    return writeDoc(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), null, doc);
+    return writeDoc(random, dir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), null, doc);
   }
 
   /**
@@ -233,8 +236,8 @@ class DocHelper {
    * @param doc
    * @throws IOException
    */ 
-  public static SegmentInfo writeDoc(Directory dir, Analyzer analyzer, SimilarityProvider similarity, Document doc) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+  public static SegmentInfo writeDoc(Random random, Directory dir, Analyzer analyzer, SimilarityProvider similarity, Document doc) throws IOException {
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         TEST_VERSION_CURRENT, analyzer).setSimilarityProvider(similarity));
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);

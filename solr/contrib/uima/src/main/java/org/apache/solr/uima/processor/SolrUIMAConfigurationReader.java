@@ -18,11 +18,11 @@ package org.apache.solr.uima.processor;
  */
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.core.SolrConfig;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 
 /**
  * Read configuration for Solr-UIMA integration
@@ -32,94 +32,86 @@ import org.w3c.dom.NodeList;
  */
 public class SolrUIMAConfigurationReader {
 
-  private static final String AE_RUNTIME_PARAMETERS_NODE_PATH = "/config/uimaConfig/runtimeParameters";
+  private NamedList<Object> args;
 
-  private static final String FIELD_MAPPING_NODE_PATH = "/config/uimaConfig/fieldMapping";
-
-  private static final String ANALYZE_FIELDS_NODE_PATH = "/config/uimaConfig/analyzeFields";
-
-  private static final String ANALYSIS_ENGINE_NODE_PATH = "/config/uimaConfig/analysisEngine";
-
-  private SolrConfig solrConfig;
-
-  public SolrUIMAConfigurationReader(SolrConfig solrConfig) {
-    this.solrConfig = solrConfig;
+  public SolrUIMAConfigurationReader(NamedList<Object> args) {
+    this.args = args;
   }
 
   public SolrUIMAConfiguration readSolrUIMAConfiguration() {
     return new SolrUIMAConfiguration(readAEPath(), readFieldsToAnalyze(), readFieldsMerging(),
-            readTypesFeaturesFieldsMapping(), readAEOverridingParameters());
+            readTypesFeaturesFieldsMapping(), readAEOverridingParameters(), readIgnoreErrors(),
+            readLogField());
   }
 
   private String readAEPath() {
-    return solrConfig.getNode(ANALYSIS_ENGINE_NODE_PATH, true).getTextContent();
+    return (String) args.get("analysisEngine");
   }
 
+  @SuppressWarnings("rawtypes")
+  private NamedList getAnalyzeFields() {
+    return (NamedList) args.get("analyzeFields");
+  }
+
+  @SuppressWarnings("unchecked")
   private String[] readFieldsToAnalyze() {
-    Node analyzeFieldsNode = solrConfig.getNode(ANALYZE_FIELDS_NODE_PATH, true);
-    return analyzeFieldsNode.getTextContent().split(",");
+    List<String> fields = (List<String>) getAnalyzeFields().get("fields");
+    return fields.toArray(new String[fields.size()]);
   }
 
   private boolean readFieldsMerging() {
-    Node analyzeFieldsNode = solrConfig.getNode(ANALYZE_FIELDS_NODE_PATH, true);
-    Node mergeNode = analyzeFieldsNode.getAttributes().getNamedItem("merge");
-    return Boolean.valueOf(mergeNode.getNodeValue());
+    return (Boolean) getAnalyzeFields().get("merge");
   }
 
-  private Map<String, Map<String, String>> readTypesFeaturesFieldsMapping() {
-    Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
+  @SuppressWarnings("rawtypes")
+  private Map<String, Map<String, MapField>> readTypesFeaturesFieldsMapping() {
+    Map<String, Map<String, MapField>> map = new HashMap<String, Map<String, MapField>>();
 
-    Node fieldMappingNode = solrConfig.getNode(FIELD_MAPPING_NODE_PATH, true);
+    NamedList fieldMappings = (NamedList) args.get("fieldMappings");
     /* iterate over UIMA types */
-    if (fieldMappingNode.hasChildNodes()) {
-      NodeList typeNodes = fieldMappingNode.getChildNodes();
-      for (int i = 0; i < typeNodes.getLength(); i++) {
-        /* <type> node */
-        Node typeNode = typeNodes.item(i);
-        if (typeNode.getNodeType() != Node.TEXT_NODE) {
-          Node typeNameAttribute = typeNode.getAttributes().getNamedItem("name");
-          /* get a UIMA typename */
-          String typeName = typeNameAttribute.getNodeValue();
-          /* create entry for UIMA type */
-          map.put(typeName, new HashMap<String, String>());
-          if (typeNode.hasChildNodes()) {
-            /* iterate over features */
-            NodeList featuresNodeList = typeNode.getChildNodes();
-            for (int j = 0; j < featuresNodeList.getLength(); j++) {
-              Node mappingNode = featuresNodeList.item(j);
-              if (mappingNode.getNodeType() != Node.TEXT_NODE) {
-                /* get field name */
-                Node fieldNameNode = mappingNode.getAttributes().getNamedItem("field");
-                String mappedFieldName = fieldNameNode.getNodeValue();
-                /* get feature name */
-                Node featureNameNode = mappingNode.getAttributes().getNamedItem("feature");
-                String featureName = featureNameNode.getNodeValue();
-                /* map the feature to the field for the specified type */
-                map.get(typeName).put(featureName, mappedFieldName);
-              }
-            }
-          }
+    for (int i = 0; i < fieldMappings.size(); i++) {
+      NamedList type = (NamedList) fieldMappings.get("type", i);
+      String typeName = (String)type.get("name");
+
+      Map<String, MapField> subMap = new HashMap<String, MapField>();
+      /* iterate over mapping definitions */
+      for(int j = 0; j < type.size() - 1; j++){
+        NamedList mapping = (NamedList) type.get("mapping", j + 1);
+        String featureName = (String) mapping.get("feature");
+        String fieldNameFeature = null;
+        String mappedFieldName = (String) mapping.get("field");
+        if(mappedFieldName == null){
+          fieldNameFeature = (String) mapping.get("fieldNameFeature");
+          mappedFieldName = (String) mapping.get("dynamicField");
         }
+        if(mappedFieldName == null)
+          throw new RuntimeException("either of field or dynamicField should be defined for feature " + featureName);
+        MapField mapField = new MapField(mappedFieldName, fieldNameFeature);
+        subMap.put(featureName, mapField);
       }
+      map.put(typeName, subMap);
     }
     return map;
   }
 
+  @SuppressWarnings("rawtypes")
   private Map<String, Object> readAEOverridingParameters() {
     Map<String, Object> runtimeParameters = new HashMap<String, Object>();
-    Node uimaConfigNode = solrConfig.getNode(AE_RUNTIME_PARAMETERS_NODE_PATH, true);
-
-    if (uimaConfigNode.hasChildNodes()) {
-      NodeList overridingNodes = uimaConfigNode.getChildNodes();
-      for (int i = 0; i < overridingNodes.getLength(); i++) {
-        Node overridingNode = overridingNodes.item(i);
-        if (overridingNode.getNodeType() != Node.TEXT_NODE && overridingNode.getNodeType() != Node.COMMENT_NODE) {
-          runtimeParameters.put(overridingNode.getNodeName(), overridingNode.getTextContent());
-        }
-      }
+    NamedList runtimeParams = (NamedList) args.get("runtimeParameters");
+    for (int i = 0; i < runtimeParams.size(); i++) {
+      String name = runtimeParams.getName(i);
+      Object value = runtimeParams.getVal(i);
+      runtimeParameters.put(name, value);
     }
-
     return runtimeParameters;
   }
 
+  private boolean readIgnoreErrors() {
+    Object ignoreErrors = args.get("ignoreErrors");
+    return ignoreErrors == null ? false : (Boolean)ignoreErrors;
+  }
+
+  private String readLogField() {
+    return (String)args.get("logField");
+  }
 }

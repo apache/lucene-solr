@@ -42,7 +42,7 @@ public class TestTermVectors extends LuceneTestCase {
   public void setUp() throws Exception {                  
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -108,7 +108,7 @@ public class TestTermVectors extends LuceneTestCase {
   
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.SIMPLE, true));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -238,8 +238,8 @@ public class TestTermVectors extends LuceneTestCase {
     Directory dir = newDirectory();
     
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
-                                                     .setOpenMode(OpenMode.CREATE).setMergePolicy(newInOrderLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
+                                                     .setOpenMode(OpenMode.CREATE).setMergePolicy(newLogMergePolicy()));
     writer.addDocument(testDoc1);
     writer.addDocument(testDoc2);
     writer.addDocument(testDoc3);
@@ -351,7 +351,7 @@ public class TestTermVectors extends LuceneTestCase {
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
     writer.w.setInfoStream(VERBOSE ? System.out : null);
     if (VERBOSE) {
@@ -398,7 +398,7 @@ public class TestTermVectors extends LuceneTestCase {
   public void testMixedVectrosVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new Field("field", "one",
                       Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));

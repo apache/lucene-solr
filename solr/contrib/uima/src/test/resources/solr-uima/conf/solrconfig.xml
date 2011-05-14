@@ -295,7 +295,7 @@
   <!--
     <indexReaderFactory name="IndexReaderFactory"
     class="org.apache.solr.core.StandardIndexReaderFactory"> <int
-    name="termInfosIndexDivisor">12</int> </indexReaderFactory >
+    name="setTermIndexDivisor">12</int> </indexReaderFactory >
   -->
 
 
@@ -855,7 +855,7 @@
   -->
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler">
     <lst name="defaults">
-      <str name="update.processor">uima</str>
+      <str name="update.chain">uima</str>
     </lst>
   </requestHandler>
 
@@ -953,42 +953,6 @@
     </lst>
   </requestHandler>
 
-  <highlighting>
-    <!-- Configure the standard fragmenter -->
-    <!-- This could most likely be commented out in the "default" case -->
-    <fragmenter name="gap"
-      class="org.apache.solr.highlight.GapFragmenter" default="true">
-      <lst name="defaults">
-        <int name="hl.fragsize">100</int>
-      </lst>
-    </fragmenter>
-
-    <!--
-      A regular-expression-based fragmenter (f.i., for sentence
-      extraction)
-    -->
-    <fragmenter name="regex"
-      class="org.apache.solr.highlight.RegexFragmenter">
-      <lst name="defaults">
-        <!-- slightly smaller fragsizes work better because of slop -->
-        <int name="hl.fragsize">70</int>
-        <!-- allow 50% slop on fragment sizes -->
-        <float name="hl.regex.slop">0.5</float>
-        <!-- a basic sentence pattern -->
-        <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
-      </lst>
-    </fragmenter>
-
-    <!-- Configure the standard formatter -->
-    <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter"
-      default="true">
-      <lst name="defaults">
-        <str name="hl.simple.pre"><![CDATA[<em>]]></str>
-        <str name="hl.simple.post"><![CDATA[</em>]]></str>
-      </lst>
-    </formatter>
-  </highlighting>
-
   <!--
     An example dedup update processor that creates the "id" field on the
     fly based on the hash code of some other fields. This example has
@@ -997,16 +961,122 @@
     anyway. You have to link the chain to an update handler above to use
     it ie: <requestHandler name="/update
     "class="solr.XmlUpdateRequestHandler"> <lst name="defaults"> <str
-    name="update.processor">dedupe</str> </lst> </requestHandler>
+    name="update.chain">dedupe</str> </lst> </requestHandler>
   -->
 
   <updateRequestProcessorChain name="uima">
-    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory"/>
-    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestAE.xml</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings">
+          <lst name="type">
+            <str name="name">org.apache.uima.SentenceAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">coveredText</str>
+              <str name="field">sentence</str>
+            </lst>
+          </lst>
+          <lst name="type">
+            <str name="name">org.apache.solr.uima.ts.SentimentAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">mood</str>
+              <str name="field">sentiment</str>
+            </lst>
+          </lst>
+          <lst name="type">
+            <str name="name">org.apache.solr.uima.ts.EntityAnnotation</str>
+            <lst name="mapping">
+              <str name="feature">entity</str>
+              <str name="fieldNameFeature">name</str>
+              <str name="dynamicField">*_sm</str>
+            </lst>
+          </lst>
+        </lst>
+      </lst>
+    </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="uima-multi-map">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestAE.xml</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings">
+          <lst name="type">
+            <str name="name">a-type-which-can-have-multiple-features</str>
+            <lst name="mapping">
+              <str name="feature">A</str>
+              <str name="field">1</str>
+            </lst>
+            <lst name="mapping">
+              <str name="feature">B</str>
+              <str name="field">2</str>
+            </lst>
+          </lst>
+        </lst>
+      </lst>
+    </processor>
+  </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="uima-not-ignoreErrors">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestExceptionAE.xml</str>
+        <bool name="ignoreErrors">false</bool>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings"/>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="uima-ignoreErrors">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <int name="ngramsize">3</int>
+        </lst>
+        <str name="analysisEngine">/TestExceptionAE.xml</str>
+        <bool name="ignoreErrors">true</bool>
+        <!-- This is optional. It is used for logging when text processing fails. Usually, set uniqueKey field name -->
+        <str name="logField">id</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings"/>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <!--
     queryResponseWriter plugins... query responses will be written using
@@ -1061,24 +1131,5 @@
       <healthcheck type="file">server-enabled</healthcheck>
     -->
   </admin>
-
-<uimaConfig>
-   <runtimeParameters>
-     <ngramsize>3</ngramsize>
-  </runtimeParameters>
-  <analysisEngine>/TestAE.xml</analysisEngine>
-  <analyzeFields merge="false">text</analyzeFields>
-  <fieldMapping>
-    <type name="org.apache.uima.SentenceAnnotation">
-      <map feature="coveredText" field="sentence"/>
-    </type>
-    <type name="org.apache.solr.uima.ts.SentimentAnnotation">
-      <map feature="mood" field="sentiment"/>
-    </type>
-    <type name="org.apache.solr.uima.ts.EntityAnnotation">
-      <map feature="coveredText" field="entity"/>
-    </type>
-  </fieldMapping>
-</uimaConfig>
 
 </config>

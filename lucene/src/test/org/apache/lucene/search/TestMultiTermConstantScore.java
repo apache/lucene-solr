@@ -62,7 +62,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     small = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, small, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
-            new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMergePolicy(newInOrderLogMergePolicy()));
+            new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMergePolicy(newLogMergePolicy()));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();

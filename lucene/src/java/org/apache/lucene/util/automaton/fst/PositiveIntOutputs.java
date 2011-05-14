@@ -22,14 +22,11 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
-// TODO: make a sharing and non-sharing variant; eg if you
-// output docFreq per term the FST will be smaller if you
-// don't share since they are not "well shared"
-
 /**
  * Output is a long, for each input term.  NOTE: the
  * resulting FST is not guaranteed to be minimal!  See
- * {@link Builder}.
+ * {@link Builder}.  You cannot store 0 output with this
+ * (that's reserved to mean "no output")!
  * @lucene.experimental
  */
 

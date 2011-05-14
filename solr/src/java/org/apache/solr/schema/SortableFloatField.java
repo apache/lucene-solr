@@ -154,6 +154,12 @@ class SortableFloatFieldSource extends FieldCacheSource {
       }
 
       @Override
+      public Object objectVal(int doc) {
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? null  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, spare));
+      }
+
+      @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
           private final MutableValueFloat mval = new MutableValueFloat();

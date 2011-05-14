@@ -75,7 +75,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry pizza",
     };
     directory = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, directory);
+    RandomIndexWriter iw = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
@@ -89,7 +89,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for (int i = 1; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer());
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(random));
     query = queryParser.parse(qtxt);
     
     // warm the searcher

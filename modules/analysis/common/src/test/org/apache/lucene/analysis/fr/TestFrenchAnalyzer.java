@@ -260,4 +260,9 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
     FrenchAnalyzer a = new FrenchAnalyzer(Version.LUCENE_31);
     assertAnalyzesTo(a, "Votre", new String[] { });
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new FrenchAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

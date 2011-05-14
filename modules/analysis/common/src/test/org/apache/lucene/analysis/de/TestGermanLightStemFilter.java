@@ -45,4 +45,9 @@ public class TestGermanLightStemFilter extends BaseTokenStreamTestCase {
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("delighttestdata.zip"), "delight.txt");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
 }

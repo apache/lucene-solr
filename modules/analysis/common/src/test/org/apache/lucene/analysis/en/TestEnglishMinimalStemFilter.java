@@ -51,4 +51,9 @@ public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "congress", "congress");
     checkOneTerm(analyzer, "serious", "serious");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
+  }
 }

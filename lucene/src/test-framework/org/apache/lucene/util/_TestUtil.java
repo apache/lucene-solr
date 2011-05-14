@@ -34,8 +34,6 @@ import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.junit.Assert;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CheckIndex;
@@ -43,17 +41,22 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
+import org.junit.Assert;
 
 public class _TestUtil {
 
   /** Returns temp dir, containing String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    return new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
+    File f = new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
+    LuceneTestCase.tempDirs.add(f.getAbsolutePath());
+    return f;
   }
 
   /**
@@ -88,6 +91,7 @@ public class _TestUtil {
     rmDir(destDir);
     
     destDir.mkdir();
+    LuceneTestCase.tempDirs.add(destDir.getAbsolutePath());
     
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
@@ -157,6 +161,19 @@ public class _TestUtil {
     return start + r.nextInt(end-start+1);
   }
 
+  public static String randomSimpleString(Random r) {
+    final int end = r.nextInt(10);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+    }
+    return new String(buffer, 0, end);
+  }
+
   /** Returns random string, including full unicode range. */
   public static String randomUnicodeString(Random r) {
     return randomUnicodeString(r, 20);
@@ -172,22 +189,35 @@ public class _TestUtil {
       return "";
     }
     final char[] buffer = new char[end];
-    for (int i = 0; i < end; i++) {
-      int t = r.nextInt(5);
+    randomFixedLengthUnicodeString(r, buffer, 0, buffer.length);
+    return new String(buffer, 0, end);
+  }
 
-      if (0 == t && i < end - 1) {
+  /**
+   * Fills provided char[] with valid random unicode code
+   * unit sequence.
+   */
+  public static void randomFixedLengthUnicodeString(Random random, char[] chars, int offset, int length) {
+    int i = offset;
+    final int end = offset + length;
+    while(i < end) {
+      final int t = random.nextInt(5);
+      if (0 == t && i < length - 1) {
         // Make a surrogate pair
         // High surrogate
-        buffer[i++] = (char) nextInt(r, 0xd800, 0xdbff);
+        chars[i++] = (char) nextInt(random, 0xd800, 0xdbff);
         // Low surrogate
-        buffer[i] = (char) nextInt(r, 0xdc00, 0xdfff);
+        chars[i++] = (char) nextInt(random, 0xdc00, 0xdfff);
+      } else if (t <= 1) {
+        chars[i++] = (char) random.nextInt(0x80);
+      } else if (2 == t) {
+        chars[i++] = (char) nextInt(random, 0x80, 0x800);
+      } else if (3 == t) {
+        chars[i++] = (char) nextInt(random, 0x800, 0xd7ff);
+      } else if (4 == t) {
+        chars[i++] = (char) nextInt(random, 0xe000, 0xffff);
       }
-      else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) nextInt(r, 0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
-      else if (4 == t) buffer[i] = (char) nextInt(r, 0xe000, 0xffff);
     }
-    return new String(buffer, 0, end);
   }
 
   private static final int[] blockStarts = {
@@ -294,9 +324,14 @@ public class _TestUtil {
    * count lowish */
   public static void reduceOpenFiles(IndexWriter w) {
     // keep number of open files lowish
-    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
-    lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
-
+    MergePolicy mp = w.getConfig().getMergePolicy();
+    if (mp instanceof LogMergePolicy) {
+      LogMergePolicy lmp = (LogMergePolicy) mp;
+      lmp.setMergeFactor(Math.min(5, lmp.getMergeFactor()));
+    } else if (mp instanceof TieredMergePolicy) {
+      TieredMergePolicy tmp = (TieredMergePolicy) mp;
+      tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
+    }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
       ((ConcurrentMergeScheduler) ms).setMaxThreadCount(2);

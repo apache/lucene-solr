@@ -46,8 +46,18 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  * <p>Applications usually need only call the inherited
  * {@link #search(Query,int)}
- * or {@link #search(Query,Filter,int)} methods. For performance reasons it is 
- * recommended to open only one IndexSearcher and use it for all of your searches.
+ * or {@link #search(Query,Filter,int)} methods. For
+ * performance reasons, if your index is unchanging, you
+ * should share a single IndexSearcher instance across
+ * multiple searches instead of creating a new one
+ * per-search.  If your index has changed and you wish to
+ * see the changes reflected in searching, you should
+ * use {@link IndexReader#reopen} to obtain a new reader and
+ * then create a new IndexSearcher from that.  Also, for
+ * low-latency turnaround it's best to use a near-real-time
+ * reader ({@link IndexReader#open(IndexWriter,boolean)}).
+ * Once you have a new {@link IndexReader}, it's relatively
+ * cheap to create a new IndexSearcher from it.
  * 
  * <a name="thread-safety"></a><p><b>NOTE</b>: <code>{@link
  * IndexSearcher}</code> instances are completely
@@ -856,5 +866,10 @@ public class IndexSearcher {
     public LeafSlice(AtomicReaderContext...leaves) {
       this.leaves = leaves;
     }
+  }
+
+  @Override
+  public String toString() {
+    return "IndexSearcher(" + reader + ")";
   }
 }

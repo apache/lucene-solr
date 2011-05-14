@@ -190,7 +190,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
 
         UpdateRequestProcessorChain processorChain =
-                core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
+                core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);

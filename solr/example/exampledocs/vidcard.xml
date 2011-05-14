@@ -19,7 +19,10 @@
 <doc>
   <field name="id">EN7800GTX/2DHTV/256M</field>
   <field name="name">ASUS Extreme N7800GTX/2DHTV (256 MB)</field>
+  <!-- Denormalized -->
   <field name="manu">ASUS Computer Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">asus</field>
   <field name="cat">electronics</field>
   <field name="cat">graphics card</field>
   <field name="features">NVIDIA GeForce 7800 GTX GPU/VPU clocked at 486MHz</field>
@@ -39,6 +42,8 @@
   <field name="id">100-435805</field>
   <field name="name">ATI Radeon X1900 XTX 512 MB PCIE Video Card</field>
   <field name="manu">ATI Technologies</field>
+  <!-- Join -->
+  <field name="manu_id_s">ati</field>
   <field name="cat">electronics</field>
   <field name="cat">graphics card</field>
   <field name="features">ATI RADEON X1900 GPU/VPU clocked at 650MHz</field>

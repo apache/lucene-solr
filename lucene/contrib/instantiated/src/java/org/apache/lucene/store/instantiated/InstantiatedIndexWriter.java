@@ -532,7 +532,7 @@ public class InstantiatedIndexWriter implements Closeable {
           if (field.tokenStreamValue() != null) {
             tokenStream = field.tokenStreamValue();
           } else {
-            tokenStream = analyzer.tokenStream(field.name(), new StringReader(field.stringValue()));
+            tokenStream = analyzer.reusableTokenStream(field.name(), new StringReader(field.stringValue()));
           }
 
           // reset the TokenStream to the first token          

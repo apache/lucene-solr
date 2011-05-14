@@ -316,7 +316,8 @@ class JSONWriter extends TextResponseWriter {
     if( idx > 0 ) {
       writeArraySeparator();
     }
-    
+
+    indent();
     writeMapOpener(doc.size()); 
     incLevel();
 

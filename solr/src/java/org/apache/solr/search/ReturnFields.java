@@ -27,6 +27,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -89,12 +90,10 @@ public class ReturnFields
         parseFieldList( new String[]{fl}, req);
       }
     }
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   public ReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
-    SolrCore.log.info("fields=" + fields + "\t globs="+globs + "\t transformer="+transformer);
   }
 
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
@@ -161,7 +160,7 @@ public class ReturnFields
         char ch = sp.ch();
 
         if (field != null) {
-          if (sp.opt('=')) {
+          if (sp.opt(':')) {
             // this was a key, not a field name
             key = field;
             field = null;
@@ -179,7 +178,7 @@ public class ReturnFields
         }
 
         if (key != null) {
-          // we read "key = "
+          // we read "key : "
           field = sp.getId(null);
           ch = sp.ch();
           if (field != null && (ch==' ' || ch == ',' || ch==0)) {
@@ -194,7 +193,7 @@ public class ReturnFields
 
         if (field == null) {
           // We didn't find a simple name, so let's see if it's a globbed field name.
-          // Globbing only works with recommended field names.
+          // Globbing only works with field names of the recommended form (roughly like java identifiers)
 
           field = sp.getGlobbedId(null);
           ch = sp.ch();
@@ -259,6 +258,18 @@ public class ReturnFields
           }
 
           if (key==null) {
+            SolrParams localParams = parser.getLocalParams();
+            if (localParams != null) {
+              key = localParams.get("key");
+            }
+            if (key == null) {
+              // use the function name itself as the field name
+              key = sp.val.substring(start, sp.pos);
+            }
+          }
+
+
+          if (key==null) {
             key = funcStr;
           }
           okFieldNames.add( key );
@@ -292,7 +303,7 @@ public class ReturnFields
   private void addField( String field, String key, DocTransformers augmenters, SolrQueryRequest req )
   {
     String disp = (key==null) ? field : key;
-    fields.add( field ); // need to put in the map to maintain order for things like CSVResponseWriter
+    fields.add(field); // need to put in the map to maintain order for things like CSVResponseWriter
     okFieldNames.add( field );
     okFieldNames.add( key );
     // a valid field name
