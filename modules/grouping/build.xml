@@ -10,4 +10,6 @@
 
     <import file="../../lucene/contrib/contrib-build.xml"/>
     <property name="working.dir" location="work"/>
+
+    <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven" />
 </project>
