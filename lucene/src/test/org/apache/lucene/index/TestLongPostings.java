@@ -43,11 +43,6 @@ public class TestLongPostings extends LuceneTestCase {
       if (other != null && s.equals(other)) {
         continue;
       }
-      if (s.indexOf("\uffff") != -1) {
-        // 3.x limitation only (4.x can handle this code
-        // point fine)
-        continue;
-      }
       final TokenStream ts = a.tokenStream("foo", new StringReader(s));
       final TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
       int count = 0;
