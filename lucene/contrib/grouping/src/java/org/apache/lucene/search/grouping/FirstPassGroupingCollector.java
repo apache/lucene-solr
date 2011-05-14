@@ -33,8 +33,11 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
 /** FirstPassGroupingCollector is the first of two passes necessary
- *  to collected grouped hits.  This pass gathers the top N sorted
+ *  to collect grouped hits.  This pass gathers the top N sorted
  *  groups.
+ *
+ *  <p>See {@link org.apache.lucene.search.grouping} for more
+ *  details including a full code example.</p>
  *
  * @lucene.experimental
  */

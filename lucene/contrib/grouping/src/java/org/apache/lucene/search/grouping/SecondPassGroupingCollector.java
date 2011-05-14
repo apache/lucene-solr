@@ -32,7 +32,14 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 
 /**
- * See {@link FirstPassGroupingCollector}.
+ * SecondPassGroupingCollector is the second of two passes
+ * necessary to collect grouped docs.  This pass gathers the
+ * top N documents per top group computed from the
+ * first pass.
+ *
+ * <p>See {@link org.apache.lucene.search.grouping} for more
+ * details including a full code example.</p>
+ *
  * @lucene.experimental
  */
 public class SecondPassGroupingCollector extends Collector {

@@ -42,6 +42,9 @@ import org.apache.lucene.util.RamUsageEstimator;
  * set is large this can easily be a very substantial amount
  * of RAM!
  * 
+ * <p>See {@link org.apache.lucene.search.grouping} for more
+ * details including a full code example.</p>
+ *
  * @lucene.experimental
  */
 public class CachingCollector extends Collector {
