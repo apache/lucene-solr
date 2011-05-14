@@ -12,6 +12,8 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/bdb/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/bdb-je/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/db/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/demo/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/grouping/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/highlighter/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/icu/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/instantiated/build.xml" />

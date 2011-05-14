@@ -12,6 +12,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/db/bdb/bdb.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/db/bdb-je/bdb-je.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/demo/demo.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/highlighter/highlighter.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/icu/icu.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/instantiated/instantiated.iml" />
