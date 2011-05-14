@@ -23,6 +23,8 @@
 	<classpathentry kind="src" path="lucene/contrib/db/bdb-je/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/grouping/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/grouping/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/icu/src/java"/>
