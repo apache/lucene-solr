@@ -2139,7 +2139,7 @@ public class TestIndexWriter extends LuceneTestCase {
       while(!finish) {
         try {
 
-          while(true) {
+          while(!finish) {
             if (w != null) {
               w.close();
               w = null;
@@ -2157,6 +2157,7 @@ public class TestIndexWriter extends LuceneTestCase {
               }
             }
             w.close();
+            w = null;
             _TestUtil.checkIndex(dir);
             IndexReader.open(dir, true).close();
 
