@@ -162,11 +162,6 @@ Changes in Runtime Behavior
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
-* LUCENE-1076: The default merge policy (TieredMergePolicy) is now
-  able to merge non-contiguous segments, which means docIDs no longer
-  necessarily say "in order".  If this is a problem then you can use
-  either of the LogMergePolicy impls.  (Mike McCandless)
-  
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
   properties from all previous segments combined. Field numbers are now tracked
@@ -492,6 +487,13 @@ Changes in runtime behavior
   returns NumericField instances. (Uwe Schindler, Ryan McKinley,
   Mike McCandless)
 
+* LUCENE-1076: Changed the default merge policy from
+  LogByteSizeMergePolicy to TieredMergePolicy, as of Version.LUCENE_32
+  (passed to IndexWriterConfig), which is able to merge non-contiguous
+  segments. This means docIDs no longer necessarily stay "in order"
+  during indexing.  If this is a problem then you can use either of
+  the LogMergePolicy impls.  (Mike McCandless)
+  
 New features
 
 * LUCENE-3082: Added index upgrade tool oal.index.IndexUpgrader
