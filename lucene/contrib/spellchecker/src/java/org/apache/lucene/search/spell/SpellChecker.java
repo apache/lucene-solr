@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.BooleanClause;
@@ -42,7 +42,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util.VirtualMethod;
 
 /**
  * <p>
@@ -505,7 +504,7 @@ public class SpellChecker implements java.io.Closeable {
       ensureOpen();
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).setRAMBufferSizeMB(ramMB));
-      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(mergeFactor);
+      ((TieredMergePolicy) writer.getConfig().getMergePolicy()).setMaxMergeAtOnce(mergeFactor);
       IndexSearcher indexSearcher = obtainSearcher();
       final List<IndexReader> readers = new ArrayList<IndexReader>();
 

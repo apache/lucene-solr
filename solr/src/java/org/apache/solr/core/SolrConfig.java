@@ -55,7 +55,6 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.InputStream;
 
 
 /**
@@ -131,12 +130,12 @@ public class SolrConfig extends Config {
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();
+    luceneMatchVersion = getLuceneVersion("luceneMatchVersion", Version.LUCENE_24);
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
     reopenReaders = getBool("mainIndex/reopenReaders", true);
     
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    luceneMatchVersion = getLuceneVersion("luceneMatchVersion", Version.LUCENE_24);
     log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
 
     filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
