@@ -24,6 +24,7 @@
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
     <version>8</version>
+    <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-solr-grandparent</artifactId>
