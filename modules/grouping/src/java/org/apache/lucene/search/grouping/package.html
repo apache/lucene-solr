@@ -49,7 +49,7 @@ field fall into a single group.</p>
   org.apache.lucene.search.grouping.SecondPassGroupingCollector})
   gathers documents within those groups.  If the search is costly to
   run you may want to use the {@link
-  org.apache.lucene.search.grouping.CachingCollector} class, which
+  org.apache.lucene.search.CachingCollector} class, which
   caches hits and can (quickly) replay them for the second pass.  This
   way you only run the query once, but you pay a RAM cost to (briefly)
   hold all hits.  Results are returned as a {@link
@@ -66,7 +66,7 @@ field fall into a single group.</p>
     group yourself.
 </ul>
 
-<p>Typical usage looks like this (using the {@link org.apache.lucene.search.grouping.CachingCollector}):</p>
+<p>Typical usage looks like this (using the {@link org.apache.lucene.search.CachingCollector}):</p>
 
 <pre>
   FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
