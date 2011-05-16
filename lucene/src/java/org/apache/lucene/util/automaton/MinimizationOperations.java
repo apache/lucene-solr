@@ -30,6 +30,8 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.BitSet;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 /**
@@ -72,8 +74,12 @@ final public class MinimizationOperations {
     final int[] sigma = a.getStartPoints();
     final State[] states = a.getNumberedStates();
     final int sigmaLen = sigma.length, statesLen = states.length;
-    final BitSet[][] reverse = new BitSet[statesLen][sigmaLen];
-    final BitSet[] splitblock = new BitSet[statesLen], partition = new BitSet[statesLen];
+    @SuppressWarnings("unchecked") final ArrayList<State>[][] reverse =
+      (ArrayList<State>[][]) new ArrayList[statesLen][sigmaLen];
+    @SuppressWarnings("unchecked") final HashSet<State>[] partition =
+      (HashSet<State>[]) new HashSet[statesLen];
+    @SuppressWarnings("unchecked") final ArrayList<State>[] splitblock =
+      (ArrayList<State>[]) new ArrayList[statesLen];
     final int[] block = new int[statesLen];
     final StateList[][] active = new StateList[statesLen][sigmaLen];
     final StateListNode[][] active2 = new StateListNode[statesLen][sigmaLen];
@@ -82,8 +88,8 @@ final public class MinimizationOperations {
     final BitSet split = new BitSet(statesLen), 
       refine = new BitSet(statesLen), refine2 = new BitSet(statesLen);
     for (int q = 0; q < statesLen; q++) {
-      splitblock[q] = new BitSet(statesLen);
-      partition[q] = new BitSet(statesLen);
+      splitblock[q] = new ArrayList<State>();
+      partition[q] = new HashSet<State>();
       for (int x = 0; x < sigmaLen; x++) {
         active[q][x] = new StateList();
       }
@@ -92,23 +98,22 @@ final public class MinimizationOperations {
     for (int q = 0; q < statesLen; q++) {
       final State qq = states[q];
       final int j = qq.accept ? 0 : 1;
-      partition[j].set(q);
+      partition[j].add(qq);
       block[q] = j;
       for (int x = 0; x < sigmaLen; x++) {
-        final BitSet[] r =
+        final ArrayList<State>[] r =
           reverse[qq.step(sigma[x]).number];
         if (r[x] == null)
-          r[x] = new BitSet();
-        r[x].set(q);
+          r[x] = new ArrayList<State>();
+        r[x].add(qq);
       }
     }
     // initialize active sets
     for (int j = 0; j <= 1; j++) {
-      final BitSet part = partition[j];
       for (int x = 0; x < sigmaLen; x++) {
-        for (int i = part.nextSetBit(0); i >= 0; i = part.nextSetBit(i+1)) {
-          if (reverse[i][x] != null)
-            active2[i][x] = active[j][x].add(states[i]);
+        for (final State qq : partition[j]) {
+          if (reverse[qq.number][x] != null)
+            active2[qq.number][x] = active[j][x].add(qq);
         }
       }
     }
@@ -121,18 +126,19 @@ final public class MinimizationOperations {
     // process pending until fixed point
     int k = 2;
     while (!pending.isEmpty()) {
-      IntPair ip = pending.removeFirst();
+      final IntPair ip = pending.removeFirst();
       final int p = ip.n1;
       final int x = ip.n2;
       pending2.clear(x*statesLen + p);
       // find states that need to be split off their blocks
       for (StateListNode m = active[p][x].first; m != null; m = m.next) {
-        final BitSet r = reverse[m.q.number][x];
-        if (r != null) for (int i = r.nextSetBit(0); i >= 0; i = r.nextSetBit(i+1)) {
+        final ArrayList<State> r = reverse[m.q.number][x];
+        if (r != null) for (final State s : r) {
+          final int i = s.number;
           if (!split.get(i)) {
             split.set(i);
             final int j = block[i];
-            splitblock[j].set(i);
+            splitblock[j].add(s);
             if (!refine2.get(j)) {
               refine2.set(j);
               refine.set(j);
@@ -142,18 +148,19 @@ final public class MinimizationOperations {
       }
       // refine blocks
       for (int j = refine.nextSetBit(0); j >= 0; j = refine.nextSetBit(j+1)) {
-        final BitSet sb = splitblock[j];
-        if (sb.cardinality() < partition[j].cardinality()) {
-          final BitSet b1 = partition[j], b2 = partition[k];
-          for (int i = sb.nextSetBit(0); i >= 0; i = sb.nextSetBit(i+1)) {
-            b1.clear(i);
-            b2.set(i);
-            block[i] = k;
+        final ArrayList<State> sb = splitblock[j];
+        if (sb.size() < partition[j].size()) {
+          final HashSet<State> b1 = partition[j];
+          final HashSet<State> b2 = partition[k];
+          for (final State s : sb) {
+            b1.remove(s);
+            b2.add(s);
+            block[s.number] = k;
             for (int c = 0; c < sigmaLen; c++) {
-              final StateListNode sn = active2[i][c];
+              final StateListNode sn = active2[s.number][c];
               if (sn != null && sn.sl == active[j][c]) {
                 sn.remove();
-                active2[i][c] = active[k][c].add(states[i]);
+                active2[s.number][c] = active[k][c].add(s);
               }
             }
           }
@@ -173,8 +180,8 @@ final public class MinimizationOperations {
           k++;
         }
         refine2.clear(j);
-        for (int i = sb.nextSetBit(0); i >= 0; i = sb.nextSetBit(i+1))
-          split.clear(i);
+        for (final State s : sb)
+          split.clear(s.number);
         sb.clear();
       }
       refine.clear();
@@ -184,9 +191,7 @@ final public class MinimizationOperations {
     for (int n = 0; n < newstates.length; n++) {
       final State s = new State();
       newstates[n] = s;
-      BitSet part = partition[n];
-      for (int i = part.nextSetBit(0); i >= 0; i = part.nextSetBit(i+1)) {
-        final State q = states[i];
+      for (State q : partition[n]) {
         if (q == a.initial) a.initial = s;
         s.accept = q.accept;
         s.number = q.number; // select representative

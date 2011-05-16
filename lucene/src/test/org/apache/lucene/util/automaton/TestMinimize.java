@@ -49,4 +49,9 @@ public class TestMinimize extends LuceneTestCase {
       assertEquals(a.getNumberOfTransitions(), b.getNumberOfTransitions());
     }
   }
+  
+  /** n^2 space usage in Hopcroft minimization? */
+  public void testMinimizeHuge() {
+    new RegExp("+-*(A|.....|BC)*]", RegExp.NONE).toAutomaton();
+  }
 }
