@@ -396,6 +396,15 @@
       <str name="name">mock</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
     </lst>
+    <lst name="engine">
+      <str name="name">lexical-resource-check</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">lexical-resource-check-custom-resource-dir</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+      <str name="carrot.lexicalResourcesDir">clustering/custom</str>
+    </lst>
   </searchComponent>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="doc-clustering">

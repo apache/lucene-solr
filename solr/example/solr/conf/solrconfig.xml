@@ -1198,17 +1198,20 @@
     <lst name="engine">
       <!-- The name, only one can be named "default" -->
       <str name="name">default</str>
-      <!-- Class name of Carrot2 clustering algorithm. 
-           
+
+      <!-- Class name of Carrot2 clustering algorithm.
+
            Currently available algorithms are:
            
            * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
            * org.carrot2.clustering.stc.STCClusteringAlgorithm
+           * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
            
            See http://project.carrot2.org/algorithms.html for the
            algorithm's characteristics.
         -->
       <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
+
       <!-- Overriding values for Carrot2 default algorithm attributes.
 
            For a description of all available attributes, see:
@@ -1219,9 +1222,22 @@
            name and attribute value as parameter value.
         -->
       <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
-      
+
+      <!-- Location of Carrot2 lexical resources.
+
+           A directory from which to load Carrot2-specific stop words
+           and stop labels. Absolute or relative to Solr config directory.
+           If a specific resource (e.g. stopwords.en) is present in the
+           specified dir, it will completely override the corresponding
+           default one that ships with Carrot2.
+
+           For an overview of Carrot2 lexical resources, see:
+           http://download.carrot2.org/head/manual/#chapter.lexical-resources
+        -->
+      <str name="carrot.lexicalResourcesDir">clustering/carrot2</str>
+
       <!-- The language to assume for the documents.
-           
+
            For a list of allowed values, see:
            http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
        -->

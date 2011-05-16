@@ -9,11 +9,19 @@ CHANGES
 $Id$
 ================== Release 4.0.0-dev ==================
 
-(No Changes)
+* SOLR-2448: Search results clustering updates: bisecting k-means
+  clustering algorithm added, loading of Carrot2 stop words from
+  <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
+  for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
+  (Stanislaw Osinski, Dawid Weiss).
 
 ================== Release 3.2.0-dev ==================
 
-(No Changes)
+* SOLR-2448: Search results clustering updates: bisecting k-means
+  clustering algorithm added, loading of Carrot2 stop words from
+  <solr.home>/conf/carrot2 (SOLR-2449), using Solr's stopwords.txt
+  for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
+  (Stanislaw Osinski, Dawid Weiss).
 
 ================== Release 3.1.0-dev ==================
 

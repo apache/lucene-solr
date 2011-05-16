@@ -26,7 +26,7 @@ Versions of Major Components
 ---------------------
 Apache Lucene trunk
 Apache Tika 0.8
-Carrot2 3.4.2
+Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 

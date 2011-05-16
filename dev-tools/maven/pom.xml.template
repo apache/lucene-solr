@@ -107,14 +107,6 @@
   </licenses>
   <repositories>
     <repository>
-      <id>carrot2.org</id>
-      <name>Carrot2 Maven2 repository</name>
-      <url>http://download.carrot2.org/maven2/</url>
-      <snapshots>
-        <updatePolicy>never</updatePolicy>
-      </snapshots>
-    </repository>
-    <repository>
       <id>apache.snapshots</id>
       <name>Apache Snapshot Repository</name>
       <url>http://repository.apache.org/snapshots</url>
@@ -306,7 +298,7 @@
       <dependency>
         <groupId>org.carrot2</groupId>
         <artifactId>carrot2-core</artifactId>
-        <version>3.4.2</version>
+        <version>3.5.0</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
