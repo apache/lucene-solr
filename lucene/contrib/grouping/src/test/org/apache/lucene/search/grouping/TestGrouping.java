@@ -217,11 +217,11 @@ public class TestGrouping extends LuceneTestCase {
     };
   }
 
-  private Comparable[] fillFields(GroupDoc d, Sort sort) {
+  private Comparable<?>[] fillFields(GroupDoc d, Sort sort) {
     final SortField[] sortFields = sort.getSort();
-    final Comparable[] fields = new Comparable[sortFields.length];
+    final Comparable<?>[] fields = new Comparable[sortFields.length];
     for(int fieldIDX=0;fieldIDX<sortFields.length;fieldIDX++) {
-      final Comparable c;
+      final Comparable<?> c;
       final SortField sf = sortFields[fieldIDX];
       if (sf.getField().equals("sort1")) {
         c = d.sort1;
@@ -253,7 +253,7 @@ public class TestGrouping extends LuceneTestCase {
     Arrays.sort(groupDocs, groupSortComp);
     final HashMap<String,List<GroupDoc>> groups = new HashMap<String,List<GroupDoc>>();
     final List<String> sortedGroups = new ArrayList<String>();
-    final List<Comparable[]> sortedGroupFields = new ArrayList<Comparable[]>();
+    final List<Comparable<?>[]> sortedGroupFields = new ArrayList<Comparable<?>[]>();
 
     int totalHitCount = 0;
 
@@ -517,7 +517,7 @@ public class TestGrouping extends LuceneTestCase {
       final GroupDocs expectedGroup = expected.groups[groupIDX];
       final GroupDocs actualGroup = actual.groups[groupIDX];
       assertEquals(expectedGroup.groupValue, actualGroup.groupValue);
-      assertEquals(expectedGroup.groupSortValues, actualGroup.groupSortValues);
+      assertArrayEquals(expectedGroup.groupSortValues, actualGroup.groupSortValues);
 
       // TODO
       // assertEquals(expectedGroup.maxScore, actualGroup.maxScore);
@@ -533,7 +533,7 @@ public class TestGrouping extends LuceneTestCase {
         assertEquals(expectedFD.doc, docIDtoID[actualFD.doc]);
         // TODO
         // assertEquals(expectedFD.score, actualFD.score);
-        assertEquals(expectedFD.fields, actualFD.fields);
+        assertArrayEquals(expectedFD.fields, actualFD.fields);
       }
     }
   }
