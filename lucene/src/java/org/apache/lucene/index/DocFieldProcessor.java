@@ -251,7 +251,7 @@ final class DocFieldProcessor extends DocConsumer {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
       if (field.hasDocValues()) {
-        final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo, fieldInfos);
+        final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo);
         docValuesConsumer.add(docState.docID, field.getDocValues());
       }
     }
@@ -292,7 +292,7 @@ final class DocFieldProcessor extends DocConsumer {
   final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
   final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
 
-  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo, FieldInfos infos) 
+  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo) 
       throws IOException {
     DocValuesConsumer docValuesConsumer = docValues.get(fieldInfo.name);
     if (docValuesConsumer != null) {
@@ -303,12 +303,12 @@ final class DocFieldProcessor extends DocConsumer {
       PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(fieldInfo.getCodecId());
       SegmentCodecs codecs = perDocWriteState.segmentCodecs;
       assert codecs.codecs.length > fieldInfo.getCodecId();
-      
       Codec codec = codecs.codecs[fieldInfo.getCodecId()];
       perDocConsumer = codec.docsConsumer(perDocWriteState);
       perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
     }
     docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
+    fieldInfo.commitDocValues();
     docValues.put(fieldInfo.name, docValuesConsumer);
     return docValuesConsumer;
   }

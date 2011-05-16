@@ -73,7 +73,6 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-@SuppressWarnings("serial")
 public class DocValuesField extends AbstractField implements PerDocFieldValues {
 
   protected BytesRef bytes;

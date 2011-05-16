@@ -127,6 +127,7 @@ public final class FieldInfo {
   }
   
   private boolean vectorsCommitted;
+  private boolean docValuesCommitted;
  
   /**
    * Reverts all uncommitted changes on this {@link FieldInfo}
@@ -137,6 +138,10 @@ public final class FieldInfo {
       storeOffsetWithTermVector = false;
       storePositionWithTermVector = false;
       storeTermVector = false;  
+    }
+    
+    if (docValues != null && !docValuesCommitted) {
+      docValues = null;
     }
   }
 
@@ -149,5 +154,10 @@ public final class FieldInfo {
   void commitVectors() {
     assert storeTermVector;
     vectorsCommitted = true;
+  }
+  
+  void commitDocValues() {
+    assert hasDocValues();
+    docValuesCommitted = true;
   }
 }

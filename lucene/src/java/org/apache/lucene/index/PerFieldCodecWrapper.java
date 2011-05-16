@@ -317,22 +317,22 @@ final class PerFieldCodecWrapper extends Codec {
   }
   
   private final class PerDocConsumers extends PerDocConsumer {
-    private final ArrayList<PerDocConsumer> consumers = new ArrayList<PerDocConsumer>();
+    private final PerDocConsumer[] consumers;
+    private final Codec[] codecs;
+    private final PerDocWriteState state;
 
     public PerDocConsumers(PerDocWriteState state) throws IOException {
       assert segmentCodecs == state.segmentCodecs;
-      final Codec[] codecs = segmentCodecs.codecs;
-      for (int i = 0; i < codecs.length; i++) {
-        consumers.add(codecs[i].docsConsumer(new PerDocWriteState(state, i)));
-      }
+      this.state = state;
+      codecs = segmentCodecs.codecs;
+      consumers = new PerDocConsumer[codecs.length];
     }
 
     public void close() throws IOException {
-      Iterator<PerDocConsumer> it = consumers.iterator();
       IOException err = null;
-      while (it.hasNext()) {
+      for (int i = 0; i < consumers.length; i++) {
         try {
-          PerDocConsumer next = it.next();
+          final PerDocConsumer next = consumers[i];
           if (next != null) {
             next.close();
           }
@@ -351,10 +351,13 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
-      assert field.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
-      final PerDocConsumer perDoc = consumers.get(field.getCodecId());
+      final int codecId = field.getCodecId();
+      assert codecId != FieldInfo.UNASSIGNED_CODEC_ID;
+      PerDocConsumer perDoc = consumers[codecId];
       if (perDoc == null) {
-        return null;
+        perDoc = codecs[codecId].docsConsumer(new PerDocWriteState(state, codecId));
+        assert perDoc != null;
+        consumers[codecId] = perDoc;
       }
       return perDoc.addValuesField(field);
     }

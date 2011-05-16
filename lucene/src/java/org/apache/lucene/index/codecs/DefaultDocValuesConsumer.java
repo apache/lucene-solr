@@ -77,6 +77,7 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
                 Writer.INDEX_EXTENSION));
             assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
                 Writer.INDEX_EXTENSION));
+            // until here all types use an index
           case BYTES_FIXED_STRAIGHT:
           case FLOAT_32:
           case FLOAT_64:
