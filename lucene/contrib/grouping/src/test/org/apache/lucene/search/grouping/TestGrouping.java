@@ -32,6 +32,7 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldDoc;
