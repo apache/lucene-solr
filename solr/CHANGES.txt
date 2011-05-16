@@ -29,7 +29,7 @@ Versions of Major Components
 ---------------------
 Apache Lucene 3x
 Apache Tika 0.8
-Carrot2 3.4.2
+Carrot2 3.5.0
 
 
 Upgrading from Solr 3.1
