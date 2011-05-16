@@ -104,7 +104,7 @@ final class DocFieldProcessor extends DocConsumer {
       try {
         consumer.close();  // TODO add abort to PerDocConsumer!
       } catch (IOException e) {
-        // nocommit handle exce
+        // ignore on abort!
       }
     }
 
