@@ -831,6 +831,10 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         } catch (Throwable t) {
           // throw orig excp
         }
+      } else {
+        // we must sync here explicitly since during a commit
+        // IW will not sync the global field map. 
+        dir.sync(Collections.singleton(name));
       }
     }
     return version;
