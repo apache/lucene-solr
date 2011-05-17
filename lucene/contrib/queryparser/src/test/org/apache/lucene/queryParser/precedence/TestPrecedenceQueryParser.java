@@ -647,8 +647,9 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    super.tearDown();
   }
 
 }

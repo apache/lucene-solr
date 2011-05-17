@@ -17,8 +17,6 @@ package org.apache.lucene.ant;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.ant.DocumentTestCase;
 import org.apache.lucene.ant.HtmlDocument;
 
@@ -27,7 +25,8 @@ public class HtmlDocumentTest extends DocumentTestCase
     HtmlDocument doc;
     
     @Override
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
+        super.setUp();
         doc = new HtmlDocument(getFile("test.html"));
     }
     
@@ -37,8 +36,9 @@ public class HtmlDocumentTest extends DocumentTestCase
     }
     
     @Override
-    public void tearDown() {
+    public void tearDown() throws Exception {
         doc = null;
+        super.tearDown();
     }
 }
 
