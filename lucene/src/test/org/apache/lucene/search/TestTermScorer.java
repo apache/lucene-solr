@@ -65,6 +65,7 @@ public class TestTermScorer extends LuceneTestCase {
     indexSearcher.close();
     indexReader.close();
     directory.close();
+    super.tearDown();
   }
 
   public void test() throws IOException {
