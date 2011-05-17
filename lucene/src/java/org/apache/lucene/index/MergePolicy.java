@@ -72,7 +72,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
     int maxNumSegmentsOptimize;     // used by IndexWriter
-    long estimatedMergeBytes;       // used by IndexWriter
+    public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
     List<SegmentReader> readerClones;   // used by IndexWriter
     public final List<SegmentInfo> segments;
