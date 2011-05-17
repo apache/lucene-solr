@@ -85,6 +85,11 @@ New Features
    it cannot group by function queries nor arbitrary queries.  (Mike
    McCandless)
 
+ * LUCENE-3092: Added NRTCachingDirectory in contrib/misc, which
+   caches small segments in RAM.  This is useful, in the near-real-time
+   case where the indexing rate is lowish but the reopen rate is
+   highish, to take load off the IO system.  (Mike McCandless)
+
 Optimizations
 
  * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
