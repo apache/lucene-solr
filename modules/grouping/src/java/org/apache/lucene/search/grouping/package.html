@@ -88,6 +88,13 @@ field fall into a single group.</p>
   boolean fillFields = true;
   SecondPassGroupingCollector c2 = new SecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
 
+  //Optionally compute total group count
+  AllGroupsCollector allGroupsCollector = null;
+  if (requiredTotalGroupCount) {
+    allGroupsCollector = new AllGroupsCollector("author");
+    c2 = MultiCollector.wrap(c2, allGroupsCollector);
+  }
+
   if (cachedCollector.isCached()) {
     // Cache fit within maxCacheRAMMB, so we can replay it:
     cachedCollector.replay(c2);
@@ -97,6 +104,9 @@ field fall into a single group.</p>
   }
         
   TopGroups groupsResult = c2.getTopGroups(docOffset);
+  if (requiredTotalGroupCount) {
+    groupResult = new TopGroups(groupsResult, allGroupsCollector.getGroupCount());
+  }
 
   // Render groupsResult...
 </pre>

@@ -17,13 +17,7 @@
 
 package org.apache.lucene.search.grouping;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,15 +26,7 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.CachingCollector;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -121,7 +107,7 @@ public class TestGrouping extends LuceneTestCase {
 
     final SecondPassGroupingCollector c2 = new SecondPassGroupingCollector(groupField, c1.getTopGroups(0, true), groupSort, null, 5, true, false, true);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c2);
-    
+
     final TopGroups groups = c2.getTopGroups(0);
 
     assertEquals(7, groups.totalHitCount);
@@ -243,6 +229,7 @@ public class TestGrouping extends LuceneTestCase {
                                  boolean fillFields,
                                  boolean getScores,
                                  boolean getMaxScores,
+                                 boolean doAllGroups,
                                  Sort groupSort,
                                  Sort docSort,
                                  int topNGroups,
@@ -258,6 +245,7 @@ public class TestGrouping extends LuceneTestCase {
     final List<Comparable<?>[]> sortedGroupFields = new ArrayList<Comparable<?>[]>();
 
     int totalHitCount = 0;
+    Set<BytesRef> knownGroups = new HashSet<BytesRef>();
 
     for(GroupDoc d : groupDocs) {
       // TODO: would be better to filter by searchTerm before sorting!
@@ -265,6 +253,13 @@ public class TestGrouping extends LuceneTestCase {
         continue;
       }
       totalHitCount++;
+
+      if (doAllGroups) {
+        if (!knownGroups.contains(d.group)) {
+          knownGroups.add(d.group);
+        }
+      }
+
       List<GroupDoc> l = groups.get(d.group);
       if (l == null) {
         sortedGroups.add(d.group);
@@ -317,7 +312,14 @@ public class TestGrouping extends LuceneTestCase {
                                               fillFields ? sortedGroupFields.get(idx) : null);
     }
 
-    return new TopGroups(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result);
+    if (doAllGroups) {
+      return new TopGroups(
+          new TopGroups(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result),
+          knownGroups.size()
+      );
+    } else {
+      return new TopGroups(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result);
+    }
   }
 
   public void testRandom() throws Exception {
@@ -335,7 +337,7 @@ public class TestGrouping extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
       }
-      
+
       final List<BytesRef> groups = new ArrayList<BytesRef>();
       for(int i=0;i<numGroups;i++) {
         groups.add(new BytesRef(_TestUtil.randomRealisticUnicodeString(random)));
@@ -428,8 +430,16 @@ public class TestGrouping extends LuceneTestCase {
         //final int docOffset = 0;
 
         final boolean doCache = random.nextBoolean();
+        final boolean doAllGroups = random.nextBoolean();
         if (VERBOSE) {
-          System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup);
+          System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups);
+        }
+
+        final AllGroupsCollector allGroupsCollector;
+        if (doAllGroups) {
+          allGroupsCollector = new AllGroupsCollector("group");
+        } else {
+          allGroupsCollector = null;
         }
 
         final FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("group", groupSort, groupOffset+topNGroups);
@@ -440,7 +450,16 @@ public class TestGrouping extends LuceneTestCase {
           if (VERBOSE) {
             System.out.println("TEST: maxCacheMB=" + maxCacheMB);
           }
-          c = cCache = new CachingCollector(c1, true, maxCacheMB);
+
+          if (doAllGroups) {
+            cCache = new CachingCollector(c1, true, maxCacheMB);
+            c = MultiCollector.wrap(cCache, allGroupsCollector);
+          } else {
+            c = cCache = new CachingCollector(c1, true, maxCacheMB);
+          }
+        } else if (doAllGroups) {
+          c = MultiCollector.wrap(c1, allGroupsCollector);
+          cCache = null;
         } else {
           c = c1;
           cCache = null;
@@ -475,8 +494,13 @@ public class TestGrouping extends LuceneTestCase {
           } else {
             s.search(new TermQuery(new Term("content", searchTerm)), c2);
           }
-        
-          groupsResult = c2.getTopGroups(docOffset);
+
+          if (doAllGroups) {
+            TopGroups tempTopGroups = c2.getTopGroups(docOffset);
+            groupsResult = new TopGroups(tempTopGroups, allGroupsCollector.getGroupCount());
+          } else {
+            groupsResult = c2.getTopGroups(docOffset);
+          }
         } else {
           groupsResult = null;
           if (VERBOSE) {
@@ -484,7 +508,7 @@ public class TestGrouping extends LuceneTestCase {
           }
         }
 
-        final TopGroups expectedGroups = slowGrouping(groupDocs, searchTerm, fillFields, getScores, getMaxScores, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
+        final TopGroups expectedGroups = slowGrouping(groupDocs, searchTerm, fillFields, getScores, getMaxScores, doAllGroups, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
 
         try {
           // NOTE: intentional but temporary field cache insanity!
@@ -509,7 +533,10 @@ public class TestGrouping extends LuceneTestCase {
     assertEquals(expected.groups.length, actual.groups.length);
     assertEquals(expected.totalHitCount, actual.totalHitCount);
     assertEquals(expected.totalGroupedHitCount, actual.totalGroupedHitCount);
-    
+    if (expected.totalGroupCount != null) {
+      assertEquals(expected.totalGroupCount, actual.totalGroupCount);
+    }
+
     for(int groupIDX=0;groupIDX<expected.groups.length;groupIDX++) {
       if (VERBOSE) {
         System.out.println("  check groupIDX=" + groupIDX);
