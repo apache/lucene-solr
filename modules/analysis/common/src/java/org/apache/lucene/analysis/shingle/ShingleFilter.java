@@ -327,6 +327,8 @@ public final class ShingleFilter extends TokenFilter {
     return tokenAvailable;
   }
 
+  private boolean exhausted;
+
   /**
    * <p>Get the next token from the input stream.
    * <p>If the next token has <code>positionIncrement > 1</code>,
@@ -359,7 +361,7 @@ public final class ShingleFilter extends TokenFilter {
       }
       isNextInputStreamToken = false;
       newTarget.isFiller = false;
-    } else if (input.incrementToken()) {
+    } else if (!exhausted && input.incrementToken()) {
       if (null == target) {
         newTarget = new InputWindowToken(cloneAttributes());
       } else {
@@ -387,6 +389,7 @@ public final class ShingleFilter extends TokenFilter {
       }
     } else {
       newTarget = null;
+      exhausted = true;
     }
     return newTarget;
 	}
@@ -435,7 +438,8 @@ public final class ShingleFilter extends TokenFilter {
     inputWindow.clear();
     numFillerTokensToInsert = 0;
     isOutputHere = false;
-    noShingleOutput = true;    
+    noShingleOutput = true;
+    exhausted = false;
     if (outputUnigramsIfNoShingles && ! outputUnigrams) {
       // Fix up gramSize if minValue was reset for outputUnigramsIfNoShingles
       gramSize.minValue = minShingleSize;

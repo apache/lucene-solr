@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -32,7 +33,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    input = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
+    input = new MockTokenizer(new StringReader("abcde"), MockTokenizer.WHITESPACE, false);
   }
 
   public void testInvalidInput() throws Exception {
@@ -91,7 +92,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testSmallTokenInStream() throws Exception {
-    input = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abc de fgh"));
+    input = new MockTokenizer(new StringReader("abc de fgh"), MockTokenizer.WHITESPACE, false);
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
     assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10});
   }

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -43,14 +44,14 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
 
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected);
   }
   
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[], int posIncs[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, posIncs);
   }

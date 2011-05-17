@@ -20,8 +20,8 @@ package org.apache.lucene.analysis.tr;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Test the Turkish lowercase filter.
@@ -32,8 +32,8 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * Test composed forms
    */
   public void testTurkishLowerCaseFilter() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-        "\u0130STANBUL \u0130ZM\u0130R ISPARTA"));
+    TokenStream stream = new MockTokenizer(new StringReader(
+        "\u0130STANBUL \u0130ZM\u0130R ISPARTA"), MockTokenizer.WHITESPACE, false);
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
         "\u0131sparta",});
@@ -43,8 +43,8 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * Test decomposed forms
    */
   public void testDecomposed() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-        "\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA"));
+    TokenStream stream = new MockTokenizer(new StringReader(
+        "\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA"), MockTokenizer.WHITESPACE, false);
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
         "\u0131sparta",});
@@ -56,8 +56,8 @@ public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
    * to U+0130 + U+0316, and is lowercased the same way.
    */
   public void testDecomposed2() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-        "\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA"));
+    TokenStream stream = new MockTokenizer(new StringReader(
+        "\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA"), MockTokenizer.WHITESPACE, false);
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"i\u0316stanbul", "izmir",
         "\u0131\u0316sparta",});
