@@ -442,7 +442,7 @@ class JSONWriter extends TextResponseWriter {
 
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
-        if ((ch > '#' && ch != '\\' && ch !=  '\u2028') || ch==' ') { // fast path
+        if ((ch > '#' && ch != '\\' && ch < '\u2028') || ch == ' ') { // fast path
           writer.write(ch);
           continue;
         }
@@ -457,7 +457,10 @@ class JSONWriter extends TextResponseWriter {
           case '\t': writer.write('\\'); writer.write('t'); break;
           case '\b': writer.write('\\'); writer.write('b'); break;
           case '\f': writer.write('\\'); writer.write('f'); break;
-          case '\u2028': unicodeEscape(writer,ch); break;
+          case '\u2028': // fallthrough
+          case '\u2029':
+            unicodeEscape(writer,ch);
+            break;
           // case '/':
           default: {
             if (ch <= 0x1F) {

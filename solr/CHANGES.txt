@@ -329,6 +329,10 @@ Bug Fixes
 * SOLR-2495: The JSON parser could hang on corrupted input and could fail
   to detect numbers that were too large to fit in a long.  (yonik)
 
+* SOLR-2520: Make JSON response format escape \u2029 as well as \u2028
+  in strings since those characters are not valid in javascript strings
+  (although they are valid in JSON strings).  (yonik)
+
 
 Other Changes
 ----------------------
