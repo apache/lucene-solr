@@ -29,11 +29,20 @@ import org.apache.lucene.index.values.MultiDocValues;
 import org.apache.lucene.index.values.Type;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderUtil.Gather;
 
 /**
+ * Exposes per-document flex API, merged from per-document flex API of
+ * sub-segments. This is useful when you're interacting with an
+ * {@link IndexReader} implementation that consists of sequential sub-readers
+ * (eg DirectoryReader or {@link MultiReader}).
  * 
- * nocommit - javadoc
- * @experimental
+ * <p>
+ * <b>NOTE</b>: for multi readers, you'll get better performance by gathering
+ * the sub readers using {@link ReaderUtil#gatherSubReaders} and then operate
+ * per-reader, instead of using this class.
+ * 
+ * @lucene.experimental
  */
 public class MultiPerDocValues extends PerDocValues {
   private final PerDocValues[] subs;
@@ -50,6 +59,14 @@ public class MultiPerDocValues extends PerDocValues {
     }
   }
 
+  /**
+   * Returns a single {@link PerDocValues} instance for this reader, merging
+   * their values on the fly. This method will not return <code>null</code>.
+   * 
+   * <p>
+   * <b>NOTE</b>: this is a slow way to access postings. It's better to get the
+   * sub-readers (using {@link Gather}) and iterate through them yourself.
+   */
   public static PerDocValues getPerDocs(IndexReader r) throws IOException {
     final IndexReader[] subs = r.getSequentialSubReaders();
     if (subs == null) {

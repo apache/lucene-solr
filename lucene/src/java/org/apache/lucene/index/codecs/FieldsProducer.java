@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.values.DocValues;
 
 /** Abstract API that consumes terms, doc, freq, prox and
  *  payloads postings.  Concrete implementations of this

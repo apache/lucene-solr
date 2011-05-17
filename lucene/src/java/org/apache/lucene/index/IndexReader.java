@@ -1069,7 +1069,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * through them yourself. */
   public abstract Fields fields() throws IOException;
   
-  // nocommit javadoc
+  /**
+   * Flex API: returns {@link PerDocValues} for this reader.
+   *  This method may return null if the reader has no per-document
+   *  values stored.
+   *
+   * <p><b>NOTE</b>: if this is a multi reader ({@link
+   * #getSequentialSubReaders} is not null) then this
+   * method will throw UnsupportedOperationException.  If
+   * you really need {@link PerDocValues} for such a reader,
+   * use {@link MultiPerDocValues#getPerDocs(IndexReader)}.  However, for
+   * performance reasons, it's best to get all sub-readers
+   * using {@link ReaderUtil#gatherSubReaders} and iterate
+   * through them yourself. */
   public abstract PerDocValues perDocValues() throws IOException;
 
   public int docFreq(Term term) throws IOException {

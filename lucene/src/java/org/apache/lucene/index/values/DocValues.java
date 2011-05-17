@@ -27,7 +27,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * TODO
+ * nocommit - javadoc 
  * 
  * @see FieldsEnum#docValues()
  * @see Fields#docValues(String)

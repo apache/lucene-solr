@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;

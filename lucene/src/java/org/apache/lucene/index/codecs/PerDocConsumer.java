@@ -22,15 +22,24 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.values.DocValues;
 
 /**
- * nocommit - javadoc
- * @experimental
- *
+ * Abstract API that consumes per document values. Concrete implementations of
+ * this convert field values into a Codec specific format during indexing.
+ * <p>
+ * The {@link PerDocConsumer} API is accessible through flexible indexing / the
+ * {@link Codec} - API providing per field consumers and producers for inverted
+ * data (terms, postings) as well as per-document data.
+ * 
+ * @lucene.experimental
  */
 public abstract class PerDocConsumer implements Closeable{
   /** Adds a new DocValuesField */
   public abstract DocValuesConsumer addValuesField(FieldInfo field)
       throws IOException;
 
+  /**
+   * Consumes and merges the given {@link PerDocValues} producer
+   * into this consumers format.   
+   */
   public void merge(MergeState mergeState, PerDocValues producer)
       throws IOException {
     Iterable<String> fields = producer.fields();

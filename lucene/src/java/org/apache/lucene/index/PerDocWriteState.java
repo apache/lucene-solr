@@ -18,10 +18,13 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.Directory;
 
 /**
- * nocommit - javadoc
+ * Encapsulates all necessary state to initiate a {@link PerDocConsumer} and
+ * create all necessary files in order to consume and merge per-document values.
+ * 
  * @lucene.experimental
  */
 public class PerDocWriteState {
@@ -33,14 +36,9 @@ public class PerDocWriteState {
   public final SegmentCodecs segmentCodecs;
   public final int codecId;
 
-  /** Expert: The fraction of terms in the "dictionary" which should be stored
-   * in RAM.  Smaller values use more memory, but make searching slightly
-   * faster, while larger values use less memory and make searching slightly
-   * slower.  Searching is typically not dominated by dictionary lookup, so
-   * tweaking this is rarely useful.*/
-  public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
-
-  public PerDocWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos, AtomicLong bytesUsed, int codecId) {
+  PerDocWriteState(PrintStream infoStream, Directory directory,
+      String segmentName, FieldInfos fieldInfos, AtomicLong bytesUsed,
+      int codecId) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
@@ -49,8 +47,8 @@ public class PerDocWriteState {
     this.codecId = codecId;
     this.bytesUsed = bytesUsed;
   }
-  
-  public PerDocWriteState(SegmentWriteState state) {
+
+  PerDocWriteState(SegmentWriteState state) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentCodecs = state.segmentCodecs;
@@ -59,8 +57,8 @@ public class PerDocWriteState {
     codecId = state.codecId;
     bytesUsed = new AtomicLong(0);
   }
-  
-  public PerDocWriteState(PerDocWriteState state, int codecId) {
+
+  PerDocWriteState(PerDocWriteState state, int codecId) {
     this.infoStream = state.infoStream;
     this.directory = state.directory;
     this.segmentName = state.segmentName;
@@ -69,8 +67,7 @@ public class PerDocWriteState {
     this.codecId = codecId;
     this.bytesUsed = state.bytesUsed;
   }
-  
-  
+
   public String codecIdAsString() {
     return "" + codecId;
   }

@@ -22,9 +22,16 @@ import java.util.Collection;
 import org.apache.lucene.index.values.DocValues;
 
 /**
+ * Abstract API that provides access to one or more per-document storage
+ * features. The concrete implementations provide access to the underlying
+ * storage on a per-document basis corresponding to their actual
+ * {@link PerDocConsumer} counterpart.
+ * <p>
+ * The {@link PerDocValues} API is accessible through flexible indexing / the
+ * {@link Codec} - API providing per field consumers and producers for inverted
+ * data (terms, postings) as well as per-document data.
  * 
- * nocommit javadoc
- * @experimental
+ * @lucene.experimental
  */
 public abstract class PerDocValues implements Closeable {
   /**
@@ -40,5 +47,9 @@ public abstract class PerDocValues implements Closeable {
 
   public static final PerDocValues[] EMPTY_ARRAY = new PerDocValues[0];
 
+  /**
+   * Returns all fields this {@link PerDocValues} contains values for.
+   */
   public abstract Collection<String> fields();
+  
 }

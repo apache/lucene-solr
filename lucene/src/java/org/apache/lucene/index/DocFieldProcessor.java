@@ -144,7 +144,7 @@ final class DocFieldProcessor extends DocConsumer {
       try {
         consumer.close();  
       } catch (IOException e) {
-        // nocommit handle exce
+        // ignore and continue closing remaining consumers
       }
     }
     perDocConsumers.clear();

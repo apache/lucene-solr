@@ -69,10 +69,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * 
    * - Add documentation for: 
    *  - DocValues 
-   * - Add @lucene.experimental to all necessary classes 
    * - add test for unoptimized case with deletes
    * - add multithreaded tests / integrate into stress indexing?
-   * - run RAT
    */
 
   @Before
