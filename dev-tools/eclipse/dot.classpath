@@ -126,8 +126,8 @@
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-glassfish-2.1.v20091210.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-jetty-6.1.26.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-api-2.1-glassfish-2.1.v20091210.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.4.2.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.5.0.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-collections-0.3.jar"/>
