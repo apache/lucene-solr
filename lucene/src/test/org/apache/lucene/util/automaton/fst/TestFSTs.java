@@ -540,7 +540,7 @@ public class TestFSTs extends LuceneTestCase {
           Object output = run(fst, term, null);
 
           assertNotNull("term " + inputToString(inputMode, term) + " is not accepted", output);
-          assertEquals(output, pair.output);
+          assertEquals(pair.output, output);
 
           // verify enum's next
           IntsRefFSTEnum.InputOutput<T> t = fstEnum.next();
