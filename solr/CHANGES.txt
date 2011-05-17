@@ -25,6 +25,11 @@ on how to get started.
 
 Bug Fixes
 ----------------------
+
+* SOLR-2445: Change the default qt to blank in form.jsp, because there is no "standard"
+  request handler unless you have it in your solrconfig.xml explicitly.
+  (Gabriele Kahlout via koji)
+
 * SOLR-2493: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each
   instantiation which is a huge slowdown.  (Stephane Bailliez via uschindler)
 

@@ -72,7 +72,7 @@
 	<strong>Query Type</strong>
   </td>
   <td>
-	<input name="qt" type="text" value="standard">
+	<input name="qt" type="text" value="">
   </td>
 </tr>
 <tr>
