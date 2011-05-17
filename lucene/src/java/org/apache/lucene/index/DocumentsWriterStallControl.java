@@ -36,8 +36,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
  * continue indexing.
  */
 //TODO: rename this to DocumentsWriterStallControl (or something like that)?
-final class Healthiness {
-
+final class DocumentsWriterStallControl {
   @SuppressWarnings("serial")
   private static final class Sync extends AbstractQueuedSynchronizer {
     volatile boolean hasBlockedThreads = false; // only with assert
@@ -96,13 +95,14 @@ final class Healthiness {
    * <code>true</code> iff the number of flushing
    * {@link DocumentsWriterPerThread} is greater than the number of active
    * {@link DocumentsWriterPerThread}. Otherwise it will reset the
-   * {@link Healthiness} to healthy and release all threads waiting on
+   * {@link DocumentsWriterStallControl} to healthy and release all threads waiting on
    * {@link #waitIfStalled()}
    */
   void updateStalled(DocumentsWriterFlushControl flushControl) {
     do {
-      // if we have more flushing DWPT than numActiveDWPT we stall!
-      while (flushControl.numActiveDWPT() < flushControl.numFlushingDWPT()) {
+      // if we have more flushing / blocked DWPT than numActiveDWPT we stall!
+      // don't stall if we have queued flushes - threads should be hijacked instead
+      while (flushControl.netBytes() > flushControl.stallLimitBytes()) {
         if (sync.trySetStalled()) {
           assert wasStalled = true;
           return;
@@ -114,8 +114,8 @@ final class Healthiness {
   void waitIfStalled() {
     sync.acquireShared(0);
   }
-
-  boolean hasBlocked() {
+  
+  boolean hasBlocked() { // for tests
     return sync.hasBlockedThreads;
   }
 }

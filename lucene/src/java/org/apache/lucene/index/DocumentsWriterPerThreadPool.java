@@ -165,6 +165,13 @@ public abstract class DocumentsWriterPerThreadPool {
   public int getMaxThreadStates() {
     return perThreads.length;
   }
+  
+  /**
+   * Returns the active number of {@link ThreadState} instances.
+   */
+  public int getActiveThreadState() {
+    return numThreadStatesActive;
+  }
 
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
