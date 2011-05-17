@@ -37,6 +37,10 @@ New Features
    it cannot group by function queries nor arbitrary queries.  (Mike
    McCandless)
 
+ * LUCENE-3098: add AllGroupsCollector, to collect all unique groups
+   (but in unspecified order).  (Martijn van Groningen via Mike
+   McCandless)
+
 Optimizations
 
  * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
