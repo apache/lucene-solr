@@ -128,8 +128,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     fsmp.length = 2;
     System.out.println("maybeMerge "+writer.segmentInfos);
 
-    SegmentInfo info0 = writer.segmentInfos.get(0);
-    SegmentInfo info1 = writer.segmentInfos.get(1);
+    SegmentInfo info0 = writer.segmentInfos.info(0);
+    SegmentInfo info1 = writer.segmentInfos.info(1);
 
     writer.maybeMerge();
     System.out.println("maybeMerge after "+writer.segmentInfos);
@@ -199,7 +199,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // deletes for info1, the newly created segment from the
     // merge should have no deletes because they were applied in
     // the merge
-    //SegmentInfo info1 = writer.segmentInfos.get(1);
+    //SegmentInfo info1 = writer.segmentInfos.info(1);
     //assertFalse(exists(info1, writer.docWriter.segmentDeletes));
 
     //System.out.println("infos4:"+writer.segmentInfos);
@@ -261,11 +261,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
         throws CorruptIndexException, IOException {
       MergeSpecification ms = new MergeSpecification();
       if (doMerge) {
-        SegmentInfos mergeInfos = new SegmentInfos();
-        for (int x=start; x < (start+length); x++) {
-          mergeInfos.add(segmentInfos.get(x));
-        }
-        OneMerge om = new OneMerge(mergeInfos);
+        OneMerge om = new OneMerge(segmentInfos.asList().subList(start, start + length));
         ms.add(om);
         doMerge = false;
         return ms;

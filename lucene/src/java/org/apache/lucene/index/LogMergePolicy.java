@@ -242,6 +242,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   private MergeSpecification findMergesForOptimizeSizeLimit(
       SegmentInfos infos, int maxNumSegments, int last) throws IOException {
     MergeSpecification spec = new MergeSpecification();
+    final List<SegmentInfo> segments = infos.asList();
 
     int start = last - 1;
     while (start >= 0) {
@@ -254,12 +255,12 @@ public abstract class LogMergePolicy extends MergePolicy {
         // unless there is only 1 which is optimized.
         if (last - start - 1 > 1 || (start != last - 1 && !isOptimized(infos.info(start + 1)))) {
           // there is more than 1 segment to the right of this one, or an unoptimized single segment.
-          spec.add(new OneMerge(infos.range(start + 1, last)));
+          spec.add(new OneMerge(segments.subList(start + 1, last)));
         }
         last = start;
       } else if (last - start == mergeFactor) {
         // mergeFactor eligible segments were found, add them as a merge.
-        spec.add(new OneMerge(infos.range(start, last)));
+        spec.add(new OneMerge(segments.subList(start, last)));
         last = start;
       }
       --start;
@@ -267,7 +268,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Add any left-over segments, unless there is just 1 already optimized.
     if (last > 0 && (++start + 1 < last || !isOptimized(infos.info(start)))) {
-      spec.add(new OneMerge(infos.range(start, last)));
+      spec.add(new OneMerge(segments.subList(start, last)));
     }
 
     return spec.merges.size() == 0 ? null : spec;
@@ -280,11 +281,12 @@ public abstract class LogMergePolicy extends MergePolicy {
    */
   private MergeSpecification findMergesForOptimizeMaxNumSegments(SegmentInfos infos, int maxNumSegments, int last) throws IOException {
     MergeSpecification spec = new MergeSpecification();
+    final List<SegmentInfo> segments = infos.asList();
     
     // First, enroll all "full" merges (size
     // mergeFactor) to potentially be run concurrently:
     while (last - maxNumSegments + 1 >= mergeFactor) {
-      spec.add(new OneMerge(infos.range(last - mergeFactor, last)));
+      spec.add(new OneMerge(segments.subList(last - mergeFactor, last)));
       last -= mergeFactor;
     }
 
@@ -296,7 +298,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         // Since we must optimize down to 1 segment, the
         // choice is simple:
         if (last > 1 || !isOptimized(infos.info(0))) {
-          spec.add(new OneMerge(infos.range(0, last)));
+          spec.add(new OneMerge(segments.subList(0, last)));
         }
       } else if (last > maxNumSegments) {
 
@@ -325,7 +327,7 @@ public abstract class LogMergePolicy extends MergePolicy {
           }
         }
 
-        spec.add(new OneMerge(infos.range(bestStart, bestStart + finalMergeSize)));
+        spec.add(new OneMerge(segments.subList(bestStart, bestStart + finalMergeSize)));
       }
     }
     return spec.merges.size() == 0 ? null : spec;
@@ -412,7 +414,8 @@ public abstract class LogMergePolicy extends MergePolicy {
   @Override
   public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos)
       throws CorruptIndexException, IOException {
-    final int numSegments = segmentInfos.size();
+    final List<SegmentInfo> segments = segmentInfos.asList();
+    final int numSegments = segments.size();
 
     if (verbose())
       message("findMergesToExpungeDeletes: " + numSegments + " segments");
@@ -434,7 +437,7 @@ public abstract class LogMergePolicy extends MergePolicy {
           // deletions, so force a merge now:
           if (verbose())
             message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
-          spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i)));
+          spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
           firstSegmentWithDeletions = i;
         }
       } else if (firstSegmentWithDeletions != -1) {
@@ -443,7 +446,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         // mergeFactor segments
         if (verbose())
           message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
-        spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i)));
+        spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, i)));
         firstSegmentWithDeletions = -1;
       }
     }
@@ -451,7 +454,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     if (firstSegmentWithDeletions != -1) {
       if (verbose())
         message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive");
-      spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, numSegments)));
+      spec.add(new OneMerge(segments.subList(firstSegmentWithDeletions, numSegments)));
     }
 
     return spec;

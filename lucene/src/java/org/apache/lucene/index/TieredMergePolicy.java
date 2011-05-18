@@ -251,9 +251,7 @@ public class TieredMergePolicy extends MergePolicy {
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
     final Collection<SegmentInfo> toBeMerged = new HashSet<SegmentInfo>();
 
-    final List<SegmentInfo> infosSorted = new ArrayList<SegmentInfo>();
-    infosSorted.addAll(infos);
-
+    final List<SegmentInfo> infosSorted = new ArrayList<SegmentInfo>(infos.asList());
     Collections.sort(infosSorted, segmentByteSizeDescending);
 
     // Compute total index bytes & print details about the index

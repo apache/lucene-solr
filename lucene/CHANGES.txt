@@ -478,9 +478,15 @@ Changes in backwards compatibility policy
   (Mike McCandless, Shai Erera)
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
-  SegmentInfos to a List<SegmentInfo>; this is actually a minor change
-  because SegmentInfos itself extends Vector<SegmentInfo>.  (Uwe
-  Schindler, Mike McCandless)
+  SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
+	to no longer extend Vector<SegmentInfo> (to update code that is using
+	Vector-API, use the new asList() and asSet() methods returning unmodifiable
+	collections; modifying SegmentInfos is now only possible through
+	the explicitely declared methods). IndexWriter.segString() now takes
+	Iterable<SegmentInfo> instead of List<SegmentInfo>. A simple recompile
+	should fix this. MergePolicy and SegmentInfos are internal/experimental
+	APIs not covered by the strict backwards compatibility policy.
+	(Uwe Schindler, Mike McCandless)
 
 Changes in runtime behavior
 
