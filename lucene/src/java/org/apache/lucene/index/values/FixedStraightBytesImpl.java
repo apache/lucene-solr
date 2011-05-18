@@ -164,8 +164,8 @@ class FixedStraightBytesImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.BYTES_FIXED_STRAIGHT;
+      public ValueType type() {
+        return ValueType.BYTES_FIXED_STRAIGHT;
       }
 
       @Override
@@ -188,7 +188,7 @@ class FixedStraightBytesImpl {
 
       public FixedStraightBytesEnum(AttributeSource source, IndexInput datIn,
           int size, int maxDoc) throws IOException {
-        super(source, Type.BYTES_FIXED_STRAIGHT);
+        super(source, ValueType.BYTES_FIXED_STRAIGHT);
         this.datIn = datIn;
         this.size = size;
         this.maxDoc = maxDoc;
@@ -237,8 +237,8 @@ class FixedStraightBytesImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.BYTES_FIXED_STRAIGHT;
+    public ValueType type() {
+      return ValueType.BYTES_FIXED_STRAIGHT;
     }
   }
 }

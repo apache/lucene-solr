@@ -27,7 +27,7 @@ import org.apache.lucene.document.DocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -131,8 +131,8 @@ public class RandomIndexWriter implements Closeable {
   
   private void randomPerDocFieldValues(Random random, Document doc) {
     
-    Type[] values = Type.values();
-    Type type = values[random.nextInt(values.length)];
+    ValueType[] values = ValueType.values();
+    ValueType type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getFieldable(name) != null)
         return;

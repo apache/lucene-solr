@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
@@ -117,7 +117,7 @@ public class MultiPerDocValues extends PerDocValues {
       // create & add to docValues:
       final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
       int docsUpto = 0;
-      Type type = null;
+      ValueType type = null;
       // Gather all sub-readers that share this field
       for (int i = 0; i < subs.length; i++) {
         DocValues values = subs[i].docValues(field);

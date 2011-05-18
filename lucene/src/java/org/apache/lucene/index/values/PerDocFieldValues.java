@@ -48,19 +48,19 @@ public interface PerDocFieldValues {
   public void setFloat(double value);
 
   /**
-   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
+   * Sets the given {@link BytesRef} value and the field's {@link ValueType}. The
    * comparator for this field is set to <code>null</code>. If a
    * <code>null</code> comparator is set the default comparator for the given
-   * {@link Type} is used.
+   * {@link ValueType} is used.
    */
-  public void setBytes(BytesRef value, Type type);
+  public void setBytes(BytesRef value, ValueType type);
 
   /**
-   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
+   * Sets the given {@link BytesRef} value, the field's {@link ValueType} and the
    * field's comparator. If the {@link Comparator} is set to <code>null</code>
-   * the default for the given {@link Type} is used instead.
+   * the default for the given {@link ValueType} is used instead.
    */
-  public void setBytes(BytesRef value, Type type, Comparator<BytesRef> comp);
+  public void setBytes(BytesRef value, ValueType type, Comparator<BytesRef> comp);
 
   /**
    * Returns the set {@link BytesRef} or <code>null</code> if not set.
@@ -84,18 +84,18 @@ public interface PerDocFieldValues {
 
   /**
    * Sets the {@link BytesRef} comparator for this field. If the field has a
-   * numeric {@link Type} the comparator will be ignored.
+   * numeric {@link ValueType} the comparator will be ignored.
    */
   public void setBytesComparator(Comparator<BytesRef> comp);
 
   /**
-   * Sets the {@link Type}
+   * Sets the {@link ValueType}
    */
-  public void setType(Type type);
+  public void setType(ValueType type);
 
   /**
-  * Returns the {@link Type}
+  * Returns the {@link ValueType}
   */
-  public Type type();
+  public ValueType type();
 
 }

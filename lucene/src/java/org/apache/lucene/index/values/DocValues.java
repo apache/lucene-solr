@@ -126,9 +126,9 @@ public abstract class DocValues implements Closeable {
   }
 
   /**
-   * Returns the {@link Type} of this {@link DocValues} instance
+   * Returns the {@link ValueType} of this {@link DocValues} instance
    */
-  public abstract Type type();
+  public abstract ValueType type();
 
   /**
    * Closes this {@link DocValues} instance. This method should only be called
@@ -164,11 +164,11 @@ public abstract class DocValues implements Closeable {
 
   /**
    * Source of per document values like long, double or {@link BytesRef}
-   * depending on the {@link DocValues} fields {@link Type}. Source
+   * depending on the {@link DocValues} fields {@link ValueType}. Source
    * implementations provide random access semantics similar to array lookups
    * and typically are entirely memory resident.
    * <p>
-   * {@link Source} defines 3 {@link Type} //TODO finish this
+   * {@link Source} defines 3 {@link ValueType} //TODO finish this
    */
   public static abstract class Source {
     // TODO we might need a close method here to null out the internal used arrays?!
@@ -243,11 +243,11 @@ public abstract class DocValues implements Closeable {
     }
 
     /**
-     * Returns the {@link Type} of this source.
+     * Returns the {@link ValueType} of this source.
      * 
-     * @return the {@link Type} of this source.
+     * @return the {@link ValueType} of this source.
      */
-    public abstract Type type();
+    public abstract ValueType type();
 
     /**
      * Returns a {@link DocValuesEnum} for this source which uses the given
@@ -272,13 +272,13 @@ public abstract class DocValues implements Closeable {
      * @param attrs
      *          the {@link AttributeSource} for this enum
      * @param type
-     *          the enums {@link Type}
+     *          the enums {@link ValueType}
      * @param source
      *          the source this enum operates on
      * @param numDocs
      *          the number of documents within the source
      */
-    protected SourceEnum(AttributeSource attrs, Type type, Source source,
+    protected SourceEnum(AttributeSource attrs, ValueType type, Source source,
         int numDocs) {
       super(attrs, type);
       this.source = source;
@@ -361,7 +361,7 @@ public abstract class DocValues implements Closeable {
    * {@link MissingValue} is used by {@link Source} implementations to define an
    * Implementation dependent value for documents that had no value assigned
    * during indexing. Its purpose is similar to a default value but since the a
-   * missing value across {@link Type} and its implementations can be highly
+   * missing value across {@link ValueType} and its implementations can be highly
    * dynamic the actual values are not constant but defined per {@link Source}
    * through the {@link MissingValue} struct. The actual value used to indicate
    * a missing value can even changed within the same field from one segment to

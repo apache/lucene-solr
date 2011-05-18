@@ -22,8 +22,8 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 
 /**
- * {@link Type} specifies the type of the {@link DocValues} for a certain field.
- * A {@link Type} only defines the data type for a field while the actual
+ * {@link ValueType} specifies the type of the {@link DocValues} for a certain field.
+ * A {@link ValueType} only defines the data type for a field while the actual
  * implemenation used to encode and decode the values depends on the field's
  * {@link Codec}. It is up to the {@link Codec} implementing
  * {@link FieldsConsumer#addValuesField(org.apache.lucene.index.FieldInfo)} and
@@ -32,7 +32,7 @@ import org.apache.lucene.index.values.DocValues.SortedSource;
  * 
  * @lucene.experimental
  */
-public enum Type {
+public enum ValueType {
   /*
    * TODO: Add INT_32 INT_64 INT_16 & INT_8?!
    */

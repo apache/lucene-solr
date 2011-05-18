@@ -81,7 +81,7 @@ public class MultiDocValues extends DocValues {
     final int maxDoc;
     final Source emptySoruce;
 
-    public DummyDocValues(int maxDoc, Type type) {
+    public DummyDocValues(int maxDoc, ValueType type) {
       this.maxDoc = maxDoc;
       this.emptySoruce = new EmptySource(type);
     }
@@ -97,7 +97,7 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Type type() {
+    public ValueType type() {
       return emptySoruce.type();
     }
 
@@ -228,16 +228,16 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Type type() {
+    public ValueType type() {
       return docValuesIdx[0].docValues.type();
     }
 
   }
 
   private static class EmptySource extends Source {
-    private final Type type;
+    private final ValueType type;
 
-    public EmptySource(Type type) {
+    public EmptySource(ValueType type) {
       this.type = type;
     }
 
@@ -263,13 +263,13 @@ public class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Type type() {
+    public ValueType type() {
       return type;
     }
   }
 
   @Override
-  public Type type() {
+  public ValueType type() {
     return this.docValuesIdx[0].docValues.type();
   }
 }

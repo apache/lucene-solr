@@ -18,7 +18,7 @@ package org.apache.lucene.util;
  */
 
 /**
- * Represents float[], as a slice (offset + length) into an existing float[].
+ * Represents double[], as a slice (offset + length) into an existing float[].
  * 
  * @lucene.internal
  */

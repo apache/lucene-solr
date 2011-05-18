@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +26,7 @@ public final class FieldInfo {
   public final int number;
 
   public boolean isIndexed;
-  Type docValues;
+  ValueType docValues;
 
 
   // true if term vector for this field should be stored
@@ -42,7 +42,7 @@ public final class FieldInfo {
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValues) {
+            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
     name = na;
     isIndexed = tk;
     number = nu;
@@ -112,7 +112,7 @@ public final class FieldInfo {
     }
     assert !this.omitTermFreqAndPositions || !this.storePayloads;
   }
-  void setDocValues(Type v) {
+  void setDocValues(ValueType v) {
     if (docValues == null) {
       docValues = v;
     }
@@ -122,7 +122,7 @@ public final class FieldInfo {
     return docValues != null;
   }
 
-  public Type getDocValues() {
+  public ValueType getDocValues() {
     return docValues;
   }
   

@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -433,14 +433,14 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValues) {
+                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
     return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
                                storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValues) {
+      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
@@ -473,7 +473,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, Type docValuesType) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
     name = StringHelper.intern(name);
     if (globalFieldNumbers != null) {
@@ -680,7 +680,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       }
       hasVectors |= storeTermVector;
       hasProx |= isIndexed && !omitTermFreqAndPositions;
-      Type docValuesType = null;
+      ValueType docValuesType = null;
       if (format <= FORMAT_INDEX_VALUES) {
         final byte b = input.readByte();
         switch(b) {
@@ -688,31 +688,31 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           docValuesType = null;
           break;
         case 1:
-          docValuesType = Type.INTS;
+          docValuesType = ValueType.INTS;
           break;
         case 2:
-          docValuesType = Type.FLOAT_32;
+          docValuesType = ValueType.FLOAT_32;
           break;
         case 3:
-          docValuesType = Type.FLOAT_64;
+          docValuesType = ValueType.FLOAT_64;
           break;
         case 4:
-          docValuesType = Type.BYTES_FIXED_STRAIGHT;
+          docValuesType = ValueType.BYTES_FIXED_STRAIGHT;
           break;
         case 5:
-          docValuesType = Type.BYTES_FIXED_DEREF;
+          docValuesType = ValueType.BYTES_FIXED_DEREF;
           break;
         case 6:
-          docValuesType = Type.BYTES_FIXED_SORTED;
+          docValuesType = ValueType.BYTES_FIXED_SORTED;
           break;
         case 7:
-          docValuesType = Type.BYTES_VAR_STRAIGHT;
+          docValuesType = ValueType.BYTES_VAR_STRAIGHT;
           break;
         case 8:
-          docValuesType = Type.BYTES_VAR_DEREF;
+          docValuesType = ValueType.BYTES_VAR_DEREF;
           break;
         case 9:
-          docValuesType = Type.BYTES_VAR_SORTED;
+          docValuesType = ValueType.BYTES_VAR_SORTED;
           break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);

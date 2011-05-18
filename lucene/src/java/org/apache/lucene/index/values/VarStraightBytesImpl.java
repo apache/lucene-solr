@@ -154,8 +154,8 @@ class VarStraightBytesImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.BYTES_VAR_STRAIGHT;
+      public ValueType type() {
+        return ValueType.BYTES_VAR_STRAIGHT;
       }
 
       @Override
@@ -179,7 +179,7 @@ class VarStraightBytesImpl {
 
       protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
-        super(source, Type.BYTES_VAR_STRAIGHT);
+        super(source, ValueType.BYTES_VAR_STRAIGHT);
         totBytes = idxIn.readVLong();
         fp = datIn.getFilePointer();
         addresses = PackedInts.getReader(idxIn);
@@ -227,8 +227,8 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.BYTES_VAR_STRAIGHT;
+    public ValueType type() {
+      return ValueType.BYTES_VAR_STRAIGHT;
     }
   }
 }

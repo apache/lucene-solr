@@ -173,8 +173,8 @@ class FixedDerefBytesImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.BYTES_FIXED_DEREF;
+      public ValueType type() {
+        return ValueType.BYTES_FIXED_DEREF;
       }
 
       @Override
@@ -198,11 +198,11 @@ class FixedDerefBytesImpl {
 
       public DerefBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn, int size) throws IOException {
-        this(source, datIn, idxIn, size, Type.BYTES_FIXED_DEREF);
+        this(source, datIn, idxIn, size, ValueType.BYTES_FIXED_DEREF);
       }
 
       protected DerefBytesEnum(AttributeSource source, IndexInput datIn,
-          IndexInput idxIn, int size, Type enumType) throws IOException {
+          IndexInput idxIn, int size, ValueType enumType) throws IOException {
         super(source, enumType);
         this.datIn = datIn;
         this.size = size;
@@ -268,8 +268,8 @@ class FixedDerefBytesImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.BYTES_FIXED_DEREF;
+    public ValueType type() {
+      return ValueType.BYTES_FIXED_DEREF;
     }
   }
 

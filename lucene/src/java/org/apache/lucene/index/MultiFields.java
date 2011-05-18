@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.util.ReaderUtil;

@@ -219,8 +219,8 @@ class VarSortedBytesImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.BYTES_VAR_SORTED;
+      public ValueType type() {
+        return ValueType.BYTES_VAR_SORTED;
       }
 
       @Override
@@ -247,7 +247,7 @@ class VarSortedBytesImpl {
 
       protected VarSortedBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
-        super(source, Type.BYTES_VAR_SORTED);
+        super(source, ValueType.BYTES_VAR_SORTED);
         totBytes = idxIn.readLong();
         // keep that in memory to prevent lots of disk seeks
         docToOrdIndex = PackedInts.getReader(idxIn);
@@ -308,8 +308,8 @@ class VarSortedBytesImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.BYTES_VAR_SORTED;
+    public ValueType type() {
+      return ValueType.BYTES_VAR_SORTED;
     }
   }
 }

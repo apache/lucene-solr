@@ -28,7 +28,7 @@ import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -86,8 +86,8 @@ public class DefaultDocValuesProducer extends PerDocValues {
   
 
   /**
-   * Loads a {@link DocValues} instance depending on the given {@link Type}.
-   * Codecs that use different implementations for a certain {@link Type} can
+   * Loads a {@link DocValues} instance depending on the given {@link ValueType}.
+   * Codecs that use different implementations for a certain {@link ValueType} can
    * simply override this method and return their custom implementations.
    * 
    * @param docCount
@@ -102,10 +102,10 @@ public class DefaultDocValuesProducer extends PerDocValues {
    * @throws IOException
    *           if an {@link IOException} occurs
    * @throws IllegalArgumentException
-   *           if the given {@link Type} is not supported
+   *           if the given {@link ValueType} is not supported
    */
   protected DocValues loadDocValues(int docCount, Directory dir, String id,
-      Type type) throws IOException {
+      ValueType type) throws IOException {
     switch (type) {
     case INTS:
       return Ints.getValues(dir, id, false);

@@ -173,10 +173,10 @@ public abstract class Writer extends DocValuesConsumer {
   /**
    * Factory method to create a {@link Writer} instance for a given type. This
    * method returns default implementations for each of the different types
-   * defined in the {@link Type} enumeration.
+   * defined in the {@link ValueType} enumeration.
    * 
    * @param type
-   *          the {@link Type} to create the {@link Writer} for
+   *          the {@link ValueType} to create the {@link Writer} for
    * @param id
    *          the file name id used to create files within the writer.
    * @param directory
@@ -188,10 +188,10 @@ public abstract class Writer extends DocValuesConsumer {
    *          default.
    * @param bytesUsed
    *          a byte-usage tracking reference
-   * @return a new {@link Writer} instance for the given {@link Type}
+   * @return a new {@link Writer} instance for the given {@link ValueType}
    * @throws IOException
    */
-  public static Writer create(Type type, String id, Directory directory,
+  public static Writer create(ValueType type, String id, Directory directory,
       Comparator<BytesRef> comp, AtomicLong bytesUsed) throws IOException {
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();

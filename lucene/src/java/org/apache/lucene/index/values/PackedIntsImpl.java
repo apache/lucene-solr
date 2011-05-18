@@ -223,8 +223,8 @@ class PackedIntsImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.INTS;
+      public ValueType type() {
+        return ValueType.INTS;
       }
     }
 
@@ -240,8 +240,8 @@ class PackedIntsImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.INTS;
+    public ValueType type() {
+      return ValueType.INTS;
     }
 
   }
@@ -256,7 +256,7 @@ class PackedIntsImpl {
 
     private IntsEnumImpl(AttributeSource source, IndexInput dataIn)
         throws IOException {
-      super(source, Type.INTS);
+      super(source, ValueType.INTS);
       intsRef.offset = 0;
       this.dataIn = dataIn;
       dataIn.seek(CodecUtil.headerLength(CODEC_NAME));

@@ -218,8 +218,8 @@ class FixedSortedBytesImpl {
       }
 
       @Override
-      public Type type() {
-        return Type.BYTES_FIXED_SORTED;
+      public ValueType type() {
+        return ValueType.BYTES_FIXED_SORTED;
       }
 
       @Override
@@ -235,8 +235,8 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public Type type() {
-      return Type.BYTES_FIXED_SORTED;
+    public ValueType type() {
+      return ValueType.BYTES_FIXED_SORTED;
     }
   }
 }

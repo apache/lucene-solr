@@ -24,7 +24,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.values.PerDocFieldValues;
-import org.apache.lucene.index.values.Type;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -47,7 +47,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  *  for(all documents) {
  *    ...
- *    field.setIntValue(value)
+ *    field.setInt(value)
  *    writer.addDocument(document);
  *    ...
  *  }
@@ -66,7 +66,7 @@ import org.apache.lucene.util.BytesRef;
  *  field.set(indexedField);
  *  for(all documents) {
  *    ...
- *    field.setIntValue(value)
+ *    field.setInt(value)
  *    writer.addDocument(document);
  *    ...
  *  }
@@ -78,7 +78,7 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
   protected BytesRef bytes;
   protected double doubleValue;
   protected long longValue;
-  protected Type type;
+  protected ValueType type;
   protected Comparator<BytesRef> bytesComparator;
 
   /**
@@ -97,60 +97,60 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
   }
 
   /**
-   * Sets the given <code>long</code> value and sets the field's {@link Type} to
-   * {@link Type#INTS} unless already set. If you want to change the
-   * default type use {@link #setType(Type)}.
+   * Sets the given <code>long</code> value and sets the field's {@link ValueType} to
+   * {@link ValueType#INTS} unless already set. If you want to change the
+   * default type use {@link #setType(ValueType)}.
    */
   public void setInt(long value) {
     if (type == null) {
-      type = Type.INTS;
+      type = ValueType.INTS;
     }
     longValue = value;
   }
 
   /**
-   * Sets the given <code>float</code> value and sets the field's {@link Type}
-   * to {@link Type#FLOAT_32} unless already set. If you want to
-   * change the type use {@link #setType(Type)}.
+   * Sets the given <code>float</code> value and sets the field's {@link ValueType}
+   * to {@link ValueType#FLOAT_32} unless already set. If you want to
+   * change the type use {@link #setType(ValueType)}.
    */
   public void setFloat(float value) {
     if (type == null) {
-      type = Type.FLOAT_32;
+      type = ValueType.FLOAT_32;
     }
     doubleValue = value;
   }
 
   /**
-   * Sets the given <code>double</code> value and sets the field's {@link Type}
-   * to {@link Type#FLOAT_64} unless already set. If you want to
-   * change the default type use {@link #setType(Type)}.
+   * Sets the given <code>double</code> value and sets the field's {@link ValueType}
+   * to {@link ValueType#FLOAT_64} unless already set. If you want to
+   * change the default type use {@link #setType(ValueType)}.
    */
   public void setFloat(double value) {
     if (type == null) {
-      type = Type.FLOAT_64;
+      type = ValueType.FLOAT_64;
     }
     doubleValue = value;
   }
 
   /**
-   * Sets the given {@link BytesRef} value and the field's {@link Type}. The
+   * Sets the given {@link BytesRef} value and the field's {@link ValueType}. The
    * comparator for this field is set to <code>null</code>. If a
    * <code>null</code> comparator is set the default comparator for the given
-   * {@link Type} is used.
+   * {@link ValueType} is used.
    */
-  public void setBytes(BytesRef value, Type type) {
+  public void setBytes(BytesRef value, ValueType type) {
     setBytes(value, type, null);
   }
 
   /**
-   * Sets the given {@link BytesRef} value, the field's {@link Type} and the
+   * Sets the given {@link BytesRef} value, the field's {@link ValueType} and the
    * field's comparator. If the {@link Comparator} is set to <code>null</code>
-   * the default for the given {@link Type} is used instead.
+   * the default for the given {@link ValueType} is used instead.
    * 
    * @throws IllegalArgumentException
    *           if the value or the type are null
    */
-  public void setBytes(BytesRef value, Type type, Comparator<BytesRef> comp) {
+  public void setBytes(BytesRef value, ValueType type, Comparator<BytesRef> comp) {
     if (value == null) {
       throw new IllegalArgumentException("value must not be null");
     }
@@ -193,16 +193,16 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
 
   /**
    * Sets the {@link BytesRef} comparator for this field. If the field has a
-   * numeric {@link Type} the comparator will be ignored.
+   * numeric {@link ValueType} the comparator will be ignored.
    */
   public void setBytesComparator(Comparator<BytesRef> comp) {
     this.bytesComparator = comp;
   }
 
   /**
-   * Sets the {@link Type} for this field.
+   * Sets the {@link ValueType} for this field.
    */
-  public void setType(Type type) {
+  public void setType(ValueType type) {
     if (type == null) {
       throw new IllegalArgumentException("Type must not be null");
     }
@@ -210,9 +210,9 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
   }
 
   /**
-   * Returns the field's {@link Type}
+   * Returns the field's {@link ValueType}
    */
-  public Type type() {
+  public ValueType type() {
     return type;
   }
 
@@ -252,7 +252,7 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
    * given type and returns it.
    * 
    */
-  public static <T extends AbstractField> T set(T field, Type type) {
+  public static <T extends AbstractField> T set(T field, ValueType type) {
     if (field instanceof DocValuesField)
       return field;
     final DocValuesField valField = new DocValuesField();
