@@ -42,7 +42,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p><b>NOTE</b>: this class caches at least 128 documents
  * before checking RAM limits.
  * 
- * <p>See {@link org.apache.lucene.search.grouping} for more
+ * <p>See the Lucene <tt>modules/grouping</tt> module for more
  * details including a full code example.</p>
  *
  * @lucene.experimental

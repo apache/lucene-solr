@@ -35,9 +35,9 @@ import java.util.List;
  * the most relevant document of a group.
  *
  * <p/>
- * Internally, {@link SentinelIntSet} is used to detect
- * if a group is already added to the total count.  For each
- * segment the {@link SentinelIntSet} is cleared and filled
+ * Implementation detail: an int hash set (SentinelIntSet)
+ * is used to detect if a group is already added to the
+ * total count.  For each segment the int set is cleared and filled
  * with previous counted groups that occur in the new
  * segment.
  *
@@ -58,9 +58,11 @@ public class AllGroupsCollector extends Collector {
    * Expert: Constructs a {@link AllGroupsCollector}
    *
    * @param groupField  The field to group by
-   * @param initialSize The initial size of the {@link SentinelIntSet} and groups list. The initial size should
-   *                    roughly match the total number of expected unique groups. Be aware that the heap usage
-   *                    is 4 bytes * initialSize.
+   * @param initialSize The initial allocation size of the
+   * internal int set and group list
+   * which should roughly match the total
+   * number of expected unique groups. Be aware that the
+   * heap usage is 4 bytes * initialSize.
    */
   public AllGroupsCollector(String groupField, int initialSize) {
     this.groupField = groupField;
@@ -69,8 +71,9 @@ public class AllGroupsCollector extends Collector {
   }
 
   /**
-   * Constructs a {@link AllGroupsCollector}. This sets the initialSize for the {@link SentinelIntSet} and group list
-   * to 128 in the {@link #AllGroupsCollector(String, int)} constructor.
+   * Constructs a {@link AllGroupsCollector}. This sets the
+   * initial allocation size for the internal int set and group
+   * list to 128.
    *
    * @param groupField The field to group by
    */
