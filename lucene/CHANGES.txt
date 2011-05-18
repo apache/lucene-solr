@@ -102,6 +102,9 @@ Bug fixes
 
 * LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
   query terms had same position in the query. (Doron Cohen)
+
+* LUCENE-3012: Lucene writes the header now for separate norm files (*.sNNN)
+  (Robert Muir)
   
 Test Cases
 
