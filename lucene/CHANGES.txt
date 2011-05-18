@@ -94,6 +94,9 @@ Bug fixes
   PhraseQuery as term with lower doc freq will also have less positions.
   (Uwe Schindler, Robert Muir, Otis Gospodnetic)
 
+* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
+  query terms had same position in the query. (Doron Cohen)
+  
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
