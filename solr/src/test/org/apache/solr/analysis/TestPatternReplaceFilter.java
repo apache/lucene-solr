@@ -17,8 +17,8 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 import java.io.StringReader;
 import java.util.regex.Pattern;
@@ -31,7 +31,7 @@ public class TestPatternReplaceFilter extends BaseTokenTestCase {
   public void testReplaceAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)),
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
                     Pattern.compile("a*b"),
                     "-", true);
     assertTokenStreamContents(ts, 
@@ -41,7 +41,7 @@ public class TestPatternReplaceFilter extends BaseTokenTestCase {
   public void testReplaceFirst() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)),
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
                     Pattern.compile("a*b"),
                     "-", false);
     assertTokenStreamContents(ts, 
@@ -51,7 +51,7 @@ public class TestPatternReplaceFilter extends BaseTokenTestCase {
   public void testStripFirst() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)),
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
                     Pattern.compile("a*b"),
                     null, false);
     assertTokenStreamContents(ts,
@@ -61,7 +61,7 @@ public class TestPatternReplaceFilter extends BaseTokenTestCase {
   public void testStripAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)),
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
                     Pattern.compile("a*b"),
                     null, true);
     assertTokenStreamContents(ts,
@@ -71,7 +71,7 @@ public class TestPatternReplaceFilter extends BaseTokenTestCase {
   public void testReplaceAllWithBackRef() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
     TokenStream ts = new PatternReplaceFilter
-            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)),
+            (new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
                     Pattern.compile("(a*)b"),
                     "$1\\$", true);
     assertTokenStreamContents(ts,

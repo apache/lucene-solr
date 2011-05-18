@@ -152,8 +152,6 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
      */
     protected boolean reset(final Reader reader) throws IOException {
       source.reset(reader);
-      if(sink != source)
-        sink.reset(); // only reset if the sink reference is different from source
       return true;
     }
 

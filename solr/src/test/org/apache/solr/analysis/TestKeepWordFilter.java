@@ -23,8 +23,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -53,9 +54,14 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
     assertTrue(factory.isEnablePositionIncrements());
-    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
+    TokenStream stream = factory.create(new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
-    
+       
+    // Now force case
+    stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    stream = new KeepWordFilter(true, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
+
     // Test Stopwords (ignoreCase via the setter instead)
     factory = new KeepWordFilterFactory();
     args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
@@ -65,7 +71,7 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
     assertFalse(factory.isEnablePositionIncrements());
-    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
+    stream = factory.create(new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 1, 1 });
     
     // Now force case and posIncr
@@ -78,7 +84,12 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.setWords( words );    
     assertFalse(factory.isIgnoreCase());
     assertTrue(factory.isEnablePositionIncrements());
-    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
+    stream = factory.create(new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false));
     assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
+       
+    // Now force case
+    stream = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    stream = new KeepWordFilter(false, stream, new CharArraySet(TEST_VERSION_CURRENT,words, false));
+    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 1 });
   }
 }

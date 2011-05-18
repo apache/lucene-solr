@@ -191,14 +191,18 @@ public final class SynonymFilter extends TokenFilter {
   private LinkedList<AttributeSource> buffer;
   private LinkedList<AttributeSource> matched;
 
+  private boolean exhausted;
+
   private AttributeSource nextTok() throws IOException {
     if (buffer!=null && !buffer.isEmpty()) {
       return buffer.removeFirst();
     } else {
-      if (input.incrementToken()) {
+      if (!exhausted && input.incrementToken()) {
         return this;
-      } else
+      } else {
+        exhausted = true;
         return null;
+      }
     }
   }
 
@@ -251,5 +255,6 @@ public final class SynonymFilter extends TokenFilter {
   public void reset() throws IOException {
     input.reset();
     replacement = null;
+    exhausted = false;
   }
 }

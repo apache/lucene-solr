@@ -19,8 +19,8 @@ package org.apache.solr.analysis;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 /**
  * HyphenatedWordsFilter test
@@ -29,7 +29,7 @@ public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenatedWords() throws Exception {
 		String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
 		// first test
-		TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
+    TokenStream ts = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
 		HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
 		ts = factory.create(ts);
 		assertTokenStreamContents(ts, 
@@ -42,7 +42,7 @@ public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenAtEnd() throws Exception {
 	    String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecology-";
 	    // first test
-	    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
+      TokenStream ts = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
 	    HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
 	    ts = factory.create(ts);
 	    assertTokenStreamContents(ts, 

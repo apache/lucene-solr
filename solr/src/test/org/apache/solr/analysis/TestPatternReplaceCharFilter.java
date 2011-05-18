@@ -25,8 +25,8 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 /**
  * 
@@ -47,7 +47,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "this", "is", "test." },
         new int[] { 0, 5, 8 },
@@ -64,8 +64,8 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
-    assertFalse(ts.incrementToken());
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    assertTokenStreamContents(ts, new String[] {});
   }
   
   // 012345678
@@ -80,7 +80,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     factory.init(args);
     CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb#cc" },
         new int[] { 0 },
@@ -95,7 +95,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     final String BLOCK = "aa bb cc dd";
     CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1##$2###$3",
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa##bb###cc", "dd" },
         new int[] { 0, 9 },
@@ -109,7 +109,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     final String BLOCK = " a  a";
     CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa",
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa", "aa" },
         new int[] { 1, 4 },
@@ -124,7 +124,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     final String BLOCK = "aa  bb   cc dd";
     CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1#$2",
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa#bb", "dd" },
         new int[] { 0, 12 },
@@ -139,7 +139,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     final String BLOCK = "  aa bb cc --- aa bb aa   bb   cc";
     CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1  $2  $3",
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa", "bb", "cc", "---", "aa", "bb", "aa", "bb", "cc" },
         new int[] { 2, 6, 9, 11, 15, 18, 21, 25, 29 },
@@ -154,7 +154,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     final String BLOCK = "  aa bb cc --- aa bb aa. bb aa   bb cc";
     CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2", ".",
           CharReader.get( new StringReader( BLOCK ) ) );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa##bb", "cc", "---", "aa##bb", "aa.", "bb", "aa##bb", "cc" },
         new int[] { 2, 8, 11, 15, 21, 25, 28, 36 },
@@ -171,7 +171,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
         CharReader.get( new StringReader( BLOCK ) ) );
     cs = new PatternReplaceCharFilter( pattern("bb"), "b", ".", cs );
     cs = new PatternReplaceCharFilter( pattern("ccc"), "c", ".", cs );
-    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, cs );
+    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
     assertTokenStreamContents(ts,
         new String[] { "aa", "b", "-", "c", ".", "---", "b", "aa", ".", "c", "c", "b" },
         new int[] { 1, 3, 6, 8, 12, 14, 18, 21, 23, 25, 29, 33 },

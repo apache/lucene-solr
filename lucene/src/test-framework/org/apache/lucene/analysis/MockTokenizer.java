@@ -91,7 +91,7 @@ public class MockTokenizer extends Tokenizer {
           endOffset = off;
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
-        offsetAtt.setOffset(startOffset, endOffset);
+        offsetAtt.setOffset(correctOffset(startOffset), correctOffset(endOffset));
         streamState = State.INCREMENT;
         return true;
       }

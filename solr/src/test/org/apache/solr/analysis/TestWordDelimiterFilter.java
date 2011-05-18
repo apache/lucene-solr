@@ -19,8 +19,8 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
@@ -338,8 +338,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
 
   public void doSplit(final String input, String... output) throws Exception {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new KeywordTokenizer(
-        new StringReader(input)), 1, 1, 0, 0, 0);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
+                new StringReader(input), MockTokenizer.KEYWORD, false), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 0, 1, 0, 1, 1, null);
     
     assertTokenStreamContents(wdf, output);
   }
@@ -380,8 +380,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   }
   
   public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new KeywordTokenizer(
-        new StringReader(input)), 1,1,0,0,0,1,0,1,stemPossessive, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
+        new StringReader(input), MockTokenizer.KEYWORD, false), 1,1,0,0,0,1,0,1,stemPossessive, null);
 
     assertTokenStreamContents(wdf, output);
   }
@@ -427,7 +427,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
       @Override
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader),
+            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };
@@ -455,7 +455,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader)),
+            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };
@@ -486,8 +486,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
     Analyzer a3 = new Analyzer() {
       @Override
       public TokenStream tokenStream(String field, Reader reader) {
-        StopFilter filter = new StopFilter(DEFAULT_VERSION,
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader), StandardAnalyzer.STOP_WORDS_SET);
+        StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
+            new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), StandardAnalyzer.STOP_WORDS_SET);
         filter.setEnablePositionIncrements(true);
         return new WordDelimiterFilter(filter, 
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);

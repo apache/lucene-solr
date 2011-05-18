@@ -23,15 +23,15 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
+import org.apache.lucene.analysis.MockTokenizer;
 
 public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.US));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)));
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);
     int count = 0;
     

@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.io.StringReader;
 import java.util.List;
@@ -27,14 +28,14 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
   // testLain1Accents() is a copy of TestLatin1AccentFilter.testU().
   public void testLatin1Accents() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader
+    TokenStream stream = new MockTokenizer(new StringReader
       ("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ"
       +" Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ"
-      +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
+      +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"), MockTokenizer.WHITESPACE, false);
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
 
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
-
+    filter.reset();
     assertTermEquals("Des", filter, termAtt);
     assertTermEquals("mot", filter, termAtt);
     assertTermEquals("cles", filter, termAtt);
@@ -1888,10 +1889,11 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       expectedOutputTokens.add(expected.toString());
     }
 
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(inputText.toString()));
+    TokenStream stream = new MockTokenizer(new StringReader(inputText.toString()), MockTokenizer.WHITESPACE, false);
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     Iterator<String> expectedIter = expectedOutputTokens.iterator();
+    filter.reset();
     while (expectedIter.hasNext()) {
       assertTermEquals(expectedIter.next(), filter, termAtt);
     }
