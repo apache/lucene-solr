@@ -26,7 +26,6 @@ public class RAMFile {
   RAMDirectory directory;
   protected long sizeInBytes;
 
-  // This is publicly modifiable via Directory.touchFile(), so direct access not supported
   private long lastModified = System.currentTimeMillis();
 
   // File used as buffer, in no RAMDirectory

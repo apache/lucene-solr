@@ -345,12 +345,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.deleteFile(name);
       }
       @Override
-      public void touchFile(String name)
-        throws IOException
-      {
-        dir.touchFile(name);
-      }
-      @Override
       public long fileModified(String name)
         throws IOException
       {

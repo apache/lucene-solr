@@ -530,6 +530,9 @@ API Changes
   ClassCastException when loading lazy fields or NumericFields.
   (Uwe Schindler, Ryan McKinley, Mike McCandless)
 
+* LUCENE-2027: Directory.touchFile is deprecated and will be removed
+  in 4.0.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2990: ArrayUtil/CollectionUtil.*Sort() methods now exit early

@@ -27,8 +27,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.util.ThreadInterruptedException;
-
 /**
  * A memory-resident {@link Directory} implementation.  Locking
  * implementation is by default the {@link SingleInstanceLockFactory}
@@ -110,30 +108,6 @@ public class RAMDirectory extends Directory {
       throw new FileNotFoundException(name);
     }
     return file.getLastModified();
-  }
-
-  /** Set the modified time of an existing file to now.
-   * @throws IOException if the file does not exist
-   */
-  @Override
-  public void touchFile(String name) throws IOException {
-    ensureOpen();
-    RAMFile file = fileMap.get(name);
-    if (file == null) {
-      throw new FileNotFoundException(name);
-    }
-    
-    long ts2, ts1 = System.currentTimeMillis();
-    do {
-      try {
-        Thread.sleep(0, 1);
-      } catch (InterruptedException ie) {
-        throw new ThreadInterruptedException(ie);
-      }
-      ts2 = System.currentTimeMillis();
-    } while(ts1 == ts2);
-    
-    file.setLastModified(ts2);
   }
 
   /** Returns the length in bytes of a file in the directory.
