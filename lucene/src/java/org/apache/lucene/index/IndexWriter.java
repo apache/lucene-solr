@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -274,7 +275,7 @@ public class IndexWriter implements Closeable {
   private volatile long changeCount; // increments every time a change is completed
   private long lastCommitChangeCount; // last changeCount that was committed
 
-  private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
+  private List<SegmentInfo> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
@@ -504,14 +505,14 @@ public class IndexWriter implements Closeable {
     public synchronized boolean infoIsLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
       assert idx != -1: "info=" + info + " isn't in pool";
-      assert segmentInfos.get(idx) == info: "info=" + info + " doesn't match live info in segmentInfos";
+      assert segmentInfos.info(idx) == info: "info=" + info + " doesn't match live info in segmentInfos";
       return true;
     }
 
     public synchronized SegmentInfo mapToLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
       if (idx != -1) {
-        info = segmentInfos.get(idx);
+        info = segmentInfos.info(idx);
       }
       return info;
     }
@@ -1158,7 +1159,7 @@ public class IndexWriter implements Closeable {
         }
       }
 
-      setRollbackSegmentInfos(segmentInfos);
+      rollbackSegments = segmentInfos.createBackupSegmentInfos(true);
 
       docWriter = new DocumentsWriter(config, directory, this, getCurrentFieldInfos(), bufferedDeletesStream);
       docWriter.setInfoStream(infoStream);
@@ -1239,10 +1240,6 @@ public class IndexWriter implements Closeable {
       fieldInfos = new FieldInfos();
     }
     return fieldInfos;
-  }
-
-  private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
-    rollbackSegmentInfos = (SegmentInfos) infos.clone();
   }
 
   /**
@@ -1925,8 +1922,7 @@ public class IndexWriter implements Closeable {
     else
       count = 0;
 
-    for (int i = 0; i < segmentInfos.size(); i++)
-      count += segmentInfos.info(i).docCount;
+    count += segmentInfos.totalDocCount();
     return count;
   }
 
@@ -1943,8 +1939,7 @@ public class IndexWriter implements Closeable {
     else
       count = 0;
 
-    for (int i = 0; i < segmentInfos.size(); i++) {
-      final SegmentInfo info = segmentInfos.info(i);
+    for (final SegmentInfo info : segmentInfos) {
       count += info.docCount - numDeletedDocs(info);
     }
     return count;
@@ -1958,9 +1953,11 @@ public class IndexWriter implements Closeable {
     if (docWriter.anyDeletions()) {
       return true;
     }
-    for (int i = 0; i < segmentInfos.size(); i++)
-      if (segmentInfos.info(i).hasDeletions())
+    for (final SegmentInfo info : segmentInfos) {
+      if (info.hasDeletions()) {
         return true;
+      }
+    }
     return false;
   }
 
@@ -2391,7 +2388,8 @@ public class IndexWriter implements Closeable {
 
     synchronized(this) {
       resetMergeExceptions();
-      segmentsToOptimize = new HashSet<SegmentInfo>(segmentInfos);
+      segmentsToOptimize.clear();
+      segmentsToOptimize.addAll(segmentInfos.asSet());
       optimizeMaxNumSegments = maxNumSegments;
       
       // Now mark all pending & running merges as optimize
@@ -2615,7 +2613,7 @@ public class IndexWriter implements Closeable {
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, segmentsToOptimize);
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableSet(segmentsToOptimize));
 
       if (spec != null) {
         final int numMerges = spec.merges.size();
@@ -2726,8 +2724,7 @@ public class IndexWriter implements Closeable {
         // attempt to commit using this instance of IndexWriter
         // will always write to a new generation ("write
         // once").
-        segmentInfos.clear();
-        segmentInfos.addAll(rollbackSegmentInfos);
+        segmentInfos.rollbackSegmentInfos(rollbackSegments);
 
         docWriter.abort();
 
@@ -3289,7 +3286,7 @@ public class IndexWriter implements Closeable {
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
         segmentInfos.setUserData(pendingCommit.getUserData());
-        setRollbackSegmentInfos(pendingCommit);
+        rollbackSegments = pendingCommit.createBackupSegmentInfos(true);
         deleter.checkpoint(pendingCommit, true);
       } finally {
         // Matches the incRef done in startCommit:
@@ -3393,8 +3390,10 @@ public class IndexWriter implements Closeable {
         if (infoStream != null) {
           message("apply all deletes during flush");
         }
+        
         flushDeletesCount.incrementAndGet();
-        final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos);
+        final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream
+          .applyDeletes(readerPool, segmentInfos.asList());
         if (result.anyDeletes) {
           checkpoint();
         }
@@ -3402,7 +3401,7 @@ public class IndexWriter implements Closeable {
           if (infoStream != null) {
             message("drop 100% deleted segments: " + result.allDeleted);
           }
-          for(SegmentInfo info : result.allDeleted) {
+          for (SegmentInfo info : result.allDeleted) {
             // If a merge has already registered for this
             // segment, we leave it in the readerPool; the
             // merge will skip merging it and will then drop
@@ -3417,6 +3416,7 @@ public class IndexWriter implements Closeable {
           checkpoint();
         }
         bufferedDeletesStream.prune(segmentInfos);
+
         assert !bufferedDeletesStream.any();
         flushControl.clearDeletes();
       } else if (infoStream != null) {
@@ -3458,7 +3458,7 @@ public class IndexWriter implements Closeable {
 
   private void ensureValidMerge(MergePolicy.OneMerge merge) throws IOException {
     for(SegmentInfo info : merge.segments) {
-      if (segmentInfos.indexOf(info) == -1) {
+      if (!segmentInfos.contains(info)) {
         throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the current index " + segString(), directory);
       }
     }
@@ -3594,39 +3594,13 @@ public class IndexWriter implements Closeable {
       message("merged segment " + merge.info + " is 100% deleted" +  (keepFullyDeletedSegments ? "" : "; skipping insert"));
     }
 
-    final Set mergedAway = new HashSet<SegmentInfo>(merge.segments);
-    int segIdx = 0;
-    int newSegIdx = 0;
-    boolean inserted = false;
-    final int curSegCount = segmentInfos.size();
-    while(segIdx < curSegCount) {
-      final SegmentInfo info = segmentInfos.info(segIdx++);
-      if (mergedAway.contains(info)) {
-        if (!inserted && (!allDeleted || keepFullyDeletedSegments)) {
-          segmentInfos.set(segIdx-1, merge.info);
-          inserted = true;
-          newSegIdx++;
-        }
-      } else {
-        segmentInfos.set(newSegIdx++, info);
-      }
+    final boolean dropSegment = allDeleted && !keepFullyDeletedSegments;
+    segmentInfos.applyMergeChanges(merge, dropSegment);
+    
+    if (dropSegment) {
+      readerPool.drop(merge.info);
     }
-
-    // Either we found place to insert segment, or, we did
-    // not, but only because all segments we merged became
-    // deleted while we are merging, in which case it should
-    // be the case that the new segment is also all deleted:
-    if (!inserted) {
-      assert allDeleted;
-      if (keepFullyDeletedSegments) {
-        segmentInfos.add(0, merge.info);
-      } else {
-        readerPool.drop(merge.info);
-      }
-    }
-
-    segmentInfos.subList(newSegIdx, segmentInfos.size()).clear();
-
+    
     if (infoStream != null) {
       message("after commit: " + segString());
     }
@@ -3761,7 +3735,7 @@ public class IndexWriter implements Closeable {
       if (mergingSegments.contains(info)) {
         return false;
       }
-      if (segmentInfos.indexOf(info) == -1) {
+      if (!segmentInfos.contains(info)) {
         return false;
       }
       if (info.dir != directory) {
@@ -4213,7 +4187,7 @@ public class IndexWriter implements Closeable {
   }
 
   // utility routines for tests
-  SegmentInfo newestSegment() {
+  synchronized SegmentInfo newestSegment() {
     return segmentInfos.size() > 0 ? segmentInfos.info(segmentInfos.size()-1) : null;
   }
 
@@ -4223,14 +4197,13 @@ public class IndexWriter implements Closeable {
   }
 
   /** @lucene.internal */
-  public synchronized String segString(List<SegmentInfo> infos) throws IOException {
-    StringBuilder buffer = new StringBuilder();
-    final int count = infos.size();
-    for(int i = 0; i < count; i++) {
-      if (i > 0) {
+  public synchronized String segString(Iterable<SegmentInfo> infos) throws IOException {
+    final StringBuilder buffer = new StringBuilder();
+    for(final SegmentInfo s : infos) {
+      if (buffer.length() > 0) {
         buffer.append(' ');
       }
-      buffer.append(segString(infos.get(i)));
+      buffer.append(segString(s));
     }
     return buffer.toString();
   }

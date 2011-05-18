@@ -38,7 +38,7 @@ import java.util.Set;
  * 
  * @lucene.experimental
  */
-public final class SegmentInfo {
+public final class SegmentInfo implements Cloneable {
 
   static final int NO = -1;          // e.g. no norms; no deletes;
   static final int YES = 1;          // e.g. have norms; have deletes;

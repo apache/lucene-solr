@@ -84,7 +84,8 @@ public abstract class MergePolicy implements java.io.Closeable {
     public OneMerge(List<SegmentInfo> segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
-      this.segments = segments;
+      // clone the list, as the in list may be based off original SegmentInfos and may be modified
+      this.segments = new ArrayList<SegmentInfo>(segments);
       int count = 0;
       for(SegmentInfo info : segments) {
         count += info.docCount;
