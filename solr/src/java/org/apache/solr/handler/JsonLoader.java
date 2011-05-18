@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * @since solr 4.0
+ * @since solr 3.1
  */
 class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
@@ -153,6 +153,7 @@ class JsonLoader extends ContentStreamLoader {
     assertNextEvent( JSONParser.OBJECT_START );
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand();
+    cmd.fromCommitted = cmd.fromPending = true;
 
     while( true ) {
       int ev = parser.nextEvent();

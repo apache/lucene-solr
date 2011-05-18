@@ -123,10 +123,12 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     DeleteUpdateCommand delete = p.deleteCommands.get( 0 );
     assertEquals( delete.id, "ID" );
     assertEquals( delete.query, null );
-    
+    assertTrue(delete.fromPending && delete.fromCommitted);
+
     delete = p.deleteCommands.get( 1 );
     assertEquals( delete.id, null );
     assertEquals( delete.query, "QUERY" );
+    assertTrue(delete.fromPending && delete.fromCommitted);
 
     // ROLLBACK COMMANDS
     assertEquals( 1, p.rollbackCommands.size() );
