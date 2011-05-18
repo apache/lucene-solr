@@ -564,6 +564,9 @@ Bug fixes
   PhraseQuery as term with lower doc freq will also have less positions.
   (Uwe Schindler, Robert Muir, Otis Gospodnetic)
 
+* LUCENE-3012: Lucene writes the header now for separate norm files (*.sNNN)
+  (Robert Muir)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 

@@ -38,6 +38,7 @@ import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * @lucene.experimental
@@ -441,6 +442,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       boolean success = false;
       try {
         try {
+          out.writeBytes(SegmentMerger.NORMS_HEADER, 0, SegmentMerger.NORMS_HEADER.length);
           out.writeBytes(bytes, maxDoc());
         } finally {
           out.close();
@@ -986,8 +988,20 @@ public class SegmentReader extends IndexReader implements Cloneable {
           // If this were to change in the future, a clone could be done here.
           normInput = singleNormStream;
         } else {
-          normSeek = 0;
           normInput = d.openInput(fileName);
+          // if the segment was created in 3.2 or after, we wrote the header for sure,
+          // and don't need to do the sketchy file size check. otherwise, we check 
+          // if the size is exactly equal to maxDoc to detect a headerless file.
+          // NOTE: remove this check in Lucene 5.0!
+          String version = si.getVersion();
+          final boolean isUnversioned = 
+            (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
+            && normInput.length() == maxDoc();
+          if (isUnversioned) {
+            normSeek = 0;
+          } else {
+            normSeek = SegmentMerger.NORMS_HEADER.length;
+          }
         }
 
         norms.put(fi.name, new Norm(normInput, fi.number, normSeek));
