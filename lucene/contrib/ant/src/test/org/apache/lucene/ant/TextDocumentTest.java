@@ -17,8 +17,6 @@ package org.apache.lucene.ant;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.ant.DocumentTestCase;
 import org.apache.lucene.ant.TextDocument;
 
@@ -27,7 +25,8 @@ public class TextDocumentTest extends DocumentTestCase
     TextDocument doc;
     
     @Override
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
+        super.setUp();
         doc = new TextDocument(getFile("test.txt"));
     }
     
@@ -36,8 +35,9 @@ public class TextDocumentTest extends DocumentTestCase
     }
     
     @Override
-    public void tearDown() {
+    public void tearDown() throws Exception {
         doc = null;
+        super.tearDown();
     }
 }
 

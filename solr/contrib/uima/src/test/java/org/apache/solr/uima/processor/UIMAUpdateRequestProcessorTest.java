@@ -93,7 +93,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void testProcessing() throws Exception {
 
-    addDoc(adoc(
+    addDoc("uima", adoc(
             "id",
             "2312312321312",
             "text",
@@ -111,13 +111,13 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void testTwoUpdates() throws Exception {
 
-    addDoc(adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
+    addDoc("uima", adoc("id", "1", "text", "The Apache Software Foundation is happy to announce "
             + "BarCampApache Sydney, Australia, the first ASF-backed event in the Southern "
             + "Hemisphere!"));
     assertU(commit());
     assertQ(req("sentence:*"), "//*[@numFound='1']");
 
-    addDoc(adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
+    addDoc("uima", adoc("id", "2", "text", "Taking place 11th December 2010 at the University "
             + "of Sydney's Darlington Centre, the BarCampApache \"unconference\" will be"
             + " attendee-driven, facilitated by members of the Apache community and will "
             + "focus on the Apache..."));
@@ -128,9 +128,41 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     assertQ(req("ORGANIZATION_sm:Apache"), "//*[@numFound='2']");
   }
 
-  private void addDoc(String doc) throws Exception {
+  @Test
+  public void testErrorHandling() throws Exception {
+
+    try{
+      addDoc("uima-not-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes. \n  "
+                    + "Add support for specifying Spelling SuggestWord Comparator to Lucene spell "
+                    + "checkers for SpellCheckComponent. Issue SOLR-2053 is already fixed, patch is"
+                    + " attached if you need it, but it is also committed to trunk and 3_x branch."
+                    + " Last Lucene European Conference has been held in Prague."));
+      fail("exception shouldn't be ignored");
+    }
+    catch(RuntimeException expected){}
+    assertU(commit());
+    assertQ(req("*:*"), "//*[@numFound='0']");
+
+    addDoc("uima-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes. \n  "
+                    + "Add support for specifying Spelling SuggestWord Comparator to Lucene spell "
+                    + "checkers for SpellCheckComponent. Issue SOLR-2053 is already fixed, patch is"
+                    + " attached if you need it, but it is also committed to trunk and 3_x branch."
+                    + " Last Lucene European Conference has been held in Prague."));
+    assertU(commit());
+    assertQ(req("*:*"), "//*[@numFound='1']");
+  }
+
+  private void addDoc(String chain, String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
-    params.put(UpdateParams.UPDATE_CHAIN, new String[] { "uima" });
+    params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {
     };

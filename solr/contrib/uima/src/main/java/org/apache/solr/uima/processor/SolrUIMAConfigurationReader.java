@@ -40,7 +40,8 @@ public class SolrUIMAConfigurationReader {
 
   public SolrUIMAConfiguration readSolrUIMAConfiguration() {
     return new SolrUIMAConfiguration(readAEPath(), readFieldsToAnalyze(), readFieldsMerging(),
-            readTypesFeaturesFieldsMapping(), readAEOverridingParameters());
+            readTypesFeaturesFieldsMapping(), readAEOverridingParameters(), readIgnoreErrors(),
+            readLogField());
   }
 
   private String readAEPath() {
@@ -105,4 +106,12 @@ public class SolrUIMAConfigurationReader {
     return runtimeParameters;
   }
 
+  private boolean readIgnoreErrors() {
+    Object ignoreErrors = args.get("ignoreErrors");
+    return ignoreErrors == null ? false : (Boolean)ignoreErrors;
+  }
+
+  private String readLogField() {
+    return (String)args.get("logField");
+  }
 }

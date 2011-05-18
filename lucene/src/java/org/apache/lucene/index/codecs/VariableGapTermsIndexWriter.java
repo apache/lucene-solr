@@ -200,6 +200,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   private class FSTFieldWriter extends FieldWriter {
     private final Builder<Long> fstBuilder;
     private final PositiveIntOutputs fstOutputs;
+    private final long startTermsFilePointer;
 
     final FieldInfo fieldInfo;
     int numIndexTerms;
@@ -220,6 +221,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
       // Always put empty string in
       fstBuilder.add(new BytesRef(), fstOutputs.get(termsFilePointer));
+      startTermsFilePointer = termsFilePointer;
     }
 
     @Override
@@ -239,6 +241,11 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
     @Override
     public void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException {
+      if (text.length == 0) {
+        // We already added empty string in ctor
+        assert termsFilePointer == startTermsFilePointer;
+        return;
+      }
       final int lengthSave = text.length;
       text.length = indexedTermPrefixLength(lastTerm, text);
       try {

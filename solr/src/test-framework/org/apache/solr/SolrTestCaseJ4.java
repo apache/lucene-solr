@@ -36,8 +36,12 @@ import org.apache.solr.handler.JsonUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
@@ -374,15 +378,29 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
   }
 
-  /** Validates a query matches some JSON test expressions and closes the query.
-   * The text expression is of the form path:JSON.  To facilitate easy embedding
-   * in Java strings, the JSON can have double quotes replaced with single quotes.
-   *
-   * Please use this with care: this makes it easy to match complete structures, but doing so
-   * can result in fragile tests if you are matching more than what you want to test.
-   *
-   **/
+  /** 
+   * Validates a query matches some JSON test expressions using the default double delta tollerance.
+   * @see JSONTestUtil#DEFAULT_DELTA
+   * @see #assertJQ(SolrQueryRequest,double,String...)
+   */
   public static void assertJQ(SolrQueryRequest req, String... tests) throws Exception {
+    assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
+  }
+  /** 
+   * Validates a query matches some JSON test expressions and closes the 
+   * query. The text expression is of the form path:JSON.  To facilitate 
+   * easy embedding in Java strings, the JSON can have double quotes 
+   * replaced with single quotes.
+   * <p>
+   * Please use this with care: this makes it easy to match complete 
+   * structures, but doing so can result in fragile tests if you are 
+   * matching more than what you want to test.
+   * </p>
+   * @param req Solr request to execute
+   * @param delta tollerance allowed in comparing float/double values
+   * @param tests JSON path expression + '==' + expected value
+   */
+  public static void assertJQ(SolrQueryRequest req, double delta, String... tests) throws Exception {
     SolrParams params =  null;
     try {
       params = req.getParams();
@@ -409,7 +427,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
         try {
           failed = true;
-          String err = JSONTestUtil.match(response, testJSON);
+          String err = JSONTestUtil.match(response, testJSON, delta);
           failed = false;
           if (err != null) {
             log.error("query failed JSON validation. error=" + err +

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -215,8 +215,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
     set.add("строеве");
-    WhitespaceTokenizer tokenStream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
-        new StringReader("строевете строеве"));
+    MockTokenizer tokenStream = new MockTokenizer(new StringReader("строевете строеве"), MockTokenizer.WHITESPACE, false);
 
     BulgarianStemFilter filter = new BulgarianStemFilter(
         new KeywordMarkerFilter(tokenStream, set));

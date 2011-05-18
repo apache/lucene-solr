@@ -17,6 +17,11 @@ package org.apache.solr.handler.clustering.carrot2;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -37,15 +42,11 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.google.common.collect.ImmutableList;
 
 /**
  *
  */
-@SuppressWarnings("unchecked")
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {
@@ -74,7 +75,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   @Test
   public void testWithoutSubclusters() throws Exception {
-    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs),
+    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs),
             1, 1, 0);
   }
 
@@ -82,7 +83,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   public void testWithSubclusters() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, true);
-    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs), 1, 1, 2);
+    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs), 1, 1, 2);
   }
 
   @Test
@@ -90,8 +91,35 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "labels"), 5);
     params.set(CarrotParams.NUM_DESCRIPTIONS, 3);
-    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs,
+    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs,
             params), 1, 3, 0);
+  }
+
+  @Test
+  public void testClusterScores() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "depth"), 1);
+    List<NamedList<Object>> clusters = checkEngine(getClusteringEngine("mock"),
+        AbstractClusteringTestCase.numberOfDocs, params);
+    int i = 1;
+    for (NamedList<Object> cluster : clusters) {
+      final Double score = getScore(cluster);
+      assertNotNull(score);
+      assertEquals(0.25 * i++, score, 0);
+    }
+  }
+
+  @Test
+  public void testOtherTopics() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "depth"), 1);
+    params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "otherTopicsModulo"), 2);
+    List<NamedList<Object>> clusters = checkEngine(getClusteringEngine("mock"),
+        AbstractClusteringTestCase.numberOfDocs, params);
+    int i = 1;
+    for (NamedList<Object> cluster : clusters) {
+      assertEquals(i++ % 2 == 0 ? true : null, isOtherTopics(cluster));
+    }
   }
 
   @Test
@@ -99,9 +127,70 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "depth"), 1);
     params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "labels"), 3);
-    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs,
+    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs,
             params), 1, 3, 0);
   }
+
+	@Test
+	public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
+		checkLexicalResourcesFromSolrConfig("lexical-resource-check",
+				"online,customsolrstopword,customsolrstoplabel");
+	}
+
+	@Test
+	public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
+		checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
+				"online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
+	}
+
+	private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
+			throws IOException {
+		ModifiableSolrParams params = new ModifiableSolrParams();
+		params.set("merge-resources", false);
+		params.set(AttributeUtils.getKey(
+				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+				wordsToCheck);
+
+		// "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
+		// stoplabels.en, so we're expecting only one cluster with label "online".
+		final List<NamedList<Object>> clusters = checkEngine(
+				getClusteringEngine(engineName), 1, params);
+		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+	}
+
+	@Test
+	public void solrStopWordsUsedInCarrot2Clustering() throws Exception {
+		ModifiableSolrParams params = new ModifiableSolrParams();
+		params.set("merge-resources", false);
+		params.set(AttributeUtils.getKey(
+				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+		"online,solrownstopword");
+
+		// "solrownstopword" is in stopwords.txt, so we're expecting
+		// only one cluster with label "online".
+		final List<NamedList<Object>> clusters = checkEngine(
+				getClusteringEngine("lexical-resource-check"), 1, params);
+		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
+	}
+
+	@Test
+	public void solrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
+		ModifiableSolrParams params = new ModifiableSolrParams();
+		// Force string fields to be used for clustering. Does not make sense
+		// in a real word, but does the job in the test.
+		params.set(CarrotParams.TITLE_FIELD_NAME, "url");
+		params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
+		params.set("merge-resources", false);
+		params.set(AttributeUtils.getKey(
+				LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
+		"online,solrownstopword");
+
+		final List<NamedList<Object>> clusters = checkEngine(
+				getClusteringEngine("lexical-resource-check"), 2, params);
+		assertEquals(ImmutableList.of("online"), getLabels(clusters.get(0)));
+		assertEquals(ImmutableList.of("solrownstopword"),
+				getLabels(clusters.get(1)));
+	}
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
@@ -114,18 +203,18 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     return engine;
   }
 
-  private List checkEngine(CarrotClusteringEngine engine,
+  private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
                             int expectedNumClusters) throws IOException {
     return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), new ModifiableSolrParams());
   }
 
-  private List checkEngine(CarrotClusteringEngine engine,
+  private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
                             int expectedNumClusters, SolrParams clusteringParams) throws IOException {
     return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), clusteringParams);
   }
 
 
-  private List checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
+  private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
                            int expectedNumClusters, Query query, SolrParams clusteringParams) throws IOException {
     // Get all documents to cluster
     RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
@@ -145,7 +234,9 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
       Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(docList.size());
       SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
-      List results = (List)engine.cluster(query, solrDocList, docIds, req);
+
+      @SuppressWarnings("unchecked")
+			List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
       req.close();
       assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
       checkClusters(results, false);
@@ -155,51 +246,74 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     }
   }
 
-  private void checkClusters(List results, int expectedDocCount,
+  private void checkClusters(List<NamedList<Object>> results, int expectedDocCount,
                              int expectedLabelCount, int expectedSubclusterCount) {
     for (int i = 0; i < results.size(); i++) {
-      NamedList cluster = (NamedList) results.get(i);
+      NamedList<Object> cluster = results.get(i);
       checkCluster(cluster, expectedDocCount, expectedLabelCount,
               expectedSubclusterCount);
     }
   }
 
-  private void checkClusters(List results, boolean hasSubclusters) {
+  private void checkClusters(List<NamedList<Object>> results, boolean hasSubclusters) {
     for (int i = 0; i < results.size(); i++) {
-      checkCluster((NamedList) results.get(i), hasSubclusters);
+      checkCluster(results.get(i), hasSubclusters);
     }
   }
 
-  private void checkCluster(NamedList cluster, boolean hasSubclusters) {
-    List docs = (List) cluster.get("docs");
+  private void checkCluster(NamedList<Object> cluster, boolean hasSubclusters) {
+    List<Object> docs = getDocs(cluster);
     assertNotNull("docs is null and it shouldn't be", docs);
     for (int j = 0; j < docs.size(); j++) {
       String id = (String) docs.get(j);
       assertNotNull("id is null and it shouldn't be", id);
     }
 
-    List labels = (List) cluster.get("labels");
+    List<String> labels = getLabels(cluster);
     assertNotNull("labels is null but it shouldn't be", labels);
 
     if (hasSubclusters) {
-      List subclusters = (List) cluster.get("clusters");
+      List<NamedList<Object>> subclusters = getSubclusters(cluster);
       assertNotNull("subclusters is null but it shouldn't be", subclusters);
     }
   }
 
-  private void checkCluster(NamedList cluster, int expectedDocCount,
+  private void checkCluster(NamedList<Object> cluster, int expectedDocCount,
                             int expectedLabelCount, int expectedSubclusterCount) {
     checkCluster(cluster, expectedSubclusterCount > 0);
     assertEquals("number of docs in cluster", expectedDocCount,
-            ((List) cluster.get("docs")).size());
+            getDocs(cluster).size());
     assertEquals("number of labels in cluster", expectedLabelCount,
-            ((List) cluster.get("labels")).size());
+            getLabels(cluster).size());
 
     if (expectedSubclusterCount > 0) {
-      List subclusters = (List) cluster.get("clusters");
+      List<NamedList<Object>> subclusters = getSubclusters(cluster);
       assertEquals("numClusters", expectedSubclusterCount, subclusters.size());
       assertEquals("number of subclusters in cluster",
               expectedSubclusterCount, subclusters.size());
     }
   }
+
+	@SuppressWarnings("unchecked")
+	private List<NamedList<Object>> getSubclusters(NamedList<Object> cluster) {
+		return (List<NamedList<Object>>) cluster.get("clusters");
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<String> getLabels(NamedList<Object> cluster) {
+		return (List<String>) cluster.get("labels");
+	}
+
+	private Double getScore(NamedList<Object> cluster) {
+	  return (Double) cluster.get("score");
+	}
+
+	private Boolean isOtherTopics(NamedList<Object> cluster) {
+	  return (Boolean)cluster.get("other-topics");
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Object> getDocs(NamedList<Object> cluster) {
+		return (List<Object>) cluster.get("docs");
+	}
 }

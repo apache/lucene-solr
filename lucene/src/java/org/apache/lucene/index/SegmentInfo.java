@@ -42,7 +42,7 @@ import org.apache.lucene.util.Constants;
  *
  * @lucene.experimental
  */
-public final class SegmentInfo {
+public final class SegmentInfo implements Cloneable {
   // TODO: remove with hasVector and hasProx
   private static final int CHECK_FIELDINFO = -2;
   static final int NO = -1;          // e.g. no norms; no deletes;

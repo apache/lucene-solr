@@ -35,6 +35,8 @@ public interface CarrotParams {
   String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
   String SUMMARY_FRAGSIZE = CARROT_PREFIX + "fragzise";
 
+  String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
+
   public static final Set<String> CARROT_PARAM_NAMES = ImmutableSet.of(
           ALGORITHM, TITLE_FIELD_NAME, URL_FIELD_NAME, SNIPPET_FIELD_NAME,
           PRODUCE_SUMMARY, NUM_DESCRIPTIONS, OUTPUT_SUB_CLUSTERS, SUMMARY_FRAGSIZE);

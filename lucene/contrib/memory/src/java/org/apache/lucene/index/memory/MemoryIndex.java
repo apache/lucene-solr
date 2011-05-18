@@ -262,8 +262,12 @@ public class MemoryIndex {
     if (analyzer == null)
       throw new IllegalArgumentException("analyzer must not be null");
     
-    TokenStream stream = analyzer.tokenStream(fieldName, 
-    		new StringReader(text));
+    TokenStream stream;
+    try {
+      stream = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
 
     addField(fieldName, stream);
   }

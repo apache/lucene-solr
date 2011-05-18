@@ -26,7 +26,7 @@ Versions of Major Components
 ---------------------
 Apache Lucene trunk
 Apache Tika 0.8
-Carrot2 3.4.2
+Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 
@@ -241,6 +241,11 @@ Other Changes
 * SOLR-2461: QuerySenderListener and AbstractSolrEventListener are 
   now public (hossman)
 
+* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
+  tolerance delta used in numeric equalities.  This allows for slight 
+  variance in asserting score comparisons in unit tests.
+  (David Smiley, Chris Hostetter)
+
 Documentation
 ----------------------
 
@@ -323,6 +328,10 @@ Bug Fixes
 
 * SOLR-2495: The JSON parser could hang on corrupted input and could fail
   to detect numbers that were too large to fit in a long.  (yonik)
+
+* SOLR-2520: Make JSON response format escape \u2029 as well as \u2028
+  in strings since those characters are not valid in javascript strings
+  (although they are valid in JSON strings).  (yonik)
 
 
 Other Changes

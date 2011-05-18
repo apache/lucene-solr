@@ -101,6 +101,14 @@ public class TestJoin extends SolrTestCaseJ4 {
     int indexIter=50 * RANDOM_MULTIPLIER;
     int queryIter=50 * RANDOM_MULTIPLIER;
 
+    // groups of fields that have any chance of matching... used to
+    // increase test effectiveness by avoiding 0 resultsets much of the time.
+    String[][] compat = new String[][] {
+        {"small_s","small2_s","small2_ss","small3_ss"},
+        {"small_i","small2_i","small2_is","small3_is"}
+    };
+
+
     while (--indexIter >= 0) {
       int indexSize = random.nextInt(20 * RANDOM_MULTIPLIER);
 
@@ -121,8 +129,19 @@ public class TestJoin extends SolrTestCaseJ4 {
       Map<String, Map<Comparable, Set<Comparable>>> pivots = new HashMap<String, Map<Comparable, Set<Comparable>>>();
 
       for (int qiter=0; qiter<queryIter; qiter++) {
-        String fromField = types.get(random.nextInt(types.size())).fname;
-        String toField = types.get(random.nextInt(types.size())).fname;
+        String fromField;
+        String toField;
+        if (random.nextInt(100) < 5) {
+          // pick random fields 5% of the time
+          fromField = types.get(random.nextInt(types.size())).fname;
+          // pick the same field 50% of the time we pick a random field (since other fields won't match anything)
+          toField = (random.nextInt(100) < 50) ? fromField : types.get(random.nextInt(types.size())).fname;
+        } else {
+          // otherwise, pick compatible fields that have a chance of matching indexed tokens
+          String[] group = compat[random.nextInt(compat.length)];
+          fromField = group[random.nextInt(group.length)];
+          toField = group[random.nextInt(group.length)];
+        }
 
         Map<Comparable, Set<Comparable>> pivot = pivots.get(fromField+"/"+toField);
         if (pivot == null) {
@@ -146,7 +165,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         resultSet.put("start", 0);
         resultSet.put("docs", sortedDocs);
 
-        // todo: use filters
+        // todo: use different join queries for better coverage
 
         SolrQueryRequest req = req("wt","json","indent","true", "echoParams","all",
             "q","{!join from="+fromField+" to="+toField
@@ -159,7 +178,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         Object realResponse = ObjectBuilder.fromJSON(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
         if (err != null) {
-          log.error("GROUPING MISMATCH: " + err
+          log.error("JOIN MISMATCH: " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
            + "\n\texpected="+ JSONUtil.toJSON(resultSet)

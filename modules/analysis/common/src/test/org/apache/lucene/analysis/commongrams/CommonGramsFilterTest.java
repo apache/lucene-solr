@@ -21,6 +21,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -90,7 +91,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       public TokenStream tokenStream(String field, Reader in) {
         return new CommonGramsQueryFilter(new CommonGramsFilter(TEST_VERSION_CURRENT,
-            new WhitespaceTokenizer(TEST_VERSION_CURRENT, in), commonWords));
+            new MockTokenizer(in, MockTokenizer.WHITESPACE, false), commonWords));
       } 
     };
 
@@ -159,7 +160,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
       @Override
       public TokenStream tokenStream(String field, Reader in) {
         return new CommonGramsFilter(TEST_VERSION_CURRENT,
-            new WhitespaceTokenizer(TEST_VERSION_CURRENT, in), commonWords);
+            new MockTokenizer(in, MockTokenizer.WHITESPACE, false), commonWords);
       } 
     };
 
@@ -245,7 +246,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void testCaseSensitive() throws Exception {
     final String input = "How The s a brown s cow d like A B thing?";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     TokenFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     assertTokenStreamContents(cgf, new String[] {"How", "The", "The_s", "s",
         "s_a", "a", "a_brown", "brown", "brown_s", "s", "s_cow", "cow",
@@ -257,7 +258,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void testLastWordisStopWord() throws Exception {
     final String input = "dog the";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "dog_the" });
@@ -268,7 +269,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void testFirstWordisStopWord() throws Exception {
     final String input = "the dog";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_dog" });
@@ -279,7 +280,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void testOneWordQueryStopWord() throws Exception {
     final String input = "the";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the" });
@@ -290,7 +291,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void testOneWordQuery() throws Exception {
     final String input = "monster";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "monster" });
@@ -301,7 +302,7 @@ public class CommonGramsFilterTest extends BaseTokenStreamTestCase {
    */
   public void TestFirstAndLastStopWord() throws Exception {
     final String input = "the of";
-    WhitespaceTokenizer wt = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    MockTokenizer wt = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     CommonGramsFilter cgf = new CommonGramsFilter(TEST_VERSION_CURRENT, wt, commonWords);
     TokenFilter nsf = new CommonGramsQueryFilter(cgf);
     assertTokenStreamContents(nsf, new String[] { "the_of" });

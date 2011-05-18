@@ -59,6 +59,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
   
   private final StringBuilder hyphenated = new StringBuilder();
   private State savedState;
+  private boolean exhausted = false;
 
   /**
    * Creates a new HyphenatedWordsFilter
@@ -74,7 +75,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
    */
   @Override
   public boolean incrementToken() throws IOException {
-    while (input.incrementToken()) {
+    while (!exhausted && input.incrementToken()) {
       char[] term = termAttribute.buffer();
       int termLength = termAttribute.length();
       
@@ -96,6 +97,8 @@ public final class HyphenatedWordsFilter extends TokenFilter {
       }
     }
     
+    exhausted = true;
+
     if (savedState != null) {
       // the final term ends with a hyphen
       // add back the hyphen, for backwards compatibility.
@@ -115,6 +118,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     super.reset();
     hyphenated.setLength(0);
     savedState = null;
+    exhausted = false;
   }
 
   // ================================================= Helper Methods ================================================

@@ -20,9 +20,6 @@ package org.apache.lucene.util;
 import java.util.Comparator;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.IOException;
 
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].
@@ -193,6 +190,9 @@ public final class BytesRef implements Comparable<BytesRef> {
 
   @Override
   public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    }
     return this.bytesEquals((BytesRef) other);
   }
 

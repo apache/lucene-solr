@@ -21,6 +21,7 @@ import java.io.StringReader;
 import org.xml.sax.InputSource;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -35,8 +36,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         .getHyphenationTree(is);
 
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-            "min veninde som er lidt af en læsehest")), hyphenator,
+        new MockTokenizer(new StringReader("min veninde som er lidt af en læsehest"), MockTokenizer.WHITESPACE, false), 
+        hyphenator,
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
@@ -55,8 +56,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
     // the word basket will not be added due to the longest match option
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-            "basketballkurv")), hyphenator, dict,
+        new MockTokenizer(new StringReader("basketballkurv"), MockTokenizer.WHITESPACE, false), 
+        hyphenator, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 40, true);
     assertTokenStreamContents(tf, 
@@ -77,7 +78,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
         TEST_VERSION_CURRENT,
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        new MockTokenizer(new StringReader("basketballkurv"), MockTokenizer.WHITESPACE, false),
         hyphenator,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         2, 4);
@@ -89,7 +90,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     
     tf = new HyphenationCompoundWordTokenFilter(
         TEST_VERSION_CURRENT,
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        new MockTokenizer(new StringReader("basketballkurv"), MockTokenizer.WHITESPACE, false),
         hyphenator,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         4, 6);
@@ -101,7 +102,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     
     tf = new HyphenationCompoundWordTokenFilter(
         TEST_VERSION_CURRENT,
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        new MockTokenizer(new StringReader("basketballkurv"), MockTokenizer.WHITESPACE, false),
         hyphenator,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         4, 10);
@@ -120,9 +121,10 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Sko", "Vind", "Rute", "Torkare", "Blad" };
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
+        new MockTokenizer( 
             new StringReader(
-                "Bildörr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glasögonfodral Basfiolsfodral Basfiolsfodralmakaregesäll Skomakare Vindrutetorkare Vindrutetorkarblad abba")),
+                "Bildörr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glasögonfodral Basfiolsfodral Basfiolsfodralmakaregesäll Skomakare Vindrutetorkare Vindrutetorkarblad abba"),
+            MockTokenizer.WHITESPACE, false),
         dict);
 
     assertTokenStreamContents(tf, new String[] { "Bildörr", "Bil", "dörr", "Bilmotor",
@@ -149,7 +151,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Sko", "Vind", "Rute", "Torkare", "Blad", "Fiolsfodral" };
 
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
-        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("Basfiolsfodralmakaregesäll")),
+        new MockTokenizer(new StringReader("Basfiolsfodralmakaregesäll"), MockTokenizer.WHITESPACE, false),
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true);

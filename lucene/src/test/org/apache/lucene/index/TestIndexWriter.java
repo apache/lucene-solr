@@ -1231,13 +1231,17 @@ public class TestIndexWriter extends LuceneTestCase {
         System.out.println("TEST: pass=" + pass);
       }
 
-      IndexWriter writer = new IndexWriter(
-          directory,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+      IndexWriterConfig conf =  newIndexWriterConfig(
+              TEST_VERSION_CURRENT, new MockAnalyzer(random)).
               setOpenMode(OpenMode.CREATE).
               setMaxBufferedDocs(2).
-              setMergePolicy(newLogMergePolicy())
-      );
+              setMergePolicy(newLogMergePolicy());
+      if (pass == 2) {
+        conf.setMergeScheduler(new SerialMergeScheduler());
+      }
+
+      IndexWriter writer = new IndexWriter(directory, conf);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
       writer.setInfoStream(VERBOSE ? System.out : null);
 
       for(int iter=0;iter<10;iter++) {
@@ -2139,7 +2143,7 @@ public class TestIndexWriter extends LuceneTestCase {
       while(!finish) {
         try {
 
-          while(true) {
+          while(!finish) {
             if (w != null) {
               w.close();
               w = null;
@@ -2157,6 +2161,7 @@ public class TestIndexWriter extends LuceneTestCase {
               }
             }
             w.close();
+            w = null;
             _TestUtil.checkIndex(dir);
             IndexReader.open(dir, true).close();
 

@@ -25,29 +25,69 @@ import java.util.*;
 
 public class JSONTestUtil {
 
+  /**
+   * Default delta used in numeric equality comparisons for floats and doubles.
+   */
+  public final static double DEFAULT_DELTA = 1e-5;
+
+  /** 
+   * comparison using default delta
+   * @see #DEFAULT_DELTA
+   * @see #match(String,String,double)
+   */
   public static String match(String input, String pathAndExpected) throws Exception {
+    return match(input, pathAndExpected, DEFAULT_DELTA);
+  }
+
+  /** 
+   * comparison using default delta
+   * @see #DEFAULT_DELTA
+   * @see #match(String,String,String,double)
+   */
+  public static String match(String path, String input, String expected) throws Exception {
+    return match(path, input, expected, DEFAULT_DELTA);
+  }
+
+  /**
+   * comparison using default delta
+   * @see #DEFAULT_DELTA
+   * @see #matchObj(String,Object,Object,double)
+   */
+  public static String matchObj(String path, Object input, Object expected) throws Exception {
+    return matchObj(path,input,expected, DEFAULT_DELTA);
+  }
+
+  /**
+   * @param input JSON Structure to parse and test against
+   * @param pathAndExpected JSON path expression + '==' + expected value
+   * @param delta tollerance allowed in comparing float/double values
+   */
+  public static String match(String input, String pathAndExpected, double delta) throws Exception {
     int pos = pathAndExpected.indexOf("==");
     String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
     String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
-    return match(path, input, expected);
+    return match(path, input, expected, delta);
   }
 
-  public static String match(String path, String input, String expected) throws Exception {
+  /**
+   * @param path JSON path expression
+   * @param input JSON Structure to parse and test against
+   * @param expected expected value of path
+   * @param delta tollerance allowed in comparing float/double values
+   */
+  public static String match(String path, String input, String expected, double delta) throws Exception {
     Object inputObj = ObjectBuilder.fromJSON(input);
     Object expectObj = ObjectBuilder.fromJSON(expected);
     return matchObj(path, inputObj, expectObj);
   }
-
-  /**
-  public static Object fromJSON(String json) {
-    try {
-      Object out = ObjectBuilder.fromJSON(json);
-    } finally {
-
-  }
-  **/
   
-  public static String matchObj(String path, Object input, Object expected) throws Exception {
+  /**
+   * @param path JSON path expression
+   * @param input JSON Structure
+   * @param expected expected JSON Object
+   * @param delta tollerance allowed in comparing float/double values
+   */
+  public static String matchObj(String path, Object input, Object expected, double delta) throws Exception {
     CollectionTester tester = new CollectionTester(input);
     boolean reversed = path.startsWith("!");
     String positivePath = reversed ? path.substring(1) : path;
@@ -68,13 +108,18 @@ class CollectionTester {
   public Object val;
   public Object expectedRoot;
   public Object expected;
+  public double delta;
   public List<Object> path;
   public String err;
 
-  public CollectionTester(Object val) {
+  public CollectionTester(Object val, double delta) {
     this.val = val;
     this.valRoot = val;
+    this.delta = delta;
     path = new ArrayList<Object>();
+  }
+  public CollectionTester(Object val) {
+    this(val, JSONTestUtil.DEFAULT_DELTA);
   }
 
   public String getPath() {
@@ -143,7 +188,7 @@ class CollectionTester {
         double a = ((Number)expected).doubleValue();
         double b = ((Number)val).doubleValue();
         if (Double.compare(a,b) == 0) return true;
-        if (Math.abs(a-b) < 1e-5) return true;
+        if (Math.abs(a-b) < delta) return true;
         return false;
       } else {
         setErr("mismatch: '" + expected + "'!='" + val + "'");

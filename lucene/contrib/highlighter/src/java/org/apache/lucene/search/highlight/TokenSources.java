@@ -286,7 +286,11 @@ public class TokenSources {
   // convenience method
   public static TokenStream getTokenStream(String field, String contents,
       Analyzer analyzer) {
-    return analyzer.tokenStream(field, new StringReader(contents));
+    try {
+      return analyzer.reusableTokenStream(field, new StringReader(contents));
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
 }

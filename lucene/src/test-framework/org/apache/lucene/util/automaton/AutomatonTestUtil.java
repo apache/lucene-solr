@@ -397,4 +397,15 @@ public class AutomatonTestUtil {
     path.remove(s);
     return true;
   }
+  
+  
+  /**
+   * Checks that an automaton has no detached states that are unreachable
+   * from the initial state.
+   */
+  public static void assertNoDetachedStates(Automaton a) {
+    int numStates = a.getNumberOfStates();
+    a.clearNumberedStates(); // force recomputation of cached numbered states
+    assert numStates == a.getNumberOfStates() : "automaton has " + (numStates - a.getNumberOfStates()) + " detached states";
+  }
 }

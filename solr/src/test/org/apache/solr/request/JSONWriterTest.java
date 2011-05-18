@@ -73,12 +73,12 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     StringWriter buf = new StringWriter();
     NamedList nl = new NamedList();
-    nl.add("data1", "hello");
+    nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
     nl.add(null, 42);
     rsp.add("nl", nl);
 
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{\"nl\":[[\"data1\",\"hello\"],[null,42]]}");
+    assertEquals("{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]]}", buf.toString());
     req.close();
   }
   

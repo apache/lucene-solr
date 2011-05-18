@@ -232,9 +232,7 @@ public class FST<T> {
 
   void setEmptyOutput(T v) throws IOException {
     if (emptyOutput != null) {
-      if (!emptyOutput.equals(v)) {
-        emptyOutput = outputs.merge(emptyOutput, v);
-      }
+      emptyOutput = outputs.merge(emptyOutput, v);
     } else {
       emptyOutput = v;
     }

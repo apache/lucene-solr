@@ -40,7 +40,13 @@ import java.util.Collection;
   * refuses to run by default. Specify {@code -delete-prior-commits}
   * to override this, allowing the tool to delete all but the last commit.
   * From Java code this can be enabled by passing {@code true} to
-  * {@link #IndexUpgrader(Directory,PrintStream,boolean)}.
+  * {@link #IndexUpgrader(Directory,Version,PrintStream,boolean)}.
+  * <p><b>Warning:</b> This tool may reorder documents if the index was partially
+  * upgraded before execution (e.g., documents were added). If your application relies
+  * on &quot;monotonicity&quot; of doc IDs (which means that the order in which the documents
+  * were added to the index is preserved), do a full optimize instead.
+  * The {@link MergePolicy} set by {@link IndexWriterConfig} may also reorder
+  * documents.
   */
 public final class IndexUpgrader {
 
@@ -52,9 +58,11 @@ public final class IndexUpgrader {
     System.err.println("reason, if the incoming index has more than one commit, the tool");
     System.err.println("refuses to run by default. Specify -delete-prior-commits to override");
     System.err.println("this, allowing the tool to delete all but the last commit.");
+    System.err.println("WARNING: This tool may reorder document IDs!");
     System.exit(1);
   }
 
+  @SuppressWarnings("deprecation")
   public static void main(String[] args) throws IOException {
     String dir = null;
     boolean deletePriorCommits = false;
@@ -74,7 +82,7 @@ public final class IndexUpgrader {
       printUsage();
     }
     
-    new IndexUpgrader(FSDirectory.open(new File(dir)), out, deletePriorCommits).upgrade();
+    new IndexUpgrader(FSDirectory.open(new File(dir)), Version.LUCENE_CURRENT, out, deletePriorCommits).upgrade();
   }
   
   private final Directory dir;
@@ -82,16 +90,22 @@ public final class IndexUpgrader {
   private final IndexWriterConfig iwc;
   private final boolean deletePriorCommits;
   
-  @SuppressWarnings("deprecation")
-  public IndexUpgrader(Directory dir) {
-    this(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null), null, false);
+  /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
+   * {@code matchVersion}. The tool refuses to upgrade indexes with multiple commit points. */
+  public IndexUpgrader(Directory dir, Version matchVersion) {
+    this(dir, new IndexWriterConfig(matchVersion, null), null, false);
   }
   
-  @SuppressWarnings("deprecation")
-  public IndexUpgrader(Directory dir, PrintStream infoStream, boolean deletePriorCommits) {
-    this(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null), infoStream, deletePriorCommits);
+  /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
+   * {@code matchVersion}. You have the possibility to upgrade indexes with multiple commit points by removing
+   * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
+  public IndexUpgrader(Directory dir, Version matchVersion, PrintStream infoStream, boolean deletePriorCommits) {
+    this(dir, new IndexWriterConfig(matchVersion, null), infoStream, deletePriorCommits);
   }
   
+  /** Creates index upgrader on the given directory, using an {@link IndexWriter} using the given
+   * config. You have the possibility to upgrade indexes with multiple commit points by removing
+   * all older ones. If {@code infoStream} is not {@code null}, all logging output will be sent to this stream. */
   public IndexUpgrader(Directory dir, IndexWriterConfig iwc, PrintStream infoStream, boolean deletePriorCommits) {
     this.dir = dir;
     this.iwc = iwc;

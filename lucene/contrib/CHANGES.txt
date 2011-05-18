@@ -75,9 +75,35 @@ Bug Fixes
    caused a problem if you consumed a tokenstream, then reused it, added different
    attributes to it, and consumed it again.  (Robert Muir, Uwe Schindler)
 
+ * LUCENE-3113: Fixed some minor analysis bugs: double-reset() in ReusableAnalyzerBase
+   and ShingleAnalyzerWrapper, missing end() implementations in PrefixAwareTokenFilter
+   and PrefixAndSuffixAwareTokenFilter, invocations of incrementToken() after it
+   already returned false in CommonGramsQueryFilter, HyphenatedWordsFilter,
+   ShingleFilter, and SynonymsFilter.  (Robert Muir, Steven Rowe, Uwe Schindler)
+
 New Features
 
  * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
+
+ * LUCENE-1421: create new grouping contrib module, enabling search
+   results to be grouped by a single-valued indexed field.  This
+   module was factored out of Solr's grouping implementation, but
+   it cannot group by function queries nor arbitrary queries.  (Mike
+   McCandless)
+
+ * LUCENE-3098: add AllGroupsCollector, to collect all unique groups
+   (but in unspecified order).  (Martijn van Groningen via Mike
+   McCandless)
+
+ * LUCENE-3092: Added NRTCachingDirectory in contrib/misc, which
+   caches small segments in RAM.  This is useful, in the near-real-time
+   case where the indexing rate is lowish but the reopen rate is
+   highish, to take load off the IO system.  (Mike McCandless)
+
+Optimizations
+
+ * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
+   over to reusableTokenStream().  (Robert Muir)
 
 ======================= Lucene 3.1.0 =======================
 

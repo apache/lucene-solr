@@ -162,11 +162,6 @@ Changes in Runtime Behavior
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. (Shai Erera, Mike McCandless, Uwe Schindler)
 
-* LUCENE-1076: The default merge policy (TieredMergePolicy) is now
-  able to merge non-contiguous segments, which means docIDs no longer
-  necessarily say "in order".  If this is a problem then you can use
-  either of the LogMergePolicy impls.  (Mike McCandless)
-  
 * LUCENE-2881: FieldInfos is now tracked per segment.  Before it was tracked
   per IndexWriter session, which resulted in FieldInfos that had the FieldInfo
   properties from all previous segments combined. Field numbers are now tracked
@@ -416,6 +411,10 @@ New features
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
 
+* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
+  document IDs and scores encountered during the search, and "reply" them to 
+  another Collector. (Mike McCandless, Shai Erera)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
@@ -452,6 +451,9 @@ Bug fixes
   indexes, causing existing deletions to be applied on the incoming indexes as 
   well. (Shai Erera, Mike McCandless)
 
+* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
+  query terms had same position in the query. (Doron Cohen)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
@@ -476,9 +478,15 @@ Changes in backwards compatibility policy
   (Mike McCandless, Shai Erera)
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
-  SegmentInfos to a List<SegmentInfo>; this is actually a minor change
-  because SegmentInfos itself extends Vector<SegmentInfo>.  (Uwe
-  Schindler, Mike McCandless)
+  SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
+	to no longer extend Vector<SegmentInfo> (to update code that is using
+	Vector-API, use the new asList() and asSet() methods returning unmodifiable
+	collections; modifying SegmentInfos is now only possible through
+	the explicitely declared methods). IndexWriter.segString() now takes
+	Iterable<SegmentInfo> instead of List<SegmentInfo>. A simple recompile
+	should fix this. MergePolicy and SegmentInfos are internal/experimental
+	APIs not covered by the strict backwards compatibility policy.
+	(Uwe Schindler, Mike McCandless)
 
 Changes in runtime behavior
 
@@ -492,6 +500,13 @@ Changes in runtime behavior
   returns NumericField instances. (Uwe Schindler, Ryan McKinley,
   Mike McCandless)
 
+* LUCENE-1076: Changed the default merge policy from
+  LogByteSizeMergePolicy to TieredMergePolicy, as of Version.LUCENE_32
+  (passed to IndexWriterConfig), which is able to merge non-contiguous
+  segments. This means docIDs no longer necessarily stay "in order"
+  during indexing.  If this is a problem then you can use either of
+  the LogMergePolicy impls.  (Mike McCandless)
+  
 New features
 
 * LUCENE-3082: Added index upgrade tool oal.index.IndexUpgrader

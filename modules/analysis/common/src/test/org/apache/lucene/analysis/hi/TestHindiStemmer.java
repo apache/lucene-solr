@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Test HindiStemmer
@@ -81,8 +81,7 @@ public class TestHindiStemmer extends BaseTokenStreamTestCase {
   }
   
   private void check(String input, String output) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
-        new StringReader(input));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
     TokenFilter tf = new HindiStemFilter(tokenizer);
     assertTokenStreamContents(tf, new String[] { output });
   }
