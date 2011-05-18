@@ -172,7 +172,7 @@ public class NIOFSDirectory extends FSDirectory {
         final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
               "OutOfMemoryError likely caused by the Sun VM Bug described in "
               + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
-              + "with a a value smaller than the current chunk size (" + chunkSize + ")");
+              + "with a value smaller than the current chunk size (" + chunkSize + ")");
         outOfMemoryError.initCause(e);
         throw outOfMemoryError;
       }
