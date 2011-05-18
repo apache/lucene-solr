@@ -451,6 +451,9 @@ Bug fixes
   indexes, causing existing deletions to be applied on the incoming indexes as 
   well. (Shai Erera, Mike McCandless)
 
+* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
+  query terms had same position in the query. (Doron Cohen)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 

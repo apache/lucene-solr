@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.HashSet;
 
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
@@ -109,8 +109,14 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
     /**
      * Init PhrasePositions in place.
-     * There is a one time initialization for this scorer:
+     * There is a one time initialization for this scorer (taking place at the first doc that matches all terms):
      * <br>- Put in repeats[] each pp that has another pp with same position in the doc.
+     *       This relies on that the position in PP is computed as (TP.position - offset) and 
+     *       so by adding offset we actually compare positions and identify that the two are 
+     *       the same term.
+     *       An exclusion to this is two distinct terms in the same offset in query and same 
+     *       position in doc. This case is detected by comparing just the (query) offsets, 
+     *       and two such PPs are not considered "repeating". 
      * <br>- Also mark each such pp by pp.repeats = true.
      * <br>Later can consult with repeats[] in termPositionsDiffer(pp), making that check efficient.
      * In particular, this allows to score queries with no repetitions with no overhead due to this computation.
@@ -145,23 +151,26 @@ final class SloppyPhraseScorer extends PhraseScorer {
         if (!checkedRepeats) {
             checkedRepeats = true;
             // check for repeats
-            HashMap<PhrasePositions, Object> m = null;
+            HashSet<PhrasePositions> m = null;
             for (PhrasePositions pp = first; pp != null; pp = pp.next) {
                 int tpPos = pp.position + pp.offset;
                 for (PhrasePositions pp2 = pp.next; pp2 != null; pp2 = pp2.next) {
+                    if (pp.offset == pp2.offset) {
+                      continue; // not a repetition: the two PPs are originally in same offset in the query! 
+                    }
                     int tpPos2 = pp2.position + pp2.offset;
                     if (tpPos2 == tpPos) { 
                         if (m == null)
-                            m = new HashMap<PhrasePositions, Object>();
+                            m = new HashSet<PhrasePositions>();
                         pp.repeats = true;
                         pp2.repeats = true;
-                        m.put(pp,null);
-                        m.put(pp2,null);
+                        m.add(pp);
+                        m.add(pp2);
                     }
                 }
             }
             if (m!=null)
-                repeats = m.keySet().toArray(new PhrasePositions[0]);
+                repeats = m.toArray(new PhrasePositions[0]);
         }
         
         // with repeats must advance some repeating pp's so they all start with differing tp's       
@@ -204,11 +213,16 @@ final class SloppyPhraseScorer extends PhraseScorer {
         int tpPos = pp.position + pp.offset;
         for (int i = 0; i < repeats.length; i++) {
             PhrasePositions pp2 = repeats[i];
-            if (pp2 == pp)
+            if (pp2 == pp) {
                 continue;
+            }
+            if (pp.offset == pp2.offset) {
+              continue; // not a repetition: the two PPs are originally in same offset in the query! 
+            }
             int tpPos2 = pp2.position + pp2.offset;
-            if (tpPos2 == tpPos)
+            if (tpPos2 == tpPos) {
                 return pp.offset > pp2.offset ? pp : pp2; // do not differ: return the one with higher offset.
+            }
         }
         return null; 
     }
