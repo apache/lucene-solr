@@ -56,7 +56,7 @@ New features
   PathHierarchyTokenizer (Olivier Favre via ryan)
 
 * LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
-  document IDs and scores encountered during the search, and "reply" them to 
+  document IDs and scores encountered during the search, and "replay" them to 
   another Collector. (Mike McCandless, Shai Erera)
   
 API Changes

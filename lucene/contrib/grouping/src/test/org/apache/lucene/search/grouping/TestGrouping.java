@@ -435,36 +435,63 @@ public class TestGrouping extends LuceneTestCase {
           System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups);
         }
 
-        final AllGroupsCollector groupCountCollector;
+        final AllGroupsCollector allGroupsCollector;
         if (doAllGroups) {
-          groupCountCollector = new AllGroupsCollector("group");
+          allGroupsCollector = new AllGroupsCollector("group");
         } else {
-          groupCountCollector = null;
+          allGroupsCollector = null;
         }
 
         final FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("group", groupSort, groupOffset+topNGroups);
         final CachingCollector cCache;
         final Collector c;
+
+        final boolean useWrappingCollector = random.nextBoolean();
+
         if (doCache) {
           final double maxCacheMB = random.nextDouble();
           if (VERBOSE) {
             System.out.println("TEST: maxCacheMB=" + maxCacheMB);
           }
 
-          if (doAllGroups) {
-            cCache = CachingCollector.create(c1, true, maxCacheMB);
-            c = MultiCollector.wrap(cCache, groupCountCollector);
+          if (useWrappingCollector) {
+            if (doAllGroups) {
+              cCache = CachingCollector.create(c1, true, maxCacheMB);              
+              c = MultiCollector.wrap(cCache, allGroupsCollector);
+            } else {
+              c = cCache = CachingCollector.create(c1, true, maxCacheMB);              
+            }
           } else {
-            c = cCache = CachingCollector.create(c1, true, maxCacheMB);
+            // Collect only into cache, then replay multiple times:
+            c = cCache = CachingCollector.create(false, true, maxCacheMB);
           }
-        } else if (doAllGroups) {
-          c = MultiCollector.wrap(c1, groupCountCollector);
-          cCache = null;
         } else {
-          c = c1;
           cCache = null;
+          if (doAllGroups) {
+            c = MultiCollector.wrap(c1, allGroupsCollector);
+          } else {
+            c = c1;
+          }
         }
+
         s.search(new TermQuery(new Term("content", searchTerm)), c);
+
+        if (doCache && !useWrappingCollector) {
+          if (cCache.isCached()) {
+            // Replay for first-pass grouping
+            cCache.replay(c1);
+            if (doAllGroups) {
+              // Replay for all groups:
+              cCache.replay(allGroupsCollector);
+            }
+          } else {
+            // Replay by re-running search:
+            s.search(new TermQuery(new Term("content", searchTerm)), c1);
+            if (doAllGroups) {
+              s.search(new TermQuery(new Term("content", searchTerm)), allGroupsCollector);
+            }
+          }
+        }
 
         final Collection<SearchGroup> topGroups = c1.getTopGroups(groupOffset, fillFields);
         final TopGroups groupsResult;
@@ -497,7 +524,7 @@ public class TestGrouping extends LuceneTestCase {
         
           if (doAllGroups) {
             TopGroups tempTopGroups = c2.getTopGroups(docOffset);
-            groupsResult = new TopGroups(tempTopGroups, groupCountCollector.getGroupCount());
+            groupsResult = new TopGroups(tempTopGroups, allGroupsCollector.getGroupCount());
           } else {
             groupsResult = c2.getTopGroups(docOffset);
           }
