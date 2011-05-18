@@ -49,6 +49,10 @@ New features
 * LUCENE-3071: Adding ReversePathHierarchyTokenizer, added skip parameter to 
   PathHierarchyTokenizer (Olivier Favre via ryan)
 
+* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
+  document IDs and scores encountered during the search, and "reply" them to 
+  another Collector. (Mike McCandless, Shai Erera)
+  
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public

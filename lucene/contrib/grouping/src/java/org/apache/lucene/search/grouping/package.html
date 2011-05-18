@@ -73,7 +73,7 @@ field fall into a single group.</p>
 
   boolean cacheScores = true;
   double maxCacheRAMMB = 4.0;
-  CachingCollector cachedCollector = new CachingCollector(c1, cacheScores, maxCacheRAMMB);
+  CachingCollector cachedCollector = CachingCollector.create(c1, cacheScores, maxCacheRAMMB);
   s.search(new TermQuery(new Term("content", searchTerm)), cachedCollector);
 
   Collection<SearchGroup> topGroups = c1.getTopGroups(groupOffset, fillFields);
