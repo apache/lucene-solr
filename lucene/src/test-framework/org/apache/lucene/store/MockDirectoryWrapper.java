@@ -555,6 +555,9 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
+  @Deprecated
+  /*  @deprecated Lucene never uses this API; it will be
+   *  removed in 4.0. */
   public synchronized void touchFile(String name) throws IOException {
     maybeYield();
     delegate.touchFile(name);

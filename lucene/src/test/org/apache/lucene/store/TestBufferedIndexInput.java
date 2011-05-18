@@ -344,6 +344,9 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.deleteFile(name);
       }
       @Override
+      @Deprecated
+      /*  @deprecated Lucene never uses this API; it will be
+       *  removed in 4.0. */
       public void touchFile(String name)
         throws IOException
       {

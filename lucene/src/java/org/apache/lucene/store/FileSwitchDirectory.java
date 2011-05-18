@@ -115,7 +115,10 @@ public class FileSwitchDirectory extends Directory {
     return getDirectory(name).fileModified(name);
   }
 
+  @Deprecated
   @Override
+  /*  @deprecated Lucene never uses this API; it will be
+   *  removed in 4.0. */
   public void touchFile(String name) throws IOException {
     getDirectory(name).touchFile(name);
   }

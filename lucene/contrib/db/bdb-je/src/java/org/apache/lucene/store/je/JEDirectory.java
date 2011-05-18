@@ -201,6 +201,9 @@ public class JEDirectory extends Directory {
     }
 
     @Override
+    @Deprecated
+    /*  @deprecated Lucene never uses this API; it will be
+     *  removed in 4.0. */
     public void touchFile(String name) throws IOException {
         File file = new File(name);
         long length = 0L;

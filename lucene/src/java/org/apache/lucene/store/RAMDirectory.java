@@ -122,8 +122,10 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Set the modified time of an existing file to now.
    * @throws IOException if the file does not exist
-   */
+   *  @deprecated Lucene never uses this API; it will be
+   *  removed in 4.0. */
   @Override
+  @Deprecated
   public void touchFile(String name) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.get(name);

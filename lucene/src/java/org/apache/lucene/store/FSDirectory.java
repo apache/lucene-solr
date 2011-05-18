@@ -274,8 +274,11 @@ public abstract class FSDirectory extends Directory {
     return file.lastModified();
   }
 
-  /** Set the modified time of an existing file to now. */
+  /** Set the modified time of an existing file to now.
+   *  @deprecated Lucene never uses this API; it will be
+   *  removed in 4.0. */
   @Override
+  @Deprecated
   public void touchFile(String name) {
     ensureOpen();
     File file = new File(directory, name);

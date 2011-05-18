@@ -135,6 +135,9 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
+  @Deprecated
+  /*  @deprecated Lucene never uses this API; it will be
+   *  removed in 4.0. */
   public synchronized void touchFile(String name) throws IOException {
     if (cache.fileExists(name)) {
       cache.touchFile(name);
