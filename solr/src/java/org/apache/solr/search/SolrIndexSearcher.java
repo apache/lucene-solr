@@ -811,7 +811,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       bitsSet += upto;
       result = new BitDocSet(obs, bitsSet);
     } else {
-      result = new SortedIntDocSet(Arrays.copyOf(docs, upto));
+      result = upto==0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
 
     if (useCache) {
