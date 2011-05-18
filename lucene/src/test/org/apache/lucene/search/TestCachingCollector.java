@@ -75,39 +75,41 @@ public class TestCachingCollector extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    CachingCollector cc = new CachingCollector(new NoOpCollector(false), true, 1);
-    cc.setScorer(new MockScorer());
-    
-    // collect 1000 docs
-    for (int i = 0; i < 1000; i++) {
-      cc.collect(i);
+    for (boolean cacheScores : new boolean[] { false, true }) {
+      CachingCollector cc = CachingCollector.create(new NoOpCollector(false), cacheScores, 1);
+      cc.setScorer(new MockScorer());
+
+      // collect 1000 docs
+      for (int i = 0; i < 1000; i++) {
+        cc.collect(i);
+      }
+
+      // now replay them
+      cc.replay(new Collector() {
+        int prevDocID = -1;
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {}
+
+        @Override
+        public void setNextReader(AtomicReaderContext context) throws IOException {}
+
+        @Override
+        public void collect(int doc) throws IOException {
+          assertEquals(prevDocID + 1, doc);
+          prevDocID = doc;
+        }
+
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
+        }
+      });
     }
-    
-    // now replay them
-    cc.replay(new Collector() {
-      int prevDocID = -1;
-      
-      @Override
-      public void setScorer(Scorer scorer) throws IOException {}
-      
-      @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {}
-      
-      @Override
-      public void collect(int doc) throws IOException {
-        assertEquals(prevDocID + 1, doc);
-        prevDocID = doc;
-      }
-      
-      @Override
-      public boolean acceptsDocsOutOfOrder() {
-        return false;
-      }
-    });
   }
   
   public void testIllegalStateOnReplay() throws Exception {
-    CachingCollector cc = new CachingCollector(new NoOpCollector(false), true, 50 * ONE_BYTE);
+    CachingCollector cc = CachingCollector.create(new NoOpCollector(false), true, 50 * ONE_BYTE);
     cc.setScorer(new MockScorer());
     
     // collect 130 docs, this should be enough for triggering cache abort.
@@ -130,14 +132,14 @@ public class TestCachingCollector extends LuceneTestCase {
     // is valid with the Collector passed to the ctor
     
     // 'src' Collector does not support out-of-order
-    CachingCollector cc = new CachingCollector(new NoOpCollector(false), true, 50 * ONE_BYTE);
+    CachingCollector cc = CachingCollector.create(new NoOpCollector(false), true, 50 * ONE_BYTE);
     cc.setScorer(new MockScorer());
     for (int i = 0; i < 10; i++) cc.collect(i);
     cc.replay(new NoOpCollector(true)); // this call should not fail
     cc.replay(new NoOpCollector(false)); // this call should not fail
 
     // 'src' Collector supports out-of-order
-    cc = new CachingCollector(new NoOpCollector(true), true, 50 * ONE_BYTE);
+    cc = CachingCollector.create(new NoOpCollector(true), true, 50 * ONE_BYTE);
     cc.setScorer(new MockScorer());
     for (int i = 0; i < 10; i++) cc.collect(i);
     cc.replay(new NoOpCollector(true)); // this call should not fail
@@ -156,14 +158,18 @@ public class TestCachingCollector extends LuceneTestCase {
     
     // set RAM limit enough for 150 docs + random(10000)
     int numDocs = random.nextInt(10000) + 150;
-    CachingCollector cc = new CachingCollector(new NoOpCollector(false), true, 8 * ONE_BYTE * numDocs);
-    cc.setScorer(new MockScorer());
-    for (int i = 0; i < numDocs; i++) cc.collect(i);
-    assertTrue(cc.isCached());
-    
-    // The 151's document should terminate caching
-    cc.collect(numDocs);
-    assertFalse(cc.isCached());
+    for (boolean cacheScores : new boolean[] { false, true }) {
+      int bytesPerDoc = cacheScores ? 8 : 4;
+      CachingCollector cc = CachingCollector.create(new NoOpCollector(false),
+          cacheScores, bytesPerDoc * ONE_BYTE * numDocs);
+      cc.setScorer(new MockScorer());
+      for (int i = 0; i < numDocs; i++) cc.collect(i);
+      assertTrue(cc.isCached());
+
+      // The 151's document should terminate caching
+      cc.collect(numDocs);
+      assertFalse(cc.isCached());
+    }
   }
   
 }

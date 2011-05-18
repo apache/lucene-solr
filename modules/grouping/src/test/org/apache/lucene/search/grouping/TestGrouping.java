@@ -452,10 +452,10 @@ public class TestGrouping extends LuceneTestCase {
           }
 
           if (doAllGroups) {
-            cCache = new CachingCollector(c1, true, maxCacheMB);
+            cCache = CachingCollector.create(c1, true, maxCacheMB);
             c = MultiCollector.wrap(cCache, allGroupsCollector);
           } else {
-            c = cCache = new CachingCollector(c1, true, maxCacheMB);
+            c = cCache = CachingCollector.create(c1, true, maxCacheMB);
           }
         } else if (doAllGroups) {
           c = MultiCollector.wrap(c1, allGroupsCollector);

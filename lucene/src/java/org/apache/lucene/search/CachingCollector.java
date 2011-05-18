@@ -47,7 +47,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-public class CachingCollector extends Collector {
+public abstract class CachingCollector extends Collector {
   
   // Max out at 512K arrays
   private static final int MAX_ARRAY_SIZE = 512 * 1024;
@@ -64,8 +64,8 @@ public class CachingCollector extends Collector {
     }
   }
   
-  private static class CachedScorer extends Scorer {
-
+  private static final class CachedScorer extends Scorer {
+    
     // NOTE: these members are package-private b/c that way accessing them from
     // the outer class does not incur access check by the JVM. The same
     // situation would be if they were defined in the outer class as private
@@ -76,52 +76,246 @@ public class CachingCollector extends Collector {
     private CachedScorer() { super(null); }
 
     @Override
-    public float score() { return score; }
-
+    public final float score() { return score; }
+    
     @Override
-    public int advance(int target) { throw new UnsupportedOperationException(); }
-
+    public final int advance(int target) { throw new UnsupportedOperationException(); }
+    
     @Override
-    public int docID() { return doc; }
-
+    public final int docID() { return doc; }
+    
     @Override
-    public float freq() { throw new UnsupportedOperationException(); }
-
+    public final float freq() { throw new UnsupportedOperationException(); }
+    
     @Override
-    public int nextDoc() { throw new UnsupportedOperationException(); }
-  }
+    public final int nextDoc() { throw new UnsupportedOperationException(); }
+    }
 
-  // TODO: would be nice if a collector defined a
-  // needsScores() method so we can specialize / do checks
-  // up front:
-  private final Collector other;
-  private final int maxDocsToCache;
+  // A CachingCollector which caches scores
+  private static final class ScoreCachingCollector extends CachingCollector {
 
-  private final boolean cacheScores;
-  private final CachedScorer cachedScorer;
-  private final List<int[]> cachedDocs;
-  private final List<float[]> cachedScores;
-  private final List<SegStart> cachedSegs = new ArrayList<SegStart>();
+    private final CachedScorer cachedScorer;
+    private final List<float[]> cachedScores;
 
-  private Scorer scorer;
-  private int[] curDocs;
-  private float[] curScores;
-  private int upto;
-  private AtomicReaderContext lastReaderContext;
-  private int base;
+    private Scorer scorer;
+    private float[] curScores;
 
-  public CachingCollector(Collector other, boolean cacheScores, double maxRAMMB) {
-    this.other = other;
-    this.cacheScores = cacheScores;
-    if (cacheScores) {
+    ScoreCachingCollector(Collector other, double maxRAMMB) {
+      super(other, maxRAMMB, true);
+
       cachedScorer = new CachedScorer();
       cachedScores = new ArrayList<float[]>();
       curScores = new float[128];
       cachedScores.add(curScores);
-    } else {
-      cachedScorer = null;
-      cachedScores = null;
     }
+    
+    @Override
+    public void collect(int doc) throws IOException {
+
+      if (curDocs == null) {
+        // Cache was too large
+        cachedScorer.score = scorer.score();
+        cachedScorer.doc = doc;
+        other.collect(doc);
+        return;
+      }
+
+      // Allocate a bigger array or abort caching
+      if (upto == curDocs.length) {
+        base += upto;
+        
+        // Compute next array length - don't allocate too big arrays
+        int nextLength = 8*curDocs.length;
+        if (nextLength > MAX_ARRAY_SIZE) {
+          nextLength = MAX_ARRAY_SIZE;
+        }
+
+        if (base + nextLength > maxDocsToCache) {
+          // try to allocate a smaller array
+          nextLength = maxDocsToCache - base;
+          if (nextLength <= 0) {
+            // Too many docs to collect -- clear cache
+            curDocs = null;
+            curScores = null;
+            cachedSegs.clear();
+            cachedDocs.clear();
+            cachedScores.clear();
+            cachedScorer.score = scorer.score();
+            cachedScorer.doc = doc;
+            other.collect(doc);
+            return;
+          }
+        }
+        
+        curDocs = new int[nextLength];
+        cachedDocs.add(curDocs);
+        curScores = new float[nextLength];
+        cachedScores.add(curScores);
+        upto = 0;
+      }
+      
+      curDocs[upto] = doc;
+      cachedScorer.score = curScores[upto] = scorer.score();
+      upto++;
+      cachedScorer.doc = doc;
+      other.collect(doc);
+    }
+
+    @Override
+    public void replay(Collector other) throws IOException {
+      replayInit(other);
+      
+      int curUpto = 0;
+      int curBase = 0;
+      int chunkUpto = 0;
+      other.setScorer(cachedScorer);
+      curDocs = EMPTY_INT_ARRAY;
+      for (SegStart seg : cachedSegs) {
+        other.setNextReader(seg.readerContext);
+        while (curBase + curUpto < seg.end) {
+          if (curUpto == curDocs.length) {
+            curBase += curDocs.length;
+            curDocs = cachedDocs.get(chunkUpto);
+            curScores = cachedScores.get(chunkUpto);
+            chunkUpto++;
+            curUpto = 0;
+          }
+          cachedScorer.score = curScores[curUpto];
+          other.collect(curDocs[curUpto++]);
+        }
+      }
+    }
+
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      other.setScorer(cachedScorer);
+    }
+
+    @Override
+    public String toString() {
+      if (isCached()) {
+        return "CachingCollector (" + (base+upto) + " docs & scores cached)";
+      } else {
+        return "CachingCollector (cache was cleared)";
+      }
+    }
+
+  }
+
+  // A CachingCollector which does not cache scores
+  private static final class NoScoreCachingCollector extends CachingCollector {
+    
+    NoScoreCachingCollector(Collector other, double maxRAMMB) {
+     super(other, maxRAMMB, false);
+    }
+    
+    @Override
+    public void collect(int doc) throws IOException {
+
+      if (curDocs == null) {
+        // Cache was too large
+        other.collect(doc);
+        return;
+      }
+
+      // Allocate a bigger array or abort caching
+      if (upto == curDocs.length) {
+        base += upto;
+        
+        // Compute next array length - don't allocate too big arrays
+        int nextLength = 8*curDocs.length;
+        if (nextLength > MAX_ARRAY_SIZE) {
+          nextLength = MAX_ARRAY_SIZE;
+        }
+
+        if (base + nextLength > maxDocsToCache) {
+          // try to allocate a smaller array
+          nextLength = maxDocsToCache - base;
+          if (nextLength <= 0) {
+            // Too many docs to collect -- clear cache
+            curDocs = null;
+            cachedSegs.clear();
+            cachedDocs.clear();
+            other.collect(doc);
+            return;
+          }
+        }
+        
+        curDocs = new int[nextLength];
+        cachedDocs.add(curDocs);
+        upto = 0;
+      }
+      
+      curDocs[upto] = doc;
+      upto++;
+      other.collect(doc);
+    }
+
+    @Override
+    public void replay(Collector other) throws IOException {
+      replayInit(other);
+      
+      int curUpto = 0;
+      int curbase = 0;
+      int chunkUpto = 0;
+      curDocs = EMPTY_INT_ARRAY;
+      for (SegStart seg : cachedSegs) {
+        other.setNextReader(seg.readerContext);
+        while (curbase + curUpto < seg.end) {
+          if (curUpto == curDocs.length) {
+            curbase += curDocs.length;
+            curDocs = cachedDocs.get(chunkUpto);
+            chunkUpto++;
+            curUpto = 0;
+          }
+          other.collect(curDocs[curUpto++]);
+        }
+      }
+    }
+
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+      other.setScorer(scorer);
+    }
+
+    @Override
+    public String toString() {
+      if (isCached()) {
+        return "CachingCollector (" + (base+upto) + " docs cached)";
+      } else {
+        return "CachingCollector (cache was cleared)";
+      }
+    }
+
+  }
+
+  // TODO: would be nice if a collector defined a
+  // needsScores() method so we can specialize / do checks
+  // up front. This is only relevant for the ScoreCaching
+  // version -- if the wrapped Collector does not need
+  // scores, it can avoid cachedScorer entirely.
+  protected final Collector other;
+  
+  protected final int maxDocsToCache;
+  protected final List<SegStart> cachedSegs = new ArrayList<SegStart>();
+  protected final List<int[]> cachedDocs;
+  
+  private AtomicReaderContext lastReaderContext;
+  
+  protected int[] curDocs;
+  protected int upto;
+  protected int base;
+  protected int lastDocBase;
+  
+  public static CachingCollector create(Collector other, boolean cacheScores, double maxRAMMB) {
+    return cacheScores ? new ScoreCachingCollector(other, maxRAMMB) : new NoScoreCachingCollector(other, maxRAMMB);
+    }
+  
+  // Prevent extension from non-internal classes
+  private CachingCollector(Collector other, double maxRAMMB, boolean cacheScores) {
+    this.other = other;
+    
     cachedDocs = new ArrayList<int[]>();
     curDocs = new int[INITIAL_ARRAY_SIZE];
     cachedDocs.add(curDocs);
@@ -134,76 +328,8 @@ public class CachingCollector extends Collector {
   }
   
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    this.scorer = scorer;
-    other.setScorer(cachedScorer);
-  }
-
-  @Override
   public boolean acceptsDocsOutOfOrder() {
     return other.acceptsDocsOutOfOrder();
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-
-    if (curDocs == null) {
-      // Cache was too large
-      if (cacheScores) {
-        cachedScorer.score = scorer.score();
-      }
-      cachedScorer.doc = doc;
-      other.collect(doc);
-      return;
-    }
-
-    // Allocate a bigger array or abort caching
-    if (upto == curDocs.length) {
-      base += upto;
-      
-      // Compute next array length - don't allocate too big arrays
-      int nextLength = 8*curDocs.length;
-      if (nextLength > MAX_ARRAY_SIZE) {
-        nextLength = MAX_ARRAY_SIZE;
-      }
-
-      if (base + nextLength > maxDocsToCache) {
-        // try to allocate a smaller array
-        nextLength = maxDocsToCache - base;
-        if (nextLength <= 0) {
-          // Too many docs to collect -- clear cache
-          curDocs = null;
-          curScores = null;
-          cachedSegs.clear();
-          cachedDocs.clear();
-          cachedScores.clear();
-          if (cacheScores) {
-            cachedScorer.score = scorer.score();
-          }
-          cachedScorer.doc = doc;
-          other.collect(doc);
-          return;
-        }
-      }
-      
-      curDocs = new int[nextLength];
-      cachedDocs.add(curDocs);
-      if (cacheScores) {
-        curScores = new float[nextLength];
-        cachedScores.add(curScores);
-      }
-      upto = 0;
-    }
-    
-    curDocs[upto] = doc;
-    // TODO: maybe specialize private subclass so we don't
-    // null check per collect...
-    if (cacheScores) {
-      cachedScorer.score = curScores[upto] = scorer.score();
-    }
-    upto++;
-    cachedScorer.doc = doc;
-    other.collect(doc);
   }
 
   public boolean isCached() {
@@ -219,26 +345,8 @@ public class CachingCollector extends Collector {
     lastReaderContext = context;
   }
 
-  @Override
-  public String toString() {
-    if (isCached()) {
-      return "CachingCollector (" + (base+upto) + " docs " + (cacheScores ? " & scores" : "") + " cached)";
-    } else {
-      return "CachingCollector (cache was cleared)";
-    }
-  }
-
-  /**
-   * Replays the cached doc IDs (and scores) to the given Collector.
-   * 
-   * @throws IllegalStateException
-   *           if this collector is not cached (i.e., if the RAM limits were too
-   *           low for the number of documents + scores to cache).
-   * @throws IllegalArgumentException
-   *           if the given Collect's does not support out-of-order collection,
-   *           while the collector passed to the ctor does.
-   */
-  public void replay(Collector other) throws IOException {
+  /** Reused by the specialized inner classes. */
+  void replayInit(Collector other) {
     if (!isCached()) {
       throw new IllegalStateException("cannot replay: cache was cleared because too much RAM was required");
     }
@@ -249,35 +357,26 @@ public class CachingCollector extends Collector {
               + "out-of-order collection, while the wrapped collector does. "
               + "Therefore cached documents may be out-of-order.");
     }
-
+    
     //System.out.println("CC: replay totHits=" + (upto + base));
     if (lastReaderContext != null) {
       cachedSegs.add(new SegStart(lastReaderContext, base+upto));
       lastReaderContext = null;
     }
-    
-    int curupto = 0;
-    int curbase = 0;
-    int chunkUpto = 0;
-    other.setScorer(cachedScorer);
-    curDocs = EMPTY_INT_ARRAY;
-    for(SegStart seg : cachedSegs) {
-      other.setNextReader(seg.readerContext);
-      while(curbase+curupto < seg.end) {
-        if (curupto == curDocs.length) {
-          curbase += curDocs.length;
-          curDocs = cachedDocs.get(chunkUpto);
-          if (cacheScores) {
-            curScores = cachedScores.get(chunkUpto);
-          }
-          chunkUpto++;
-          curupto = 0;
-        }
-        if (cacheScores) {
-          cachedScorer.score = curScores[curupto];
-        }
-        other.collect(curDocs[curupto++]);
-      }
-    }
   }
+
+  /**
+   * Replays the cached doc IDs (and scores) to the given Collector. If this
+   * instance does not cache scores, then Scorer is not set on
+   * {@code other.setScorer} as well as scores are not replayed.
+   * 
+   * @throws IllegalStateException
+   *           if this collector is not cached (i.e., if the RAM limits were too
+   *           low for the number of documents + scores to cache).
+   * @throws IllegalArgumentException
+   *           if the given Collect's does not support out-of-order collection,
+   *           while the collector passed to the ctor does.
+   */
+  public abstract void replay(Collector other) throws IOException;
+  
 }

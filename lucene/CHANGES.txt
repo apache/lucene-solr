@@ -411,6 +411,10 @@ New features
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
 
+* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
+  document IDs and scores encountered during the search, and "reply" them to 
+  another Collector. (Mike McCandless, Shai Erera)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
