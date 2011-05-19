@@ -444,27 +444,6 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-* LUCENE-2936: PhraseQuery score explanations were not correctly 
-  identifying matches vs non-matches.  (hossman)
-
-* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
-  indexes, causing existing deletions to be applied on the incoming indexes as 
-  well. (Shai Erera, Mike McCandless)
-
-* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
-  query terms had same position in the query. (Doron Cohen)
-
-Test Cases
-
-* LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
-  stop iterating if at least 'tests.iter.min' ran and a failure occured. 
-  (Shai Erera, Chris Hostetter)
-
-Build
-
-* LUCENE-3006: Building javadocs will fail on warnings by default. 
-  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -564,8 +543,16 @@ Bug fixes
   PhraseQuery as term with lower doc freq will also have less positions.
   (Uwe Schindler, Robert Muir, Otis Gospodnetic)
 
+* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
+  query terms had same position in the query. (Doron Cohen)
+
 * LUCENE-3012: Lucene writes the header now for separate norm files (*.sNNN)
   (Robert Muir)
+
+Build
+
+* LUCENE-3006: Building javadocs will fail on warnings by default. 
+  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
 Test Cases
 
