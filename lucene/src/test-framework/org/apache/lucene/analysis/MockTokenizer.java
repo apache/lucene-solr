@@ -26,7 +26,16 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * Automaton-based tokenizer for testing. Optionally lowercases.
+ * Tokenizer for testing.
+ * <p>
+ * This tokenizer is a replacement for {@link #WHITESPACE}, {@link #SIMPLE}, and {@link #KEYWORD}
+ * tokenizers. If you are writing a component such as a TokenFilter, its a great idea to test
+ * it wrapping this tokenizer instead for extra checks. This tokenizer has the following behavior:
+ * <ul>
+ *   <li>An internal state-machine is used for checking consumer consistency. These checks can
+ *       be disabled with {@link #setEnableChecks(boolean)}.
+ *   <li>For convenience, optionally lowercases terms that it outputs.
+ * </ul>
  */
 public class MockTokenizer extends Tokenizer {
   /** Acts Similar to WhitespaceTokenizer */

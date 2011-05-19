@@ -30,7 +30,15 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /** 
- * Base class for all Lucene unit tests that use TokenStreams.  
+ * Base class for all Lucene unit tests that use TokenStreams. 
+ * <p>
+ * When writing unit tests for analysis components, its highly recommended
+ * to use the helper methods here (especially in conjunction with {@link MockAnalyzer} or
+ * {@link MockTokenizer}), as they contain many assertions and checks to 
+ * catch bugs.
+ * 
+ * @see MockAnalyzer
+ * @see MockTokenizer
  */
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   // some helpers to test Analyzers and TokenStreams:
