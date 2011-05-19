@@ -108,7 +108,12 @@ Bug fixes
 
 * LUCENE-3012: Lucene writes the header now for separate norm files (*.sNNN)
   (Robert Muir)
-  
+
+Build
+
+* LUCENE-3006: Building javadocs will fail on warnings by default. 
+  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
