@@ -275,10 +275,6 @@ API Changes
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
-* LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
-  (though @lucene.experimental), allowing for custom MergeScheduler 
-  implementations. (Shai Erera)
-
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -334,9 +330,6 @@ New features
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
 
-* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
-  (Tim Smith, Grant Ingersoll)
-
 * LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
   SegmentInfosReader to allow customization of SegmentInfos data.
   (Andrzej Bialecki)
@@ -366,9 +359,6 @@ New features
   use MultiFields static methods directly, instead) if you need to use
   the flex APIs directly on a composite reader.  (Mike McCandless)
 
-* LUCENE-2692: Added several new SpanQuery classes for positional checking
-  (match is in a range, payload is a specific value) (Grant Ingersoll)  
-  
 * LUCENE-2690: MultiTermQuery boolean rewrites per segment.
   (Uwe Schindler, Robert Muir, Mike McCandless, Simon Willnauer)
 
@@ -401,19 +391,12 @@ New features
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
 
-* LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
-  fields without the solr dependency. (ryan)
-  
 * LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
   refactored from Solr's UnInvertedField, for accessing term ords for
   multi-valued fields, per document.  This is similar to FieldCache in
   that it inverts the index to compute the ords, but differs in that
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
-
-* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
-  document IDs and scores encountered during the search, and "replay" them to 
-  another Collector. (Mike McCandless, Shai Erera)
 
 Optimizations
 
@@ -498,6 +481,10 @@ New features
 
 * LUCENE-3071: Adding ReversePathHierarchyTokenizer, added skip parameter to 
   PathHierarchyTokenizer (Olivier Favre via ryan)
+
+* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
+  document IDs and scores encountered during the search, and "replay" them to 
+  another Collector. (Mike McCandless, Shai Erera)
 
 API Changes
 
@@ -1097,6 +1084,12 @@ New features
   (Robert Muir, Steven Rowe)
 
 * LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
+
+* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
+  (Tim Smith, Grant Ingersoll)
+
+* LUCENE-2692: Added several new SpanQuery classes for positional checking
+  (match is in a range, payload is a specific value) (Grant Ingersoll)  
 
 Optimizations
 
