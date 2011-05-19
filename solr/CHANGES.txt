@@ -36,8 +36,18 @@ Bug Fixes
 * SOLR-2495: The JSON parser could hang on corrupted input and could fail
   to detect numbers that were too large to fit in a long.  (yonik)
 
+Other Changes
+----------------------
 
-  
+* SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
+  because html encoding confuses non-ascii users. (koji)
+
+Build
+----------------------
+
+Documentation
+----------------------
+
 ==================  3.1.0 ==================
 Versions of Major Components
 ---------------------
