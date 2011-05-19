@@ -1258,11 +1258,11 @@ public class TestIndexWriter extends LuceneTestCase {
             newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
                 setOpenMode(OpenMode.CREATE).
                 setMaxBufferedDocs(2).
-                setMergePolicy(newLogMergePolicy(101))
+                setMergePolicy(newLogMergePolicy(51))
         );
         Document doc = new Document();
         doc.add(newField("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-        for(int i=0;i<200;i++)
+        for(int i=0;i<100;i++)
           writer.addDocument(doc);
         writer.optimize(false);
 
