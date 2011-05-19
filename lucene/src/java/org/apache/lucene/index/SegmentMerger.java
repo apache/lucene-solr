@@ -575,15 +575,12 @@ final class SegmentMerger {
       mergeState.multiDeletedDocs = new MultiBits(perDocBits, perDocBitsStarts);
       final PerDocConsumer docsConsumer = codec
           .docsConsumer(new PerDocWriteState(segmentWriteState));
-      MultiPerDocValues multiPerDocValues = null; 
       try {
-        multiPerDocValues = new MultiPerDocValues(perDocProducers
+        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(perDocProducers
             .toArray(PerDocValues.EMPTY_ARRAY), perDocSlices
             .toArray(ReaderUtil.Slice.EMPTY_ARRAY));
         docsConsumer.merge(mergeState, multiPerDocValues);
       } finally {
-        if (multiPerDocValues != null)
-          multiPerDocValues.close();
         docsConsumer.close();
       }
     }
