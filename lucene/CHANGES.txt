@@ -658,6 +658,12 @@ New features
 
 * LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
 
+* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
+  (Tim Smith, Grant Ingersoll)
+
+* LUCENE-2692: Added several new SpanQuery classes for positional checking
+  (match is in a range, payload is a specific value) (Grant Ingersoll)  
+
 Optimizations
 
 * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
