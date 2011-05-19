@@ -341,43 +341,29 @@ public final class Bytes {
 
   // TODO: open up this API?!
   static abstract class BytesWriterBase extends Writer {
-    private final Directory dir;
     private final String id;
     protected IndexOutput idxOut;
     protected IndexOutput datOut;
     protected BytesRef bytesRef;
-    private final String codecName;
-    private final int version;
     protected final ByteBlockPool pool;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version, boolean initIndex, boolean initData, ByteBlockPool pool,
+        int version, boolean initIndex, ByteBlockPool pool,
         AtomicLong bytesUsed) throws IOException {
       super(bytesUsed);
-      this.dir = dir;
       this.id = id;
-      this.codecName = codecName;
-      this.version = version;
       this.pool = pool;
-      if (initData) {
-        initDataOut();
-      }
+        datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+            DATA_EXTENSION));
+        CodecUtil.writeHeader(datOut, codecName, version);
 
       if (initIndex) {
-        initIndexOut();
+        idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+            INDEX_EXTENSION));
+        CodecUtil.writeHeader(idxOut, codecName, version);
+      } else {
+        idxOut = null;
       }
-    }
-
-    private void initDataOut() throws IOException {
-      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          DATA_EXTENSION));
-      CodecUtil.writeHeader(datOut, codecName, version);
-    }
-
-    private void initIndexOut() throws IOException {
-      idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          INDEX_EXTENSION));
-      CodecUtil.writeHeader(idxOut, codecName, version);
     }
 
     /**
@@ -390,7 +376,6 @@ public final class Bytes {
     @Override
     public void finish(int docCount) throws IOException {
       try {
-        if (datOut != null)
           datOut.close();
       } finally {
         try {
@@ -483,9 +468,7 @@ public final class Bytes {
         super.close();
       } finally {
         try {
-          if (datIn != null) {
             datIn.close();
-          }
         } finally {
           if (idxIn != null) {
             idxIn.close();

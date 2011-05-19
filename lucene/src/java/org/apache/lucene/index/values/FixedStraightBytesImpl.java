@@ -46,7 +46,7 @@ class FixedStraightBytesImpl {
     private byte[] oneRecord;
 
     protected Writer(Directory dir, String id) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, true, null, null);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, null, null);
     }
 
     // TODO - impl bulk copy here!
@@ -87,7 +87,13 @@ class FixedStraightBytesImpl {
         }
         fill(state.docBase);
         // TODO should we add a transfer to API to each reader?
-        datOut.copyBytes(reader.cloneData(), size * maxDocs);
+        final IndexInput cloneData = reader.cloneData();
+        try {
+          datOut.copyBytes(cloneData, size * maxDocs);
+        } finally {
+          cloneData.close();  
+        }
+        
         lastDocID += maxDocs - 1;
       } else
         super.merge(state);
@@ -116,7 +122,7 @@ class FixedStraightBytesImpl {
     }
 
     public long ramBytesUsed() {
-      return 0;
+      return oneRecord == null ? 0 : oneRecord.length;
     }
 
   }

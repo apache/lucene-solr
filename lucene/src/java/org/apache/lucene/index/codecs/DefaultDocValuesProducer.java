@@ -131,7 +131,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
   }
 
   public void close() throws IOException {
-    Collection<DocValues> values = docValues.values();
+    final Collection<DocValues> values = docValues.values();
     IOException ex = null;
     for (DocValues docValues : values) {
       try {

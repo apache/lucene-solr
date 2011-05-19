@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.codecs.Codec;
@@ -243,8 +244,7 @@ final class PerFieldCodecWrapper extends Codec {
   }
   
   private final class PerDocProducers extends PerDocValues {
-    private final Set<String> fields = new TreeSet<String>();
-    private final Map<String, PerDocValues> codecs = new HashMap<String, PerDocValues>();
+    private final TreeMap<String, PerDocValues> codecs = new TreeMap<String, PerDocValues>();
 
     public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
         int readBufferSize, int indexDivisor) throws IOException {
@@ -253,7 +253,6 @@ final class PerFieldCodecWrapper extends Codec {
       try {
         for (FieldInfo fi : fieldInfos) {
           if (fi.hasDocValues()) { 
-            fields.add(fi.name);
             assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
@@ -280,9 +279,10 @@ final class PerFieldCodecWrapper extends Codec {
         }
       }
     }
+    
     @Override
     public Collection<String> fields() {
-      return fields;
+      return codecs.keySet();
     }
     @Override
     public DocValues docValues(String field) throws IOException {
@@ -302,11 +302,11 @@ final class PerFieldCodecWrapper extends Codec {
           if (next != null) {
             next.close();
           }
-        } catch (IOException ioe) {
+        } catch (Exception ioe) {
           // keep first IOException we hit but keep
           // closing the rest
           if (err == null) {
-            err = ioe;
+            err = new IOException(ioe);
           }
         }
       }

@@ -151,9 +151,19 @@ public class MultiPerDocValues extends PerDocValues {
   }
 
   public void close() throws IOException {
-    PerDocValues[] perDocValues = this.subs;
+    final PerDocValues[] perDocValues = this.subs;
+    IOException ex = null;
     for (PerDocValues values : perDocValues) {
-      values.close();
+      try {
+        values.close();
+      } catch (IOException e) {
+        if (ex == null) {
+          ex = e;
+        }
+      }
+    }
+    if (ex != null) {
+      throw ex;
     }
   }
 

@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
-import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.BytesRefHash.TrackingDirectBytesStartArray;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -54,16 +54,15 @@ class FixedDerefBytesImpl {
     private final BytesRefHash hash = new BytesRefHash(pool,
         BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
             BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
-
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      this(dir, id, new DirectAllocator(ByteBlockPool.BYTE_BLOCK_SIZE),
+      this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
           bytesUsed);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
         AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true,
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
           new ByteBlockPool(allocator), bytesUsed);
       docToID = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT); // TODO BytesRefHash
@@ -249,8 +248,11 @@ class FixedDerefBytesImpl {
       }
 
       public void close() throws IOException {
-        datIn.close();
-        idx.close();
+        try {
+          datIn.close();
+        } finally {
+          idx.close();
+        }
       }
 
       protected void fill(long address, BytesRef ref) throws IOException {

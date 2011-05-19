@@ -303,7 +303,7 @@ public abstract class AbstractField implements Fieldable {
   }
   
   public boolean hasDocValues() {
-    return docValues != null;
+    return docValues != null && docValues.type() != null;
   }
   
   public ValueType docValuesType() {

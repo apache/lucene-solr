@@ -51,7 +51,7 @@ class VarStraightBytesImpl {
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, true, null, bytesUsed);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed);
       docToAddress = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
