@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.SegmentReader.Norm;
+import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
@@ -161,7 +161,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
     reader1.norms("field1");
-    Norm r1norm = reader1.norms.get("field1");
+    SegmentNorms r1norm = reader1.norms.get("field1");
     AtomicInteger r1BytesRef = r1norm.bytesRef();
     SegmentReader reader2 = (SegmentReader)reader1.clone();
     assertEquals(2, r1norm.bytesRef().get());
@@ -180,14 +180,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader2C = (IndexReader) reader1.clone();
     SegmentReader segmentReader2C = SegmentReader.getOnlySegmentReader(reader2C);
     segmentReader2C.norms("field1"); // load the norms for the field
-    Norm reader2CNorm = segmentReader2C.norms.get("field1");
+    SegmentNorms reader2CNorm = segmentReader2C.norms.get("field1");
     assertTrue("reader2CNorm.bytesRef()=" + reader2CNorm.bytesRef(), reader2CNorm.bytesRef().get() == 2);
     
     
     
     IndexReader reader3C = (IndexReader) reader2C.clone();
     SegmentReader segmentReader3C = SegmentReader.getOnlySegmentReader(reader3C);
-    Norm reader3CCNorm = segmentReader3C.norms.get("field1");
+    SegmentNorms reader3CCNorm = segmentReader3C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().get());
     
     // edit a norm and the refcount should be 1
@@ -207,13 +207,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     // norm values should be different 
     assertTrue(Similarity.getDefault().decodeNormValue(segmentReader3C.norms("field1")[5]) 
     		!= Similarity.getDefault().decodeNormValue(segmentReader4C.norms("field1")[5]));
-    Norm reader4CCNorm = segmentReader4C.norms.get("field1");
+    SegmentNorms reader4CCNorm = segmentReader4C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().get());
     assertEquals(1, reader4CCNorm.bytesRef().get());
         
     IndexReader reader5C = (IndexReader) reader4C.clone();
     SegmentReader segmentReader5C = SegmentReader.getOnlySegmentReader(reader5C);
-    Norm reader5CCNorm = segmentReader5C.norms.get("field1");
+    SegmentNorms reader5CCNorm = segmentReader5C.norms.get("field1");
     reader5C.setNorm(5, "field1", 0.7f);
     assertEquals(1, reader5CCNorm.bytesRef().get());
 
