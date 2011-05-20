@@ -132,7 +132,7 @@
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-collections-0.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-math-0.3.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.3.5.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.4.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/activation-1.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/mail-1.4.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/asm-3.1.jar"/>
