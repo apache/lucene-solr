@@ -93,7 +93,6 @@
       <groupId>org.simpleframework</groupId>
       <artifactId>simple-xml</artifactId>
       <version>2.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
