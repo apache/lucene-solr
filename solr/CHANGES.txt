@@ -55,6 +55,10 @@ New Features
   when generating filter queries from terms returned from field faceting or
   the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
 
+* SOLR-1915: DebugComponent now supports using a NamedList to model
+  Explanation objects in it's responses instead of
+  Explanation.toString  (hossman) 
+
 
 Optimizations
 ----------------------

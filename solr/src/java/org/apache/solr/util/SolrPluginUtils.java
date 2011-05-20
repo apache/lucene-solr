@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -108,7 +109,7 @@ public class SolrPluginUtils {
    * @deprecated Use org.apache.solr.common.params.CommonParams.FL.
    */
   @Deprecated
-  public static String FL = org.apache.solr.common.params.CommonParams.FL;
+  public static String FL = CommonParams.FL;
 
   /**
    * SolrIndexSearch.numDocs(Query,Query) freaks out if the filtering
@@ -189,7 +190,7 @@ public class SolrPluginUtils {
   public static int setReturnFields(SolrQueryRequest req,
                                     SolrQueryResponse res) {
 
-    return setReturnFields(req.getParams().get(org.apache.solr.common.params.CommonParams.FL), res);
+    return setReturnFields(req.getParams().get(CommonParams.FL), res);
   }
 
   /**
@@ -312,10 +313,10 @@ public class SolrPluginUtils {
                                           String userQuery,
                                           Query query,
                                           DocList results,
-                                          CommonParams params)
+                                          org.apache.solr.util.CommonParams params)
     throws IOException {
         
-    String debug = getParam(req, org.apache.solr.common.params.CommonParams.DEBUG_QUERY, params.debugQuery);
+    String debug = getParam(req, CommonParams.DEBUG_QUERY, params.debugQuery);
 
     NamedList dbg = null;
     if (debug!=null) {
@@ -368,7 +369,7 @@ public class SolrPluginUtils {
    *     own toString method (in case it has internal state Solr
    *     doesn't know about)
    * </li>
-   * <li>expain - the list of score explanations for each document in
+   * <li>explain - the list of score explanations for each document in
    *     results against query.
    * </li>
    * <li>otherQuery - the query string specified in 'explainOther' query param.
@@ -392,74 +393,140 @@ public class SolrPluginUtils {
                                           DocList results)
     throws IOException {
 
-    String debug = req.getParams().get(org.apache.solr.common.params.CommonParams.DEBUG_QUERY);
+    String debug = req.getParams().get(CommonParams.DEBUG_QUERY);
 
     NamedList dbg = null;
     if (debug!=null) {
       dbg = new SimpleOrderedMap();
 
+      SolrIndexSearcher searcher = req.getSearcher();
+      IndexSchema schema = req.getSchema();
+
+      boolean explainStruct
+        = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT,false);
+      
       /* userQuery may have been pre-processes .. expose that */
-      dbg.add("rawquerystring", req.getParams().get(org.apache.solr.common.params.CommonParams.Q));
+      dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
       dbg.add("querystring", userQuery);
 
       /* QueryParsing.toString isn't perfect, use it to see converted
        * values, use regular toString to see any attributes of the
        * underlying Query it may have missed.
        */
-      dbg.add("parsedquery",QueryParsing.toString(query, req.getSchema()));
+      dbg.add("parsedquery",QueryParsing.toString(query, schema));
       dbg.add("parsedquery_toString", query.toString());
 
-      dbg.add("explain", getExplainList
-              (query, results, req.getSearcher(), req.getSchema()));
-      String otherQueryS = req.getParams().get(org.apache.solr.common.params.CommonParams.EXPLAIN_OTHER);
+      NamedList<Explanation> explain 
+        = getExplanations(query, results, searcher, schema);
+      dbg.add("explain", explainStruct ?
+              explanationsToNamedLists(explain) : 
+              explanationsToStrings(explain));
+
+      String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
           (otherQueryS,req,0,10);
         dbg.add("otherQuery",otherQueryS);
-        dbg.add("explainOther", getExplainList
-                (query, otherResults,
-                 req.getSearcher(),
-                 req.getSchema()));
+        NamedList<Explanation> explainO
+          = getExplanations(query, otherResults, searcher, schema);
+        dbg.add("explainOther", explainStruct ?
+                explanationsToNamedLists(explainO) : 
+                explanationsToStrings(explainO));
       }
     }
 
     return dbg;
   }
 
+  public static NamedList<Object> explanationToNamedList(Explanation e) {
+    NamedList<Object> out = new SimpleOrderedMap<Object>();
 
+    out.add("match", e.isMatch());
+    out.add("value", e.getValue());
+    out.add("description", e.getDescription());
+
+    Explanation[] details = e.getDetails();
+
+    // short circut out
+    if (null == details || 0 == details.length) return out;
+
+    List<NamedList<Object>> kids
+      = new ArrayList<NamedList<Object>>(details.length);
+    for (Explanation d : details) {
+      kids.add(explanationToNamedList(d));
+    }
+    out.add("details", kids);
+
+    return out;
+  }
+  
+  public static NamedList<NamedList<Object>> explanationsToNamedLists
+    (NamedList<Explanation> explanations) {
+
+    NamedList<NamedList<Object>> out 
+      = new SimpleOrderedMap<NamedList<Object>>();
+    for (Map.Entry<String,Explanation> entry : explanations) {
+      out.add(entry.getKey(), explanationToNamedList(entry.getValue()));
+    }
+    return out;
+  }
 
   /**
-   * Generates an list of Explanations for each item in a list of docs.
+   * Generates an NamedList of Explanations for each item in a list of docs.
    *
    * @param query The Query you want explanations in the context of
    * @param docs The Documents you want explained relative that query
    */
-  public static NamedList getExplainList(Query query, DocList docs,
-                                         SolrIndexSearcher searcher,
-                                         IndexSchema schema)
-    throws IOException {
-        
-    NamedList explainList = new SimpleOrderedMap();
+  public static NamedList<Explanation> getExplanations
+    (Query query, 
+     DocList docs, 
+     SolrIndexSearcher searcher, 
+     IndexSchema schema) throws IOException {
+    
+    NamedList<Explanation> explainList = new SimpleOrderedMap<Explanation>();
     DocIterator iterator = docs.iterator();
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Explanation explain = searcher.explain(query, id);
-
       Document doc = searcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
-      // String docname = "";
-      // if (strid != null) docname="id="+strid+",";
-      // docname = docname + "internal_docid="+id;
-
-      explainList.add(strid, "\n" +explain.toString());
+      explainList.add(strid, searcher.explain(query, id) );
     }
     return explainList;
   }
 
+  private static NamedList<String> explanationsToStrings
+    (NamedList<Explanation> explanations) {
+
+    NamedList<String> out = new SimpleOrderedMap<String>();
+    for (Map.Entry<String,Explanation> entry : explanations) {
+      out.add(entry.getKey(), "\n"+entry.getValue().toString());
+    }
+    return out;
+  }
+
   /**
    * Executes a basic query
+   * Generates an list of Explanations for each item in a list of docs.
+   *
+   * @param query The Query you want explanations in the context of
+   * @param docs The Documents you want explained relative that query
+   * @deprecated this returns the explanations as Strings, instead it 
+   *    is recommeded to use getExplanations and call toString() 
+   *    yourself, or use explanationsToNamedLists
+   */
+  @Deprecated
+  public static NamedList getExplainList(Query query, DocList docs,
+                                         SolrIndexSearcher searcher,
+                                         IndexSchema schema)
+    throws IOException {
+
+    return explanationsToStrings(getExplanations(query,docs,searcher,schema));
+  }
+
+  /**
+   * Executes a basic query in lucene syntax
    */
   public static DocList doSimpleQuery(String sreq,
                                       SolrQueryRequest req,
@@ -829,7 +896,7 @@ public class SolrPluginUtils {
    */
   public static Sort getSort(SolrQueryRequest req) {
 
-    String sort = req.getParams().get(org.apache.solr.common.params.CommonParams.SORT);
+    String sort = req.getParams().get(CommonParams.SORT);
     if (null == sort || sort.equals("")) {
       return null;
     }
@@ -859,7 +926,7 @@ public class SolrPluginUtils {
    * @return null if no filter queries
    */
   public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {
-    return parseQueryStrings(req, req.getParams().getParams(org.apache.solr.common.params.CommonParams.FQ));
+    return parseQueryStrings(req, req.getParams().getParams(CommonParams.FQ));
   }
 
   /** Turns an array of query strings into a List of Query objects.

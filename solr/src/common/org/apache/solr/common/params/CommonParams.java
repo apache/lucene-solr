@@ -61,6 +61,12 @@ public interface CommonParams {
   /** whether to include debug data */
   public static final String DEBUG_QUERY = "debugQuery";
   
+  /** 
+   * boolean indicating whether score explanations should structured (true), 
+   * or plain text (false)
+   */
+  public static final String EXPLAIN_STRUCT = "debug.explain.structured";
+  
   /** another query to explain against */
   public static final String EXPLAIN_OTHER = "explainOther";
   
