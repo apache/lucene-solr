@@ -61,37 +61,33 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecId,
       Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
-    boolean indexed = false;
     for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.getCodecId() == codecId) {
-        indexed |= fieldInfo.isIndexed;
-        if (fieldInfo.hasDocValues()) {
-          String filename = docValuesId(segmentInfo.name, codecId, fieldInfo.number);
-          switch (fieldInfo.getDocValues()) {
-          case BYTES_FIXED_DEREF:
-          case BYTES_VAR_DEREF:
-          case BYTES_VAR_SORTED:
-          case BYTES_FIXED_SORTED:
-          case BYTES_VAR_STRAIGHT:
-            files.add(IndexFileNames.segmentFileName(filename, "",
-                Writer.INDEX_EXTENSION));
-            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                Writer.INDEX_EXTENSION));
-            // until here all types use an index
-          case BYTES_FIXED_STRAIGHT:
-          case FLOAT_32:
-          case FLOAT_64:
-          case INTS:
-            files.add(IndexFileNames.segmentFileName(filename, "",
-                Writer.DATA_EXTENSION));
-            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-                Writer.DATA_EXTENSION));
-            break;
-           default:
-             assert false;
-          }
+      if (fieldInfo.getCodecId() == codecId && fieldInfo.hasDocValues()) {
+        String filename = docValuesId(segmentInfo.name, codecId,
+            fieldInfo.number);
+        switch (fieldInfo.getDocValues()) {
+        case BYTES_FIXED_DEREF:
+        case BYTES_VAR_DEREF:
+        case BYTES_VAR_SORTED:
+        case BYTES_FIXED_SORTED:
+        case BYTES_VAR_STRAIGHT:
+          files.add(IndexFileNames.segmentFileName(filename, "",
+              Writer.INDEX_EXTENSION));
+          assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+              Writer.INDEX_EXTENSION));
+          // until here all types use an index
+        case BYTES_FIXED_STRAIGHT:
+        case FLOAT_32:
+        case FLOAT_64:
+        case INTS:
+          files.add(IndexFileNames.segmentFileName(filename, "",
+              Writer.DATA_EXTENSION));
+          assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+              Writer.DATA_EXTENSION));
+          break;
+        default:
+          assert false;
         }
-
       }
     }
   }

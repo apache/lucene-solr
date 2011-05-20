@@ -71,7 +71,6 @@ public class Floats {
   }
 
   abstract static class FloatsWriter extends Writer {
-    private final Directory dir;
     private final String id;
     private FloatsRef floatsRef;
     protected int lastDocId = -1;
@@ -81,19 +80,15 @@ public class Floats {
     protected FloatsWriter(Directory dir, String id, int precision,
         AtomicLong bytesUsed) throws IOException {
       super(bytesUsed);
-      this.dir = dir;
       this.id = id;
       this.precision = (byte) precision;
-      initDatOut();
-    }
-
-    private void initDatOut() throws IOException {
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
       CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
       assert datOut.getFilePointer() == CodecUtil.headerLength(CODEC_NAME);
-      datOut.writeByte(precision);
+      datOut.writeByte(this.precision);
     }
+
 
     public long ramBytesUsed() {
       return 0;
@@ -125,8 +120,6 @@ public class Floats {
         assert reader.precisionBytes == (int) precision;
         if (reader.maxDoc == 0)
           return;
-        if (datOut == null)
-          initDatOut();
         final int docBase = state.docBase;
         if (docBase - lastDocId > 1) {
           // fill with default values

@@ -294,13 +294,12 @@ final class PerFieldCodecWrapper extends Codec {
     }
     
     public void close() throws IOException {
-      final Iterator<PerDocValues> it = codecs.values().iterator();
+      final Collection<PerDocValues> values = codecs.values();
       IOException err = null;
-      while (it.hasNext()) {
+      for (PerDocValues perDocValues : values) {
         try {
-          PerDocValues next = it.next();
-          if (next != null) {
-            next.close();
+          if (perDocValues != null) {
+            perDocValues.close();
           }
         } catch (IOException ioe) {
           // keep first IOException we hit but keep

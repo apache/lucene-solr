@@ -39,7 +39,7 @@ import org.apache.lucene.store.Directory;
  */
 public class DefaultDocValuesProducer extends PerDocValues {
 
-  protected final TreeMap<String, DocValues> docValues = new TreeMap<String, DocValues>();
+  protected final TreeMap<String, DocValues> docValues;
 
   /**
    * Creates a new {@link DefaultDocValuesProducer} instance and loads all
@@ -58,7 +58,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
    */
   public DefaultDocValuesProducer(SegmentInfo si, Directory dir,
       FieldInfos fieldInfo, int codecId) throws IOException {
-    load(fieldInfo, si.name, si.docCount, dir, codecId);
+    docValues = load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
   /**
@@ -66,22 +66,37 @@ public class DefaultDocValuesProducer extends PerDocValues {
    * <code>null</code> if this field has no {@link DocValues}.
    */
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public synchronized DocValues docValues(String field) throws IOException {
     return docValues.get(field);
   }
 
   // Only opens files... doesn't actually load any values
-  protected void load(FieldInfos fieldInfos, String segment, int docCount,
-      Directory dir, int codecId) throws IOException {
-    for (FieldInfo fieldInfo : fieldInfos) {
-      if (codecId == fieldInfo.getCodecId() && fieldInfo.hasDocValues()) {
-        final String field = fieldInfo.name;
-        // TODO can we have a compound file per segment and codec for docvalues?
-        final String id = DefaultDocValuesConsumer.docValuesId(segment, codecId, fieldInfo.number);
-        docValues.put(field, loadDocValues(docCount, dir, id, fieldInfo
-            .getDocValues()));
+  protected TreeMap<String, DocValues> load(FieldInfos fieldInfos,
+      String segment, int docCount, Directory dir, int codecId)
+      throws IOException {
+    TreeMap<String, DocValues> values = new TreeMap<String, DocValues>();
+    boolean success = false;
+    try {
+
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (codecId == fieldInfo.getCodecId() && fieldInfo.hasDocValues()) {
+          final String field = fieldInfo.name;
+          // TODO can we have a compound file per segment and codec for
+          // docvalues?
+          final String id = DefaultDocValuesConsumer.docValuesId(segment,
+              codecId, fieldInfo.number);
+          values.put(field,
+              loadDocValues(docCount, dir, id, fieldInfo.getDocValues()));
+        }
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        // if we fail we must close all opened resources if there are any
+        closeDocValues(values.values());
       }
     }
+    return values;
   }
   
 
@@ -130,8 +145,12 @@ public class DefaultDocValuesProducer extends PerDocValues {
     }
   }
 
-  public void close() throws IOException {
-    final Collection<DocValues> values = docValues.values();
+  public synchronized void close() throws IOException {
+    closeDocValues(docValues.values());
+  }
+
+  private void closeDocValues(final Collection<DocValues> values)
+      throws IOException {
     IOException ex = null;
     for (DocValues docValues : values) {
       try {

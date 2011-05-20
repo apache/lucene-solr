@@ -307,8 +307,16 @@ final class DocFieldProcessor extends DocConsumer {
       perDocConsumer = codec.docsConsumer(perDocWriteState);
       perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
     }
-    docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
-    fieldInfo.commitDocValues();
+    boolean success = false;
+    try {
+      docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
+      fieldInfo.commitDocValues();
+      success = true;
+    } finally {
+      if (!success) {
+        fieldInfo.revertUncommitted();
+      }
+    }
     docValues.put(fieldInfo.name, docValuesConsumer);
     return docValuesConsumer;
   }

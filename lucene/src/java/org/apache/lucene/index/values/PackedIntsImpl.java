@@ -60,13 +60,13 @@ class PackedIntsImpl {
     protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
       super(bytesUsed);
+      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+          DATA_EXTENSION));
+      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
       this.id = id;
       docToValue = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the bitset
                                                              // needs memory too
-      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          DATA_EXTENSION));
-      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
     }
 
     @Override

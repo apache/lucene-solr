@@ -434,6 +434,8 @@ public final class Bytes {
       this.id = id;
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
+      boolean success = false;
+      try {
       version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
       if (doIndex) {
         idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
@@ -443,6 +445,12 @@ public final class Bytes {
         assert version == version2;
       } else {
         idxIn = null;
+      }
+      success = true;
+      } finally {
+        if (!success) {
+          closeInternal();
+        }
       }
     }
 
@@ -467,12 +475,16 @@ public final class Bytes {
       try {
         super.close();
       } finally {
-        try {
-            datIn.close();
-        } finally {
-          if (idxIn != null) {
-            idxIn.close();
-          }
+         closeInternal();
+      }
+    }
+    
+    private void closeInternal() throws IOException {
+      try {
+        datIn.close();
+      } finally {
+        if (idxIn != null) {
+          idxIn.close();
         }
       }
     }
