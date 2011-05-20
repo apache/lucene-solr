@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.SegmentReader.Norm;
+import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -338,7 +338,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     origSegmentReader.close();
     assertDelDocsRefCountEquals(1, origSegmentReader);
     // check the norm refs
-    Norm norm = clonedSegmentReader.norms.get("field1");
+    SegmentNorms norm = clonedSegmentReader.norms.get("field1");
     assertEquals(1, norm.bytesRef().get());
     clonedSegmentReader.close();
     dir1.close();

@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -68,8 +67,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private int rollbackPendingDeleteCount;
 
   // optionally used for the .nrm file shared by multiple norms
-  private IndexInput singleNormStream;
-  private AtomicInteger singleNormRef;
+  IndexInput singleNormStream;
+  AtomicInteger singleNormRef;
 
   CoreReaders core;
 
@@ -250,219 +249,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
   
-  /**
-   * Byte[] referencing is used because a new norm object needs 
-   * to be created for each clone, and the byte array is all 
-   * that is needed for sharing between cloned readers.  The 
-   * current norm referencing is for sharing between readers 
-   * whereas the byte[] referencing is for copy on write which 
-   * is independent of reader references (i.e. incRef, decRef).
-   */
 
-  final class Norm implements Cloneable {
-    private int refCount = 1;
 
-    // If this instance is a clone, the originalNorm
-    // references the Norm that has a real open IndexInput:
-    private Norm origNorm;
-
-    private IndexInput in;
-    private long normSeek;
-
-    // null until bytes is set
-    private AtomicInteger bytesRef;
-    private byte[] bytes;
-    private boolean dirty;
-    private int number;
-    private boolean rollbackDirty;
-    
-    public Norm(IndexInput in, int number, long normSeek) {
-      this.in = in;
-      this.number = number;
-      this.normSeek = normSeek;
-    }
-
-    public synchronized void incRef() {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-      refCount++;
-    }
-
-    private void closeInput() throws IOException {
-      if (in != null) {
-        if (in != singleNormStream) {
-          // It's private to us -- just close it
-          in.close();
-        } else {
-          // We are sharing this with others -- decRef and
-          // maybe close the shared norm stream
-          if (singleNormRef.decrementAndGet() == 0) {
-            singleNormStream.close();
-            singleNormStream = null;
-          }
-        }
-
-        in = null;
-      }
-    }
-
-    public synchronized void decRef() throws IOException {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-
-      if (--refCount == 0) {
-        if (origNorm != null) {
-          origNorm.decRef();
-          origNorm = null;
-        } else {
-          closeInput();
-        }
-
-        if (bytes != null) {
-          assert bytesRef != null;
-          bytesRef.decrementAndGet();
-          bytes = null;
-          bytesRef = null;
-        } else {
-          assert bytesRef == null;
-        }
-      }
-    }
-
-    // Load & cache full bytes array.  Returns bytes.
-    public synchronized byte[] bytes() throws IOException {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-      if (bytes == null) {                     // value not yet read
-        assert bytesRef == null;
-        if (origNorm != null) {
-          // Ask origNorm to load so that for a series of
-          // reopened readers we share a single read-only
-          // byte[]
-          bytes = origNorm.bytes();
-          bytesRef = origNorm.bytesRef;
-          bytesRef.incrementAndGet();
-
-          // Once we've loaded the bytes we no longer need
-          // origNorm:
-          origNorm.decRef();
-          origNorm = null;
-
-        } else {
-          // We are the origNorm, so load the bytes for real
-          // ourself:
-          final int count = maxDoc();
-          bytes = new byte[count];
-
-          // Since we are orig, in must not be null
-          assert in != null;
-
-          // Read from disk.
-          synchronized(in) {
-            in.seek(normSeek);
-            in.readBytes(bytes, 0, count, false);
-          }
-
-          bytesRef = new AtomicInteger(1);
-          closeInput();
-        }
-      }
-
-      return bytes;
-    }
-
-    // Only for testing
-    AtomicInteger bytesRef() {
-      return bytesRef;
-    }
-
-    // Called if we intend to change a norm value.  We make a
-    // private copy of bytes if it's shared with others:
-    public synchronized byte[] copyOnWrite() throws IOException {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-      bytes();
-      assert bytes != null;
-      assert bytesRef != null;
-      if (bytesRef.get() > 1) {
-        // I cannot be the origNorm for another norm
-        // instance if I'm being changed.  Ie, only the
-        // "head Norm" can be changed:
-        assert refCount == 1;
-        final AtomicInteger oldRef = bytesRef;
-        bytes = cloneNormBytes(bytes);
-        bytesRef = new AtomicInteger(1);
-        oldRef.decrementAndGet();
-      }
-      dirty = true;
-      return bytes;
-    }
-    
-    // Returns a copy of this Norm instance that shares
-    // IndexInput & bytes with the original one
-    @Override
-    public synchronized Object clone() {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
-        
-      Norm clone;
-      try {
-        clone = (Norm) super.clone();
-      } catch (CloneNotSupportedException cnse) {
-        // Cannot happen
-        throw new RuntimeException("unexpected CloneNotSupportedException", cnse);
-      }
-      clone.refCount = 1;
-
-      if (bytes != null) {
-        assert bytesRef != null;
-        assert origNorm == null;
-
-        // Clone holds a reference to my bytes:
-        clone.bytesRef.incrementAndGet();
-      } else {
-        assert bytesRef == null;
-        if (origNorm == null) {
-          // I become the origNorm for the clone:
-          clone.origNorm = this;
-        }
-        clone.origNorm.incRef();
-      }
-
-      // Only the origNorm will actually readBytes from in:
-      clone.in = null;
-
-      return clone;
-    }
-
-    // Flush all pending changes to the next generation
-    // separate norms file.
-    public void reWrite(SegmentInfo si) throws IOException {
-      assert refCount > 0 && (origNorm == null || origNorm.refCount > 0): "refCount=" + refCount + " origNorm=" + origNorm;
-
-      // NOTE: norms are re-written in regular directory, not cfs
-      si.advanceNormGen(this.number);
-      final String normFileName = si.getNormFileName(this.number);
-      IndexOutput out = directory().createOutput(normFileName);
-      boolean success = false;
-      try {
-        try {
-          out.writeBytes(SegmentMerger.NORMS_HEADER, 0, SegmentMerger.NORMS_HEADER.length);
-          out.writeBytes(bytes, maxDoc());
-        } finally {
-          out.close();
-        }
-        success = true;
-      } finally {
-        if (!success) {
-          try {
-            directory().deleteFile(normFileName);
-          } catch (Throwable t) {
-            // suppress this so we keep throwing the
-            // original exception
-          }
-        }
-      }
-      this.dirty = false;
-    }
-  }
-
-  Map<String,Norm> norms = new HashMap<String,Norm>();
+  Map<String,SegmentNorms> norms = new HashMap<String,SegmentNorms>();
   
   /**
    * @throws CorruptIndexException if the index is corrupt
@@ -660,16 +449,16 @@ public class SegmentReader extends IndexReader implements Cloneable {
         }
       }
 
-      clone.norms = new HashMap<String,Norm>();
+      clone.norms = new HashMap<String,SegmentNorms>();
 
       // Clone norms
       for (FieldInfo fi : core.fieldInfos) {
         // Clone unchanged norms to the cloned reader
         if (doClone || !fieldNormsChanged.contains(fi.number)) {
           final String curField = fi.name;
-          Norm norm = this.norms.get(curField);
+          SegmentNorms norm = this.norms.get(curField);
           if (norm != null)
-            clone.norms.put(curField, (Norm) norm.clone());
+            clone.norms.put(curField, (SegmentNorms) norm.clone());
         }
       }
 
@@ -739,7 +528,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
     if (normsDirty) {               // re-write norms
       si.initNormGen();
-      for (final Norm norm : norms.values()) {
+      for (final SegmentNorms norm : norms.values()) {
         if (norm.dirty) {
           norm.reWrite(si);
         }
@@ -765,7 +554,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       deletedDocs = null;
     }
 
-    for (final Norm norm : norms.values()) {
+    for (final SegmentNorms norm : norms.values()) {
       norm.decRef();
     }
     if (core != null) {
@@ -935,7 +724,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public byte[] norms(String field) throws IOException {
     ensureOpen();
-    final Norm norm = norms.get(field);
+    final SegmentNorms norm = norms.get(field);
     if (norm == null) {
       // not indexed, or norms not stored
       return null;  
@@ -946,7 +735,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
-    Norm norm = norms.get(field);
+    SegmentNorms norm = norms.get(field);
     if (norm == null)                             // not an indexed field
       return;
 
@@ -1004,7 +793,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           }
         }
 
-        norms.put(fi.name, new Norm(normInput, fi.number, normSeek));
+        norms.put(fi.name, new SegmentNorms(normInput, fi.number, normSeek, this));
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
@@ -1024,7 +813,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     if (singleNormStream != null) {
       return false;
     }
-    for (final Norm norm : norms.values()) {
+    for (final SegmentNorms norm : norms.values()) {
       if (norm.refCount > 0) {
         return false;
       }
@@ -1171,7 +960,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
     rollbackPendingDeleteCount = pendingDeleteCount;
-    for (Norm norm : norms.values()) {
+    for (SegmentNorms norm : norms.values()) {
       norm.rollbackDirty = norm.dirty;
     }
   }
@@ -1182,7 +971,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
     pendingDeleteCount = rollbackPendingDeleteCount;
-    for (Norm norm : norms.values()) {
+    for (SegmentNorms norm : norms.values()) {
       norm.dirty = norm.rollbackDirty;
     }
   }
