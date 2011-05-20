@@ -66,7 +66,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
    * <code>null</code> if this field has no {@link DocValues}.
    */
   @Override
-  public synchronized DocValues docValues(String field) throws IOException {
+  public DocValues docValues(String field) throws IOException {
     return docValues.get(field);
   }
 
@@ -145,7 +145,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
     }
   }
 
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
     closeDocValues(docValues.values());
   }
 
