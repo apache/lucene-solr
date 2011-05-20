@@ -306,7 +306,7 @@ final class PerFieldCodecWrapper extends Codec {
           // keep first IOException we hit but keep
           // closing the rest
           if (err == null) {
-            err = new IOException(ioe);
+            err = ioe;
           }
         }
       }
