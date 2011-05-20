@@ -107,7 +107,6 @@
 	<classpathentry kind="lib" path="solr/lib/commons-io-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-lang-2.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/easymock-2.2.jar"/>
-	<classpathentry kind="lib" path="solr/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/guava-r05.jar"/>
 	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/junit-4.7.jar"/>
