@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -53,6 +54,8 @@ public class MockTokenizer extends Tokenizer {
 
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;
+  private final int maxTokenLength;
+  public static final int DEFAULT_MAX_TOKEN_LENGTH = Integer.MAX_VALUE;
   private int state;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -74,20 +77,21 @@ public class MockTokenizer extends Tokenizer {
   private State streamState = State.CLOSE;
   private boolean enableChecks = true;
   
-  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
     super(factory, input);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
     this.streamState = State.SETREADER;
+    this.maxTokenLength = maxTokenLength;
+  }
+
+  public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, runAutomaton, lowerCase, maxTokenLength);
   }
 
   public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    super(input);
-    this.runAutomaton = runAutomaton;
-    this.lowerCase = lowerCase;
-    this.state = runAutomaton.getInitialState();
-    this.streamState = State.SETREADER;
+    this(input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
   
   @Override
@@ -107,6 +111,9 @@ public class MockTokenizer extends Tokenizer {
           for (int i = 0; i < chars.length; i++)
             termAtt.append(chars[i]);
           endOffset = off;
+          if (termAtt.length() >= maxTokenLength) {
+            break;
+          }
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
         offsetAtt.setOffset(correctOffset(startOffset), correctOffset(endOffset));
