@@ -49,7 +49,7 @@ public class TestParser extends LuceneTestCase {
 	@BeforeClass
 	public static void beforeClass() throws Exception {
 	  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-	  Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
+	  Analyzer analyzer=new MockAnalyzer(random, MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
     //initialize the parser
 	  builder=new CorePlusExtensionsParser("contents",analyzer);
 		
@@ -187,7 +187,8 @@ public class TestParser extends LuceneTestCase {
 	}
 	public void testDuplicateFilterQueryXML() throws ParserException, IOException
 	{
-                        Assume.assumeTrue(searcher.getIndexReader().getSequentialSubReaders().length == 1);
+      Assume.assumeTrue(searcher.getIndexReader().getSequentialSubReaders() == null || 
+                        searcher.getIndexReader().getSequentialSubReaders().length == 1);
 			Query q=parse("DuplicateFilterQuery.xml");
 			int h = searcher.search(q, null, 1000).totalHits;
 			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h);

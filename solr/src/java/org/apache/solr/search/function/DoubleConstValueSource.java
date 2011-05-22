@@ -40,7 +40,7 @@ public class DoubleConstValueSource extends ConstNumberSource {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    return new DocValues() {
+    return new DoubleDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return fv;
@@ -64,6 +64,11 @@ public class DoubleConstValueSource extends ConstNumberSource {
       @Override
       public String strVal(int doc) {
         return Double.toString(constant);
+      }
+
+      @Override
+      public Object objectVal(int doc) {
+        return constant;
       }
 
       @Override

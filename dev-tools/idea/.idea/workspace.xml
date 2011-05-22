@@ -4,7 +4,7 @@
     <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/analysis-extras" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -39,7 +39,7 @@
     <configuration default="false" name="clustering contrib" type="JUnit" factoryName="JUnit">
       <module name="clustering" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/clustering/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/clustering" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -53,21 +53,28 @@
     <configuration default="false" name="dataimporthandler contrib" type="JUnit" factoryName="JUnit">
       <module name="dataimporthandler" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/dataimporthandler" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="dataimporthandler-extras contrib" type="JUnit" factoryName="JUnit">
+      <module name="dataimporthandler-extras" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/dataimporthandler-extras" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="extraction contrib" type="JUnit" factoryName="JUnit">
       <module name="extraction" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/extraction/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/extraction" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="extras from dataimporthandler contrib" type="JUnit" factoryName="JUnit">
-      <module name="extras" />
+    <configuration default="false" name="grouping module" type="JUnit" factoryName="JUnit">
+      <module name="grouping" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target/extras" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/grouping/build" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -186,7 +193,7 @@
     <configuration default="false" name="uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/uima/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/uima" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -204,7 +211,7 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="29">
+    <list size="30">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.ant contrib" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.bdb contrib" />
@@ -213,27 +220,28 @@
       <item index="5" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
       <item index="6" class="java.lang.String" itemvalue="JUnit.common analysis module" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.dataimporthandler contrib" />
-      <item index="8" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
-      <item index="9" class="java.lang.String" itemvalue="JUnit.extras from dataimporthandler contrib" />
-      <item index="10" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
-      <item index="11" class="java.lang.String" itemvalue="JUnit.icu analysis module" />
-      <item index="12" class="java.lang.String" itemvalue="JUnit.instantiated contrib" />
-      <item index="13" class="java.lang.String" itemvalue="JUnit.lucene" />
-      <item index="14" class="java.lang.String" itemvalue="JUnit.lucli contrib" />
-      <item index="15" class="java.lang.String" itemvalue="JUnit.memory contrib" />
-      <item index="16" class="java.lang.String" itemvalue="JUnit.misc contrib" />
-      <item index="17" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
-      <item index="18" class="java.lang.String" itemvalue="JUnit.queries contrib" />
-      <item index="19" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
-      <item index="21" class="java.lang.String" itemvalue="JUnit.solr" />
-      <item index="22" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
-      <item index="23" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
-      <item index="24" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
-      <item index="25" class="java.lang.String" itemvalue="JUnit.swing contrib" />
-      <item index="26" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="28" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="8" class="java.lang.String" itemvalue="JUnit.dataimporthandler-extras contrib" />
+      <item index="9" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
+      <item index="10" class="java.lang.String" itemvalue="JUnit.grouping module" />
+      <item index="11" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
+      <item index="12" class="java.lang.String" itemvalue="JUnit.icu analysis module" />
+      <item index="13" class="java.lang.String" itemvalue="JUnit.instantiated contrib" />
+      <item index="14" class="java.lang.String" itemvalue="JUnit.lucene" />
+      <item index="15" class="java.lang.String" itemvalue="JUnit.lucli contrib" />
+      <item index="16" class="java.lang.String" itemvalue="JUnit.memory contrib" />
+      <item index="17" class="java.lang.String" itemvalue="JUnit.misc contrib" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.queries contrib" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.solr" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.swing contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.uima contrib" />
+      <item index="28" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
+      <item index="29" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>

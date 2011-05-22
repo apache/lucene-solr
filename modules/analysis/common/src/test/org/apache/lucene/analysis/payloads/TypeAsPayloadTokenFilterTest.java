@@ -17,9 +17,9 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -32,12 +32,12 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test))));
+    TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false)));
     int count = 0;
     CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
-    
+    nptf.reset();
     while (nptf.incrementToken()) {
       assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.buffer()[0]))));
       assertTrue("nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);

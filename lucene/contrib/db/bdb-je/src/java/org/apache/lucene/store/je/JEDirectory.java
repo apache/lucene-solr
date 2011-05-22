@@ -199,17 +199,6 @@ public class JEDirectory extends Directory {
         return new JELock();
     }
 
-    @Override
-    public void touchFile(String name) throws IOException {
-        File file = new File(name);
-        long length = 0L;
-
-        if (file.exists(this))
-            length = file.getLength();
-
-        file.modify(this, length, System.currentTimeMillis());
-    }
-
     /**
      * Once a transaction handle was committed it is no longer valid. In order
      * to continue using this JEDirectory instance after a commit, the

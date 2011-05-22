@@ -84,6 +84,11 @@ public abstract class FieldType extends FieldProperties {
   public boolean isMultiValued() {
     return (properties & MULTIVALUED) != 0;
   }
+  
+  /** Check if a property is set */
+  protected boolean hasProperty( int p ) {
+    return (properties & p) != 0;
+  }
 
   /**
    * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful

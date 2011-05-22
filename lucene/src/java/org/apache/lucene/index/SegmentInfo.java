@@ -37,14 +37,15 @@ import org.apache.lucene.util.Constants;
 /**
  * Information about a segment such as it's name, directory, and files related
  * to the segment.
- * 
+ *
  * @lucene.experimental
  */
-public final class SegmentInfo {
-
+public final class SegmentInfo implements Cloneable {
+  // TODO: remove with hasVector and hasProx
+  private static final int CHECK_FIELDINFO = -2;
   static final int NO = -1;          // e.g. no norms; no deletes;
   static final int YES = 1;          // e.g. have norms; have deletes;
-  static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it. 
+  static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it.
 
   public String name;				  // unique name in dir
   public int docCount;				  // number of docs in seg
@@ -56,7 +57,7 @@ public final class SegmentInfo {
    * - YES or higher if there are deletes at generation N
    */
   private long delGen;
-  
+
   /*
    * Current generation of each field's norm file. If this array is null,
    * means no separate norms. If this array is not null, its values mean:
@@ -65,7 +66,7 @@ public final class SegmentInfo {
    */
   private Map<Integer,Long> normGen;
 
-  private boolean isCompoundFile;         
+  private boolean isCompoundFile;
 
   private volatile List<String> files;                     // cached list of files that this segment uses
                                                   // in the Directory
@@ -73,17 +74,22 @@ public final class SegmentInfo {
   private volatile long sizeInBytesNoStore = -1;           // total byte size of all but the store files (computed on demand)
   private volatile long sizeInBytesWithStore = -1;         // total byte size of all of our files (computed on demand)
 
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private String docStoreSegment;                 // name used to derive fields/vectors file we share with
                                                   // other segments
+  //TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
   private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
   private int delCount;                           // How many deleted docs in this segment
+  
+  //TODO: remove when we don't have to support old indexes anymore that had this field
+  private int hasVectors = CHECK_FIELDINFO;
+  //TODO: remove when we don't have to support old indexes anymore that had this field
+  private int hasProx = CHECK_FIELDINFO;     // True if this segment has any fields with omitTermFreqAndPositions==false
 
-  private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
-
-  private boolean hasVectors;                     // True if this segment wrote term vectors
   
   private FieldInfos fieldInfos;
 
@@ -91,9 +97,9 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
-  // Tracks the Lucene version this segment was created with, since 3.1. Null 
+  // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
-  // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and 
+  // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
   // specific versions afterwards ("3.0", "3.1" etc.).
   // see Constants.LUCENE_MAIN_VERSION.
   private String version;
@@ -102,8 +108,11 @@ public final class SegmentInfo {
   // this is never written to/read from the Directory
   private long bufferedDeletesGen;
   
+  // holds the fieldInfos Version to refresh files() cache if FI has changed
+  private long fieldInfosVersion;
+  
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile,
-                     boolean hasProx, SegmentCodecs segmentCodecs, boolean hasVectors, FieldInfos fieldInfos) {
+                     SegmentCodecs segmentCodecs, FieldInfos fieldInfos) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
@@ -111,9 +120,7 @@ public final class SegmentInfo {
     this.isCompoundFile = isCompoundFile;
     this.docStoreOffset = -1;
     this.docStoreSegment = name;
-    this.hasProx = hasProx;
     this.segmentCodecs = segmentCodecs;
-    this.hasVectors = hasVectors;
     delCount = 0;
     version = Constants.LUCENE_MAIN_VERSION;
     this.fieldInfos = fieldInfos;
@@ -182,11 +189,13 @@ public final class SegmentInfo {
       docStoreSegment = name;
       docStoreIsCompoundFile = false;
     }
+
     if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
       byte b = input.readByte();
       assert 1 == b;
     }
+
     int numNormGen = input.readInt();
     if (numNormGen == NO) {
       normGen = null;
@@ -206,8 +215,8 @@ public final class SegmentInfo {
     delCount = input.readInt();
     assert delCount <= docCount;
 
-    hasProx = input.readByte() == YES;
-    
+    hasProx = input.readByte();
+
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
       segmentCodecs = new SegmentCodecs(codecs, input);
@@ -217,9 +226,9 @@ public final class SegmentInfo {
       segmentCodecs = new SegmentCodecs(codecs, new Codec[] { codecs.lookup("PreFlex")});
     }
     diagnostics = input.readStringStringMap();
-    
+
     if (format <= DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
-      hasVectors = input.readByte() == 1;
+      hasVectors = input.readByte();
     } else {
       final String storesSegment;
       final String ext;
@@ -240,7 +249,7 @@ public final class SegmentInfo {
         dirToTest = dir;
       }
       try {
-        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+        hasVectors = dirToTest.fileExists(IndexFileNames.segmentFileName(storesSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION)) ? YES : NO;
       } finally {
         if (isCompoundFile) {
           dirToTest.close();
@@ -304,14 +313,9 @@ public final class SegmentInfo {
   }
 
   public boolean getHasVectors() throws IOException {
-    return hasVectors;
+    return hasVectors == CHECK_FIELDINFO ? getFieldInfos().hasVectors() : hasVectors == YES;
   }
-
-  public void setHasVectors(boolean v) {
-    hasVectors = v;
-    clearFilesCache();
-  }
-
+  
   public FieldInfos getFieldInfos() throws IOException {
     loadFieldInfos(dir, true);
     return fieldInfos;
@@ -342,7 +346,7 @@ public final class SegmentInfo {
 
   @Override
   public Object clone() {
-    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, hasProx, segmentCodecs, hasVectors,
+    final SegmentInfo si = new SegmentInfo(name, docCount, dir, isCompoundFile, segmentCodecs,
         fieldInfos == null ? null : (FieldInfos) fieldInfos.clone());
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;
@@ -357,6 +361,8 @@ public final class SegmentInfo {
       }
     }
     si.version = version;
+    si.hasProx = hasProx;
+    si.hasVectors = hasVectors;
     return si;
   }
 
@@ -366,7 +372,7 @@ public final class SegmentInfo {
       // against this segment
       return null;
     } else {
-      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen); 
+      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
     }
   }
 
@@ -432,7 +438,7 @@ public final class SegmentInfo {
     if (hasSeparateNorms(number)) {
       return IndexFileNames.fileNameFromGeneration(name, "s" + number, normGen.get(number));
     } else {
-      // single file for all norms 
+      // single file for all norms
       return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
     }
   }
@@ -465,39 +471,74 @@ public final class SegmentInfo {
     assert delCount <= docCount;
   }
 
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public int getDocStoreOffset() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreOffset;
   }
-  
+
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
   public boolean getDocStoreIsCompoundFile() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     return docStoreIsCompoundFile;
   }
-  
-  void setDocStoreIsCompoundFile(boolean v) {
-    docStoreIsCompoundFile = v;
-    clearFilesCache();
-  }
-  
-  public String getDocStoreSegment() {
-    return docStoreSegment;
-  }
-  
-  public void setDocStoreSegment(String segment) {
-    docStoreSegment = segment;
-  }
-  
-  void setDocStoreOffset(int offset) {
-    docStoreOffset = offset;
+
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
+  public void setDocStoreIsCompoundFile(boolean docStoreIsCompoundFile) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
+    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     clearFilesCache();
   }
 
-  void setDocStore(int offset, String segment, boolean isCompoundFile) {        
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
+  void setDocStore(int offset, String segment, boolean isCompoundFile) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
     docStoreOffset = offset;
     docStoreSegment = segment;
     docStoreIsCompoundFile = isCompoundFile;
     clearFilesCache();
   }
-  
+
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
+  public String getDocStoreSegment() {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
+    return docStoreSegment;
+  }
+
+  /**
+   * @deprecated shared doc stores are not supported in >= 4.0
+   */
+  @Deprecated
+  void setDocStoreOffset(int offset) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
+    docStoreOffset = offset;
+    clearFilesCache();
+  }
+
+  /**
+   * @deprecated shared doc stores are not supported in 4.0
+   */
+  @Deprecated
+  public void setDocStoreSegment(String docStoreSegment) {
+    // TODO: LUCENE-2555: remove once we don't need to support shared doc stores (pre 4.0)
+    this.docStoreSegment = docStoreSegment;
+  }
+
   /** Save this segment's info. */
   public void write(IndexOutput output)
     throws IOException {
@@ -507,11 +548,13 @@ public final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
+
     output.writeInt(docStoreOffset);
     if (docStoreOffset != -1) {
       output.writeString(docStoreSegment);
       output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
     }
+
 
     if (normGen == null) {
       output.writeInt(NO);
@@ -522,22 +565,17 @@ public final class SegmentInfo {
         output.writeLong(entry.getValue());
       }
     }
-    
+
     output.writeByte((byte) (isCompoundFile ? YES : NO));
     output.writeInt(delCount);
-    output.writeByte((byte) (hasProx ? 1:0));
+    output.writeByte((byte) (hasProx));
     segmentCodecs.write(output);
     output.writeStringStringMap(diagnostics);
-    output.writeByte((byte) (hasVectors ? 1 : 0));
+    output.writeByte((byte) (hasVectors));
   }
 
-  void setHasProx(boolean hasProx) {
-    this.hasProx = hasProx;
-    clearFilesCache();
-  }
-
-  public boolean getHasProx() {
-    return hasProx;
+  public boolean getHasProx() throws IOException {
+    return hasProx == CHECK_FIELDINFO ? getFieldInfos().hasProx() : hasProx == YES;
   }
 
   /** Can only be called once. */
@@ -565,14 +603,15 @@ public final class SegmentInfo {
    */
 
   public List<String> files() throws IOException {
-
-    if (files != null) {
+    final long fisVersion = fieldInfosVersion;
+    if (fisVersion != (fieldInfosVersion = getFieldInfos().getVersion())) {
+      clearFilesCache(); // FIS has modifications - need to recompute
+    } else if (files != null) {
       // Already cached:
       return files;
     }
-    
-    Set<String> fileSet = new HashSet<String>();
-    
+    final Set<String> fileSet = new HashSet<String>();
+
     boolean useCompoundFile = getUseCompoundFile();
 
     if (useCompoundFile) {
@@ -593,7 +632,7 @@ public final class SegmentInfo {
       } else {
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
-        if (hasVectors) {
+        if (getHasVectors()) {
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
           fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
@@ -602,11 +641,11 @@ public final class SegmentInfo {
     } else if (!useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.FIELDS_EXTENSION));
-      if (hasVectors) {
+      if (getHasVectors()) {
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
         fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-      }      
+      }
     }
 
     String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
@@ -644,7 +683,7 @@ public final class SegmentInfo {
   }
 
   /** Used for debugging.  Format may suddenly change.
-   * 
+   *
    *  <p>Current format looks like
    *  <code>_a(3.1):c45/4->_1</code>, which means the segment's
    *  name is <code>_a</code>; it was created with Lucene 3.1 (or
@@ -659,15 +698,18 @@ public final class SegmentInfo {
 
     StringBuilder s = new StringBuilder();
     s.append(name).append('(').append(version == null ? "?" : version).append(')').append(':');
-
     char cfs = getUseCompoundFile() ? 'c' : 'C';
     s.append(cfs);
 
     if (this.dir != dir) {
       s.append('x');
     }
-    if (hasVectors) {
-      s.append('v');
+    try {
+      if (getHasVectors()) {
+        s.append('v');
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
     s.append(docCount);
 
@@ -675,7 +717,7 @@ public final class SegmentInfo {
     if (delCount != 0) {
       s.append('/').append(delCount);
     }
-    
+
     if (docStoreOffset != -1) {
       s.append("->").append(docStoreSegment);
       if (docStoreIsCompoundFile) {
@@ -715,13 +757,13 @@ public final class SegmentInfo {
    * <b>NOTE:</b> this method is used for internal purposes only - you should
    * not modify the version of a SegmentInfo, or it may result in unexpected
    * exceptions thrown when you attempt to open the index.
-   * 
+   *
    * @lucene.internal
    */
   public void setVersion(String version) {
     this.version = version;
   }
-  
+
   /** Returns the version of the code which wrote the segment. */
   public String getVersion() {
     return version;

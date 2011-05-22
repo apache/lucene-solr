@@ -36,20 +36,30 @@ import static org.apache.lucene.analysis.util.VocabularyAssert.*;
  *
  */
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
+  Analyzer analyzer = new ReusableAnalyzerBase() {
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName,
+        Reader reader) {
+      Tokenizer t = new KeywordTokenizer(reader);
+      return new TokenStreamComponents(t,
+          new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
+    }
+  };
 
-  public void testStemming() throws Exception {
-    Analyzer analyzer = new ReusableAnalyzerBase() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-          Reader reader) {
-        Tokenizer t = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(t,
-            new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
-      }
-    };
-    
+  public void testStemming() throws Exception {  
     InputStream vocOut = getClass().getResourceAsStream("data.txt");
     assertVocabulary(analyzer, vocOut);
     vocOut.close();
+  }
+  
+  // LUCENE-3043: we use keywordtokenizer in this test,
+  // so ensure the stemmer does not crash on zero-length strings.
+  public void testEmpty() throws Exception {
+    assertAnalyzesTo(analyzer, "", new String[] { "" });
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
 }

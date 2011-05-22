@@ -18,16 +18,12 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.StringHelper;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -44,15 +40,11 @@ import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Comparator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -86,7 +78,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   much like Lucene's own internal term index).
  *
  */
-public class UnInvertedField {
+public class UnInvertedField extends DocTermOrds {
   private static int TNUM_OFFSET=2;
 
   static class TopTerm {
@@ -100,362 +92,113 @@ public class UnInvertedField {
     }
   }
 
-  String field;
-  int numTermsInField;
-  int termsInverted;  // number of unique terms that were un-inverted
-  long termInstances; // total number of references to term numbers
-  final TermIndex ti;
   long memsz;
-  int total_time;  // total time to uninvert the field
-  int phase1_time;  // time for phase1 of the uninvert process
   final AtomicLong use = new AtomicLong(); // number of uses
 
-  int[] index;
-  byte[][] tnums = new byte[256][];
-  int[] maxTermCounts;
+  int[] maxTermCounts = new int[1024];
+
   final Map<Integer,TopTerm> bigTerms = new LinkedHashMap<Integer,TopTerm>();
 
+  private SolrIndexSearcher.DocsEnumState deState;
+  private final SolrIndexSearcher searcher;
+
+  @Override
+  protected void visitTerm(TermsEnum te, int termNum) throws IOException {
+
+    if (termNum >= maxTermCounts.length) {
+      // resize by doubling - for very large number of unique terms, expanding
+      // by 4K and resultant GC will dominate uninvert times.  Resize at end if material
+      int[] newMaxTermCounts = new int[maxTermCounts.length*2];
+      System.arraycopy(maxTermCounts, 0, newMaxTermCounts, 0, termNum);
+      maxTermCounts = newMaxTermCounts;
+    }
+
+    final BytesRef term = te.term();
+
+    if (te.docFreq() > maxTermDocFreq) {
+      TopTerm topTerm = new TopTerm();
+      topTerm.term = new BytesRef(term);
+      topTerm.termNum = termNum;
+      bigTerms.put(topTerm.termNum, topTerm);
+
+      if (deState == null) {
+        deState = new SolrIndexSearcher.DocsEnumState();
+        deState.fieldName = StringHelper.intern(field);
+        // deState.termsEnum = te.tenum;
+        deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
+        deState.docsEnum = docsEnum;
+        deState.minSetSizeCached = maxTermDocFreq;
+      }
+      docsEnum = deState.docsEnum;
+      DocSet set = searcher.getDocSet(deState);
+      maxTermCounts[termNum] = set.size();
+    }
+  }
+
+  @Override
+  protected void setActualDocFreq(int termNum, int docFreq) {
+    maxTermCounts[termNum] = docFreq;
+  }
 
   public long memSize() {
     // can cache the mem size since it shouldn't change
     if (memsz!=0) return memsz;
-    long sz = 8*8 + 32; // local fields
+    long sz = super.ramUsedInBytes();
+    sz += 8*8 + 32; // local fields
     sz += bigTerms.size() * 64;
     for (TopTerm tt : bigTerms.values()) {
       sz += tt.memSize();
     }
-    if (index != null) sz += index.length * 4;
-    if (tnums!=null) {
-      for (byte[] arr : tnums)
-        if (arr != null) sz += arr.length;
-    }
     if (maxTermCounts != null)
       sz += maxTermCounts.length * 4;
-    sz += ti.memSize();
+    if (indexedTermsArray != null) {
+      // assume 8 byte references?
+      sz += 8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings;
+    }
     memsz = sz;
     return sz;
   }
 
-
-  /** Number of bytes to represent an unsigned int as a vint. */
-  static int vIntSize(int x) {
-    if ((x & (0xffffffff << (7*1))) == 0 ) {
-      return 1;
-    }
-    if ((x & (0xffffffff << (7*2))) == 0 ) {
-      return 2;
-    }
-    if ((x & (0xffffffff << (7*3))) == 0 ) {
-      return 3;
-    }
-    if ((x & (0xffffffff << (7*4))) == 0 ) {
-      return 4;
-    }
-    return 5;
-  }
-
-
-  // todo: if we know the size of the vInt already, we could do
-  // a single switch on the size
-  static int writeInt(int x, byte[] arr, int pos) {
-    int a;
-    a = (x >>> (7*4));
-    if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
-    }
-    a = (x >>> (7*3));
-    if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
-    }
-    a = (x >>> (7*2));
-    if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
-    }
-    a = (x >>> (7*1));
-    if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
-    }
-    arr[pos++] = (byte)(x & 0x7f);
-    return pos;
-  }
-
-
-
   public UnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    this.field = field;
-    this.ti = new TermIndex(field,
-            TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field)));
-    uninvert(searcher);
-  }
+    super(field,
+          // threshold, over which we use set intersections instead of counting
+          // to (1) save memory, and (2) speed up faceting.
+          // Add 2 for testing purposes so that there will always be some terms under
+          // the threshold even when the index is very
+          // small.
+          searcher.maxDoc()/20 + 2,
+          DEFAULT_INDEX_INTERVAL_BITS);
+    //System.out.println("maxTermDocFreq=" + maxTermDocFreq + " maxDoc=" + searcher.maxDoc());
 
-
-  private void uninvert(SolrIndexSearcher searcher) throws IOException {
-    long startTime = System.currentTimeMillis();
-
-    IndexReader reader = searcher.getIndexReader();
-    int maxDoc = reader.maxDoc();
-
-    int[] index = new int[maxDoc];       // immediate term numbers, or the index into the byte[] representing the last number
-    this.index = index;
-    final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
-    final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
-    maxTermCounts = new int[1024];
-
-    NumberedTermsEnum te = ti.getEnumerator(reader);
-
-    // threshold, over which we use set intersections instead of counting
-    // to (1) save memory, and (2) speed up faceting.
-    // Add 2 for testing purposes so that there will always be some terms under
-    // the threshold even when the index is very small.
-    int threshold = maxDoc / 20 + 2;
-    // threshold = 2000000000; //////////////////////////////// USE FOR TESTING
-
-    // we need a minimum of 9 bytes, but round up to 12 since the space would
-    // be wasted with most allocators anyway.
-    byte[] tempArr = new byte[12];
-
-    //
-    // enumerate all terms, and build an intermediate form of the un-inverted field.
-    //
-    // During this intermediate form, every document has a (potential) byte[]
-    // and the int[maxDoc()] array either contains the termNumber list directly
-    // or the *end* offset of the termNumber list in it's byte array (for faster
-    // appending and faster creation of the final form).
-    //
-    // idea... if things are too large while building, we could do a range of docs
-    // at a time (but it would be a fair amount slower to build)
-    // could also do ranges in parallel to take advantage of multiple CPUs
-
-    // OPTIONAL: remap the largest df terms to the lowest 128 (single byte)
-    // values.  This requires going over the field first to find the most
-    // frequent terms ahead of time.
-
-    SolrIndexSearcher.DocsEnumState deState = null;
-
-    for (;;) {
-      BytesRef t = te.term();
-      if (t==null) break;
-
-      int termNum = te.getTermNumber();
-
-      if (termNum >= maxTermCounts.length) {
-        // resize by doubling - for very large number of unique terms, expanding
-        // by 4K and resultant GC will dominate uninvert times.  Resize at end if material
-        int[] newMaxTermCounts = new int[maxTermCounts.length*2];
-        System.arraycopy(maxTermCounts, 0, newMaxTermCounts, 0, termNum);
-        maxTermCounts = newMaxTermCounts;
-      }
-
-      int df = te.docFreq();
-      if (df >= threshold) {
-        TopTerm topTerm = new TopTerm();
-        topTerm.term = new BytesRef(t);
-        topTerm.termNum = termNum;
-        bigTerms.put(topTerm.termNum, topTerm);
-
-        if (deState == null) {
-          deState = new SolrIndexSearcher.DocsEnumState();
-          deState.termsEnum = te.tenum;
-          deState.reuse = te.docsEnum;
-        }
-        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term)), deState);
-        te.docsEnum = deState.reuse;
-
-        maxTermCounts[termNum] = set.size();
-
-        te.next();
-        continue;
-      }
-
-      termsInverted++;
-
-      DocsEnum docsEnum = te.getDocsEnum();
-
-      DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
-
-      for(;;) {
-        int n = docsEnum.read();
-        if (n <= 0) break;
-
-        maxTermCounts[termNum] += n;
-
-        for (int i=0; i<n; i++) {
-          termInstances++;
-          int doc = bulkResult.docs.ints[i];
-          // add 2 to the term number to make room for special reserved values:
-          // 0 (end term) and 1 (index into byte array follows)
-          int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
-          lastTerm[doc] = termNum;
-          int val = index[doc];
-
-          if ((val & 0xff)==1) {
-            // index into byte array (actually the end of
-            // the doc-specific byte[] when building)
-            int pos = val >>> 8;
-            int ilen = vIntSize(delta);
-            byte[] arr = bytes[doc];
-            int newend = pos+ilen;
-            if (newend > arr.length) {
-              // We avoid a doubling strategy to lower memory usage.
-              // this faceting method isn't for docs with many terms.
-              // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
-              // TODO: figure out what array lengths we can round up to w/o actually using more memory
-              // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
-              // It should be safe to round up to the nearest 32 bits in any case.
-              int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
-              byte[] newarr = new byte[newLen];
-              System.arraycopy(arr, 0, newarr, 0, pos);
-              arr = newarr;
-              bytes[doc] = newarr;
-            }
-            pos = writeInt(delta, arr, pos);
-            index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
-          } else {
-            // OK, this int has data in it... find the end (a zero starting byte - not
-            // part of another number, hence not following a byte with the high bit set).
-            int ipos;
-            if (val==0) {
-              ipos=0;
-            } else if ((val & 0x0000ff80)==0) {
-              ipos=1;
-            } else if ((val & 0x00ff8000)==0) {
-              ipos=2;
-            } else if ((val & 0xff800000)==0) {
-              ipos=3;
-            } else {
-              ipos=4;
-            }
-
-            int endPos = writeInt(delta, tempArr, ipos);
-            if (endPos <= 4) {
-              // value will fit in the integer... move bytes back
-              for (int j=ipos; j<endPos; j++) {
-                val |= (tempArr[j] & 0xff) << (j<<3);
-              }
-              index[doc] = val;
-            } else {
-              // value won't fit... move integer into byte[]
-              for (int j=0; j<ipos; j++) {
-                tempArr[j] = (byte)val;
-                val >>>=8;
-              }
-              // point at the end index in the byte[]
-              index[doc] = (endPos<<8) | 1;
-              bytes[doc] = tempArr;
-              tempArr = new byte[12];
-            }
-
-          }
-
-        }
-
-      }
-
-      te.next();
+    final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
+    this.searcher = searcher;
+    try {
+      uninvert(searcher.getIndexReader(), prefix == null ? null : new BytesRef(prefix));
+    } catch (IllegalStateException ise) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise.getMessage());
     }
-
-    numTermsInField = te.getTermNumber();
-    te.close();
+    if (tnums != null) {
+      for(byte[] target : tnums) {
+        if (target != null && target.length > (1<<24)*.9) {
+          SolrCore.log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+        }
+      }
+    }
 
     // free space if outrageously wasteful (tradeoff memory/cpu) 
-
     if ((maxTermCounts.length - numTermsInField) > 1024) { // too much waste!
       int[] newMaxTermCounts = new int[numTermsInField];
       System.arraycopy(maxTermCounts, 0, newMaxTermCounts, 0, numTermsInField);
       maxTermCounts = newMaxTermCounts;
-   }
-
-    long midPoint = System.currentTimeMillis();
-
-    if (termInstances == 0) {
-      // we didn't invert anything
-      // lower memory consumption.
-      index = this.index = null;
-      tnums = null;
-    } else {
-
-      //
-      // transform intermediate form into the final form, building a single byte[]
-      // at a time, and releasing the intermediate byte[]s as we go to avoid
-      // increasing the memory footprint.
-      //
-      for (int pass = 0; pass<256; pass++) {
-        byte[] target = tnums[pass];
-        int pos=0;  // end in target;
-        if (target != null) {
-          pos = target.length;
-        } else {
-          target = new byte[4096];
-        }
-
-        // loop over documents, 0x00ppxxxx, 0x01ppxxxx, 0x02ppxxxx
-        // where pp is the pass (which array we are building), and xx is all values.
-        // each pass shares the same byte[] for termNumber lists.
-        for (int docbase = pass<<16; docbase<maxDoc; docbase+=(1<<24)) {
-          int lim = Math.min(docbase + (1<<16), maxDoc);
-          for (int doc=docbase; doc<lim; doc++) {
-            int val = index[doc];
-            if ((val&0xff) == 1) {
-              int len = val >>> 8;
-              index[doc] = (pos<<8)|1; // change index to point to start of array
-              if ((pos & 0xff000000) != 0) {
-                // we only have 24 bits for the array index
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Too many values for UnInvertedField faceting on field "+field);
-              }
-              byte[] arr = bytes[doc];
-              bytes[doc] = null;        // IMPORTANT: allow GC to avoid OOM
-              if (target.length <= pos + len) {
-                int newlen = target.length;
-                /*** we don't have to worry about the array getting too large
-                 * since the "pos" param will overflow first (only 24 bits available)
-                if ((newlen<<1) <= 0) {
-                  // overflow...
-                  newlen = Integer.MAX_VALUE;
-                  if (newlen <= pos + len) {
-                    throw new SolrException(400,"Too many terms to uninvert field!");
-                  }
-                } else {
-                  while (newlen <= pos + len) newlen<<=1;  // doubling strategy
-                }
-                ****/
-                while (newlen <= pos + len) newlen<<=1;  // doubling strategy                 
-                byte[] newtarget = new byte[newlen];
-                System.arraycopy(target, 0, newtarget, 0, pos);
-                target = newtarget;
-              }
-              System.arraycopy(arr, 0, target, pos, len);
-              pos += len + 1;  // skip single byte at end and leave it 0 for terminator
-            }
-          }
-        }
-
-        // shrink array
-        if (pos < target.length) {
-          byte[] newtarget = new byte[pos];
-          System.arraycopy(target, 0, newtarget, 0, pos);
-          target = newtarget;
-          if (target.length > (1<<24)*.9) {
-            SolrCore.log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
-          }
-        }
-        
-        tnums[pass] = target;
-
-        if ((pass << 16) > maxDoc)
-          break;
-      }
     }
 
-    long endTime = System.currentTimeMillis();
-
-    total_time = (int)(endTime-startTime);
-    phase1_time = (int)(midPoint-startTime);
-
     SolrCore.log.info("UnInverted multi-valued field " + toString());
+    //System.out.println("CREATED: " + toString() + " ti.index=" + ti.index);
   }
 
-
-
+  public int getNumTerms() {
+    return numTermsInField;
+  }
 
   public NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
     use.incrementAndGet();
@@ -468,6 +211,7 @@ public class UnInvertedField {
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
 
+    //System.out.println("GET COUNTS field=" + field + " baseSize=" + baseSize + " minCount=" + mincount + " maxDoc=" + maxDoc + " numTermsInField=" + numTermsInField);
     if (baseSize >= mincount) {
 
       final int[] index = this.index;
@@ -481,14 +225,20 @@ public class UnInvertedField {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      NumberedTermsEnum te = ti.getEnumerator(searcher.getIndexReader());
+      TermsEnum te = getOrdTermsEnum(searcher.getIndexReader());
       if (prefix != null && prefix.length() > 0) {
         BytesRef prefixBr = new BytesRef(prefix);
-        te.skipTo(prefixBr);
-        startTerm = te.getTermNumber();
+        if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
+          startTerm = numTermsInField;
+        } else {
+          startTerm = (int) te.ord();
+        }
         prefixBr.append(ByteUtils.bigTerm);
-        te.skipTo(prefixBr);
-        endTerm = te.getTermNumber();
+        if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
+          endTerm = numTermsInField;
+        } else {
+          endTerm = (int) te.ord();
+        }
       }
 
       /***********
@@ -514,13 +264,18 @@ public class UnInvertedField {
         docs = new BitDocSet(bs, maxDoc - baseSize);
         // simply negating will mean that we have deleted docs in the set.
         // that should be OK, as their entries in our table should be empty.
+        //System.out.println("  NEG");
       }
 
       // For the biggest terms, do straight set intersections
       for (TopTerm tt : bigTerms.values()) {
+        //System.out.println("  do big termNum=" + tt.termNum + " term=" + tt.term.utf8ToString());
         // TODO: counts could be deferred if sorted==false
         if (tt.termNum >= startTerm && tt.termNum < endTerm) {
-          counts[tt.termNum] = searcher.numDocs(new TermQuery(new Term(ti.field, tt.term)), docs);
+          counts[tt.termNum] = searcher.numDocs(new TermQuery(new Term(field, tt.term)), docs);
+          //System.out.println("    count=" + counts[tt.termNum]);
+        } else {
+          //System.out.println("SKIP term=" + tt.termNum);
         }
       }
 
@@ -537,9 +292,11 @@ public class UnInvertedField {
         DocIterator iter = docs.iterator();
         while (iter.hasNext()) {
           int doc = iter.nextDoc();
+          //System.out.println("iter doc=" + doc);
           int code = index[doc];
 
           if ((code & 0xff)==1) {
+            //System.out.println("  ptr");
             int pos = code>>>8;
             int whichArray = (doc >>> 16) & 0xff;
             byte[] arr = tnums[whichArray];
@@ -553,9 +310,11 @@ public class UnInvertedField {
               }
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
+              //System.out.println("    tnum=" + tnum);
               counts[tnum]++;
             }
           } else {
+            //System.out.println("  inlined");
             int tnum = 0;
             int delta = 0;
             for (;;) {
@@ -563,6 +322,7 @@ public class UnInvertedField {
               if ((code & 0x80)==0) {
                 if (delta==0) break;
                 tnum += delta - TNUM_OFFSET;
+                //System.out.println("    tnum=" + tnum);
                 counts[tnum]++;
                 delta = 0;
               }
@@ -583,6 +343,7 @@ public class UnInvertedField {
         LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
 
         int min=mincount-1;  // the smallest value in the top 'N' values
+        //System.out.println("START=" + startTerm + " END=" + endTerm);
         for (int i=startTerm; i<endTerm; i++) {
           int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
           if (c>min) {
@@ -641,11 +402,14 @@ public class UnInvertedField {
           }
         });
 
-        // convert the term numbers to term values and set as the label
+        // convert the term numbers to term values and set
+        // as the label
+        //System.out.println("sortStart=" + sortedIdxStart + " end=" + sortedIdxEnd);
         for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
           int idx = indirect[i];
           int tnum = (int)sorted[idx];
           String label = getReadableValue(getTermValue(te, tnum), ft, spare);
+          //System.out.println("  label=" + label);
           res.setName(idx - sortedIdxStart, label);
         }
 
@@ -668,8 +432,6 @@ public class UnInvertedField {
           res.add(label, c);
         }
       }
-
-      te.close();
     }
 
 
@@ -677,6 +439,8 @@ public class UnInvertedField {
       // TODO: a faster solution for this?
       res.add(null, SimpleFacets.getFieldMissingCount(searcher, baseDocs, field));
     }
+
+    //System.out.println("  res=" + res);
 
     return res;
   }
@@ -731,8 +495,7 @@ public class UnInvertedField {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    NumberedTermsEnum te = ti.getEnumerator(searcher.getIndexReader());
-
+    TermsEnum te = getOrdTermsEnum(searcher.getIndexReader());
 
     boolean doNegative = false;
     if (finfo.length == 0) {
@@ -755,7 +518,7 @@ public class UnInvertedField {
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorted==false
       if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
-        final Term t = new Term(ti.field, tt.term);
+        final Term t = new Term(field, tt.term);
         if (finfo.length == 0) {
           counts[tt.termNum] = searcher.numDocs(new TermQuery(t), docs);
         } else {
@@ -836,7 +599,6 @@ public class UnInvertedField {
         f.accumulateTermNum(i, value);
       }
     }
-    te.close();
 
     int c = missing.size();
     allstats.addMissing(c);
@@ -870,23 +632,26 @@ public class UnInvertedField {
   }
 
   /** may return a reused BytesRef */
-  BytesRef getTermValue(NumberedTermsEnum te, int termNum) throws IOException {
+  BytesRef getTermValue(TermsEnum te, int termNum) throws IOException {
+    //System.out.println("getTermValue termNum=" + termNum + " this=" + this + " numTerms=" + numTermsInField);
     if (bigTerms.size() > 0) {
       // see if the term is one of our big terms.
       TopTerm tt = bigTerms.get(termNum);
       if (tt != null) {
+        //System.out.println("  return big " + tt.term);
         return tt.term;
       }
     }
 
-    return te.skipTo(termNum);
+    return lookupTerm(te, termNum);
   }
 
   @Override
   public String toString() {
+    final long indexSize = indexedTermsArray == null ? 0 : (8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings); // assume 8 byte references?
     return "{field=" + field
             + ",memSize="+memSize()
-            + ",tindexSize="+ti.memSize()
+            + ",tindexSize="+indexSize
             + ",time="+total_time
             + ",phase1="+phase1_time
             + ",nTerms="+numTermsInField
@@ -895,7 +660,6 @@ public class UnInvertedField {
             + ",uses="+use.get()
             + "}";
   }
-
 
   //////////////////////////////////////////////////////////////////
   //////////////////////////// caching /////////////////////////////
@@ -920,287 +684,3 @@ public class UnInvertedField {
     return uif;
   }
 }
-
-
-// How to share TermDocs (int[] score[])???
-// Hot to share TermPositions?
-/***
-class TermEnumListener {
-  void doTerm(Term t) {
-  }
-  void done() {
-  }
-}
-***/
-
-
-class NumberedTermsEnum extends TermsEnum {
-  protected final IndexReader reader;
-  protected final TermIndex tindex;
-  protected TermsEnum tenum;
-  protected int pos=-1;
-  protected BytesRef termText;
-  protected DocsEnum docsEnum;
-  protected Bits deletedDocs;
-
-
-  NumberedTermsEnum(IndexReader reader, TermIndex tindex) throws IOException {
-    this.reader = reader;
-    this.tindex = tindex;
-  }
-
-
-  NumberedTermsEnum(IndexReader reader, TermIndex tindex, BytesRef termValue, int pos) throws IOException {
-    this.reader = reader;
-    this.tindex = tindex;
-    this.pos = pos;
-    Terms terms = MultiFields.getTerms(reader, tindex.field);
-    deletedDocs = MultiFields.getDeletedDocs(reader);
-    if (terms != null) {
-      tenum = terms.iterator();
-      tenum.seek(termValue);
-      setTerm();
-    }
-  }
-
-  @Override
-  public Comparator<BytesRef> getComparator() throws IOException {
-    return tenum.getComparator();
-  }
-
-  public DocsEnum getDocsEnum() throws IOException {
-    docsEnum = tenum.docs(deletedDocs, docsEnum);
-    return docsEnum;
-  }
-
-  protected BytesRef setTerm() throws IOException {
-    termText = tenum.term();
-    if (tindex.prefix != null && !termText.startsWith(tindex.prefix)) {
-      termText = null;
-    }
-    return termText;
-  }
-
-  @Override
-  public BytesRef next() throws IOException {
-    pos++;
-    if (tenum.next() == null) {
-      termText = null;
-      return null;
-    }
-    return setTerm();  // this is extra work if we know we are in bounds...
-  }
-
-  @Override
-  public BytesRef term() {
-    return termText;
-  }
-
-  @Override
-  public int docFreq() throws IOException {
-    return tenum.docFreq();
-  }
-
-  @Override
-  public long totalTermFreq() throws IOException {
-    return tenum.totalTermFreq();
-  }
-
-  public BytesRef skipTo(BytesRef target) throws IOException {
-
-    // already here
-    if (termText != null && termText.equals(target)) return termText;
-
-    if (tenum == null) {
-      return null;
-    }
-
-    int startIdx = Arrays.binarySearch(tindex.index,target);
-
-    if (startIdx >= 0) {
-      // we hit the term exactly... lucky us!
-      TermsEnum.SeekStatus seekStatus = tenum.seek(target);
-      assert seekStatus == TermsEnum.SeekStatus.FOUND;
-      pos = startIdx << tindex.intervalBits;
-      return setTerm();
-    }
-
-    // we didn't hit the term exactly
-    startIdx=-startIdx-1;
-    
-    if (startIdx == 0) {
-      // our target occurs *before* the first term
-      TermsEnum.SeekStatus seekStatus = tenum.seek(target);
-      assert seekStatus == TermsEnum.SeekStatus.NOT_FOUND;
-      pos = 0;
-      return setTerm();
-    }
-
-    // back up to the start of the block
-    startIdx--;
-
-    if ((pos >> tindex.intervalBits) == startIdx && termText != null && termText.compareTo(target)<=0) {
-      // we are already in the right block and the current term is before the term we want,
-      // so we don't need to seek.
-    } else {
-      // seek to the right block
-      TermsEnum.SeekStatus seekStatus = tenum.seek(tindex.index[startIdx]);
-      assert seekStatus == TermsEnum.SeekStatus.FOUND;
-      pos = startIdx << tindex.intervalBits;
-      setTerm();  // should be non-null since it's in the index
-    }
-
-    while (termText != null && termText.compareTo(target) < 0) {
-      next();
-    }
-
-    return termText;
-  }
-
-  public BytesRef skipTo(int termNumber) throws IOException {
-    int delta = termNumber - pos;
-    if (delta < 0 || delta > tindex.interval || tenum==null) {
-      int idx = termNumber >>> tindex.intervalBits;
-      BytesRef base = tindex.index[idx];
-      pos = idx << tindex.intervalBits;
-      delta = termNumber - pos;
-      TermsEnum.SeekStatus seekStatus = tenum.seek(base);
-      assert seekStatus == TermsEnum.SeekStatus.FOUND;
-    }
-    while (--delta >= 0) {
-      BytesRef br = tenum.next();
-      if (br == null) {
-        termText = null;
-        return null;
-      }
-      ++pos;
-    }
-    return setTerm();
-  }
-
-  protected void close() throws IOException {
-    // no-op, needed so the anon subclass that does indexing
-    // can build its index
-  }
-
-  /** The current term number, starting at 0.
-   * Only valid if the previous call to next() or skipTo() returned true.
-   */
-  public int getTermNumber() {
-    return pos;
-  }
-
-  @Override
-  public long ord() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public SeekStatus seek(long ord) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public SeekStatus seek(BytesRef target, boolean useCache) {
-    throw new UnsupportedOperationException();
-  }
-}
-
-
-/**
- * Class to save memory by only storing every nth term (for random access), while
- * numbering the terms, allowing them to be retrieved later by number.
- * This is only valid when used with the IndexReader it was created with.
- * The IndexReader is not actually stored to facilitate caching by using it as a key in
- * a weak hash map.
- */
-class TermIndex {
-  final static int intervalBits = 7;  // decrease to a low number like 2 for testing
-  final static int intervalMask = 0xffffffff >>> (32-intervalBits);
-  final static int interval = 1 << intervalBits;
-
-  final String field;
-  final BytesRef prefix;
-  BytesRef[] index;
-  int nTerms;
-  long sizeOfStrings;
-
-  TermIndex(String field) {
-    this(field, null);
-  }
-
-  TermIndex(String field, String prefix) {
-    this.field = field;
-    this.prefix = prefix == null ? null : new BytesRef(prefix);
-  }
-
-  NumberedTermsEnum getEnumerator(IndexReader reader, int termNumber) throws IOException {
-    NumberedTermsEnum te = new NumberedTermsEnum(reader, this);
-    te.skipTo(termNumber);
-    return te;
-  }
-
-  /* The first time an enumerator is requested, it should be used
-     with next() to fully traverse all of the terms so the index
-     will be built.
-   */
-  NumberedTermsEnum getEnumerator(IndexReader reader) throws IOException {
-    if (index==null) return new NumberedTermsEnum(reader,this, prefix==null?new BytesRef():prefix, 0) {
-      ArrayList<BytesRef> lst;
-      PagedBytes bytes;
-
-      @Override
-      protected BytesRef setTerm() throws IOException {
-        BytesRef br = super.setTerm();
-        if (br != null && (pos & intervalMask)==0) {
-          sizeOfStrings += br.length;
-          if (lst==null) {
-            lst = new ArrayList<BytesRef>();
-            bytes = new PagedBytes(15);
-          }
-          BytesRef out = new BytesRef();
-          bytes.copy(br, out);
-          lst.add(out);
-        }
-        return br;
-      }
-
-      @Override
-      public BytesRef skipTo(int termNumber) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public void close() throws IOException {
-        nTerms=pos;
-        super.close();
-        index = lst!=null ? lst.toArray(new BytesRef[lst.size()]) : new BytesRef[0];
-      }
-    };
-    else return new NumberedTermsEnum(reader,this,new BytesRef(),0);
-  }
-
-
-  /**
-   * Returns the approximate amount of memory taken by this TermIndex.
-   * This is only an approximation and doesn't take into account java object overhead.
-   *
-   * @return
-   * the approximate memory consumption in bytes
-   */
-  public long memSize() {
-    // assume 8 byte references?
-    return 8+8+8+8+(index.length<<3)+sizeOfStrings;
-  }
-}
-

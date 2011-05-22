@@ -1,0 +1,131 @@
+====================================
+Lucene/Solr Maven build instructions
+====================================
+
+Contents:
+
+A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
+B. How to generate Lucene Maven artifacts
+C. How to generate Solr Maven artifacts
+D. How to use Maven to build Lucene/Solr
+
+-----
+
+A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
+
+   The most recently produced nightly Jenkins-built Lucene and Solr Maven
+   artifacts are available in Maven repository layout here:
+   
+      <https://builds.apache.org/hudson/job/Lucene-Solr-Maven-trunk/lastSuccessfulBuild/artifact/maven_artifacts/>
+
+
+B. How to generate Lucene Maven artifacts
+
+   1. Prerequisites: JDK 1.5+, Ant 1.7.X, and maven-ant-tasks-2.1.1.jar
+
+      In order to generate Maven artifacts for Lucene/Solr, you must first
+      download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar), e.g.
+      from <http://maven.apache.org/ant-tasks/download.html>, and add it
+      to any one of the following:
+
+         a. Your $HOME/.ant/lib/ directory (C:\Users\username\.ant\lib\ under
+            Windows Vista/7); or
+         b. Your $ANT_HOME/lib/ directory (%ANT_HOME%\lib\ under Windows); or
+         c. Your $CLASSPATH (%CLASSPATH% under Windows); or
+         d. Your ant commond line: "-lib /path/to/maven-ant-tasks-2.1.1.jar".
+
+   2. Run the following command from the lucene/ directory:
+
+         ant generate-maven-artifacts
+	  
+      The above command will create an internal Maven repository under
+      lucene/dist/maven/, including POMs, binary .jars, source .jars,
+      and javadoc .jars, for Lucene Core, for the Lucene test framework,
+      for each contrib, and for each module under the top-level modules/
+      directory.
+
+
+C. How to generate Solr Maven artifacts
+
+   1. Prerequisites: JDK 1.6+; Ant 1.7.X; and maven-ant-tasks-2.1.1.jar 
+      (see item A.1. above for where to put the Maven ant tasks jar).
+
+   2. Run the following from the solr/ directory:
+
+         ant generate-maven-artifacts
+		 
+      The above command will create an internal Maven repository under
+      solr/package/maven/, including POMs, binary .jars, source .jars,
+      and javadoc .jars, for Solr Core, for the Solr test framework,
+      for each contrib, and for the Solr .war (for which there are no
+      source or javadoc .jars).
+
+
+D. How to use Maven to build Lucene/Solr
+
+   In summary, to enable Maven builds, perform the following:
+
+         svn update
+         ant get-maven-poms
+         mvn -N -Pbootstrap install
+
+   The details, followed by some example Maven commands:
+
+   1. Prerequisites: JDK 1.5+ (for Lucene); JDK 1.6+ (for Solr);
+                     Maven 2.2.1 or 3.0.X
+
+   2. Make sure your sources are up to date.  If you checked your sources out
+      from the Apache Subversion repository, run "svn update" from the top
+      level.
+
+   3. Copy the Maven POM templates from under dev-tools/maven/ to where they
+      they need to go in order to drive the Maven build, using the following
+      command from the top-level directory:
+
+         ant get-maven-poms
+
+      Note that you will need to do this whenever changes to the POM
+      templates are committed.  It's a good idea to follow every "svn update"
+      with "ant get-maven-poms" for this reason.
+
+      The above command copies all of the POM templates from dev-tools/maven/,
+      filling in the project version with the default "X.X-SNAPSHOT".  If you
+      want the POMs and the Maven-built artifacts to have a version other than
+      the default, you can supply an alternate version on the command line
+      with the above command, e.g.:
+
+         ant -Dversion=4.0-my-special-version get-maven-poms
+
+   4. Populate your local repository with .jars & POMs for dependencies that
+      are not available from public Maven repositories (a.k.a. "non-mavenized
+      dependencies"):
+
+         mvn -N -Pbootstrap install
+
+      Note that you will need to do this whenever changes to the non-Mavenized
+      dependencies are committed.  It's a good idea to follow every
+      "svn update" with "ant get-maven-poms" and "mvn -N -Pbootstrap install"
+      for this reason.
+
+
+   Some example Maven commands you can use after you perform the above
+   preparatory steps:
+
+   - Compile, package, and install all artifacts to your local repository:
+
+         mvn install
+
+     After compiling and packaging, but before installing each module's 
+     artifact, the above command will also run all the module's tests.
+
+     To compile, package and install all artifacts without running any tests:
+
+         mvn -DskipTests install
+
+   - Run tests:
+
+         mvn test
+
+     To run all test methods defined in a test class:
+
+         mvn -Dtest=TestClassName test

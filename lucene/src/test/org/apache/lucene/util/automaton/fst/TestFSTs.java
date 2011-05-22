@@ -54,14 +54,16 @@ public class TestFSTs extends LuceneTestCase {
   private MockDirectoryWrapper dir;
 
   @Override
-  public void setUp() throws IOException {
+  public void setUp() throws Exception {
+    super.setUp();
     dir = newDirectory();
     dir.setPreventDoubleWrite(false);
   }
 
   @Override
-  public void tearDown() throws IOException {
+  public void tearDown() throws Exception {
     dir.close();
+    super.tearDown();
   }
 
   private static BytesRef toBytesRef(IntsRef ir) {
@@ -288,6 +290,36 @@ public class TestFSTs extends LuceneTestCase {
       }
       new FSTTester<IntsRef>(random, dir, inputMode, pairs, outputs).doTest();
     }
+
+    // Up to two positive ints, shared, generally but not
+    // monotonically increasing
+    {
+      if (VERBOSE) {
+        System.out.println("TEST: now test UpToTwoPositiveIntOutputs");
+      }
+      final UpToTwoPositiveIntOutputs outputs = UpToTwoPositiveIntOutputs.getSingleton(true);
+      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
+      long lastOutput = 0;
+      for(int idx=0;idx<terms.length;idx++) {
+        // Sometimes go backwards
+        long value = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+        while(value < 0) {
+          value = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+        }
+        final Object output;
+        if (random.nextInt(5) == 3) {
+          long value2 = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+          while(value2 < 0) {
+            value2 = lastOutput + _TestUtil.nextInt(random, -100, 1000);
+          }
+          output = outputs.get(value, value2);
+        } else {
+          output = outputs.get(value);
+        }
+        pairs.add(new FSTTester.InputOutput<Object>(terms[idx], output));
+      }
+      new FSTTester<Object>(random, dir, inputMode, pairs, outputs).doTest();
+    }
   }
 
   private static class FSTTester<T> {
@@ -328,11 +360,13 @@ public class TestFSTs extends LuceneTestCase {
       // no pruning
       doTest(0, 0);
 
-      // simple pruning
-      doTest(_TestUtil.nextInt(random, 1, 1+pairs.size()), 0);
-
-      // leafy pruning
-      doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()));
+      if (!(outputs instanceof UpToTwoPositiveIntOutputs)) {
+        // simple pruning
+        doTest(_TestUtil.nextInt(random, 1, 1+pairs.size()), 0);
+        
+        // leafy pruning
+        doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()));
+      }
     }
 
     // runs the term, returning the output, or null if term
@@ -421,7 +455,15 @@ public class TestFSTs extends LuceneTestCase {
                                                 prune1==0 && prune2==0, outputs);
 
       for(InputOutput<T> pair : pairs) {
-        builder.add(pair.input, pair.output);
+        if (pair.output instanceof UpToTwoPositiveIntOutputs.TwoLongs) {
+          final UpToTwoPositiveIntOutputs _outputs = (UpToTwoPositiveIntOutputs) outputs;
+          final UpToTwoPositiveIntOutputs.TwoLongs twoLongs = (UpToTwoPositiveIntOutputs.TwoLongs) pair.output;
+          @SuppressWarnings("unchecked") final Builder<Object> builderObject = (Builder<Object>) builder;
+          builderObject.add(pair.input, _outputs.get(twoLongs.first));
+          builderObject.add(pair.input, _outputs.get(twoLongs.second));
+        } else {
+          builder.add(pair.input, pair.output);
+        }
       }
       FST<T> fst = builder.finish();
 
@@ -498,7 +540,7 @@ public class TestFSTs extends LuceneTestCase {
           Object output = run(fst, term, null);
 
           assertNotNull("term " + inputToString(inputMode, term) + " is not accepted", output);
-          assertEquals(output, pair.output);
+          assertEquals(pair.output, output);
 
           // verify enum's next
           IntsRefFSTEnum.InputOutput<T> t = fstEnum.next();
@@ -942,7 +984,7 @@ public class TestFSTs extends LuceneTestCase {
 
     final LineFileDocs docs = new LineFileDocs(random);
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriter writer = new IndexWriter(dir, conf);
@@ -1420,5 +1462,74 @@ public class TestFSTs extends LuceneTestCase {
     FST<Object> fst = s.compile(input);
     FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
     s.verifyStateAndBelow(fst, arc, 1);
+  }
+
+  // Make sure raw FST can differentiate between final vs
+  // non-final end nodes
+  public void testNonFinalStopNodes() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    final Long nothing = outputs.getNoOutput();
+    final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+
+    final FST<Long> fst = new FST<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<Long>(b, 0);
+
+    // Add final stop node
+    {
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      node.isFinal = true;
+      rootNode.addArc('a', node);
+      final Builder.CompiledNode frozen = new Builder.CompiledNode();
+      frozen.address = fst.addNode(node);
+      rootNode.arcs[0].nextFinalOutput = outputs.get(17);
+      rootNode.arcs[0].isFinal = true;
+      rootNode.arcs[0].output = nothing;
+      rootNode.arcs[0].target = frozen;
+    }
+
+    // Add non-final stop node
+    {
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      rootNode.addArc('b', node);
+      final Builder.CompiledNode frozen = new Builder.CompiledNode();
+      frozen.address = fst.addNode(node);
+      rootNode.arcs[1].nextFinalOutput = nothing;
+      rootNode.arcs[1].output = outputs.get(42);
+      rootNode.arcs[1].target = frozen;
+    }
+
+    fst.finish(fst.addNode(rootNode));
+    
+    checkStopNodes(fst, outputs);
+
+    // Make sure it still works after save/load:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createOutput("fst");
+    fst.save(out);
+    out.close();
+
+    IndexInput in = dir.openInput("fst");
+    final FST<Long> fst2 = new FST<Long>(in, outputs);
+    checkStopNodes(fst2, outputs);
+    in.close();
+    dir.close();
+  }
+
+  private void checkStopNodes(FST<Long> fst, PositiveIntOutputs outputs) throws Exception {
+    final Long nothing = outputs.getNoOutput();
+    FST.Arc<Long> startArc = fst.getFirstArc(new FST.Arc<Long>());
+    assertEquals(nothing, startArc.output);
+    assertEquals(nothing, startArc.nextFinalOutput);
+
+    FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>());
+    assertEquals('a', arc.label);
+    assertEquals(17, arc.nextFinalOutput.longValue());
+    assertTrue(arc.isFinal());
+
+    arc = fst.readNextArc(arc);
+    assertEquals('b', arc.label);
+    assertFalse(arc.isFinal());
+    assertEquals(42, arc.output.longValue());
   }
 }

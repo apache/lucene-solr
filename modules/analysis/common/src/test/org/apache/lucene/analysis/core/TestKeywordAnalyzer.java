@@ -102,4 +102,9 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(0, offsetAtt.startOffset());
     assertEquals(4, offsetAtt.endOffset());
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new KeywordAnalyzer(), 10000*RANDOM_MULTIPLIER);
+  }
 }

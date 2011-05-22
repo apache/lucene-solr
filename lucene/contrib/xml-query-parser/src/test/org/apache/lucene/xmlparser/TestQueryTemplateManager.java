@@ -44,7 +44,7 @@ import org.xml.sax.SAXException;
 public class TestQueryTemplateManager extends LuceneTestCase {
 
 	CoreParser builder;
-	Analyzer analyzer=new MockAnalyzer();
+	Analyzer analyzer=new MockAnalyzer(random);
 	private IndexSearcher searcher;
 	private Directory dir;
 	

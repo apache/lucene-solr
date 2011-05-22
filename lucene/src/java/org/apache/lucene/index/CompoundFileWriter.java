@@ -46,8 +46,10 @@ import org.apache.lucene.util.IOUtils;
  * file. The {directory} that follows has that many entries. Each directory entry
  * contains a long pointer to the start of this file's data section, and a String
  * with that file's name.
+ * 
+ * @lucene.internal
  */
-final class CompoundFileWriter {
+public final class CompoundFileWriter {
 
     private static final class FileEntry {
         /** source file */
@@ -136,8 +138,7 @@ final class CompoundFileWriter {
 
     /** Merge files with the extensions added up to now.
      *  All files with these extensions are combined sequentially into the
-     *  compound stream. After successful merge, the source files
-     *  are deleted.
+     *  compound stream.
      *  @throws IllegalStateException if close() had been called before or
      *   if no file has been added to this object
      */

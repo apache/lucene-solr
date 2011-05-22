@@ -115,11 +115,6 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public void touchFile(String name) throws IOException {
-    getDirectory(name).touchFile(name);
-  }
-
-  @Override
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
   }

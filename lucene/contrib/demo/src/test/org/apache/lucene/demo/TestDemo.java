@@ -22,16 +22,17 @@ import java.io.File;
 import java.io.PrintStream;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestDemo extends LuceneTestCase {
 
-  private void testOneSearch(String query, int expectedHitCount) throws Exception {
+  private void testOneSearch(File indexPath, String query, int expectedHitCount) throws Exception {
     PrintStream outSave = System.out;
     try {
       ByteArrayOutputStream bytes = new ByteArrayOutputStream();
       PrintStream fakeSystemOut = new PrintStream(bytes);
       System.setOut(fakeSystemOut);
-      SearchFiles.main(new String[] {"-query", query});
+      SearchFiles.main(new String[] {"-query", query, "-index", indexPath.getPath()});
       fakeSystemOut.flush();
       String output = bytes.toString(); // intentionally use default encoding
       assertTrue("output=" + output, output.contains(expectedHitCount + " total matching documents"));
@@ -42,12 +43,13 @@ public class TestDemo extends LuceneTestCase {
 
   public void testIndexSearch() throws Exception {
     File dir = getDataFile("test-files/docs");
-    IndexFiles.main(new String[] { "-create", "-docs", dir.getPath() });
-    testOneSearch("apache", 3);
-    testOneSearch("patent", 8);
-    testOneSearch("lucene", 0);
-    testOneSearch("gnu", 6);
-    testOneSearch("derivative", 8);
-    testOneSearch("license", 13);
+    File indexDir = _TestUtil.getTempDir("ContribDemoTest");
+    IndexFiles.main(new String[] { "-create", "-docs", dir.getPath(), "-index", indexDir.getPath()});
+    testOneSearch(indexDir, "apache", 3);
+    testOneSearch(indexDir, "patent", 8);
+    testOneSearch(indexDir, "lucene", 0);
+    testOneSearch(indexDir, "gnu", 6);
+    testOneSearch(indexDir, "derivative", 8);
+    testOneSearch(indexDir, "license", 13);
   }
 }

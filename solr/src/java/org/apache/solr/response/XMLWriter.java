@@ -19,9 +19,7 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -32,11 +30,13 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 
 
-public final class XMLWriter extends TextResponseWriter {
+/**
+ * @lucene.internal
+ */
+public class XMLWriter extends TextResponseWriter {
 
   public static float CURRENT_VERSION=2.2f;
 
@@ -54,12 +54,7 @@ public final class XMLWriter extends TextResponseWriter {
   
   private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
-  private boolean defaultIndent=false;
   final int version;
-
-  // temporary working objects...
-  // be careful not to use these recursively...
-  private final ArrayList tlst = new ArrayList();
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter xmlWriter = null;
@@ -106,7 +101,7 @@ public final class XMLWriter extends TextResponseWriter {
     writer.write(XML_START2_NOSCHEMA);
 
     // dump response values
-    NamedList lst = rsp.getValues();
+    NamedList<?> lst = rsp.getValues();
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
     if(omitHeader != null && omitHeader) lst.remove("responseHeader");
     int sz = lst.size();

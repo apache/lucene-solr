@@ -22,8 +22,8 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
 import static org.apache.lucene.analysis.util.VocabularyAssert.*;
@@ -36,7 +36,7 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      Tokenizer source = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(source, new FrenchMinimalStemFilter(source));
     }
   };
@@ -58,5 +58,10 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataFile("frminimaltestdata.zip"), "frminimal.txt");
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, analyzer, 10000*RANDOM_MULTIPLIER);
   }
 }

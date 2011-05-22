@@ -20,9 +20,10 @@ package org.apache.lucene.index;
 /** @lucene.experimental */
 public final class FieldInfo {
   public static final int UNASSIGNED_CODEC_ID = -1;
-  public String name;
+  public final String name;
+  public final int number;
+
   public boolean isIndexed;
-  public int number;
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
@@ -56,6 +57,7 @@ public final class FieldInfo {
       this.omitNorms = false;
       this.omitTermFreqAndPositions = false;
     }
+    assert !omitTermFreqAndPositions || !storePayloads;
   }
 
   void setCodecId(int codecId) {
@@ -78,6 +80,7 @@ public final class FieldInfo {
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
               boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
     }
@@ -99,7 +102,33 @@ public final class FieldInfo {
       }
       if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
         this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
+        this.storePayloads = false;
       }
     }
+    assert !this.omitTermFreqAndPositions || !this.storePayloads;
+  }
+  private boolean vectorsCommitted;
+
+  /**
+   * Reverts all uncommitted changes on this {@link FieldInfo}
+   * @see #commitVectors()
+   */
+  void revertUncommitted() {
+    if (storeTermVector && !vectorsCommitted) {
+      storeOffsetWithTermVector = false;
+      storePositionWithTermVector = false;
+      storeTermVector = false;  
+    }
+  }
+
+  /**
+   * Commits term vector modifications. Changes to term-vectors must be
+   * explicitly committed once the necessary files are created. If those changes
+   * are not committed subsequent {@link #revertUncommitted()} will reset the
+   * all term-vector flags before the next document.
+   */
+  void commitVectors() {
+    assert storeTermVector;
+    vectorsCommitted = true;
   }
 }

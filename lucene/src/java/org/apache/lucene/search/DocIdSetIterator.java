@@ -61,9 +61,10 @@ public abstract class DocIdSetIterator {
   public abstract int nextDoc() throws IOException;
 
   /**
-   * Advances to the first beyond the current whose document number is greater
-   * than or equal to <i>target</i>. Returns the current document number or
-   * {@link #NO_MORE_DOCS} if there are no more docs in the set.
+   * Advances to the first beyond (see NOTE below) the current whose document
+   * number is greater than or equal to <i>target</i>. Returns the current
+   * document number or {@link #NO_MORE_DOCS} if there are no more docs in the
+   * set.
    * <p>
    * Behaves as if written:
    * 
@@ -78,7 +79,7 @@ public abstract class DocIdSetIterator {
    * 
    * Some implementations are considerably more efficient than that.
    * <p>
-   * <b>NOTE:</b> when <code> target &le; current</code> implementations may opt 
+   * <b>NOTE:</b> when <code> target &le; current</code> implementations may opt
    * not to advance beyond their current {@link #docID()}.
    * <p>
    * <b>NOTE:</b> this method may be called with {@link #NO_MORE_DOCS} for

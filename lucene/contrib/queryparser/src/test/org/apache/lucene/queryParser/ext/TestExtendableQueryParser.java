@@ -43,7 +43,7 @@ public class TestExtendableQueryParser extends TestQueryParser {
   public QueryParser getParser(Analyzer a, Extensions extensions)
       throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
+      a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a) : new ExtendableQueryParser(
         TEST_VERSION_CURRENT, "field", a, extensions);

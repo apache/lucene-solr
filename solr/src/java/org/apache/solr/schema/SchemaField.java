@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;

@@ -56,6 +56,7 @@ public class WeightedSpanTermExtractor {
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
   private boolean wrapToCaching = true;
+  private int maxDocCharsToAnalyze;
 
   public WeightedSpanTermExtractor() {
   }
@@ -320,13 +321,13 @@ public class WeightedSpanTermExtractor {
 
   private AtomicReaderContext getLeafContextForField(String field) throws IOException {
     if(wrapToCaching && !cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
-      tokenStream = new CachingTokenFilter(tokenStream);
+      tokenStream = new CachingTokenFilter(new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
       cachedTokenStream = true;
     }
     AtomicReaderContext context = readers.get(field);
     if (context == null) {
       MemoryIndex indexer = new MemoryIndex();
-      indexer.addField(field, tokenStream);
+      indexer.addField(field, new OffsetLimitTokenFilter(tokenStream, maxDocCharsToAnalyze));
       tokenStream.reset();
       IndexSearcher searcher = indexer.createSearcher();
       // MEM index has only atomic ctx
@@ -544,5 +545,9 @@ public class WeightedSpanTermExtractor {
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
+  }
+
+  protected final void setMaxDocCharsToAnalyze(int maxDocCharsToAnalyze) {
+    this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
   }
 }

@@ -199,10 +199,7 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
       setPreviousTokenStream(streams);
     } else {
       TokenStream result = defaultAnalyzer.reusableTokenStream(fieldName, reader);
-      if (result == streams.wrapped) {
-        /* the wrapped analyzer reused the stream */
-        streams.shingle.reset(); 
-      } else {
+      if (result != streams.wrapped) {
         /* the wrapped analyzer did not, create a new shingle around the new one */
         streams.wrapped = result;
         streams.shingle = new ShingleFilter(streams.wrapped);

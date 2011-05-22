@@ -71,7 +71,7 @@ public class TestCartesian extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     
     setUpPlotter( 2, 15);
     

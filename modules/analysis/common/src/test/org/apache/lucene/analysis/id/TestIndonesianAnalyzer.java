@@ -50,4 +50,9 @@ public class TestIndonesianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "peledakan", "peledakan");
     checkOneTermReuse(a, "pembunuhan", "bunuh");
   }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new IndonesianAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
+  }
 }

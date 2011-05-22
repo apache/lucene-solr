@@ -47,7 +47,7 @@ public class TestTermScorer extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(newInOrderLogMergePolicy()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc
@@ -65,6 +65,7 @@ public class TestTermScorer extends LuceneTestCase {
     indexSearcher.close();
     indexReader.close();
     directory.close();
+    super.tearDown();
   }
 
   public void test() throws IOException {

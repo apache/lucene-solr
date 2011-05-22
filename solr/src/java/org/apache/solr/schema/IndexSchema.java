@@ -797,19 +797,23 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      // No need to be core-aware as Analyzers are not in the core-aware list
-      final Class<? extends Analyzer> clazz = loader.findClass(analyzerName).asSubclass(Analyzer.class);
       try {
+        // No need to be core-aware as Analyzers are not in the core-aware list
+        final Class<? extends Analyzer> clazz = loader.findClass
+          (analyzerName).asSubclass(Analyzer.class);
+
         try {
-          // first try to use a ctor with version parameter (needed for many new Analyzers that have no default one anymore)
+          // first try to use a ctor with version parameter 
+          // (needed for many new Analyzers that have no default one anymore)
           Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
           final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
           final Version luceneMatchVersion = (matchVersionStr == null) ?
             solrConfig.luceneMatchVersion : Config.parseLuceneVersionString(matchVersionStr);
           if (luceneMatchVersion == null) {
-            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "Configuration Error: Analyzer '" + clazz.getName() +
-              "' needs a 'luceneMatchVersion' parameter");
+            throw new SolrException
+              ( SolrException.ErrorCode.SERVER_ERROR,
+                "Configuration Error: Analyzer '" + clazz.getName() +
+                "' needs a 'luceneMatchVersion' parameter");
           }
           return cnstr.newInstance(luceneMatchVersion);
         } catch (NoSuchMethodException nsme) {
@@ -817,8 +821,9 @@ public final class IndexSchema {
           return clazz.newInstance();
         }
       } catch (Exception e) {
+        log.error("Cannot load analyzer: "+analyzerName, e);
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "Cannot load analyzer: "+analyzerName );
+                                 "Cannot load analyzer: "+analyzerName, e );
       }
     }
 

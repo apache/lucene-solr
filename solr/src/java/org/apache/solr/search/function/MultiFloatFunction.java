@@ -62,28 +62,12 @@ public abstract class MultiFloatFunction extends ValueSource {
       valsArr[i] = sources[i].getValues(context, readerContext);
     }
 
-    return new DocValues() {
+    return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return func(doc, valsArr);
       }
-      @Override
-      public int intVal(int doc) {
-        return (int)floatVal(doc);
-      }
-      @Override
-      public long longVal(int doc) {
-        return (long)floatVal(doc);
-      }
-      @Override
-      public double doubleVal(int doc) {
-        return (double)floatVal(doc);
-      }
-      @Override
-      public String strVal(int doc) {
-        return Float.toString(floatVal(doc));
-      }
-      @Override
+       @Override
       public String toString(int doc) {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');

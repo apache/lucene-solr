@@ -126,7 +126,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Directory directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     Document d1 = new Document();
     d1.add(newField("default","one two", Field.Store.YES, Field.Index.ANALYZED));
@@ -143,7 +143,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     Directory target = newDirectory();
-    writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);
     writer.close();

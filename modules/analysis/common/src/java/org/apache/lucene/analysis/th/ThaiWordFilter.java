@@ -131,5 +131,8 @@ public final class ThaiWordFilter extends TokenFilter {
   public void reset() throws IOException {
     super.reset();
     hasMoreTokensInClone = false;
+    clonedToken = null;
+    clonedTermAtt = null;
+    clonedOffsetAtt = null;
   }
 }

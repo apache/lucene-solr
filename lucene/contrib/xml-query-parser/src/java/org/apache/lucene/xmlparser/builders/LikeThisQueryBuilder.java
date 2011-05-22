@@ -76,13 +76,16 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		    stopWordsSet=new HashSet<String>();
 		    for (int i = 0; i < fields.length; i++)
             {
-                TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
-                CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
                 try
                 {
+                  TokenStream ts = analyzer.reusableTokenStream(fields[i],new StringReader(stopWords));
+                  CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+                  ts.reset();
 	                while(ts.incrementToken()) {
 	                    stopWordsSet.add(termAtt.toString());
 	                }
+	                ts.end();
+	                ts.close();
                 }
                 catch(IOException ioe)
                 {

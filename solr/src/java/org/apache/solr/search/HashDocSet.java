@@ -48,6 +48,12 @@ public final class HashDocSet extends DocSetBase {
 
   private final int mask;
 
+  public HashDocSet(HashDocSet set) {
+    this.table = set.table.clone();
+    this.size = set.size;
+    this.mask = set.mask;
+  }
+
   /** Create a HashDocSet from a list of *unique* ids */
   public HashDocSet(int[] docs, int offset, int len) {
     this(docs, offset, len, DEFAULT_INVERSE_LOAD_FACTOR);
@@ -207,6 +213,31 @@ public final class HashDocSet extends DocSetBase {
 
   }
 
+  @Override
+  public boolean intersects(DocSet other) {
+   if (other instanceof HashDocSet) {
+     // set "a" to the smallest doc set for the most efficient
+     // intersection.
+     final HashDocSet a = size()<=other.size() ? this : (HashDocSet)other;
+     final HashDocSet b = size()<=other.size() ? (HashDocSet)other : this;
+
+     for (int i=0; i<a.table.length; i++) {
+       int id=a.table[i];
+       if (id >= 0 && b.exists(id)) {
+         return true;
+       }
+     }
+     return false;
+   } else {
+     for (int i=0; i<table.length; i++) {
+       int id=table[i];
+       if (id >= 0 && other.exists(id)) {
+         return true;
+       }
+     }
+     return false;
+   }
+  }
 
   @Override
   public DocSet andNot(DocSet other) {
@@ -249,6 +280,10 @@ public final class HashDocSet extends DocSetBase {
    }
   }
 
+  @Override
+  protected HashDocSet clone() {
+    return new HashDocSet(this);
+  }
 
   // don't implement andNotSize() and unionSize() on purpose... they are implemented
   // in BaseDocSet in terms of intersectionSize().

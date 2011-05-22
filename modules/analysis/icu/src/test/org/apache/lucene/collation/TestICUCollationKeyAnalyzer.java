@@ -19,6 +19,7 @@ package org.apache.lucene.collation;
 
 
 import com.ibm.icu.text.Collator;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.BytesRef;
@@ -88,7 +89,7 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
   public void testThreadSafe() throws Exception {
     int iters = 20 * RANDOM_MULTIPLIER;
     for (int i = 0; i < iters; i++) {
-      Locale locale = randomLocale(random);
+      Locale locale = Locale.GERMAN;
       Collator collator = Collator.getInstance(locale);
       collator.setStrength(Collator.IDENTICAL);
       assertThreadSafe(new ICUCollationKeyAnalyzer(TEST_VERSION_CURRENT, collator));

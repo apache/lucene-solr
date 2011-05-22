@@ -26,10 +26,12 @@
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/stempel/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/benchmark/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/grouping/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/clustering/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/uima/build.xml" />
   </component>

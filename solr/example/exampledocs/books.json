@@ -1,7 +1,5 @@
-{
-
-"add": {
-  "doc": {
+[
+  {
     "id" : "978-0641723445",
     "cat" : ["book","hardcover"],
     "title" : "The Lightning Thief",
@@ -13,11 +11,8 @@
     "price" : 12.50,
     "pages_i" : 384
   }
-}
-
 ,
-"add": {
-  "doc": {
+  {
     "id" : "978-1423103349",
     "cat" : ["book","paperback"],
     "title" : "The Sea of Monsters",
@@ -29,6 +24,4 @@
     "price" : 6.49,
     "pages_i" : 304
   }
-}
-
-}
+]

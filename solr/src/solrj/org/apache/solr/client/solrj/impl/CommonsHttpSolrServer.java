@@ -26,15 +26,7 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpConnectionManager;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpMethodBase;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.NoHttpResponseException;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -43,6 +35,7 @@ import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.PartBase;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -205,15 +198,21 @@ public class CommonsHttpSolrServer extends SolrServer
     if( _baseURL.indexOf( '?' ) >=0 ) {
       throw new RuntimeException( "Invalid base url for solrj.  The base URL must not contain parameters: "+_baseURL );
     }
- 
-    _httpClient = (client == null) ? new HttpClient(new MultiThreadedHttpConnectionManager()) : client;
 
     if (client == null) {
+      _httpClient = new HttpClient(new MultiThreadedHttpConnectionManager()) ;
+
+      // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
+      DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
+      _httpClient.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+
       // set some better defaults if we created a new connection manager and client
-      
+
       // increase the default connections
       this.setDefaultMaxConnectionsPerHost( 32 );  // 2
       this.setMaxTotalConnections( 128 ); // 20
+    } else {
+      _httpClient = client;
     }
 
     _parser = parser;

@@ -24,6 +24,7 @@
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
     <version>8</version>
+    <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-solr-grandparent</artifactId>
@@ -106,14 +107,6 @@
   </licenses>
   <repositories>
     <repository>
-      <id>carrot2.org</id>
-      <name>Carrot2 Maven2 repository</name>
-      <url>http://download.carrot2.org/maven2/</url>
-      <snapshots>
-        <updatePolicy>never</updatePolicy>
-      </snapshots>
-    </repository>
-    <repository>
       <id>apache.snapshots</id>
       <name>Apache Snapshot Repository</name>
       <url>http://repository.apache.org/snapshots</url>
@@ -131,6 +124,11 @@
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-icu4j</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>r05</version>
       </dependency>
       <dependency>
         <groupId>com.sleepycat</groupId>
@@ -233,11 +231,6 @@
         <version>1.1</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-stax-api_1.0_spec</artifactId>
-        <version>1.0.1</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.solr</groupId>
         <artifactId>solr-commons-csv</artifactId>
         <version>${project.version}</version>
@@ -300,7 +293,7 @@
       <dependency>
         <groupId>org.carrot2</groupId>
         <artifactId>carrot2-core</artifactId>
-        <version>3.4.2</version>
+        <version>3.5.0</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.woodstox</groupId>
@@ -694,7 +687,7 @@
                   <artifactId>solr-noggit</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>solr/lib/apache-solr-noggit-r944541.jar</file>
+                  <file>solr/lib/apache-solr-noggit-r1099557.jar</file>
                 </configuration>  
               </execution>
               <execution>

@@ -76,39 +76,74 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "100", "store", "1,2"));
     assertU(commit());
    
-    assertJQ(req("defType","func", "q","geodist(1,2,3,4)","fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist(1,2,3,4)",
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             , "/response/docs/[0]/score==314.40338"
+             );
 
     // throw in some decimal points
-    assertJQ(req("defType","func", "q","geodist(1.0,2,3,4.0)","fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist(1.0,2,3,4.0)",
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             , "/response/docs/[0]/score==314.40338"
+             );
 
     // default to reading pt
-    assertJQ(req("defType","func", "q","geodist(1,2)","pt","3,4", "fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist(1,2)",
+                 "pt","3,4", 
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             , "/response/docs/[0]/score==314.40338"
+             );
 
     // default to reading pt first
-    assertJQ(req("defType","func", "q","geodist(1,2)","pt","3,4", "sfield","store", "fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist(1,2)",
+                 "pt","3,4", 
+                 "sfield","store", 
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             , "/response/docs/[0]/score==314.40338"
+             );
 
     // if pt missing, use sfield
-    assertJQ(req("defType","func", "q","geodist(3,4)","sfield","store", "fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
-
+    assertJQ(req("defType","func", 
+                 "q","geodist(3,4)",
+                 "sfield","store", 
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             ,"/response/docs/[0]/score==314.40338"
+             );
+    
     // read both pt and sfield
-    assertJQ(req("defType","func", "q","geodist()","pt","3,4","sfield","store", "fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist()","pt","3,4",
+                 "sfield","store", 
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             ,"/response/docs/[0]/score==314.40338"
+             );
 
     // param substitution
-    assertJQ(req("defType","func", "q","geodist($a,$b)","a","3,4","b","store", "fq","id:100","fl","id,score")
-      ,"/response/docs/[0]/score==314.40338"
-    );
+    assertJQ(req("defType","func", 
+                 "q","geodist($a,$b)",
+                 "a","3,4",
+                 "b","store", 
+                 "fq","id:100",
+                 "fl","id,score")
+             , 1e-5
+             ,"/response/docs/[0]/score==314.40338"
+             );
 
   }
 

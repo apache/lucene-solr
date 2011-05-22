@@ -143,13 +143,16 @@ public class LevenshteinAutomata {
       if (dest >= 0)
         for (int r = 0; r < numRanges; r++)
           states[k].addTransition(new Transition(rangeLower[r], rangeUpper[r], states[dest]));      
-      // reduce the state: this doesn't appear to help anything
-      //states[k].reduce();
     }
 
     Automaton a = new Automaton(states[0]);
     a.setDeterministic(true);
-    a.setNumberedStates(states);
+    // we create some useless unconnected states, and its a net-win overall to remove these,
+    // as well as to combine any adjacent transitions (it makes later algorithms more efficient).
+    // so, while we could set our numberedStates here, its actually best not to, and instead to
+    // force a traversal in reduce, pruning the unconnected states while we combine adjacent transitions.
+    //a.setNumberedStates(states);
+    a.reduce();
     // we need not trim transitions to dead states, as they are not created.
     //a.restoreInvariant();
     return a;

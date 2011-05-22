@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.hu.HungarianAnalyzer;
 
 public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
@@ -49,5 +50,10 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
         SwedishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "jaktkarlarne", "jaktkarlarne");
     checkOneTermReuse(a, "jaktkarlens", "jaktkarl");
+  }
+  
+  /** blast some random strings through the analyzer */
+  public void testRandomStrings() throws Exception {
+    checkRandomData(random, new SwedishAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);
   }
 }

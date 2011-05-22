@@ -367,8 +367,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         Query query = c.getQuery().rewrite(reader);    // rewrite first
 
         if (getBoost() != 1.0f) {                 // incorporate boost
-          if (query == c.getQuery())                   // if rewrite was no-op
+          if (query == c.getQuery()) {                   // if rewrite was no-op
             query = (Query)query.clone();         // then clone before boost
+          }
+          // Since the BooleanQuery only has 1 clause, the BooleanQuery will be
+          // written out. Therefore the rewritten Query's boost must incorporate both
+          // the clause's boost, and the boost of the BooleanQuery itself
           query.setBoost(getBoost() * query.getBoost());
         }
 
@@ -381,8 +385,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       BooleanClause c = clauses.get(i);
       Query query = c.getQuery().rewrite(reader);
       if (query != c.getQuery()) {                     // clause rewrote: must clone
-        if (clone == null)
+        if (clone == null) {
+          // The BooleanQuery clone is lazily initialized so only initialize
+          // it if a rewritten clause differs from the original clause (and hasn't been
+          // initialized already).  If nothing differs, the clone isn't needlessly created
           clone = (BooleanQuery)this.clone();
+        }
         clone.clauses.set(i, new BooleanClause(query, c.getOccur()));
       }
     }

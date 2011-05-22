@@ -90,7 +90,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   Directory ramDir;
   public IndexSearcher searcher = null;
   int numHighlights = 0;
-  final Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+  final Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
   TopDocs hits;
 
   String[] texts = {
@@ -101,7 +101,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
 
   public void testQueryScorerHits() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true);
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
     searcher = new IndexSearcher(ramDir, true);
@@ -133,7 +133,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     String s1 = "I call our world Flatland, not because we call it so,";
 
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
 
     // Verify that a query against the default field results in text being
     // highlighted
@@ -165,7 +165,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    */
   private static String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
-    TokenStream tokenStream = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true).tokenStream(fieldName, new StringReader(text));
+    TokenStream tokenStream = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true).tokenStream(fieldName, new StringReader(text));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
     QueryScorer scorer = new QueryScorer(query, fieldName, FIELD_NAME);
@@ -210,7 +210,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String f2c = f2 + ":";
     String q = "(" + f1c + ph1 + " OR " + f2c + ph1 + ") AND (" + f1c + ph2
         + " OR " + f2c + ph2 + ")";
-    Analyzer analyzer = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, f1, analyzer);
     Query query = qp.parse(q);
 
@@ -1093,6 +1093,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testMaxSizeHighlight() throws Exception {
+    final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    // we disable MockTokenizer checks because we will forcefully limit the 
+    // tokenstream and call end() before incrementToken() returns false.
+    analyzer.setEnableChecks(false);
     TestHighlightRunner helper = new TestHighlightRunner() {
 
       @Override
@@ -1122,7 +1126,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         String goodWord = "goodtoken";
         CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("stoppedtoken"));
-
+        // we disable MockTokenizer checks because we will forcefully limit the 
+        // tokenstream and call end() before incrementToken() returns false.
+        final MockAnalyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true);
+        analyzer.setEnableChecks(false);
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
         String match;
@@ -1134,13 +1141,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           sb.append("stoppedtoken");
         }
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        Highlighter hg = getHighlighter(query, "data", new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true).tokenStream(
+        Highlighter hg = getHighlighter(query, "data", analyzer.tokenStream(
             "data", new StringReader(sb.toString())), fm);// new Highlighter(fm,
         // new
         // QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(100);
-        match = hg.getBestFragment(new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true), "data", sb.toString());
+        match = hg.getBestFragment(analyzer, "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocCharsToAnalyze());
 
@@ -1151,7 +1158,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // + whitespace)
         sb.append(" ");
         sb.append(goodWord);
-        match = hg.getBestFragment(new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true), "data", sb.toString());
+        match = hg.getBestFragment(analyzer, "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocCharsToAnalyze());
       }
@@ -1170,10 +1177,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         String text = "this is a text with searchterm in it";
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        Highlighter hg = getHighlighter(query, "text", new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true).tokenStream("text", new StringReader(text)), fm);
+        Highlighter hg = getHighlighter(query, "text", new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true).tokenStream("text", new StringReader(text)), fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);
-        String match = hg.getBestFragment(new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true), "text", text);
+        String match = hg.getBestFragment(new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopWords, true), "text", text);
         assertTrue(
             "Matched text should contain remainder of text after highlighted query ",
             match.endsWith("in it"));
@@ -1191,7 +1198,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // test to show how rewritten query can still be used
         if (searcher != null) searcher.close();
         searcher = new IndexSearcher(ramDir, true);
-        Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+        Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
 
         QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
         Query query = parser.parse("JF? or Kenned*");
@@ -1446,64 +1453,64 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter;
         String result;
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("foo");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("10");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hi");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("speed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hispeed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hi speed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
         // ///////////////// same tests, just put the bigger overlapping token
         // first
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("foo");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("10");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hi");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("speed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hispeed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("hi speed");
+        query = new QueryParser(TEST_VERSION_CURRENT, "text", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
@@ -1514,7 +1521,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private Directory dir;
-  private Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
+  private Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
   
   public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
     makeIndex();
@@ -1529,7 +1536,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private void makeIndex() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
     writer.addDocument( doc( "t_text1", "more random words for second field del" ) );
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
@@ -1539,7 +1546,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private void deleteDocument() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     writer.deleteDocuments( new Term( "t_text1", "del" ) );
     // To see negative idf, keep comment the following line
     //writer.optimize();
@@ -1644,7 +1651,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     dir = newDirectory();
     ramDir = newDirectory();
     IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     for (String text : texts) {
       addDoc(writer, text);
     }
@@ -1726,6 +1733,11 @@ final class SynonymAnalyzer extends Analyzer {
     stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
+    try {
+      stream.reset();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return new SynonymTokenizer(stream, synonyms);
   }
 }

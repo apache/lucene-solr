@@ -42,10 +42,68 @@ API Changes
    Instead, use SimilarityProvider to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
+   
+Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
 
 ======================= Lucene 3.x (not yet released) =======================
 
-(No changes)
+Changes in runtime behavior
+
+ * LUCENE-3086: ItalianAnalyzer now uses ElisionFilter with a set of Italian
+   contractions by default.  (Robert Muir)
+
+Bug Fixes
+
+ * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
+   not lowercasing the key before checking for the tag (Adriano Crestani)
+
+ * LUCENE-3026: SmartChineseAnalyzer's WordTokenFilter threw NullPointerException
+   on sentences longer than 32,767 characters.  (wangzhenghang via Robert Muir)
+   
+ * LUCENE-2939: Highlighter should try and use maxDocCharsToAnalyze in 
+   WeightedSpanTermExtractor when adding a new field to MemoryIndex as well as 
+   when using CachingTokenStream. This can be a significant performance bug for
+   large documents. (Mark Miller)
+
+ * LUCENE-3043: GermanStemmer threw IndexOutOfBoundsException if it encountered
+   a zero-length token.  (Robert Muir)
+   
+ * LUCENE-3044: ThaiWordFilter didn't reset its cached state correctly, this only
+   caused a problem if you consumed a tokenstream, then reused it, added different
+   attributes to it, and consumed it again.  (Robert Muir, Uwe Schindler)
+
+ * LUCENE-3113: Fixed some minor analysis bugs: double-reset() in ReusableAnalyzerBase
+   and ShingleAnalyzerWrapper, missing end() implementations in PrefixAwareTokenFilter
+   and PrefixAndSuffixAwareTokenFilter, invocations of incrementToken() after it
+   already returned false in CommonGramsQueryFilter, HyphenatedWordsFilter,
+   ShingleFilter, and SynonymsFilter.  (Robert Muir, Steven Rowe, Uwe Schindler)
+
+New Features
+
+ * LUCENE-3016: Add analyzer for Latvian.  (Robert Muir)
+
+ * LUCENE-1421: create new grouping contrib module, enabling search
+   results to be grouped by a single-valued indexed field.  This
+   module was factored out of Solr's grouping implementation, but
+   it cannot group by function queries nor arbitrary queries.  (Mike
+   McCandless)
+
+ * LUCENE-3098: add AllGroupsCollector, to collect all unique groups
+   (but in unspecified order).  (Martijn van Groningen via Mike
+   McCandless)
+
+ * LUCENE-3092: Added NRTCachingDirectory in contrib/misc, which
+   caches small segments in RAM.  This is useful, in the near-real-time
+   case where the indexing rate is lowish but the reopen rate is
+   highish, to take load off the IO system.  (Mike McCandless)
+
+Optimizations
+
+ * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
+   over to reusableTokenStream().  (Robert Muir)
 
 ======================= Lucene 3.1.0 =======================
 
@@ -155,6 +213,10 @@ Bug fixes
 
  * LUCENE-2943: Fix thread-safety issues with ICUCollationKeyFilter.
    (Robert Muir)
+
+ * LUCENE-3087: Highlighter: fix case that was preventing highlighting
+   of exact phrase when tokens overlap. (Pierre Gossé via Mike
+   McCandless)
 
 API Changes
 

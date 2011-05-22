@@ -881,11 +881,11 @@ public final class MoreLikeThis {
 	    throw new UnsupportedOperationException("To use MoreLikeThis without " +
 	    		"term vectors, you must provide an Analyzer");
 	  }
-		   TokenStream ts = analyzer.tokenStream(fieldName, r);
+		   TokenStream ts = analyzer.reusableTokenStream(fieldName, r);
 			int tokenCount=0;
 			// for every token
 			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-			
+			ts.reset();
 			while (ts.incrementToken()) {
 				String word = termAtt.toString();
 				tokenCount++;
@@ -906,6 +906,8 @@ public final class MoreLikeThis {
 					cnt.x++;
 				}
 			}
+			ts.end();
+			ts.close();
 	}
 	
 	

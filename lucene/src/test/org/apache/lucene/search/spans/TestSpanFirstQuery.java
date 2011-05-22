@@ -37,7 +37,7 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     
     // mimic StopAnalyzer
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|a|of").toAutomaton());
-    Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, stopSet, true);
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopSet, true);
     
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, analyzer);
     Document doc = new Document();

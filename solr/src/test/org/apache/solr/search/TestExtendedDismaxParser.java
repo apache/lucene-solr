@@ -49,8 +49,13 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "name", "The Zapper"));
     assertU(adoc("id", "45", "trait_ss", "Chauvinist",
             "title", "25 star General"));
-    assertU(adoc("id", "46", "trait_ss", "Obnoxious",
-            "subject", "Defeated the pacifists op the Gandhi nebula"));
+    assertU(adoc("id", "46", 
+                 "trait_ss", "Obnoxious",
+                 "subject", "Defeated the pacifists op the Gandhi nebula",
+                 "t_special", "literal:colon value",
+                 "movies_t", "first is Mission: Impossible, second is Terminator 2: Judgement Day.  Terminator:3 ok...",
+                 "foo_i", "8"
+    ));
     assertU(adoc("id", "47", "trait_ss", "Pig",
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(adoc("id", "48", "text_sw", "this has gigabyte potential", "foo_i","100"));
@@ -64,6 +69,11 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
 
+  assertQ("expected doc is missing (using un-escaped edismax w/qf)",
+          req("q", "literal:colon", 
+              "qf", "t_special",
+              "defType", "edismax"),
+          "//doc[1]/str[@name='id'][.='46']"); 
 
     assertQ("standard request handler returns all matches",
             req(allq),
@@ -163,6 +173,58 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
                 "q.op","AND",
                 "q","the big"), oner
     );
+
+    // searching for a literal colon value when clearly not used for a field
+    assertQ("expected doc is missing (using standard)",
+            req("q", "t_special:literal\\:colon"),
+            "//doc[1]/str[@name='id'][.='46']"); 
+    assertQ("expected doc is missing (using escaped edismax w/field)",
+            req("q", "t_special:literal\\:colon", 
+                "defType", "edismax"),
+            "//doc[1]/str[@name='id'][.='46']"); 
+    assertQ("expected doc is missing (using un-escaped edismax w/field)",
+            req("q", "t_special:literal:colon", 
+                "defType", "edismax"),
+            "//doc[1]/str[@name='id'][.='46']"); 
+    assertQ("expected doc is missing (using escaped edismax w/qf)",
+            req("q", "literal\\:colon", 
+                "qf", "t_special",
+                "defType", "edismax"),
+            "//doc[1]/str[@name='id'][.='46']"); 
+    assertQ("expected doc is missing (using un-escaped edismax w/qf)",
+            req("q", "literal:colon", 
+                "qf", "t_special",
+                "defType", "edismax"),
+            "//doc[1]/str[@name='id'][.='46']");
+
+    assertQ(req("defType","edismax", "mm","100%", "q","terminator:3", "qf","movies_t"),
+            oner);
+    assertQ(req("defType","edismax", "mm","100%", "q","Mission:Impossible", "qf","movies_t"),
+            oner);
+    assertQ(req("defType","edismax", "mm","100%", "q","Mission : Impossible", "qf","movies_t"),
+            oner);
+    assertQ(req("defType","edismax", "mm","100%", "q","Mission: Impossible", "qf","movies_t"),
+            oner);
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator 2: Judgement Day", "qf","movies_t"),
+            oner);
+
+    // make sure the clause wasn't eliminated
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator 10: Judgement Day", "qf","movies_t"),
+            nor);
+
+    // throw in a numeric field
+    assertQ(req("defType","edismax", "mm","0", "q","Terminator: 100", "qf","movies_t foo_i"),
+            twor);
+
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 100", "qf","movies_t foo_i"),
+            nor);
+
+    assertQ(req("defType","edismax", "mm","100%", "q","Terminator: 8", "qf","movies_t foo_i"),
+            oner);
+
+    assertQ(req("defType","edismax", "mm","0", "q","movies_t:Terminator 100", "qf","movies_t foo_i"),
+            twor);
+
 
     /** stopword removal in conjunction with multi-word synonyms at query time
      * break this test.

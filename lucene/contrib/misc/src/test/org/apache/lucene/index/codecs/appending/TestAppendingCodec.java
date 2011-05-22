@@ -30,7 +30,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -134,10 +134,10 @@ public class TestAppendingCodec extends LuceneTestCase {
 
   public void testCodec() throws Exception {
     Directory dir = new AppendingRAMDirectory(random, new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer());
+    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random));
     
     cfg.setCodecProvider(new AppendingCodecProvider());
-    ((LogMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
+    ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
     doc.add(newField("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));

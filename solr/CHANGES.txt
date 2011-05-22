@@ -26,7 +26,7 @@ Versions of Major Components
 ---------------------
 Apache Lucene trunk
 Apache Tika 0.8
-Carrot2 3.4.2
+Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 
@@ -60,6 +60,11 @@ Detailed Change List
 
 New Features
 ----------------------
+
+* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete) 
+  component, offering an order of magnitude smaller memory consumption
+  compared to ternary trees and jaspell and very fast lookups at runtime.
+  (Dawid Weiss)
   
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
@@ -75,7 +80,7 @@ New Features
 
 * SOLR-1682: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Search grouping / Field collapsing.
   (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar,
-   Koji Sekiguchi, Iv�n de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
+   Koji Sekiguchi, Iván de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
    Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
    Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
    Harish Agarwal, yonik)
@@ -100,8 +105,10 @@ New Features
   levenshtein automata.  (rmuir)
    
 * SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
-  built-in load balancing, and infrastructure for future SolrCloud work. 
-  (yonik, Mark Miller)
+  built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
+  Additional Work:
+  SOLR-2324: SolrCloud solr.xml parameters are not persisted by CoreContainer.
+  (Massimo Schiavon, Mark Miller)
 
 * SOLR-1729: Evaluation of NOW for date math is done only once per request for
   consistency, and is also propagated to shards in distributed search.
@@ -110,7 +117,7 @@ New Features
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
-  as results. (ryan with patches from grant, noble, cmale, yonik)
+  as results. (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl)
 
 * SOLR-2417: Add explain info directly to return documents using ?fl=_explain_ (ryan)
 
@@ -121,6 +128,23 @@ New Features
 * SOLR-2338: Add support for using <similarity/> in a schema's fieldType,
   for customizing scoring on a per-field basis. (hossman, yonik, rmuir)
   
+* SOLR-2335: New 'field("...")' function syntax for refering to complex 
+  field names (containing whitespace or special characters) in functions.
+
+* SOLR-1709: Distributed support for Date and Numeric Range Faceting
+  (Peter Sturge, David Smiley, hossman)
+
+* SOLR-2383: /browse improvements: generalize range and date facet display
+  (Jan Høydahl via yonik)
+
+* SOLR-2272: Pseudo-join queries / filters.  Examples:
+  To restrict to the set of parents with at least one blue-eyed child:
+    fq={!join from=parent to=name}eyes:blue
+  To restrict to the set of children with at least one blue-eyed parent:
+    fq={!join from=name to=parent}eyes:blue
+  (yonik)
+
+
 
 Optimizations
 ----------------------
@@ -174,6 +198,9 @@ Bug Fixes
   initialization if the schema.xml contains an analyzer configuration
   for a fieldType that does not use TextField.  (hossman) 
 
+* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
+  are logged properly.  (hossman)
+
 Other Changes
 ----------------------
 
@@ -206,7 +233,18 @@ Other Changes
 * SOLR-2423: FieldType argument changed from String to Object
   Conversion from SolrInputDocument > Object > Fieldable is now managed
   by FieldType rather then DocumentBuilder.  (ryan)
+  
+* SOLR-2061: Pull base tests out into a new Solr Test Framework module,
+  and publish binary, javadoc, and source test-framework jars. 
+  (Drew Farris, Robert Muir, Steve Rowe)
 
+* SOLR-2461: QuerySenderListener and AbstractSolrEventListener are 
+  now public (hossman)
+
+* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
+  tolerance delta used in numeric equalities.  This allows for slight 
+  variance in asserting score comparisons in unit tests.
+  (David Smiley, Chris Hostetter)
 
 Documentation
 ----------------------
@@ -226,12 +264,22 @@ Carrot2 3.4.2
 
 Upgrading from Solr 3.1
 ----------------------
+  
+* The updateRequestProcessorChain for a RequestHandler is now defined
+  with update.chain rather than update.processor. The latter still works,
+  but has been deprecated.
 
 Detailed Change List
 ----------------------
 
 New Features
 ----------------------
+
+* SOLR-2496: Add ability to specify overwrite and commitWithin as request
+  parameters (e.g. specified in the URL) when using the JSON update format,
+  and added a simplified format for specifying multiple documents.
+  Example: [{"id":"doc1"},{"id":"doc2"}] 
+  (yonik)
 
 Optimizations
 ----------------------
@@ -242,8 +290,58 @@ Bug Fixes
 * SOLR-2445: Change the default qt to blank in form.jsp, because there is no "standard"
   request handler unless you have it in your solrconfig.xml explicitly. (koji)
 
+* SOLR-2455: Prevent double submit of forms in admin interface.
+  (Jeffrey Chang via uschindler)
+
+* SOLR-2464: Fix potential slowness in QueryValueSource (the query() function) when
+  the query is very sparse and may not match any documents in a segment. (yonik)
+
+* SOLR-2469: When using java replication with replicateAfter=startup, the first
+  commit point on server startup is never removed. (yonik)
+
+* SOLR-2466: SolrJ's CommonsHttpSolrServer would retry requests on failure, regardless
+  of the configured maxRetries, due to HttpClient having it's own retry mechanism
+  by default.  The retryCount of HttpClient is now set to 0, and SolrJ does
+  the retry.  (yonik)
+
+* SOLR-2409: edismax parser - treat the text of a fielded query as a literal if the
+  fieldname does not exist.  For example Mission: Impossible should not search on
+  the "Mission" field unless it's a valid field in the schema.  (Ryan McKinley, yonik)
+
+* SOLR-2403: facet.sort=index reported incorrect results for distributed search
+  in a number of scenarios when facet.mincount>0.  This patch also adds some
+  performance/algorithmic improvements when (facet.sort=count && facet.mincount=1
+  && facet.limit=-1) and when (facet.sort=index && facet.mincount>0)  (yonik)
+
+* SOLR-2333: The "rename" core admin action does not persist the new name to solr.xml
+  (Rasmus Hahn, Paul R. Brown via Mark Miller)
+  
+* SOLR-2390: Performance of usePhraseHighlighter is terrible on very large Documents, 
+  regardless of hl.maxDocCharsToAnalyze. (Mark Miller)
+
+* SOLR-2474: The helper TokenStreams in analysis.jsp and AnalysisRequestHandlerBase
+  did not clear all attributes so they displayed incorrect attribute values for tokens
+  in later filter stages. (uschindler, rmuir, yonik)
+
+* SOLR-2493: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each
+  instantiation which is a huge slowdown.  (Stephane Bailliez via uschindler)
+
+* SOLR-2495: The JSON parser could hang on corrupted input and could fail
+  to detect numbers that were too large to fit in a long.  (yonik)
+
+* SOLR-2520: Make JSON response format escape \u2029 as well as \u2028
+  in strings since those characters are not valid in javascript strings
+  (although they are valid in JSON strings).  (yonik)
+
+
 Other Changes
 ----------------------
+
+* SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
+	(Jan Høydahl via Mark Miller)
+
+* SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
+  because html encoding confuses non-ascii users. (koji)
 
 Build
 ----------------------

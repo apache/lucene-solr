@@ -16,7 +16,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
 <project name="solr-core" default="usage">
   <description>Solr</description>
 
@@ -35,14 +34,14 @@
   <!-- add some descriptions to some inherited targets -->
   <target name="compile" description="Compile the source code." 
   	      depends="compile-core, build-contrib"/>
-  <target name="test" description="Run core and contrib unit tests." 
-  	      depends="common.test, test-contrib"/>
+  <target name="test" description="Validate, then run core and contrib unit tests."
+  	      depends="validate-solr, common.test, test-contrib"/>
   <target name="test-core" description="Runs the core unit tests."
           depends="common.test"/>
   <target name="compile-test" description="Compile unit tests." 
    	      depends="compile-test-framework, common.compile-test"/>
-  <target name="javadocs" description="Generate javadocs for core, client, and contrib" 
-          depends="contrib-build.javadocs, javadocs-solrj, javadocs-contrib"/>
+  <target name="javadocs" description="Generate javadocs for core, client, test-framework, and contrib"
+          depends="contrib-build.javadocs, javadocs-solrj, javadocs-test-framework, javadocs-contrib"/>
   <target name="javadocs-core" description="Generate javadocs for core." 
           depends="contrib-build.javadocs"/>
  
@@ -74,7 +73,7 @@
   <!-- hacky? -->
   <target name="compile-test-framework" depends="compile-core">
     <compile srcdir="src/test-framework" destdir="${build.dir}/classes/test-framework">
-  	  <classpath refid="test.classpath"/>
+  	  <classpath refid="test.base.classpath"/>
   	</compile>
   </target>
 
@@ -87,6 +86,23 @@
         <sources>
           <packageset dir="src/common"/>
           <packageset dir="src/solrj"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+
+  <target name="javadocs-test-framework" depends="compile-test-framework"
+          description="Generates javadoc documentation for the Solr test-framework.">
+    <sequential>
+      <mkdir dir="${build.javadoc}/test-framework"/>
+      <path id="javadoc.classpath">
+        <path refid="test.classpath"/> <!-- nocommit switch to testframework.compile.classpath -->
+      </path>
+      <invoke-javadoc
+        destdir="${javadoc.dir}/test-framework"
+        title="${Name} ${version} Test Framework API (${specversion})">
+        <sources>
+          <packageset dir="src/test-framework" />
         </sources>
       </invoke-javadoc>
     </sequential>

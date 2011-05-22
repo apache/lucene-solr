@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.SegmentReader.Norm;
+import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -199,7 +199,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
     IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.optimize();
     w.close();
     IndexReader reader2 = reader1.clone(true);
@@ -338,7 +338,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     origSegmentReader.close();
     assertDelDocsRefCountEquals(1, origSegmentReader);
     // check the norm refs
-    Norm norm = clonedSegmentReader.norms.get("field1");
+    SegmentNorms norm = clonedSegmentReader.norms.get("field1");
     assertEquals(1, norm.bytesRef().get());
     clonedSegmentReader.close();
     dir1.close();
@@ -496,7 +496,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(
         dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();

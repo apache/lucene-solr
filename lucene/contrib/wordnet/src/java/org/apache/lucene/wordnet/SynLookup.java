@@ -124,7 +124,7 @@ public class SynLookup {
 		List<String> top = new LinkedList<String>(); // needs to be separately listed..
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
-		TokenStream ts = a.tokenStream( field, new StringReader( query));
+		TokenStream ts = a.reusableTokenStream( field, new StringReader( query));
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
 		while (ts.incrementToken()) {

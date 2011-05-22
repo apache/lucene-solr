@@ -919,6 +919,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
 
+  /**
+   * Returns <code>true</code> if an index exists at the specified directory.
+   * @param  directory the directory to check for an index
+   * @param  codecProvider provides a CodecProvider in case the index uses non-core codecs
+   * @return <code>true</code> if an index exists; <code>false</code> otherwise
+   * @throws IOException if there is a problem with accessing the index
+   */
+  public static boolean indexExists(Directory directory, CodecProvider codecProvider) throws IOException {
+    try {
+      new SegmentInfos().read(directory, codecProvider);
+      return true;
+    } catch (IOException ioe) {
+      return false;
+    }
+  }
+
   /** Returns the number of documents in this index. */
   public abstract int numDocs();
 
@@ -1404,7 +1420,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.listAll();
-      ArrayUtil.quickSort(files);   // sort the array of filename so that the output is more readable
+      ArrayUtil.mergeSort(files);   // sort the array of filename so that the output is more readable
 
       for (int i = 0; i < files.length; ++i) {
         long len = cfr.fileLength(files[i]);

@@ -127,4 +127,70 @@ public class TestPathHierarchyTokenizer extends BaseTokenStreamTestCase {
         new int[]{1, 0, 0, 0},
         path.length());
   }
+
+  public void testBasicSkip() throws Exception {
+    String path = "/a/b/c";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c"},
+        new int[]{2, 2},
+        new int[]{4, 6},
+        new int[]{1, 0},
+        path.length());
+  }
+
+  public void testEndOfDelimiterSkip() throws Exception {
+    String path = "/a/b/c/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c", "/b/c/"},
+        new int[]{2, 2, 2},
+        new int[]{4, 6, 7},
+        new int[]{1, 0, 0},
+        path.length());
+  }
+
+  public void testStartOfCharSkip() throws Exception {
+    String path = "a/b/c";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c"},
+        new int[]{1, 1},
+        new int[]{3, 5},
+        new int[]{1, 0},
+        path.length());
+  }
+
+  public void testStartOfCharEndOfDelimiterSkip() throws Exception {
+    String path = "a/b/c/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/b", "/b/c", "/b/c/"},
+        new int[]{1, 1, 1},
+        new int[]{3, 5, 6},
+        new int[]{1, 0, 0},
+        path.length());
+  }
+
+  public void testOnlyDelimiterSkip() throws Exception {
+    String path = "/";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{},
+        new int[]{},
+        new int[]{},
+        new int[]{},
+        path.length());
+  }
+
+  public void testOnlyDelimitersSkip() throws Exception {
+    String path = "//";
+    PathHierarchyTokenizer t = new PathHierarchyTokenizer( new StringReader(path), 1 );
+    assertTokenStreamContents(t,
+        new String[]{"/"},
+        new int[]{1},
+        new int[]{2},
+        new int[]{1},
+        path.length());
+  }
 }

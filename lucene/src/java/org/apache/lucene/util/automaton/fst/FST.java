@@ -21,11 +21,13 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.automaton.fst.Builder.UnCompiledNode;
+
+// NOTE: while the FST is able to represent a non-final
+// dead-end state (NON_FINAL_END_NODE=0), the layres above
+// (FSTEnum, Util) have problems with this!!
 
 /** Represents an FST using a compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
@@ -168,7 +170,7 @@ public class FST<T> {
   }
 
   // create an existing FST
-  public FST(IndexInput in, Outputs<T> outputs) throws IOException {
+  public FST(DataInput in, Outputs<T> outputs) throws IOException {
     this.outputs = outputs;
     writer = null;
     CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_START, VERSION_START);
@@ -216,6 +218,9 @@ public class FST<T> {
   }
 
   void finish(int startNode) {
+    if (startNode == FINAL_END_NODE && emptyOutput != null) {
+      startNode = 0;
+    }
     if (this.startNode != -1) {
       throw new IllegalStateException("already finished");
     }
@@ -226,10 +231,11 @@ public class FST<T> {
   }
 
   void setEmptyOutput(T v) throws IOException {
-    if (emptyOutput != null && !emptyOutput.equals(v)) {
-      throw new IllegalStateException("empty output is already set: " + outputs.outputToString(emptyOutput) + " vs " + outputs.outputToString(v));
+    if (emptyOutput != null) {
+      emptyOutput = outputs.merge(emptyOutput, v);
+    } else {
+      emptyOutput = v;
     }
-    emptyOutput = v;
 
     // TODO: this is messy -- replace with sillyBytesWriter; maybe make
     // bytes private
@@ -250,11 +256,13 @@ public class FST<T> {
     writer.posWrite = posSave;
   }
 
-  public void save(IndexOutput out) throws IOException {
+  public void save(DataOutput out) throws IOException {
     if (startNode == -1) {
       throw new IllegalStateException("call finish first");
     }
     CodecUtil.writeHeader(out, FILE_FORMAT_NAME, VERSION_CURRENT);
+    // TODO: really we should encode this as an arc, arriving
+    // to the root node, instead of special casing here:
     if (emptyOutput != null) {
       out.writeByte((byte) 1);
       out.writeVInt(emptyOutputBytes.length);
@@ -439,25 +447,17 @@ public class FST<T> {
     // reverse bytes in-place; we do this so that the
     // "BIT_TARGET_NEXT" opto can work, ie, it reads the
     // node just before the current one
-    final int endAddress = writer.posWrite;
-    final int stopAt = (endAddress - startAddress)/2;
-    int upto = 0;
-    while (upto < stopAt) {
-      final byte b = bytes[startAddress+upto];
-      bytes[startAddress+upto] = bytes[endAddress-upto-1];
-      bytes[endAddress-upto-1] = b;
-      upto++;
+    final int endAddress = lastFrozenNode = writer.posWrite - 1;
+
+    int left = startAddress;
+    int right = endAddress;
+    while (left < right) {
+      final byte b = bytes[left];
+      bytes[left++] = bytes[right];
+      bytes[right--] = b;
     }
 
-    lastFrozenNode = endAddress - 1;
-    /*
-    System.out.println("  return node addr=" + (endAddress-1));
-    for(int i=endAddress-1;i>=startAddress;i--) {
-      System.out.println("    bytes[" + i + "]=" + bytes[i]);
-    }
-    */
-
-    return endAddress-1;
+    return endAddress;
   }
 
   /** Fills virtual 'start' arc, ie, an empty incoming arc to
@@ -468,7 +468,9 @@ public class FST<T> {
       arc.nextFinalOutput = emptyOutput;
     } else {
       arc.flags = BIT_LAST_ARC;
+      arc.nextFinalOutput = NO_OUTPUT;
     }
+    arc.output = NO_OUTPUT;
 
     // If there are no nodes, ie, the FST only accepts the
     // empty string, then startNode is 0, and then readFirstTargetArc
@@ -585,12 +587,11 @@ public class FST<T> {
    * expanded array format.
    */
   boolean isExpandedTarget(Arc<T> follow) throws IOException {
-    if (follow.isFinal()) {
+    if (!targetHasArcs(follow)) {
       return false;
     } else {
       final BytesReader in = getBytesReader(follow.target);
       final byte b = in.readByte();
-      
       return (b & BIT_ARCS_AS_FIXED_ARRAY) != 0;
     }
   }
@@ -669,8 +670,11 @@ public class FST<T> {
     }
 
     if (arc.flag(BIT_STOP_NODE)) {
-      arc.target = FINAL_END_NODE;
-      arc.flags |= BIT_FINAL_ARC;
+      if (arc.flag(BIT_FINAL_ARC)) {
+        arc.target = FINAL_END_NODE;
+      } else {
+        arc.target = NON_FINAL_END_NODE;
+      }
       arc.nextArc = in.pos;
     } else if (arc.flag(BIT_TARGET_NEXT)) {
       arc.nextArc = in.pos;

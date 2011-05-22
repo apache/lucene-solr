@@ -75,7 +75,7 @@ class SegGraph {
     List<SegToken> result = new ArrayList<SegToken>();
     int s = -1, count = 0, size = tokenListTable.size();
     List<SegToken> tokenList;
-    short index = 0;
+    int index = 0;
     while (count < size) {
       if (isStartExist(s)) {
         tokenList = tokenListTable.get(s);

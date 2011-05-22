@@ -53,6 +53,8 @@
 	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
+	<classpathentry kind="src" path="modules/grouping/src/java"/>
+	<classpathentry kind="src" path="modules/grouping/src/test"/>
 	<classpathentry kind="src" path="solr/src/java"/>
 	<classpathentry kind="src" path="solr/src/webapp/src"/>
 	<classpathentry kind="src" path="solr/src/common"/>
@@ -95,7 +97,7 @@
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
-	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r944541.jar"/>
+	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1099557.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-collections-3.2.1.jar"/>
@@ -105,7 +107,6 @@
 	<classpathentry kind="lib" path="solr/lib/commons-io-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-lang-2.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/easymock-2.2.jar"/>
-	<classpathentry kind="lib" path="solr/lib/geronimo-stax-api_1.0_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/guava-r05.jar"/>
 	<classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.1.jar"/>
 	<classpathentry kind="lib" path="solr/lib/junit-4.7.jar"/>
@@ -124,13 +125,13 @@
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-glassfish-2.1.v20091210.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-2.1-jetty-6.1.26.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jsp-2.1/jsp-api-2.1-glassfish-2.1.v20091210.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.4.2.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/carrot2-core-3.5.0.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/hppc-0.3.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-core-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/jackson-mapper-asl-1.5.2.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-collections-0.3.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/clustering/lib/mahout-math-0.3.jar"/>
-	<classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.3.5.jar"/>
+	<classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.4.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/activation-1.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/mail-1.4.1.jar"/>
 	<classpathentry kind="lib" path="solr/contrib/extraction/lib/asm-3.1.jar"/>

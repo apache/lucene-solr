@@ -93,7 +93,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     Directory dir = newDirectory();
     CodecProvider provider = new MockCodecProvider();
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(
+        new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(
         provider);
     IndexWriter writer = newWriter(dir, iwconf);
     addDocs(writer, 10);
@@ -121,7 +121,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       System.out.println("TEST: make new index");
     }
     IndexWriterConfig iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT,
-             new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
+             new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setCodecProvider(provider);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
@@ -141,7 +141,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     assertCodecPerField(_TestUtil.checkIndex(dir, provider), "content",
         provider.lookup("MockSep"));
 
-    iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+    iwconf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setOpenMode(OpenMode.APPEND).setCodecProvider(provider);
     //((LogMergePolicy) iwconf.getMergePolicy()).setUseCompoundFile(false);
     //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
@@ -288,7 +288,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
         provider.setFieldCodec("" + j, codecs[random.nextInt(codecs.length)].name);
       }
       IndexWriterConfig config = newIndexWriterConfig(random,
-          TEST_VERSION_CURRENT, new MockAnalyzer());
+          TEST_VERSION_CURRENT, new MockAnalyzer(random));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
       config.setCodecProvider(provider);
       IndexWriter writer = newWriter(dir, config);

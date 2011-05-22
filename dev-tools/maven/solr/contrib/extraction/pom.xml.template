@@ -36,7 +36,7 @@
   </description>
   <properties>
     <module-directory>solr/contrib/extraction</module-directory>
-    <build-directory>build</build-directory>
+    <build-directory>../../build/contrib/extraction</build-directory>
     <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
@@ -47,9 +47,8 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>solr-core</artifactId>
+      <artifactId>solr-test-framework</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>

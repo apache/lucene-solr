@@ -41,7 +41,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    tempDir = File.createTempFile("jrecrash", "tmp", TEMP_DIR);
+    tempDir = _TestUtil.getTempDir("jrecrash");
     tempDir.delete();
     tempDir.mkdir();
   }
@@ -100,7 +100,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add("org.junit.runner.JUnitCore");
     cmd.add(getClass().getName());
     ProcessBuilder pb = new ProcessBuilder(cmd);
-    pb.directory(TEMP_DIR);
+    pb.directory(tempDir);
     pb.redirectErrorStream(true);
     Process p = pb.start();
     InputStream is = p.getInputStream();

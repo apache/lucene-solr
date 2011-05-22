@@ -21,6 +21,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -655,7 +656,6 @@ public class SimpleFacets {
       }
     }
 
-    Term template = new Term(field);
     DocsEnum docsEnum = null;
     CharArr spare = new CharArr();
 
@@ -675,21 +675,18 @@ public class SimpleFacets {
 
           if (df >= minDfFilterCache) {
             // use the filter cache
-            // TODO: need a term query that takes a BytesRef to handle binary terms
-            spare.reset();
-            ByteUtils.UTF8toUTF16(term, spare);
-            Term t = template.createTerm(spare.toString());
 
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();
+              deState.fieldName = StringHelper.intern(field);
               deState.deletedDocs = MultiFields.getDeletedDocs(r);
               deState.termsEnum = termsEnum;
-              deState.reuse = docsEnum;
+              deState.docsEnum = docsEnum;
             }
 
-            c = searcher.numDocs(new TermQuery(t), docs, deState);
+            c = searcher.numDocs(docs, deState);
 
-            docsEnum = deState.reuse;
+            docsEnum = deState.docsEnum;
           } else {
             // iterate over TermDocs to calculate the intersection
 

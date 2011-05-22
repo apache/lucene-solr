@@ -29,7 +29,8 @@ public class TestValueSource extends LuceneTestCase {
 
   public void testMultiValueSource() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    ((LogMergePolicy) w.getConfig().getMergePolicy()).setMergeFactor(10);
     Document doc = new Document();
     Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(f);
@@ -43,7 +44,7 @@ public class TestValueSource extends LuceneTestCase {
     IndexReader r = IndexReader.open(w, true);
     w.close();
 
-    assertTrue(r.getSequentialSubReaders().length > 1);
+    assertTrue("reader=" + r, r.getSequentialSubReaders().length > 1);
 
     ValueSource s1 = new IntFieldSource("field");
     AtomicReaderContext[] leaves = ReaderUtil.leaves(r.getTopReaderContext());

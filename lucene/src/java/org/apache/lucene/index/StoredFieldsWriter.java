@@ -18,7 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.store.RAMOutputStream;
+
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -26,22 +27,38 @@ import org.apache.lucene.util.RamUsageEstimator;
 final class StoredFieldsWriter {
 
   FieldsWriter fieldsWriter;
-  final DocumentsWriter docWriter;
+  final DocumentsWriterPerThread docWriter;
   int lastDocID;
 
-  PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
 
-  public StoredFieldsWriter(DocumentsWriter docWriter) {
+  final DocumentsWriterPerThread.DocState docState;
+
+  public StoredFieldsWriter(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
+    this.docState = docWriter.docState;
   }
 
-  public StoredFieldsWriterPerThread addThread(DocumentsWriter.DocState docState) throws IOException {
-    return new StoredFieldsWriterPerThread(docState, this);
+  private int numStoredFields;
+  private Fieldable[] storedFields;
+  private int[] fieldNumbers;
+
+  public void reset() {
+    numStoredFields = 0;
+    storedFields = new Fieldable[1];
+    fieldNumbers = new int[1];
   }
 
-  synchronized public void flush(SegmentWriteState state) throws IOException {
-    if (state.numDocs > lastDocID) {
+  public void startDocument() {
+    reset();
+  }
+
+  public void flush(SegmentWriteState state) throws IOException {
+
+    if (state.numDocs > 0) {
+      // It's possible that all documents seen in this segment
+      // hit non-aborting exceptions, in which case we will
+      // not have yet init'd the FieldsWriter:
       initFieldsWriter();
       fill(state.numDocs);
     }
@@ -67,23 +84,9 @@ final class StoredFieldsWriter {
 
   int allocCount;
 
-  synchronized PerDoc getPerDoc() {
-    if (freeCount == 0) {
-      allocCount++;
-      if (allocCount > docFreeList.length) {
-        // Grow our free list up front to make sure we have
-        // enough space to recycle all outstanding PerDoc
-        // instances
-        assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      }
-      return new PerDoc();
-    } else {
-      return docFreeList[--freeCount];
-    }
-  }
+  void abort() {
+    reset();
 
-  synchronized void abort() {
     if (fieldsWriter != null) {
       fieldsWriter.abort();
       fieldsWriter = null;
@@ -101,53 +104,40 @@ final class StoredFieldsWriter {
     }
   }
 
-  synchronized void finishDocument(PerDoc perDoc) throws IOException {
+  void finishDocument() throws IOException {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
+
     initFieldsWriter();
+    fill(docState.docID);
 
-    fill(perDoc.docID);
+    if (fieldsWriter != null && numStoredFields > 0) {
+      fieldsWriter.startDocument(numStoredFields);
+      for (int i = 0; i < numStoredFields; i++) {
+        fieldsWriter.writeField(fieldNumbers[i], storedFields[i]);
+      }
+      lastDocID++;
+    }
 
-    // Append stored fields to the real FieldsWriter:
-    fieldsWriter.flushDocument(perDoc.numStoredFields, perDoc.fdt);
-    lastDocID++;
-    perDoc.reset();
-    free(perDoc);
+    reset();
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
-  synchronized void free(PerDoc perDoc) {
-    assert freeCount < docFreeList.length;
-    assert 0 == perDoc.numStoredFields;
-    assert 0 == perDoc.fdt.length();
-    assert 0 == perDoc.fdt.getFilePointer();
-    docFreeList[freeCount++] = perDoc;
-  }
-
-  class PerDoc extends DocumentsWriter.DocWriter {
-    final DocumentsWriter.PerDocBuffer buffer = docWriter.newPerDocBuffer();
-    RAMOutputStream fdt = new RAMOutputStream(buffer);
-    int numStoredFields;
-
-    void reset() {
-      fdt.reset();
-      buffer.recycle();
-      numStoredFields = 0;
+  public void addField(Fieldable field, FieldInfo fieldInfo) throws IOException {
+    if (numStoredFields == storedFields.length) {
+      int newSize = ArrayUtil.oversize(numStoredFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      Fieldable[] newArray = new Fieldable[newSize];
+      System.arraycopy(storedFields, 0, newArray, 0, numStoredFields);
+      storedFields = newArray;
     }
 
-    @Override
-    void abort() {
-      reset();
-      free(this);
+    if (numStoredFields == fieldNumbers.length) {
+      fieldNumbers = ArrayUtil.grow(fieldNumbers);
     }
 
-    @Override
-    public long sizeInBytes() {
-      return buffer.getSizeInBytes();
-    }
+    storedFields[numStoredFields] = field;
+    fieldNumbers[numStoredFields] = fieldInfo.number;
+    numStoredFields++;
 
-    @Override
-    public void finish() throws IOException {
-      finishDocument(this);
-    }
+    assert docState.testPoint("StoredFieldsWriterPerThread.processFields.writeField");
   }
 }

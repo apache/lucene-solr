@@ -24,6 +24,7 @@ import java.io.ObjectOutputStream;
 import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -49,11 +50,11 @@ public class TestRAMDirectory extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    indexDir = new File(TEMP_DIR, "RAMDirIndex");
+    indexDir = _TestUtil.getTempDir("RAMDirIndex");
     
     Directory dir = newFSDirectory(indexDir);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     // add some documents
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
@@ -105,7 +106,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     dir.close();
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());

@@ -21,11 +21,33 @@ $Id$
 
 ==================  3.2.0-dev ==================
 
+Upgrading from Solr 3.1
+----------------------
+
+* <uimaConfig/> just beneath <config> ... </config> is no longer supported.
+  It should move to UIMAUpdateRequestProcessorFactory setting.
+  See contrib/uima/README.txt for more details. (SOLR-2436)
+
+New Features
+----------------------
+
+* SOLR-2503: extend mapping function to map feature value to dynamicField. (koji)
+
+* SOLR-2512: add ignoreErrors flag so that users can ignore exceptions in AE.
+  (Tommaso Teofili, koji)
+
 Test Cases:
+----------------------
 
- * SOLR-2387: add mock annotators for improved testing,
-   (Tommaso Teofili via rmuir)
+* SOLR-2387: add mock annotators for improved testing,
+  (Tommaso Teofili via rmuir)
 
-==================  3.1.0-dev ==================
+Other Changes
+----------------------
+
+* SOLR-2436: move uimaConfig to under the uima's update processor in solrconfig.xml.
+  (Tommaso Teofili, koji)
+
+==================  3.1.0 ==================
 
 Initial Release

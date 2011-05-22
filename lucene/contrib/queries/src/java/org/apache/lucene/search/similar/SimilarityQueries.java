@@ -85,7 +85,7 @@ public final class SimilarityQueries
 										  Set<?> stop)
 										  throws IOException
 	{	
-		TokenStream ts = a.tokenStream( field, new StringReader( body));
+		TokenStream ts = a.reusableTokenStream( field, new StringReader( body));
 		CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 		
 		BooleanQuery tmp = new BooleanQuery();

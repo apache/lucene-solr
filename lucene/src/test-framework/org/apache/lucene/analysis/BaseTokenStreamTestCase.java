@@ -19,14 +19,26 @@ package org.apache.lucene.analysis;
 
 import java.io.StringReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
  
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /** 
- * Base class for all Lucene unit tests that use TokenStreams.  
+ * Base class for all Lucene unit tests that use TokenStreams. 
+ * <p>
+ * When writing unit tests for analysis components, its highly recommended
+ * to use the helper methods here (especially in conjunction with {@link MockAnalyzer} or
+ * {@link MockTokenizer}), as they contain many assertions and checks to 
+ * catch bugs.
+ * 
+ * @see MockAnalyzer
+ * @see MockTokenizer
  */
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   // some helpers to test Analyzers and TokenStreams:
@@ -117,11 +129,24 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertEquals("type "+i, types[i], typeAtt.type());
       if (posIncrements != null)
         assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
+      
+      // we can enforce some basic things about a few attributes even if the caller doesn't check:
+      if (offsetAtt != null) {
+        assertTrue("startOffset must be >= 0", offsetAtt.startOffset() >= 0);
+        assertTrue("endOffset must be >= 0", offsetAtt.endOffset() >= 0);
+        assertTrue("endOffset must be >= startOffset", offsetAtt.endOffset() >= offsetAtt.startOffset());
+      }
+      if (posIncrAtt != null) {
+        assertTrue("posIncrement must be >= 0", posIncrAtt.getPositionIncrement() >= 0);
+      }
     }
     assertFalse("end of stream", ts.incrementToken());
     ts.end();
     if (finalOffset != null)
       assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
+    if (offsetAtt != null) {
+      assertTrue("finalOffset must be >= 0", offsetAtt.endOffset() >= 0);
+    }
     ts.close();
   }
   
@@ -216,4 +241,40 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     assertAnalyzesToReuse(a, input, new String[]{expected});
   }
   
+  // simple utility method for blasting tokenstreams with data to make sure they don't do anything crazy
+
+  public static void checkRandomData(Random random, Analyzer a, int iterations) throws IOException {
+    checkRandomData(random, a, iterations, 20);
+  }
+
+  public static void checkRandomData(Random random, Analyzer a, int iterations, int maxWordLength) throws IOException {
+    for (int i = 0; i < iterations; i++) {
+      String text;
+      switch(_TestUtil.nextInt(random, 0, 3)) {
+        case 0: 
+          text = _TestUtil.randomSimpleString(random);
+          break;
+        case 1:
+          text = _TestUtil.randomRealisticUnicodeString(random, maxWordLength);
+          break;
+        default:
+          text = _TestUtil.randomUnicodeString(random, maxWordLength);
+      }
+      
+      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(text));
+      assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
+      CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+      List<String> tokens = new ArrayList<String>();
+      ts.reset();
+      while (ts.incrementToken()) {
+        tokens.add(termAtt.toString());
+        // TODO: we could collect offsets etc here for better checking that reset() really works.
+      }
+      ts.end();
+      ts.close();
+      // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
+      if (!tokens.isEmpty())
+        assertAnalyzesToReuse(a, text, tokens.toArray(new String[tokens.size()]));
+    }
+  }
 }

@@ -312,6 +312,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+    - o.a.l.analysis.CharTokenizer -> o.a.l.analysis.util.CharTokenizer
+    - o.a.l.util.CharacterUtils -> o.a.l.analysis.util.CharacterUtils
 
 * LUCENE-2514: The option to use a Collator's order (instead of binary order) for
   sorting and range queries has been moved to contrib/queries.
@@ -356,3 +358,9 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   field as a parameter, this is removed due to the fact the entire Similarity (all methods)
   can now be configured per-field.
   Methods that apply to the entire query such as coord() and queryNorm() exist in SimilarityProvider.
+
+* LUCENE-1076: TieredMergePolicy is now the default merge policy.
+  It's able to merge non-contiguous segments; this may cause problems
+  for applications that rely on Lucene's internal document ID
+  assigment.  If so, you should instead use LogByteSize/DocMergePolicy
+  during indexing.

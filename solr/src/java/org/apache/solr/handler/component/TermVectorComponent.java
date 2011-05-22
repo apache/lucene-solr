@@ -208,7 +208,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
       if (keyField != null) {
         Document document = reader.document(docId, fieldSelector);
-        Fieldable uniqId = document.getField(uniqFieldName);
+        Fieldable uniqId = document.getFieldable(uniqFieldName);
         String uniqVal = null;
         if (uniqId != null) {
           uniqVal = keyField.getType().storedToReadable(uniqId);          

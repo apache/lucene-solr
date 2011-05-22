@@ -25,9 +25,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 import static org.apache.lucene.analysis.miscellaneous.CapitalizationFilter.*;
@@ -105,7 +104,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       boolean onlyFirstWord, CharArraySet keep, boolean forceFirstLetter,
       Collection<char[]> okPrefix, int minWordLength, int maxWordCount,
       int maxTokenLength) throws IOException {
-    assertCapitalizesTo(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input)),
+    assertCapitalizesTo(new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false),
         expected, onlyFirstWord, keep, forceFirstLetter, okPrefix, minWordLength, 
         maxWordCount, maxTokenLength);
   }
@@ -114,7 +113,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       boolean onlyFirstWord, CharArraySet keep, boolean forceFirstLetter,
       Collection<char[]> okPrefix, int minWordLength, int maxWordCount,
       int maxTokenLength) throws IOException {
-    assertCapitalizesTo(new KeywordTokenizer(new StringReader(input)),
+    assertCapitalizesTo(new MockTokenizer(new StringReader(input), MockTokenizer.KEYWORD, false),
         new String[] { expected }, onlyFirstWord, keep, forceFirstLetter, okPrefix,
         minWordLength, maxWordCount, maxTokenLength);    
   }

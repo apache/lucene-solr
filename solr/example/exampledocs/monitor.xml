@@ -19,6 +19,8 @@
   <field name="id">3007WFP</field>
   <field name="name">Dell Widescreen UltraSharp 3007WFP</field>
   <field name="manu">Dell, Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">dell</field>
   <field name="cat">electronics</field>
   <field name="cat">monitor</field>
   <field name="features">30" TFT active matrix LCD, 2560 x 1600, .25mm dot pitch, 700:1 contrast</field>

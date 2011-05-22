@@ -240,12 +240,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = new File(TEMP_DIR, "testSetBufferSize");
+      File indexDir = _TestUtil.getTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random);
       try {
         IndexWriter writer = new IndexWriter(
             dir,
-            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).
+            new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
                 setOpenMode(OpenMode.CREATE).
                 setMergePolicy(newLogMergePolicy(false))
         );
@@ -343,12 +343,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         throws IOException
       {
         dir.deleteFile(name);
-      }
-      @Override
-      public void touchFile(String name)
-        throws IOException
-      {
-        dir.touchFile(name);
       }
       @Override
       public long fileModified(String name)

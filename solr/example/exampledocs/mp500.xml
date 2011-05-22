@@ -19,6 +19,8 @@
   <field name="id">0579B002</field>
   <field name="name">Canon PIXMA MP500 All-In-One Photo Printer</field>
   <field name="manu">Canon Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">canon</field>
   <field name="cat">electronics</field>
   <field name="cat">multifunction printer</field>
   <field name="cat">printer</field>

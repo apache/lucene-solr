@@ -20,7 +20,7 @@
 <project name="solr-contrib-build">
   <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
   <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
-  <property name="dist.dir" location="../../dist/"/>
+  <property name="dist.dir" location="../../dist"/>
   	
   <import file="../common-build.xml"/>
 
@@ -39,7 +39,7 @@
     <!-- set jarfile only, if the target jar file has no generic name -->
     <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/apache-solr-@{name}-${version}.jar"/>
     <sequential>
-      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
+      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/main/java'"/>-->
       <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
         <srcfiles dir="../@{name}/src/main/java" includes="**/*.java"/>

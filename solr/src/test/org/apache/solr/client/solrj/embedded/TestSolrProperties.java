@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
@@ -54,6 +55,7 @@ import org.w3c.dom.Node;
 public class TestSolrProperties extends LuceneTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
   protected CoreContainer cores = null;
+  private File home;
   private File solrXml;
   
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -62,19 +64,27 @@ public class TestSolrProperties extends LuceneTestCase {
     return "solr/shared";
   }
 
-  public String getSolrXml() {
+  public String getOrigSolrXml() {
     return "solr.xml";
   }
 
+  public String getSolrXml() {
+    return "test-solr.xml";
+  }
+  
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    File home = SolrTestCaseJ4.getFile(getSolrHome());
+    System.setProperty("solr.solr.home", getSolrHome());
+    
+    home = SolrTestCaseJ4.getFile(getSolrHome());
     System.setProperty("solr.solr.home", home.getAbsolutePath());
 
     log.info("pwd: " + (new File(".")).getAbsolutePath());
-    solrXml = new File(home, "solr.xml");
+    File origSolrXml = new File(home, getOrigSolrXml());
+    solrXml = new File(home, getSolrXml());
+    FileUtils.copyFile(origSolrXml, solrXml);
     cores = new CoreContainer(home.getAbsolutePath(), solrXml);
   }
 
@@ -83,7 +93,7 @@ public class TestSolrProperties extends LuceneTestCase {
   public void tearDown() throws Exception {
     if (cores != null)
       cores.shutdown();
-    File dataDir = new File(getSolrHome() + "/data");
+    File dataDir = new File(home,"data");
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {
       log.info("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
@@ -92,8 +102,9 @@ public class TestSolrProperties extends LuceneTestCase {
         log.warn("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
       }
     }
-    File persistedFile = new File(getSolrHome() + File.separator + "solr-persist.xml");
-    persistedFile.delete();
+    File persistedFile = new File(home,"solr-persist.xml");
+    assertTrue("Failed to delete "+persistedFile, persistedFile.delete());
+    assertTrue("Failed to delete "+solrXml, solrXml.delete());
     super.tearDown();
   }
 
@@ -108,6 +119,10 @@ public class TestSolrProperties extends LuceneTestCase {
 
   protected SolrServer getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
+  }
+  
+  protected SolrServer getRenamedSolrAdmin() {
+    return new EmbeddedSolrServer(cores, "renamed_core");
   }
 
   protected SolrServer getSolrCore(String name) {
@@ -187,16 +202,31 @@ public class TestSolrProperties extends LuceneTestCase {
 
     mcr = CoreAdminRequest.persist("solr-persist.xml", coreadmin);
     
-    // System.out.println(IOUtils.toString(new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"))));
+    //System.out.println(IOUtils.toString(new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"))));
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {
       Document document = builder.parse(fis);
       assertTrue(exists("/solr/cores[@defaultCoreName='core0']", document));
+      assertTrue(exists("/solr/cores[@host='127.0.0.1']", document));
+      assertTrue(exists("/solr/cores[@hostPort='8983']", document));
+      assertTrue(exists("/solr/cores[@zkClientTimeout='8000']", document));
+      assertTrue(exists("/solr/cores[@hostContext='solr']", document));
+      
     } finally {
       fis.close();
     }
- 
+    
+    CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
+    mcr = CoreAdminRequest.persist("solr-persist.xml", getRenamedSolrAdmin());
+    
+    fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+    try {
+      Document document = builder.parse(fis);
+      assertTrue(exists("/solr/cores/core[@name='renamed_core']", document));
+    } finally {
+      fis.close();
+    }
   }
   
   public static boolean exists(String xpathStr, Node node)

@@ -54,9 +54,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
-        .setMergePolicy(newInOrderLogMergePolicy()));
+        .setMergePolicy(newLogMergePolicy()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -154,7 +154,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       assertEquals("First doc"+type, 2*distance+startOffset, Integer.parseInt(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Integer.parseInt(doc.get(field)) );
-      if (i>0 && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
+      if (i>0 && 
+          (searcher.getIndexReader().getSequentialSubReaders() == null || 
+           searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
         assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
       }
       lastTerms = terms;
@@ -284,7 +286,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   @Test
   public void testInfiniteValues() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
     doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
     doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));
@@ -378,7 +380,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }
-    if (precisionStep == Integer.MAX_VALUE && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
+    if (precisionStep == Integer.MAX_VALUE && 
+        (searcher.getIndexReader().getSequentialSubReaders() == null || 
+         searcher.getIndexReader().getSequentialSubReaders().length == 1)) {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");

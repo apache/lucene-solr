@@ -84,7 +84,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   // with BaseTokenStreamTestCase now...
   public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
@@ -108,7 +108,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   }
   
   public void testGeneral() throws IOException {
-    final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer1.toString())));
+    final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(buffer1.toString()), MockTokenizer.WHITESPACE, false));
     final TokenStream sink1 = source.newSinkTokenStream();
     final TokenStream sink2 = source.newSinkTokenStream(theFilter);
     
@@ -122,16 +122,17 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testMultipleSources() throws Exception {
-    final TeeSinkTokenFilter tee1 = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer1.toString())));
+    final TeeSinkTokenFilter tee1 = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(buffer1.toString()), MockTokenizer.WHITESPACE, false));
     final TeeSinkTokenFilter.SinkTokenStream dogDetector = tee1.newSinkTokenStream(dogFilter);
     final TeeSinkTokenFilter.SinkTokenStream theDetector = tee1.newSinkTokenStream(theFilter);
+    tee1.reset();
     final TokenStream source1 = new CachingTokenFilter(tee1);
     
     tee1.addAttribute(CheckClearAttributesAttribute.class);
     dogDetector.addAttribute(CheckClearAttributesAttribute.class);
     theDetector.addAttribute(CheckClearAttributesAttribute.class);
 
-    final TeeSinkTokenFilter tee2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer2.toString())));
+    final TeeSinkTokenFilter tee2 = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(buffer2.toString()), MockTokenizer.WHITESPACE, false));
     tee2.addSinkTokenStream(dogDetector);
     tee2.addSinkTokenStream(theDetector);
     final TokenStream source2 = tee2;

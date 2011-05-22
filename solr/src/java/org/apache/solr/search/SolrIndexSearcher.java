@@ -28,12 +28,17 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.UnInvertedField;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -187,6 +192,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   @Override
   public String toString() {
     return name;
+  }
+
+  public SolrCore getCore() {
+    return core;
   }
 
 
@@ -576,32 +585,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return answer;
   }
 
-  /** lucene.internal */
-  public DocSet getDocSet(Query query, DocsEnumState deState) throws IOException {
-    // Get the absolute value (positive version) of this query.  If we
-    // get back the same reference, we know it's positive.
-    Query absQ = QueryUtils.getAbs(query);
-    boolean positive = query==absQ;
-
-    if (filterCache != null) {
-      DocSet absAnswer = filterCache.get(absQ);
-      if (absAnswer!=null) {
-        if (positive) return absAnswer;
-        else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
-      }
-    }
-
-    DocSet absAnswer = getDocSetNC(absQ, null, deState);
-    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery, deState).andNot(absAnswer);
-
-    if (filterCache != null) {
-      // cache negative queries as positive
-      filterCache.put(absQ, absAnswer);
-    }
-
-    return answer;
-  }
-
   // only handle positive (non negative) queries
   DocSet getPositiveDocSet(Query q) throws IOException {
     DocSet answer;
@@ -610,18 +593,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null);
-    if (filterCache != null) filterCache.put(q,answer);
-    return answer;
-  }
-
-  // only handle positive (non negative) queries
-  DocSet getPositiveDocSet(Query q, DocsEnumState deState) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = filterCache.get(q);
-      if (answer!=null) return answer;
-    }
-    answer = getDocSetNC(q,null,deState);
     if (filterCache != null) filterCache.put(q,answer);
     return answer;
   }
@@ -756,21 +727,31 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   }
 
-  // query must be positive
-  protected DocSet getDocSetNC(Query query, DocSet filter, DocsEnumState deState) throws IOException {
-    if (filter != null) return getDocSetNC(query, filter, null);
+  /** lucene.internal */
+  public DocSet getDocSet(DocsEnumState deState) throws IOException {
+    int largestPossible = deState.termsEnum.docFreq();
+    boolean useCache = filterCache != null && largestPossible >= deState.minSetSizeCached;
+    TermQuery key = null;
+
+    if (useCache) {
+      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term()), false));
+      DocSet result = filterCache.get(key);
+      if (result != null) return result;
+    }
 
     int smallSetSize = maxDoc()>>6;
-    int largestPossible = deState.termsEnum.docFreq();
+    int scratchSize = Math.min(smallSetSize, largestPossible);
+    if (deState.scratch == null || deState.scratch.length < scratchSize)
+      deState.scratch = new int[scratchSize];
 
-    int[] docs = new int[Math.min(smallSetSize, largestPossible)];
+    final int[] docs = deState.scratch;
     int upto = 0;
     int bitsSet = 0;
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.deletedDocs, deState.reuse);
-    if (deState.reuse == null) {
-      deState.reuse = docsEnum;
+    DocsEnum docsEnum = deState.termsEnum.docs(deState.deletedDocs, deState.docsEnum);
+    if (deState.docsEnum == null) {
+      deState.docsEnum = docsEnum;
     }
 
     if (docsEnum instanceof MultiDocsEnum) {
@@ -822,15 +803,22 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
     }
 
+    DocSet result;
     if (obs != null) {
       for (int i=0; i<upto; i++) {
         obs.fastSet(docs[i]);  
       }
       bitsSet += upto;
-      return new BitDocSet(obs, bitsSet);
+      result = new BitDocSet(obs, bitsSet);
+    } else {
+      result = upto==0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
 
-    return new SortedIntDocSet(docs, upto);
+    if (useCache) {
+      filterCache.put(key, result);
+    }
+    
+    return result;
   }
 
   // query must be positive
@@ -1593,14 +1581,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     DocIterator iter = set.iterator();
     int base=0;
     int end=0;
-    int readerIndex = -1;
-    
-    AtomicReaderContext leaf = null;
+    int readerIndex = 0;
 
-    for (int i = 0; i < leafContexts.length; i++) {
+    while (iter.hasNext()) {
       int doc = iter.nextDoc();
       while (doc>=end) {
-        leaf = leafContexts[i++];
+        AtomicReaderContext leaf = leafContexts[readerIndex++];
         base = leaf.docBase;
         end = base + leaf.reader.maxDoc();
         topCollector.setNextReader(leaf);
@@ -1642,17 +1628,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   /** @lucene.internal */
-  public int numDocs(Query a, DocSet b, DocsEnumState deState) throws IOException {
+  public int numDocs(DocSet a, DocsEnumState deState) throws IOException {
     // Negative query if absolute value different from original
-    Query absQ = QueryUtils.getAbs(a);
-    DocSet positiveA = getPositiveDocSet(absQ, deState);
-    return a==absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
+    return a.intersectionSize(getDocSet(deState));
   }
 
   public static class DocsEnumState {
+    public String fieldName;  // currently interned for as long as lucene requires it
     public TermsEnum termsEnum;
     public Bits deletedDocs;
-    public DocsEnum reuse;
+    public DocsEnum docsEnum;
+
+    public int minSetSizeCached;
+
+    public int[] scratch;
   }
 
    /**
@@ -1708,9 +1697,29 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     boolean logme = log.isInfoEnabled();
     long warmingStartTime = System.currentTimeMillis();
     // warm the caches in order...
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("warming","true");
     for (int i=0; i<cacheList.length; i++) {
       if (logme) log.info("autowarming " + this + " from " + old + "\n\t" + old.cacheList[i]);
-      this.cacheList[i].warm(this, old.cacheList[i]);
+
+
+      SolrQueryRequest req = new LocalSolrQueryRequest(core,params) {
+        @Override public SolrIndexSearcher getSearcher() { return SolrIndexSearcher.this; }
+        @Override public void close() { }
+      };
+
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      try {
+        this.cacheList[i].warm(this, old.cacheList[i]);
+      } finally {
+        try {
+          req.close();
+        } finally {
+          SolrRequestInfo.clearRequestInfo();
+        }
+      }
+
       if (logme) log.info("autowarming result for " + this + "\n\t" + this.cacheList[i]);
     }
     warmupTime = System.currentTimeMillis() - warmingStartTime;

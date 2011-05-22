@@ -20,6 +20,7 @@ package org.apache.solr.search.function.distance;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.FloatDocValues;
 import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
@@ -51,26 +52,11 @@ public class StringDistanceFunction extends ValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final DocValues str1DV = str1.getValues(context, readerContext);
     final DocValues str2DV = str2.getValues(context, readerContext);
-    return new DocValues() {
+    return new FloatDocValues(this) {
 
       @Override
       public float floatVal(int doc) {
         return dist.getDistance(str1DV.strVal(doc), str2DV.strVal(doc));
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return (int) doubleVal(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long) doubleVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double) floatVal(doc);
       }
 
       @Override

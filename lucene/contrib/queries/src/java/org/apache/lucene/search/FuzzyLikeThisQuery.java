@@ -186,12 +186,13 @@ public class FuzzyLikeThisQuery extends Query
     private void addTerms(IndexReader reader,FieldVals f) throws IOException
     {
         if(f.queryString==null) return;
-        TokenStream ts=analyzer.tokenStream(f.fieldName,new StringReader(f.queryString));
+        TokenStream ts=analyzer.reusableTokenStream(f.fieldName,new StringReader(f.queryString));
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
         
         int corpusNumDocs=reader.numDocs();
         Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet<String> processedTerms=new HashSet<String>();
+        ts.reset();
         while (ts.incrementToken()) 
         {
                 String term = termAtt.toString();
@@ -213,17 +214,15 @@ public class FuzzyLikeThisQuery extends Query
                   BoostAttribute boostAtt =
                     fe.attributes().addAttribute(BoostAttribute.class);
                   while ((possibleMatch = fe.next()) != null) {
-                      if (possibleMatch!=null) {
-                        numVariants++;
-                        totalVariantDocFreqs+=fe.docFreq();
-                        float score=boostAtt.getBoost();
-                        if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-                          ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), new BytesRef(possibleMatch)),score,startTerm);                    
-                          variantsQ.insertWithOverflow(st);
-                          minScore = variantsQ.top().score; // maintain minScore
-                        }
-                        maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+                      numVariants++;
+                      totalVariantDocFreqs+=fe.docFreq();
+                      float score=boostAtt.getBoost();
+                      if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
+                        ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), new BytesRef(possibleMatch)),score,startTerm);                    
+                        variantsQ.insertWithOverflow(st);
+                        minScore = variantsQ.top().score; // maintain minScore
                       }
+                      maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
                     }
 
                   if(numVariants>0)
@@ -246,7 +245,9 @@ public class FuzzyLikeThisQuery extends Query
 	                }                            
                 }
         	}
-        }     
+        }
+        ts.end();
+        ts.close();
     }
             
     @Override

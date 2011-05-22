@@ -18,7 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -40,14 +42,13 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     if (segmentInfos.size() > 1 && random.nextInt(5) == 3) {
       
-      SegmentInfos segmentInfos2 = new SegmentInfos();
-      segmentInfos2.addAll(segmentInfos);
-      Collections.shuffle(segmentInfos2, random);
+      List<SegmentInfo> segments = new ArrayList<SegmentInfo>(segmentInfos.asList());
+      Collections.shuffle(segments, random);
 
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
       final int segsToMerge = _TestUtil.nextInt(random, 1, segmentInfos.size());
-      mergeSpec.add(new OneMerge(segmentInfos2.range(0, segsToMerge)));
+      mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
     }
 
     return mergeSpec;
@@ -58,19 +59,34 @@ public class MockRandomMergePolicy extends MergePolicy {
       SegmentInfos segmentInfos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
     throws CorruptIndexException, IOException {
 
-    //System.out.println("MRMP: findMergesForOptimize sis=" + segmentInfos);
+    final List<SegmentInfo> eligibleSegments = new ArrayList<SegmentInfo>();
+    for(SegmentInfo info : segmentInfos) {
+      if (segmentsToOptimize.contains(info)) {
+        eligibleSegments.add(info);
+      }
+    }
+
+    //System.out.println("MRMP: findMergesForOptimize sis=" + segmentInfos + " eligible=" + eligibleSegments);
     MergeSpecification mergeSpec = null;
-    if (segmentInfos.size() > 1 || (segmentInfos.size() == 1 && segmentInfos.info(0).hasDeletions())) {
+    if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && eligibleSegments.get(0).hasDeletions())) {
       mergeSpec = new MergeSpecification();
-      SegmentInfos segmentInfos2 = new SegmentInfos();
-      segmentInfos2.addAll(segmentInfos);
-      Collections.shuffle(segmentInfos2, random);
+      // Already shuffled having come out of a set but
+      // shuffle again for good measure:
+      Collections.shuffle(eligibleSegments, random);
       int upto = 0;
-      while(upto < segmentInfos.size()) {
-        int max = Math.min(10, segmentInfos.size()-upto);
+      while(upto < eligibleSegments.size()) {
+        int max = Math.min(10, eligibleSegments.size()-upto);
         int inc = max <= 2 ? max : _TestUtil.nextInt(random, 2, max);
-        mergeSpec.add(new OneMerge(segmentInfos2.range(upto, upto+inc)));
+        mergeSpec.add(new OneMerge(eligibleSegments.subList(upto, upto+inc)));
         upto += inc;
+      }
+    }
+
+    if (mergeSpec != null) {
+      for(OneMerge merge : mergeSpec.merges) {
+        for(SegmentInfo info : merge.segments) {
+          assert segmentsToOptimize.contains(info);
+        }
       }
     }
     return mergeSpec;
