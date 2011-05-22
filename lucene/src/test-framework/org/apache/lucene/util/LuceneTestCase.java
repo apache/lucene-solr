@@ -69,6 +69,8 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runner.manipulation.Filter;
 import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
@@ -1019,6 +1021,7 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
+
     if (random.nextBoolean()) {
       if (maybeWrap && random.nextBoolean()) {
         return new IndexSearcher(new SlowMultiReaderWrapper(r));
@@ -1169,19 +1172,25 @@ public abstract class LuceneTestCase extends Assert {
       }
       
       // only print iteration info if the user requested more than one iterations
-      boolean verbose = VERBOSE && TEST_ITER > 1;
-      int lastIterFailed = -1;
+      final boolean verbose = VERBOSE && TEST_ITER > 1;
+      
+      final int currentIter[] = new int[1];
+      arg1.addListener(new RunListener() {
+        @Override
+        public void testFailure(Failure failure) throws Exception {
+          if (verbose) {
+            System.out.println("\nNOTE: iteration " + currentIter[0] + " failed! ");
+          }
+        }
+      });
       for (int i = 0; i < TEST_ITER; i++) {
+        currentIter[0] = i;
         if (verbose) {
           System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
         }
         super.runChild(arg0, arg1);
         if (testsFailed) {
-          lastIterFailed = i;
-          if (i == TEST_ITER_MIN - 1) {
-            if (verbose) {
-              System.out.println("\nNOTE: iteration " + lastIterFailed + " failed !");
-            }
+          if (i >= TEST_ITER_MIN - 1) { // XXX is this still off-by-one?
             break;
           }
         }
