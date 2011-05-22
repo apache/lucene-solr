@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * Tokenizer for testing.
@@ -47,6 +48,8 @@ public class MockTokenizer extends Tokenizer {
 
   private final int pattern;
   private final boolean lowerCase;
+  private final int maxTokenLength;
+  public static final int DEFAULT_MAX_TOKEN_LENGTH = Integer.MAX_VALUE;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -67,18 +70,20 @@ public class MockTokenizer extends Tokenizer {
   private State streamState = State.CLOSE;
   private boolean enableChecks = true;
   
-  public MockTokenizer(AttributeFactory factory, Reader input, int pattern, boolean lowerCase) {
+  public MockTokenizer(AttributeFactory factory, Reader input, int pattern, boolean lowerCase, int maxTokenLength) {
     super(factory, input);
     this.pattern = pattern;
     this.lowerCase = lowerCase;
     this.streamState = State.SETREADER;
+    this.maxTokenLength = maxTokenLength;
+  }
+
+  public MockTokenizer(Reader input, int pattern, boolean lowerCase, int maxTokenLength) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, pattern, lowerCase, maxTokenLength);
   }
 
   public MockTokenizer(Reader input, int pattern, boolean lowerCase) {
-    super(input);
-    this.pattern = pattern;
-    this.lowerCase = lowerCase;
-    this.streamState = State.SETREADER;
+    this(input, pattern, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
   
   @Override
@@ -98,6 +103,9 @@ public class MockTokenizer extends Tokenizer {
           for (int i = 0; i < chars.length; i++)
             termAtt.append(chars[i]);
           endOffset = off;
+          if (termAtt.length() >= maxTokenLength) {
+            break;
+          }
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
         offsetAtt.setOffset(correctOffset(startOffset), correctOffset(endOffset));
