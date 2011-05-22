@@ -27,6 +27,7 @@
       <entry name="?*.tbl" />
       <entry name="?*.tld" />
       <entry name="?*.txt" />
+      <entry name="?*.utf8"/>
       <entry name="?*.xml" />
       <entry name="?*.xsl" />
       <entry name="?*.vm" />
