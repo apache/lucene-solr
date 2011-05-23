@@ -741,8 +741,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       // case we have to roll back:
       startCommit();
 
-      final SegmentInfos rollbackSegmentInfos = new SegmentInfos();
-      rollbackSegmentInfos.addAll(segmentInfos);
+      final List<SegmentInfo> rollbackSegments = segmentInfos.createBackupSegmentInfos(false);
 
       boolean success = false;
       try {
@@ -774,8 +773,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           deleter.refresh();
 
           // Restore all SegmentInfos (in case we pruned some)
-          segmentInfos.clear();
-          segmentInfos.addAll(rollbackSegmentInfos);
+          segmentInfos.rollbackSegmentInfos(rollbackSegments);
         }
       }
 

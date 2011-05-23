@@ -66,6 +66,8 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runner.manipulation.Filter;
 import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
@@ -171,8 +173,15 @@ public abstract class LuceneTestCase extends Assert {
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
-  private boolean setup;
+  private static State state = State.INITIAL;
 
+  private static enum State {
+    INITIAL, // no tests ran yet
+    SETUP,   // test has called setUp()
+    RANTEST, // test is running
+    TEARDOWN // test has called tearDown()
+  };
+  
   /**
    * Some tests expect the directory to contain a single segment, and want to do tests on that segment's reader.
    * This is an utility method to help them.
@@ -326,6 +335,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    state = State.INITIAL;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     tempDirs.clear();
@@ -375,6 +385,11 @@ public abstract class LuceneTestCase extends Assert {
 
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    if (!testsFailed) {
+      assertTrue("ensure your setUp() calls super.setUp() and your tearDown() calls super.tearDown()!!!", 
+          state == State.INITIAL || state == State.TEARDOWN);
+    }
+    state = State.INITIAL;
     if (! "false".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test class");
       if (rogueThreads > 0) {
@@ -483,17 +498,22 @@ public abstract class LuceneTestCase extends Assert {
     public void starting(FrameworkMethod method) {
       // set current method name for logging
       LuceneTestCase.this.name = method.getName();
+      if (!testsFailed) {
+        assertTrue("ensure your setUp() calls super.setUp()!!!", state == State.SETUP);
+      }
+      state = State.RANTEST;
       super.starting(method);
     }
-
   };
 
   @Before
   public void setUp() throws Exception {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
-    assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
-    setup = true;
+    if (!testsFailed) {
+      assertTrue("ensure your tearDown() calls super.tearDown()!!!", (state == State.INITIAL || state == State.TEARDOWN));
+    }
+    state = State.SETUP;
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -529,8 +549,12 @@ public abstract class LuceneTestCase extends Assert {
 
   @After
   public void tearDown() throws Exception {
-    assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
-    setup = false;
+    if (!testsFailed) {
+      // Note: we allow a test to go straight from SETUP -> TEARDOWN (without ever entering the RANTEST state)
+      // because if you assume() inside setUp(), it skips the test and the TestWatchman has no way to know...
+      assertTrue("ensure your setUp() calls super.setUp()!!!", state == State.RANTEST || state == State.SETUP);
+    }
+    state = State.TEARDOWN;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     if ("perMethod".equals(TEST_CLEAN_THREADS)) {
       int rogueThreads = threadCleanup("test method: '" + getName() + "'");
@@ -1123,6 +1147,7 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
+
     if (random.nextBoolean()) {
       if (maybeWrap && random.nextBoolean()) {
         return new IndexSearcher(new SlowMultiReaderWrapper(r));
@@ -1274,17 +1299,25 @@ public abstract class LuceneTestCase extends Assert {
       }
       
       // only print iteration info if the user requested more than one iterations
-      boolean verbose = VERBOSE && TEST_ITER > 1;
+      final boolean verbose = VERBOSE && TEST_ITER > 1;
+      
+      final int currentIter[] = new int[1];
+      arg1.addListener(new RunListener() {
+        @Override
+        public void testFailure(Failure failure) throws Exception {
+          if (verbose) {
+            System.out.println("\nNOTE: iteration " + currentIter[0] + " failed! ");
+          }
+        }
+      });
       for (int i = 0; i < TEST_ITER; i++) {
+        currentIter[0] = i;
         if (verbose) {
           System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
         }
         super.runChild(arg0, arg1);
         if (testsFailed) {
-          if (i >= TEST_ITER_MIN - 1) {
-            if (verbose) {
-              System.out.println("\nNOTE: iteration " + i + " failed !");
-            }
+          if (i >= TEST_ITER_MIN - 1) { // XXX is this still off-by-one?
             break;
           }
         }

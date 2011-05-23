@@ -52,14 +52,10 @@ See http://forrest.apache.org/docs/linking.html for more info
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
 		 <javadoc-test-framework label="Test Framework" href="ext:javadocs-test-framework"/>
 		 <javadoc-contrib label="Contrib">
-		    <javadoc-contrib-ant label="Ant" href="ext:javadocs-contrib-ant"/>
-		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
-		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
 		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
         <javadoc-contrib-demo label="Demo" href="ext:javadocs-contrib-demo"/>
 		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
 		    <javadoc-contrib-instantiated label="Instantiated" href="ext:javadocs-contrib-instantiated"/>
-		    <javadoc-contrib-lucli label="Lucli" href="ext:javadocs-contrib-lucli"/>
 		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
 		    <javadoc-contrib-misc label="Miscellaneous" href="ext:javadocs-contrib-misc"/>
 		    <javadoc-contrib-queries label="Queries" href="ext:javadocs-contrib-queries"/>
@@ -69,8 +65,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 -->			
 		    <javadoc-contrib-remote label="Remote" href="ext:javadocs-contrib-remote"/>
 		    <javadoc-contrib-spatial label="Spatial" href="ext:javadocs-contrib-spatial"/>
-		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>			
-		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>				    
+		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>						    
 			<javadoc-contrib-wordnet label="Wordnet" href="ext:javadocs-contrib-wordnet"/>			
 		    <javadoc-contrib-xml-query-parser label="XML Query Parser" href="ext:javadocs-contrib-xml-query-parser"/>			
 		 </javadoc-contrib>
@@ -100,14 +95,10 @@ See http://forrest.apache.org/docs/linking.html for more info
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-test-framework href="api/test-framework/index.html"/>
-	<javadocs-contrib-ant href="api/contrib-ant/index.html"/>
-	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
-	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
   <javadocs-contrib-demo href="api/contrib-demo/index.html"/>
 	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
 	<javadocs-contrib-instantiated href="api/contrib-instantiated/index.html"/>
-	<javadocs-contrib-lucli href="api/contrib-lucli/index.html"/>
 	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
 	<javadocs-contrib-misc href="api/contrib-misc/index.html"/>
 	<javadocs-contrib-queries href="api/contrib-queries/index.html"/>
@@ -115,7 +106,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-remote href="api/contrib-remote/index.html"/>
 	<javadocs-contrib-spatial href="api/contrib-spatial/index.html"/>
 	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
-	<javadocs-contrib-swing href="api/contrib-swing/index.html"/>
 	<javadocs-contrib-wordnet href="api/contrib-wordnet/index.html"/>
 	<javadocs-contrib-xml-query-parser href="api/contrib-xml-query-parser/index.html"/>
 	

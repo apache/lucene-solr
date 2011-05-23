@@ -30,7 +30,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ThrottledIndexOutput;
 import org.junit.Before;
 
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
@@ -105,7 +104,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertTrue(maxRAMBytes < flushControl.peakActiveBytes);
     }
     if (ensureNotStalled) {
-      assertFalse(docsWriter.healthiness.wasStalled);
+      assertFalse(docsWriter.flushControl.stallControl.wasStalled);
     }
     writer.close();
     assertEquals(0, flushControl.activeBytes());
@@ -216,15 +215,15 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertEquals(numDocumentsToIndex, r.numDocs());
     assertEquals(numDocumentsToIndex, r.maxDoc());
     if (!flushPolicy.flushOnRAM()) {
-      assertFalse("never stall if we don't flush on RAM", docsWriter.healthiness.wasStalled);
-      assertFalse("never block if we don't flush on RAM", docsWriter.healthiness.hasBlocked());
+      assertFalse("never stall if we don't flush on RAM", docsWriter.flushControl.stallControl.wasStalled);
+      assertFalse("never block if we don't flush on RAM", docsWriter.flushControl.stallControl.hasBlocked());
     }
     r.close();
     writer.close();
     dir.close();
   }
 
-  public void testHealthyness() throws InterruptedException,
+  public void testStallControl() throws InterruptedException,
       CorruptIndexException, LockObtainFailedException, IOException {
 
     int[] numThreads = new int[] { 4 + random.nextInt(8), 1 };
@@ -240,7 +239,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();
       iwc.setFlushPolicy(flushPolicy);
-
+      
       DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
           numThreads[i]== 1 ? 1 : 2);
       iwc.setIndexerThreadPool(threadPool);
@@ -265,11 +264,11 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertEquals(numDocumentsToIndex, writer.maxDoc());
       if (numThreads[i] == 1) {
         assertFalse(
-            "single thread must not stall",
-            docsWriter.healthiness.wasStalled);
-        assertFalse(
             "single thread must not block numThreads: " + numThreads[i],
-            docsWriter.healthiness.hasBlocked());
+            docsWriter.flushControl.stallControl.hasBlocked());
+      }
+      if (docsWriter.flushControl.peakNetBytes > (2.d * iwc.getRAMBufferSizeMB() * 1024.d * 1024.d)) {
+        assertTrue(docsWriter.flushControl.stallControl.wasStalled);
       }
       assertActiveBytesAfter(flushControl);
       writer.close(true);

@@ -411,10 +411,6 @@ public class TestFieldsReader extends LuceneTestCase {
       return fsDir.fileModified(name);
     }
     @Override
-    public void touchFile(String name) throws IOException {
-      fsDir.touchFile(name);
-    }
-    @Override
     public void deleteFile(String name) throws IOException {
       fsDir.deleteFile(name);
     }

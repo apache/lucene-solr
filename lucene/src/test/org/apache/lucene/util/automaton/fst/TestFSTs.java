@@ -54,14 +54,16 @@ public class TestFSTs extends LuceneTestCase {
   private MockDirectoryWrapper dir;
 
   @Override
-  public void setUp() throws IOException {
+  public void setUp() throws Exception {
+    super.setUp();
     dir = newDirectory();
     dir.setPreventDoubleWrite(false);
   }
 
   @Override
-  public void tearDown() throws IOException {
+  public void tearDown() throws Exception {
     dir.close();
+    super.tearDown();
   }
 
   private static BytesRef toBytesRef(IntsRef ir) {
@@ -538,7 +540,7 @@ public class TestFSTs extends LuceneTestCase {
           Object output = run(fst, term, null);
 
           assertNotNull("term " + inputToString(inputMode, term) + " is not accepted", output);
-          assertEquals(output, pair.output);
+          assertEquals(pair.output, output);
 
           // verify enum's next
           IntsRefFSTEnum.InputOutput<T> t = fstEnum.next();

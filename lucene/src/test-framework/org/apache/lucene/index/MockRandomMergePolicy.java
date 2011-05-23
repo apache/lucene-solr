@@ -42,14 +42,13 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     if (segmentInfos.size() > 1 && random.nextInt(5) == 3) {
       
-      SegmentInfos segmentInfos2 = new SegmentInfos();
-      segmentInfos2.addAll(segmentInfos);
-      Collections.shuffle(segmentInfos2, random);
+      List<SegmentInfo> segments = new ArrayList<SegmentInfo>(segmentInfos.asList());
+      Collections.shuffle(segments, random);
 
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
       final int segsToMerge = _TestUtil.nextInt(random, 1, segmentInfos.size());
-      mergeSpec.add(new OneMerge(segmentInfos2.range(0, segsToMerge)));
+      mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
     }
 
     return mergeSpec;

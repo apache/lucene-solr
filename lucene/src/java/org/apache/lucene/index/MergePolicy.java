@@ -72,7 +72,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
     int maxNumSegmentsOptimize;     // used by IndexWriter
-    long estimatedMergeBytes;       // used by IndexWriter
+    public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
     List<SegmentReader> readerClones;   // used by IndexWriter
     public final List<SegmentInfo> segments;
@@ -84,7 +84,8 @@ public abstract class MergePolicy implements java.io.Closeable {
     public OneMerge(List<SegmentInfo> segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
-      this.segments = segments;
+      // clone the list, as the in list may be based off original SegmentInfos and may be modified
+      this.segments = new ArrayList<SegmentInfo>(segments);
       int count = 0;
       for(SegmentInfo info : segments) {
         count += info.docCount;

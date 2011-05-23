@@ -126,7 +126,6 @@ final class DocumentsWriter {
   final DocumentsWriterPerThreadPool perThreadPool;
   final FlushPolicy flushPolicy;
   final DocumentsWriterFlushControl flushControl;
-  final Healthiness healthiness;
   DocumentsWriter(IndexWriterConfig config, Directory directory, IndexWriter writer, FieldNumberBiMap globalFieldNumbers,
       BufferedDeletesStream bufferedDeletesStream) throws IOException {
     this.directory = directory;
@@ -142,10 +141,7 @@ final class DocumentsWriter {
       flushPolicy = configuredPolicy;
     }
     flushPolicy.init(this);
-    
-    healthiness = new Healthiness();
-    final long maxRamPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
-    flushControl = new DocumentsWriterFlushControl(this, healthiness, maxRamPerDWPT);
+    flushControl = new DocumentsWriterFlushControl(this, config );
   }
 
   synchronized void deleteQueries(final Query... queries) throws IOException {
@@ -283,31 +279,28 @@ final class DocumentsWriter {
     ensureOpen();
     boolean maybeMerge = false;
     final boolean isUpdate = delTerm != null;
-    if (healthiness.anyStalledThreads()) {
-
-      // Help out flushing any pending DWPTs so we can un-stall:
+    if (flushControl.anyStalledThreads() || flushControl.numQueuedFlushes() > 0) {
+      // Help out flushing any queued DWPTs so we can un-stall:
       if (infoStream != null) {
-        message("WARNING DocumentsWriter has stalled threads; will hijack this thread to flush pending segment(s)");
+        message("DocumentsWriter has queued dwpt; will hijack this thread to flush pending segment(s)");
       }
-
-      // Try pick up pending threads here if possible
-      DocumentsWriterPerThread flushingDWPT;
-      while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
-        // Don't push the delete here since the update could fail!
-        maybeMerge = doFlush(flushingDWPT);
-        if (!healthiness.anyStalledThreads()) {
-          break;
+      do {
+        // Try pick up pending threads here if possible
+        DocumentsWriterPerThread flushingDWPT;
+        while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
+          // Don't push the delete here since the update could fail!
+          maybeMerge |= doFlush(flushingDWPT);
         }
-      }
+  
+        if (infoStream != null && flushControl.anyStalledThreads()) {
+          message("WARNING DocumentsWriter has stalled threads; waiting");
+        }
+        
+        flushControl.waitIfStalled(); // block if stalled
+      } while (flushControl.numQueuedFlushes() != 0); // still queued DWPTs try help flushing
 
-      if (infoStream != null && healthiness.anyStalledThreads()) {
-        message("WARNING DocumentsWriter still has stalled threads; waiting");
-      }
-
-      healthiness.waitIfStalled(); // block if stalled
-
-      if (infoStream != null && healthiness.anyStalledThreads()) {
-        message("WARNING DocumentsWriter done waiting");
+      if (infoStream != null) {
+        message("continue indexing after helpling out flushing DocumentsWriter is healthy");
       }
     }
 
@@ -353,7 +346,6 @@ final class DocumentsWriter {
       maybeMerge = true;
       boolean success = false;
       FlushTicket ticket = null;
-      
       try {
         assert currentFullFlushDelQueue == null
             || flushingDWPT.deleteQueue == currentFullFlushDelQueue : "expected: "
@@ -511,9 +503,7 @@ final class DocumentsWriter {
         anythingFlushed |= doFlush(flushingDWPT);
       }
       // If a concurrent flush is still in flight wait for it
-      while (flushControl.anyFlushing()) {
-        flushControl.waitForFlush();  
-      }
+      flushControl.waitForFlush();  
       if (!anythingFlushed) { // apply deletes if we did not flush any document
         synchronized (ticketQueue) {
           ticketQueue.add(new FlushTicket(flushingDeleteQueue.freezeGlobalBuffer(null), false));

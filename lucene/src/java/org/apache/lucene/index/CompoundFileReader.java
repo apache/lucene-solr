@@ -189,12 +189,6 @@ public class CompoundFileReader extends Directory {
         return directory.fileModified(fileName);
     }
 
-    /** Set the modified time of the compound file to now. */
-    @Override
-    public void touchFile(String name) throws IOException {
-        directory.touchFile(fileName);
-    }
-
     /** Not implemented
      * @throws UnsupportedOperationException */
     @Override

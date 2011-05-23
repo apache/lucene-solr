@@ -20,13 +20,16 @@ package org.apache.lucene.index;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
+import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -45,7 +48,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * 
  * @lucene.experimental
  */
-public final class SegmentInfos extends Vector<SegmentInfo> {
+public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
   /* 
    * The file format version, a negative number.
@@ -84,7 +87,12 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   private int format;
   
   private FieldNumberBiMap globalFieldNumberMap; // this segments global field number map - lazy loaded on demand
-
+  
+  private List<SegmentInfo> segments = new ArrayList<SegmentInfo>();
+  private Set<SegmentInfo> segmentSet = new HashSet<SegmentInfo>();
+  private transient List<SegmentInfo> cachedUnmodifiableList;
+  private transient Set<SegmentInfo> cachedUnmodifiableSet;  
+  
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
@@ -107,8 +115,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     return format;
   }
 
-  public final SegmentInfo info(int i) {
-    return get(i);
+  public SegmentInfo info(int i) {
+    return segments.get(i);
   }
 
   /**
@@ -237,7 +245,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     boolean success = false;
 
     // Clear any previous segments:
-    clear();
+    this.clear();
 
     generation = generationFromSegmentsFileName(segmentFileName);
 
@@ -252,7 +260,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       if (!success) {
         // Clear any segment infos we had loaded so we
         // have a clean slate on retry:
-        clear();
+        this.clear();
       }
     }
   }
@@ -349,15 +357,14 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
   /** Prunes any segment whose docs are all deleted. */
   public void pruneDeletedSegments() {
-    int segIdx = 0;
-    while(segIdx < size()) {
-      final SegmentInfo info = info(segIdx);
+    for(final Iterator<SegmentInfo> it = segments.iterator(); it.hasNext();) {
+      final SegmentInfo info = it.next();
       if (info.getDelCount() == info.docCount) {
-        remove(segIdx);
-      } else {
-        segIdx++;
+        it.remove();
+        segmentSet.remove(info);
       }
     }
+    assert segmentSet.size() == segments.size();
   }
 
   /**
@@ -367,14 +374,23 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   
   @Override
   public Object clone() {
-    SegmentInfos sis = (SegmentInfos) super.clone();
-    for(int i=0;i<sis.size();i++) {
-      final SegmentInfo info = sis.info(i);
-      assert info.getSegmentCodecs() != null;
-      sis.set(i, (SegmentInfo) info.clone());
+    try {
+      final SegmentInfos sis = (SegmentInfos) super.clone();
+      // deep clone, first recreate all collections:
+      sis.segments = new ArrayList<SegmentInfo>(size());
+      sis.segmentSet = new HashSet<SegmentInfo>(size());
+      sis.cachedUnmodifiableList = null;
+      sis.cachedUnmodifiableSet = null;
+      for(final SegmentInfo info : this) {
+        assert info.getSegmentCodecs() != null;
+        // dont directly access segments, use add method!!!
+        sis.add((SegmentInfo) info.clone());
+      }
+      sis.userData = new HashMap<String,String>(userData);
+      return sis;
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException("should not happen", e);
     }
-    sis.userData = new HashMap<String,String>(userData);
-    return sis;
   }
 
   /**
@@ -742,18 +758,6 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     protected abstract Object doBody(String segmentFileName) throws CorruptIndexException, IOException;
   }
 
-  /**
-   * Returns a new SegmentInfos containing the SegmentInfo
-   * instances in the specified range first (inclusive) to
-   * last (exclusive), so total number of segments returned
-   * is last-first.
-   */
-  public SegmentInfos range(int first, int last) {
-    SegmentInfos infos = new SegmentInfos(codecs);
-    infos.addAll(super.subList(first, last));
-    return infos;
-  }
-
   // Carry over generation numbers from another SegmentInfos
   void updateGeneration(SegmentInfos other) {
     lastGeneration = other.lastGeneration;
@@ -831,6 +835,10 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         } catch (Throwable t) {
           // throw orig excp
         }
+      } else {
+        // we must sync here explicitly since during a commit
+        // IW will not sync the global field map. 
+        dir.sync(Collections.singleton(name));
       }
     }
     return version;
@@ -956,7 +964,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   }
   
 
-  public synchronized String toString(Directory directory) {
+  public String toString(Directory directory) {
     StringBuilder buffer = new StringBuilder();
     buffer.append(getCurrentSegmentFileName()).append(": ");
     final int count = size();
@@ -987,8 +995,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    *  remain write once.
    */
   void replace(SegmentInfos other) {
-    clear();
-    addAll(other);
+    rollbackSegmentInfos(other.asList());
     lastGeneration = other.lastGeneration;
     lastGlobalFieldMapVersion = other.lastGlobalFieldMapVersion;
     format = other.format;
@@ -1014,7 +1021,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * Loads or returns the already loaded the global field number map for this {@link SegmentInfos}.
    * If this {@link SegmentInfos} has no global field number map the returned instance is empty
    */
-  synchronized FieldNumberBiMap getOrLoadGlobalFieldNumberMap(Directory dir) throws IOException {
+  FieldNumberBiMap getOrLoadGlobalFieldNumberMap(Directory dir) throws IOException {
     if (globalFieldNumberMap != null) {
       return globalFieldNumberMap;
     }
@@ -1054,4 +1061,135 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   long getLastGlobalFieldMapVersion() {
     return lastGlobalFieldMapVersion;
   }
+  
+  /** applies all changes caused by committing a merge to this SegmentInfos */
+  void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
+    final Set<SegmentInfo> mergedAway = new HashSet<SegmentInfo>(merge.segments);
+    boolean inserted = false;
+    int newSegIdx = 0;
+    for (int segIdx = 0, cnt = segments.size(); segIdx < cnt; segIdx++) {
+      assert segIdx >= newSegIdx;
+      final SegmentInfo info = segments.get(segIdx);
+      if (mergedAway.contains(info)) {
+        if (!inserted && !dropSegment) {
+          segments.set(segIdx, merge.info);
+          inserted = true;
+          newSegIdx++;
+        }
+      } else {
+        segments.set(newSegIdx, info);
+        newSegIdx++;
+      }
+    }
+
+    // Either we found place to insert segment, or, we did
+    // not, but only because all segments we merged became
+    // deleted while we are merging, in which case it should
+    // be the case that the new segment is also all deleted,
+    // we insert it at the beginning if it should not be dropped:
+    if (!inserted && !dropSegment) {
+      segments.add(0, merge.info);
+    }
+
+    // the rest of the segments in list are duplicates, so don't remove from map, only list!
+    segments.subList(newSegIdx, segments.size()).clear();
+    
+    // update the Set
+    if (!dropSegment) {
+      segmentSet.add(merge.info);
+    }
+    segmentSet.removeAll(mergedAway);
+    
+    assert segmentSet.size() == segments.size();
+  }
+
+  List<SegmentInfo> createBackupSegmentInfos(boolean cloneChildren) {
+    if (cloneChildren) {
+      final List<SegmentInfo> list = new ArrayList<SegmentInfo>(size());
+      for(final SegmentInfo info : this) {
+        assert info.getSegmentCodecs() != null;
+        list.add((SegmentInfo) info.clone());
+      }
+      return list;
+    } else {
+      return new ArrayList<SegmentInfo>(segments);
+    }
+  }
+  
+  void rollbackSegmentInfos(List<SegmentInfo> infos) {
+    this.clear();
+    this.addAll(infos);
+  }
+  
+  /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
+  // @Override (comment out until Java 6)
+  public Iterator<SegmentInfo> iterator() {
+    return asList().iterator();
+  }
+  
+  /** Returns all contained segments as an <b>unmodifiable</b> {@link List} view. */
+  public List<SegmentInfo> asList() {
+    if (cachedUnmodifiableList == null) {
+      cachedUnmodifiableList = Collections.unmodifiableList(segments);
+    }
+    return cachedUnmodifiableList;
+  }
+  
+  /** Returns all contained segments as an <b>unmodifiable</b> {@link Set} view.
+   * The iterator is not sorted, use {@link List} view or {@link #iterator} to get all segments in order. */
+  public Set<SegmentInfo> asSet() {
+    if (cachedUnmodifiableSet == null) {
+      cachedUnmodifiableSet = Collections.unmodifiableSet(segmentSet);
+    }
+    return cachedUnmodifiableSet;
+  }
+  
+  public int size() {
+    return segments.size();
+  }
+
+  public void add(SegmentInfo si) {
+    if (segmentSet.contains(si)) {
+      throw new IllegalStateException("Cannot add the same segment two times to this SegmentInfos instance");
+    }
+    segments.add(si);
+    segmentSet.add(si);
+    assert segmentSet.size() == segments.size();
+  }
+  
+  public void addAll(Iterable<SegmentInfo> sis) {
+    for (final SegmentInfo si : sis) {
+      this.add(si);
+    }
+  }
+  
+  public void clear() {
+    segments.clear();
+    segmentSet.clear();
+  }
+  
+  public void remove(SegmentInfo si) {
+    final int index = this.indexOf(si);
+    if (index >= 0) {
+      this.remove(index);
+    }
+  }
+  
+  public void remove(int index) {
+    segmentSet.remove(segments.remove(index));
+    assert segmentSet.size() == segments.size();
+  }
+  
+  public boolean contains(SegmentInfo si) {
+    return segmentSet.contains(si);
+  }
+
+  public int indexOf(SegmentInfo si) {
+    if (segmentSet.contains(si)) {
+      return segments.indexOf(si);
+    } else {
+      return -1;
+    }
+  }
+
 }
