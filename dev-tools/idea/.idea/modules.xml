@@ -22,6 +22,7 @@
       <module filepath="$PROJECT_DIR$/modules/analysis/stempel/stempel.iml" />
       <module filepath="$PROJECT_DIR$/modules/benchmark/benchmark.iml" />
       <module filepath="$PROJECT_DIR$/modules/grouping/grouping.iml" />
+      <module filepath="$PROJECT_DIR$/modules/suggest/suggest.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/clustering/clustering.iml" />

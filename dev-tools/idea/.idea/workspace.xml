@@ -155,6 +155,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="suggest module" type="JUnit" factoryName="JUnit">
+      <module name="suggest" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/suggest/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="package" />
@@ -176,7 +183,7 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="25">
+    <list size="26">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.benchmark module" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
@@ -199,9 +206,10 @@
       <item index="19" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
       <item index="20" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
       <item index="21" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
-      <item index="22" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="23" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="24" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.suggest module" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.uima contrib" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>
