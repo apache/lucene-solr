@@ -1,1 +1,0 @@
-No bdb jars are shipped with lucene. This is a fake license to work around the automated license checking.

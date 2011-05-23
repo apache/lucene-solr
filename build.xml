@@ -77,14 +77,6 @@
     <mkdir dir=".settings"/>
     <copy file="dev-tools/eclipse/resources.prefs" 
           tofile=".settings/org.eclipse.core.resources.prefs" overwrite="true"/>
-    <echo>Running Lucene contrib db/bdb-je task 'get-je-jar' ...</echo>
-    <subant target="get-je-jar">
-      <fileset dir="lucene/contrib/db/bdb-je" includes="build.xml" />
-    </subant>
-    <echo>Running Lucene contrib db/bdb task 'get-db-jar' ...</echo>
-    <subant target="get-db-jar">
-      <fileset dir="lucene/contrib/db/bdb" includes="build.xml" />
-    </subant>
     <echo>
       SUCCESS: You must right-click your project and choose Refresh
       Please note, your project must use a Java 6 JRE
@@ -95,14 +87,6 @@
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
     </copy>
-    <echo>Running Lucene contrib db/bdb-je task 'get-je-jar' ...</echo>
-    <subant target="get-je-jar">
-      <fileset dir="lucene/contrib/db/bdb-je" includes="build.xml" />
-    </subant>
-    <echo>Running Lucene contrib db/bdb task 'get-db-jar' ...</echo>
-    <subant target="get-db-jar">
-      <fileset dir="lucene/contrib/db/bdb" includes="build.xml" />
-    </subant>
     <echo>
       To complete IntelliJ IDEA setup, you must manually configure
       Project Structure | Project | Project SDK.
