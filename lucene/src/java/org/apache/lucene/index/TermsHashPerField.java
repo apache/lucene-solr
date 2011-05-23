@@ -160,7 +160,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
     }
 
-    assert upto == numPostings;
+    assert upto == numPostings: "upto=" + upto + " numPostings=" + numPostings;
     postingsCompacted = true;
   }
 

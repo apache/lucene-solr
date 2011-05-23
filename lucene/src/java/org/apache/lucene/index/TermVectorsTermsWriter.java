@@ -159,7 +159,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       perDoc.numVectorFields = 0;
     }
 
-    assert lastDocID == perDoc.docID;
+    assert lastDocID == perDoc.docID: "lastDocID=" + lastDocID + " perDoc.docID=" + perDoc.docID;
 
     lastDocID++;
 
