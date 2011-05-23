@@ -457,7 +457,7 @@ class JoinQuery extends Query {
         return resultList.get(0);
       }
 
-      int sz = resultList.size();
+      int sz = 0;
 
       for (DocSet set : resultList)
         sz += set.size();

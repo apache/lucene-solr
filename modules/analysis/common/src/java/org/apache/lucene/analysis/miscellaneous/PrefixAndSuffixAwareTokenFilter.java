@@ -76,4 +76,9 @@ public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
   public void close() throws IOException {
     suffix.close();
   }
+
+  @Override
+  public void end() throws IOException {
+    suffix.end();
+  }
 }

@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MockTokenizer;
 
 public class TokenRangeSinkTokenizerTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     TokenRangeSinkFilter sinkFilter = new TokenRangeSinkFilter(2, 4);
     String test = "The quick red fox jumped over the lazy brown dogs";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)));
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     TeeSinkTokenFilter.SinkTokenStream rangeToks = tee.newSinkTokenStream(sinkFilter);
     
     int count = 0;

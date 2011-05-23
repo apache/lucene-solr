@@ -28,6 +28,11 @@ public interface ExtractingParams {
    */
   public static final String LOWERNAMES = "lowernames";
 
+  /**
+   * if true, ignore TikaException (give up to extract text but index meta data)
+   */
+  public static final String IGNORE_TIKA_EXCEPTION = "ignoreTikaException";
+
 
   /**
    * The param prefix for mapping Tika metadata to Solr fields.

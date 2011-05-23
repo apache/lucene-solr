@@ -656,7 +656,6 @@ public class SimpleFacets {
       }
     }
 
-    Term template = new Term(field);
     DocsEnum docsEnum = null;
     CharArr spare = new CharArr();
 
@@ -676,10 +675,6 @@ public class SimpleFacets {
 
           if (df >= minDfFilterCache) {
             // use the filter cache
-            // TODO: need a term query that takes a BytesRef to handle binary terms
-            spare.reset();
-            ByteUtils.UTF8toUTF16(term, spare);
-            Term t = template.createTerm(spare.toString());
 
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();

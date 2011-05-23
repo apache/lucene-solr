@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,24 +16,22 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
-import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
-
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.ArrayList;
-import java.io.File;
 
 
 /**
@@ -361,6 +359,40 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("wdf_nocase:السلم"), "//result[@numFound=0]");
     assertU(commit());
     assertQ(req("wdf_nocase:السلم"), "//result[@numFound=1]");
+  }
+
+  @Test
+  public void testTikaExceptionHandling() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) 
+      h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+
+    try{
+      loadLocal("password-is-solrcell.docx",
+          "literal.id", "one");
+      fail("TikaException is expected because of trying to extract text from password protected word file.");
+    }
+    catch(Exception expected){}
+    assertU(commit());
+    assertQ(req("*:*"), "//result[@numFound=0]");
+
+    try{
+      loadLocal("password-is-solrcell.docx", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+          "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+          "fmap.Creation-Date", "extractedDate",
+          "fmap.AAPL:Keywords", "ignored_a",
+          "fmap.xmpTPg:NPages", "ignored_a",
+          "fmap.Author", "extractedAuthor",
+          "fmap.content", "wdf_nocase",
+          "literal.id", "one",
+          "ignoreTikaException", "true",  // set ignore flag
+          "fmap.Last-Modified", "extractedDate");
+    }
+    catch(Exception e){
+      fail("TikaException should be ignored.");
+    }
+    assertU(commit());
+    assertQ(req("*:*"), "//result[@numFound=1]");
   }
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {

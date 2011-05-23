@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
@@ -30,11 +30,11 @@ public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)));
+    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false));
     int count = 0;
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);
-    
+    nptf.reset();
     while (nptf.incrementToken()) {
       Payload pay = payloadAtt.getPayload();
       assertTrue("pay is null and it shouldn't be", pay != null);

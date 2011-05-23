@@ -225,7 +225,6 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
       TokenStream result = delegate.reusableTokenStream(fieldName, reader);
       if (result == streams.wrapped) {
         /* the wrapped analyzer reused the stream */
-        streams.withStopFilter.reset();
       } else {
         /*
          * the wrapped analyzer did not. if there are any stopwords for the

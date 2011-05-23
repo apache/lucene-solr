@@ -22,12 +22,11 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
@@ -41,7 +40,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      Tokenizer t = new KeywordTokenizer(reader);
+      Tokenizer t = new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(t, new PorterStemFilter(t));
     }
   };
@@ -57,7 +56,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("yourselves");
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("yourselves yours"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("yourselves yours"), MockTokenizer.WHITESPACE, false);
     TokenStream filter = new PorterStemFilter(new KeywordMarkerFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }

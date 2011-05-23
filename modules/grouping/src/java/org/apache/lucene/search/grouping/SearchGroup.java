@@ -20,7 +20,7 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.util.BytesRef;
 
 /** @lucene.experimental */
-class SearchGroup {
+public class SearchGroup {
   public BytesRef groupValue;
   public Comparable[] sortValues;
 }

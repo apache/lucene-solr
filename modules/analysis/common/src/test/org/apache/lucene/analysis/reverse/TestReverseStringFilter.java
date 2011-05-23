@@ -19,22 +19,22 @@ package org.apache.lucene.analysis.reverse;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
-        new StringReader("Do have a nice day"));     // 1-4 length string
+    TokenStream stream = new MockTokenizer(new StringReader("Do have a nice day"),
+        MockTokenizer.WHITESPACE, false);     // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream);
     assertTokenStreamContents(filter, new String[] { "oD", "evah", "a", "ecin", "yad" });
   }
   
   public void testFilterWithMark() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-        "Do have a nice day")); // 1-4 length string
+    TokenStream stream = new MockTokenizer(new StringReader("Do have a nice day"),
+        MockTokenizer.WHITESPACE, false); // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream, '\u0001');
     assertTokenStreamContents(filter, 
         new String[] { "\u0001oD", "\u0001evah", "\u0001a", "\u0001ecin", "\u0001yad" });

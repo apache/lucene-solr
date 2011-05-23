@@ -22,8 +22,8 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
 /**
@@ -34,7 +34,7 @@ public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      Tokenizer source = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer source = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       return new TokenStreamComponents(source, new EnglishMinimalStemFilter(source));
     }
   };

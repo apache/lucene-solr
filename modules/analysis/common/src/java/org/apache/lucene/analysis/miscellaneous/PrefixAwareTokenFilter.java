@@ -159,6 +159,12 @@ public class PrefixAwareTokenFilter extends TokenStream {
   }
 
   @Override
+  public void end() throws IOException {
+    prefix.end();
+    suffix.end();
+  }
+
+  @Override
   public void close() throws IOException {
     prefix.close();
     suffix.close();

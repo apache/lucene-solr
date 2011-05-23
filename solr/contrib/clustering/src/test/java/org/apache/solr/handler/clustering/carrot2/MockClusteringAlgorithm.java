@@ -49,6 +49,11 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
   @IntRange(min = 1, max = 5)
   private int labels = 1;
 
+  @Input
+  @Processing
+  @Attribute
+  private int otherTopicsModulo = 0;
+
   @Override
   public void process() throws ProcessingException {
     clusters = Lists.newArrayList();
@@ -59,21 +64,26 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
     int documentIndex = 1;
     for (Document document : documents) {
       StringBuilder label = new StringBuilder("Cluster " + documentIndex);
-      Cluster cluster = createCluster(label.toString(), document);
+      Cluster cluster = createCluster(label.toString(), documentIndex, document);
       clusters.add(cluster);
       for (int i = 1; i <= depth; i++) {
         label.append(".");
         label.append(i);
-        Cluster newCluster = createCluster(label.toString(), document);
-        cluster.addSubclusters(createCluster(label.toString(), document), newCluster);
+        Cluster newCluster = createCluster(label.toString(), documentIndex, document);
+        cluster.addSubclusters(createCluster(label.toString(), documentIndex, document), newCluster);
         cluster = newCluster;
       }
       documentIndex++;
     }
   }
 
-  private Cluster createCluster(String labelBase, Document... documents) {
+  private Cluster createCluster(String labelBase, int documentIndex, Document... documents) {
     Cluster cluster = new Cluster();
+    cluster.setScore(documentIndex * 0.25);
+    if (otherTopicsModulo != 0 && documentIndex % otherTopicsModulo == 0)
+    {
+      cluster.setOtherTopics(true);
+    }
     for (int i = 0; i < labels; i++) {
       cluster.addPhrases(labelBase + "#" + (i + 1));
     }

@@ -21,9 +21,6 @@ import org.apache.lucene.search.SortField;
 
 /** Represents result returned by a grouping search.
  *
- * Note that we do not return the total number of unique
- * groups; doing so would be costly.
- * 
  * @lucene.experimental */
 public class TopGroups {
   /** Number of documents matching the search */
@@ -31,6 +28,9 @@ public class TopGroups {
 
   /** Number of documents grouped into the topN groups */
   public final int totalGroupedHitCount;
+
+  /** The total number of unique groups. If <code>null</code> this value is not computed. */
+  public final Integer totalGroupCount;
 
   /** Group results in groupSort order */
   public final GroupDocs[] groups;
@@ -47,5 +47,15 @@ public class TopGroups {
     this.totalHitCount = totalHitCount;
     this.totalGroupedHitCount = totalGroupedHitCount;
     this.groups = groups;
+    this.totalGroupCount = null;
+  }
+
+  public TopGroups(TopGroups oldTopGroups, Integer totalGroupCount) {
+    this.groupSort = oldTopGroups.groupSort;
+    this.withinGroupSort = oldTopGroups.withinGroupSort;
+    this.totalHitCount = oldTopGroups.totalHitCount;
+    this.totalGroupedHitCount = oldTopGroups.totalGroupedHitCount;
+    this.groups = oldTopGroups.groups;
+    this.totalGroupCount = totalGroupCount;
   }
 }

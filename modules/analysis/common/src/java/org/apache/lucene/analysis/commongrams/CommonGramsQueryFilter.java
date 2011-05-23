@@ -49,6 +49,7 @@ public final class CommonGramsQueryFilter extends TokenFilter {
   
   private State previous;
   private String previousType;
+  private boolean exhausted;
 
   /**
    * Constructs a new CommonGramsQueryFilter based on the provided CommomGramsFilter 
@@ -67,6 +68,7 @@ public final class CommonGramsQueryFilter extends TokenFilter {
     super.reset();
     previous = null;
     previousType = null;
+    exhausted = false;
   }
   
   /**
@@ -79,7 +81,7 @@ public final class CommonGramsQueryFilter extends TokenFilter {
    */
   @Override
   public boolean incrementToken() throws IOException {
-    while (input.incrementToken()) {
+    while (!exhausted && input.incrementToken()) {
       State current = captureState();
 
       if (previous != null && !isGramType()) {
@@ -95,6 +97,8 @@ public final class CommonGramsQueryFilter extends TokenFilter {
 
       previous = current;
     }
+
+    exhausted = true;
 
     if (previous == null || GRAM_TYPE.equals(previousType)) {
       return false;
