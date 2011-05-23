@@ -486,6 +486,10 @@ New features
   document IDs and scores encountered during the search, and "replay" them to 
   another Collector. (Mike McCandless, Shai Erera)
 
+* LUCENE-3112: Added experimental IndexWriter.add/updateDocuments,
+  enabling a block of documents to be indexed, atomically, with
+  guaranteed sequential docIDs.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public

@@ -1228,6 +1228,111 @@ public class IndexWriter implements Closeable {
   }
 
   /**
+   * Atomically adds a block of documents with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents.
+   *
+   * <p><b>WARNING</b>: the index does not currently record
+   * which documents were added as a block.  Today this is
+   * fine, because merging will preserve the block (as long
+   * as none them were deleted).  But it's possible in the
+   * future that Lucene may more aggressively re-order
+   * documents (for example, perhaps to obtain better index
+   * compression), in which case you may need to fully
+   * re-index your documents at that time.
+   *
+   * <p>See {@link #addDocument(Document)} for details on
+   * index and IndexWriter state after an Exception, and
+   * flushing/merging temporary free space requirements.</p>
+   *
+   * <p><b>NOTE</b>: tools that do offline splitting of an index
+   * (for example, IndexSplitter in contrib) or
+   * re-sorting of documents (for example, IndexSorter in
+   * contrib) are not aware of these atomically added documents
+   * and will likely break them up.  Use such tools at your
+   * own risk!
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void addDocuments(Iterable<Document> docs) throws CorruptIndexException, IOException {
+    addDocuments(docs, analyzer);
+  }
+
+  /**
+   * Atomically adds a block of documents, analyzed using the
+   * provided analyzer, with sequentially assigned document
+   * IDs, such that an external reader will see all or none
+   * of the documents. 
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void addDocuments(Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+    updateDocuments(null, docs, analyzer);
+  }
+
+  /**
+   * Atomically deletes documents matching the provided
+   * delTerm and adds a block of documents with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents. 
+   *
+   * See {@link #addDocuments(Iterable)}.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void updateDocuments(Term delTerm, Iterable<Document> docs) throws CorruptIndexException, IOException {
+    updateDocuments(delTerm, docs, analyzer);
+  }
+
+  /**
+   * Atomically deletes documents matching the provided
+   * delTerm and adds a block of documents, analyzed  using
+   * the provided analyzer, with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents. 
+   *
+   * See {@link #addDocuments(Iterable)}.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void updateDocuments(Term delTerm, Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+    ensureOpen();
+    try {
+      boolean success = false;
+      boolean anySegmentFlushed = false;
+      try {
+        anySegmentFlushed = docWriter.updateDocuments(docs, analyzer, delTerm);
+        success = true;
+      } finally {
+        if (!success && infoStream != null) {
+          message("hit exception updating document");
+        }
+      }
+      if (anySegmentFlushed) {
+        maybeMerge();
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "updateDocuments");
+    }
+  }
+
+  /**
    * Deletes the document(s) containing <code>term</code>.
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError

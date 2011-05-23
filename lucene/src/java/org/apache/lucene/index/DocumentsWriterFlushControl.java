@@ -68,7 +68,7 @@ public final class DocumentsWriterFlushControl {
     this.stallControl = new DocumentsWriterStallControl();
     this.perThreadPool = documentsWriter.perThreadPool;
     this.flushPolicy = documentsWriter.flushPolicy;
-    this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;;
+    this.hardMaxBytesPerDWPT = config.getRAMPerThreadHardLimitMB() * 1024 * 1024;
     this.config = config;
     this.documentsWriter = documentsWriter;
   }
@@ -162,8 +162,6 @@ public final class DocumentsWriterFlushControl {
       stallControl.updateStalled(this);
       assert assertMemory();
     }
-    
-    
   }
 
   synchronized void doAfterFlush(DocumentsWriterPerThread dwpt) {
@@ -217,7 +215,7 @@ public final class DocumentsWriterFlushControl {
       assert assertMemory();
       // Take it out of the loop this DWPT is stale
       perThreadPool.replaceForFlush(state, closed);
-    }finally {
+    } finally {
       stallControl.updateStalled(this);
     }
   }

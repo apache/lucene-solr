@@ -21,33 +21,35 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -56,6 +58,39 @@ import org.junit.Test;
 //   - randomoly mix in non-congruent docs
 
 public class TestNRTThreads extends LuceneTestCase {
+
+  private static class SubDocs {
+    public final String packID;
+    public final List<String> subIDs;
+    public boolean deleted;
+
+    public SubDocs(String packID, List<String> subIDs) {
+      this.packID = packID;
+      this.subIDs = subIDs;
+    }
+  }
+
+  // TODO: is there a pre-existing way to do this!!!
+  private Document cloneDoc(Document doc1) {
+    final Document doc2 = new Document();
+    for(Fieldable f : doc1.getFields()) {
+      Field field1 = (Field) f;
+      
+      Field field2 = new Field(field1.name(),
+                               field1.stringValue(),
+                               field1.isStored() ? Field.Store.YES : Field.Store.NO,
+                               field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
+      if (field1.getOmitNorms()) {
+        field2.setOmitNorms(true);
+      }
+      if (field1.getOmitTermFreqAndPositions()) {
+        field2.setOmitTermFreqAndPositions(true);
+      }
+      doc2.add(field2);
+    }
+
+    return doc2;
+  }
 
   @Test
   public void testNRTThreads() throws Exception {
@@ -121,13 +156,16 @@ public class TestNRTThreads extends LuceneTestCase {
 
     final int NUM_INDEX_THREADS = 2;
     final int NUM_SEARCH_THREADS = 3;
+
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : 5;
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger addCount = new AtomicInteger();
     final AtomicInteger delCount = new AtomicInteger();
+    final AtomicInteger packCount = new AtomicInteger();
 
     final Set<String> delIDs = Collections.synchronizedSet(new HashSet<String>());
+    final List<SubDocs> allSubDocs = Collections.synchronizedList(new ArrayList<SubDocs>());
 
     final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC*1000;
     Thread[] threads = new Thread[NUM_INDEX_THREADS];
@@ -135,7 +173,9 @@ public class TestNRTThreads extends LuceneTestCase {
       threads[thread] = new Thread() {
           @Override
           public void run() {
+            // TODO: would be better if this were cross thread, so that we make sure one thread deleting anothers added docs works:
             final List<String> toDeleteIDs = new ArrayList<String>();
+            final List<SubDocs> toDeleteSubDocs = new ArrayList<SubDocs>();
             while(System.currentTimeMillis() < stopTime && !failed.get()) {
               try {
                 Document doc = docs.nextDoc();
@@ -153,7 +193,92 @@ public class TestNRTThreads extends LuceneTestCase {
                   if (VERBOSE) {
                     //System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("docid"));
                   }
-                  writer.addDocument(doc);
+
+                  if (random.nextBoolean()) {
+                    // Add a pack of adjacent sub-docs
+                    final String packID;
+                    final SubDocs delSubDocs;
+                    if (toDeleteSubDocs.size() > 0 && random.nextBoolean()) {
+                      delSubDocs = toDeleteSubDocs.get(random.nextInt(toDeleteSubDocs.size()));
+                      assert !delSubDocs.deleted;
+                      toDeleteSubDocs.remove(delSubDocs);
+                      // reuse prior packID
+                      packID = delSubDocs.packID;
+                    } else {
+                      delSubDocs = null;
+                      // make new packID
+                      packID = packCount.getAndIncrement() + "";
+                    }
+
+                    final Field packIDField = newField("packID", packID, Field.Store.YES, Field.Index.NOT_ANALYZED);
+                    final List<String> docIDs = new ArrayList<String>();
+                    final SubDocs subDocs = new SubDocs(packID, docIDs);
+                    final List<Document> docsList = new ArrayList<Document>();
+
+                    allSubDocs.add(subDocs);
+                    doc.add(packIDField);
+                    docsList.add(cloneDoc(doc));
+                    docIDs.add(doc.get("docid"));
+
+                    final int maxDocCount = _TestUtil.nextInt(random, 1, 10);
+                    while(docsList.size() < maxDocCount) {
+                      doc = docs.nextDoc();
+                      if (doc == null) {
+                        break;
+                      }
+                      docsList.add(cloneDoc(doc));
+                      docIDs.add(doc.get("docid"));
+                    }
+                    addCount.addAndGet(docsList.size());
+
+                    if (delSubDocs != null) {
+                      delSubDocs.deleted = true;
+                      delIDs.addAll(delSubDocs.subIDs);
+                      delCount.addAndGet(delSubDocs.subIDs.size());
+                      if (VERBOSE) {
+                        System.out.println("TEST: update pack packID=" + delSubDocs.packID + " count=" + docsList.size() + " docs=" + docIDs);
+                      }
+                      writer.updateDocuments(new Term("packID", delSubDocs.packID), docsList);
+                      /*
+                      // non-atomic:
+                      writer.deleteDocuments(new Term("packID", delSubDocs.packID));
+                      for(Document subDoc : docsList) {
+                        writer.addDocument(subDoc);
+                      }
+                      */
+                    } else {
+                      if (VERBOSE) {
+                        System.out.println("TEST: add pack packID=" + packID + " count=" + docsList.size() + " docs=" + docIDs);
+                      }
+                      writer.addDocuments(docsList);
+                      
+                      /*
+                      // non-atomic:
+                      for(Document subDoc : docsList) {
+                        writer.addDocument(subDoc);
+                      }
+                      */
+                    }
+                    doc.removeField("packID");
+
+                    if (random.nextInt(5) == 2) {
+                      if (VERBOSE) {
+                        //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + packID);
+                      }
+                      toDeleteSubDocs.add(subDocs);
+                    }
+
+                  } else {
+                    writer.addDocument(doc);
+                    addCount.getAndIncrement();
+
+                    if (random.nextInt(5) == 3) {
+                      if (VERBOSE) {
+                        //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
+                      }
+                      toDeleteIDs.add(doc.get("docid"));
+                    }
+                  }
                 } else {
                   // we use update but it never replaces a
                   // prior doc
@@ -161,14 +286,17 @@ public class TestNRTThreads extends LuceneTestCase {
                     //System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("docid"));
                   }
                   writer.updateDocument(new Term("docid", doc.get("docid")), doc);
-                }
-                if (random.nextInt(5) == 3) {
-                  if (VERBOSE) {
-                    //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
+                  addCount.getAndIncrement();
+
+                  if (random.nextInt(5) == 3) {
+                    if (VERBOSE) {
+                      //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
+                    }
+                    toDeleteIDs.add(doc.get("docid"));
                   }
-                  toDeleteIDs.add(doc.get("docid"));
                 }
-                if (random.nextInt(50) == 17) {
+
+                if (random.nextInt(30) == 17) {
                   if (VERBOSE) {
                     //System.out.println(Thread.currentThread().getName() + ": apply " + toDeleteIDs.size() + " deletes");
                   }
@@ -184,8 +312,19 @@ public class TestNRTThreads extends LuceneTestCase {
                   }
                   delIDs.addAll(toDeleteIDs);
                   toDeleteIDs.clear();
+
+                  for(SubDocs subDocs : toDeleteSubDocs) {
+                    assert !subDocs.deleted;
+                    writer.deleteDocuments(new Term("packID", subDocs.packID));
+                    subDocs.deleted = true;
+                    if (VERBOSE) {
+                      System.out.println("  del subs: " + subDocs.subIDs + " packID=" + subDocs.packID);
+                    }
+                    delIDs.addAll(subDocs.subIDs);
+                    delCount.addAndGet(subDocs.subIDs.size());
+                  }
+                  toDeleteSubDocs.clear();
                 }
-                addCount.getAndIncrement();
                 if (addedField != null) {
                   doc.removeField(addedField);
                 }
@@ -356,7 +495,7 @@ public class TestNRTThreads extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: done join [" + (System.currentTimeMillis()-t0) + " ms]; addCount=" + addCount + " delCount=" + delCount);
     }
-    
+
     final IndexReader r2 = writer.getReader();
     final IndexSearcher s = newSearcher(r2);
     boolean doFail = false;
@@ -365,6 +504,43 @@ public class TestNRTThreads extends LuceneTestCase {
       if (hits.totalHits != 0) {
         System.out.println("doc id=" + id + " is supposed to be deleted, but got docID=" + hits.scoreDocs[0].doc);
         doFail = true;
+      }
+    }
+
+    // Make sure each group of sub-docs are still in docID order:
+    for(SubDocs subDocs : allSubDocs) {
+      if (!subDocs.deleted) {
+        // We sort by relevance but the scores should be identical so sort falls back to by docID:
+        TopDocs hits = s.search(new TermQuery(new Term("packID", subDocs.packID)), 20);
+        assertEquals(subDocs.subIDs.size(), hits.totalHits);
+        int lastDocID = -1;
+        int startDocID = -1;
+        for(ScoreDoc scoreDoc : hits.scoreDocs) {
+          final int docID = scoreDoc.doc;
+          if (lastDocID != -1) {
+            assertEquals(1+lastDocID, docID);
+          } else {
+            startDocID = docID;
+          }
+          lastDocID = docID;
+          final Document doc = s.doc(docID);
+          assertEquals(subDocs.packID, doc.get("packID"));
+        }
+
+        lastDocID = startDocID - 1;
+        for(String subID : subDocs.subIDs) {
+          hits = s.search(new TermQuery(new Term("docid", subID)), 1);
+          assertEquals(1, hits.totalHits);
+          final int docID = hits.scoreDocs[0].doc;
+          if (lastDocID != -1) {
+            assertEquals(1+lastDocID, docID);
+          }
+          lastDocID = docID;
+        }          
+      } else {
+        for(String subID : subDocs.subIDs) {
+          assertEquals(0, s.search(new TermQuery(new Term("docid", subID)), 1).totalHits);
+        }
       }
     }
     
