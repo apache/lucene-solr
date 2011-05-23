@@ -60,54 +60,6 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertTrue(dir != null);
   }
 
-  public void testAddDocument() throws Exception {
-    Document testDoc = new Document();
-    DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    writer.addDocument(testDoc);
-    writer.commit();
-    SegmentInfo info = writer.newestSegment();
-    writer.close();
-    //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-    assertTrue(reader != null);
-    Document doc = reader.document(0);
-    assertTrue(doc != null);
-
-    //System.out.println("Document: " + doc);
-    Fieldable [] fields = doc.getFields("textField2");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
-    assertTrue(fields[0].isTermVectorStored());
-
-    fields = doc.getFields("textField1");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_1_TEXT));
-    assertFalse(fields[0].isTermVectorStored());
-
-    fields = doc.getFields("keyField");
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.KEYWORD_TEXT));
-
-    fields = doc.getFields(DocHelper.NO_NORMS_KEY);
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.NO_NORMS_TEXT));
-
-    fields = doc.getFields(DocHelper.TEXT_FIELD_3_KEY);
-    assertTrue(fields != null && fields.length == 1);
-    assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_3_TEXT));
-
-    // test that the norms are not present in the segment if
-    // omitNorms is true
-    for (int i = 0; i < reader.core.fieldInfos.size(); i++) {
-      FieldInfo fi = reader.core.fieldInfos.fieldInfo(i);
-      if (fi.isIndexed) {
-        assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
-      }
-    }
-    reader.close();
-  }
-
   public void testPositionIncrementGap() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
