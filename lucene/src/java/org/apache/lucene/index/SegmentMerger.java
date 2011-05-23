@@ -40,10 +40,6 @@ import org.apache.lucene.util.ReaderUtil;
  * @see #add
  */
 final class SegmentMerger {
-  
-  /** norms header placeholder */
-  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1}; 
-  
   private Directory directory;
   private String segment;
   private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
@@ -630,7 +626,7 @@ final class SegmentMerger {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) { 
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
-            output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
+            output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
           if (normBuffer == null) {
             normBuffer = new byte[bufferSize];

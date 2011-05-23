@@ -92,7 +92,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
     IndexOutput normsOut = state.directory.createOutput(normsFileName);
 
     try {
-      normsOut.writeBytes(SegmentMerger.NORMS_HEADER, 0, SegmentMerger.NORMS_HEADER.length);
+      normsOut.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
 
       final int numField = fieldInfos.size();
 
