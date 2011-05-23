@@ -852,13 +852,6 @@
       <arg value="-c" />
       <arg value="${common.dir}/lib" />
       <arg value="-c" />
-      <arg value="${common.dir}/contrib/ant/lib" />
-      <!-- BDB libs are downloaded, don't check them -->
-      <!--<arg value="-c" />
-      <arg value="${toplevel.dir}/lucene/contrib/db/bdb/lib" />
-      <arg value="-c" />
-      <arg value="${toplevel.dir}/lucene/contrib/db/bdb-je/lib" />-->
-      <arg value="-c" />
       <arg value="${common.dir}/contrib/benchmark/lib" />
       <arg value="-c" />
       <arg value="${common.dir}/contrib/icu/lib" />
