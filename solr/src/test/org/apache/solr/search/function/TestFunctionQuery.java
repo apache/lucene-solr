@@ -19,6 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.FileOutputStream;
@@ -189,7 +191,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternalField() {
+  public void testExternalField() throws Exception {
     String field = "foo_extf";
 
     float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
@@ -208,8 +210,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1","UTF-8");
-    assertU(adoc("id", "10000")); // will get same reader if no index change
-    assertU(commit());   
+    assertU(h.query("/reloadCache",lrf.makeRequest("","")));
     singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
@@ -245,8 +246,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       makeExternalFile(field, sb.toString(),"UTF-8");
 
       // make it visible
-      assertU(adoc("id", "10001")); // will get same reader if no index change
-      assertU(commit());
+      assertU(h.query("/reloadCache",lrf.makeRequest("","")));
 
       // test it
       float[] answers = new float[ids.length*2];

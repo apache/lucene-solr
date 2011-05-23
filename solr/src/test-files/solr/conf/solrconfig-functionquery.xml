@@ -311,6 +311,9 @@
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
+  <requestHandler name="/reloadCache"
+                  class="org.apache.solr.search.function.FileFloatSource$ReloadCacheRequestHandler" />
+
   <!-- test ValueSourceParser plugins -->
   <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
     <float name="nvlFloatValue">0.0</float>
