@@ -18,8 +18,6 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -262,33 +260,41 @@ public class Floats {
      */
     @Override
     public Source load() throws IOException {
-      /*
-       *  the allocated byteBuffer always uses BIG_ENDIAN here
-       *  and since the writer uses DataOutput#writeInt() / writeLong()
-       *  we can allways assume BIGE_ENDIAN
-       */
-      final ByteBuffer buffer = ByteBuffer.allocate(precisionBytes * maxDoc);
-      IndexInput indexInput = (IndexInput) datIn.clone();
+      /* we always read BIG_ENDIAN here since the writer uses
+       * DataOutput#writeInt() / writeLong() we can simply read the ints / longs
+       * back in using readInt / readLong */
+      final IndexInput indexInput = (IndexInput) datIn.clone();
       indexInput.seek(CodecUtil.headerLength(CODEC_NAME));
       // skip precision:
       indexInput.readByte();
-      assert buffer.hasArray() : "Buffer must support Array";
-      final byte[] arr = buffer.array();
-      indexInput.readBytes(arr, 0, arr.length);
-      return precisionBytes == 4 ? new Source4(buffer) : new Source8(buffer);
+      if (precisionBytes == 4) {
+        final float[] values = new float[(4 * maxDoc) >> 2];
+        assert values.length == maxDoc;
+        for (int i = 0; i < values.length; i++) {
+          values[i] = Float.intBitsToFloat(indexInput.readInt());
+        }
+        return new Source4(values);
+      } else {
+        final double[] values = new double[(8 * maxDoc) >> 3];
+        assert values.length == maxDoc;
+        for (int i = 0; i < values.length; i++) {
+          values[i] = Double.longBitsToDouble(indexInput.readLong());
+        }
+        return new Source8(values);
+      }
     }
 
     private class Source4 extends Source {
-      private final FloatBuffer values;
+      private final float[] values;
 
-      Source4(ByteBuffer buffer) {
-        values = buffer.asFloatBuffer();
+      Source4(final float[] values ) throws IOException {
+        this.values = values;
         missingValue.doubleValue = Float.NEGATIVE_INFINITY;
       }
 
       @Override
       public double getFloat(int docID) {
-        return values.get(docID);
+        return values[docID];
       }
 
       @Override
@@ -318,17 +324,16 @@ public class Floats {
     }
 
     private class Source8 extends Source {
-      private final DoubleBuffer values;
+      private final double[] values;
 
-      Source8(ByteBuffer buffer) {
-        values = buffer.asDoubleBuffer();
+      Source8(final double[] values) throws IOException {
+        this.values = values;
         missingValue.doubleValue = Double.NEGATIVE_INFINITY;
-
       }
 
       @Override
       public double getFloat(int docID) {
-        return values.get(docID);
+        return values[docID];
       }
 
       @Override

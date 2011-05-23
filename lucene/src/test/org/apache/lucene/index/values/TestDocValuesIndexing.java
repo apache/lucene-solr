@@ -298,7 +298,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
         for (int i = 0; i < base; i++) {
           double value = floats.getFloat(i);
-          assertEquals(" floats failed for doc: " + i + " base: " + base,
+          assertEquals(val + " failed for doc: " + i + " base: " + base,
               missing.doubleValue, value, 0.0d);
         }
         DocValuesEnum floatEnum = getValuesEnum(floatReader);
@@ -528,8 +528,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           valField.setInt(i);
           break;
         case FLOAT_32:
-        case FLOAT_64:
           valField.setFloat(2.0f * i);
+          break;
+        case FLOAT_64:
+          valField.setFloat(2.0d * i);
           break;
         default:
           fail("unexpected value " + value);
