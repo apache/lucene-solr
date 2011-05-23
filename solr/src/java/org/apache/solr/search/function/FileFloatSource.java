@@ -16,23 +16,38 @@
  */
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.VersionedFile;
-
-import java.io.*;
-import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Obtains float field values from an external file.
@@ -99,6 +114,10 @@ public class FileFloatSource extends ValueSource {
             + ",defVal="+defVal+",dataDir="+dataDir+")";
 
   }
+  
+  public static void resetCache(){
+    floatCache.resetCache();
+  }
 
   private final float[] getCachedFloats(IndexReader reader) {
     return (float[])floatCache.get(reader, new Entry(this));
@@ -149,6 +168,14 @@ public class FileFloatSource extends ValueSource {
       }
 
       return value;
+    }
+    
+    public void resetCache(){
+      synchronized(readerCache){
+        // Map.clear() is optional and can throw UnsipportedOperationException,
+        // but readerCache is WeakHashMap and it supports clear().
+        readerCache.clear();
+      }
     }
   }
 
@@ -272,5 +299,44 @@ public class FileFloatSource extends ValueSource {
     return vals;
   }
 
+  public static class ReloadCacheRequestHandler extends RequestHandlerBase {
+    
+    static final Logger log = LoggerFactory.getLogger(ReloadCacheRequestHandler.class);
 
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+        throws Exception {
+      FileFloatSource.resetCache();
+      log.debug("readerCache has been reset.");
+
+      UpdateRequestProcessor processor =
+        req.getCore().getUpdateProcessingChain(null).createProcessor(req, rsp);
+      try{
+        RequestHandlerUtils.handleCommit(req, processor, req.getParams(), true);
+      }
+      finally{
+        processor.finish();
+      }
+    }
+
+    @Override
+    public String getDescription() {
+      return "Reload readerCache request handler";
+    }
+
+    @Override
+    public String getSource() {
+      return "$URL$";
+    }
+
+    @Override
+    public String getSourceId() {
+      return "$Id$";
+    }
+
+    @Override
+    public String getVersion() {
+      return "$Revision$";
+    }    
+  }
 }
