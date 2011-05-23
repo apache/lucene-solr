@@ -139,7 +139,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       }
     }
 
-    assert lastDocID == docState.docID;
+    assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;
 
     lastDocID++;
 

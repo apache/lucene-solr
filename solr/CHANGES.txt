@@ -333,6 +333,10 @@ Bug Fixes
   in strings since those characters are not valid in javascript strings
   (although they are valid in JSON strings).  (yonik)
 
+* SOLR-2536: Add ReloadCacheRequestHandler to fix ExternalFileField bug (if reopenReaders
+  set to true and no index segments have been changed, commit cannot trigger reload
+  external file). (koji)
+
 
 Other Changes
 ----------------------

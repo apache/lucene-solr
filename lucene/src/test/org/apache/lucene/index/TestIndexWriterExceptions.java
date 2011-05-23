@@ -17,24 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -43,8 +35,53 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriterExceptions extends LuceneTestCase {
+
+  private static class DocCopyIterator implements Iterable<Document> {
+    private final Document doc;
+    private final int count;
+
+    public DocCopyIterator(Document doc, int count) {
+      this.count = count;
+      this.doc = doc;
+    }
+
+    // @Override -- not until Java 1.6
+    public Iterator<Document> iterator() {
+      return new Iterator<Document>() {
+        int upto;
+
+        // @Override -- not until Java 1.6
+        public boolean hasNext() {
+          return upto < count;
+        }
+
+        // @Override -- not until Java 1.6
+        public Document next() {
+          upto++;
+          return doc;
+        }
+
+        // @Override -- not until Java 1.6
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
+  }
 
   private class IndexerThread extends Thread {
 
@@ -87,7 +124,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         idField.setValue(id);
         Term idTerm = new Term("id", id);
         try {
-          writer.updateDocument(idTerm, doc);
+          if (r.nextBoolean()) {
+            writer.updateDocuments(idTerm, new DocCopyIterator(doc, _TestUtil.nextInt(r, 1, 20)));
+          } else {
+            writer.updateDocument(idTerm, doc);
+          }
         } catch (RuntimeException re) {
           if (VERBOSE) {
             System.out.println(Thread.currentThread().getName() + ": EXC: ");
@@ -136,7 +177,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     boolean testPoint(String name) {
-      if (doFail.get() != null && !name.equals("startDoFlush") && r.nextInt(20) == 17) {
+      if (doFail.get() != null && !name.equals("startDoFlush") && r.nextInt(40) == 17) {
         if (VERBOSE) {
           System.out.println(Thread.currentThread().getName() + ": NOW FAIL: " + name);
           new Throwable().printStackTrace(System.out);
@@ -267,6 +308,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
+  private static String CRASH_FAIL_MESSAGE = "I'm experiencing problems";
+
   private class CrashingFilter extends TokenFilter {
     String fieldName;
     int count;
@@ -279,7 +322,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (this.fieldName.equals("crash") && count++ >= 4)
-        throw new IOException("I'm experiencing problems");
+        throw new IOException(CRASH_FAIL_MESSAGE);
       return input.incrementToken();
     }
 
@@ -1277,5 +1320,142 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         throw new RuntimeException(EXC_MSG + " fail on finishDoc");
       }
     }
+  }
+
+  public void testAddDocsNonAbortingException() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final int numDocs1 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs1;docCount++) {
+      Document doc = new Document();
+      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+    
+    final List<Document> docs = new ArrayList<Document>();
+    for(int docCount=0;docCount<7;docCount++) {
+      Document doc = new Document();
+      docs.add(doc);
+      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+      if (docCount == 4) {
+        Field f = newField("crash", "", Field.Index.ANALYZED);
+        doc.add(f);
+        MockTokenizer tokenizer = new MockTokenizer(new StringReader("crash me on the 4th token"), MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        f.setTokenStream(new CrashingFilter("crash", tokenizer));
+      }
+    }
+    try {
+      w.addDocuments(docs);
+      // BUG: CrashingFilter didn't
+      fail("did not hit expected exception");
+    } catch (IOException ioe) {
+      // expected
+      assertEquals(CRASH_FAIL_MESSAGE, ioe.getMessage());
+    }
+
+    final int numDocs2 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs2;docCount++) {
+      Document doc = new Document();
+      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    final IndexSearcher s = new IndexSearcher(r);
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("content", "silly"));
+    pq.add(new Term("content", "content"));
+    assertEquals(0, s.search(pq, 1).totalHits);
+
+    pq = new PhraseQuery();
+    pq.add(new Term("content", "good"));
+    pq.add(new Term("content", "content"));
+    assertEquals(numDocs1+numDocs2, s.search(pq, 1).totalHits);
+    r.close();
+    dir.close();
+  }
+
+
+  public void testUpdateDocsNonAbortingException() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final int numDocs1 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs1;docCount++) {
+      Document doc = new Document();
+      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+
+    // Use addDocs (no exception) to get docs in the index:
+    final List<Document> docs = new ArrayList<Document>();
+    final int numDocs2 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs2;docCount++) {
+      Document doc = new Document();
+      docs.add(doc);
+      doc.add(newField("subid", "subs", Field.Index.NOT_ANALYZED));
+      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+    }
+    w.addDocuments(docs);
+
+    final int numDocs3 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs3;docCount++) {
+      Document doc = new Document();
+      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+
+    docs.clear();
+    final int limit = _TestUtil.nextInt(random, 2, 25);
+    final int crashAt = random.nextInt(limit);
+    for(int docCount=0;docCount<limit;docCount++) {
+      Document doc = new Document();
+      docs.add(doc);
+      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+      if (docCount == crashAt) {
+        Field f = newField("crash", "", Field.Index.ANALYZED);
+        doc.add(f);
+        MockTokenizer tokenizer = new MockTokenizer(new StringReader("crash me on the 4th token"), MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        f.setTokenStream(new CrashingFilter("crash", tokenizer));
+      }
+    }
+
+    try {
+      w.updateDocuments(new Term("subid", "subs"), docs);
+      // BUG: CrashingFilter didn't
+      fail("did not hit expected exception");
+    } catch (IOException ioe) {
+      // expected
+      assertEquals(CRASH_FAIL_MESSAGE, ioe.getMessage());
+    }
+
+    final int numDocs4 = random.nextInt(25);
+    for(int docCount=0;docCount<numDocs4;docCount++) {
+      Document doc = new Document();
+      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      w.addDocument(doc);
+    }
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    final IndexSearcher s = new IndexSearcher(r);
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("content", "silly"));
+    pq.add(new Term("content", "content"));
+    assertEquals(numDocs2, s.search(pq, 1).totalHits);
+
+    pq = new PhraseQuery();
+    pq.add(new Term("content", "good"));
+    pq.add(new Term("content", "content"));
+    assertEquals(numDocs1+numDocs3+numDocs4, s.search(pq, 1).totalHits);
+    r.close();
+    dir.close();
   }
 }
