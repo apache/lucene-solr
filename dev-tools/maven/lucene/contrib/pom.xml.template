@@ -32,15 +32,12 @@
   <packaging>pom</packaging>
   <modules>
     <module>analyzers</module>
-    <module>ant</module>
     <module>benchmark</module>
-    <module>db</module>
     <module>demo</module>
     <module>grouping</module>
     <module>highlighter</module>
     <module>icu</module>
     <module>instantiated</module>
-    <module>lucli</module>
     <module>memory</module>
     <module>misc</module>
     <module>queries</module>
@@ -48,7 +45,6 @@
     <module>remote</module>
     <module>spatial</module>
     <module>spellchecker</module>
-    <module>swing</module>
     <module>wordnet</module>
     <module>xml-query-parser</module>
   </modules>
