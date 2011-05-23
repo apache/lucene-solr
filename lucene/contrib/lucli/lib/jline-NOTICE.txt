@@ -1,2 +1,0 @@
-JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.
-See http://jline.sourceforge.net/

@@ -852,15 +852,6 @@
       <arg value="-c" />
       <arg value="${basedir}/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/ant/lib" />
-      <!-- BDB libs are downloaded, don't check them -->
-      <!--<arg value="-c" />
-      <arg value="${toplevel.dir}/lucene/contrib/db/bdb/lib" />
-      <arg value="-c" />
-      <arg value="${toplevel.dir}/lucene/contrib/db/bdb-je/lib" />-->
-      <arg value="-c" />
-      <arg value="${basedir}/contrib/lucli/lib" />
-      <arg value="-c" />
       <arg value="${basedir}/contrib/queries/lib" />
     </java>
   </target>

@@ -68,7 +68,7 @@ field fall into a single group.</p>
 
 <p>Typical usage looks like this (using the {@link org.apache.lucene.search.CachingCollector}):</p>
 
-<pre>
+<pre class="prettyprint">
   FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
 
   boolean cacheScores = true;

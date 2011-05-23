@@ -3,21 +3,12 @@
 	<classpathentry kind="src" path="lucene/src/java"/>
 	<classpathentry kind="src" path="lucene/src/test-framework"/>
 	<classpathentry kind="src" path="lucene/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/ant/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/ant/src/resources"/>
-	<classpathentry kind="src" path="lucene/contrib/ant/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/db/bdb/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/db/bdb/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/db/bdb-je/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/db/bdb-je/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/instantiated/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/instantiated/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/lucli/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/lucli/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/memory/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/memory/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/java"/>
@@ -31,8 +22,6 @@
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/swing/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/swing/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/wordnet/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/wordnet/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>
@@ -84,10 +73,6 @@
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/ant/lib/jtidy-r938.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/db/bdb/lib/db-4.7.25.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/db/bdb-je/lib/je-3.3.93.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/lucli/lib/jline.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_6.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
