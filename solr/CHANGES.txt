@@ -340,6 +340,9 @@ Other Changes
 * SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
 	(Jan Høydahl via Mark Miller)
 
+* SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
+  because html encoding confuses non-ascii users. (koji)
+
 Build
 ----------------------
 

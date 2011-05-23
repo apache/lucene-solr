@@ -1376,7 +1376,6 @@
 
       <!-- Configure the standard encoder -->
       <encoder name="html" 
-               default="true"
                class="solr.highlight.HtmlEncoder" />
 
       <!-- Configure the standard fragListBuilder -->

@@ -31,19 +31,15 @@
   <name>Lucene Contrib aggregator POM</name>
   <packaging>pom</packaging>
   <modules>
-    <module>ant</module>
-    <module>db</module>
     <module>demo</module>
     <module>highlighter</module>
     <module>instantiated</module>
-    <module>lucli</module>
     <module>memory</module>
     <module>misc</module>
     <module>queries</module>
     <module>queryparser</module>
     <module>spatial</module>
     <module>spellchecker</module>
-    <module>swing</module>
     <module>wordnet</module>
     <module>xml-query-parser</module>
   </modules>

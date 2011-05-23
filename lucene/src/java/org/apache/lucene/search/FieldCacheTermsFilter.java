@@ -127,7 +127,7 @@ public class FieldCacheTermsFilter extends Filter {
 
     public FieldCacheTermsFilterDocIdSet(FieldCache.DocTermsIndex fcsi) {
       this.fcsi = fcsi;
-      openBitSet = new OpenBitSet(this.fcsi.size());
+      openBitSet = new OpenBitSet(this.fcsi.numOrd());
       final BytesRef spare = new BytesRef();
       for (int i=0;i<terms.length;i++) {
         int termNumber = this.fcsi.binarySearchLookup(terms[i], spare);

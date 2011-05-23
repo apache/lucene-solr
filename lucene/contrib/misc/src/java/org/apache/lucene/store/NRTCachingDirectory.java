@@ -135,15 +135,6 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized void touchFile(String name) throws IOException {
-    if (cache.fileExists(name)) {
-      cache.touchFile(name);
-    } else {
-      delegate.touchFile(name);
-    }
-  }
-
-  @Override
   public synchronized void deleteFile(String name) throws IOException {
     // Delete from both, in case we are currently uncaching:
     if (VERBOSE) {

@@ -50,6 +50,10 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) =======================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-2981: Removed the following contribs: ant, db, lucli, swing. (Robert Muir)
+
 Changes in runtime behavior
 
  * LUCENE-3086: ItalianAnalyzer now uses ElisionFilter with a set of Italian

@@ -131,16 +131,6 @@
         <version>r05</version>
       </dependency>
       <dependency>
-        <groupId>com.sleepycat</groupId>
-        <artifactId>berkeleydb</artifactId>
-        <version>4.7.25</version>
-      </dependency>
-      <dependency>
-        <groupId>com.sleepycat</groupId>
-        <artifactId>berkeleydb-je</artifactId>
-        <version>3.3.93</version>
-      </dependency>
-      <dependency>
         <groupId>commons-beanutils</groupId>
         <artifactId>commons-beanutils</artifactId>
         <version>1.7.0</version>
@@ -206,11 +196,6 @@
         <version>0.9.1</version>
       </dependency>
       <dependency>
-        <groupId>jtidy</groupId>
-        <artifactId>jtidy</artifactId>
-        <version>4aug2000r7-dev</version>
-      </dependency>
-      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.7</version>
@@ -229,11 +214,6 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-stax-api_1.0_spec</artifactId>
-        <version>1.0.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
@@ -590,25 +570,6 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>get-jars-and-poms</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target>
-                    <ant dir="lucene/contrib/db/bdb"    target="get-db-jar"/>
-                    <ant dir="lucene/contrib/db/bdb-je" target="get-je-jar"/>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
               <execution>
@@ -637,34 +598,6 @@
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
                   <file>modules/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-berkeleydb</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>com.sleepycat</groupId>
-                  <artifactId>berkeleydb</artifactId>
-                  <version>4.7.25</version>
-                  <packaging>jar</packaging>
-                  <file>lucene/contrib/db/bdb/lib/db-4.7.25.jar</file>
-                </configuration>  
-              </execution>
-              <execution>
-                <id>install-berkeleydb-je</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>com.sleepycat</groupId>
-                  <artifactId>berkeleydb-je</artifactId>
-                  <version>3.3.93</version>
-                  <packaging>jar</packaging>
-                  <file>lucene/contrib/db/bdb-je/lib/je-3.3.93.jar</file>
                 </configuration>  
               </execution>
               <execution>

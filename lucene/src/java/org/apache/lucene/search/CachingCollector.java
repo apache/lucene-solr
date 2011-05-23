@@ -308,6 +308,48 @@ public abstract class CachingCollector extends Collector {
   protected int base;
   protected int lastDocBase;
   
+  /**
+   * Creates a {@link CachingCollector} which does not wrap another collector.
+   * The cached documents and scores can later be {@link #replay(Collector)
+   * replayed}.
+   * 
+   * @param acceptDocsOutOfOrder
+   *          whether documents are allowed to be collected out-of-order
+   */
+  public static CachingCollector create(final boolean acceptDocsOutOfOrder, boolean cacheScores, double maxRAMMB) {
+    Collector other = new Collector() {
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return acceptDocsOutOfOrder;
+      }
+      
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {}
+
+      @Override
+      public void collect(int doc) throws IOException {}
+
+      @Override
+      public void setNextReader(AtomicReaderContext context) throws IOException {}
+
+    };
+    return create(other, cacheScores, maxRAMMB);
+  }
+
+  /**
+   * Create a new {@link CachingCollector} that wraps the given collector and
+   * caches documents and scores up to the specified RAM threshold.
+   * 
+   * @param other
+   *          the Collector to wrap and delegate calls to.
+   * @param cacheScores
+   *          whether to cache scores in addition to document IDs. Note that
+   *          this increases the RAM consumed per doc
+   * @param maxRAMMB
+   *          the maximum RAM in MB to consume for caching the documents and
+   *          scores. If the collector exceeds the threshold, no documents and
+   *          scores are cached.
+   */
   public static CachingCollector create(Collector other, boolean cacheScores, double maxRAMMB) {
     return cacheScores ? new ScoreCachingCollector(other, maxRAMMB) : new NoScoreCachingCollector(other, maxRAMMB);
     }

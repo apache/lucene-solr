@@ -50,11 +50,6 @@
                 <a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/">http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/</a>.
             </p>
           
-            <section id="ant"><title>ant</title>
-                <p>Ant task to create Lucene indexes.</p>
-                <p>See <a href="../api/contrib-ant/index.html">ant javadoc</a></p>
-            </section>
-            
             <section id="benchmark"><title>benchmark</title>
                 <p>The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.</p>
                 <p>See <a href="../api/contrib-benchmark/index.html">benchmark javadoc</a></p>
@@ -66,11 +61,6 @@
                 <p>See <a href="../api/contrib-demo/index.html">demo javadoc</a></p>
             </section>
             
-            <section id="db"><title>db</title>
-                <p>Provides integration with Berkley DB.</p>
-                <p>See <a href="../api/contrib-db/index.html">db javadoc</a></p>
-            </section>
-            
             <section id="highlighter"><title>highlighter</title>
                 <p>A set of classes for highlighting matching terms in search results.</p>
                 <p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a></p>
@@ -79,11 +69,6 @@
             <section id="instantiated"><title>instantiated</title>
                 <p>RAM-based index that enables much faster searching than RAMDirectory in certain situations.</p>
                 <p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a></p>
-            </section>
-
-            <section id="lucli"><title>lucli</title>
-                <p>An application that allows Lucene index manipulation from the command-line.</p>
-                <p>See <a href="../api/contrib-lucli/index.html">lucli javadoc</a></p>
             </section>
             
             <section id="memory"><title>memory</title>
@@ -120,11 +105,6 @@
                 <p>Provides tools for spellchecking and suggestions with Lucene.</p>
                 <p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a></p>
             </section>                     
-            
-            <section id="swing"><title>swing</title>
-                <p>Swing components designed to integrate with Lucene.</p>
-                <p>See <a href="../api/contrib-swing/index.html">swing javadoc</a></p>
-            </section>    
             
             <section id="wordnet"><title>wordnet</title>
                 <p>Tools to help utilize wordnet synonyms with Lucene</p>

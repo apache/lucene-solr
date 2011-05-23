@@ -275,10 +275,6 @@ API Changes
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
-* LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
-  (though @lucene.experimental), allowing for custom MergeScheduler 
-  implementations. (Shai Erera)
-
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -334,9 +330,6 @@ New features
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
 
-* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
-  (Tim Smith, Grant Ingersoll)
-
 * LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
   SegmentInfosReader to allow customization of SegmentInfos data.
   (Andrzej Bialecki)
@@ -366,9 +359,6 @@ New features
   use MultiFields static methods directly, instead) if you need to use
   the flex APIs directly on a composite reader.  (Mike McCandless)
 
-* LUCENE-2692: Added several new SpanQuery classes for positional checking
-  (match is in a range, payload is a specific value) (Grant Ingersoll)  
-  
 * LUCENE-2690: MultiTermQuery boolean rewrites per segment.
   (Uwe Schindler, Robert Muir, Mike McCandless, Simon Willnauer)
 
@@ -401,19 +391,12 @@ New features
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
 
-* LUCENE-3001: Added TrieFieldHelper to write solr compatible numeric
-  fields without the solr dependency. (ryan)
-  
 * LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
   refactored from Solr's UnInvertedField, for accessing term ords for
   multi-valued fields, per document.  This is similar to FieldCache in
   that it inverts the index to compute the ords, but differs in that
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
-
-* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
-  document IDs and scores encountered during the search, and "reply" them to 
-  another Collector. (Mike McCandless, Shai Erera)
 
 Optimizations
 
@@ -444,27 +427,6 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-* LUCENE-2936: PhraseQuery score explanations were not correctly 
-  identifying matches vs non-matches.  (hossman)
-
-* LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
-  indexes, causing existing deletions to be applied on the incoming indexes as 
-  well. (Shai Erera, Mike McCandless)
-
-* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
-  query terms had same position in the query. (Doron Cohen)
-
-Test Cases
-
-* LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
-  stop iterating if at least 'tests.iter.min' ran and a failure occured. 
-  (Shai Erera, Chris Hostetter)
-
-Build
-
-* LUCENE-3006: Building javadocs will fail on warnings by default. 
-  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -479,14 +441,14 @@ Changes in backwards compatibility policy
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
   SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
-	to no longer extend Vector<SegmentInfo> (to update code that is using
-	Vector-API, use the new asList() and asSet() methods returning unmodifiable
-	collections; modifying SegmentInfos is now only possible through
-	the explicitely declared methods). IndexWriter.segString() now takes
-	Iterable<SegmentInfo> instead of List<SegmentInfo>. A simple recompile
-	should fix this. MergePolicy and SegmentInfos are internal/experimental
-	APIs not covered by the strict backwards compatibility policy.
-	(Uwe Schindler, Mike McCandless)
+  to no longer extend Vector<SegmentInfo> (to update code that is using
+  Vector-API, use the new asList() and asSet() methods returning unmodifiable
+  collections; modifying SegmentInfos is now only possible through
+  the explicitely declared methods). IndexWriter.segString() now takes
+  Iterable<SegmentInfo> instead of List<SegmentInfo>. A simple recompile
+  should fix this. MergePolicy and SegmentInfos are internal/experimental
+  APIs not covered by the strict backwards compatibility policy.
+  (Uwe Schindler, Mike McCandless)
 
 Changes in runtime behavior
 
@@ -520,6 +482,10 @@ New features
 * LUCENE-3071: Adding ReversePathHierarchyTokenizer, added skip parameter to 
   PathHierarchyTokenizer (Olivier Favre via ryan)
 
+* LUCENE-1421, LUCENE-3102: added CachingCollector which allow you to cache 
+  document IDs and scores encountered during the search, and "replay" them to 
+  another Collector. (Mike McCandless, Shai Erera)
+
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
@@ -529,6 +495,9 @@ API Changes
 * LUCENE-3065: Document.getField() was deprecated, as it throws
   ClassCastException when loading lazy fields or NumericFields.
   (Uwe Schindler, Ryan McKinley, Mike McCandless)
+
+* LUCENE-2027: Directory.touchFile is deprecated and will be removed
+  in 4.0.  (Mike McCandless)
 
 Optimizations
 
@@ -560,6 +529,17 @@ Bug fixes
   SorterTemplate.quickSort(). This fix also adds an optimization to
   PhraseQuery as term with lower doc freq will also have less positions.
   (Uwe Schindler, Robert Muir, Otis Gospodnetic)
+
+* LUCENE-3068: sloppy phrase query failed to match valid documents when multiple 
+  query terms had same position in the query. (Doron Cohen)
+
+* LUCENE-3012: Lucene writes the header now for separate norm files (*.sNNN)
+  (Robert Muir)
+
+Build
+
+* LUCENE-3006: Building javadocs will fail on warnings by default. 
+  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
 Test Cases
 
@@ -1104,6 +1084,12 @@ New features
   (Robert Muir, Steven Rowe)
 
 * LUCENE-2913: Add missing getters to Numeric* classes. (Uwe Schindler)
+
+* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
+  (Tim Smith, Grant Ingersoll)
+
+* LUCENE-2692: Added several new SpanQuery classes for positional checking
+  (match is in a range, payload is a specific value) (Grant Ingersoll)  
 
 Optimizations
 

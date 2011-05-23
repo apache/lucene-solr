@@ -560,12 +560,6 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized void touchFile(String name) throws IOException {
-    maybeYield();
-    delegate.touchFile(name);
-  }
-
-  @Override
   public synchronized long fileLength(String name) throws IOException {
     maybeYield();
     return delegate.fileLength(name);
