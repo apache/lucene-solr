@@ -7,16 +7,12 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/common/common.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/smartcn/smartcn.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/stempel/stempel.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/ant/ant.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/benchmark/benchmark.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/db/bdb/bdb.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/db/bdb-je/bdb-je.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/demo/demo.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/highlighter/highlighter.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/icu/icu.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/instantiated/instantiated.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/lucli/lucli.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries.iml" />
@@ -24,7 +20,6 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/remote/remote.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spellchecker/spellchecker.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/swing/swing.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/wordnet/wordnet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
