@@ -246,6 +246,10 @@ Other Changes
   variance in asserting score comparisons in unit tests.
   (David Smiley, Chris Hostetter)
 
+* LUCENE-2995: Moved some spellchecker and suggest APIs to modules/suggest:
+  HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
+  suggester APIs and implementations. (rmuir)
+
 Documentation
 ----------------------
 

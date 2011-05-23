@@ -6,6 +6,8 @@ Build
 
  * LUCENE-2845: Moved contrib/benchmark to modules.
 
+ * LUCENE-2995: Moved contrib/spellchecker into modules/suggest.
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.

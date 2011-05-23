@@ -27,15 +27,20 @@ import java.util.List;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.search.spell.HighFrequencyDictionary;
+import org.apache.lucene.search.suggest.FileDictionary;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.suggest.Lookup.LookupResult;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
-import org.apache.solr.util.HighFrequencyDictionary;
+import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
+import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
+import org.apache.solr.spelling.suggest.tst.TSTLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,11 +85,18 @@ public class Suggester extends SolrSpellChecker {
     sourceLocation = (String) config.get(LOCATION);
     field = (String)config.get(FIELD);
     lookupImpl = (String)config.get(LOOKUP_IMPL);
-    if (lookupImpl == null) {
-      lookupImpl = JaspellLookup.class.getName();
+
+    // support the old classnames without -Factory for config file backwards compatibility.
+    if (lookupImpl == null || "org.apache.solr.spelling.suggest.jaspell.JaspellLookup".equals(lookupImpl)) {
+      lookupImpl = JaspellLookupFactory.class.getName();
+    } else if ("org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
+      lookupImpl = TSTLookupFactory.class.getName();
+    } else if ("org.apache.solr.spelling.suggest.fst.FSTLookup".equals(lookupImpl)) {
+      lookupImpl = FSTLookupFactory.class.getName();
     }
-    lookup = (Lookup) core.getResourceLoader().newInstance(lookupImpl);
-    lookup.init(config, core);
+
+    LookupFactory factory = (LookupFactory) core.getResourceLoader().newInstance(lookupImpl);
+    lookup = factory.create(config, core);
     String store = (String)config.get(STORE_DIR);
     if (store != null) {
       storeDir = new File(store);
