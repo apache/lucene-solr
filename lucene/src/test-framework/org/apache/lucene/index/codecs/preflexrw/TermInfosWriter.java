@@ -21,6 +21,7 @@ package org.apache.lucene.index.codecs.preflexrw;
 import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.util.BytesRef;
@@ -107,14 +108,14 @@ final class TermInfosWriter {
   }
 
   // Currently used only by assert statements
-  UnicodeUtil.UTF16Result utf16Result1;
-  UnicodeUtil.UTF16Result utf16Result2;
+  CharsRef utf16Result1;
+  CharsRef utf16Result2;
   private final BytesRef scratchBytes = new BytesRef();
 
   // Currently used only by assert statements
   private boolean initUTF16Results() {
-    utf16Result1 = new UnicodeUtil.UTF16Result();
-    utf16Result2 = new UnicodeUtil.UTF16Result();
+    utf16Result1 = new CharsRef(10);
+    utf16Result2 = new CharsRef(10);
     return true;
   }
 
@@ -145,8 +146,8 @@ final class TermInfosWriter {
       len = utf16Result2.length;
 
     for(int i=0;i<len;i++) {
-      final char ch1 = utf16Result1.result[i];
-      final char ch2 = utf16Result2.result[i];
+      final char ch1 = utf16Result1.chars[i];
+      final char ch2 = utf16Result2.chars[i];
       if (ch1 != ch2)
         return ch1-ch2;
     }

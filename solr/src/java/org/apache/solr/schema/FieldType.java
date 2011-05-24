@@ -30,8 +30,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -39,7 +39,6 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.util.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -354,9 +353,9 @@ public abstract class FieldType extends FieldProperties {
   }
 
   public Object toObject(SchemaField sf, BytesRef term) {
-    CharArr ext = new CharArr(term.length);
-    indexedToReadable(term, ext);
-    Fieldable f = createField(sf, ext.toString(), 1.0f);
+    final CharsRef ref = new CharsRef(term.length);
+    indexedToReadable(term, ref);
+    final Fieldable f = createField(sf, ref.toString(), 1.0f);
     return toObject(f);
   }
 
@@ -365,9 +364,10 @@ public abstract class FieldType extends FieldProperties {
     return indexedForm;
   }
 
-  /** Given an indexed term, append the human readable representation to out */
-  public void indexedToReadable(BytesRef input, CharArr out) {
-    ByteUtils.UTF8toUTF16(input, out);
+  /** Given an indexed term, append the human readable representation*/
+  public CharsRef indexedToReadable(BytesRef input, CharsRef output) {
+    input.utf8ToChars(output);
+    return output;
   }
 
   /** Given the stored field, return the human readable representation */
@@ -390,7 +390,7 @@ public abstract class FieldType extends FieldProperties {
 
   /** Given the readable value, return the term value that will match it. */
   public void readableToIndexed(CharSequence val, BytesRef result) {
-    String internal = readableToIndexed(val.toString());
+    final String internal = readableToIndexed(val.toString());
     UnicodeUtil.UTF16toUTF8(internal, 0, internal.length(), result);
   }
 

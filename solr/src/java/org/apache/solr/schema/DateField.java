@@ -23,14 +23,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
@@ -131,6 +130,8 @@ public class DateField extends FieldType {
 
   protected static String NOW = "NOW";
   protected static char Z = 'Z';
+  private static char[] Z_ARRAY = new char[] {Z};
+  
   
   @Override
   public String toInternal(String val) {
@@ -184,7 +185,7 @@ public class DateField extends FieldType {
   public Fieldable createField(SchemaField field, Object value, float boost) {
     // Convert to a string before indexing
     if(value instanceof Date) {
-      value = toInternal( (Date)value ) + 'Z';
+      value = toInternal( (Date)value ) + Z;
     }
     return super.createField(field, value, boost);
   }
@@ -199,9 +200,10 @@ public class DateField extends FieldType {
   }
 
   @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
-    ByteUtils.UTF8toUTF16(input, out);
-    out.write(Z);
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
+    input.utf8ToChars(charsRef);
+    charsRef.append(Z_ARRAY, 0, 1);
+    return charsRef;
   }
 
   @Override
@@ -479,10 +481,8 @@ class DateFieldSource extends FieldCacheSource {
         if (ord == 0) {
           return null;
         } else {
-          BytesRef br = termsIndex.lookup(ord, new BytesRef());
-          CharArr spare = new CharArr();
-          ft.indexedToReadable(br, spare);
-          return spare.toString();
+          final BytesRef br = termsIndex.lookup(ord, spare);
+          return ft.indexedToReadable(br, spareChars).toString();
         }
       }
 
@@ -492,7 +492,7 @@ class DateFieldSource extends FieldCacheSource {
         if (ord == 0) {
           return null;
         } else {
-          BytesRef br = termsIndex.lookup(ord, new BytesRef());
+          final BytesRef br = termsIndex.lookup(ord, new BytesRef());
           return ft.toObject(null, br);
         }
       }

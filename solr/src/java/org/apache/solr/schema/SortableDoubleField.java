@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.search.MutableValueDouble;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.QParser;
@@ -29,7 +29,6 @@ import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -78,9 +77,12 @@ public class SortableDoubleField extends FieldType {
   }
 
   @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    out.write( indexedToReadable(ByteUtils.UTF8toUTF16(input)) );
+    input.utf8ToChars(charsRef);
+    final char[] indexedToReadable = indexedToReadable(charsRef.toString()).toCharArray();
+    charsRef.copy(indexedToReadable, 0, indexedToReadable.length);
+    return charsRef;
   }
 
   @Override
@@ -89,9 +91,6 @@ public class SortableDoubleField extends FieldType {
     writer.writeDouble(name, NumberUtils.SortableStr2double(sval));
   }
 }
-
-
-
 
 class SortableDoubleFieldSource extends FieldCacheSource {
   protected double defVal;

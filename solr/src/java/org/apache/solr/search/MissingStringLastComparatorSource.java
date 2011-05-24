@@ -21,11 +21,11 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 
@@ -34,7 +34,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
   private final BytesRef missingValueProxy;
 
   public MissingStringLastComparatorSource() {
-    this(ByteUtils.bigTerm);
+    this(UnicodeUtil.BIG_TERM);
   }
 
   /** Creates a {@link FieldComparatorSource} that sorts null last in a normal ascending sort.

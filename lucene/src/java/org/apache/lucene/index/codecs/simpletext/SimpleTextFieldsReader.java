@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.fst.Builder;
@@ -236,7 +237,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private int tf;
     private Bits skipDocs;
     private final BytesRef scratch = new BytesRef(10);
-    private final UnicodeUtil.UTF16Result scratchUTF16 = new UnicodeUtil.UTF16Result();
+    private final CharsRef scratchUTF16 = new CharsRef(10);
     
     public SimpleTextDocsEnum() {
       this.inStart = SimpleTextFieldsReader.this.in;
@@ -286,7 +287,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
             return docID;
           }
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
-          docID = ArrayUtil.parseInt(scratchUTF16.result, 0, scratchUTF16.length);
+          docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           termFreq = 0;
           first = false;
         } else if (scratch.startsWith(POS)) {
@@ -323,8 +324,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private Bits skipDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final BytesRef scratch2 = new BytesRef(10);
-    private final UnicodeUtil.UTF16Result scratchUTF16 = new UnicodeUtil.UTF16Result();
-    private final UnicodeUtil.UTF16Result scratchUTF16_2 = new UnicodeUtil.UTF16Result();
+    private final CharsRef scratchUTF16 = new CharsRef(10);
+    private final CharsRef scratchUTF16_2 = new CharsRef(10);
     private BytesRef payload;
     private long nextDocStart;
 
@@ -368,7 +369,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
             return docID;
           }
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
-          docID = ArrayUtil.parseInt(scratchUTF16.result, 0, scratchUTF16.length);
+          docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           tf = 0;
           posStart = in.getFilePointer();
           first = false;
@@ -400,7 +401,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       readLine(in, scratch);
       assert scratch.startsWith(POS): "got line=" + scratch.utf8ToString();
       UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+POS.length, scratch.length-POS.length, scratchUTF16_2);
-      final int pos = ArrayUtil.parseInt(scratchUTF16_2.result, 0, scratchUTF16_2.length);
+      final int pos = ArrayUtil.parseInt(scratchUTF16_2.chars, 0, scratchUTF16_2.length);
       final long fp = in.getFilePointer();
       readLine(in, scratch);
       if (scratch.startsWith(PAYLOAD)) {

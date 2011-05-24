@@ -34,6 +34,7 @@ import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
@@ -322,7 +323,7 @@ public class DirectSpellChecker {
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir, 
       boolean morePopular, float accuracy) throws IOException {
-    
+    final CharsRef spare = new CharsRef();
     String text = term.text();
     if (minQueryLength > 0 && text.codePointCount(0, text.length()) < minQueryLength)
       return new SuggestWord[0];
@@ -358,11 +359,11 @@ public class DirectSpellChecker {
     int inspections = numSug * maxInspections;
     
     // try ed=1 first, in case we get lucky
-    terms = suggestSimilar(term, inspections, ir, docfreq, 1, accuracy);
+    terms = suggestSimilar(term, inspections, ir, docfreq, 1, accuracy, spare);
     if (maxEdits > 1 && terms.size() < inspections) {
       HashSet<ScoreTerm> moreTerms = new HashSet<ScoreTerm>();
       moreTerms.addAll(terms);
-      moreTerms.addAll(suggestSimilar(term, inspections, ir, docfreq, maxEdits, accuracy));
+      moreTerms.addAll(suggestSimilar(term, inspections, ir, docfreq, maxEdits, accuracy, spare));
       terms = moreTerms;
     }
     
@@ -372,7 +373,7 @@ public class DirectSpellChecker {
     int index = suggestions.length - 1;
     for (ScoreTerm s : terms) {
       SuggestWord suggestion = new SuggestWord();
-      suggestion.string = s.termAsString != null ? s.termAsString : s.term.utf8ToString();
+      suggestion.string = s.termAsString != null ? s.termAsString : s.term.utf8ToChars(spare).toString();
       suggestion.score = s.score;
       suggestion.freq = s.docfreq;
       suggestions[index--] = suggestion;
@@ -388,7 +389,7 @@ public class DirectSpellChecker {
   }
   
   private Collection<ScoreTerm> suggestSimilar(Term term, int numSug, 
-      IndexReader ir, int docfreq, int editDistance, float accuracy) throws IOException {
+      IndexReader ir, int docfreq, int editDistance, float accuracy, final CharsRef spare) throws IOException {
     
     AttributeSource atts = new AttributeSource();
     MaxNonCompetitiveBoostAttribute maxBoostAtt =
@@ -425,7 +426,7 @@ public class DirectSpellChecker {
         // undo FuzzyTermsEnum's scale factor for a real scaled lev score
         score = boost / e.getScaleFactor() + e.getMinSimilarity();
       } else {
-        termAsString = candidateTerm.utf8ToString();
+        termAsString = candidateTerm.utf8ToChars(spare).toString();
         score = distance.getDistance(term.text(), termAsString);
       }
       

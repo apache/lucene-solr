@@ -23,7 +23,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.QParser;
-import org.apache.solr.util.ByteUtils;
 
 import java.util.Map;
 import java.io.IOException;
@@ -54,7 +53,7 @@ public class StrField extends FieldType {
 
   @Override
   public Object toObject(SchemaField sf, BytesRef term) {
-    return ByteUtils.UTF8toUTF16(term);
+    return term.utf8ToString();
   }
 }
 

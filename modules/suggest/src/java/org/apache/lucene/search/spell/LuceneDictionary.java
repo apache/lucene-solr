@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.StringHelper;
@@ -56,6 +57,7 @@ public class LuceneDictionary implements Dictionary {
   final class LuceneIterator implements Iterator<String> {
     private TermsEnum termsEnum;
     private BytesRef pendingTerm;
+    private final CharsRef spare = new CharsRef();
 
     LuceneIterator() {
       try {
@@ -74,7 +76,7 @@ public class LuceneDictionary implements Dictionary {
         return null;
       }
 
-      String result = pendingTerm.utf8ToString();
+      final String result = pendingTerm.utf8ToChars(spare).toString();
 
       try {
         pendingTerm = termsEnum.next();

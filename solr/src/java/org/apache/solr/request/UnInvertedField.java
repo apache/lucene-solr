@@ -24,7 +24,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.StringHelper;
-import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
@@ -33,13 +32,14 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -227,13 +227,13 @@ public class UnInvertedField extends DocTermOrds {
 
       TermsEnum te = getOrdTermsEnum(searcher.getIndexReader());
       if (prefix != null && prefix.length() > 0) {
-        BytesRef prefixBr = new BytesRef(prefix);
+        final BytesRef prefixBr = new BytesRef(prefix);
         if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
           startTerm = numTermsInField;
         } else {
           startTerm = (int) te.ord();
         }
-        prefixBr.append(ByteUtils.bigTerm);
+        prefixBr.append(UnicodeUtil.BIG_TERM);
         if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
           endTerm = numTermsInField;
         } else {
@@ -331,8 +331,7 @@ public class UnInvertedField extends DocTermOrds {
           }
         }
       }
-
-      CharArr spare = new CharArr();
+      final CharsRef charsRef = new CharsRef();
 
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
@@ -408,7 +407,7 @@ public class UnInvertedField extends DocTermOrds {
         for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
           int idx = indirect[i];
           int tnum = (int)sorted[idx];
-          String label = getReadableValue(getTermValue(te, tnum), ft, spare);
+          final String label = getReadableValue(getTermValue(te, tnum), ft, charsRef);
           //System.out.println("  label=" + label);
           res.setName(idx - sortedIdxStart, label);
         }
@@ -428,7 +427,7 @@ public class UnInvertedField extends DocTermOrds {
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
 
-          String label = getReadableValue(getTermValue(te, i), ft, spare);
+          final String label = getReadableValue(getTermValue(te, i), ft, charsRef);
           res.add(label, c);
         }
       }
@@ -582,14 +581,12 @@ public class UnInvertedField extends DocTermOrds {
         }
       }
     }
-
+    final CharsRef charsRef = new CharsRef();
     // add results in index order
-    CharArr spare = new CharArr();
-
     for (i = 0; i < numTermsInField; i++) {
       int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
       if (c == 0) continue;
-      String label = getReadableValue(getTermValue(te, i), ft, spare);
+      String label = getReadableValue(getTermValue(te, i), ft, charsRef);
       // TODO: we should avoid this re-parse
       Double value = Double.parseDouble(label);
 
@@ -621,14 +618,8 @@ public class UnInvertedField extends DocTermOrds {
 
   }
 
-  String getReadableValue(BytesRef termval, FieldType ft, CharArr spare) {
-    if (spare == null) {
-      spare = new CharArr();
-    } else {
-      spare.reset();
-    }
-    ft.indexedToReadable(termval, spare);
-    return spare.toString();    
+  String getReadableValue(BytesRef termval, FieldType ft, CharsRef charsRef) {
+    return ft.indexedToReadable(termval, charsRef).toString();
   }
 
   /** may return a reused BytesRef */

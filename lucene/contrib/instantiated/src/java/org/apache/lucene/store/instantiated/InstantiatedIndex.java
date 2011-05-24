@@ -41,6 +41,7 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 
 /**
  * Represented as a coupled graph of class instances, this
@@ -228,12 +229,13 @@ public class InstantiatedIndex
     if (fieldsC != null) {
       FieldsEnum fieldsEnum = fieldsC.iterator();
       String field;
+      final CharsRef spare = new CharsRef();
       while((field = fieldsEnum.next()) != null) {
         if (fields == null || fields.contains(field)) {
           TermsEnum termsEnum = fieldsEnum.terms();
           BytesRef text;
           while((text = termsEnum.next()) != null) {
-            String termText = text.utf8ToString();
+            String termText = text.utf8ToChars(spare).toString();
             InstantiatedTerm instantiatedTerm = new InstantiatedTerm(field, termText);
             final long totalTermFreq = termsEnum.totalTermFreq();
             if (totalTermFreq != -1) {

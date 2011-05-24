@@ -68,6 +68,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.UnicodeUtil;
@@ -1631,7 +1632,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testAllUnicodeChars() throws Throwable {
 
     BytesRef utf8 = new BytesRef(10);
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    CharsRef utf16 = new CharsRef(10);
     char[] chars = new char[2];
     for(int ch=0;ch<0x0010FFFF;ch++) {
 
@@ -1654,7 +1655,7 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals("codepoint " + ch, s1, s2);
 
       UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
-      assertEquals("codepoint " + ch, s1, new String(utf16.result, 0, utf16.length));
+      assertEquals("codepoint " + ch, s1, new String(utf16.chars, 0, utf16.length));
 
       byte[] b = s1.getBytes("UTF-8");
       assertEquals(utf8.length, b.length);
@@ -1721,7 +1722,7 @@ public class TestIndexWriter extends LuceneTestCase {
     char[] expected = new char[20];
 
     BytesRef utf8 = new BytesRef(20);
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    CharsRef utf16 = new CharsRef(20);
 
     int num = 100000 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
@@ -1738,62 +1739,7 @@ public class TestIndexWriter extends LuceneTestCase {
       UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals(utf16.length, 20);
       for(int i=0;i<20;i++)
-        assertEquals(expected[i], utf16.result[i]);
-    }
-  }
-
-  // LUCENE-510
-  public void testIncrementalUnicodeStrings() throws Throwable {
-    char[] buffer = new char[20];
-    char[] expected = new char[20];
-
-    BytesRef utf8 = new BytesRef(new byte[20]);
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
-    UnicodeUtil.UTF16Result utf16a = new UnicodeUtil.UTF16Result();
-
-    boolean hasIllegal = false;
-    byte[] last = new byte[60];
-
-    int num = 100000 * RANDOM_MULTIPLIER;
-    for (int iter = 0; iter < num; iter++) {
-
-      final int prefix;
-
-      if (iter == 0 || hasIllegal)
-        prefix = 0;
-      else
-        prefix = nextInt(20);
-
-      hasIllegal = fillUnicode(buffer, expected, prefix, 20-prefix);
-
-      UnicodeUtil.UTF16toUTF8(buffer, 0, 20, utf8);
-      if (!hasIllegal) {
-        byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
-        assertEquals(b.length, utf8.length);
-        for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.bytes[i]);
-      }
-
-      int bytePrefix = 20;
-      if (iter == 0 || hasIllegal)
-        bytePrefix = 0;
-      else
-        for(int i=0;i<20;i++)
-          if (last[i] != utf8.bytes[i]) {
-            bytePrefix = i;
-            break;
-          }
-      System.arraycopy(utf8.bytes, 0, last, 0, utf8.length);
-
-      UnicodeUtil.UTF8toUTF16(utf8.bytes, bytePrefix, utf8.length-bytePrefix, utf16);
-      assertEquals(20, utf16.length);
-      for(int i=0;i<20;i++)
-        assertEquals(expected[i], utf16.result[i]);
-
-      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16a);
-      assertEquals(20, utf16a.length);
-      for(int i=0;i<20;i++)
-        assertEquals(expected[i], utf16a.result[i]);
+        assertEquals(expected[i], utf16.chars[i]);
     }
   }
 

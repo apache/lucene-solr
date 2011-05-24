@@ -25,6 +25,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.BytesRef;
 
@@ -42,6 +43,7 @@ public class HighFrequencyDictionary implements Dictionary {
   private IndexReader reader;
   private String field;
   private float thresh;
+  private final CharsRef spare = new CharsRef();
 
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
@@ -89,7 +91,7 @@ public class HighFrequencyDictionary implements Dictionary {
       }
       hasNextCalled = false;
 
-      return (actualTerm != null) ? actualTerm.utf8ToString() : null;
+      return (actualTerm != null) ? actualTerm.utf8ToChars(spare).toString() : null;
     }
 
     public boolean hasNext() {

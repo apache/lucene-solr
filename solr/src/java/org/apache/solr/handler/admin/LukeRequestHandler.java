@@ -46,6 +46,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.CharFilterFactory;
@@ -232,6 +233,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   
   private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader, IndexSchema schema ) throws IOException
   { 
+    final CharsRef spare = new CharsRef();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for( Object o : doc.getFields() ) {
       Fieldable fieldable = (Fieldable)o;
@@ -265,7 +267,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
             for( int i=0; i<v.size(); i++ ) {
-              tfv.add( v.getTerms()[i].utf8ToString(), v.getTermFrequencies()[i] );
+              tfv.add( v.getTerms()[i].utf8ToChars(spare).toString(), v.getTermFrequencies()[i] );
             }
             f.add( "termVector", tfv );
           }
@@ -624,7 +626,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Map<String,TopTermQueue> getTopTerms( IndexReader reader, Set<String> fields, int numTerms, Set<String> junkWords ) throws Exception 
   {
     Map<String,TopTermQueue> info = new HashMap<String, TopTermQueue>();
-
+    final CharsRef spare = new CharsRef();
     Fields fieldsC = MultiFields.getFields(reader);
     if (fieldsC != null) {
       FieldsEnum fieldsEnum = fieldsC.iterator();
@@ -634,7 +636,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         TermsEnum termsEnum = fieldsEnum.terms();
         BytesRef text;
         while((text = termsEnum.next()) != null) {
-          String t = text.utf8ToString();
+          String t = text.utf8ToChars(spare).toString();
   
           // Compute distinct terms for every field
           TopTermQueue tiq = info.get( field );

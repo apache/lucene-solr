@@ -19,6 +19,7 @@
                  org.apache.lucene.util.AttributeSource,
                  org.apache.lucene.util.Attribute,
                  org.apache.lucene.util.BytesRef,
+                 org.apache.lucene.util.CharsRef,
                  org.apache.lucene.analysis.TokenStream,
                  org.apache.lucene.index.Payload,
                  org.apache.lucene.analysis.CharReader,
@@ -32,8 +33,7 @@
                  org.apache.solr.schema.FieldType,
                  org.apache.solr.schema.SchemaField,
                  org.apache.solr.common.util.XML,
-                 javax.servlet.jsp.JspWriter,java.io.IOException,
-                 org.apache.noggit.CharArr
+                 javax.servlet.jsp.JspWriter,java.io.IOException
                 "%>
 <%@ page import="java.io.Reader"%>
 <%@ page import="java.io.StringReader"%>
@@ -287,9 +287,7 @@
 	  bytes = new BytesRef(spare);
       rawText = (token.hasAttribute(CharTermAttribute.class)) ?
         token.getAttribute(CharTermAttribute.class).toString() : null;
-      final CharArr textBuf = new CharArr(bytes.length);
-      ft.indexedToReadable(bytes, textBuf);
-      text = textBuf.toString();
+      text = ft.indexedToReadable(bytes, new CharsRef()).toString();
       token.reflectWith(new AttributeReflector() {
         public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
           // leave out position and raw term
