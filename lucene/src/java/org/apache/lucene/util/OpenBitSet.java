@@ -79,11 +79,15 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   protected long[] bits;
   protected int wlen;   // number of words (elements) used in the array
 
+  // Used only for assert:
+  private long numBits;
+
   /** Constructs an OpenBitSet large enough to hold numBits.
    *
    * @param numBits
    */
   public OpenBitSet(long numBits) {
+    this.numBits = numBits;
     bits = new long[bits2words(numBits)];
     wlen = bits.length;
   }
@@ -108,6 +112,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   public OpenBitSet(long[] bits, int numWords) {
     this.bits = bits;
     this.wlen = numWords;
+    this.numBits = wlen * 64;
   }
   
   @Override
@@ -166,6 +171,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size
    */
   public boolean fastGet(int index) {
+    assert index >= 0 && index < numBits;
     int i = index >> 6;               // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
@@ -190,6 +196,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public boolean fastGet(long index) {
+    assert index >= 0 && index < numBits;
     int i = (int)(index >> 6);               // div 64
     int bit = (int)index & 0x3f;           // mod 64
     long bitmask = 1L << bit;
@@ -213,6 +220,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size
    */
   public int getBit(int index) {
+    assert index >= 0 && index < numBits;
     int i = index >> 6;                // div 64
     int bit = index & 0x3f;            // mod 64
     return ((int)(bits[i]>>>bit)) & 0x01;
@@ -241,6 +249,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   * The index should be less than the OpenBitSet size.
   */
   public void fastSet(int index) {
+    assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
     int bit = index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -251,6 +260,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   * The index should be less than the OpenBitSet size.
   */
   public void fastSet(long index) {
+    assert index >= 0 && index < numBits;
     int wordNum = (int)(index >> 6);
     int bit = (int)index & 0x3f;
     long bitmask = 1L << bit;
@@ -292,6 +302,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
       ensureCapacity(index+1);
       wlen = wordNum+1;
     }
+    numBits = Math.max(numBits, index+1);
     return wordNum;
   }
 
@@ -300,6 +311,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public void fastClear(int index) {
+    assert index >= 0 && index < numBits;
     int wordNum = index >> 6;
     int bit = index & 0x03f;
     long bitmask = 1L << bit;
@@ -317,6 +329,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public void fastClear(long index) {
+    assert index >= 0 && index < numBits;
     int wordNum = (int)(index >> 6); // div 64
     int bit = (int)index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -411,6 +424,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public boolean getAndSet(int index) {
+    assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
     int bit = index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -423,6 +437,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public boolean getAndSet(long index) {
+    assert index >= 0 && index < numBits;
     int wordNum = (int)(index >> 6);      // div 64
     int bit = (int)index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -435,6 +450,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public void fastFlip(int index) {
+    assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
     int bit = index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -445,6 +461,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public void fastFlip(long index) {
+    assert index >= 0 && index < numBits;
     int wordNum = (int)(index >> 6);   // div 64
     int bit = (int)index & 0x3f;       // mod 64
     long bitmask = 1L << bit;
@@ -463,6 +480,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public boolean flipAndGet(int index) {
+    assert index >= 0 && index < numBits;
     int wordNum = index >> 6;      // div 64
     int bit = index & 0x3f;     // mod 64
     long bitmask = 1L << bit;
@@ -474,6 +492,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * The index should be less than the OpenBitSet size.
    */
   public boolean flipAndGet(long index) {
+    assert index >= 0 && index < numBits;
     int wordNum = (int)(index >> 6);   // div 64
     int bit = (int)index & 0x3f;       // mod 64
     long bitmask = 1L << bit;
@@ -670,6 +689,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   public void union(OpenBitSet other) {
     int newLen = Math.max(wlen,other.wlen);
     ensureCapacityWords(newLen);
+    numBits = Math.max(other.numBits, numBits);
 
     long[] thisArr = this.bits;
     long[] otherArr = other.bits;
@@ -698,6 +718,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   public void xor(OpenBitSet other) {
     int newLen = Math.max(wlen,other.wlen);
     ensureCapacityWords(newLen);
+    numBits = Math.max(other.numBits, numBits);
 
     long[] thisArr = this.bits;
     long[] otherArr = other.bits;
