@@ -341,6 +341,9 @@ Bug Fixes
   set to true and no index segments have been changed, commit cannot trigger reload
   external file). (koji)
 
+* SOLR-2539: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
+  (Tom Liu via yonik)
+
 
 Other Changes
 ----------------------
