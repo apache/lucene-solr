@@ -20,6 +20,8 @@ package org.apache.solr.core;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
@@ -93,6 +95,7 @@ public final class SolrCore implements SolrInfoMBean {
   private IndexDeletionPolicyWrapper solrDelPolicy;
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
+  private final CodecProvider codecProvider;
 
   public long getStartTime() { return startTime; }
 
@@ -330,6 +333,7 @@ public final class SolrCore implements SolrInfoMBean {
       indexReaderFactory = new StandardIndexReaderFactory();
     } 
     this.indexReaderFactory = indexReaderFactory;
+    this.indexReaderFactory.setCodecProvider(codecProvider);
   }
   
   // protect via synchronized(SolrCore.class)
@@ -366,7 +370,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy, codecProvider);
         writer.close();
       }
 
@@ -493,6 +497,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     initDeletionPolicy();
 
+    this.codecProvider = initCodecProvider(solrConfig, schema);
     initIndex();
 
     initWriters();
@@ -555,6 +560,19 @@ public final class SolrCore implements SolrInfoMBean {
     resourceLoader.inform(infoRegistry);
   }
 
+  private CodecProvider initCodecProvider(SolrConfig solrConfig, IndexSchema schema) {
+    final PluginInfo info = solrConfig.getPluginInfo(CodecProviderFactory.class.getName());
+    CodecProvider cp;
+    if (info != null) {
+      CodecProviderFactory factory = (CodecProviderFactory) schema.getResourceLoader().newInstance(info.className);
+      factory.init(info.initArgs);
+      cp = factory.create();
+    } else {
+      // make sure we use the default if nothing is configured
+      cp = CodecProvider.getDefault();
+    }
+    return new SchemaCodecProvider(schema, cp);
+  }
 
   /**
    * Load the request processors
@@ -1617,6 +1635,10 @@ public final class SolrCore implements SolrInfoMBean {
       lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
     }
     return lst;
+  }
+  
+  public CodecProvider getCodecProvider() {
+    return codecProvider;
   }
 
 }

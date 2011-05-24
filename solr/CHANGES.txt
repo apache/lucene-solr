@@ -144,6 +144,11 @@ New Features
     fq={!join from=name to=parent}eyes:blue
   (yonik)
 
+* SOLR-1942: Added the ability to select codec per fieldType in schema.xml
+  as well as support custom CodecProviders in solrconfig.xml.
+  NOTE: IndexReaderFactory now has a codecProvider that should be passed
+  to IndexReader.open (in the case you have a custom IndexReaderFactory).
+  (simonw via rmuir)
 
 
 Optimizations

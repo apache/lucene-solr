@@ -1383,6 +1383,11 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     @Override
+    public synchronized boolean hasFieldCodec(String name) {
+      return true; // we have a codec for every field
+    }
+
+    @Override
     public synchronized String toString() {
       return "RandomCodecProvider: " + previousMappings.toString();
     }

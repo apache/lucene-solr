@@ -167,6 +167,12 @@ public abstract class FieldType extends FieldProperties {
       initArgs.remove("positionIncrementGap");
     }
 
+    final String codec = initArgs.get("codec");
+    if (codec != null) {
+      this.codec = codec;
+      initArgs.remove("codec");
+    }
+
     if (initArgs.size() > 0) {
       throw new RuntimeException("schema fieldtype " + typeName
               + "("+ this.getClass().getName() + ")"
@@ -535,6 +541,15 @@ public abstract class FieldType extends FieldProperties {
    */
   public void setSimilarity(Similarity similarity) {
     this.similarity = similarity;
+  }
+  
+  /**
+   * The codec ID used for this field type
+   */
+  protected String codec;
+  
+  public String getCodec() {
+    return codec;
   }
   
   /**

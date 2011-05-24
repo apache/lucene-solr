@@ -88,6 +88,15 @@ public class CodecProvider {
     return codec;
   }
 
+  /**
+   * Returns <code>true</code> iff a codec with the given name is registered
+   * @param name codec name
+   * @return <code>true</code> iff a codec with the given name is registered, otherwise <code>false</code>.
+   */
+  public synchronized boolean isCodecRegistered(String name) {
+    return codecs.containsKey(name);
+  }
+
   public SegmentInfosWriter getSegmentInfosWriter() {
     return infosWriter;
   }
@@ -143,6 +152,14 @@ public class CodecProvider {
       return defaultFieldCodec;
     }
     return codec;
+  }
+
+  /**
+   * Returns <code>true</code> if this provider has a Codec registered for this
+   * field.
+   */
+  public synchronized boolean hasFieldCodec(String name) {
+    return perFieldMap.containsKey(name);
   }
 
   /**

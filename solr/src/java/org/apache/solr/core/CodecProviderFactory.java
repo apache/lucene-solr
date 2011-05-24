@@ -1,4 +1,5 @@
 package org.apache.solr.core;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,25 +17,16 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * IndexReader.
- * 
- * @see IndexReader#open(Directory)
+ * Factory for plugging in a custom {@link CodecProvider}
  */
-public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
-  /* (non-Javadoc)
-   * @see org.apache.solr.core.IndexReaderFactory#newReader(org.apache.lucene.store.Directory, boolean)
-   */
-  @Override
-  public IndexReader newReader(Directory indexDir, boolean readOnly)
-      throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor, provider);
+public abstract class CodecProviderFactory implements NamedListInitializedPlugin {
+  public void init(NamedList args) {  
   }
+  
+  public abstract CodecProvider create();
 }
