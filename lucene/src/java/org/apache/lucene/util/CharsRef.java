@@ -201,17 +201,14 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
     return new String(chars, offset, length);
   }
 
-  @Override
   public int length() {
     return length;
   }
 
-  @Override
   public char charAt(int index) {
     return chars[offset + index];
   }
 
-  @Override
   public CharSequence subSequence(int start, int end) {
     return new CharsRef(chars, offset + start, offset + end - 1);
   }
