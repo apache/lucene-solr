@@ -85,8 +85,8 @@ public class VectorValueSource extends MultiValueSource {
         }
         @Override
         public void floatVal(int doc, float[] vals) {
-          vals[0] = x.byteVal(doc);
-          vals[1] = y.byteVal(doc);
+          vals[0] = x.floatVal(doc);
+          vals[1] = y.floatVal(doc);
         }
         @Override
         public void doubleVal(int doc, double[] vals) {
