@@ -19,9 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -98,35 +95,11 @@ public class RandomIndexWriter implements Closeable {
    * Adds a Document.
    * @see IndexWriter#addDocument(Document)
    */
-  public void addDocument(final Document doc) throws IOException {
-    if (r.nextInt(5) == 3) {
-      // TODO: maybe, we should simply buffer up added docs
-      // (but we need to clone them), and only when
-      // getReader, commit, etc. are called, we do an
-      // addDocuments?  Would be better testing.
-      final List<Document> theDoc = new ArrayList<Document>(1);
-      theDoc.add(doc);
-      w.addDocuments(theDoc);
-    } else {
-      w.addDocument(doc);
-    }
-    maybeCommit();
-  }
-  
-  public void addDocuments(Collection<Document> docs) throws IOException {
-    w.addDocuments(docs);
-    maybeCommit();
-  }
-
-  public void updateDocuments(Term delTerm, Collection<Document> docs) throws IOException {
-    w.updateDocuments(delTerm, docs);
-    maybeCommit();
-  }
-
-  private void maybeCommit() throws IOException {
+  public void addDocument(Document doc) throws IOException {
+    w.addDocument(doc);
     if (docCount++ == flushAt) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
+        System.out.println("RIW.addDocument: now doing a commit at docCount=" + docCount);
       }
       w.commit();
       flushAt += _TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
@@ -136,20 +109,16 @@ public class RandomIndexWriter implements Closeable {
       }
     }
   }
-
-  /**
-   * Updates a document.
-   * @see IndexWriter#updateDocument(Term, Document)
-   */
-  public void updateDocument(Term t, final Document doc) throws IOException {
-    if (r.nextInt(5) == 3) {
-      final List<Document> theDoc = new ArrayList<Document>(1);
-      theDoc.add(doc);
-      w.updateDocuments(t, theDoc);
-    } else {
-      w.updateDocument(t, doc);
+  
+  public void updateDocument(Term t, Document doc) throws IOException {
+    w.updateDocument(t, doc);
+    if (docCount++ == flushAt) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("RIW.updateDocument: now doing a commit");
+      }
+      w.commit();
+      flushAt += _TestUtil.nextInt(r, 10, 1000);
     }
-    maybeCommit();
   }
   
   public void addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
