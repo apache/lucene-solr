@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;       // javadocs
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
 
@@ -32,6 +33,11 @@ import org.apache.lucene.util.Version;
  * specified field, which has to be single-valued and stored, with string value
  * that represents a float number. Stored fields in the output index remain
  * consistent, i.e. both stored fields and postings are renumbered in sync.
+ *
+ * <p><b>NOTE</b>: this tool is unaware of documents added
+ * atomically via {@link IndexWriter#addDocuments} or {@link
+ * IndexWriter#updateDocuments}, which means it can easily
+ * break up such document groups.
  */
 public class IndexSorter {
   private static final Logger LOG = Logger.getLogger(IndexSorter.class.getName());
