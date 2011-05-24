@@ -306,7 +306,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
       ensureCapacity(index+1);
       wlen = wordNum+1;
     }
-    numBits = Math.max(numBits, index+1);
+    assert (numBits = Math.max(numBits, index+1)) >= 0;
     return wordNum;
   }
 
@@ -693,7 +693,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   public void union(OpenBitSet other) {
     int newLen = Math.max(wlen,other.wlen);
     ensureCapacityWords(newLen);
-    numBits = Math.max(other.numBits, numBits);
+    assert (numBits = Math.max(other.numBits, numBits)) >= 0;
 
     long[] thisArr = this.bits;
     long[] otherArr = other.bits;
@@ -722,7 +722,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   public void xor(OpenBitSet other) {
     int newLen = Math.max(wlen,other.wlen);
     ensureCapacityWords(newLen);
-    numBits = Math.max(other.numBits, numBits);
+    assert (numBits = Math.max(other.numBits, numBits)) >= 0;
 
     long[] thisArr = this.bits;
     long[] otherArr = other.bits;
