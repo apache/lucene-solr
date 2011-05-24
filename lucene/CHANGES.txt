@@ -545,6 +545,9 @@ Build
 * LUCENE-3006: Building javadocs will fail on warnings by default. 
   Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
+* LUCENE-3128: "ant eclipse" creates a .project file for easier Eclipse
+  integration (unless one already exists). (Daniel Serodio via Shai Erera)
+
 Test Cases
 
 * LUCENE-3002: added 'tests.iter.min' to control 'tests.iter' by allowing to 
