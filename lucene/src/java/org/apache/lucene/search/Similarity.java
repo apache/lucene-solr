@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.TermContext;
 
 
@@ -116,14 +117,45 @@ public abstract class Similarity {
   
   public abstract IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException;
   
+  /**
+   * returns a new {@link Similarity.ExactDocScorer}.
+   */
   public abstract ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;
+  
+  /**
+   * returns a new {@link Similarity.SloppyDocScorer}.
+   */
   public abstract SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;
   
+  /**
+   * API for scoring exact queries such as {@link TermQuery} and 
+   * exact {@link PhraseQuery}.
+   * <p>
+   * Term frequencies are integers (the term or phrase's tf)
+   */
   public abstract class ExactDocScorer {
+    /**
+     * Score a single document
+     * @param doc document id
+     * @param freq term frequency
+     * @return document's score
+     */
     public abstract float score(int doc, int freq);
   }
   
+  /**
+   * API for scoring "sloppy" queries such as {@link SpanQuery} and 
+   * sloppy {@link PhraseQuery}.
+   * <p>
+   * Term frequencies are floating point values.
+   */
   public abstract class SloppyDocScorer {
+    /**
+     * Score a single document
+     * @param doc document id
+     * @param freq sloppy term frequency
+     * @return document's score
+     */
     public abstract float score(int doc, float freq);
   }
 }
