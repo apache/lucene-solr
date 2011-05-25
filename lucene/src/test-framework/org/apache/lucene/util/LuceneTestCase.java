@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -135,7 +136,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /** set of directories we created, in afterclass we try to clean these up */
-  static final Set<String> tempDirs = Collections.synchronizedSet(new HashSet<String>());
+  private static final Map<File, StackTraceElement[]> tempDirs = Collections.synchronizedMap(new HashMap<File, StackTraceElement[]>());
 
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
@@ -177,7 +178,7 @@ public abstract class LuceneTestCase extends Assert {
     SETUP,   // test has called setUp()
     RANTEST, // test is running
     TEARDOWN // test has called tearDown()
-  };
+  }
   
   private static class UncaughtExceptionEntry {
     public final Thread thread;
@@ -303,11 +304,20 @@ public abstract class LuceneTestCase extends Assert {
     }
     // clear out any temp directories if we can
     if (!testsFailed) {
-      for (String path : tempDirs) {
+      for (Entry<File, StackTraceElement[]> entry : tempDirs.entrySet()) {
         try {
-          _TestUtil.rmDir(new File(path));
+          _TestUtil.rmDir(entry.getKey());
         } catch (IOException e) {
           e.printStackTrace();
+          System.err.println("path " + entry.getKey() + " allocated from");
+          // first two STE's are Java's
+          StackTraceElement[] elements = entry.getValue();
+          for (int i = 2; i < elements.length; i++) {
+            StackTraceElement ste = elements[i];            
+            // print only our code's stack information
+            if (ste.getClassName().indexOf("org.apache.lucene") == -1) break; 
+            System.err.println("\t" + ste);
+          }
         }
       }
     }
@@ -986,6 +996,11 @@ public abstract class LuceneTestCase extends Assert {
     return d;
   }
   
+  /** Registers a temp file that will be deleted when tests are done. */
+  public static void registerTempFile(File tmpFile) {
+    tempDirs.put(tmpFile.getAbsoluteFile(), Thread.currentThread().getStackTrace());
+  }
+  
   static Directory newDirectoryImpl(Random random, String clazzName) {
     if (clazzName.equals("random"))
       clazzName = randomDirectory(random);
@@ -998,7 +1013,7 @@ public abstract class LuceneTestCase extends Assert {
         final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
-        tempDirs.add(tmpFile.getAbsolutePath());
+        registerTempFile(tmpFile);
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
       }
 

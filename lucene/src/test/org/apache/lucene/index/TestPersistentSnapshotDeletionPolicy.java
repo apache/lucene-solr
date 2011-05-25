@@ -30,8 +30,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPolicy {
+
   // Keep it a class member so that getDeletionPolicy can use it
   private Directory snapshotDir;
+  
+  // so we can close it if called by SDP tests
+  private PersistentSnapshotDeletionPolicy psdp;
   
   @Before
   @Override
@@ -43,15 +47,17 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @After
   @Override
   public void tearDown() throws Exception {
+    if (psdp != null) psdp.close();
     snapshotDir.close();
     super.tearDown();
   }
   
   @Override
   protected SnapshotDeletionPolicy getDeletionPolicy() throws IOException {
+    if (psdp != null) psdp.close();
     snapshotDir.close();
     snapshotDir = newDirectory();
-    return new PersistentSnapshotDeletionPolicy(
+    return psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.CREATE,
         TEST_VERSION_CURRENT);
   }
@@ -173,6 +179,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
      fail("should not have reached here - the snapshots directory should be locked!");
     } catch (LockObtainFailedException e) {
       // expected
+    } finally {
+      psdp.close();
     }
     
     // Reading the snapshots info should succeed though
