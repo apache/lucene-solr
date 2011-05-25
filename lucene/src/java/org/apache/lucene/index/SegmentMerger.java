@@ -113,13 +113,22 @@ final class SegmentMerger {
     return mergedDocs;
   }
 
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file.
+   */
   final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
           throws IOException {
-
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
     for (String file : files) {
+      assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                : ".del file is not allowed in .cfs: " + file;
+      assert !file.substring(file.lastIndexOf('.') + 1).startsWith(IndexFileNames.SEPARATE_NORMS_EXTENSION) 
+                : "separate norms file (.s*) is not allowed in .cfs: " + file;
       cfsWriter.addFile(file);
     }
     
