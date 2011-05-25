@@ -122,17 +122,19 @@ public class ExtractReuters {
 
   public static void main(String[] args) {
     if (args.length != 2) {
-      printUsage();
+      usage("Wrong number of arguments ("+args.length+")");
+      return;
     }
     File reutersDir = new File(args[0]);
     if (!reutersDir.exists()) {
-      printUsage();
+      usage("Cannot find Path to Reuters SGM files ("+reutersDir+")");
       return;
     }
     
     // First, extract to a tmp directory and only if everything succeeds, rename
     // to output directory.
-    File outputDir = new File(args[1] + "-tmp");
+    File outputDir = new File(args[1]);
+    outputDir = new File(outputDir.getAbsolutePath() + "-tmp");
     outputDir.mkdirs();
     ExtractReuters extractor = new ExtractReuters(reutersDir, outputDir);
     extractor.extract();
@@ -140,8 +142,8 @@ public class ExtractReuters {
     outputDir.renameTo(new File(args[1]));
   }
 
-  private static void printUsage() {
-    System.err.println("Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractReuters <Path to Reuters SGM files> <Output Path>");
+  private static void usage(String msg) {
+    System.err.println("Usage: "+msg+" :: java -cp <...> org.apache.lucene.benchmark.utils.ExtractReuters <Path to Reuters SGM files> <Output Path>");
   }
   
 }
