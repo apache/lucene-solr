@@ -54,8 +54,8 @@ public class _TestUtil {
   /** Returns temp dir, containing String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    File f = new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
-    LuceneTestCase.tempDirs.add(f.getAbsolutePath());
+    File f = new File(LuceneTestCase.TEMP_DIR, desc + "." + LuceneTestCase.random.nextLong());
+    LuceneTestCase.registerTempFile(f);
     return f;
   }
 
@@ -91,7 +91,7 @@ public class _TestUtil {
     rmDir(destDir);
     
     destDir.mkdir();
-    LuceneTestCase.tempDirs.add(destDir.getAbsolutePath());
+    LuceneTestCase.registerTempFile(destDir);
     
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();

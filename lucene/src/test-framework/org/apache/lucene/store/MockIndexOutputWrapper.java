@@ -45,19 +45,22 @@ public class MockIndexOutputWrapper extends IndexOutput {
 
   @Override
   public void close() throws IOException {
-    dir.maybeThrowDeterministicException();
-    delegate.close();
-    if (dir.trackDiskUsage) {
-      // Now compute actual disk usage & track the maxUsedSize
-      // in the MockDirectoryWrapper:
-      long size = dir.getRecomputedActualSizeInBytes();
-      if (size > dir.maxUsedSize) {
-        dir.maxUsedSize = size;
+    try {
+      dir.maybeThrowDeterministicException();
+    } finally {
+      delegate.close();
+      if (dir.trackDiskUsage) {
+        // Now compute actual disk usage & track the maxUsedSize
+        // in the MockDirectoryWrapper:
+        long size = dir.getRecomputedActualSizeInBytes();
+        if (size > dir.maxUsedSize) {
+          dir.maxUsedSize = size;
+        }
       }
-    }
-    synchronized(dir) {
-      dir.openFileHandles.remove(this);
-      dir.openFilesForWrite.remove(name);
+      synchronized(dir) {
+        dir.openFileHandles.remove(this);
+        dir.openFilesForWrite.remove(name);
+      }
     }
   }
 
