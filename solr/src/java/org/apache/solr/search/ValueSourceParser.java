@@ -39,7 +39,6 @@ import org.apache.solr.search.function.DoubleConstValueSource;
 import org.apache.solr.search.function.DualFloatFunction;
 import org.apache.solr.search.function.LinearFloatFunction;
 import org.apache.solr.search.function.LiteralValueSource;
-import org.apache.solr.search.function.MaxFloatFunction;
 import org.apache.solr.search.function.MultiValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ProductFloatFunction;
@@ -150,14 +149,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         float slope = fp.parseFloat();
         float intercept = fp.parseFloat();
         return new LinearFloatFunction(source, slope, intercept);
-      }
-    });
-    addParser("max", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValueSource();
-        float val = fp.parseFloat();
-        return new MaxFloatFunction(source, val);
       }
     });
     addParser("recip", new ValueSourceParser() {
@@ -501,6 +492,18 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public double func(int doc, DocValues a, DocValues b) {
         return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
+    addParser(new Double2Parser("max") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.max(a.doubleVal(doc), b.doubleVal(doc));
+      }
+    });
+    addParser(new Double2Parser("min") {
+      @Override
+      public double func(int doc, DocValues a, DocValues b) {
+        return Math.min(a.doubleVal(doc), b.doubleVal(doc));
       }
     });
 
