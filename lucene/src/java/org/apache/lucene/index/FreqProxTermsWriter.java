@@ -57,9 +57,10 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
 
-    TermsHash termsHash = null;
-
-    /*
+    try {
+      TermsHash termsHash = null;
+      
+      /*
     Current writer chain:
       FieldsConsumer
         -> IMPL: FormatPostingsTermsDictWriter
@@ -69,36 +70,38 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
                 -> IMPL: FormatPostingsDocsWriter
                   -> PositionsConsumer
                     -> IMPL: FormatPostingsPositionsWriter
-    */
-
-    for (int fieldNumber = 0; fieldNumber < numAllFields; fieldNumber++) {
-      final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
-
-      final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
-
-      // Aggregate the storePayload as seen by the same
-      // field across multiple threads
-      if (!fieldInfo.omitTermFreqAndPositions) {
-        fieldInfo.storePayloads |= fieldWriter.hasPayloads;
+       */
+      
+      for (int fieldNumber = 0; fieldNumber < numAllFields; fieldNumber++) {
+        final FieldInfo fieldInfo = allFields.get(fieldNumber).fieldInfo;
+        
+        final FreqProxTermsWriterPerField fieldWriter = allFields.get(fieldNumber);
+        
+        // Aggregate the storePayload as seen by the same
+        // field across multiple threads
+        if (!fieldInfo.omitTermFreqAndPositions) {
+          fieldInfo.storePayloads |= fieldWriter.hasPayloads;
+        }
+        
+        // If this field has postings then add them to the
+        // segment
+        fieldWriter.flush(fieldInfo.name, consumer, state);
+        
+        TermsHashPerField perField = fieldWriter.termsHashPerField;
+        assert termsHash == null || termsHash == perField.termsHash;
+        termsHash = perField.termsHash;
+        int numPostings = perField.bytesHash.size();
+        perField.reset();
+        perField.shrinkHash(numPostings);
+        fieldWriter.reset();
       }
-
-      // If this field has postings then add them to the
-      // segment
-      fieldWriter.flush(fieldInfo.name, consumer, state);
-
-      TermsHashPerField perField = fieldWriter.termsHashPerField;
-      assert termsHash == null || termsHash == perField.termsHash;
-      termsHash = perField.termsHash;
-      int numPostings = perField.bytesHash.size();
-      perField.reset();
-      perField.shrinkHash(numPostings);
-      fieldWriter.reset();
+      
+      if (termsHash != null) {
+        termsHash.reset();
+      }
+    } finally {
+      consumer.close();
     }
-
-    if (termsHash != null) {
-      termsHash.reset();
-    }
-    consumer.close();
   }
 
   BytesRef payload;
