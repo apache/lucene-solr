@@ -33,15 +33,16 @@
             
             <a href="./"><span>Apache SOLR</span></a>
 
+            <div id="wip-notice">
+                <a href="https://issues.apache.org/jira/browse/SOLR-2399">
+                    This UI is currently under development.<br>
+                    Bugs/Requests/Suggestions: <span>SOLR-2399</span>
+                </a>
+            </div>
+            
             <p id="environment">&nbsp;</p>
 
         </div>
-     
-<div>
-  NOTE: This interface is work in progress.  It works best in Chrome.  
-  Use <a href="admin" style="color:blue;">the old admin interface</a> if there are problems with this one.
-  <a style="color:blue;" href="https://issues.apache.org/jira/browse/SOLR-2399">SOLR-2399</a>
-</div>
         
         <div id="main" class="clearfix">
         

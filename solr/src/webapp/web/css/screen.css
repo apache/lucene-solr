@@ -84,6 +84,30 @@ ul
     display: none;
 }
 
+
+#header #wip-notice
+{
+    left: 212px;
+    position: absolute;
+    top: 10px;
+}
+
+#header #wip-notice a
+{
+    background-color: #eceffa;
+    background-image: url( ../img/ico/information-button.png );
+    background-position: 8px 7px;
+    border: 1px solid #4465cb;
+    display: block;
+    padding: 5px 10px;
+    padding-left: 31px;
+}
+
+#header #wip-notice span
+{
+    border-bottom: 1px solid #c0c0c0;
+}
+
 #main
 {
     background-image: url( ../img/div.gif );
