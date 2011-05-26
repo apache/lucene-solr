@@ -1,0 +1,2925 @@
+*
+{
+    background-repeat: no-repeat;
+    margin: 0;
+    padding: 0;
+}
+
+body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
+{
+    color: #333;
+    font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+
+body
+{
+    padding: 20px;
+    text-align: center;
+}
+
+a, button
+{
+    cursor: pointer;
+}
+
+button, input, select, textarea
+{
+    border: 1px solid #c0c0c0;
+    padding: 2px;
+}
+
+a
+{
+    text-decoration: none;
+}
+
+pre
+{
+    color: #333;
+    text-align: left;
+}
+
+ul
+{
+    list-style: none;
+}
+
+.clearfix:after { clear: both; content: "."; display: block; font-size: 0; height: 0; visibility: hidden; }
+.clearfix       { display: block; }
+
+.loader
+{
+    background-image: url( ../img/loader.gif ) !important;
+}
+
+.loader-light
+{
+    background-image: url( ../img/loader-light.gif ) !important;
+}
+
+#wrapper
+{
+    margin: 0 auto;
+    margin-bottom: 30px;
+    text-align: left;
+    width: 1002px;
+}
+
+#header
+{
+    padding-bottom: 10px;
+    position: relative;
+}
+
+#header a
+{
+    background-image: url( ../img/solr.png );
+    display: block;
+    height: 78px;
+    width: 200px;
+}
+
+#header a span
+{
+    display: none;
+}
+
+#main
+{
+    background-image: url( ../img/div.gif );
+    background-position: 200px 0;
+    background-repeat: repeat-y;
+    border: 1px solid #c0c0c0;
+    min-height: 600px;
+    position: relative;
+}
+
+#meta
+{
+    position: absolute;
+    bottom: -26px;
+    right: 0;
+}
+
+#meta li
+{
+    float: left;
+}
+
+#meta li a
+{
+    background-position: 10px 50%;
+    display: block;
+    height: 25px;
+    line-height: 25px;
+    padding-left: 31px;
+    padding-right: 10px;
+}
+
+#meta li a:hover
+{
+    background-color: #f0f0f0;
+}
+
+#meta .documentation a { background-image: url( ../img/ico/document-text.png ); }
+#meta .issues a { background-image: url( ../img/ico/bug.png ); }
+#meta .irc a { background-image: url( ../img/ico/users.png ); }
+#meta .mailinglist a { background-image: url( ../img/ico/mail.png ); }
+#meta .wiki-query-syntax a { background-image: url( ../img/ico/script-code.png ); }
+
+#environment
+{
+    background-image: url( ../img/ico/box.png );
+    background-position: 10px 50%;
+    border: 1px solid #c0c0c0;
+    display: none;
+    font-weight: bold;
+    padding: 5px 10px;
+    padding-left: 31px;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+#environment.prod
+{
+    background-color: #c37f7f;
+    border-color: #b15757;
+    color: #fff;
+}
+
+#environment.test
+{
+    background-color: #f5f5b2;
+    border-color: #e4e433;
+}
+
+#environment.dev
+{
+    background-color: #cce7cc;
+    border-color: #66b866;
+}
+
+#menu-wrapper
+{
+    float: left;
+    width: 201px;
+}
+
+#menu p.loader
+{
+    background-position: 5px 50%;
+    color: #c0c0c0;
+    margin-top: 5px;
+    padding-left: 26px;
+}
+
+#menu a
+{
+    display: block;
+    padding: 4px 2px;
+}
+
+#menu .active
+{
+    background-color: #fafafa;
+}
+
+#menu p a
+{
+    background-position: 97% 50%;
+    background-image: url( ../img/ico/status-offline.png );
+    padding-left: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#menu p a:hover
+{
+    background-color: #f0f0f0;
+}
+
+#menu .active p a
+{
+    background-color: #c0c0c0; /* #a5a5a6 */
+    font-weight: bold;
+}
+
+#menu p a small
+{
+    color: #b5b5b5;
+    font-weight: normal;
+}
+
+#menu p a small span.txt
+{
+    display: none;
+}
+
+#menu p a small:hover span.txt
+{
+    display: inline;
+}
+
+#menu .busy
+{
+    border-right-color: #f6f5d9;
+}
+
+#menu .busy p a
+{
+    background-color: #f6f5d9;
+    background-image: url( ../img/ico/status-away.png );
+}
+
+#menu .offline
+{
+    border-right-color: #eccfcf;
+}
+
+#menu .offline p a
+{
+    background-color: #eccfcf;
+    background-image: url( ../img/ico/status-busy.png );
+}
+
+#menu .online
+{
+    border-right-color: #cfecd3;
+}
+
+#menu .online p a
+{
+    background-color: #cfecd3;
+    background-image: url( ../img/ico/status.png );
+}
+
+#menu .ping small
+{
+    color: #000
+}
+
+#menu li
+{
+    border-bottom: 1px solid #c0c0c0;
+    /*border-right: 1px solid #f0f0f0;*/
+}
+
+#menu li.optional
+{
+    display: none;
+}
+
+#menu li:last-child
+{
+    border-bottom: 0;
+}
+
+#menu ul ul
+{
+    display: none;
+    padding-top: 5px;
+    padding-bottom: 10px;
+}
+
+#menu ul .active ul
+{
+    display: block;
+}
+
+#menu ul ul li
+{
+    border-bottom: 0;
+    /*border-right: 0;*/
+    border-right: 1px solid #f0f0f0;
+}
+
+#menu ul ul li a
+{
+    background-position: 7px 50%;
+    border-bottom: 1px solid #f0f0f0;
+    color: #bbb;
+    margin-left: 15px;
+    padding-left: 26px;
+}
+
+#menu ul ul li:last-child a
+{
+    border-bottom: 0;
+}
+
+#menu ul ul li a:hover
+{
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+#menu ul ul li.active
+{
+    background-color: #fff;
+    border-right-color: #fff;
+}
+
+#menu ul ul li.active a
+{
+    color: #333;
+}
+
+#menu ul ul li.active a:hover
+{
+    background-color: transparent;
+}
+
+#menu .global p a
+{
+    background-position: 5px 50%;
+    padding-left: 26px;
+}
+
+#menu #index p a
+{
+    background-image: url( ../img/ico/dashboard.png );
+}
+
+#menu #logging p a
+{
+    background-image: url( ../img/ico/inbox-document-text.png );
+}
+
+#menu #java-properties p a
+{
+    background-image: url( ../img/ico/jar.png );
+}
+
+#menu #threads p a
+{
+    background-image: url( ../img/ico/ui-accordion.png );
+}
+
+#menu #cores p a
+{
+    background-image: url( ../img/ico/databases.png );
+}
+
+#menu #cloud p a
+{
+    background-image: url( ../img/ico/network-cloud.png );
+}
+
+#menu .query a { background-image: url( ../img/ico/magnifier.png ); }
+#menu .schema a { background-image: url( ../img/ico/table.png ); }
+#menu .config a { background-image: url( ../img/ico/gear.png ); }
+#menu .analysis a { background-image: url( ../img/ico/funnel.png ); }
+#menu .schema-browser a { background-image: url( ../img/ico/book-open-text.png ); }
+#menu .stats a { background-image: url( ../img/ico/chart.png ); }
+#menu .replication a { background-image: url( ../img/ico/node.png ); }
+#menu .distribution a { background-image: url( ../img/ico/node-select.png ); }
+#menu .ping a { background-image: url( ../img/ico/system-monitor.png ); }
+#menu .logging a { background-image: url( ../img/ico/inbox-document-text.png ); }
+#menu .plugins a { background-image: url( ../img/ico/block.png ); }
+#menu .dataimport a { background-image: url( ../img/ico/document-import.png ); }
+
+#content-wrapper
+{
+    float: right;
+    width: 799px;
+}
+
+#content
+{
+    padding: 10px;
+}
+
+#content.single
+{
+    padding: 0;
+}
+
+#content iframe
+{
+    border: 0;
+    display: block;
+    min-height: 400px;
+    width: 100%;
+}
+
+#content .block
+{
+    margin-bottom: 10px;
+}
+
+#content .block h2
+{
+    background-color: #fafafa;
+    background-position: 5px 50%;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: bold;
+    padding: 5px;
+    padding-left: 26px;
+}
+
+#content .block.disabled,
+#content .block.disabled h2
+{
+    color: #c0c0c0;
+}
+
+#content .block .message,
+#content .block .content
+{
+    padding: 5px;
+}
+
+#content .block .message
+{
+    display: none;
+}
+
+/* dashboard */
+
+#content #dashboard .block
+{
+    width: 49%;
+}
+
+#content #dashboard #statistics
+{
+    float: left;
+}
+
+#content #dashboard #statistics dt,
+#content #dashboard #statistics dd
+{
+    display: block;
+    float: left;
+}
+
+#content #dashboard #statistics dt
+{
+    clear: left;
+    margin-right: 2%;
+    text-align: right;
+    width: 23%;
+}
+
+#content #dashboard #statistics dd
+{
+    width: 74%;
+}
+
+#content #dashboard #statistics .index_optimized
+{
+    margin-top: 10px;
+}
+
+#content #dashboard #statistics .ico
+{
+    background-image: url( ../img/ico/slash.png );
+    height: 20px;
+}
+
+#content #dashboard #statistics .ico.ico-1
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #dashboard #statistics .ico span
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_optimized.value a
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_optimized.value.ico-0 a
+{
+    background-color: #f0f0f0;
+    background-image: url( ../img/ico/hammer-screwdriver.png );
+    background-position: 5px 50%;
+    border: 1px solid #c0c0c0;
+    display: block;
+    float: left;
+    margin-left: 50px;
+    padding: 1px 5px;
+    padding-left: 26px;
+}
+
+#content #dashboard #statistics .index_has-deletions
+{
+    display: none;
+}
+
+#content #dashboard #statistics .index_has-deletions.value.ico-0
+{
+    background-image: url( ../img/ico/tick-red.png );
+}
+
+#content #dashboard #replication
+{
+    float: left;
+}
+
+#content #dashboard #replication .is-replicating
+{
+    background-position: 99% 50%;
+    display: block;
+}
+
+#content #dashboard #replication.is-master .slave
+{
+    display: none;
+}
+
+#content #dashboard #replication table
+{
+    border-collapse: collapse;
+}
+
+#content #dashboard #replication table th,
+#content #dashboard #replication table td
+{
+    border: 1px solid #f0f0f0;
+    padding: 2px 5px;
+}
+
+#content #dashboard #replication table thead td
+{
+    border: 0;
+}
+
+#content #dashboard #replication table thead th,
+#content #dashboard #replication table tbody td
+{
+    border-right: 0;
+}
+
+#content #dashboard #replication table thead th
+{
+    border-top: 0;
+    font-weight: bold;
+}
+
+#content #dashboard #replication table tbody th,
+#content #dashboard #replication table tbody td
+{
+    border-bottom: 0;
+    text-align: right;
+}
+
+#content #dashboard #replication table tbody th
+{
+    border-left: 0;
+}
+
+#content #dashboard #replication table tbody th,
+#content #dashboard #replication dt
+{
+    width: 100px;
+}
+
+#content #dashboard #replication dl
+{
+    display: none;
+    margin-top: 10px;
+}
+
+#content #dashboard #replication dt,
+#content #dashboard #replication dd
+{
+    display: block;
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+#content #dashboard #replication dt
+{
+    border-right: 1px solid #f0f0f0;
+    float: left;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-right: 3px;
+    text-align: right;
+}
+
+#content #dashboard #dataimport
+{
+    background-color: #0ff;
+    float: right;
+}
+
+
+#content #dashboard #admin-extra
+{
+    float: right;
+}
+
+#content #dashboard #system h2 { background-image: url( ../img/ico/server.png ); }
+#content #dashboard #statistics h2 { background-image: url( ../img/ico/chart.png ); }
+#content #dashboard #replication h2 { background-image: url( ../img/ico/node.png ); }
+#content #dashboard #replication.is-master h2 { background-image: url( ../img/ico/node-master.png ); }
+#content #dashboard #replication.is-slave h2 { background-image: url( ../img/ico/node-slave.png ); }
+#content #dashboard #dataimport h2 { background-image: url( ../img/ico/document-import.png ); }
+#content #dashboard #admin-extra h2 { background-image: url( ../img/ico/plus-button.png ); }
+
+/* analysis */
+
+#content #analysis .settings
+{
+    clear: both;
+    padding-top: 10px;
+}
+
+#content #analysis .settings select.loader
+{
+    background-position: 3px 50%;
+    padding-left: 21px;
+}
+
+#content #analysis .settings select optgroup
+{
+    font-style: normal;
+    padding: 5px;
+}
+
+#content #analysis .settings select option
+{
+    padding-left: 10px;
+}
+
+#content #analysis .settings div
+{
+    float: right;
+    width: 49%;
+}
+
+#content #analysis .settings button
+{
+    float: right;
+}
+
+#content #analysis .index label,
+#content #analysis .query label
+{
+    display: block;
+}
+
+#content #analysis .index textarea,
+#content #analysis .query textarea
+{
+    display: block;
+    width: 100%;
+}
+
+#content #analysis .index
+{
+    float: left;
+    margin-right: 0.5%;
+    min-width: 49%;
+    max-width: 99%;
+}
+
+#content #analysis .query
+{
+    float: right;
+    margin-left: 0.5%;
+    min-width: 49%;
+    max-width: 99%;
+}
+
+#content #analysis .analysis-result h2
+{
+    position: relative;
+}
+
+#content #analysis .analysis-result h2 .verbose_output
+{
+    position: absolute;
+    right: 5px;
+    top: 5px;
+}
+
+#content #analysis .analysis-result h2 .verbose_output a
+{
+    background-image: url( ../img/ico/ui-check-box-uncheck.png );
+    background-position: 0 50%;
+    color: #999;
+    display: block;
+    padding-left: 21px;
+}
+
+#content #analysis .analysis-result.verbose_output h2 .verbose_output a
+{
+    background-image: url( ../img/ico/ui-check-box.png );
+    color: #080;
+}
+
+#content #analysis .analysis-result .index,
+#content #analysis .analysis-result .query
+{
+    margin-bottom: 10px;
+}
+
+#content #analysis .analysis-result .row
+{
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#content #analysis .analysis-result .row:first-child
+{
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+#content #analysis .analysis-result .row .analyzer
+{
+    color: #c0c0c0;
+}
+
+#content #analysis .analysis-result .row:hover .analyzer
+{
+    color: #333;
+}
+
+#content #analysis .analysis-result .row table tr.verbose_output
+{
+    display: none;
+}
+
+#content #analysis .analysis-result.verbose_output .row table tr.verbose_output
+{
+    display: table-row;
+}
+
+#content #analysis .analysis-result .row table th,
+#content #analysis .analysis-result .row table td
+{
+    border-top: 1px solid #f0f0f0;
+    vertical-align: top;
+}
+
+#content #analysis .analysis-result .row table th
+{
+    background-color: #f8f8f8;
+    color: #999;
+    padding: 2px;
+    padding-bottom: 0;
+}
+
+#content #analysis .analysis-result .row table th abbr
+{
+    border: 0;
+    cursor: help;
+}
+
+#content #analysis .analysis-result .row table td
+{
+    border-left: 1px solid #dcdcdc;
+}
+
+#content #analysis .analysis-result .row table td div
+{
+    border-top: 1px solid #f0f0f0;
+    display: block;
+    padding: 1px 2px;
+}
+
+#content #analysis .analysis-result .row table td div.match
+{
+    background-color: #e9eff7;
+}
+
+#content #analysis .analysis-result .row table td div:first-child
+{
+    border-top: 0;
+}
+
+#content #analysis #field-analysis h2 { background-image: url( ../img/ico/receipt.png ); }
+#content #analysis .analysis-result h2 { background-image: url( ../img/ico/receipt-invoice.png ); }
+
+/* plugins */
+
+#content #plugins .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #plugins .block h2 { background-image: url( ../img/ico/block-small.png ); }
+#content #plugins #core h2 { background-image: url( ../img/ico/terminal.png ); }
+#content #plugins #queryhandler h2 { background-image: url( ../img/ico/magnifier.png ); }
+#content #plugins #updatehandler h2 { background-image: url( ../img/ico/arrow-circle.png ); }
+#content #plugins #cache h2 { background-image: url( ../img/ico/disk-black.png ); }
+#content #plugins #highlighting h2 { background-image: url( ../img/ico/highlighter-text.png ); }
+
+#content #plugins .block .entry
+{
+    padding-top: 10px;
+}
+
+#content #plugins .block .entry a
+{
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    background-position: 0 50%;
+    display: block;
+    font-weight: bold;
+    padding-left: 21px;
+}
+
+#content #plugins .block .entry.expanded a
+{
+    background-image: url( ../img/ico/chevron-small.png );
+}
+
+#content #plugins .block .entry.expanded ul
+{
+    display: block;
+}
+
+#content #plugins .block .entry ul
+{
+    display: none;
+    padding-top: 5px;
+    margin-left: 21px;
+}
+
+#content #plugins .block .entry li
+{
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#content #plugins .block .entry li.stats
+{
+    border-top: 1px solid #c0c0c0;
+    margin-top: 5px;
+    padding-top: 5px;
+}
+
+#content #plugins .block .entry li.odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #plugins .block .entry dt,
+#content #plugins .block .entry .stats span
+{
+    float: left;
+    width: 11%;
+}
+
+#content #plugins .block .entry dd,
+#content #plugins .block .entry .stats ul
+{
+    float: right;
+    width: 88%;
+}
+
+#content #plugins .block .entry .stats ul
+{
+    margin: 0;
+    padding: 0;
+}
+
+#content #plugins .block .entry .stats dt
+{
+    width: 27%;
+}
+
+#content #plugins .block .entry .stats dd
+{
+    width: 72%;
+}
+
+/* query */
+
+#content #query
+{
+    background-image: url( ../img/div.gif );
+    background-position: 210px 0;
+    background-repeat: repeat-y;
+}
+
+#content #query #form
+{
+    float: left;
+    width: 200px;
+}
+
+#content #query #form label
+{
+    cursor: pointer;
+    display: block;
+    margin-top: 5px;
+}
+
+#content #query #form input,
+#content #query #form textarea
+{
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+#content #query #form #start
+{
+    float: left;
+    margin-right: 2%;
+    width: 49%;
+}
+
+#content #query #form #rows
+{
+    width: 49%;
+}
+
+#content #query #form .checkbox input
+{
+    margin-bottom: 0;
+    width: auto;
+}
+
+#content #query #form fieldset,
+#content #query #form .optional.expanded
+{
+    border: 1px solid #fff;
+    border-top: 1px solid #c0c0c0;
+    margin-bottom: 10px;
+}
+
+#content #query #form fieldset legend,
+#content #query #form .optional.expanded legend
+{
+    display: block;
+    margin-left: 10px;
+    padding: 0px 5px;
+}
+
+#content #query #form fieldset legend label
+{
+    margin-top: 0;
+}
+
+#content #query #form fieldset .fieldset
+{
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+}
+
+#content #query #form .optional
+{
+    border: 0;
+}
+
+#content #query #form .optional .fieldset
+{
+    display: none;
+}
+
+#content #query #form .optional legend
+{
+    margin-left: 0;
+    padding-left: 0;
+}
+
+#content #query #form .optional.expanded .fieldset
+{
+    display: block;
+}
+
+#content #query #result
+{
+    display: none;
+    float: right;
+    width: 560px;
+}
+
+#content #query #result #url
+{
+    margin-bottom: 10px;
+}
+
+#content #query #result #url input
+{
+    background-image: url( ../img/ico/ui-address-bar.png );
+    background-position: 5px 50%;
+    border-color: #f0f0f0;
+    box-shadow: 1px 1px 0 #f0f0f0;
+    -moz-box-shadow: 1px 1px 0 #f0f0f0;
+    -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+    color: #c0c0c0;
+    display: block;
+    padding: 5px;
+    padding-left: 26px;
+    width: 100%;
+}
+
+#content #query #result #url input:focus,
+#content #query #result #url input:hover
+{
+    border-color: #c0c0c0;
+    box-shadow: 1px 1px 0 #d8d8d8;
+    -moz-box-shadow: 1px 1px 0 #d8d8d8;
+    -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+    color: #333;
+}
+
+#content #query #result #response
+{
+}
+
+/* zookeeper */
+
+#content #zookeeper .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+/* tree */
+
+#content .tree li, 
+#content .tree ins
+{
+    background-color: transparent;
+    background-image: url( ../img/tree.png );
+    background-repeat: no-repeat; 
+}
+
+#content .tree li
+{
+    background-position: -54px 0;
+    background-repeat: repeat-y;
+    line-height: 22px;
+}
+
+#content .tree li.jstree-last
+{
+    background:transparent;
+}
+
+#content .tree .jstree-open > ins
+{
+    background-position: -36px 0;
+}
+
+#content .tree .jstree-closed > ins
+{
+    background-position: -18px 0;
+}
+
+#content .tree .jstree-leaf > ins
+{
+    background-position: 0 0;
+}
+
+#content .tree .jstree-hovered
+{
+    background:#e7f4f9; border:1px solid #d8f0fa; padding:0 2px 0 1px;
+}
+
+#content .tree .jstree-clicked
+{
+    background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
+}
+
+#content .tree a .jstree-icon
+{
+    background-image: url( ../img/ico/folder.png );
+}
+
+#content .tree .jstree-leaf a .jstree-icon
+{
+    background-image: url( ../img/ico/document-text.png );
+}
+
+#content .tree .jstree-search
+{
+    font-style:italic;
+}
+
+#content .tree a.jstree-search
+{
+    color:aqua;
+}
+
+/* index */
+
+#content #index .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #index #data
+{
+    float: left;
+    width: 74%;
+}
+
+#content #index #memory
+{
+    float: right;
+    width: 24%;
+}
+
+#content #index #data h2 { background-image: url( ../img/ico/server.png ); }
+#content #index #memory h2 { background-image: url( ../img/ico/battery.png ); }
+
+#content #index #data li
+{
+    display: none;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #index #data li.odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #index #data li dt
+{
+    float: left;
+    width: 27%;
+}
+
+#content #index #data li dd
+{
+    float: right;
+    width: 72%
+}
+
+#content #index #data li dd.odd
+{
+    color: #999;
+}
+
+#content #index #data dt span
+{
+    background-position: 0 50%;
+    display: block;
+    padding-left: 21px;
+}
+
+#content #index #data .start_time dt span
+{
+    background-image: url( ../img/ico/clock-select.png );
+}
+
+#content #index #data .host dt span
+{
+    background-image: url( ../img/ico/globe.png );
+}
+
+#content #index #data .cwd dt span
+{
+    background-image: url( ../img/ico/folder-export.png );
+}
+
+#content #index #data .jvm dt span
+{
+    background-image: url( ../img/ico/jar.png );
+}
+
+#content #index #data .command_line_args dt span
+{
+    background-image: url( ../img/ico/terminal.png );
+}
+
+#content #index #data .lucene dt span
+{
+    background-image: url( ../img/lucene-ico.png );
+}
+
+#content #index #memory #memory-bar
+{
+    background-color: #00f;
+    box-shadow: 5px 5px 10px #c0c0c0;
+    -moz-box-shadow: 5px 5px 10px #c0c0c0;
+    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+    margin-top: 20px;
+    width: 100px;
+}
+
+#content #index #memory .bar
+{
+    bottom: 0;
+    position: absolute;
+    width: 100%;
+}
+
+#content #index #memory div .value
+{
+    border-top: 1px solid #f00;
+    display: block;
+    font-size: 10px;
+    line-height: 12px;
+    padding-left: 10px;
+    padding-right: 2px;
+    position: absolute;
+    margin-left: 100px;
+    white-space: nowrap;
+}
+
+#content #index #memory div .value.upper
+{
+    border-top-width: 0;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+#content #index #memory #memory-bar-max
+{
+    background-color: #f0f0f0;
+    height: 200px;
+    position: relative;
+}
+
+#content #index #memory #memory-bar-max .value
+{
+    border-color: #f0f0f0;
+    color: #d6d6d6;
+}
+
+#content #index #memory #memory-bar-total
+{
+    background-color: #c0c0c0;
+}
+
+#content #index #memory #memory-bar-total .value
+{
+    border-color: #c0c0c0;
+    color: #c0c0c0;
+}
+
+#content #index #memory #memory-bar-used
+{
+    background-color: #969696;
+}
+
+#content #index #memory #memory-bar-used .value
+{
+    border-color: #969696;
+    color: #969696;
+}
+
+/* schema-browser */
+
+#content #schema-browser .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;   
+}
+
+#content #schema-browser.loaded
+{
+    background-image: url( ../img/div.gif );
+    background-position: 21% 0;
+    background-repeat: repeat-y;
+}
+
+#content #schema-browser #data
+{
+    float: right;
+    width: 78%;
+}
+
+#content #schema-browser #related
+{
+    float: left;
+    width: 20%;
+}
+
+#content #schema-browser #related select
+{
+    width: 100%;
+}
+
+#content #schema-browser #related select optgroup
+{
+    font-style: normal;
+    padding: 5px;
+}
+
+#content #schema-browser #related select option
+{
+    padding-left: 10px;
+}
+
+#content #schema-browser #related dl
+{
+    margin-top: 15px;
+}
+
+#content #schema-browser #related dl dt,
+#content #schema-browser #related dl dd a
+{
+    color: #c0c0c0;
+}
+
+#content #schema-browser #related dl dt
+{
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+#content #schema-browser #related dl dd a
+{
+    display: block;
+    padding-left: 10px;
+}
+
+#content #schema-browser #related dl dd a:hover
+{
+    background-color: #f8f8f8;
+}
+
+#content #schema-browser #related .field .field,
+#content #schema-browser #related .field .field a,
+#content #schema-browser #related .dynamic-field .dynamic-field,
+#content #schema-browser #related .dynamic-field .dynamic-field a,
+#content #schema-browser #related .type .type,
+#content #schema-browser #related .type .type a
+{
+    color: #333;
+}
+
+#content #schema-browser #related .copyfield,
+#content #schema-browser #related .copyfield a
+{
+    color: #666;
+}
+
+#content #schema-browser #data #index dt
+{
+    display: none;
+    float: left;
+    margin-right: 5px;
+    width: 150px;
+}
+
+#content #schema-browser #data #field .field-options
+{
+    margin-bottom: 20px;
+}
+
+#content #schema-browser #data #field .field-options .options dt,
+#content #schema-browser #data #field .field-options .options dd
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .field-options .options dt
+{
+    clear: left;
+    display: none;
+    margin-right: 5px;
+    width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .options dd
+{
+    margin-right: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer,
+#content #schema-browser #data #field .field-options .analyzer li,
+#content #schema-browser #data #field .field-options .analyzer ul,
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+    display: none;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p,
+#content #schema-browser #data #field .field-options .analyzer dl
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .field-options .analyzer p
+{
+    margin-right: 5px;
+    text-align: right;
+    width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer li
+{
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul
+{
+    clear: left;
+    display: block;
+    margin-left: 30px;
+    padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul li
+{
+    border-top: 1px solid #f8f8f8;
+    margin-top: 5px;
+    padding-top: 5px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul p
+{
+    color: #999;
+    margin-right: 5px;
+    text-align: right;
+    width: 70px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+    margin-left: 20px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd
+{
+    background-image: url( ../img/ico/document-list.png );
+    background-position: 0 50%;
+    color: #c0c0c0;
+    padding-left: 21px;
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-0
+{
+    background-image: url( ../img/ico/slash.png );
+}
+
+#content #schema-browser #data #field .field-options .analyzer ul dd.ico-1
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #schema-browser #data #field .head
+{
+    margin-bottom: 5px;
+}
+
+#content #schema-browser #data #field .topterms-holder
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .topterms-holder .head .max-holder
+{
+    color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .topterms-holder table
+{
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#content #schema-browser #data #field .topterms-holder th,
+#content #schema-browser #data #field .topterms-holder td
+{
+    border: 1px solid #f0f0f0;
+    padding: 1px 4px;
+}
+
+#content #schema-browser #data #field .topterms-holder thead tr
+{
+    background-color: #c0c0c0;
+}
+
+#content #schema-browser #data #field .topterms-holder thead th
+{
+    text-align: left;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody
+{
+    display: none;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody .odd
+{
+    background-color: #f0f0f0;
+}
+
+#content #schema-browser #data #field .topterms-holder tbody .position
+{
+    color: #c0c0c0;
+    text-align: right;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi
+{
+    margin-top: 5px;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi a
+{
+    color: #c0c0c0;
+    display: block;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    width: 49%;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi a:hover
+{
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .less
+{
+    float: left;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .less span
+{
+    background-image: url( ../img/ico/chevron-small.png );
+    background-position: 0 50%;
+    padding-left: 18px;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .more
+{
+    float: right;
+    text-align: right;
+}
+
+#content #schema-browser #data #field .topterms-holder .navi .more span
+{
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    background-position: 100% 50%;
+    padding-right: 18px;
+}
+
+#content #schema-browser #data #field .histogram-holder
+{
+    display: none;
+    float: left;
+    margin-left: 50px;
+}
+
+#content #schema-browser #data #field .histogram-holder .histogram
+{
+    height: 150px;
+}
+
+#content #schema-browser #data #field .histogram-holder dt,
+#content #schema-browser #data #field .histogram-holder dd
+{
+    float: left;
+    font-size: 10px;
+    text-align: center;
+}
+
+#content #schema-browser #data #field .histogram-holder span
+{
+    background-color: #f0f0f0;
+    display: block;
+    width: 20px;
+}
+
+#content #schema-browser #data #field .histogram-holder dt
+{
+    padding-right: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder dd
+{
+    padding-right: 3px;
+}
+
+#content #schema-browser #data #field .histogram-holder dd span
+{
+    width: 25px;
+}
+
+/* java-properties */
+
+#content #java-properties .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;   
+}
+
+#content #java-properties li
+{
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #java-properties li.odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #java-properties li dt
+{
+    float: left;
+    width: 24%;
+}
+
+#content #java-properties li dd
+{
+    float: right;
+    width: 75%
+}
+
+#content #java-properties li dd.odd
+{
+    color: #999;
+}
+
+/* logging */
+
+#content #logging .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #logging .jstree
+{
+    position: relative;
+}
+
+#content #logging .jstree a
+{
+    cursor: auto;
+}
+
+#content #logging .jstree .trigger span
+{
+    background-position: 100% 50%;
+    cursor: pointer;
+    padding-right: 21px;
+}
+
+#content #logging .jstree a.trigger:hover span
+{
+    background-image: url( ../img/ico/pencil-small.png );
+}
+
+#content #logging .jstree .inactive,
+#content #logging .jstree .inactive .effective_level
+{
+    color: #c0c0c0;
+}
+
+#content #logging .jstree li
+{
+    position: relative;
+}
+
+#content #logging .jstree .odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #logging .jstree .loglevel
+{
+    position: absolute;
+    margin-top: 3px;
+    top: 0;
+}
+
+#content #logging .jstree li .loglevel { left: 340px; }
+#content #logging .jstree li li .loglevel { left: 322px; }
+#content #logging .jstree li li li .loglevel { left: 304px; }
+#content #logging .jstree li li li li .loglevel { left: 286px; }
+#content #logging .jstree li li li li li .loglevel { left: 268px; }
+#content #logging .jstree li li li li li li .loglevel { left: 250px; }
+
+#content #logging .jstree .loglevel a
+{
+    display: block;
+}
+
+#content #logging .jstree .loglevel .effective_level
+{
+    height: 22px;
+    line-height: 22px;
+    padding-left: 5px;
+    width: 150px;
+}
+
+#content #logging .jstree .loglevel.open .effective_level
+{
+    background-color: #f0f0f0;
+}
+
+#content #logging .jstree .loglevel.open .effective_level
+{
+    background-image: url( ../img/ico/arrow-000-small.png );
+    background-position: 75px 50%;
+}
+
+#content #logging .jstree .loglevel.open .effective_level span
+{
+    background-image: none;
+}
+
+#content #logging .jstree .loglevel ul
+{
+    background-color: #fff;
+    border: 1px solid #f0f0f0;
+    display: none;
+    position: absolute;
+    left: 100px;
+    top: 0;
+}
+
+#content #logging .jstree .loglevel.open ul
+{
+    display: block;
+}
+
+#content #logging .jstree .loglevel ul li
+{
+    background-image: none;
+    line-height: auto;
+    margin-left: 0;
+}
+
+#content #logging .jstree .loglevel ul li a
+{
+    background-image: url( ../img/ico/ui-radio-button-uncheck.png );
+    background-position: 2px 50%;
+    cursor: pointer;
+    display: block;
+    height: 22px;
+    line-height: 22px;
+    padding-left: 21px;
+    padding-right: 5px;
+}
+
+#content #logging .jstree .loglevel ul li.selected a
+{
+    background-image: url( ../img/ico/ui-radio-button.png );
+}
+
+#content #logging .jstree .loglevel ul li a:hover
+{
+    background-color: #f8f8f8;
+    color: #008;
+}
+
+#content #logging .jstree .loglevel ul li.unset
+{
+    border-top: 1px solid #f0f0f0;
+}
+
+#content #logging .jstree .loglevel ul li.unset a
+{
+    background-image: url( ../img/ico/cross-0.png );
+    background-position: 4px 50%;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #logging .jstree .loglevel ul li.unset a:hover
+{
+    background-image: url( ../img/ico/cross-1.png );
+    color: #800;
+}
+
+/* threads */
+
+#content #threads .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #threads #thread-dump table
+{
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#content #threads #thread-dump table .spacer,
+#content #threads #thread-dump tbody .state
+{
+    background-color: #fff;
+    border: 0;
+}
+
+#content #threads #thread-dump table th,
+#content #threads #thread-dump table td
+{
+    border: 1px solid #c0c0c0;
+    padding: 3px;
+    vertical-align: top;
+}
+
+#content #threads #thread-dump thead th
+{
+    background-color: #c8c8c8;
+    font-weight: bold;
+    text-align: left;
+}
+
+#content #threads #thread-dump tbody .odd
+{
+    background-color: #f0f0f0;
+}
+
+#content #threads #thread-dump tbody .state
+{
+    width: 20px;
+}
+
+#content #threads #thread-dump tbody .state a
+{
+    background-position: 50% 50%;
+    display: block;
+    height: 20px;
+}
+
+#content #threads #thread-dump tbody .open .state a
+{
+    background-image: url( ../img/ico/chevron-small.png );
+}
+
+#content #threads #thread-dump tbody .state a span
+{
+    display: none;
+}
+
+#content #threads #thread-dump tbody .id
+{
+    text-align: right;
+}
+
+#content #threads #thread-dump tbody .ico
+{
+    background-position: 50% 3px;
+    cursor: help;
+    width: 20px;
+}
+
+#content #threads #thread-dump tbody .RUNNABLE .ico
+{
+    background-image: url( ../img/ico/tick-circle.png );
+}
+
+#content #threads #thread-dump tbody .WAITING .ico,
+#content #threads #thread-dump tbody .TIMED_WAITING .ico
+{
+    background-image: url( ../img/ico/hourglass.png );
+}
+
+#content #threads #thread-dump tbody .WAITING.lock .ico,
+#content #threads #thread-dump tbody .TIMED_WAITING.lock .ico
+{
+    background-image: url( ../img/ico/hourglass--exclamation.png );
+}
+
+#content #threads #thread-dump tbody .ico span
+{
+    display: none;
+}
+
+#content #threads #thread-dump tbody .name a
+{
+    cursor: auto;
+    display: block;
+}
+
+#content #threads #thread-dump tbody .stacktrace .name a
+{
+    cursor: pointer;
+}
+
+#content #threads #thread-dump tbody .stacktrace .name a span
+{    
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    background-position: 100% 50%;
+    padding-right: 21px;
+}
+
+#content #threads #thread-dump tbody .stacktrace.open .name a span
+{   
+    background-image: url( ../img/ico/chevron-small.png );
+}
+
+#content #threads #thread-dump tbody .name p
+{
+    background-image: url( ../img/ico/arrow-000-small.png );
+    background-position: 0 50%;
+    color: #c0c0c0;
+    font-size: 11px;
+    padding-left: 21px;
+}
+
+#content #threads #thread-dump tbody .name div
+{
+    border-top: 1px solid #c0c0c0;
+    display: none;
+    margin-top: 5px;
+    padding-top: 5px;
+}
+
+#content #threads #thread-dump tbody .open .name div
+{
+    display: block;
+}
+
+#content #threads #thread-dump tbody .name ul
+{
+    list-style-type: disc;
+    margin-left: 0.7em;
+    padding-left: 0.7em;
+}
+
+#content #threads #thread-dump tbody .time
+{
+    text-align: right;
+}
+
+#content #threads #thread-dump tbody .details
+{
+    display: none;
+}
+
+/* dataimport */
+
+#content #dataimport
+{
+    background-image: url( ../img/div.gif );
+    background-position: 21% 0;
+    background-repeat: repeat-y;
+}
+
+#content #dataimport #frame
+{
+    float: right;
+    width: 78%;
+}
+
+#content #dataimport #form
+{
+    float: left;
+    width: 20%;
+}
+
+#content #dataimport.error #form form
+{
+    display: none !important;
+}
+
+#content #dataimport #form label
+{
+    cursor: pointer;
+    display: block;
+    margin-top: 5px;
+}
+
+#content #dataimport #form input,
+#content #dataimport #form select,
+#content #dataimport #form textarea
+{
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+#content #dataimport #form #start
+{
+    float: left;
+    margin-right: 2%;
+    width: 49%;
+}
+
+#content #dataimport #form #rows
+{
+    width: 49%;
+}
+
+#content #dataimport #form .checkbox input
+{
+    margin-bottom: 0;
+    width: auto;
+}
+
+#content #dataimport #form fieldset,
+#content #dataimport #form .optional.expanded
+{
+    border: 1px solid #fff;
+    border-top: 1px solid #c0c0c0;
+    margin-bottom: 10px;
+}
+
+#content #dataimport #form fieldset legend,
+#content #dataimport #form .optional.expanded legend
+{
+    display: block;
+    margin-left: 10px;
+    padding: 0px 5px;
+}
+
+#content #dataimport #form fieldset legend label
+{
+    margin-top: 0;
+}
+
+#content #dataimport #form .handler
+{
+    display: none;
+}
+
+#content #dataimport #form .handler ul
+{
+    list-style: disc;
+    margin-left: 0.7em;
+    padding-left: 0.7em;
+}
+
+#content #dataimport #form .handler ul li a
+{
+    color: #c0c0c0;
+    display: block;
+}
+
+#content #dataimport #form .handler ul li.active a
+{
+    color: #333;
+}
+
+#content #dataimport #current_state
+{
+    display: none;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+#content #dataimport.error #current_state
+{
+    display: none !important;
+}
+
+#content #dataimport #current_state .time,
+#content #dataimport #current_state .info
+{
+    display: block;
+    padding-left: 21px;
+}
+
+#content #dataimport #current_state .time
+{
+    color: #c0c0c0;
+    font-size: 11px;
+}
+
+#content #dataimport #current_state .info
+{
+    background-position: 0 1px;
+}
+
+#content #dataimport #current_state.indexing
+{
+    background-color: #f9f9f9;
+}
+
+#content #dataimport #current_state.success
+{
+    background-color: #e6f3e6;
+}
+
+#content #dataimport #current_state.success .info
+{
+    background-image: url( ../img/ico/tick-circle.png );
+}
+
+#content #dataimport #current_state.success .info strong
+{
+    color: #080;
+}
+
+#content #dataimport #current_state.failure
+{
+    background-color: #f3e6e6;
+}
+
+#content #dataimport #current_state.failure .info
+{
+    background-image: url( ../img/ico/slash.png );
+}
+
+#content #dataimport #current_state.failure .info strong
+{
+    color: #800;
+}
+
+#content #dataimport #config-error
+{
+    background-color: #f00;
+    background-image: url( ../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    display: none;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
+}
+
+#content #dataimport #config h2
+{
+    border-color: #c0c0c0;
+    padding-left: 5px;
+    position: relative;
+}
+
+#content #dataimport #config.hidden h2
+{
+    border-color: #fafafa;
+}
+
+#content #dataimport #config h2 a.toggle
+{
+    background-image: url( ../img/ico/toggle-small.png );
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #dataimport #config.hidden h2 a.toggle
+{
+    background-image: url( ../img/ico/toggle-small-expand.png );
+}
+
+#content #dataimport #config h2 a.reload_config
+{
+    background-image: url( ../img/ico/arrow-circle.png );
+    padding-left: 21px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+}
+
+#content #dataimport #config h2 a.reload_config.success
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #dataimport #config h2 a.reload_config.error
+{
+    background-image: url( ../img/ico/slash.png );
+}
+
+#content #dataimport #config.hidden .content
+{
+    display: none;
+}
+
+#content #dataimport #dataimport_config .loader
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+/* cores */
+
+#content #cores
+{
+    background-image: url( ../img/div.gif );
+    background-position: 150px 0;
+    background-repeat: repeat-y;
+}
+
+#content #cores #frame
+{
+    float: right;
+    width: 610px;
+}
+
+#content #cores #list
+{
+    float: left;
+    padding-top: 15px;
+    width: 151px;
+}
+
+#content #cores #list a
+{
+    border-right: 1px solid #f0f0f0;
+    display: block;
+    margin-left: 1px;
+    padding: 3px 0;
+}
+
+#content #cores #list a:hover
+{
+    background-color: #fafafa;
+}
+
+#content #cores #list .current a
+{
+    background-color: #fff;
+    border-right-color: #fff;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: bold;
+}
+
+#content #cores #frame .actions
+{
+    margin-bottom: 20px;
+}
+
+#content #cores .actions form .buttons
+{
+    padding-left: 40px;
+}
+
+#content #cores .actions form a
+{
+    display: block;
+    float: left;
+    height: 20px;
+    margin-right: 5px;
+    padding-left: 21px;
+}
+
+#content #cores .actions form a span
+{
+    display: none;
+}
+
+#content #cores .actions form a.submit
+{
+    background-image: url( ../img/ico/tick.png );
+    background-position: 50% 50%;
+}
+
+#content #cores .actions form a.submit:hover
+{
+    background-color: #e6f3e6;
+}
+
+#content #cores .actions form a.reset
+{
+    background-image: url( ../img/ico/cross.png );
+    background-position: 50% 50%;
+}
+
+#content #cores .actions form a.reset:hover
+{
+    background-color: #f3e6e6;
+}
+
+#content #cores .actions form p
+{
+    padding-bottom: 3px;
+}
+
+#content #cores .actions form label
+{
+    float: left;
+    width: 40px;
+}
+
+#content #cores .actions form input,
+#content #cores .actions form select
+{
+    width: 100px;
+}
+
+#content #cores .actions form select option.disabled
+{
+    color: #c0c0c0;
+}
+
+#content #cores .actions .button-holder
+{
+    float: left;
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+#content #cores .actions .button-holder.active
+{
+    margin-bottom: 0;
+}
+
+#content #cores .actions .button-holder .button
+{
+    background-color: #f5f5f5;
+    border: 1px solid #c0c0c0;
+    position: relative;
+    z-index: 100;
+}
+
+#content #cores .actions .button-holder.active .button
+{
+    background-color: #fff;
+    border-bottom-color: #fff;
+    padding-bottom: 5px;
+}
+
+#content #cores .actions .button-holder .button a
+{
+    background-position: 5px 50%;
+    display: block;
+    padding: 1px 5px;
+    padding-left: 24px;
+}
+
+#content #cores .actions .button-holder .button a.success
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #cores .actions .button-holder.active .button a
+{
+    cursor: auto;
+}
+
+#content #cores .actions .button-holder .button-content
+{
+    background-color: #fff;
+    border: 1px solid #c0c0c0;
+    box-shadow: 5px 5px 10px #c0c0c0;
+    -moz-box-shadow: 5px 5px 10px #c0c0c0;
+    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+    display: none;
+    margin-top: -1px;
+    padding: 5px;
+    padding-top: 15px;
+    position: absolute;
+    z-index: 99;
+}
+
+#content #cores .actions .button-holder.active .button-content
+{
+    display: block;
+}
+
+#content #cores .actions .button .reload
+{
+    background-image: url( ../img/ico/arrow-circle.png );
+}
+
+#content #cores .actions .button .rename
+{
+    background-image: url( ../img/ico/ui-text-field-select.png );
+}
+
+#content #cores .actions .button .swap
+{
+    background-image: url( ../img/ico/arrow-switch.png );
+}
+
+#content #cores .actions .button .unload
+{
+    background-image: url( ../img/ico/cross.png );
+}
+
+#content #cores .actions .button .optimize
+{
+    background-image: url( ../img/ico/hammer-screwdriver.png );
+    display: none;
+}
+
+#content #cores #navigation .add
+{
+    background-image: url( ../img/ico/plus-button.png );
+}
+
+#content #cores #navigation .add label
+{
+    width: 85px;
+}
+
+#content #cores #navigation .add input
+{
+    width: 155px;
+}
+
+#content #cores #navigation .add .buttons
+{
+    padding-left: 85px;
+}
+
+#content #cores #data #core-data h2 { background-image: url( ../img/ico/database.png ); }
+#content #cores #data #index-data h2 { background-image: url( ../img/ico/chart.png ); }
+
+#content #cores #data #index-data
+{
+    margin-top: 10px;
+}
+
+#content #cores #data li
+{
+    padding-bottom: 3px;
+    padding-top: 3px;
+}
+
+#content #cores #data li.odd
+{
+    background-color: #f8f8f8;
+}
+
+#content #cores #data li dt
+{
+    float: left;
+    width: 17%;
+}
+
+#content #cores #data li dd
+{
+    float: right;
+    width: 82%;
+}
+
+#content #cores #data li dd.ico
+{
+    background-image: url( ../img/ico/slash.png );
+    height: 20px;
+}
+
+#content #cores #data li dd.ico.ico-1
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #cores #data li dd.ico span
+{
+    display: none;
+}
+
+/* replication */
+
+#content #replication
+{
+    background-image: url( ../img/div.gif );
+    background-position: 165px 0;
+    background-repeat: repeat-y;
+}
+
+#content #replication #frame
+{
+    float: right;
+    width: 600px;
+}
+
+#content #replication #navigation
+{
+    float: left;
+    width: 161px;
+}
+
+#content #replication #error
+{
+    background-color: #f00;
+    background-image: url( ../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    display: none;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
+}
+
+#content #replication .block
+{
+    border-bottom: 1px solid #c0c0c0;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+}
+
+#content #replication .block.last
+{
+    border-bottom: 0;
+}
+
+#content #replication .masterOnly,
+#content #replication .slaveOnly
+{
+    display: none;
+}
+
+#content #replication.master .masterOnly
+{
+    display: block;
+}
+
+#content #replication.slave .slaveOnly
+{
+    display: block;
+}
+
+#content #replication .replicating
+{
+    display: none;
+}
+
+#content #replication.replicating .replicating
+{
+    display: block;
+}
+
+#content #replication #progress
+{
+    padding-bottom: 80px;
+    position: relative;
+}
+
+#content #replication #progress .info
+{
+    padding: 5px;
+}
+
+#content #replication #progress #start
+{
+    margin-left: 100px;
+    border-left: 1px solid #c0c0c0;
+}
+
+#content #replication #progress #bar
+{
+    background-color: #f0f0f0;
+    margin-left: 100px;
+    margin-right: 100px;
+    position: relative;
+}
+
+#content #replication #progress #bar #bar-info,
+#content #replication #progress #bar #eta
+{
+    position: absolute;
+    right: -100px;
+    width: 100px;
+}
+
+#content #replication #progress #bar #bar-info
+{
+    border-left: 1px solid #f0f0f0;
+    margin-top: 30px;
+}
+
+#content #replication #progress #eta .info
+{
+    color: #c0c0c0;
+    height: 30px;
+    line-height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+#content #replication #progress #speed
+{
+    color: #c0c0c0;
+    position: absolute;
+    right: 100px;
+    top: 0;
+}
+
+#content #replication #progress #bar #done
+{
+    background-color: #c0c0c0;
+    box-shadow: 5px 5px 10px #c0c0c0;
+    -moz-box-shadow: 5px 5px 10px #c0c0c0;
+    -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+    height: 30px;
+    position: relative;
+}
+
+#content #replication #progress #bar #done .percent
+{
+    font-weight: bold;
+    height: 30px;
+    line-height: 30px;
+    padding-left: 5px;
+    padding-right: 5px;
+    position: absolute;
+    right: 0;
+    text-align: right;
+}
+
+#content #replication #progress #bar #done #done-info
+{
+    border-right: 1px solid #c0c0c0;
+    position: absolute;
+    right: 0;
+    margin-top: 30px;
+    text-align: right;
+    width: 100px;
+}
+
+#content #replication #progress #bar #done #done-info .percent
+{
+    font-weight: bold;
+}
+
+#content #replication .block .label,
+#content #replication #current-file .file,
+#content #replication #current-file .progress,
+#content #replication #iterations .iterations
+{
+    float: left;
+}
+
+#content #replication .block .label
+{
+    width: 100px;
+}
+
+#content #replication .block .label span
+{
+    display: block;
+    padding-left: 21px;
+}
+
+#content #replication #current-file
+{
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+#content #replication #current-file .progress
+{
+    color: #c0c0c0;
+    margin-left: 20px;
+}
+
+#content #replication #iterations
+{
+    display: none;
+}
+
+#content #replication #iterations .label span
+{
+    background-image: url( ../img/ico/node-design.png );
+}
+
+#content #replication #iterations .iterations li
+{
+    background-position: 100% 50%;
+    display: none;
+    padding-right: 21px;
+}
+
+#content #replication #iterations .iterations.expanded li
+{
+    display: block;
+}
+
+#content #replication #iterations .iterations .latest
+{
+    display: block;
+}
+
+#content #replication #iterations .iterations .replicated
+{
+    color: #80c480;
+}
+
+#content #replication #iterations .iterations ul:hover .replicated,
+#content #replication #iterations .iterations .replicated.latest
+{
+    color: #080;
+}
+
+#content #replication #iterations .iterations .replicated.latest
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #replication #iterations .iterations .failed
+{
+    color: #c48080;
+}
+
+#content #replication #iterations .iterations ul:hover .failed,
+#content #replication #iterations .iterations .failed.latest
+{
+    color: #800;
+}
+
+#content #replication #iterations .iterations .failed.latest
+{
+    background-image: url( ../img/ico/cross.png );
+}
+
+#content #replication #iterations .iterations a
+{
+    border-top: 1px solid #f0f0f0;
+    display: none;
+    margin-top: 2px;
+    padding-top: 2px;
+}
+
+#content #replication #iterations .iterations a span
+{
+    background-position: 0 50%;
+    color: #c0c0c0;
+    display: none;
+    padding-left: 21px;
+}
+
+#content #replication #iterations .iterations a span.expand
+{
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    display: block;
+}
+
+#content #replication #iterations .iterations.expanded a span.expand
+{
+    display: none;
+}
+
+#content #replication #iterations .iterations.expanded a span.collapse
+{
+    background-image: url( ../img/ico/chevron-small.png );
+    display: block;
+}
+
+#content #replication #details table
+{
+    border-collapse: collapse;
+}
+
+#content #replication #details table th
+{
+    text-align: left;
+}
+
+#content #replication.slave #details table .slaveOnly
+{
+    display: table-row;
+}
+
+#content #replication #details table thead th
+{
+    color: #c0c0c0;
+}
+
+#content #replication #details table thead th,
+#content #replication #details table tbody td
+{
+    padding-right: 20px;
+}
+
+#content #replication #details table thead td,
+#content #replication #details table thead th,
+#content #replication #details table tbody th,
+#content #replication #details table tbody td div
+{
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#content #replication #details table tbody td,
+#content #replication #details table tbody th
+{
+    border-top: 1px solid #f0f0f0;
+}
+
+#content #replication #details table thead td
+{
+    width: 100px;
+}
+
+#content #replication #details table thead td span
+{
+    background-image: url( ../img/ico/clipboard-list.png );
+    background-position: 0 50%;
+    display: block;
+    padding-left: 21px;
+}
+
+#content #replication #details table tbody th
+{
+    padding-right: 10px;
+    text-align: right;
+}
+
+#content #replication #details table tbody .size
+{
+    text-align: right;
+}
+
+#content #replication #details table tbody .generation div
+{
+    text-align: center;
+}
+
+#content #replication #details table tbody .diff div
+{
+    background-color: #fcfcc9;
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+#content #replication .settings .label span
+{
+    background-image: url( ../img/ico/hammer-screwdriver.png );
+}
+
+#content #replication .settings ul,
+#content #replication .settings dl dt,
+#content #replication .settings dl dd
+{
+    float: left;
+}
+
+#content #replication .settings ul li
+{
+    border-top: 1px solid #f0f0f0;
+    display: none;
+    padding-top: 3px;
+    padding-top: 3px;
+}
+
+#content #replication .settings ul li:first-child
+{
+    border-top: 0;
+    padding-top: 0;
+}
+
+#content #replication .settings dl dt
+{
+    clear: left;
+    margin-right: 5px;
+    width: 120px;
+}
+
+#content #replication .settings dl .ico
+{
+    background-position: 0 50%;
+    padding-left: 21px;
+}
+
+#content #replication .settings dl .ico.ico-0
+{
+    background-image: url( ../img/ico/slash.png );
+}
+
+#content #replication .settings dl .ico.ico-1
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #replication #navigation button
+{
+    background-position: 2px 50%;
+    margin-bottom: 10px;
+    padding-left: 21px;
+}
+
+#content #replication #navigation button.optional
+{
+    display: none;
+}
+
+#content #replication #navigation .replicate-now
+{
+    background-image: url( ../img/ico/document-convert.png );
+}
+
+#content #replication #navigation .abort-replication
+{
+    background-color: #800;
+    background-image: url( ../img/ico/hand.png );
+    border-color: #800;
+    color: #fff;
+}
+
+#content #replication #navigation .disable-polling
+{
+    background-image: url( ../img/ico/cross.png );
+}
+
+#content #replication #navigation .enable-polling
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #replication #navigation .disable-replication
+{
+    background-image: url( ../img/ico/cross.png );
+}
+
+#content #replication #navigation .enable-replication
+{
+    background-image: url( ../img/ico/tick.png );
+}
+
+#content #replication #navigation .refresh-status
+{
+    background-image: url( ../img/ico/arrow-circle.png );
+}
+
+/* cloud */
+
+#content #cloud #zookeeper h2 { background-image: url( ../img/ico/sitemap.png ); }

@@ -1,0 +1,244 @@
+<div id="query" class="clearfix">
+
+	<div id="form">
+
+		<form action="#" method="get">
+
+			<fieldset>
+				<legend>common</legend>
+				<div class="fieldset">
+
+				<label for="q">
+					q
+				</label>
+				<textarea name="q" id="q">*:*</textarea>
+
+				<label for="fq">
+					<a rel="help">fq</a>
+				</label>
+				<input type="text" id="fq" name="fq" class="multiple">
+
+				<label for="sort">
+					<a rel="help">sort</a>
+				</label>
+				<input type="text" id="sort" name="sort" class="multiple">
+
+				<label for="start">
+					<a rel="help">start</a>,
+					<a rel="help">rows</a>
+				</label>
+				<input type="text" name="start" id="start" value="0">
+				<input type="text" name="rows" id="rows" value="10">
+
+				<label for="fl">
+					<a rel="help">fl</a>
+				</label>
+				<input type="text" name="fl" id="fl" value="*">
+
+				<label for="qt">
+					<a rel="help">qt</a>
+				</label>
+				<input type="text" name="qt" id="qt" value="">
+
+				<label for="debugQuery" class="checkbox">
+					<input type="checkbox" name="debugQuery" id="debugQuery" value="true">
+					<a rel="help">debugQuery</a>
+				</label>
+
+				</div>
+			</fieldset>
+
+			<fieldset class="optional">
+				<legend>
+					<label for="dismax" class="checkbox">
+						<input type="checkbox" name="dismax" id="dismax" value="true">
+						dismax
+					</label>
+				</legend>
+				<div class="fieldset">
+
+				<label for="q_alt">q.alt</label>
+				<input type="text" name="q.alt" id="q_alt">
+
+				<label for="qf">qf</label>
+				<input type="text" name="qf" id="qf">
+
+				<label for="mm">mm</label>
+				<input type="text" name="mm" id="mm">
+
+				<label for="pf">pf</label>
+				<input type="text" name="pf" id="pf">
+
+				<label for="ps">ps</label>
+				<input type="text" name="ps" id="ps">
+
+				<label for="qs">qs</label>
+				<input type="text" name="qs" id="qs">
+
+				<label for="tie">tie</label>
+				<input type="text" name="tie" id="tie">
+
+				<label for="bq">bq</label>
+				<input type="text" name="bq" id="bq">
+
+				<label for="bf">bf</label>
+				<input type="text" name="bf" id="bf">
+			
+			</fieldset>
+
+			<fieldset class="optional">
+				<legend>
+					<label for="hl" class="checkbox">
+						<input type="checkbox" name="hl" id="hl" value="true">
+						hl
+					</label>
+				</legend>
+				<div class="fieldset">
+
+				<label for="hl_fl">hl.fl</label>
+				<input type="text" name="hl.fl" id="hl_fl" value="">
+
+				<label for="hl_simple_pre">hl.simple.pre</label>
+				<input type="text" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
+
+				<label for="hl_simple_post">hl.simple.post</label>
+				<input type="text" name="hl.simple.post" id="hl_simple_post" value="</em>">
+
+				<label for="hl_requireFieldMatch" class="checkbox">
+					<input type="checkbox" name="hl.requireFieldMatch" id="hl_requireFieldMatch" value="true">
+					hl.requireFieldMatch
+				</label>
+
+				<label for="hl_usePhraseHighlighter" class="checkbox">
+					<input type="checkbox" name="hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
+					hl.usePhraseHighlighter
+				</label>
+
+				<label for="hl_highlightMultiTerm" class="checkbox">
+					<input type="checkbox" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
+					hl.highlightMultiTerm
+				</label>
+			
+				</div>
+			</fieldset>
+
+			<fieldset class="optional">
+				<legend>
+					<label for="facet" class="checkbox">
+						<input type="checkbox" name="facet" id="facet" value="true">
+						facet
+					</label>
+				</legend>
+				<div class="fieldset">
+
+				<label for="facet_query">facet.query</label>
+				<textarea name="facet.query" id="facet_query"></textarea>
+
+				<label for="facet_field">facet.field</label>
+				<input type="text" name="facet.field" id="facet_field">
+
+				<label for="facet_prefix">facet.prefix</label>
+				<input type="text" name="facet.prefix" id="facet_prefix">
+
+				</div>
+			</fieldset>
+
+			<fieldset class="optional">
+				<legend>
+					<label for="spatial" class="checkbox">
+						<input type="checkbox" name="spatial" id="spatial" value="true">
+						spatial
+					</label>
+				</legend>
+				<div class="fieldset">
+
+				<label for="pt">pt</label>
+				<input type="text" name="pt" id="pt">
+
+				<label for="sfield">sfield</label>
+				<input type="text" name="sfield" id="sfield">
+
+				<label for="d">d</label>
+				<input type="text" name="d" id="d">
+				
+				</div>
+			</fieldset>
+
+			<fieldset class="optional">
+				<legend>
+					<label for="spellcheck" class="checkbox">
+						<input type="checkbox" name="spellcheck" id="spellcheck" value="true">
+						spellcheck
+					</label>
+				</legend>
+				<div class="fieldset">
+
+				<label for="spellcheck_build" class="checkbox">
+					<input type="checkbox" name="spellcheck.build" id="spellcheck_build" value="true">
+					spellcheck.build
+				</label>
+
+				<label for="spellcheck_reload" class="checkbox">
+					<input type="checkbox" name="spellcheck.reload" id="spellcheck_reload" value="true">
+					spellcheck.reload
+				</label>
+
+				<label for="spellcheck_q">spellcheck.q</label>
+				<input type="text" name="spellcheck.q" id="spellcheck_q">
+
+				<label for="spellcheck_dictionary">spellcheck.dictionary</label>
+				<input type="text" name="spellcheck.dictionary" id="spellcheck_dictionary">
+
+				<label for="spellcheck_count">spellcheck.count</label>
+				<input type="text" name="spellcheck.count" id="spellcheck_count">
+
+				<label for="spellcheck_onlyMorePopular" class="checkbox">
+					<input type="checkbox" name="spellcheck.onlyMorePopular" id="spellcheck_onlyMorePopular" value="true">
+					spellcheck.onlyMorePopular
+				</label>
+
+				<label for="spellcheck_extendedResults" class="checkbox">
+					<input type="checkbox" name="spellcheck.extendedResults" id="spellcheck_extendedResults" value="true">
+					spellcheck.extendedResults
+				</label>
+
+				<label for="spellcheck_collate" class="checkbox">
+					<input type="checkbox" name="spellcheck.collate" id="spellcheck_collate" value="true">
+					spellcheck.collate
+				</label>
+
+				<label for="spellcheck_maxCollations">spellcheck.maxCollations</label>
+				<input type="text" name="spellcheck.maxCollations" id="spellcheck_maxCollations">
+
+				<label for="spellcheck_maxCollationTries">spellcheck.maxCollationTries</label>
+				<input type="text" name="spellcheck.maxCollationTries" id="spellcheck_maxCollationTries">
+
+				<label for="spellcheck_accuracy">spellcheck.accuracy</label>
+				<input type="text" name="spellcheck.accuracy" id="spellcheck_accuracy">
+			
+			</fieldset>
+
+
+			<button type="submit">Execute Query</button>
+
+		</form>
+
+	</div>
+
+	<div id="result">
+
+		<div id="url">
+
+			<input type="text" readonly="readonly">
+		
+		</div>
+
+		<div id="response">
+
+			<iframe src="about:blank"></iframe>
+		
+		</div>
+
+	</div>
+
+</div>

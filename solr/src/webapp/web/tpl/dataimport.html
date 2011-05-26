@@ -1,0 +1,121 @@
+<link rel="stylesheet" type="text/css" href="css/syntax.css">
+<div id="dataimport" class="clearfix">
+
+	<div id="frame">
+
+		<div id="current_state">
+
+			<span class="time"></span>
+			<div class="info">
+				<strong></strong>
+
+				<div class="details"></div>
+			</div>
+		
+		</div>
+
+		<div id="config-error">
+
+			Dataimport XML-Configuration is not valid
+
+		</div>
+
+        <div class="block hidden" id="config">
+
+            <h2>
+            	<a class="toggle"><span>Dataimport Configuration</span></a>
+            	<a class="reload_config" title="Reload Configuration">Reload</a>
+        	</h2>
+            
+            <div class="message-container">
+                <div class="message"></div>
+            </div>
+
+            <div class="content">
+
+				<div id="dataimport_config">
+
+					<div class="loader">Loading ...</div>
+				
+				</div>
+
+            </div>
+        </div>
+	
+	</div>
+
+	<div id="form">
+
+		<fieldset class="handler">
+			<legend>handler</legend>
+			<div class="fieldset">
+
+				<ul>
+				</ul>
+		
+			</div>
+		</fieldset>
+
+		<form action="#" method="get">
+
+			<fieldset>
+				<legend>import</legend>
+				<div class="fieldset">
+
+					<label for="command">
+						<a rel="help">command</a>
+					</label>
+					<select name="command" id="command">
+						<option>full-import</option>
+						<option>delta-import</option>
+					</select>
+
+					<label for="verbose" class="checkbox">
+						<input type="checkbox" name="verbose" id="verbose" value="true">
+						<a rel="help">verbose</a>
+					</label>
+
+					<label for="clean" class="checkbox">
+						<input type="checkbox" name="clean" id="clean" value="true">
+						<a rel="help">clean</a>
+					</label>
+
+					<label for="commit" class="checkbox">
+						<input type="checkbox" name="commit" id="commit" value="true">
+						<a rel="help">commit</a>
+					</label>
+
+					<label for="optimize" class="checkbox">
+						<input type="checkbox" name="optimize" id="optimize" value="true">
+						<a rel="help">optimize</a>
+					</label>
+
+					<label for="entity">
+						<a rel="help">entity</a>
+					</label>
+					<select name="entity" id="entity">
+						<option value=""></option>
+					</select>
+
+					<label for="start">
+						<a rel="help">start</a>,
+						<a rel="help">rows</a>
+					</label>
+					<input type="text" name="start" id="start" value="0">
+					<input type="text" name="rows" id="rows" value="10">
+
+					<label for="custom_parameters">
+						<a rel="help">custom parameters</a>
+					</label>
+					<input type="text" name="custom_parameters" id="custom_parameters" value="">
+			
+				</div>
+			</fieldset>
+
+			<button type="submit">Execute Import</button>
+		
+		</form>
+	
+	</div>
+
+</div>
