@@ -436,7 +436,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public String getNormFileName(int number) {
     if (hasSeparateNorms(number)) {
-      return IndexFileNames.fileNameFromGeneration(name, "s" + number, normGen.get(number));
+      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
       return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);

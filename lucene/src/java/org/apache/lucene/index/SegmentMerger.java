@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern; // for assert
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.store.Directory;
@@ -135,8 +135,8 @@ final class SegmentMerger {
     for (String file : files) {
       assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
                 : ".del file is not allowed in .cfs: " + file;
-      assert !file.substring(file.lastIndexOf('.') + 1).startsWith(IndexFileNames.SEPARATE_NORMS_EXTENSION) 
-                : "separate norms file (.s*) is not allowed in .cfs: " + file;
+      assert !Pattern.matches("^.+[.]" + IndexFileNames.SEPARATE_NORMS_EXTENSION  + "\\d+$", file) 
+                : "separate norms file (.s[0-9]*) is not allowed in .cfs: " + file;
       cfsWriter.addFile(file);
     }
 
@@ -145,7 +145,7 @@ final class SegmentMerger {
 
     return files;
   }
-
+  
   private static void addIndexed(IndexReader reader, FieldInfos fInfos,
       Collection<String> names, boolean storeTermVectors,
       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
