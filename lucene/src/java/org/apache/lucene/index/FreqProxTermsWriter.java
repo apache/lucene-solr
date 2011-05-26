@@ -135,8 +135,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         perThread.termsHashPerThread.reset(true);
       }
     } finally {
+      consumer.finish();
     }
-    consumer.finish();
   }
 
   private byte[] payloadBuffer;
