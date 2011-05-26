@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.util.regex.Pattern;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -260,5 +262,16 @@ public final class IndexFileNames {
     }
     return filename;
   }
-  
+
+  /**
+   * Returns true if the given filename ends with the separate norms file
+   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
+   */
+  public static boolean isSeparateNormsFile(String filename) {
+    int idx = filename.lastIndexOf('.');
+    if (idx == -1) return false;
+    String ext = filename.substring(idx + 1);
+    return Pattern.matches(SEPARATE_NORMS_EXTENSION + "[0-9]+", ext);
+  }
+
 }
