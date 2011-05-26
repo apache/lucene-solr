@@ -135,8 +135,8 @@ final class SegmentMerger {
     for (String file : files) {
       assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
                 : ".del file is not allowed in .cfs: " + file;
-      assert !Pattern.matches("^.+[.]" + IndexFileNames.SEPARATE_NORMS_EXTENSION  + "\\d+$", file) 
-                : "separate norms file (.s[0-9]*) is not allowed in .cfs: " + file;
+      assert !IndexFileNames.isSeparateNormsFile(file) 
+                : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
       cfsWriter.addFile(file);
     }
 
