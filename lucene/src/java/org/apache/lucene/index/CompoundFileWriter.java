@@ -60,6 +60,9 @@ public final class CompoundFileWriter {
 
         /** temporary holder for the start of this file's data section */
         long dataOffset;
+        
+        /** the directory which contains the file. */
+        Directory dir;
     }
 
     // Before versioning started.
@@ -119,6 +122,14 @@ public final class CompoundFileWriter {
      *   has been added already
      */
     public void addFile(String file) {
+      addFile(file, directory);
+    }
+
+    /**
+     * Same as {@link #addFile(String)}, only for files that are found in an
+     * external {@link Directory}.
+     */
+    public void addFile(String file, Directory dir) {
         if (merged)
             throw new IllegalStateException(
                 "Can't add extensions after merge has been called");
@@ -133,6 +144,7 @@ public final class CompoundFileWriter {
 
         FileEntry entry = new FileEntry();
         entry.file = file;
+        entry.dir = dir;
         entries.add(entry);
     }
 
@@ -170,7 +182,7 @@ public final class CompoundFileWriter {
                 fe.directoryOffset = os.getFilePointer();
                 os.writeLong(0);    // for now
                 os.writeString(IndexFileNames.stripSegmentName(fe.file));
-                totalSize += directory.fileLength(fe.file);
+                totalSize += fe.dir.fileLength(fe.file);
             }
 
             // Pre-allocate size of file as optimization --
@@ -216,7 +228,7 @@ public final class CompoundFileWriter {
    * output stream.
    */
   private void copyFile(FileEntry source, IndexOutput os) throws IOException {
-    IndexInput is = directory.openInput(source.file);
+    IndexInput is = source.dir.openInput(source.file);
     try {
       long startPtr = os.getFilePointer();
       long length = is.length();

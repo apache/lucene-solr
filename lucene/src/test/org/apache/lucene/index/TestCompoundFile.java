@@ -648,4 +648,25 @@ public class TestCompoundFile extends LuceneTestCase
         }
 
     }
+    
+   public void testAddExternalFile() throws IOException {
+       createSequenceFile(dir, "d1", (byte) 0, 15);
+
+       Directory newDir = newDirectory();
+       CompoundFileWriter csw = new CompoundFileWriter(newDir, "d.csf");
+       csw.addFile("d1", dir);
+       csw.close();
+
+       CompoundFileReader csr = new CompoundFileReader(newDir, "d.csf");
+       IndexInput expected = dir.openInput("d1");
+       IndexInput actual = csr.openInput("d1");
+       assertSameStreams("d1", expected, actual);
+       assertSameSeekBehavior("d1", expected, actual);
+       expected.close();
+       actual.close();
+       csr.close();
+       
+       newDir.close();
+   }
+
 }
