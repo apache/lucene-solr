@@ -30,6 +30,7 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1141,6 +1142,69 @@ public class TestAddIndexes extends LuceneTestCase {
     // cleanup
     src.close();
     target.close();
+  }
+  
+  /*
+   * simple test that ensures we getting expected exceptions 
+   */
+  public void testAddIndexMissingCodec() throws IOException {
+    Directory toAdd = newDirectory();
+    {
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new StandardCodec());
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(toAdd, conf);
+      Document doc = new Document();
+      doc.add(newField("foo", "bar", Index.NOT_ANALYZED));
+      w.addDocument(doc);
+      w.close();
+    }
+    {
+      Directory dir = newDirectory();
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(dir, conf);
+      try {
+        w.addIndexes(toAdd);
+        fail("no such codec");
+      } catch (IllegalArgumentException ex) {
+        // expected
+      }
+      w.close();
+      IndexReader open = IndexReader.open(dir);
+      assertEquals(0, open.numDocs());
+      open.close();
+      dir.close();
+    }
+
+    {
+      Directory dir = newDirectory();
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(dir, conf);
+      IndexReader indexReader = IndexReader.open(toAdd);
+      try {
+        w.addIndexes(indexReader);
+        fail("no such codec");
+      } catch (IllegalArgumentException ex) {
+        // expected
+      }
+      indexReader.close();
+      w.close();
+      IndexReader open = IndexReader.open(dir);
+      assertEquals(0, open.numDocs());
+      open.close();
+      dir.close();
+    }
+    toAdd.close();
   }
 
 }
