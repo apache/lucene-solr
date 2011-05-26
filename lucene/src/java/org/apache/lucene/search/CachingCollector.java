@@ -181,6 +181,7 @@ public abstract class CachingCollector extends Collector {
             curUpto = 0;
           }
           cachedScorer.score = curScores[curUpto];
+          cachedScorer.doc = curDocs[curUpto];
           other.collect(curDocs[curUpto++]);
         }
       }
