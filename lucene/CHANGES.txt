@@ -511,6 +511,9 @@ Optimizations
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
 
+* LUCENE-3126: IndexWriter.addIndexes copies incoming segments into CFS if they
+  aren't already and MergePolicy allows that. (Shai Erera)
+
 Bug fixes
 
 * LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 

@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
 
@@ -2322,10 +2324,10 @@ public class IndexWriter implements Closeable {
    * <p>
    * <b>NOTE:</b> this method only copies the segments of the incoming indexes
    * and does not merge them. Therefore deleted documents are not removed and
-   * the new segments are not merged with the existing ones. Also, the segments
-   * are copied as-is, meaning they are not converted to CFS if they aren't,
-   * and vice-versa. If you wish to do that, you can call {@link #maybeMerge}
-   * or {@link #optimize} afterwards.
+   * the new segments are not merged with the existing ones. Also, if the merge 
+   * policy allows compound files, then any segment that is not compound is 
+   * converted to such. However, if the segment is compound, it is copied as-is
+   * even if the merge policy does not allow compound files.
    *
    * <p>This requires this index not be among those to be added.
    *
@@ -2349,6 +2351,7 @@ public class IndexWriter implements Closeable {
 
       int docCount = 0;
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
+      Comparator<String> versionComparator = StringHelper.getVersionComparator();
       for (Directory dir : dirs) {
         if (infoStream != null) {
           message("addIndexes: process directory " + dir);
@@ -2368,45 +2371,21 @@ public class IndexWriter implements Closeable {
             message("addIndexes: process segment origName=" + info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
           }
 
-          // Determine if the doc store of this segment needs to be copied. It's
-          // only relevant for segments who share doc store with others, because
-          // the DS might have been copied already, in which case we just want
-          // to update the DS name of this SegmentInfo.
-          // NOTE: pre-3x segments include a null DSName if they don't share doc
-          // store. So the following code ensures we don't accidentally insert
-          // 'null' to the map.
-          final String newDsName;
-          if (dsName != null) {
-            if (dsNames.containsKey(dsName)) {
-              newDsName = dsNames.get(dsName);
-            } else {
-              dsNames.put(dsName, newSegName);
-              newDsName = newSegName;
-            }
+          // create CFS only if the source segment is not CFS, and MP agrees it
+          // should be CFS.
+          boolean createCFS;
+          synchronized (this) { // Guard segmentInfos
+            createCFS = !info.getUseCompoundFile()
+                && mergePolicy.useCompoundFile(segmentInfos, info)
+                // optimize case only for segments that don't share doc stores
+                && versionComparator.compare(info.getVersion(), "3.1") >= 0;
+          }
+
+          if (createCFS) {
+            copySegmentIntoCFS(info, newSegName);
           } else {
-            newDsName = newSegName;
+            copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied);
           }
-
-          // Copy the segment files
-          for (String file: info.files()) {
-            final String newFileName;
-            if (IndexFileNames.isDocStoreFile(file)) {
-              newFileName = newDsName + IndexFileNames.stripSegmentName(file);
-              if (dsFilesCopied.contains(newFileName)) {
-                continue;
-              }
-              dsFilesCopied.add(newFileName);
-            } else {
-              newFileName = newSegName + IndexFileNames.stripSegmentName(file);
-            }
-            assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-            dir.copy(directory, file, newFileName);
-          }
-
-          // Update SI appropriately
-          info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
-          info.dir = directory;
-          info.name = newSegName;
 
           infos.add(info);
         }
@@ -2496,6 +2475,76 @@ public class IndexWriter implements Closeable {
     }
   }
 
+  /** Copies the segment into the IndexWriter's directory, as a compound segment. */
+  private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
+    String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    Collection<String> files = info.files();
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
+    for (String file : files) {
+      String newFileName = segName + IndexFileNames.stripSegmentName(file);
+      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+          && !IndexFileNames.isSeparateNormsFile(file)) {
+        cfsWriter.addFile(file, info.dir);
+      } else {
+        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+        info.dir.copy(directory, file, newFileName);
+      }
+    }
+    
+    // Create the .cfs
+    cfsWriter.close();
+    
+    info.dir = directory;
+    info.name = segName;
+    info.setUseCompoundFile(true);
+  }
+  
+  /** Copies the segment files as-is into the IndexWriter's directory. */
+  private void copySegmentAsIs(SegmentInfo info, String segName,
+      Map<String, String> dsNames, Set<String> dsFilesCopied)
+      throws IOException {
+    // Determine if the doc store of this segment needs to be copied. It's
+    // only relevant for segments that share doc store with others,
+    // because the DS might have been copied already, in which case we
+    // just want to update the DS name of this SegmentInfo.
+    // NOTE: pre-3x segments include a null DSName if they don't share doc
+    // store. The following code ensures we don't accidentally insert
+    // 'null' to the map.
+    String dsName = info.getDocStoreSegment();
+    final String newDsName;
+    if (dsName != null) {
+      if (dsNames.containsKey(dsName)) {
+        newDsName = dsNames.get(dsName);
+      } else {
+        dsNames.put(dsName, segName);
+        newDsName = segName;
+      }
+    } else {
+      newDsName = segName;
+    }
+    
+    // Copy the segment files
+    for (String file: info.files()) {
+      final String newFileName;
+      if (IndexFileNames.isDocStoreFile(file)) {
+        newFileName = newDsName + IndexFileNames.stripSegmentName(file);
+        if (dsFilesCopied.contains(newFileName)) {
+          continue;
+        }
+        dsFilesCopied.add(newFileName);
+      } else {
+        newFileName = segName + IndexFileNames.stripSegmentName(file);
+      }
+      
+      assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+      info.dir.copy(directory, file, newFileName);
+    }
+    
+    info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
+    info.dir = directory;
+    info.name = segName;
+  }
+  
   /**
    * A hook for extending classes to execute operations after pending added and
    * deleted documents have been flushed to the Directory but before the change
