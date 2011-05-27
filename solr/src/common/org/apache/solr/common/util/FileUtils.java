@@ -54,7 +54,7 @@ public class FileUtils {
   }
 
   /**
-   * Copied from Lucene's FSDirectory.sync(String) <!-- protected -->
+   * Copied from Lucene's FSDirectory.fsync(String) <!-- protected -->
    *
    * @param fullFile the File to be synced to disk
    * @throws IOException if the file could not be synced
