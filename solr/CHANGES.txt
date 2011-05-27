@@ -22,8 +22,6 @@ See README.txt and http://lucene.apache.org/solr for more information
 on how to get started.
 
 
-* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
-
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
@@ -146,6 +144,8 @@ Other Changes
 
 Build
 ----------------------
+
+* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
 Documentation
 ----------------------
