@@ -31,7 +31,7 @@ Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 
 
-Upgrading from Solr 3.2-dev
+Upgrading from Solr 3.3-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -263,7 +263,9 @@ Documentation
 
 * LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
 
-==================  3.2.0-dev ==================
+======================= 3.x (not yet released) ================
+
+==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
 Apache Lucene trunk

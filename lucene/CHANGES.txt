@@ -427,7 +427,11 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-======================= Lucene 3.x (not yet released) =======================
+======================= Lucene 3.x (not yet released) ================
+
+(No changes)
+
+======================= Lucene 3.2.0 =======================
 
 Changes in backwards compatibility policy
 
