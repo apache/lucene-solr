@@ -155,16 +155,25 @@ public class DirectSolrConnection
         }
       }
     }
+
     if( handler == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
-    
+
+    return request(handler, params, body);
+  }
+
+  public String request(SolrRequestHandler handler, SolrParams params, String body ) throws Exception {
+
+    if (params == null)
+      params = new MapSolrParams( new HashMap<String, String>() );
+
     // Make a stream for the 'body' content
     List<ContentStream> streams = new ArrayList<ContentStream>( 1 );
     if( body != null && body.length() > 0 ) {
       streams.add( new ContentStreamBase.StringStream( body ) );
     }
-    
+
     SolrQueryRequest req = null;
     try {
       req = parser.buildRequestFrom( core, params, streams );
@@ -173,7 +182,7 @@ public class DirectSolrConnection
       if( rsp.getException() != null ) {
         throw rsp.getException();
       }
-      
+
       // Now write it out
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       StringWriter out = new StringWriter();
