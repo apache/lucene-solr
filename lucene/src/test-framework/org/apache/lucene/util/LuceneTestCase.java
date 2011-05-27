@@ -116,7 +116,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
    */
-  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_32;
+  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_33;
 
   /**
    * If this is set, it is the only method that should run.

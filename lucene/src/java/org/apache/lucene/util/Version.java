@@ -71,13 +71,16 @@ public enum Version {
   /** Match settings and bugs in Lucene's 3.1 release. */
   LUCENE_31,
   
+  /** Match settings and bugs in Lucene's 3.2 release. */
+  LUCENE_32,
+  
   /**
-   * Match settings and bugs in Lucene's 3.2 release.
+   * Match settings and bugs in Lucene's 3.3 release.
    * <p>
    * Use this to get the latest &amp; greatest settings, bug
    * fixes, etc, for Lucene.
    */
-  LUCENE_32,
+  LUCENE_33,
   
   /* Add new constants for later versions **here** to respect order! */
 
