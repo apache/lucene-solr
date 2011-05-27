@@ -16,34 +16,21 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
+import org.junit.BeforeClass;
+
 import java.util.Map;
 import java.io.IOException;
 
-public class TestIndexSearcher extends AbstractSolrTestCase {
+public class TestIndexSearcher extends SolrTestCaseJ4 {
 
-  @Override
-  public String getSchemaFile() { return "schema11.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public String getCoreName() { return "basic"; }
-
-
-  @Override
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-  }
-  @Override
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema11.xml");
   }
 
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
@@ -128,7 +115,7 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
     assertU(delI("1"));
     assertU(commit());
     SolrQueryRequest sr6 = req("q","foo");
-    SolrIndexReader r6 = sr4.getSearcher().getReader();
+    SolrIndexReader r6 = sr6.getSearcher().getReader();
     assertEquals(1, r6.getLeafReaders()[0].numDocs()); // only a single doc left in the first segment
     assertTrue( !r5.getLeafReaders()[0].equals(r6.getLeafReaders()[0]) );  // readers now different
     String afterDelete = getStringVal(sr6, "v_s",1);
