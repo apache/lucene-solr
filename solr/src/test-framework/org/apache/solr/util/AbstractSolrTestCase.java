@@ -27,7 +27,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.*;
-import org.apache.solr.util.TestHarness;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import org.xml.sax.SAXException;
 import org.slf4j.LoggerFactory;
@@ -90,6 +91,16 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
    */
   public String getSolrHome() {
     return SolrTestCaseJ4.TEST_HOME();
+  }
+  
+  @BeforeClass
+  public static void beforeClassAbstractSolrTestCase() throws Exception {
+    SolrTestCaseJ4.startTrackingSearchers();
+  }
+  
+  @AfterClass
+  public static void afterClassAbstractSolrTestCase() throws Exception {
+    SolrTestCaseJ4.endTrackingSearchers();
   }
   
   /**

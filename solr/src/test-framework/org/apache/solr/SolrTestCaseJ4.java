@@ -62,6 +62,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
+    startTrackingSearchers();
     ignoreException("ignore_exception");
   }
 
@@ -69,6 +70,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void afterClassSolrTestCase() throws Exception {
     deleteCore();
     resetExceptionIgnores();
+    endTrackingSearchers();
   }
 
   @Override
@@ -92,7 +94,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema, String solrHome) throws Exception {
-    startTrackingSearchers();
     configString = config;
     schemaString = schema;
     if (solrHome != null) {
@@ -104,12 +105,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   static long numOpens;
   static long numCloses;
-  protected static void startTrackingSearchers() {
+  public static void startTrackingSearchers() {
     numOpens = SolrIndexSearcher.numOpens.get();
     numCloses = SolrIndexSearcher.numCloses.get();
   }
 
-  protected static void endTrackingSearchers() {
+  public static void endTrackingSearchers() {
      long endNumOpens = SolrIndexSearcher.numOpens.get();
      long endNumCloses = SolrIndexSearcher.numCloses.get();
 
@@ -289,8 +290,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     h = null;
     lrf = null;
     configString = schemaString = null;
-
-    endTrackingSearchers();
   }
 
 
