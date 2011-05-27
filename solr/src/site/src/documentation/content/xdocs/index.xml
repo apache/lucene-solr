@@ -78,7 +78,11 @@ customization is required.
    Solr 3.2 release highlights include
  </p>
   <ul>
-    <li>Features and Bugfixes list go here...</li>
+    <li>Ability to specify overwrite and commitWithin as request parameters when using the JSON update format</li>
+    <li>TermQParserPlugin, useful when generating filter queries from terms returned from field faceting or the terms component.</li>
+    <li>DebugComponent now supports using a NamedList to model Explanation objects in it's responses instead of Explanation.toString</li>
+    <li>Improvements to the UIMA and Carrot2 integrations</li>
+    <li>Bugfixes and improvements from Apache Lucene 3.2</li>
   </ul>
      
   <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_2/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
