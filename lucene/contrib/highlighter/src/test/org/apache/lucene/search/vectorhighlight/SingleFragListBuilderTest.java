@@ -24,21 +24,21 @@ public class SingleFragListBuilderTest extends AbstractTestCase {
   public void testNullFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "b c d" ), 100 );
-    assertEquals( 0, ffl.fragInfos.size() );
+    assertEquals( 0, ffl.getFragInfos().size() );
   }
   
   public void testShortFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a b c d" ), 100 );
-    assertEquals( 1, ffl.fragInfos.size() );
-    assertEquals( "subInfos=(a((0,1)))/1.0(0,2147483647)", ffl.fragInfos.get( 0 ).toString() );
+    assertEquals( 1, ffl.getFragInfos().size() );
+    assertEquals( "subInfos=(a((0,1)))/1.0(0,2147483647)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testLongFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a b c d", "a b c d e f g h i", "j k l m n o p q r s t u v w x y z a b c", "d e f g" ), 100 );
-    assertEquals( 1, ffl.fragInfos.size() );
-    assertEquals( "subInfos=(a((0,1))a((8,9))a((60,61)))/3.0(0,2147483647)", ffl.fragInfos.get( 0 ).toString() );
+    assertEquals( 1, ffl.getFragInfos().size() );
+    assertEquals( "subInfos=(a((0,1))a((8,9))a((60,61)))/3.0(0,2147483647)", ffl.getFragInfos().get( 0 ).toString() );
   }
 
   private FieldPhraseList fpl( String queryValue, String... indexValues ) throws Exception {

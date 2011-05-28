@@ -52,7 +52,10 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
-(No Changes)
+API Changes
+
+ * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
+   (Sujit Pal via Koji Sekiguchi)
 
 ======================= Lucene 3.2.0 =======================
 
