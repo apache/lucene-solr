@@ -87,8 +87,26 @@ final class TermInfosWriter implements Closeable {
                   int interval)
        throws IOException {
     initialize(directory, segment, fis, interval, false);
+    boolean success = false;
+    try {
     other = new TermInfosWriter(directory, segment, fis, interval, true);
     other.other = this;
+      success = true;
+    } finally {
+      if (!success) {
+        try {
+          IOUtils.closeSafely(true, output);
+        } catch (IOException e) {
+          // cannot happen since we suppress exceptions
+          throw new RuntimeException(e);
+        }
+
+        try {
+          directory.deleteFile(segment + (isIndex ? ".tii" : ".tis"));
+        } catch (IOException ignored) {
+        }
+      }
+    }
   }
 
   private TermInfosWriter(Directory directory, String segment, FieldInfos fis,
