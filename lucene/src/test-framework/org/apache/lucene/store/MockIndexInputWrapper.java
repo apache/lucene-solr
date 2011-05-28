@@ -40,12 +40,16 @@ public class MockIndexInputWrapper extends IndexInput {
 
   @Override
   public void close() throws IOException {
-    delegate.close();
-    // Pending resolution on LUCENE-686 we may want to
-    // remove the conditional check so we also track that
-    // all clones get closed:
-    if (!isClone) {
-      dir.removeIndexInput(this, name);
+    try {
+      dir.maybeThrowDeterministicException();
+    } finally {
+      delegate.close();
+      // Pending resolution on LUCENE-686 we may want to
+      // remove the conditional check so we also track that
+      // all clones get closed:
+      if (!isClone) {
+        dir.removeIndexInput(this, name);
+      }
     }
   }
 
