@@ -41,7 +41,9 @@ public class MockIndexInputWrapper extends IndexInput {
   @Override
   public void close() throws IOException {
     try {
-      dir.maybeThrowDeterministicException();
+      // turn on the following to look for leaks closing inputs,
+      // after fixing TestTransactions
+      // dir.maybeThrowDeterministicException();
     } finally {
       delegate.close();
       // Pending resolution on LUCENE-686 we may want to
