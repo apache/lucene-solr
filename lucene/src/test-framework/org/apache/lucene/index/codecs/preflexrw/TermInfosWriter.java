@@ -102,12 +102,30 @@ final class TermInfosWriter implements Closeable {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
+    boolean success = false;
+    try {
     output.writeInt(FORMAT_CURRENT);              // write format
     output.writeLong(0);                          // leave space for size
     output.writeInt(indexInterval);               // write indexInterval
     output.writeInt(skipInterval);                // write skipInterval
     output.writeInt(maxSkipLevels);               // write maxSkipLevels
     assert initUTF16Results();
+      success = true;
+    } finally {
+      if (!success) {
+        try {
+          IOUtils.closeSafely(true, output);
+        } catch (IOException e) {
+          // cannot happen since we suppress exceptions
+          throw new RuntimeException(e);
+        }
+
+        try {
+          directory.deleteFile(segment + (isIndex ? ".tii" : ".tis"));
+        } catch (IOException ignored) {
+        }
+      }
+    }
   }
 
   // Currently used only by assert statements

@@ -160,6 +160,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       IOUtils.closeSafely(true, tvx, tvd, tvf);
     } catch (IOException e) {
       // cannot happen since we suppress exceptions
+      throw new RuntimeException(e);
     }
     
     try {
