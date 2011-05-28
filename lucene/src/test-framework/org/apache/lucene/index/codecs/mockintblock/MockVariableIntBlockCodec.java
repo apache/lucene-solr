@@ -46,6 +46,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * A silly test codec to verify core support for variable
@@ -102,34 +103,42 @@ public class MockVariableIntBlockCodec extends Codec {
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
       final IndexOutput out = dir.createOutput(fileName);
-      out.writeInt(baseBlockSize);
-      return new VariableIntBlockIndexOutput(out, 2*baseBlockSize) {
-
-        int pendingCount;
-        final int[] buffer = new int[2+2*baseBlockSize];
-
-        @Override
-        protected int add(int value) throws IOException {
-          assert value >= 0;
-          buffer[pendingCount++] = value;
-          // silly variable block length int encoder: if
-          // first value <= 3, we write N vints at once;
-          // else, 2*N
-          final int flushAt = buffer[0] <= 3 ? baseBlockSize : 2*baseBlockSize;
-
-          // intentionally be non-causal here:
-          if (pendingCount == flushAt+1) {
-            for(int i=0;i<flushAt;i++) {
-              out.writeVInt(buffer[i]);
+      boolean success = false;
+      try {
+        out.writeInt(baseBlockSize);
+        VariableIntBlockIndexOutput ret = new VariableIntBlockIndexOutput(out, 2*baseBlockSize) {
+          int pendingCount;
+          final int[] buffer = new int[2+2*baseBlockSize];
+          
+          @Override
+          protected int add(int value) throws IOException {
+            assert value >= 0;
+            buffer[pendingCount++] = value;
+            // silly variable block length int encoder: if
+            // first value <= 3, we write N vints at once;
+            // else, 2*N
+            final int flushAt = buffer[0] <= 3 ? baseBlockSize : 2*baseBlockSize;
+            
+            // intentionally be non-causal here:
+            if (pendingCount == flushAt+1) {
+              for(int i=0;i<flushAt;i++) {
+                out.writeVInt(buffer[i]);
+              }
+              buffer[0] = buffer[flushAt];
+              pendingCount = 1;
+              return flushAt;
+            } else {
+              return 0;
             }
-            buffer[0] = buffer[flushAt];
-            pendingCount = 1;
-            return flushAt;
-          } else {
-            return 0;
           }
+        };
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, out);
         }
-      };
+      }
     }
   }
 

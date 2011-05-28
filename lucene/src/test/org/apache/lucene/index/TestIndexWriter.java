@@ -2123,6 +2123,10 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
+          if (VERBOSE) {
+            System.out.println("TEST: got interrupt");
+            re.printStackTrace(System.out);
+          }
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {

@@ -34,6 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MultiBits;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -546,14 +547,13 @@ final class SegmentMerger {
     }
     codec = segmentWriteState.segmentCodecs.codec();
     final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
-
-    // NOTE: this is silly, yet, necessary -- we create a
-    // MultiBits as our skip docs only to have it broken
-    // apart when we step through the docs enums in
-    // MultiDocsEnum.
-    mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
-
     try {
+      // NOTE: this is silly, yet, necessary -- we create a
+      // MultiBits as our skip docs only to have it broken
+      // apart when we step through the docs enums in
+      // MultiDocsEnum.
+      mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
+      
       consumer.merge(mergeState,
                      new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
@@ -579,6 +579,7 @@ final class SegmentMerger {
 
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
+    boolean success = false;
     try {
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
@@ -612,10 +613,9 @@ final class SegmentMerger {
           }
         }
       }
+      success = true;
     } finally {
-      if (output != null) {
-        output.close();
-      }
+      IOUtils.closeSafely(!success, output);
     }
   }
 }

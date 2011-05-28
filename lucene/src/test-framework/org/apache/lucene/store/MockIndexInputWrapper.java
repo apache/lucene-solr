@@ -31,8 +31,7 @@ public class MockIndexInputWrapper extends IndexInput {
   private IndexInput delegate;
   private boolean isClone;
 
-  /** Construct an empty output buffer. 
-   * @throws IOException */
+  /** Construct an empty output buffer. */
   public MockIndexInputWrapper(MockDirectoryWrapper dir, String name, IndexInput delegate) {
     this.name = name;
     this.dir = dir;
@@ -46,20 +45,7 @@ public class MockIndexInputWrapper extends IndexInput {
     // remove the conditional check so we also track that
     // all clones get closed:
     if (!isClone) {
-      synchronized(dir) {
-        Integer v = dir.openFiles.get(name);
-        // Could be null when MockRAMDirectory.crash() was called
-        if (v != null) {
-          if (v.intValue() == 1) {
-            dir.openFiles.remove(name);
-            dir.openFilesDeleted.remove(name);
-          } else {
-            v = Integer.valueOf(v.intValue()-1);
-            dir.openFiles.put(name, v);
-          }
-        }
-        dir.openFileHandles.remove(this);
-      }
+      dir.removeIndexInput(this, name);
     }
   }
 

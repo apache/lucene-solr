@@ -57,10 +57,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
           dir.maxUsedSize = size;
         }
       }
-      synchronized(dir) {
-        dir.openFileHandles.remove(this);
-        dir.openFilesForWrite.remove(name);
-      }
+      dir.removeIndexOutput(this, name);
     }
   }
 

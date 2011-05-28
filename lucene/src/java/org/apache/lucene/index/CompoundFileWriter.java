@@ -219,7 +219,7 @@ public final class CompoundFileWriter {
         } catch (IOException e) {
           priorException = e;
         } finally {
-          IOUtils.closeSafely(priorException, os);
+          IOUtils.closeSafelyPriorEx(priorException, os);
         }
     }
 

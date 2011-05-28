@@ -17,22 +17,23 @@ package org.apache.lucene.index.codecs.preflexrw;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermStats;
-import org.apache.lucene.index.codecs.standard.DefaultSkipListWriter;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.codecs.preflex.TermInfo;
-import org.apache.lucene.store.IndexOutput;
-
 import java.io.IOException;
 import java.util.Comparator;
+
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.PostingsConsumer;
+import org.apache.lucene.index.codecs.TermStats;
+import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflex.TermInfo;
+import org.apache.lucene.index.codecs.standard.DefaultSkipListWriter;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 class PreFlexFieldsWriter extends FieldsConsumer {
 
@@ -76,11 +77,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
 
   @Override
   public void close() throws IOException {
-    termsOut.close();
-    freqOut.close();
-    if (proxOut != null) {
-      proxOut.close();
-    }
+    IOUtils.closeSafely(false, termsOut, freqOut, proxOut);
   }
 
   private class PreFlexTermsWriter extends TermsConsumer {

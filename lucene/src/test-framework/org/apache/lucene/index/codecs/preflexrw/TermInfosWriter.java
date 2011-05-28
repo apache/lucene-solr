@@ -18,20 +18,23 @@ package org.apache.lucene.index.codecs.preflexrw;
  */
 
 
+import java.io.Closeable;
 import java.io.IOException;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnicodeUtil;
 
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
 
-final class TermInfosWriter {
+final class TermInfosWriter implements Closeable {
   /** The file format version, a negative number. */
   public static final int FORMAT = -3;
 
@@ -216,13 +219,18 @@ final class TermInfosWriter {
   }
 
   /** Called to complete TermInfos creation. */
-  void close() throws IOException {
-    output.seek(4);          // write size after format
-    output.writeLong(size);
-    output.close();
-
-    if (!isIndex)
-      other.close();
+  public void close() throws IOException {
+    try {
+      output.seek(4);          // write size after format
+      output.writeLong(size);
+    } finally {
+      try {
+        output.close();
+      } finally {
+        if (!isIndex) {
+          other.close();
+        }
+      }
+    }
   }
-
 }

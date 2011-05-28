@@ -208,7 +208,7 @@ public abstract class Directory implements Closeable {
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
-      IOUtils.closeSafely(priorException, os, is);
+      IOUtils.closeSafelyPriorEx(priorException, os, is);
     }
   }
 

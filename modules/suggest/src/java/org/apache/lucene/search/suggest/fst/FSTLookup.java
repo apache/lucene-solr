@@ -510,7 +510,7 @@ public class FSTLookup extends Lookup {
       this.automaton = new FST<Object>(new InputStreamDataInput(is), NoOutputs.getSingleton());
       cacheRootArcs();
     } finally {
-      IOUtils.closeSafely(is);
+      IOUtils.closeSafely(false, is);
     }
     return true;
   }
@@ -532,7 +532,7 @@ public class FSTLookup extends Lookup {
     try {
       this.automaton.save(new OutputStreamDataOutput(os));
     } finally {
-      IOUtils.closeSafely(os);
+      IOUtils.closeSafely(false, os);
     }
 
     return true;

@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Enables native per field codec support. This class selects the codec used to
@@ -61,7 +63,15 @@ final class PerFieldCodecWrapper extends Codec {
       assert segmentCodecs == state.segmentCodecs;
       final Codec[] codecs = segmentCodecs.codecs;
       for (int i = 0; i < codecs.length; i++) {
-        consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, "" + i)));
+        boolean success = false;
+        try {
+          consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, "" + i)));
+          success = true;
+        } finally {
+          if (!success) {
+            IOUtils.closeSafelyIterable(true, consumers);
+          }
+        }
       }
     }
 
@@ -74,21 +84,27 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public void close() throws IOException {
+      // TODO would be nice if we could use IOUtils.closeSafely - can do that
+      // only if we convert the list to an array
+//      IOUtils.closeSafelyIterable(false, consumers);
       Iterator<FieldsConsumer> it = consumers.iterator();
-      IOException err = null;
+      Throwable th = null;
       while (it.hasNext()) {
         try {
           it.next().close();
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
+        } catch (Throwable t) {
+          // keep first error we hit but keep closing the rest
+          if (th == null) {
+            th = t;
           }
         }
       }
-      if (err != null) {
-        throw err;
+      
+      if (th != null) {
+        if (th instanceof IOException) throw (IOException) th;
+        if (th instanceof RuntimeException) throw (RuntimeException) th;
+        if (th instanceof Error) throw (Error) th;
+        throw new RuntimeException(th);
       }
     }
   }
@@ -177,21 +193,24 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public void close() throws IOException {
+      // TODO: use IOUtils.closeSafely
       Iterator<FieldsProducer> it = codecs.values().iterator();
-      IOException err = null;
+      Throwable th = null;
       while (it.hasNext()) {
         try {
           it.next().close();
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
+        } catch (Throwable t) {
+          // keep first error we hit but keep closing the rest
+          if (th == null) {
+            th = t;
           }
         }
       }
-      if (err != null) {
-        throw err;
+      if (th != null) {
+        if (th instanceof IOException) throw (IOException) th;
+        if (th instanceof RuntimeException) throw (RuntimeException) th;
+        if (th instanceof Error) throw (Error) th;
+        throw new RuntimeException(th);
       }
     }
 

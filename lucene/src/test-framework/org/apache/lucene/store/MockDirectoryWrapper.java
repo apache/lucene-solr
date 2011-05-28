@@ -68,24 +68,24 @@ public class MockDirectoryWrapper extends Directory {
   boolean trackDiskUsage = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
-  Set<String> openFilesForWrite = new HashSet<String>();
+  private Set<String> openFilesForWrite = new HashSet<String>();
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
 
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
-  Map<Closeable,Exception> openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
+  private Map<Closeable,Exception> openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
   // member initialization vs when it calls super.  It seems
   // like super is called, then our members are initialized:
-  Map<String,Integer> openFiles;
+  private Map<String,Integer> openFiles;
 
   // Only tracked if noDeleteOpenFile is true: if an attempt
   // is made to delete an open file, we enroll it here.
-  Set<String> openFilesDeleted;
+  private Set<String> openFilesDeleted;
 
   private synchronized void init() {
     if (openFiles == null) {
@@ -127,7 +127,7 @@ public class MockDirectoryWrapper extends Directory {
     SOMETIMES,
     /** never throttle output */
     NEVER
-  };
+  }
   
   public void setThrottling(Throttling throttling) {
     this.throttling = throttling;
@@ -362,9 +362,10 @@ public class MockDirectoryWrapper extends Directory {
         ramdir.fileMap.put(name, file);
       }
     }
+    
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
-    openFileHandles.put(io, new RuntimeException("unclosed IndexOutput"));
+    addFileHandle(io, name, false);
     openFilesForWrite.add(name);
     
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
@@ -379,6 +380,18 @@ public class MockDirectoryWrapper extends Directory {
     }
   }
 
+  private void addFileHandle(Closeable c, String name, boolean input) {
+    Integer v = openFiles.get(name);
+    if (v != null) {
+      v = Integer.valueOf(v.intValue()+1);
+      openFiles.put(name, v);
+    } else {
+      openFiles.put(name, Integer.valueOf(1));
+    }
+    
+    openFileHandles.put(c, new RuntimeException("unclosed Index" + (input ? "Input" : "Output") + ": " + name));
+  }
+  
   @Override
   public synchronized IndexInput openInput(String name) throws IOException {
     maybeYield();
@@ -391,16 +404,8 @@ public class MockDirectoryWrapper extends Directory {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    if (openFiles.containsKey(name)) {
-      Integer v =  openFiles.get(name);
-      v = Integer.valueOf(v.intValue()+1);
-      openFiles.put(name, v);
-    } else {
-      openFiles.put(name, Integer.valueOf(1));
-    }
-
     IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name));
-    openFileHandles.put(ii, new RuntimeException("unclosed IndexInput"));
+    addFileHandle(ii, name, true);
     return ii;
   }
 
@@ -465,6 +470,31 @@ public class MockDirectoryWrapper extends Directory {
     delegate.close();
   }
 
+  private synchronized void removeOpenFile(Closeable c, String name) {
+    Integer v = openFiles.get(name);
+    // Could be null when crash() was called
+    if (v != null) {
+      if (v.intValue() == 1) {
+        openFiles.remove(name);
+        openFilesDeleted.remove(name);
+      } else {
+        v = Integer.valueOf(v.intValue()-1);
+        openFiles.put(name, v);
+      }
+    }
+
+    openFileHandles.remove(c);
+  }
+  
+  public synchronized void removeIndexOutput(IndexOutput out, String name) {
+    openFilesForWrite.remove(name);
+    removeOpenFile(out, name);
+  }
+  
+  public synchronized void removeIndexInput(IndexInput in, String name) {
+    removeOpenFile(in, name);
+  }
+  
   private CodecProvider codecProvider;
 
   // We pass this CodecProvider to checkIndex when dir is closed...

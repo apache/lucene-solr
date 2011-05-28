@@ -54,7 +54,6 @@ final class TermsHash extends InvertedDocConsumer {
 
   final boolean trackAllocations;
 
-
   public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, boolean trackAllocations, final TermsHash nextTermsHash) {
     this.docState = docWriter.docState;
     this.docWriter = docWriter;
@@ -108,11 +107,11 @@ final class TermsHash extends InvertedDocConsumer {
     }
 
     for (final Map.Entry<FieldInfo,InvertedDocConsumerPerField> entry : fieldsToFlush.entrySet()) {
-        TermsHashPerField perField = (TermsHashPerField) entry.getValue();
-        childFields.put(entry.getKey(), perField.consumer);
-        if (nextTermsHash != null) {
-          nextChildFields.put(entry.getKey(), perField.nextPerField);
-        }
+      TermsHashPerField perField = (TermsHashPerField) entry.getValue();
+      childFields.put(entry.getKey(), perField.consumer);
+      if (nextTermsHash != null) {
+        nextChildFields.put(entry.getKey(), perField.nextPerField);
+      }
     }
 
     consumer.flush(childFields, state);
@@ -134,12 +133,9 @@ final class TermsHash extends InvertedDocConsumer {
 
   @Override
   void finishDocument() throws IOException {
-    try {
-      consumer.finishDocument(this);
-    } finally {
-      if (nextTermsHash != null) {
-        nextTermsHash.consumer.finishDocument(nextTermsHash);
-      }
+    consumer.finishDocument(this);
+    if (nextTermsHash != null) {
+      nextTermsHash.consumer.finishDocument(nextTermsHash);
     }
   }
 

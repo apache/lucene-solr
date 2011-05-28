@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.mocksep;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import java.io.IOException;
 
@@ -36,7 +37,15 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
 
   public MockSingleIntIndexOutput(Directory dir, String fileName) throws IOException {
     out = dir.createOutput(fileName);
-    CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);
+    boolean success = false;
+    try {
+      CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
+    }
   }
 
   /** Write an int to the primary file */
