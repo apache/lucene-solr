@@ -469,6 +469,7 @@ public abstract class LuceneTestCase extends Assert {
             if (ste.getClassName().indexOf("org.apache.lucene") == -1) break; 
             System.err.println("\t" + ste);
           }
+          fail("could not remove temp dir: " + entry.getKey());
         }
       }
     }
