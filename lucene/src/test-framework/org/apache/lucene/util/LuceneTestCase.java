@@ -1137,7 +1137,7 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+        final File tmpFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
         registerTempFile(tmpFile);

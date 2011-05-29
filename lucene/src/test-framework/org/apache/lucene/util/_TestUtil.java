@@ -373,4 +373,51 @@ public class _TestUtil {
               field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
     }
   }
+  
+  /** 
+   * insecure, fast version of File.createTempFile
+   * uses Random instead of SecureRandom.
+   */
+  public static File createTempFile(String prefix, String suffix, File directory)
+      throws IOException {
+    // Force a prefix null check first
+    if (prefix.length() < 3) {
+      throw new IllegalArgumentException("prefix must be 3");
+    }
+    String newSuffix = suffix == null ? ".tmp" : suffix;
+    File result;
+    do {
+      result = genTempFile(prefix, newSuffix, directory);
+    } while (!result.createNewFile());
+    return result;
+  }
+
+  /* Temp file counter */
+  private static int counter = 0;
+
+  /* identify for differnt VM processes */
+  private static int counterBase = 0;
+
+  private static class TempFileLocker {};
+  private static TempFileLocker tempFileLocker = new TempFileLocker();
+
+  private static File genTempFile(String prefix, String suffix, File directory) {
+    int identify = 0;
+
+    synchronized (tempFileLocker) {
+      if (counter == 0) {
+        int newInt = new Random().nextInt();
+        counter = ((newInt / 65535) & 0xFFFF) + 0x2710;
+        counterBase = counter;
+      }
+      identify = counter++;
+    }
+
+    StringBuilder newName = new StringBuilder();
+    newName.append(prefix);
+    newName.append(counterBase);
+    newName.append(identify);
+    newName.append(suffix);
+    return new File(directory, newName.toString());
+  }
 }
