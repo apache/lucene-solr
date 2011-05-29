@@ -71,15 +71,7 @@ final class DocFieldProcessor extends DocConsumer {
       childFields.put(f.getFieldInfo(), f);
     }
 
-    boolean success = false;
-    try {
-      fieldsWriter.flush(state);
-      success = true;
-    } finally {
-      if (!success) {
-        abort();
-      }
-    }
+    fieldsWriter.flush(state);
     consumer.flush(childFields, state);
 
     // Important to save after asking consumer to flush so
