@@ -3334,11 +3334,12 @@ public class IndexWriter implements Closeable {
     final int numSegments = merge.readers.size();
     Throwable th = null;
     
+    boolean anyChanges = false;
     boolean drop = !suppressExceptions;
     for (int i = 0; i < numSegments; i++) {
       if (merge.readers.get(i) != null) {
         try {
-          readerPool.release(merge.readers.get(i), drop);
+          anyChanges |= readerPool.release(merge.readers.get(i), drop);
         } catch (Throwable t) {
           if (th == null) {
             th = t;
@@ -3362,11 +3363,15 @@ public class IndexWriter implements Closeable {
       }
     }
     
-    // If any errors occured, throw it.
+    if (suppressExceptions && anyChanges) {
+      checkpoint();
+    }
+    
+    // If any error occured, throw it.
     if (!suppressExceptions && th != null) {
+      if (th instanceof IOException) throw (IOException) th;
       if (th instanceof RuntimeException) throw (RuntimeException) th;
       if (th instanceof Error) throw (Error) th;
-      // defensive code - we should not hit unchecked exceptions
       throw new RuntimeException(th);
     }
   }
