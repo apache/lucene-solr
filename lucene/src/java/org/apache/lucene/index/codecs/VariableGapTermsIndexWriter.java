@@ -29,9 +29,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.automaton.fst.Builder;
-import org.apache.lucene.util.automaton.fst.FST;
-import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 /**
  * Selects index terms according to provided pluggable

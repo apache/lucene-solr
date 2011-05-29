@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,6 +27,7 @@ import org.apache.lucene.store.DataOutput;
  * resulting FST is not guaranteed to be minimal!  See
  * {@link Builder}.  You cannot store 0 output with this
  * (that's reserved to mean "no output")!
+ *
  * @lucene.experimental
  */
 

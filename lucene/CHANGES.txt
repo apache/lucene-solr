@@ -434,12 +434,23 @@ Bug fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+Changes in backwards compatibility policy
+
+* LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
+  of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
+  Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
   lock file is not stored in the index has changed.  This means you
   will see a different lucene-XXX-write.lock in your lock directory.
   (Robert Muir, Uwe Schindler, Mike McCandless)
+
+New Features
+
+* LUCENE-3140: Added experimental FST implementation to Lucene.
+  (Robert Muir, Dawid Weiss, Mike McCandless)
 
 ======================= Lucene 3.2.0 =======================
 

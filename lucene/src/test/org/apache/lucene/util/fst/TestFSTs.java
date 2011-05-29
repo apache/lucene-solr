@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,7 +47,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.automaton.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.Arc;
 
 public class TestFSTs extends LuceneTestCase {
 
@@ -1226,7 +1226,7 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  // java -cp build/classes/test:build/classes/java:lib/junit-4.7.jar org.apache.lucene.util.automaton.fst.TestFSTs /x/tmp/allTerms3.txt out
+  // java -cp build/classes/test:build/classes/java:lib/junit-4.7.jar org.apache.lucene.util.fst.TestFSTs /x/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
     int prune = 0;
     int limit = Integer.MAX_VALUE;

@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,6 +22,8 @@ import org.apache.lucene.store.DataOutput;
 
 /**
  * Use this if you just want to build an FSA.
+ *
+ * @lucene.experimental
  */
 
 public final class NoOutputs extends Outputs<Object> {

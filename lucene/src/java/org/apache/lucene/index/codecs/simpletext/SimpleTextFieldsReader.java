@@ -32,11 +32,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.automaton.fst.Builder;
-import org.apache.lucene.util.automaton.fst.BytesRefFSTEnum;
-import org.apache.lucene.util.automaton.fst.FST;
-import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
-import org.apache.lucene.util.automaton.fst.PairOutputs;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.PairOutputs;
 
 import java.io.IOException;
 import java.util.Comparator;

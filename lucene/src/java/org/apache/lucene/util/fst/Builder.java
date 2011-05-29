@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

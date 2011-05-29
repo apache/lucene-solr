@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import java.io.IOException;
 
 /** Can next() and advance() through the terms in an FST
+ *
   * @lucene.experimental
 */
 

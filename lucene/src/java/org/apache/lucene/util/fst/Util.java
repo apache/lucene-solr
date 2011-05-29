@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,7 +23,9 @@ import java.util.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
-/** Static helper methods */
+/** Static helper methods
+ *
+ * @lucene.experimental */
 public final class Util {
   private Util() {
   }

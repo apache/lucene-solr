@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,28 +17,29 @@ package org.apache.lucene.util.automaton.fst;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.IntsRef;
+
 import java.io.IOException;
 
-import org.apache.lucene.util.BytesRef;
-
 /** Can next() and advance() through the terms in an FST
+ *
   * @lucene.experimental
 */
 
-public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
-  private final BytesRef current = new BytesRef(10);
+public final class IntsRefFSTEnum<T> extends FSTEnum<T> {
+  private final IntsRef current = new IntsRef(10);
   private final InputOutput<T> result = new InputOutput<T>();
-  private BytesRef target;
+  private IntsRef target;
 
   public static class InputOutput<T> {
-    public BytesRef input;
+    public IntsRef input;
     public T output;
   }
 
   /** doFloor controls the behavior of advance: if it's true
    *  doFloor is true, advance positions to the biggest
    *  term before target.  */
-  public BytesRefFSTEnum(FST<T> fst) {
+  public IntsRefFSTEnum(FST<T> fst) {
     super(fst);
     result.input = current;
     current.offset = 1;
@@ -55,7 +56,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   }
 
   /** Seeks to smallest term that's >= target. */
-  public InputOutput<T> seekCeil(BytesRef target) throws IOException {
+  public InputOutput<T> seekCeil(IntsRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
     super.doSeekCeil();
@@ -63,7 +64,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   }
 
   /** Seeks to biggest term that's <= target. */
-  public InputOutput<T> seekFloor(BytesRef target) throws IOException {
+  public InputOutput<T> seekFloor(IntsRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
     super.doSeekFloor();
@@ -75,19 +76,19 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
     if (upto-1 == target.length) {
       return FST.END_LABEL;
     } else {
-      return target.bytes[target.offset + upto - 1] & 0xFF;
+      return target.ints[target.offset + upto - 1];
     }
   }
 
   @Override
   protected int getCurrentLabel() {
     // current.offset fixed at 1
-    return current.bytes[upto] & 0xFF;
+    return current.ints[upto];
   }
 
   @Override
   protected void setCurrentLabel(int label) {
-    current.bytes[upto] = (byte) label;
+    current.ints[upto] = label;
   }
 
   @Override

@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,9 +24,9 @@ import org.apache.lucene.store.DataOutput;
 
 /**
  * Pairs up two outputs into one.
+ *
  * @lucene.experimental
  */
-
 
 public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
 

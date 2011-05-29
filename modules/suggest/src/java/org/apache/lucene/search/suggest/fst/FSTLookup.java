@@ -15,11 +15,11 @@ import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.automaton.fst.Builder;
-import org.apache.lucene.util.automaton.fst.FST;
-import org.apache.lucene.util.automaton.fst.FST.Arc;
-import org.apache.lucene.util.automaton.fst.NoOutputs;
-import org.apache.lucene.util.automaton.fst.Outputs;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.fst.Outputs;
 
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;

@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,7 +23,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.automaton.fst.Builder.UnCompiledNode;
+import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 
 // NOTE: while the FST is able to represent a non-final
 // dead-end state (NON_FINAL_END_NODE=0), the layres above
@@ -32,6 +32,7 @@ import org.apache.lucene.util.automaton.fst.Builder.UnCompiledNode;
 /** Represents an FST using a compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
  *  (http://sourceforge.net/projects/morfologik).
+ *
  * @lucene.experimental
  */
 public class FST<T> {

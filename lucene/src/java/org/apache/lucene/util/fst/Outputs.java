@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,7 @@ import org.apache.lucene.store.DataOutput;
 /**
  * Represents the outputs for an FST, providing the basic
  * algebra needed for the FST.
+ *
  * @lucene.experimental
  */
 

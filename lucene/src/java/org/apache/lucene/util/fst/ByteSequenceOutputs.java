@@ -1,4 +1,4 @@
-package org.apache.lucene.util.automaton.fst;
+package org.apache.lucene.util.fst;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,26 +21,27 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * Output is a sequence of ints, for each input term.
+ * Output is a sequence of bytes, for each input term.
+ *
  * @lucene.experimental
  */
 
-public final class IntSequenceOutputs extends Outputs<IntsRef> {
+public final class ByteSequenceOutputs extends Outputs<BytesRef> {
 
-  private final static IntsRef NO_OUTPUT = new IntsRef();
+  private final static BytesRef NO_OUTPUT = new BytesRef();
 
-  private IntSequenceOutputs() {
+  private ByteSequenceOutputs() {
   }
 
-  public static IntSequenceOutputs getSingleton() {
-    return new IntSequenceOutputs();
+  public static ByteSequenceOutputs getSingleton() {
+    return new ByteSequenceOutputs();
   }
 
   @Override
-  public IntsRef common(IntsRef output1, IntsRef output2) {
+  public BytesRef common(BytesRef output1, BytesRef output2) {
     assert output1 != null;
     assert output2 != null;
 
@@ -48,7 +49,7 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
     int pos2 = output2.offset;
     int stopAt1 = pos1 + Math.min(output1.length, output2.length);
     while(pos1 < stopAt1) {
-      if (output1.ints[pos1] != output2.ints[pos2]) {
+      if (output1.bytes[pos1] != output2.bytes[pos2]) {
         break;
       }
       pos1++;
@@ -65,12 +66,12 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
       // output2 is a prefix of output1
       return output2;
     } else {
-      return new IntsRef(output1.ints, output1.offset, pos1-output1.offset);
+      return new BytesRef(output1.bytes, output1.offset, pos1-output1.offset);
     }
   }
 
   @Override
-  public IntsRef subtract(IntsRef output, IntsRef inc) {
+  public BytesRef subtract(BytesRef output, BytesRef inc) {
     assert output != null;
     assert inc != null;
     if (inc == NO_OUTPUT) {
@@ -82,12 +83,12 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
     } else {
       assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
       assert inc.length > 0;
-      return new IntsRef(output.ints, output.offset + inc.length, output.length-inc.length);
+      return new BytesRef(output.bytes, output.offset + inc.length, output.length-inc.length);
     }
   }
 
   @Override
-  public IntsRef add(IntsRef prefix, IntsRef output) {
+  public BytesRef add(BytesRef prefix, BytesRef output) {
     assert prefix != null;
     assert output != null;
     if (prefix == NO_OUTPUT) {
@@ -97,45 +98,41 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
     } else {
       assert prefix.length > 0;
       assert output.length > 0;
-      IntsRef result = new IntsRef(prefix.length + output.length);
-      System.arraycopy(prefix.ints, prefix.offset, result.ints, 0, prefix.length);
-      System.arraycopy(output.ints, output.offset, result.ints, prefix.length, output.length);
+      BytesRef result = new BytesRef(prefix.length + output.length);
+      System.arraycopy(prefix.bytes, prefix.offset, result.bytes, 0, prefix.length);
+      System.arraycopy(output.bytes, output.offset, result.bytes, prefix.length, output.length);
       result.length = prefix.length + output.length;
       return result;
     }
   }
 
   @Override
-  public void write(IntsRef prefix, DataOutput out) throws IOException {
+  public void write(BytesRef prefix, DataOutput out) throws IOException {
     assert prefix != null;
     out.writeVInt(prefix.length);
-    for(int idx=0;idx<prefix.length;idx++) {
-      out.writeVInt(prefix.ints[prefix.offset+idx]);
-    }
+    out.writeBytes(prefix.bytes, prefix.offset, prefix.length);
   }
 
   @Override
-  public IntsRef read(DataInput in) throws IOException {
+  public BytesRef read(DataInput in) throws IOException {
     final int len = in.readVInt();
     if (len == 0) {
       return NO_OUTPUT;
     } else {
-      final IntsRef output = new IntsRef(len);
-      for(int idx=0;idx<len;idx++) {
-        output.ints[idx] = in.readVInt();
-      }
+      final BytesRef output = new BytesRef(len);
+      in.readBytes(output.bytes, 0, len);
       output.length = len;
       return output;
     }
   }
 
   @Override
-  public IntsRef getNoOutput() {
+  public BytesRef getNoOutput() {
     return NO_OUTPUT;
   }
 
   @Override
-  public String outputToString(IntsRef output) {
-    return output.toString();
+  public String outputToString(BytesRef output) {
+    return output.utf8ToString();
   }
 }
