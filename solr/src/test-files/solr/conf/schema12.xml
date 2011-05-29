@@ -28,7 +28,7 @@
      $Name:  $
   -->
 
-<schema name="test" version="1.2">
+<schema name="test" version="1.4">
   <types>
 
     <!-- field type definitions... note that the "name" attribute is
@@ -104,7 +104,7 @@
 
 
     <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
-    <fieldtype name="highlittext" class="solr.TextField" compressThreshold="345" />
+    <fieldtype name="highlittext" class="solr.TextField"/>
 
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
@@ -116,7 +116,7 @@
     <fieldtype name="tdate" class="solr.TrieDateField" sortMissingLast="true" precisionStep="6"/>
     <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
 
-  <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+  <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true" >
       <analyzer type="index">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.StopFilterFactory"
@@ -146,7 +146,7 @@
 
 
     <!-- field type that doesn't generate phrases from unquoted multiple tokens per analysis unit -->
-   <fieldType name="text_np" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false" >
+   <fieldType name="text_np" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.StopFilterFactory"
