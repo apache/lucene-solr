@@ -3330,49 +3330,44 @@ public class IndexWriter implements Closeable {
     runningMerges.remove(merge);
   }
 
-  private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
+  private final synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
     final int numSegments = merge.readers.size();
-    if (suppressExceptions) {
-      // Suppress any new exceptions so we throw the
-      // original cause
-      boolean anyChanges = false;
-      for (int i=0;i<numSegments;i++) {
-        if (merge.readers.get(i) != null) {
-          try {
-            anyChanges |= readerPool.release(merge.readers.get(i), false);
-          } catch (Throwable t) {
+    Throwable th = null;
+    
+    boolean drop = !suppressExceptions;
+    for (int i = 0; i < numSegments; i++) {
+      if (merge.readers.get(i) != null) {
+        try {
+          readerPool.release(merge.readers.get(i), drop);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
           }
-          merge.readers.set(i, null);
         }
-
-        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
-          try {
-            merge.readerClones.get(i).close();
-          } catch (Throwable t) {
-          }
-          // This was a private clone and we had the
-          // only reference
-          assert merge.readerClones.get(i).getRefCount() == 0: "refCount should be 0 but is " + merge.readerClones.get(i).getRefCount();
-          merge.readerClones.set(i, null);
-        }
+        merge.readers.set(i, null);
       }
-      if (anyChanges) {
-        checkpoint();
-      }
-    } else {
-      for (int i=0;i<numSegments;i++) {
-        if (merge.readers.get(i) != null) {
-          readerPool.release(merge.readers.get(i), true);
-          merge.readers.set(i, null);
-        }
-
-        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
+      
+      if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
+        try {
           merge.readerClones.get(i).close();
-          // This was a private clone and we had the only reference
-          assert merge.readerClones.get(i).getRefCount() == 0;
-          merge.readerClones.set(i, null);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          }
         }
+        // This was a private clone and we had the
+        // only reference
+        assert merge.readerClones.get(i).getRefCount() == 0: "refCount should be 0 but is " + merge.readerClones.get(i).getRefCount();
+        merge.readerClones.set(i, null);
       }
+    }
+    
+    // If any errors occured, throw it.
+    if (!suppressExceptions && th != null) {
+      if (th instanceof RuntimeException) throw (RuntimeException) th;
+      if (th instanceof Error) throw (Error) th;
+      // defensive code - we should not hit unchecked exceptions
+      throw new RuntimeException(th);
     }
   }
 
