@@ -586,4 +586,20 @@ final class DocumentsWriter {
       return (!isSegmentFlush || segment != null);  
     }
   }
+  
+  // use by IW during close to assert all DWPT are inactive after final flush
+  boolean assertNoActiveDWPT() {
+    Iterator<ThreadState> activePerThreadsIterator = perThreadPool.getAllPerThreadsIterator();
+    while(activePerThreadsIterator.hasNext()) {
+      ThreadState next = activePerThreadsIterator.next();
+      next.lock();
+      try {
+        assert !next.isActive();
+      } finally  {
+        next.unlock();
+      }
+    }
+    return true;
+  }
+ 
 }

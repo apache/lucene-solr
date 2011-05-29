@@ -304,6 +304,7 @@ public final class DocumentsWriterFlushControl {
   synchronized void setClosed() {
     // set by DW to signal that we should not release new DWPT after close
     this.closed = true;
+    perThreadPool.deactivateUnreleasedStates();
   }
 
   /**
@@ -386,8 +387,12 @@ public final class DocumentsWriterFlushControl {
             toFlush.add(flushingDWPT);
           }
         } else {
-          // get the new delete queue from DW
-          next.perThread.initialize();
+          if (closed) {
+            next.resetWriter(null); // make this state inactive
+          } else {
+            // get the new delete queue from DW
+            next.perThread.initialize();
+          }
         }
       } finally {
         next.unlock();
@@ -522,5 +527,4 @@ public final class DocumentsWriterFlushControl {
   boolean anyStalledThreads() {
     return stallControl.anyStalledThreads();
   }
- 
 }

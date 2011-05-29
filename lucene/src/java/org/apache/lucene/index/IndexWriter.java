@@ -1073,7 +1073,8 @@ public class IndexWriter implements Closeable {
 
       if (infoStream != null)
         message("at close: " + segString());
-
+      // used by assert below
+      final DocumentsWriter oldWriter = docWriter;
       synchronized(this) {
         readerPool.close();
         docWriter = null;
@@ -1087,6 +1088,7 @@ public class IndexWriter implements Closeable {
       synchronized(this) {
         closed = true;
       }
+      assert oldWriter.assertNoActiveDWPT();
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "closeInternal");
     } finally {
@@ -1100,6 +1102,8 @@ public class IndexWriter implements Closeable {
       }
     }
   }
+  
+ 
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
