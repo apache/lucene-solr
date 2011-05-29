@@ -63,6 +63,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
           addCount++;
         } catch (IOException ioe) {
+          if (VERBOSE) {
+            System.out.println("TEST: expected exc:");
+            ioe.printStackTrace(System.out);
+          }
           //System.out.println(Thread.currentThread().getName() + ": hit exc");
           //ioe.printStackTrace(System.out);
           if (ioe.getMessage().startsWith("fake disk full at") ||
@@ -209,13 +213,19 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
 
     for(int iter=0;iter<2;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
       MockDirectoryWrapper dir = newDirectory();
-      IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT,
-                                                     new MockAnalyzer(random)).setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy(4));
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random)).setMaxBufferedDocs(2)
+          .setMergeScheduler(new ConcurrentMergeScheduler())
+          .setMergePolicy(newLogMergePolicy(4));
       // We expect disk full exceptions in the merge threads
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       IndexWriter writer = new IndexWriter(dir, conf);
-
+      writer.setInfoStream(VERBOSE ? System.out : null);
+      
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 
       for(int i=0;i<NUM_THREADS;i++)

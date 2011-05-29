@@ -29,6 +29,7 @@ import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ReaderUtil;
 
 /**
@@ -467,8 +468,13 @@ final class SegmentMerger {
       mergeTermInfos(fieldsConsumer);
 
     } finally {
-      fieldsConsumer.finish();
-      if (queue != null) queue.close();
+      try {
+        fieldsConsumer.finish();
+      } finally {
+        if (queue != null) {
+          queue.close();
+        }
+      }
     }
   }
 
@@ -530,7 +536,6 @@ final class SegmentMerger {
       }
 
       int df = appendPostings(termsConsumer, match, matchSize);		  // add new TermInfo
-
       checkAbort.work(df/3.0);
 
       while (matchSize > 0) {
@@ -628,6 +633,7 @@ final class SegmentMerger {
     
     byte[] normBuffer = null;
     IndexOutput output = null;
+    boolean success = false;
     try {
       int numFieldInfos = fieldInfos.size();
       for (int i = 0; i < numFieldInfos; i++) {
@@ -659,10 +665,9 @@ final class SegmentMerger {
           }
         }
       }
+      success = true;
     } finally {
-      if (output != null) { 
-        output.close();
-      }
+      IOUtils.closeSafely(!success, output);
     }
   }
 

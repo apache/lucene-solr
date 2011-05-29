@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -32,15 +33,22 @@ final class TermVectorsWriter {
                                                                              new UnicodeUtil.UTF8Result()};
 
   public TermVectorsWriter(Directory directory, String segment,
-                           FieldInfos fieldInfos)
-    throws IOException {
-    // Open files for TermVector storage
-    tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION));
-    tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-    tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION));
-    tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+                           FieldInfos fieldInfos) throws IOException {
+    boolean success = false;
+    try {
+      // Open files for TermVector storage
+      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION));
+      tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION));
+      tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, tvx, tvd, tvf);
+      }
+    }
 
     this.fieldInfos = fieldInfos;
   }
@@ -52,8 +60,7 @@ final class TermVectorsWriter {
    * @param vectors
    * @throws IOException
    */
-  public final void addAllDocVectors(TermFreqVector[] vectors)
-      throws IOException {
+  public final void addAllDocVectors(TermFreqVector[] vectors) throws IOException {
 
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
@@ -194,25 +201,6 @@ final class TermVectorsWriter {
   final void close() throws IOException {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
-    IOException keep = null;
-    if (tvx != null)
-      try {
-        tvx.close();
-      } catch (IOException e) {
-        keep = e;
-      }
-    if (tvd != null)
-      try {
-        tvd.close();
-      } catch (IOException e) {
-        if (keep == null) keep = e;
-      }
-    if (tvf != null)
-      try {
-        tvf.close();
-      } catch (IOException e) {
-        if (keep == null) keep = e;
-      }
-    if (keep != null) throw (IOException) keep.fillInStackTrace();
+    IOUtils.closeSafely(false, tvx, tvd, tvf);
   }
 }

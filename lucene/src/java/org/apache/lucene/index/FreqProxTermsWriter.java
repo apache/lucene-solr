@@ -69,7 +69,6 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       Collection<TermsHashConsumerPerField> fields = entry.getValue();
 
-
       for (final TermsHashConsumerPerField i : fields) {
         final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) i;
         if (perField.termsHashPerField.numPostings > 0)

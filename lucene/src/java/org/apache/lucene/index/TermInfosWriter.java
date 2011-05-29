@@ -18,9 +18,11 @@ package org.apache.lucene.index;
  */
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -28,7 +30,7 @@ import org.apache.lucene.util.ArrayUtil;
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
 
-final class TermInfosWriter {
+final class TermInfosWriter implements Closeable {
   /** The file format version, a negative number. */
   public static final int FORMAT = -3;
 
@@ -83,8 +85,16 @@ final class TermInfosWriter {
                   int interval)
        throws IOException {
     initialize(directory, segment, fis, interval, false);
-    other = new TermInfosWriter(directory, segment, fis, interval, true);
-    other.other = this;
+    boolean success = false;
+    try {
+      other = new TermInfosWriter(directory, segment, fis, interval, true);
+      other.other = this;
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, output, other);
+      }
+    }
   }
 
   private TermInfosWriter(Directory directory, String segment, FieldInfos fis,
@@ -98,12 +108,20 @@ final class TermInfosWriter {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
-    output.writeInt(FORMAT_CURRENT);              // write format
-    output.writeLong(0);                          // leave space for size
-    output.writeInt(indexInterval);               // write indexInterval
-    output.writeInt(skipInterval);                // write skipInterval
-    output.writeInt(maxSkipLevels);               // write maxSkipLevels
-    assert initUTF16Results();
+    boolean success = false;
+    try {
+      output.writeInt(FORMAT_CURRENT);              // write format
+      output.writeLong(0);                          // leave space for size
+      output.writeInt(indexInterval);               // write indexInterval
+      output.writeInt(skipInterval);                // write skipInterval
+      output.writeInt(maxSkipLevels);               // write maxSkipLevels
+      assert initUTF16Results();
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, output);
+      }
+    }
   }
 
   void add(Term term, TermInfo ti) throws IOException {
@@ -216,13 +234,20 @@ final class TermInfosWriter {
   }
 
   /** Called to complete TermInfos creation. */
-  void close() throws IOException {
-    output.seek(4);          // write size after format
-    output.writeLong(size);
-    output.close();
+  public void close() throws IOException {
+    try {
+      output.seek(4);          // write size after format
+      output.writeLong(size);
+    } finally {
+      try {
+        output.close();
+      } finally {
+        if (!isIndex) {
+          other.close();
+        }
+      }
+    }
 
-    if (!isIndex)
-      other.close();
   }
 
 }

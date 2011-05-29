@@ -63,9 +63,13 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
   @Override
   synchronized public void abort() {
     reset(true);
-    consumer.abort();
-    if (nextPerThread != null)
-      nextPerThread.abort();
+    try {
+      consumer.abort();
+    } finally {
+      if (nextPerThread != null) {
+        nextPerThread.abort();
+      }
+    }
   }
 
   @Override

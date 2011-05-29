@@ -17,9 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
-final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer {
+final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer implements Closeable {
 
   final FormatPostingsFieldsWriter parent;
   final FormatPostingsDocsWriter docsWriter;
@@ -27,7 +28,6 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer {
   FieldInfo fieldInfo;
 
   FormatPostingsTermsWriter(SegmentWriteState state, FormatPostingsFieldsWriter parent) throws IOException {
-    super();
     this.parent = parent;
     termsOut = parent.termsOut;
     docsWriter = new FormatPostingsDocsWriter(state, this);
@@ -67,7 +67,7 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer {
   void finish() {
   }
 
-  void close() throws IOException {
+  public void close() throws IOException {
     docsWriter.close();
   }
 }

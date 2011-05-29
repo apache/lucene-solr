@@ -79,10 +79,13 @@ final class SegmentMergeInfo {
   }
 
   final void close() throws IOException {
-    termEnum.close();
-    if (postings != null) {
-    postings.close();
+    try {
+      termEnum.close();
+    } finally {
+      if (postings != null) {
+        postings.close();
+      }
+    }
   }
-}
 }
 

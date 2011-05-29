@@ -27,6 +27,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store
 
@@ -90,7 +91,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
     final String normsFileName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.NORMS_EXTENSION);
     IndexOutput normsOut = state.directory.createOutput(normsFileName);
-
+    boolean success = false;
     try {
       normsOut.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
 
@@ -165,9 +166,9 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
         assert 4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
-
+      success = true;
     } finally {
-      normsOut.close();
+      IOUtils.closeSafely(!success, normsOut);
     }
   }
 }

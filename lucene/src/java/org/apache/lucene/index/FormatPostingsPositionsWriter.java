@@ -18,11 +18,13 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 
 
+import java.io.Closeable;
 import java.io.IOException;
 
-final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsumer {
+final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsumer implements Closeable {
 
   final FormatPostingsDocsWriter parent;
   final IndexOutput out;
@@ -80,8 +82,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
     lastPayloadLength = -1;
   }
 
-  void close() throws IOException {
-    if (out != null)
-      out.close();
+  public void close() throws IOException {
+    IOUtils.closeSafely(false, out);
   }
 }

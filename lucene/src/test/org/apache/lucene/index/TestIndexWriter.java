@@ -2422,6 +2422,10 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
+          if (VERBOSE) {
+            System.out.println("TEST: got interrupt");
+            re.printStackTrace(System.out);
+          }
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {
@@ -2873,7 +2877,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // or, at most the write.lock file
     final int extraFileCount;
     if (files.length == 1) {
-      assertEquals("write.lock", files[0]);
+      assertTrue(files[0].endsWith("write.lock"));
       extraFileCount = 1;
     } else {
       assertEquals(0, files.length);

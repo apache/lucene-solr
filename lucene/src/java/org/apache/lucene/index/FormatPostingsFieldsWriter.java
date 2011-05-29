@@ -20,40 +20,41 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
 
   final Directory dir;
   final String segment;
-  final TermInfosWriter termsOut;
+  TermInfosWriter termsOut;
   final FieldInfos fieldInfos;
-  final FormatPostingsTermsWriter termsWriter;
+  FormatPostingsTermsWriter termsWriter;
   final DefaultSkipListWriter skipListWriter;
   final int totalNumDocs;
 
   public FormatPostingsFieldsWriter(SegmentWriteState state, FieldInfos fieldInfos) throws IOException {
-    super();
-
     dir = state.directory;
     segment = state.segmentName;
     totalNumDocs = state.numDocs;
     this.fieldInfos = fieldInfos;
-    termsOut = new TermInfosWriter(dir,
-                                   segment,
-                                   fieldInfos,
-                                   state.termIndexInterval);
-
-    // TODO: this is a nasty abstraction violation (that we
-    // peek down to find freqOut/proxOut) -- we need a
-    // better abstraction here whereby these child consumers
-    // can provide skip data or not
-    skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,
-                                               termsOut.maxSkipLevels,
-                                               totalNumDocs,
-                                               null,
-                                               null);
-
-    termsWriter = new FormatPostingsTermsWriter(state, this);
+    boolean success = false;
+    try {
+      termsOut = new TermInfosWriter(dir, segment, fieldInfos, state.termIndexInterval);
+      
+      // TODO: this is a nasty abstraction violation (that we
+      // peek down to find freqOut/proxOut) -- we need a
+      // better abstraction here whereby these child consumers
+      // can provide skip data or not
+      skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,
+          termsOut.maxSkipLevels, totalNumDocs, null, null);
+      
+      termsWriter = new FormatPostingsTermsWriter(state, this);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, termsOut, termsWriter);
+      }
+    }
   }
 
   /** Add a new field */
@@ -66,7 +67,6 @@ final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
   /** Called when we are done adding everything. */
   @Override
   void finish() throws IOException {
-    termsOut.close();
-    termsWriter.close();
+    IOUtils.closeSafely(false, termsOut, termsWriter);
   }
 }

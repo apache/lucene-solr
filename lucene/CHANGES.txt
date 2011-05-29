@@ -14,6 +14,12 @@ Changes in runtime behavior
   lock file is not stored in the index has changed.  This means you
   will see a different lucene-XXX-write.lock in your lock directory.
   (Robert Muir, Uwe Schindler, Mike McCandless)
+  
+Bug fixes
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
 
 New Features
 

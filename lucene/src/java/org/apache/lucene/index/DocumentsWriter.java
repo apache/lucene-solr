@@ -400,35 +400,41 @@ final class DocumentsWriter {
     try {
 
       // Forcefully remove waiting ThreadStates from line
-      waitQueue.abort();
-
-      // Wait for all other threads to finish with
-      // DocumentsWriter:
-      waitIdle();
-
-      if (infoStream != null) {
-        message("docWriter: abort waitIdle done");
-      }
-
-      assert 0 == waitQueue.numWaiting: "waitQueue.numWaiting=" + waitQueue.numWaiting;
-
-      waitQueue.waitingBytes = 0;
-
-      pendingDeletes.clear();
-
-      for (DocumentsWriterThreadState threadState : threadStates)
-        try {
-          threadState.consumer.abort();
-        } catch (Throwable t) {
-        }
-
       try {
-        consumer.abort();
+        waitQueue.abort();
       } catch (Throwable t) {
       }
 
-      // Reset all postings data
-      doAfterFlush();
+      // Wait for all other threads to finish with
+      // DocumentsWriter:
+      try {
+        waitIdle();
+      } finally {
+        if (infoStream != null) {
+          message("docWriter: abort waitIdle done");
+        }
+        
+        assert 0 == waitQueue.numWaiting: "waitQueue.numWaiting=" + waitQueue.numWaiting;
+        waitQueue.waitingBytes = 0;
+        
+        pendingDeletes.clear();
+        
+        for (DocumentsWriterThreadState threadState : threadStates) {
+          try {
+            threadState.consumer.abort();
+          } catch (Throwable t) {
+          }
+        }
+          
+        try {
+          consumer.abort();
+        } catch (Throwable t) {
+        }
+        
+        // Reset all postings data
+        doAfterFlush();
+      }
+
       success = true;
     } finally {
       aborting = false;

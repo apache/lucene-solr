@@ -525,9 +525,13 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   @Override
   void finish() throws IOException {
-    consumer.finish();
-    if (nextPerField != null)
-      nextPerField.finish();
+    try {
+      consumer.finish();
+    } finally {
+      if (nextPerField != null) {
+        nextPerField.finish();
+      }
+    }
   }
 
   /** Called when postings hash is too small (> 50%

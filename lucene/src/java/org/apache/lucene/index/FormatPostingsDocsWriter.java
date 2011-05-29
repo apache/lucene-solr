@@ -20,12 +20,14 @@ package org.apache.lucene.index;
 /** Consumes doc & freq, writing them using the current
  *  index file format */
 
+import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.store.IndexOutput;
 
-final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
+final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implements Closeable {
 
   final IndexOutput out;
   final FormatPostingsTermsWriter parent;
@@ -40,17 +42,24 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
   FieldInfo fieldInfo;
 
   FormatPostingsDocsWriter(SegmentWriteState state, FormatPostingsTermsWriter parent) throws IOException {
-    super();
     this.parent = parent;
     out = parent.parent.dir.createOutput(IndexFileNames.segmentFileName(parent.parent.segment, IndexFileNames.FREQ_EXTENSION));
-    totalNumDocs = parent.parent.totalNumDocs;
-
-    // TODO: abstraction violation
-    skipInterval = parent.parent.termsOut.skipInterval;
-    skipListWriter = parent.parent.skipListWriter;
-    skipListWriter.setFreqOutput(out);
-
-    posWriter = new FormatPostingsPositionsWriter(state, this);
+    boolean success = false;
+    try {
+      totalNumDocs = parent.parent.totalNumDocs;
+      
+      // TODO: abstraction violation
+      skipInterval = parent.parent.termsOut.skipInterval;
+      skipListWriter = parent.parent.skipListWriter;
+      skipListWriter.setFreqOutput(out);
+      
+      posWriter = new FormatPostingsPositionsWriter(state, this);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
+    }
   }
 
   void setField(FieldInfo fieldInfo) {
@@ -120,8 +129,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
     df = 0;
   }
 
-  void close() throws IOException {
-    out.close();
-    posWriter.close();
+  public void close() throws IOException {
+    IOUtils.closeSafely(false, out, posWriter);
   }
 }

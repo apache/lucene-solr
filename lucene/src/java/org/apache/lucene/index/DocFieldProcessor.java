@@ -55,6 +55,7 @@ final class DocFieldProcessor extends DocConsumer {
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
       perThread.trimFields(state);
     }
+
     fieldsWriter.flush(state);
     consumer.flush(childThreadsAndFields, state);
 
@@ -68,8 +69,11 @@ final class DocFieldProcessor extends DocConsumer {
 
   @Override
   public void abort() {
-    fieldsWriter.abort();
-    consumer.abort();
+    try {
+      fieldsWriter.abort();
+    } finally {
+      consumer.abort();
+    }
   }
 
   @Override

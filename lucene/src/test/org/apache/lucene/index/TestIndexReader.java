@@ -1642,6 +1642,7 @@ public class TestIndexReader extends LuceneTestCase {
     r2.close();
     assertTrue(ints == ints2);
 
+    writer.close();
     dir.close();
   }
 
@@ -1689,6 +1690,7 @@ public class TestIndexReader extends LuceneTestCase {
     assertTrue(subs[1] instanceof ReadOnlySegmentReader);
     assertTrue(ints == ints2);
 
+    writer.close();
     dir.close();
   }
 
