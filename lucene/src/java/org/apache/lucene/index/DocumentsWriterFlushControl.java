@@ -16,6 +16,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -204,7 +205,7 @@ public final class DocumentsWriterFlushControl {
     } // don't assert on numDocs since we could hit an abort excp. while selecting that dwpt for flushing
     
   }
-
+  
   synchronized void doOnAbort(ThreadState state) {
     try {
       if (state.flushPending) {
@@ -449,10 +450,21 @@ public final class DocumentsWriterFlushControl {
     try {
       for (DocumentsWriterPerThread dwpt : flushQueue) {
         doAfterFlush(dwpt);
+        try {
+          dwpt.abort();
+        } catch (IOException ex) {
+          // continue
+        }
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
-        flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
+        flushingWriters
+            .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
         doAfterFlush(blockedFlush.dwpt);
+        try {
+          blockedFlush.dwpt.abort();
+        } catch (IOException ex) {
+          // continue
+        }
       }
     } finally {
       fullFlush = false;

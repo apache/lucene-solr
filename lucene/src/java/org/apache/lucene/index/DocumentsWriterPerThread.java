@@ -177,7 +177,7 @@ public class DocumentsWriterPerThread {
     this.parent = parent;
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
-    this.infoStream = parent.indexWriter.getInfoStream();
+    this.infoStream = parent.infoStream;
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
