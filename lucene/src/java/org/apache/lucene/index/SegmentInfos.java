@@ -947,7 +947,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     } catch (Throwable t) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
-      // nocommit if this is thread interrupted we should rethrow
     }
   }
 
