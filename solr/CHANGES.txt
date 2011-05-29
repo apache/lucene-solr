@@ -263,6 +263,14 @@ Documentation
 
 ======================= 3.x (not yet released) ================
 
+Bug Fixes
+----------------------
+
+* SOLR-2519: Improve text_* fieldTypes in example schema.xml: improve
+  cross-language defaults for text_general; break out separate
+  English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
+  yonik, Mike McCandless)
+
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
@@ -348,11 +356,6 @@ Bug Fixes
 
 * SOLR-2539: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
   (Tom Liu via yonik)
-
-* SOLR-2519: Improve text_* fieldTypes in example schema.xml: improve
-  cross-language defaults for text_general; break out separate
-  English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
-  yonik, Mike McCandless)
 
 Other Changes
 ----------------------
