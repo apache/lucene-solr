@@ -69,6 +69,7 @@ public class MockDirectoryWrapper extends Directory {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<String>();
+  Set<String> openLocks = Collections.synchronizedSet(new HashSet<String>());
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
@@ -107,6 +108,12 @@ public class MockDirectoryWrapper extends Directory {
     this.randomState = new Random(random.nextInt());
     this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
         .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
+    // force wrapping of lockfactory
+    try {
+      setLockFactory(new MockLockFactoryWrapper(this, delegate.getLockFactory()));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     init();
   }
 
@@ -208,6 +215,7 @@ public class MockDirectoryWrapper extends Directory {
 
   public synchronized void clearCrash() throws IOException {
     crashed = false;
+    openLocks.clear();
   }
 
   public void setMaxSizeInBytes(long maxSize) {
@@ -451,6 +459,9 @@ public class MockDirectoryWrapper extends Directory {
       // RuntimeException instead of IOException because
       // super() does not throw IOException currently:
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+    }
+    if (noDeleteOpenFile && openLocks.size() > 0) {
+      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
     }
     open = false;
     if (checkIndexOnClose) {

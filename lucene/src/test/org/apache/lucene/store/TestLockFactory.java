@@ -255,15 +255,21 @@ public class TestLockFactory extends LuceneTestCase {
     // write.lock is stored in index):
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
-      // Make sure we get null prefix:
+      // Make sure we get null prefix, which wont happen if setLockFactory is ever called.
       File dirName = _TestUtil.getTempDir("TestLockFactory.10");
-      Directory dir = newFSDirectory(dirName);
 
-      String prefix = dir.getLockFactory().getLockPrefix();
-
-      assertTrue("Default lock prefix should be null", null == prefix);
-
+      Directory dir = new SimpleFSDirectory(dirName);
+      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
       dir.close();
+      
+      dir = new MMapDirectory(dirName);
+      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
+      dir.close();
+      
+      dir = new NIOFSDirectory(dirName);
+      assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
+      dir.close();
+ 
       _TestUtil.rmDir(dirName);
     }
 
