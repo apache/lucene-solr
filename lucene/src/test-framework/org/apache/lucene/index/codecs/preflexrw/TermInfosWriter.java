@@ -18,20 +18,23 @@ package org.apache.lucene.index.codecs.preflexrw;
  */
 
 
+import java.io.Closeable;
 import java.io.IOException;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.UnicodeUtil;
+
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.UnicodeUtil;
 
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
 
-final class TermInfosWriter {
+final class TermInfosWriter implements Closeable {
   /** The file format version, a negative number. */
   public static final int FORMAT = -3;
 
@@ -84,8 +87,26 @@ final class TermInfosWriter {
                   int interval)
        throws IOException {
     initialize(directory, segment, fis, interval, false);
+    boolean success = false;
+    try {
     other = new TermInfosWriter(directory, segment, fis, interval, true);
     other.other = this;
+      success = true;
+    } finally {
+      if (!success) {
+        try {
+          IOUtils.closeSafely(true, output);
+        } catch (IOException e) {
+          // cannot happen since we suppress exceptions
+          throw new RuntimeException(e);
+        }
+
+        try {
+          directory.deleteFile(segment + (isIndex ? ".tii" : ".tis"));
+        } catch (IOException ignored) {
+        }
+      }
+    }
   }
 
   private TermInfosWriter(Directory directory, String segment, FieldInfos fis,
@@ -99,12 +120,30 @@ final class TermInfosWriter {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
+    boolean success = false;
+    try {
     output.writeInt(FORMAT_CURRENT);              // write format
     output.writeLong(0);                          // leave space for size
     output.writeInt(indexInterval);               // write indexInterval
     output.writeInt(skipInterval);                // write skipInterval
     output.writeInt(maxSkipLevels);               // write maxSkipLevels
     assert initUTF16Results();
+      success = true;
+    } finally {
+      if (!success) {
+        try {
+          IOUtils.closeSafely(true, output);
+        } catch (IOException e) {
+          // cannot happen since we suppress exceptions
+          throw new RuntimeException(e);
+        }
+
+        try {
+          directory.deleteFile(segment + (isIndex ? ".tii" : ".tis"));
+        } catch (IOException ignored) {
+        }
+      }
+    }
   }
 
   // Currently used only by assert statements
@@ -216,13 +255,18 @@ final class TermInfosWriter {
   }
 
   /** Called to complete TermInfos creation. */
-  void close() throws IOException {
-    output.seek(4);          // write size after format
-    output.writeLong(size);
-    output.close();
-
-    if (!isIndex)
-      other.close();
+  public void close() throws IOException {
+    try {
+      output.seek(4);          // write size after format
+      output.writeLong(size);
+    } finally {
+      try {
+        output.close();
+      } finally {
+        if (!isIndex) {
+          other.close();
+        }
+      }
+    }
   }
-
 }

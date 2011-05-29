@@ -176,6 +176,7 @@ public class TestCrash extends LuceneTestCase {
     reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
     reader.close();
+    dir.clearCrash();
     dir.close();
   }
 

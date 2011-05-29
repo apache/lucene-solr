@@ -73,9 +73,11 @@ public class ThrottledIndexOutput extends IndexOutput {
 
   @Override
   public void close() throws IOException {
-    sleep(closeDelayMillis + getDelay(true));
-    delegate.close();
-
+    try {
+      sleep(closeDelayMillis + getDelay(true));
+    } finally {
+      delegate.close();
+    }
   }
 
   @Override

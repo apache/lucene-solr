@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -323,17 +324,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
       segnOutput = infosWriter.writeInfos(directory, segmentFileName, this);
       infosWriter.prepareCommit(segnOutput);
-      success = true;
       pendingSegnOutput = segnOutput;
+      success = true;
     } finally {
       if (!success) {
         // We hit an exception above; try to close the file
         // but suppress any exception:
-        try {
-          segnOutput.close();
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-        }
+        IOUtils.closeSafely(true, segnOutput);
         try {
           // Try not to leave a truncated segments_N file in
           // the index:
@@ -945,9 +942,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       } finally {
         genOutput.close();
       }
+    } catch (ThreadInterruptedException t) {
+      throw t;
     } catch (Throwable t) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
+      // nocommit if this is thread interrupted we should rethrow
     }
   }
 
@@ -962,7 +962,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     prepareCommit(dir);
     finishCommit(dir);
   }
-  
 
   public String toString(Directory directory) {
     StringBuilder buffer = new StringBuilder();

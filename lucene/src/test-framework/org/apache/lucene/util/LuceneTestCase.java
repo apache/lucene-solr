@@ -469,6 +469,7 @@ public abstract class LuceneTestCase extends Assert {
             if (ste.getClassName().indexOf("org.apache.lucene") == -1) break; 
             System.err.println("\t" + ste);
           }
+          fail("could not remove temp dir: " + entry.getKey());
         }
       }
     }
@@ -971,7 +972,10 @@ public abstract class LuceneTestCase extends Assert {
 
         clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
       }
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f));
+      if (lf != null) {
+        dir.setLockFactory(lf);
+      }
       stores.put(dir, Thread.currentThread().getStackTrace());
       return dir;
     } catch (Exception e) {
@@ -1105,7 +1109,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   private static Directory newFSDirectoryImpl(
-      Class<? extends FSDirectory> clazz, File file, LockFactory lockFactory)
+      Class<? extends FSDirectory> clazz, File file)
       throws IOException {
     FSDirectory d = null;
     try {
@@ -1115,9 +1119,6 @@ public abstract class LuceneTestCase extends Assert {
       d = ctor.newInstance(file);
     } catch (Exception e) {
       d = FSDirectory.open(file);
-    }
-    if (lockFactory != null) {
-      d.setLockFactory(lockFactory);
     }
     return d;
   }
@@ -1140,7 +1141,7 @@ public abstract class LuceneTestCase extends Assert {
         tmpFile.delete();
         tmpFile.mkdir();
         registerTempFile(tmpFile);
-        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile);
       }
 
       // try empty ctor

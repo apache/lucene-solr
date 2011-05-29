@@ -38,6 +38,7 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /** This codec "inlines" the postings for terms that have
  *  low docFreq.  It wraps another codec, which is used for
@@ -81,7 +82,7 @@ public class PulsingCodec extends Codec {
       success = true;
     } finally {
       if (!success) {
-        pulsingWriter.close();
+        IOUtils.closeSafely(true, pulsingWriter);
       }
     }
 
@@ -93,11 +94,7 @@ public class PulsingCodec extends Codec {
       return ret;
     } finally {
       if (!success) {
-        try {
-          pulsingWriter.close();
-        } finally {
-          indexWriter.close();
-        }
+        IOUtils.closeSafely(true, pulsingWriter, indexWriter);
       }
     }
   }

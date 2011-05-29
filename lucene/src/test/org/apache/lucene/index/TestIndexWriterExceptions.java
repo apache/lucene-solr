@@ -919,7 +919,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
       assertFalse(dir.fileExists("1.fnx"));
-      // FIXME: on windows, this often fails! assertEquals(0, dir.listAll().length);
+      assertEquals(0, dir.listAll().length);
       dir.close();
     }
   }

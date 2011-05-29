@@ -31,15 +31,22 @@ final class TermVectorsWriter {
   private FieldInfos fieldInfos;
 
   public TermVectorsWriter(Directory directory, String segment,
-                           FieldInfos fieldInfos)
-    throws IOException {
-    // Open files for TermVector storage
-    tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-    tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-    tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
-    tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+                           FieldInfos fieldInfos) throws IOException {
+    boolean success = false;
+    try {
+      // Open files for TermVector storage
+      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+      tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
+      tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, tvx, tvd, tvf);
+      }
+    }
 
     this.fieldInfos = fieldInfos;
   }
@@ -51,8 +58,7 @@ final class TermVectorsWriter {
    * @param vectors
    * @throws IOException
    */
-  public final void addAllDocVectors(TermFreqVector[] vectors)
-      throws IOException {
+  public final void addAllDocVectors(TermFreqVector[] vectors) throws IOException {
 
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
@@ -187,6 +193,6 @@ final class TermVectorsWriter {
   final void close() throws IOException {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
-    IOUtils.closeSafely(tvx, tvd, tvf);
+    IOUtils.closeSafely(false, tvx, tvd, tvf);
   }
 }

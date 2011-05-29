@@ -427,6 +427,11 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+
 ======================= Lucene 3.x (not yet released) ================
 
 (No changes)

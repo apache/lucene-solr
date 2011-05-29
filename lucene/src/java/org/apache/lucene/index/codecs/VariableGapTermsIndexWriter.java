@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.automaton.fst.Builder;
 import org.apache.lucene.util.automaton.fst.FST;
 import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
@@ -159,9 +160,17 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   public VariableGapTermsIndexWriter(SegmentWriteState state, IndexTermSelector policy) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
     out = state.directory.createOutput(indexFileName);
-    fieldInfos = state.fieldInfos;
-    this.policy = policy;
-    writeHeader(out);
+    boolean success = false;
+    try {
+      fieldInfos = state.fieldInfos;
+      this.policy = policy;
+      writeHeader(out);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
+    }
   }
   
   protected void writeHeader(IndexOutput out) throws IOException {
@@ -265,8 +274,8 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
-  @Override
   public void close() throws IOException {
+    try {
     final long dirStart = out.getFilePointer();
     final int fieldCount = fields.size();
 
@@ -287,7 +296,9 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       }
     }
     writeTrailer(dirStart);
+    } finally {
     out.close();
+  }
   }
 
   protected void writeTrailer(long dirStart) throws IOException {

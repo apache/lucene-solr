@@ -44,6 +44,7 @@ import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * A silly test codec to verify core support for fixed
@@ -97,15 +98,25 @@ public class MockFixedIntBlockCodec extends Codec {
 
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      return new FixedIntBlockIndexOutput(dir.createOutput(fileName), blockSize) {
-        @Override
-        protected void flushBlock() throws IOException {
-          for(int i=0;i<buffer.length;i++) {
-            assert buffer[i] >= 0;
-            out.writeVInt(buffer[i]);
+      IndexOutput out = dir.createOutput(fileName);
+      boolean success = false;
+      try {
+        FixedIntBlockIndexOutput ret = new FixedIntBlockIndexOutput(out, blockSize) {
+          @Override
+          protected void flushBlock() throws IOException {
+            for(int i=0;i<buffer.length;i++) {
+              assert buffer[i] >= 0;
+              out.writeVInt(buffer[i]);
+            }
           }
+        };
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, out);
         }
-      };
+      }
     }
   }
 
