@@ -237,7 +237,7 @@
          of detailed information when indexing.
 
          Setting The value to true will instruct the underlying Lucene
-         IndexWriter to write it's debugging info the specified file
+         IndexWriter to write its debugging info the specified file
       -->
      <infoStream file="INFOSTREAM.txt">false</infoStream> 
 

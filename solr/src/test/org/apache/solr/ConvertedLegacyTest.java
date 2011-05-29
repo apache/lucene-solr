@@ -889,13 +889,10 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:42 AND subword:\"bar foo\"")
             ,"*[count(//doc)=0]"
             );
-    assertQ(req("id:42 AND subword:bar-foo")
-            ,"*[count(//doc)=0]"
-            );
     assertQ(req("id:42 AND subword:\"bar foo\"~2")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:foo/bar")
+    assertQ(req("id:42 AND subword:\"foo/bar\"")
             ,"*[count(//doc)=1]"
             );
     assertQ(req("id:42 AND subword:foobar")
@@ -916,13 +913,10 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:42 AND subword:\"bar foo\"")
             ,"*[count(//doc)=0]"
             );
-    assertQ(req("id:42 AND subword:bar-foo")
-            ,"*[count(//doc)=0]"
-            );
     assertQ(req("id:42 AND subword:\"bar foo\"~2")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:foo/bar")
+    assertQ(req("id:42 AND subword:\"foo/bar\"")
             ,"*[count(//doc)=1]"
             );
     assertQ(req("id:42 AND subword:foobar")
