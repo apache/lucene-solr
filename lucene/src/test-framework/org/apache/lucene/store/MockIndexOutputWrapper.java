@@ -154,7 +154,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   @Override
-  public void copyBytes(IndexInput input, long numBytes) throws IOException {
+  public void copyBytes(DataInput input, long numBytes) throws IOException {
     delegate.copyBytes(input, numBytes);
     // TODO: we may need to check disk full here as well
     dir.maybeThrowDeterministicException();

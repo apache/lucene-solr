@@ -162,7 +162,7 @@ public class RAMOutputStream extends IndexOutput {
   }
   
   @Override
-  public void copyBytes(IndexInput input, long numBytes) throws IOException {
+  public void copyBytes(DataInput input, long numBytes) throws IOException {
     assert numBytes >= 0: "numBytes=" + numBytes;
 
     while (numBytes > 0) {

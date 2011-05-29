@@ -1,0 +1,39 @@
+is threadlocal.get costly?  if so maybe make an FSTReader?  would hold this "relative" pos, and each thread'd use it for reading, instead of PosRef
+
+maybe changed Outputs class to "reuse" stuff?  eg this new BytesRef in ByteSequenceOutputs..
+
+do i even "need" both non_final_end_state and final_end_state?
+
+hmm -- can I get weights working here?
+
+can FST be used to index all internal substrings, mapping to term?
+  - maybe put back ability to add multiple outputs per input...?
+
+make this work w/ char...?
+  - then FSTCharFilter/FSTTokenFilter
+  - syn filter?
+
+experiment: try reversing terms before compressing -- how much smaller?
+
+maybe seprate out a 'writable/growing fst' from a read-only one?
+
+can we somehow [partially] tableize lookups like oal.util.automaton?
+
+make an FST terms index option for codecs...?
+
+make an FSTCharsMap?
+
+need a benchmark testing FST traversal -- just fix the static main to rewind & visit all terms
+
+thread state
+
+when writing FST to disk:
+- Sequentially writing (would save memory in codec during indexing). We are now using DataOutput, which could also go directly to disk
+- problem: size of BytesRef must be known before
+
+later
+  - maybe don't require FSTEnum.advance to be forward only?
+  - should i make a posIntOutputs separate from posLongOutputs?
+  - mv randomAccpetedWord / run / etc. from test into FST?
+  - hmm get multi-outputs working again?  do we ever need this?
+

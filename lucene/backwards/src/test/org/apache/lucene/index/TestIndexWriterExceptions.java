@@ -929,45 +929,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
   
-  // LUCENE-1044: Simulate checksum error in segments_N
-  public void testSegmentsChecksumError() throws IOException {
-    Directory dir = newDirectory();
-
-    IndexWriter writer = null;
-
-    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
-
-    // add 100 documents
-    for (int i = 0; i < 100; i++) {
-      addDoc(writer);
-    }
-
-    // close
-    writer.close();
-
-    long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-    assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
-
-    final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
-    IndexInput in = dir.openInput(segmentsFileName);
-    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen));
-    out.copyBytes(in, in.length()-1);
-    byte b = in.readByte();
-    out.writeByte((byte) (1+b));
-    out.close();
-    in.close();
-
-    IndexReader reader = null;
-    try {
-      reader = IndexReader.open(dir, true);
-    } catch (IOException e) {
-      e.printStackTrace(System.out);
-      fail("segmentInfos failed to retry fallback to correct segments_N file");
-    }
-    reader.close();
-    dir.close();
-  }
-  
   // Simulate a corrupt index by removing last byte of
   // latest segments file and make sure we get an
   // IOException trying to open the index:
