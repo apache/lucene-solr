@@ -862,8 +862,161 @@ Documentation
 
 * LUCENE-2894: Use google-code-prettify for syntax highlighting in javadoc.
   (Shinichiro Abe, Koji Sekiguchi)
+  
+================== Release 2.9.4 / 3.0.3 ====================
 
-================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+Changes in runtime behavior
+
+* LUCENE-2689: NativeFSLockFactory no longer attempts to acquire a
+  test lock just before the real lock is acquired.  (Surinder Pal
+  Singh Bindra via Mike McCandless)
+
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
+
+* LUCENE-2773: LogMergePolicy accepts a double noCFSRatio (default =
+  0.1), which means any time a merged segment is greater than 10% of
+  the index size, it will be left in non-compound format even if
+  compound format is on.  This change was made to reduce peak
+  transient disk usage during optimize which increased due to
+  LUCENE-2762.  (Mike McCandless)
+  
+Bug fixes
+
+* LUCENE-2142 (correct fix): FieldCacheImpl.getStringIndex no longer
+  throws an exception when term count exceeds doc count.
+  (Mike McCandless, Uwe Schindler)
+
+* LUCENE-2513: when opening writable IndexReader on a not-current
+  commit, do not overwrite "future" commits.  (Mike McCandless)
+
+* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
+  buffered deletions against segments that were flushed (Mark Harwood
+  via Mike McCandless)
+
+* LUCENE-2541: Fixed NumericRangeQuery that returned incorrect results
+  with endpoints near Long.MIN_VALUE and Long.MAX_VALUE:
+  NumericUtils.splitRange() overflowed, if
+  - the range contained a LOWER bound
+    that was greater than (Long.MAX_VALUE - (1L << precisionStep))
+  - the range contained an UPPER bound
+    that was less than (Long.MIN_VALUE + (1L << precisionStep))
+  With standard precision steps around 4, this had no effect on
+  most queries, only those that met the above conditions.
+  Queries with large precision steps failed more easy. Queries with
+  precision step >=64 were not affected. Also 32 bit data types int
+  and float were not affected.
+  (Yonik Seeley, Uwe Schindler)
+
+* LUCENE-2593: Fixed certain rare cases where a disk full could lead
+  to a corrupted index (Robert Muir, Mike McCandless)
+  
+* LUCENE-2620: Fixed a bug in WildcardQuery where too many asterisks
+  would result in unbearably slow performance.  (Nick Barkas via Robert Muir)
+
+* LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
+  exact multiple of the chunk size.  (Robert Muir)
+
+* LUCENE-2634: isCurrent on an NRT reader was failing to return false
+  if the writer had just committed (Nikolay Zamosenchuk via Mike McCandless)
+
+* LUCENE-2650: Added extra safety to MMapIndexInput clones to prevent accessing
+  an unmapped buffer if the input is closed (Mike McCandless, Uwe Schindler, Robert Muir)
+  
+* LUCENE-2384: Reset zzBuffer in StandardTokenizerImpl when lexer is reset.
+  (Ruben Laguna via Uwe Schindler, sub-issue of LUCENE-2074) 
+  
+* LUCENE-2658: Exceptions while processing term vectors enabled for multiple
+  fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-2235: Implement missing PerFieldAnalyzerWrapper.getOffsetGap().
+  (Javier Godoy via Uwe Schindler)
+
+* LUCENE-2328: Fixed memory leak in how IndexWriter/Reader tracked
+  already sync'd files. (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2549: Fix TimeLimitingCollector#TimeExceededException to record
+  the absolute docid.  (Uwe Schindler)
+ 
+* LUCENE-2533: fix FileSwitchDirectory.listAll to not return dups when
+  primary & secondary dirs share the same underlying directory.
+  (Michael McCandless)
+
+* LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
+  is fixed to return null if there are no segments.  (Karthick
+  Sankarachary via Mike McCandless)
+
+* LUCENE-2730: Fix two rare deadlock cases in IndexWriter (Mike McCandless)
+
+* LUCENE-2744: CheckIndex was stating total number of fields,
+  not the number that have norms enabled, on the "test: field
+  norms..." output.  (Mark Kristensson via Mike McCandless)
+
+* LUCENE-2759: Fixed two near-real-time cases where doc store files
+  may be opened for read even though they are still open for write.
+  (Mike McCandless)
+
+* LUCENE-2618: Fix rare thread safety issue whereby
+  IndexWriter.optimize could sometimes return even though the index
+  wasn't fully optimized (Mike McCandless)
+
+* LUCENE-2767: Fix thread safety issue in addIndexes(IndexReader[])
+  that could potentially result in index corruption.  (Mike
+  McCandless)
+
+* LUCENE-2762: Fixed bug in IndexWriter causing it to hold open file
+  handles against deleted files when compound-file was enabled (the
+  default) and readers are pooled.  As a result of this the peak
+  worst-case free disk space required during optimize is now 3X the
+  index size, when compound file is enabled (else 2X).  (Mike
+  McCandless)
+
+* LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
+  sets that only differed by trailing zeros. (Dawid Weiss, yonik)
+
+* LUCENE-2782: Fix rare potential thread hazard with
+  IndexWriter.commit (Mike McCandless)
+
+API Changes
+
+* LUCENE-2773: LogMergePolicy accepts a double noCFSRatio (default =
+  0.1), which means any time a merged segment is greater than 10% of
+  the index size, it will be left in non-compound format even if
+  compound format is on.  This change was made to reduce peak
+  transient disk usage during optimize which increased due to
+  LUCENE-2762.  (Mike McCandless)
+
+Optimizations
+
+* LUCENE-2556: Improve memory usage after cloning TermAttribute.
+  (Adriano Crestani via Uwe Schindler)
+
+* LUCENE-2098: Improve the performance of BaseCharFilter, especially for
+  large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
+
+New features
+
+* LUCENE-2675 (2.9.4 only): Add support for Lucene 3.0 stored field files
+  also in 2.9. The file format did not change, only the version number was
+  upgraded to mark segments that have no compression. FieldsWriter still only
+  writes 2.9 segments as they could contain compressed fields. This cross-version
+  index format compatibility is provided here solely because Lucene 2.9 and 3.0
+  have the same bugfix level, features, and the same index format with this slight
+  compression difference. In general, Lucene does not support reading newer
+  indexes with older library versions. (Uwe Schindler)
+  
+Documentation
+
+* LUCENE-2239: Documented limitations in NIOFSDirectory and MMapDirectory due to
+  Java NIO behavior when a Thread is interrupted while blocking on IO.
+  (Simon Willnauer, Robert Muir)
+
+================== Release 2.9.3 / 3.0.2 ====================
 
 Changes in backwards compatibility policy
 
@@ -1005,7 +1158,7 @@ Build
   compiling/testing/packaging. This marks the benchmark contrib also
   as Java 1.5, as it depends on fast-vector-highlighter. (Uwe Schindler)
 
-================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
+================== Release 2.9.2 / 3.0.1 ====================
 
 Changes in backwards compatibility policy
 
@@ -1108,7 +1261,7 @@ Documentation
    provided reader is per-segment (Simon Willnauer via Mike
    McCandless)
  
-======================= Release 3.0.0 2009-11-25 =======================
+======================= Release 3.0.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -1309,7 +1462,7 @@ Build
 * LUCENE-2024: Raise build requirements to Java 1.5 and ANT 1.7.0
   (Uwe Schindler, Mike McCandless)
 
-======================= Release 2.9.1 2009-11-06 =======================
+======================= Release 2.9.1 =======================
 
 Changes in backwards compatibility policy
 
@@ -1379,7 +1532,7 @@ Documentation
  * LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
    (Luke Nezda via Mike McCandless)
 
-======================= Release 2.9.0 2009-09-23 =======================
+======================= Release 2.9.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -2293,7 +2446,7 @@ Test Cases
  * LUCENE-1836: Added a new LocalizedTestCase as base class for localization
     junit tests.  (Robert Muir, Uwe Schindler via Michael Busch)
 
-======================= Release 2.4.1 2009-03-09 =======================
+======================= Release 2.4.1 =======================
 
 API Changes
 
@@ -2361,7 +2514,7 @@ Bug fixes
     rollback IndexWriter's internal state on hitting an
     exception. (Scott Garland via Mike McCandless)
 
-======================= Release 2.4.0 2008-10-06 =======================
+======================= Release 2.4.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -2726,7 +2879,7 @@ Test Cases
  2. LUCENE-1348: relax TestTimeLimitedCollector to not fail due to 
     timeout exceeded (just because test machine is very busy).
 	
-======================= Release 2.3.2 2008-05-05 =======================
+======================= Release 2.3.2 =======================
 
 Bug fixes
 
@@ -2776,7 +2929,7 @@ Build
  1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
 
  
-======================= Release 2.3.1 2008-02-22 =======================
+======================= Release 2.3.1 =======================
 
 Bug fixes
     
@@ -2805,7 +2958,7 @@ Bug fixes
     preventing Fields with empty-string field name from working.
     (Sergey Kabashnyuk via Mike McCandless)
 
-======================= Release 2.3.0 2008-01-21 =======================
+======================= Release 2.3.0 =======================
 
 Changes in runtime behavior
 
@@ -3197,7 +3350,7 @@ Test Cases
  1. LUCENE-766: Test adding two fields with the same name but different 
     term vector setting.  (Nicolas Lalevée via Doron Cohen)  
     
-======================= Release 2.2.0 2007-06-19 =======================
+======================= Release 2.2.0 =======================
 
 Changes in runtime behavior
 
@@ -3506,7 +3659,7 @@ Build
     of the Lucene core and the contrib modules. 
     (Sami Siren, Karl Wettin, Michael Busch)
 
-======================= Release 2.1.0 2007-02-14 =======================
+======================= Release 2.1.0 =======================
 
 Changes in runtime behavior
 
@@ -3994,7 +4147,7 @@ Build
      distribution of both binary and source distributions.  Called by package 
      and package-*-src
 
-======================= Release 2.0.0 2006-05-26 =======================
+======================= Release 2.0.0 =======================
 
 API Changes
 
@@ -5098,7 +5251,7 @@ Infrastructure
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
-1.2 RC2, 19 October 2001:
+1.2 RC2:
  - added sources to distribution
  - removed broken build scripts and libraries from distribution
  - SegmentsReader: fixed potential race condition
@@ -5113,7 +5266,7 @@ Infrastructure
  - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
    since they rely on a feature added in JDK 1.2.
 
-1.2 RC1 (first Apache release), 2 October 2001:
+1.2 RC1 (first Apache release):
   - packages renamed from com.lucene to org.apache.lucene
   - license switched from LGPL to Apache
   - ant-only build -- no more makefiles
@@ -5124,18 +5277,18 @@ Infrastructure
   - Analyzers can choose tokenizer based on field name
   - misc bug fixes.
 
-1.01b (last Sourceforge release), 2 July 2001
+1.01b (last Sourceforge release)
  . a few bug fixes
  . new Query Parser
  . new prefix query (search for "foo*" matches "food")
 
-1.0, 2000-10-04
+1.0
 
 This release fixes a few serious bugs and also includes some
 performance optimizations, a stemmer, and a few other minor
 enhancements.
 
-0.04 2000-04-19
+0.04
 
 Lucene now includes a grammar-based tokenizer, StandardTokenizer.
 
@@ -5160,7 +5313,7 @@ StandardTokenizer serves two purposes:
     the new tokenizer into the application and modifying it
     accordingly.
 
-0.01, 2000-03-30
+0.01
 
 First open source release.
 
