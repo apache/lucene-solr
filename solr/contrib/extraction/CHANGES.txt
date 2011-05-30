@@ -24,16 +24,20 @@ Current Version: Tika 0.8 (released 11/07/2010)
 
 $Id$
 
-================== Release 4.0-dev ==================
+================== Release 4.0.0-dev ==============
 
 (No Changes)
 
-================== Release 3.2-dev ==================
+================== Release 3.3.0-dev ==============
+
+(No Changes)
+
+================== Release 3.2.0 ==================
 
 * SOLR-2480: Add ignoreTikaException flag so that users can ignore TikaException but index
   meta data. (Shinichiro Abe, koji)
 
-================== Release 3.1-dev ==================
+================== Release 3.1.0 ==================
 
 * SOLR-1902: Upgraded to Tika 0.8 and changed deprecated parse call
 

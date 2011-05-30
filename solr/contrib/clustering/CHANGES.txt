@@ -7,7 +7,7 @@ See http://wiki.apache.org/solr/ClusteringComponent
 CHANGES
 
 $Id$
-================== Release 4.0.0-dev ==================
+================== Release 4.0.0-dev ==============
 
 * SOLR-2448: Search results clustering updates: bisecting k-means
   clustering algorithm added, loading of Carrot2 stop words from
@@ -15,7 +15,11 @@ $Id$
   for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
   (Stanislaw Osinski, Dawid Weiss).
 
-================== Release 3.2.0-dev ==================
+================== Release 3.3.0-dev ==============
+
+(No Changes)
+
+================== Release 3.2.0 ==================
 
 * SOLR-2448: Search results clustering updates: bisecting k-means
   clustering algorithm added, loading of Carrot2 stop words from
@@ -23,7 +27,7 @@ $Id$
   for clustering (SOLR-2450), output of cluster scores (SOLR-2505)
   (Stanislaw Osinski, Dawid Weiss).
 
-================== Release 3.1.0-dev ==================
+================== Release 3.1.0 ==================
 
 * SOLR-1684: Switch to use the SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document cache (gsingers)
 
