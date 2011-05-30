@@ -444,7 +444,7 @@ Other
 11.SOLR-1269: Better error messages from JdbcDataSource when JDBC Driver name or SQL is incorrect.
               (ehatcher, shalin)
 
-================== Release 1.3.0 20080915 ==================
+================== Release 1.3.0 ==================
 
 Status
 ------
