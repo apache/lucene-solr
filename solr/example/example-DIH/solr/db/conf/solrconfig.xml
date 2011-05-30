@@ -18,6 +18,8 @@
 
 <config>
 
+  <luceneMatchVersion>LUCENE_33</luceneMatchVersion>
+
   <jmx />
 
   <!-- Set this to 'false' if you want solr to continue working after it has 
