@@ -25,7 +25,6 @@ on how to get started.
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
-Apache Lucene 3x
 Apache Tika 0.8
 Carrot2 3.5.0
 
