@@ -100,15 +100,9 @@ See http://forrest.apache.org/docs/linking.html for more info
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-test-framework href="api/test-framework/index.html"/>
-<<<<<<< .working
 	<javadocs-contrib-analyzers href="api/contrib-analyzers/index.html"/>
 	<javadocs-contrib-smartcn href="api/contrib-smartcn/index.html"/>
 	<javadocs-contrib-stempel href="api/contrib-stempel/index.html"/>
-	<javadocs-contrib-ant href="api/contrib-ant/index.html"/>
-	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
-	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
-=======
->>>>>>> .merge-right.r1126280
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
   <javadocs-contrib-demo href="api/contrib-demo/index.html"/>
     <javadocs-contrib-grouping href="api/contrib-grouping/index.html"/>
@@ -120,7 +114,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-queries href="api/contrib-queries/index.html"/>
         <javadocs-contrib-queryparser href="api/contrib-queryparser/index.html"/>
 	<javadocs-contrib-remote href="api/contrib-remote/index.html"/>
-	<javadocs-contrib-similarity href="api/contrib-similarity/index.html"/>
 	<javadocs-contrib-spatial href="api/contrib-spatial/index.html"/>
 	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
 	<javadocs-contrib-wordnet href="api/contrib-wordnet/index.html"/>
