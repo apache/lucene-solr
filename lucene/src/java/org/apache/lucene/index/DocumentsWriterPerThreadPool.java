@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -194,6 +193,21 @@ public abstract class DocumentsWriterPerThreadPool {
     return null;
   }
   
+  /**
+   * Deactivate all unreleased threadstates 
+   */
+  protected synchronized void deactivateUnreleasedStates() {
+    for (int i = numThreadStatesActive; i < perThreads.length; i++) {
+      final ThreadState threadState = perThreads[i];
+      threadState.lock();
+      try {
+        threadState.resetWriter(null);
+      } finally {
+        threadState.unlock();
+      }
+    }
+  }
+  
   protected DocumentsWriterPerThread replaceForFlush(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
     final DocumentsWriterPerThread dwpt = threadState.perThread;
@@ -212,7 +226,7 @@ public abstract class DocumentsWriterPerThreadPool {
     // don't recycle DWPT by default
   }
   
-  public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter, Document doc);
+  public abstract ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter);
 
   /**
    * Returns an iterator providing access to all {@link ThreadState}

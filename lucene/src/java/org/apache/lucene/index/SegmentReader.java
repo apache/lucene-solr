@@ -574,7 +574,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
-    long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
+    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (FieldInfo fi : core.fieldInfos) {
       if (norms.containsKey(fi.name)) {
@@ -619,7 +619,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           if (isUnversioned) {
             normSeek = 0;
           } else {
-            normSeek = SegmentMerger.NORMS_HEADER.length;
+            normSeek = SegmentNorms.NORMS_HEADER.length;
           }
         }
 

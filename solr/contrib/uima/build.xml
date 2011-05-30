@@ -23,9 +23,9 @@
     Solr Integration with UIMA for extracting metadata from arbitrary (text) fields and enrich document with features extracted from UIMA types (language, sentences, concepts, named entities, etc.)
   </description>
 
-  <property name="src.dir" location="src/main/java"/>
-  <property name="tests.src.dir" location="src/test/java"/>
-  <property name="tests.userdir" location="src/test/resources"/>
+  <property name="src.dir" location="src/java"/>
+  <property name="tests.src.dir" location="src/test"/>
+  <property name="tests.userdir" location="src/test-files"/>
 
   <import file="../contrib-build.xml"/>
 

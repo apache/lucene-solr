@@ -57,13 +57,14 @@
         property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
   <module-uptodate name="analysis/phonetic" jarfile="${common.dir}/../modules/analysis/build/phonetic/lucene-analyzers-phonetic-${version}.jar"
         property="analyzers-phonetic.uptodate" classpath.property="analyzers-phonetic.jar"/>
+  <module-uptodate name="suggest" jarfile="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"
+        property="suggest.uptodate" classpath.property="suggest.jar"/>
   <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
   <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
   <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
   <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
   <contrib-uptodate name="spatial" property="spatial.uptodate" classpath.property="spatial.jar"/>
-  <contrib-uptodate name="spellchecker" property="spellchecker.uptodate" classpath.property="spellchecker.jar"/>
-	
+
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
@@ -72,7 +73,7 @@
   	<pathelement path="${misc.jar}"/>
   	<pathelement path="${queries.jar}"/>
   	<pathelement path="${spatial.jar}"/>
-  	<pathelement path="${spellchecker.jar}"/>
+  	<pathelement path="${suggest.jar}"/>
   	<pathelement location="${common-solr.dir}/build/classes/solrj"/>
   	<pathelement location="${common-solr.dir}/build/classes/webapp"/>
   	<pathelement location="${common-solr.dir}/build/classes/java"/>

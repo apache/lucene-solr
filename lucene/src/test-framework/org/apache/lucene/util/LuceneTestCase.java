@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -132,7 +133,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /** set of directories we created, in afterclass we try to clean these up */
-  static final Set<String> tempDirs = Collections.synchronizedSet(new HashSet<String>());
+  private static final Map<File, StackTraceElement[]> tempDirs = Collections.synchronizedMap(new HashMap<File, StackTraceElement[]>());
 
   // by default we randomly pick a different codec for
   // each test case (non-J4 tests) and each test class (J4
@@ -180,7 +181,7 @@ public abstract class LuceneTestCase extends Assert {
     SETUP,   // test has called setUp()
     RANTEST, // test is running
     TEARDOWN // test has called tearDown()
-  };
+  }
   
   /**
    * Some tests expect the directory to contain a single segment, and want to do tests on that segment's reader.
@@ -454,11 +455,21 @@ public abstract class LuceneTestCase extends Assert {
     }
     // clear out any temp directories if we can
     if (!testsFailed) {
-      for (String path : tempDirs) {
+      for (Entry<File, StackTraceElement[]> entry : tempDirs.entrySet()) {
         try {
-          _TestUtil.rmDir(new File(path));
+          _TestUtil.rmDir(entry.getKey());
         } catch (IOException e) {
           e.printStackTrace();
+          System.err.println("path " + entry.getKey() + " allocated from");
+          // first two STE's are Java's
+          StackTraceElement[] elements = entry.getValue();
+          for (int i = 2; i < elements.length; i++) {
+            StackTraceElement ste = elements[i];            
+            // print only our code's stack information
+            if (ste.getClassName().indexOf("org.apache.lucene") == -1) break; 
+            System.err.println("\t" + ste);
+          }
+          fail("could not remove temp dir: " + entry.getKey());
         }
       }
     }
@@ -961,7 +972,10 @@ public abstract class LuceneTestCase extends Assert {
 
         clazz = Class.forName(fsdirClass).asSubclass(FSDirectory.class);
       }
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f, lf));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, newFSDirectoryImpl(clazz, f));
+      if (lf != null) {
+        dir.setLockFactory(lf);
+      }
       stores.put(dir, Thread.currentThread().getStackTrace());
       return dir;
     } catch (Exception e) {
@@ -1095,7 +1109,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   private static Directory newFSDirectoryImpl(
-      Class<? extends FSDirectory> clazz, File file, LockFactory lockFactory)
+      Class<? extends FSDirectory> clazz, File file)
       throws IOException {
     FSDirectory d = null;
     try {
@@ -1106,12 +1120,14 @@ public abstract class LuceneTestCase extends Assert {
     } catch (Exception e) {
       d = FSDirectory.open(file);
     }
-    if (lockFactory != null) {
-      d.setLockFactory(lockFactory);
-    }
     return d;
   }
 
+  /** Registers a temp file that will be deleted when tests are done. */
+  public static void registerTempFile(File tmpFile) {
+    tempDirs.put(tmpFile.getAbsoluteFile(), Thread.currentThread().getStackTrace());
+  }
+  
   static Directory newDirectoryImpl(Random random, String clazzName) {
     if (clazzName.equals("random"))
       clazzName = randomDirectory(random);
@@ -1121,11 +1137,11 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+        final File tmpFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
         tmpFile.delete();
         tmpFile.mkdir();
-        tempDirs.add(tmpFile.getAbsolutePath());
-        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile, null);
+        registerTempFile(tmpFile);
+        return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), tmpFile);
       }
 
       // try empty ctor
@@ -1380,6 +1396,11 @@ public abstract class LuceneTestCase extends Assert {
         previousMappings.put(name, codec);
       }
       return codec.name;
+    }
+
+    @Override
+    public synchronized boolean hasFieldCodec(String name) {
+      return true; // we have a codec for every field
     }
 
     @Override

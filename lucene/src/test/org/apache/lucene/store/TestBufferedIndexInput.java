@@ -87,7 +87,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     // NOTE: this does only test the chunked reads and NOT if the Bug is triggered.
     //final int tmpFileSize = 1024 * 1024 * 5;
     final int inputBufferSize = 128;
-    File tmpInputFile = File.createTempFile("IndexInput", "tmpFile");
+    File tmpInputFile = _TestUtil.createTempFile("IndexInput", "tmpFile", TEMP_DIR);
     tmpInputFile.deleteOnExit();
     writeBytes(tmpInputFile, TEST_FILE_LENGTH);
 

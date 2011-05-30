@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
@@ -130,13 +130,17 @@ public class BoolField extends FieldType {
     return ch=='T' ? "true" : "false";
   }
 
+  private static final CharsRef TRUE = new CharsRef("true");
+  private static final CharsRef FALSE = new CharsRef("false");
+  
   @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     if (input.length > 0 && input.bytes[input.offset] == 'T') {
-      out.write("true");
+      charsRef.copy(TRUE);
     } else {
-      out.write("false");
+      charsRef.copy(FALSE);
     }
+    return charsRef;
   }
 
   @Override

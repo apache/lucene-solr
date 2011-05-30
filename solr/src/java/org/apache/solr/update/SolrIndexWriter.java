@@ -18,7 +18,10 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
@@ -27,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -79,16 +83,21 @@ public class SolrIndexWriter extends IndexWriter {
     return d;
   }
   
-  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy) throws IOException {
+  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, CodecProvider codecProvider) throws IOException {
     super(
         getDirectory(path, dirFactory, config),
         config.toIndexWriterConfig(schema).
             setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-            setIndexDeletionPolicy(delPolicy)
+            setIndexDeletionPolicy(delPolicy).setCodecProvider(codecProvider)
     );
     log.debug("Opened Writer " + name);
     this.name = name;
 
+    setInfoStream(config);
+  }
+
+  private void setInfoStream(SolrIndexConfig config)
+      throws IOException {
     String infoStreamFile = config.infoStreamFile;
     if (infoStreamFile != null) {
       File f = new File(infoStreamFile);

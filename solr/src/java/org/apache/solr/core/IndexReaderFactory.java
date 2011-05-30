@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -28,6 +29,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
   protected int termInfosIndexDivisor = 1;//IndexReader.DEFAULT_TERMS_INDEX_DIVISOR;  Set this once Lucene makes this public.
+  protected CodecProvider provider;
   /**
    * Potentially initializes {@link #termInfosIndexDivisor}.  Overriding classes should call super.init() in order
    * to make sure termInfosIndexDivisor is set.
@@ -63,4 +65,11 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    */
   public abstract IndexReader newReader(Directory indexDir, boolean readOnly)
       throws IOException;
+  
+  /**
+   * Sets the codec provider for this IndexReaderFactory
+   */
+  public void setCodecProvider(CodecProvider provider) {
+    this.provider = provider;
+  }
 }

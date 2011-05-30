@@ -6,6 +6,8 @@ Build
 
  * LUCENE-2845: Moved contrib/benchmark to modules.
 
+ * LUCENE-2995: Moved contrib/spellchecker into modules/suggest.
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
@@ -48,7 +50,14 @@ Bug Fixes
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
    not lowercasing the key before checking for the tag (Adriano Crestani)
 
-======================= Lucene 3.x (not yet released) =======================
+======================= Lucene 3.x (not yet released) ================
+
+API Changes
+
+ * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
+   (Sujit Pal via Koji Sekiguchi)
+
+======================= Lucene 3.2.0 =======================
 
 Changes in backwards compatibility policy
 

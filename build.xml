@@ -73,6 +73,7 @@
   </target>
 
   <target name="eclipse" description="Setup Eclipse configuration">
+    <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
     <copy file="dev-tools/eclipse/resources.prefs" 

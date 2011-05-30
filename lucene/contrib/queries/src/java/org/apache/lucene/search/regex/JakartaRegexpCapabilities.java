@@ -18,6 +18,7 @@ package org.apache.lucene.search.regex;
  */
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.regexp.CharacterIterator;
 import org.apache.regexp.RE;
@@ -104,11 +105,11 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
 
   class JakartaRegexMatcher implements RegexCapabilities.RegexMatcher {
     private RE regexp;
-    private final UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    private final CharsRef utf16 = new CharsRef(10);
     private final CharacterIterator utf16wrapper = new CharacterIterator() {
 
       public char charAt(int pos) {
-        return utf16.result[pos];
+        return utf16.chars[pos];
       }
 
       public boolean isEnd(int pos) {
@@ -120,7 +121,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
       }
 
       public String substring(int beginIndex, int endIndex) {
-        return new String(utf16.result, beginIndex, endIndex - beginIndex);
+        return new String(utf16.chars, beginIndex, endIndex - beginIndex);
       }
       
     };

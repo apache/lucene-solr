@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -912,11 +911,33 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
         
         // Make sure the transformer works for streaming
         Float score = (Float)doc.get( "score" );
-        Integer docid = (Integer)doc.get( "_docid_" );
         assertEquals( "should have score", new Float(1.0), score );
       }
      
     });
     assertEquals(10, cnt.get() );
+  }
+
+  @Test
+  public void testChineseDefaults() throws Exception {
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+
+    // Beijing medical University
+    UpdateRequest req = new UpdateRequest();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "42");
+    doc.addField("text", "北京医科大学");
+    req.add(doc);
+
+    req.setAction(ACTION.COMMIT, true, true );
+    req.process( server );
+
+    // Beijing university should match:
+    SolrQuery query = new SolrQuery("北京大学");
+    QueryResponse rsp = server.query( query );
+    assertEquals(1, rsp.getResults().getNumFound());
   }
 }

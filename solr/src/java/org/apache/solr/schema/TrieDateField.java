@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
@@ -26,6 +25,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 
 import java.util.Map;
 import java.util.Date;
@@ -111,10 +111,10 @@ public class TrieDateField extends DateField {
   public String indexedToReadable(String _indexedForm) {
     return wrappedField.indexedToReadable(_indexedForm);
   }
-
   @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
-    wrappedField.indexedToReadable(input, out);
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
+    // TODO: this could be more efficient, but the sortable types should be deprecated instead
+    return wrappedField.indexedToReadable(input, charsRef);
   }
 
   @Override

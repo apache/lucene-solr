@@ -833,6 +833,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       try {
         modifier.addDocument(doc);
       } catch (IOException io) {
+        if (VERBOSE) {
+          System.out.println("TEST: got expected exc:");
+          io.printStackTrace(System.out);
+        }
         break;
       }
     }

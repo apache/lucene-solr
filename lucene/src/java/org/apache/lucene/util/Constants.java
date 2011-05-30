@@ -43,6 +43,8 @@ public final class Constants {
   public static final boolean WINDOWS = OS_NAME.startsWith("Windows");
   /** True iff running on SunOS. */
   public static final boolean SUN_OS = OS_NAME.startsWith("SunOS");
+  /** True iff running on Mac OS X */
+  public static final boolean MAC_OS_X = OS_NAME.startsWith("Mac OS X");
 
   public static final String OS_ARCH = System.getProperty("os.arch");
   public static final String OS_VERSION = System.getProperty("os.version");

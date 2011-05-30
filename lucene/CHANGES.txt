@@ -427,7 +427,32 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-======================= Lucene 3.x (not yet released) =======================
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+
+======================= Lucene 3.x (not yet released) ================
+
+Changes in backwards compatibility policy
+
+* LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
+  of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
+  Mike McCandless)
+
+Changes in runtime behavior
+
+* LUCENE-2834: the hash used to compute the lock file name when the
+  lock file is not stored in the index has changed.  This means you
+  will see a different lucene-XXX-write.lock in your lock directory.
+  (Robert Muir, Uwe Schindler, Mike McCandless)
+
+New Features
+
+* LUCENE-3140: Added experimental FST implementation to Lucene.
+  (Robert Muir, Dawid Weiss, Mike McCandless)
+
+======================= Lucene 3.2.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -486,6 +511,10 @@ New features
   document IDs and scores encountered during the search, and "replay" them to 
   another Collector. (Mike McCandless, Shai Erera)
 
+* LUCENE-3112: Added experimental IndexWriter.add/updateDocuments,
+  enabling a block of documents to be indexed, atomically, with
+  guaranteed sequential docIDs.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3061: IndexWriter's getNextMerge() and merge(OneMerge) are now public
@@ -506,6 +535,9 @@ Optimizations
 
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
+
+* LUCENE-3126: IndexWriter.addIndexes copies incoming segments into CFS if they
+  aren't already and MergePolicy allows that. (Shai Erera)
 
 Bug fixes
 
@@ -540,6 +572,9 @@ Build
 
 * LUCENE-3006: Building javadocs will fail on warnings by default. 
   Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
+* LUCENE-3128: "ant eclipse" creates a .project file for easier Eclipse
+  integration (unless one already exists). (Daniel Serodio via Shai Erera)
 
 Test Cases
 

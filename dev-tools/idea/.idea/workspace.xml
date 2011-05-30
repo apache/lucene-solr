@@ -141,17 +141,17 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="spellchecker contrib" type="JUnit" factoryName="JUnit">
-      <module name="spellchecker" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/spellchecker" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
     <configuration default="false" name="stempel analysis module" type="JUnit" factoryName="JUnit">
       <module name="stempel" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/analysis/build/stempel" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="suggest module" type="JUnit" factoryName="JUnit">
+      <module name="suggest" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/suggest/build" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -197,8 +197,8 @@
       <item index="17" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
       <item index="18" class="java.lang.String" itemvalue="JUnit.solr" />
       <item index="19" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
-      <item index="21" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.suggest module" />
       <item index="22" class="java.lang.String" itemvalue="JUnit.uima contrib" />
       <item index="23" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
       <item index="24" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />

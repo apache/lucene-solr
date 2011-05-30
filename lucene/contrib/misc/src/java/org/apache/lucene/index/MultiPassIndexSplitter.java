@@ -40,6 +40,11 @@ import org.apache.lucene.util.Version;
  * <p>Note 2: the disadvantage of this tool is that source index needs to be
  * read as many times as there are parts to be created, hence the name of this
  * tool.
+ *
+ * <p><b>NOTE</b>: this tool is unaware of documents added
+ * atomically via {@link IndexWriter#addDocuments} or {@link
+ * IndexWriter#updateDocuments}, which means it can easily
+ * break up such document groups.
  */
 public class MultiPassIndexSplitter {
   

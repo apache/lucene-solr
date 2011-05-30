@@ -47,9 +47,9 @@
  
   <!-- hackish we have to call init/clover here, but solr core depends upon solrj? -->
   <target name="compile-core" depends="init, clover, compile-analyzers-common, 
-        compile-analyzers-phonetic, compile-highlighter, compile-memory, compile-misc, 
-        compile-queries, compile-spatial, compile-spellchecker, compile-solrj, 
-        common.compile-core, compile-webapp" 
+        compile-analyzers-phonetic, compile-suggest, compile-highlighter,
+        compile-memory, compile-misc, compile-queries, compile-spatial,
+        compile-solrj, common.compile-core, compile-webapp"
   	  unless="solr-core.compiled">
   </target>
  
@@ -147,6 +147,9 @@
   <target name="compile-analyzers-phonetic" unless="analyzers-phonetic.uptodate">
   	<ant dir="${common.dir}/../modules/analysis/phonetic" target="default" inheritAll="false"/>
   </target>
+  <target name="compile-suggest" unless="suggest.uptodate">
+  	<ant dir="${common.dir}/../modules/suggest" target="default" inheritAll="false"/>
+  </target>
   <target name="compile-highlighter" unless="highlighter.uptodate">
   	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false"/>
   </target>
@@ -161,9 +164,6 @@
   </target>
   <target name="compile-spatial" unless="spatial.uptodate">
   	<ant dir="${common.dir}/contrib/spatial" target="default" inheritAll="false"/>
-  </target>
-  <target name="compile-spellchecker" unless="spellchecker.uptodate">
-  	<ant dir="${common.dir}/contrib/spellchecker" target="default" inheritAll="false"/>
   </target>
 
 </project>

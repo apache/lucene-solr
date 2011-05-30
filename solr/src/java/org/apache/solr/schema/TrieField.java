@@ -26,8 +26,8 @@ import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -296,7 +296,7 @@ public class TrieField extends FieldType {
   @Override
   public String readableToIndexed(String val) {
     // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
-    BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     readableToIndexed(val, bytes);
     return bytes.utf8ToString();
   }
@@ -363,31 +363,29 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
-    BytesRef indexedForm = input;
-    String s;
-
+  public CharsRef indexedToReadable(BytesRef indexedForm, CharsRef charsRef) {
+    final char[] value;
     switch (type) {
       case INTEGER:
-        s = Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) );
+        value = Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) ).toCharArray();
         break;
       case FLOAT:
-        s = Float.toString( NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(indexedForm)) );
+        value = Float.toString( NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(indexedForm)) ).toCharArray();
         break;
       case LONG:
-        s = Long.toString( NumericUtils.prefixCodedToLong(indexedForm) );
+        value = Long.toString( NumericUtils.prefixCodedToLong(indexedForm) ).toCharArray();
         break;
       case DOUBLE:
-        s = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
+        value = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) ).toCharArray();
         break;
       case DATE:
-        s = dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+        value = dateField.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) ).toCharArray();
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
-
-    out.write(s);
+    charsRef.copy(value, 0, value.length);
+    return charsRef;
   }
 
   @Override

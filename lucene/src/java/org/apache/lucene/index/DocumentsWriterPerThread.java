@@ -104,7 +104,7 @@ public class DocumentsWriterPerThread {
       // largish:
       doc = null;
       analyzer = null;
-  }
+    }
   }
 
   static class FlushedSegment {
@@ -177,7 +177,7 @@ public class DocumentsWriterPerThread {
     this.parent = parent;
     this.fieldInfos = fieldInfos;
     this.writer = parent.indexWriter;
-    this.infoStream = parent.indexWriter.getInfoStream();
+    this.infoStream = parent.infoStream;
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
@@ -251,6 +251,82 @@ public class DocumentsWriterPerThread {
       }
     }
     finishDocument(delTerm);
+  }
+  
+  public int updateDocuments(Iterable<Document> docs, Analyzer analyzer, Term delTerm) throws IOException {
+    assert writer.testPoint("DocumentsWriterPerThread addDocuments start");
+    assert deleteQueue != null;
+    docState.analyzer = analyzer;
+    if (segment == null) {
+      // this call is synchronized on IndexWriter.segmentInfos
+      segment = writer.newSegmentName();
+      assert numDocsInRAM == 0;
+    }
+
+    int docCount = 0;
+    try {
+      for(Document doc : docs) {
+        docState.doc = doc;
+        docState.docID = numDocsInRAM;
+        docCount++;
+
+        boolean success = false;
+        try {
+          consumer.processDocument(fieldInfos);
+          success = true;
+        } finally {
+          if (!success) {
+            // An exc is being thrown...
+
+            if (!aborting) {
+              // One of the documents hit a non-aborting
+              // exception (eg something happened during
+              // analysis).  We now go and mark any docs
+              // from this batch that we had already indexed
+              // as deleted:
+              int docID = docState.docID;
+              final int endDocID = docID - docCount;
+              while (docID > endDocID) {
+                deleteDocID(docID);
+                docID--;
+              }
+
+              // Incr here because finishDocument will not
+              // be called (because an exc is being thrown):
+              numDocsInRAM++;
+              fieldInfos.revertUncommitted();
+            } else {
+              abort();
+            }
+          }
+        }
+        success = false;
+        try {
+          consumer.finishDocument();
+          success = true;
+        } finally {
+          if (!success) {
+            abort();
+          }
+        }
+
+        finishDocument(null);
+      }
+
+      // Apply delTerm only after all indexing has
+      // succeeded, but apply it only to docs prior to when
+      // this batch started:
+      if (delTerm != null) {
+        deleteQueue.add(delTerm, deleteSlice);
+        assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
+        deleteSlice.apply(pendingDeletes, numDocsInRAM-docCount);
+      }
+
+    } finally {
+      docState.clear();
+    }
+
+    return docCount;
   }
   
   private void finishDocument(Term delTerm) throws IOException {
@@ -474,6 +550,7 @@ public class DocumentsWriterPerThread {
       super(blockSize);
     }
 
+    @Override
     public byte[] getByteBlock() {
       bytesUsed.addAndGet(blockSize);
       return new byte[blockSize];
@@ -486,7 +563,7 @@ public class DocumentsWriterPerThread {
       }
     }
     
-  };
+  }
   
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;

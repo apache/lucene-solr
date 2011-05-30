@@ -88,7 +88,7 @@ public class AllGroupsCollector extends Collector {
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
       ordSet.put(key);
-      BytesRef term = key == 0 ? null : index.getTerm(doc, new BytesRef());
+      BytesRef term = key == 0 ? null : index.lookup(key, new BytesRef());
       groups.add(term);
     }
   }

@@ -48,6 +48,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
 
 
@@ -850,8 +851,9 @@ public final class MoreLikeThis {
 	{
 		BytesRef[] terms = vector.getTerms();
 		int freqs[]=vector.getTermFrequencies();
+		final CharsRef spare = new CharsRef();
 		for (int j = 0; j < terms.length; j++) {
-		    String term = terms[j].utf8ToString();
+		  final String term = terms[j].utf8ToChars(spare).toString();
 		
 			if(isNoiseWord(term)){
 				continue;

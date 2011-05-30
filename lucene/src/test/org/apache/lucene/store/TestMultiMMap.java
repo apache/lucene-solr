@@ -51,7 +51,7 @@ public class TestMultiMMap extends LuceneTestCase {
   }
   
   private void assertChunking(Random random, int chunkSize) throws Exception {
-    File path = File.createTempFile("mmap" + chunkSize, "tmp", workDir);
+    File path = _TestUtil.createTempFile("mmap" + chunkSize, "tmp", workDir);
     path.delete();
     path.mkdirs();
     MMapDirectory dir = new MMapDirectory(path);

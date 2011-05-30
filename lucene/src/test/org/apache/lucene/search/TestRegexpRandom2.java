@@ -35,6 +35,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -114,7 +115,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
 
     private class SimpleAutomatonTermsEnum extends FilteredTermsEnum {
       CharacterRunAutomaton runAutomaton = new CharacterRunAutomaton(automaton);
-      UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+      CharsRef utf16 = new CharsRef(10);
 
       private SimpleAutomatonTermsEnum(TermsEnum tenum) throws IOException {
         super(tenum);
@@ -124,7 +125,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       @Override
       protected AcceptStatus accept(BytesRef term) throws IOException {
         UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
-        return runAutomaton.run(utf16.result, 0, utf16.length) ? 
+        return runAutomaton.run(utf16.chars, 0, utf16.length) ? 
             AcceptStatus.YES : AcceptStatus.NO;
       }
     }

@@ -33,6 +33,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
 public final class StandardPostingsWriter extends PostingsWriterBase {
@@ -42,8 +43,8 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  final IndexOutput freqOut;
-  final IndexOutput proxOut;
+  IndexOutput freqOut;
+  IndexOutput proxOut;
   final DefaultSkipListWriter skipListWriter;
   /** Expert: The fraction of TermDocs entries stored in skip tables,
    * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
@@ -85,31 +86,35 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   public StandardPostingsWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_SKIP_INTERVAL);
   }
+  
   public StandardPostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
-    super();
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
     //this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName);
-
-    if (state.fieldInfos.hasProx()) {
-      // At least one field does not omit TF, so create the
-      // prox file
-      fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.PROX_EXTENSION);
-      proxOut = state.directory.createOutput(fileName);
-    } else {
-      // Every field omits TF so we will write no prox file
-      proxOut = null;
+    boolean success = false;
+    try {
+      if (state.fieldInfos.hasProx()) {
+        // At least one field does not omit TF, so create the
+        // prox file
+        fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.PROX_EXTENSION);
+        proxOut = state.directory.createOutput(fileName);
+      } else {
+        // Every field omits TF so we will write no prox file
+        proxOut = null;
+      }
+      
+      totalNumDocs = state.numDocs;
+      
+      skipListWriter = new DefaultSkipListWriter(skipInterval, maxSkipLevels,
+          state.numDocs, freqOut, proxOut);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, freqOut, proxOut);
+      }
     }
-
-    totalNumDocs = state.numDocs;
-
-    skipListWriter = new DefaultSkipListWriter(skipInterval,
-                                               maxSkipLevels,
-                                               state.numDocs,
-                                               freqOut,
-                                               proxOut);
   }
 
   @Override
@@ -267,12 +272,6 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
-    try {
-      freqOut.close();
-    } finally {
-      if (proxOut != null) {
-        proxOut.close();
-      }
-    }
+    IOUtils.closeSafely(false, freqOut, proxOut);
   }
 }

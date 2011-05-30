@@ -87,6 +87,7 @@ final class DocInverter extends DocFieldConsumer {
     endConsumer.startDocument();
   }
 
+  @Override
   public void finishDocument() throws IOException {
     // TODO: allow endConsumer.finishDocument to also return
     // a DocWriter

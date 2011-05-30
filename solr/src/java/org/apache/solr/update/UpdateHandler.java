@@ -98,7 +98,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   protected SolrIndexWriter createMainIndexWriter(String name, boolean removeAllExisting) throws IOException {
-    return new SolrIndexWriter(name,core.getNewIndexDir(), core.getDirectoryFactory(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
+    return new SolrIndexWriter(name,core.getNewIndexDir(), core.getDirectoryFactory(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
   }
 
   protected final Term idTerm(String readableId) {

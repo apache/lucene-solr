@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState; //javadoc
 
 /**
@@ -48,12 +47,10 @@ public class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerT
   }
 
   @Override
-  public ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter, Document doc) {
+  public ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter) {
     ThreadState threadState = threadBindings.get(requestingThread);
-    if (threadState != null) {
-      if (threadState.tryLock()) {
-        return threadState;
-      }
+    if (threadState != null && threadState.tryLock()) {
+      return threadState;
     }
     ThreadState minThreadState = null;
 

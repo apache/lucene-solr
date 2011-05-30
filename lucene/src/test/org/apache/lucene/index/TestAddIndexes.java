@@ -30,6 +30,7 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -74,7 +75,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer.close();
 
     writer = newWriter(aux2, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
-    // add 40 documents in compound files
+    // add 50 documents in compound files
     addDocs2(writer, 50);
     assertEquals(50, writer.maxDoc());
     writer.close();
@@ -1084,4 +1085,126 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals("Only one compound segment should exist", 4, dir.listAll().length);
   }
   
+  // LUCENE-3126: tests that if a non-CFS segment is copied, it is converted to
+  // a CFS, given MP preferences
+  public void testCopyIntoCFS() throws Exception {
+    // create an index, no CFS (so we can assert that existing segments are not affected)
+    Directory target = newDirectory();
+    LogMergePolicy lmp = newLogMergePolicy(false);
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null).setMergePolicy(lmp);
+    IndexWriter w = new IndexWriter(target, conf);
+    w.addDocument(new Document());
+    w.commit();
+    assertFalse(w.segmentInfos.info(0).getUseCompoundFile());
+
+    // prepare second index, no-CFS too + .del file + separate norms file
+    Directory src = newDirectory();
+    LogMergePolicy lmp2 = newLogMergePolicy(false);
+    IndexWriterConfig conf2 = newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random)).setMergePolicy(lmp2);
+    IndexWriter w2 = new IndexWriter(src, conf2);
+    Document doc = new Document();
+    doc.add(new Field("c", "some text", Store.YES, Index.ANALYZED));
+    w2.addDocument(doc);
+    doc = new Document();
+    doc.add(new Field("d", "delete", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+    w2.addDocument(doc);
+    w2.commit();
+    w2.deleteDocuments(new Term("d", "delete"));
+    w2.commit();
+    w2.close();
+
+    // create separate norms file
+    IndexReader r = IndexReader.open(src, false);
+    r.setNorm(0, "c", (byte) 1);
+    r.close();
+    assertTrue(".del file not found", src.fileExists("_0_1.del"));
+    assertTrue("separate norms file not found", src.fileExists("_0_1.s0"));
+    
+    // Case 1: force 'CFS' on target
+    lmp.setUseCompoundFile(true);
+    lmp.setNoCFSRatio(1.0);
+    w.addIndexes(src);
+    w.commit();
+    assertFalse("existing segments should not be modified by addIndexes", w.segmentInfos.info(0).getUseCompoundFile());
+    assertTrue("segment should have been converted to a CFS by addIndexes", w.segmentInfos.info(1).getUseCompoundFile());
+    assertTrue(".del file not found", target.fileExists("_1_1.del"));
+    assertTrue("separate norms file not found", target.fileExists("_1_1.s0"));
+
+    // Case 2: LMP disallows CFS
+    lmp.setUseCompoundFile(false);
+    w.addIndexes(src);
+    w.commit();
+    assertFalse("segment should not have been converted to a CFS by addIndexes if MP disallows", w.segmentInfos.info(2).getUseCompoundFile());
+
+    w.close();
+
+    // cleanup
+    src.close();
+    target.close();
+  }
+  
+  /*
+   * simple test that ensures we getting expected exceptions 
+   */
+  public void testAddIndexMissingCodec() throws IOException {
+    Directory toAdd = newDirectory();
+    {
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new StandardCodec());
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(toAdd, conf);
+      Document doc = new Document();
+      doc.add(newField("foo", "bar", Index.NOT_ANALYZED));
+      w.addDocument(doc);
+      w.close();
+    }
+    {
+      Directory dir = newDirectory();
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(dir, conf);
+      try {
+        w.addIndexes(toAdd);
+        fail("no such codec");
+      } catch (IllegalArgumentException ex) {
+        // expected
+      }
+      w.close();
+      IndexReader open = IndexReader.open(dir);
+      assertEquals(0, open.numDocs());
+      open.close();
+      dir.close();
+    }
+
+    {
+      Directory dir = newDirectory();
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
+          new MockAnalyzer(random));
+      CodecProvider provider = new CodecProvider();
+      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      conf.setCodecProvider(provider);
+      IndexWriter w = new IndexWriter(dir, conf);
+      IndexReader indexReader = IndexReader.open(toAdd);
+      try {
+        w.addIndexes(indexReader);
+        fail("no such codec");
+      } catch (IllegalArgumentException ex) {
+        // expected
+      }
+      indexReader.close();
+      w.close();
+      IndexReader open = IndexReader.open(dir);
+      assertEquals(0, open.numDocs());
+      open.close();
+      dir.close();
+    }
+    toAdd.close();
+  }
+
 }

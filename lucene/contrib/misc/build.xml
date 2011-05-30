@@ -42,4 +42,26 @@
       <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
     </subant>
   </target>
+
+  <target name="build-native-unix" >
+    <mkdir dir="${common.build.dir}/native"/>
+
+    <taskdef resource="cpptasks.tasks">
+      <classpath>
+        <pathelement location="ant_lib/cpptasks-1.0b5.jar"/>
+      </classpath>
+    </taskdef>
+
+    <cc outtype="shared" subsystem="console" outfile="${common.build.dir}/native/NativePosixUtil" >
+      <fileset file="${src.dir}/org/apache/lucene/store/NativePosixUtil.cpp" />  
+      <includepath>
+        <pathelement location="${java.home}/../include"/>
+        <pathelement location="${java.home}/../include/linux"/>
+        <pathelement location="${java.home}/../include/solaris"/>
+      </includepath>
+
+      <compilerarg value="-fPIC" />
+    </cc>
+  </target>
+
 </project>

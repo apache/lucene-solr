@@ -29,7 +29,7 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
  */
 public class FieldFragList {
 
-  List<WeightedFragInfo> fragInfos = new ArrayList<WeightedFragInfo>();
+  private List<WeightedFragInfo> fragInfos = new ArrayList<WeightedFragInfo>();
 
   /**
    * a constructor.
@@ -50,6 +50,15 @@ public class FieldFragList {
     fragInfos.add( new WeightedFragInfo( startOffset, endOffset, phraseInfoList ) );
   }
   
+  /**
+   * return the list of WeightedFragInfos.
+   * 
+   * @return fragInfos.
+   */ 
+  public List<WeightedFragInfo> getFragInfos() {
+    return fragInfos;
+  }
+
   public static class WeightedFragInfo {
 
     List<SubInfo> subInfos;

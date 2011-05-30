@@ -21,12 +21,13 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
@@ -41,7 +42,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.util.LongPriorityQueue;
@@ -109,7 +109,7 @@ public class SimpleFacets {
     if (localParams == null) return;
 
     // remove local params unless it's a query
-    if (type != FacetParams.FACET_QUERY) {
+    if (type != FacetParams.FACET_QUERY) { // TODO Cut over to an Enum here
       facetValue = localParams.get(CommonParams.VALUE);
     }
 
@@ -128,7 +128,7 @@ public class SimpleFacets {
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
     if (excludeStr == null) return;
 
-    Map tagMap = (Map)req.getContext().get("tags");
+    Map<?,?> tagMap = (Map<?,?>)req.getContext().get("tags");
     if (tagMap != null && rb != null) {
       List<String> excludeTagList = StrUtils.splitSmart(excludeStr,',');
 
@@ -137,7 +137,7 @@ public class SimpleFacets {
         Object olst = tagMap.get(excludeTag);
         // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
         if (!(olst instanceof Collection)) continue;
-        for (Object o : (Collection)olst) {
+        for (Object o : (Collection<?>)olst) {
           if (!(o instanceof QParser)) continue;
           QParser qp = (QParser)o;
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
@@ -435,7 +435,7 @@ public class SimpleFacets {
     if (prefix!=null) {
       startTermIndex = si.binarySearchLookup(prefixRef, br);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
-      prefixRef.append(ByteUtils.bigTerm);
+      prefixRef.append(UnicodeUtil.BIG_TERM);
       endTermIndex = si.binarySearchLookup(prefixRef, br);
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
@@ -446,8 +446,7 @@ public class SimpleFacets {
 
     final int nTerms=endTermIndex-startTermIndex;
     int missingCount = -1; 
-
-    CharArr spare = new CharArr();
+    final CharsRef charsRef = new CharsRef(10);
     if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are
@@ -547,10 +546,8 @@ public class SimpleFacets {
           long pair = sorted[i];
           int c = (int)(pair >>> 32);
           int tnum = Integer.MAX_VALUE - (int)pair;
-
-          spare.reset();
-          ft.indexedToReadable(si.lookup(startTermIndex+tnum, br), spare);
-          res.add(spare.toString(), c);
+          ft.indexedToReadable(si.lookup(startTermIndex+tnum, br), charsRef);
+          res.add(charsRef.toString(), c);
         }
       
       } else {
@@ -567,9 +564,8 @@ public class SimpleFacets {
           int c = counts[i];
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
-          spare.reset();
-          ft.indexedToReadable(si.lookup(startTermIndex+i, br), spare);
-          res.add(spare.toString(), c);
+          ft.indexedToReadable(si.lookup(startTermIndex+i, br), charsRef);
+          res.add(charsRef.toString(), c);
         }
       }
     }
@@ -657,7 +653,7 @@ public class SimpleFacets {
     }
 
     DocsEnum docsEnum = null;
-    CharArr spare = new CharArr();
+    CharsRef charsRef = new CharsRef(10);
 
     if (docs.size() >= mincount) {
       while (term != null) {
@@ -742,9 +738,8 @@ public class SimpleFacets {
           } else {
             if (c >= mincount && --off<0) {
               if (--lim<0) break;
-              spare.reset();
-              ft.indexedToReadable(term, spare);
-              res.add(spare.toString(), c);
+              ft.indexedToReadable(term, charsRef);
+              res.add(charsRef.toString(), c);
             }
           }
         }
@@ -757,9 +752,8 @@ public class SimpleFacets {
       for (CountPair<BytesRef,Integer> p : queue) {
         if (--off>=0) continue;
         if (--lim<0) break;
-        spare.reset();
-        ft.indexedToReadable(p.key, spare);
-        res.add(spare.toString(), p.val);
+        ft.indexedToReadable(p.key, charsRef);
+        res.add(charsRef.toString(), p.val);
       }
     }
 
