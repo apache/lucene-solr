@@ -24,7 +24,6 @@
   </description>
 
   <dirname file="${ant.file.common}" property="common.dir"/>
-  <import file="${common.dir}/../common-build.xml"/>
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" value="${common.dir}/src/tools/prettify"/>
   <property name="maven.build.dir" value="${common.dir}/build/maven"/>
@@ -60,6 +59,11 @@
   <path id="ant-path">
     <fileset dir="${common.dir}/lib" includes="ant-*.jar"/>
   </path>
+
+  <path id="tools.runtime.classpath">
+    <pathelement location="${common.dir}/build/classes/tools"/>
+  </path>
+
 
   <!-- default arguments to pass to JVM executing tests -->
   <property name="testmethod" value=""/>
