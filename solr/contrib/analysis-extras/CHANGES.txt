@@ -11,11 +11,15 @@ analyzers for Chinese and Polish.
 
 
 $Id$
-==================  3.2-dev ==================
+==================  3.3.0-dev ==============
 
 (No Changes)
 
-==================  3.1-dev ==================
+==================  3.2.0 ==================
+
+(No Changes)
+
+==================  3.1.0 ==================
 
 * SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
 
