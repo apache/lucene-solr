@@ -18,16 +18,16 @@ package org.apache.lucene.index.values;
  */
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 
 /**
  * {@link ValueType} specifies the type of the {@link DocValues} for a certain field.
  * A {@link ValueType} only defines the data type for a field while the actual
- * implemenation used to encode and decode the values depends on the field's
+ * Implementation used to encode and decode the values depends on the field's
  * {@link Codec}. It is up to the {@link Codec} implementing
- * {@link FieldsConsumer#addValuesField(org.apache.lucene.index.FieldInfo)} and
- * using a different low-level implemenations to write the stored values for a
+ * {@link PerDocConsumer#addValuesField(org.apache.lucene.index.FieldInfo)} and
+ * using a different low-level implementations to write the stored values for a
  * field.
  * 
  * @lucene.experimental

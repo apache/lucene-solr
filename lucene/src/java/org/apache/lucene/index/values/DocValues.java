@@ -29,8 +29,6 @@ import org.apache.lucene.util.BytesRef;
 /**
  * nocommit - javadoc 
  * 
- * @see FieldsEnum#docValues()
- * @see Fields#docValues(String)
  * @lucene.experimental
  */
 public abstract class DocValues implements Closeable {
