@@ -125,7 +125,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </java>
   </target>
 			
-  <target name="compile-tools">
+  <target name="compile-tools" depends="common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">

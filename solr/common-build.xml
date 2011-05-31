@@ -22,7 +22,6 @@
   </description>
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
-  <import file="${common-solr.dir}/../common-build.xml"/>
   
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
   <property name="tests.luceneMatchVersion" value="4.0"/>
@@ -635,5 +634,17 @@
       <arg value="${basedir}/src/test-files/solr/lib" />
     </java>
   </target>
+
+  <path id="tools.runtime.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/tools"/>
+  </path>
+  <target name="compile-tools" description="Compile the Test Framework and Validation tools">
+    <sequential>
+      <subant target="compile-tools" inheritall="false" failonerror="true">
+        <fileset dir="${common-solr.dir}/../lucene" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
+
 
 </project>
