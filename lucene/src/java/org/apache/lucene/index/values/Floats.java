@@ -29,6 +29,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.FloatsRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Exposes {@link Writer} and reader ({@link Source}) for 32 bit and 64 bit
@@ -82,9 +83,17 @@ public class Floats {
       this.precision = (byte) precision;
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
-      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
-      assert datOut.getFilePointer() == CodecUtil.headerLength(CODEC_NAME);
-      datOut.writeByte(this.precision);
+      boolean success = false;
+      try {
+        CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
+        assert datOut.getFilePointer() == CodecUtil.headerLength(CODEC_NAME);
+        datOut.writeByte(this.precision);
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, datOut);
+        }
+      }
     }
 
 

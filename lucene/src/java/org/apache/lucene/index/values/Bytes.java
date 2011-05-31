@@ -35,6 +35,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 
 /**
@@ -353,16 +354,23 @@ public final class Bytes {
       super(bytesUsed);
       this.id = id;
       this.pool = pool;
-        datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
             DATA_EXTENSION));
+      boolean success = false;
+      try {
         CodecUtil.writeHeader(datOut, codecName, version);
-
-      if (initIndex) {
-        idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-            INDEX_EXTENSION));
-        CodecUtil.writeHeader(idxOut, codecName, version);
-      } else {
-        idxOut = null;
+        if (initIndex) {
+          idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+              INDEX_EXTENSION));
+          CodecUtil.writeHeader(idxOut, codecName, version);
+        } else {
+          idxOut = null;
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, datOut, idxOut);
+        }
       }
     }
 
@@ -376,14 +384,10 @@ public final class Bytes {
     @Override
     public void finish(int docCount) throws IOException {
       try {
-          datOut.close();
+        IOUtils.closeSafely(false, datOut, idxOut);
       } finally {
-        try {
-          if (idxOut != null)
-            idxOut.close();
-        } finally {
-          if (pool != null)
-            pool.reset();
+        if (pool != null) {
+          pool.reset();
         }
       }
     }

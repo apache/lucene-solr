@@ -27,6 +27,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -62,11 +63,21 @@ class PackedIntsImpl {
       super(bytesUsed);
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           DATA_EXTENSION));
-      CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
-      this.id = id;
-      docToValue = new long[1];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the bitset
-                                                             // needs memory too
+      boolean success = false;
+      try {
+        CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
+        this.id = id;
+        docToValue = new long[1];
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG); // TODO the
+                                                               // bitset
+                                                               // needs memory
+                                                               // too
+        success = true;
+      } finally {
+        if (!success) {
+          datOut.close();
+        }
+      }
     }
 
     @Override
@@ -168,7 +179,15 @@ class PackedIntsImpl {
     protected IntsReader(Directory dir, String id) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
-      CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
+      boolean success = false;
+      try {
+        CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, datIn);
+        }
+      }
     }
 
     /**
