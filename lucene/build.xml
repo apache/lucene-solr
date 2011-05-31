@@ -50,8 +50,7 @@
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="docs/,*.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd"
-              excludes="BUILD.txt"
+              includes="docs/,CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd"
   />
 
 
