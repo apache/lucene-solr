@@ -376,7 +376,7 @@
   <!-- ================================================================== -->
   <!-- Populates properties svn.URL and svn.Revision using "svn info".    -->
   <!-- ================================================================== -->
-  <target name="get-svn-info">
+  <target name="get-svn-info" depends="check-svn">
     <exec dir="." executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
       <arg value="info"/>
     </exec>
@@ -392,6 +392,16 @@
     </loadproperties>
   </target>
 
+   <target name="check-svn">
+    <sequential>
+      <exec dir="." executable="${svnversion.exe}" outputproperty="svn.ver"/>
+      <fail message="A subversion checkout is required for this target">
+        <condition>
+           <equals arg1="${svn.ver}" arg2="exported"/>
+        </condition>
+      </fail>
+    </sequential>
+  </target>
 
   <!-- ================================================================== -->
   <!-- same as package-tgz-src. it is just here for compatibility.        -->
