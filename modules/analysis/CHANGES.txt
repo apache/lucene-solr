@@ -1,5 +1,8 @@
 Analysis Module Change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
    
 API Changes
