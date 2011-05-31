@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
 
@@ -1071,7 +1073,8 @@ public class IndexWriter implements Closeable {
 
       if (infoStream != null)
         message("at close: " + segString());
-
+      // used by assert below
+      final DocumentsWriter oldWriter = docWriter;
       synchronized(this) {
         readerPool.close();
         docWriter = null;
@@ -1085,6 +1088,7 @@ public class IndexWriter implements Closeable {
       synchronized(this) {
         closed = true;
       }
+      assert oldWriter.assertNoActiveDWPT();
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "closeInternal");
     } finally {
@@ -1098,6 +1102,8 @@ public class IndexWriter implements Closeable {
       }
     }
   }
+  
+ 
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
@@ -1225,6 +1231,111 @@ public class IndexWriter implements Closeable {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     updateDocument(null, doc, analyzer);
+  }
+
+  /**
+   * Atomically adds a block of documents with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents.
+   *
+   * <p><b>WARNING</b>: the index does not currently record
+   * which documents were added as a block.  Today this is
+   * fine, because merging will preserve the block (as long
+   * as none them were deleted).  But it's possible in the
+   * future that Lucene may more aggressively re-order
+   * documents (for example, perhaps to obtain better index
+   * compression), in which case you may need to fully
+   * re-index your documents at that time.
+   *
+   * <p>See {@link #addDocument(Document)} for details on
+   * index and IndexWriter state after an Exception, and
+   * flushing/merging temporary free space requirements.</p>
+   *
+   * <p><b>NOTE</b>: tools that do offline splitting of an index
+   * (for example, IndexSplitter in contrib) or
+   * re-sorting of documents (for example, IndexSorter in
+   * contrib) are not aware of these atomically added documents
+   * and will likely break them up.  Use such tools at your
+   * own risk!
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void addDocuments(Iterable<Document> docs) throws CorruptIndexException, IOException {
+    addDocuments(docs, analyzer);
+  }
+
+  /**
+   * Atomically adds a block of documents, analyzed using the
+   * provided analyzer, with sequentially assigned document
+   * IDs, such that an external reader will see all or none
+   * of the documents. 
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void addDocuments(Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+    updateDocuments(null, docs, analyzer);
+  }
+
+  /**
+   * Atomically deletes documents matching the provided
+   * delTerm and adds a block of documents with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents. 
+   *
+   * See {@link #addDocuments(Iterable)}.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void updateDocuments(Term delTerm, Iterable<Document> docs) throws CorruptIndexException, IOException {
+    updateDocuments(delTerm, docs, analyzer);
+  }
+
+  /**
+   * Atomically deletes documents matching the provided
+   * delTerm and adds a block of documents, analyzed  using
+   * the provided analyzer, with sequentially
+   * assigned document IDs, such that an external reader
+   * will see all or none of the documents. 
+   *
+   * See {@link #addDocuments(Iterable)}.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public void updateDocuments(Term delTerm, Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+    ensureOpen();
+    try {
+      boolean success = false;
+      boolean anySegmentFlushed = false;
+      try {
+        anySegmentFlushed = docWriter.updateDocuments(docs, analyzer, delTerm);
+        success = true;
+      } finally {
+        if (!success && infoStream != null) {
+          message("hit exception updating document");
+        }
+      }
+      if (anySegmentFlushed) {
+        maybeMerge();
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "updateDocuments");
+    }
   }
 
   /**
@@ -2217,10 +2328,10 @@ public class IndexWriter implements Closeable {
    * <p>
    * <b>NOTE:</b> this method only copies the segments of the incoming indexes
    * and does not merge them. Therefore deleted documents are not removed and
-   * the new segments are not merged with the existing ones. Also, the segments
-   * are copied as-is, meaning they are not converted to CFS if they aren't,
-   * and vice-versa. If you wish to do that, you can call {@link #maybeMerge}
-   * or {@link #optimize} afterwards.
+   * the new segments are not merged with the existing ones. Also, if the merge 
+   * policy allows compound files, then any segment that is not compound is 
+   * converted to such. However, if the segment is compound, it is copied as-is
+   * even if the merge policy does not allow compound files.
    *
    * <p>This requires this index not be among those to be added.
    *
@@ -2244,6 +2355,7 @@ public class IndexWriter implements Closeable {
 
       int docCount = 0;
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
+      Comparator<String> versionComparator = StringHelper.getVersionComparator();
       for (Directory dir : dirs) {
         if (infoStream != null) {
           message("addIndexes: process directory " + dir);
@@ -2263,45 +2375,21 @@ public class IndexWriter implements Closeable {
             message("addIndexes: process segment origName=" + info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
           }
 
-          // Determine if the doc store of this segment needs to be copied. It's
-          // only relevant for segments who share doc store with others, because
-          // the DS might have been copied already, in which case we just want
-          // to update the DS name of this SegmentInfo.
-          // NOTE: pre-3x segments include a null DSName if they don't share doc
-          // store. So the following code ensures we don't accidentally insert
-          // 'null' to the map.
-          final String newDsName;
-          if (dsName != null) {
-            if (dsNames.containsKey(dsName)) {
-              newDsName = dsNames.get(dsName);
-            } else {
-              dsNames.put(dsName, newSegName);
-              newDsName = newSegName;
-            }
+          // create CFS only if the source segment is not CFS, and MP agrees it
+          // should be CFS.
+          boolean createCFS;
+          synchronized (this) { // Guard segmentInfos
+            createCFS = !info.getUseCompoundFile()
+                && mergePolicy.useCompoundFile(segmentInfos, info)
+                // optimize case only for segments that don't share doc stores
+                && versionComparator.compare(info.getVersion(), "3.1") >= 0;
+          }
+
+          if (createCFS) {
+            copySegmentIntoCFS(info, newSegName);
           } else {
-            newDsName = newSegName;
+            copySegmentAsIs(info, newSegName, dsNames, dsFilesCopied);
           }
-
-          // Copy the segment files
-          for (String file: info.files()) {
-            final String newFileName;
-            if (IndexFileNames.isDocStoreFile(file)) {
-              newFileName = newDsName + IndexFileNames.stripSegmentName(file);
-              if (dsFilesCopied.contains(newFileName)) {
-                continue;
-              }
-              dsFilesCopied.add(newFileName);
-            } else {
-              newFileName = newSegName + IndexFileNames.stripSegmentName(file);
-            }
-            assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-            dir.copy(directory, file, newFileName);
-          }
-
-          // Update SI appropriately
-          info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
-          info.dir = directory;
-          info.name = newSegName;
 
           infos.add(info);
         }
@@ -2391,6 +2479,76 @@ public class IndexWriter implements Closeable {
     }
   }
 
+  /** Copies the segment into the IndexWriter's directory, as a compound segment. */
+  private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
+    String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+    Collection<String> files = info.files();
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
+    for (String file : files) {
+      String newFileName = segName + IndexFileNames.stripSegmentName(file);
+      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+          && !IndexFileNames.isSeparateNormsFile(file)) {
+        cfsWriter.addFile(file, info.dir);
+      } else {
+        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+        info.dir.copy(directory, file, newFileName);
+      }
+    }
+    
+    // Create the .cfs
+    cfsWriter.close();
+    
+    info.dir = directory;
+    info.name = segName;
+    info.setUseCompoundFile(true);
+  }
+  
+  /** Copies the segment files as-is into the IndexWriter's directory. */
+  private void copySegmentAsIs(SegmentInfo info, String segName,
+      Map<String, String> dsNames, Set<String> dsFilesCopied)
+      throws IOException {
+    // Determine if the doc store of this segment needs to be copied. It's
+    // only relevant for segments that share doc store with others,
+    // because the DS might have been copied already, in which case we
+    // just want to update the DS name of this SegmentInfo.
+    // NOTE: pre-3x segments include a null DSName if they don't share doc
+    // store. The following code ensures we don't accidentally insert
+    // 'null' to the map.
+    String dsName = info.getDocStoreSegment();
+    final String newDsName;
+    if (dsName != null) {
+      if (dsNames.containsKey(dsName)) {
+        newDsName = dsNames.get(dsName);
+      } else {
+        dsNames.put(dsName, segName);
+        newDsName = segName;
+      }
+    } else {
+      newDsName = segName;
+    }
+    
+    // Copy the segment files
+    for (String file: info.files()) {
+      final String newFileName;
+      if (IndexFileNames.isDocStoreFile(file)) {
+        newFileName = newDsName + IndexFileNames.stripSegmentName(file);
+        if (dsFilesCopied.contains(newFileName)) {
+          continue;
+        }
+        dsFilesCopied.add(newFileName);
+      } else {
+        newFileName = segName + IndexFileNames.stripSegmentName(file);
+      }
+      
+      assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+      info.dir.copy(directory, file, newFileName);
+    }
+    
+    info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
+    info.dir = directory;
+    info.name = segName;
+  }
+  
   /**
    * A hook for extending classes to execute operations after pending added and
    * deleted documents have been flushed to the Directory but before the change
@@ -3176,49 +3334,49 @@ public class IndexWriter implements Closeable {
     runningMerges.remove(merge);
   }
 
-  private synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
+  private final synchronized void closeMergeReaders(MergePolicy.OneMerge merge, boolean suppressExceptions) throws IOException {
     final int numSegments = merge.readers.size();
-    if (suppressExceptions) {
-      // Suppress any new exceptions so we throw the
-      // original cause
-      boolean anyChanges = false;
-      for (int i=0;i<numSegments;i++) {
-        if (merge.readers.get(i) != null) {
-          try {
-            anyChanges |= readerPool.release(merge.readers.get(i), false);
-          } catch (Throwable t) {
+    Throwable th = null;
+    
+    boolean anyChanges = false;
+    boolean drop = !suppressExceptions;
+    for (int i = 0; i < numSegments; i++) {
+      if (merge.readers.get(i) != null) {
+        try {
+          anyChanges |= readerPool.release(merge.readers.get(i), drop);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
           }
-          merge.readers.set(i, null);
         }
-
-        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
-          try {
-            merge.readerClones.get(i).close();
-          } catch (Throwable t) {
-          }
-          // This was a private clone and we had the
-          // only reference
-          assert merge.readerClones.get(i).getRefCount() == 0: "refCount should be 0 but is " + merge.readerClones.get(i).getRefCount();
-          merge.readerClones.set(i, null);
-        }
+        merge.readers.set(i, null);
       }
-      if (anyChanges) {
-        checkpoint();
-      }
-    } else {
-      for (int i=0;i<numSegments;i++) {
-        if (merge.readers.get(i) != null) {
-          readerPool.release(merge.readers.get(i), true);
-          merge.readers.set(i, null);
-        }
-
-        if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
+      
+      if (i < merge.readerClones.size() && merge.readerClones.get(i) != null) {
+        try {
           merge.readerClones.get(i).close();
-          // This was a private clone and we had the only reference
-          assert merge.readerClones.get(i).getRefCount() == 0;
-          merge.readerClones.set(i, null);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          }
         }
+        // This was a private clone and we had the
+        // only reference
+        assert merge.readerClones.get(i).getRefCount() == 0: "refCount should be 0 but is " + merge.readerClones.get(i).getRefCount();
+        merge.readerClones.set(i, null);
       }
+    }
+    
+    if (suppressExceptions && anyChanges) {
+      checkpoint();
+    }
+    
+    // If any error occured, throw it.
+    if (!suppressExceptions && th != null) {
+      if (th instanceof IOException) throw (IOException) th;
+      if (th instanceof RuntimeException) throw (RuntimeException) th;
+      if (th instanceof Error) throw (Error) th;
+      throw new RuntimeException(th);
     }
   }
 

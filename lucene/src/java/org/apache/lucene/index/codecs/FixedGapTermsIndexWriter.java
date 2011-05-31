@@ -25,6 +25,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.List;
@@ -58,9 +59,17 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), TERMS_INDEX_EXTENSION);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);
-    fieldInfos = state.fieldInfos;
-    writeHeader(out);
-    out.writeInt(termIndexInterval);
+    boolean success = false;
+    try {
+      fieldInfos = state.fieldInfos;
+      writeHeader(out);
+      out.writeInt(termIndexInterval);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
+    }
   }
   
   protected void writeHeader(IndexOutput out) throws IOException {
@@ -202,33 +211,37 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
-  @Override
   public void close() throws IOException {
-    final long dirStart = out.getFilePointer();
-    final int fieldCount = fields.size();
-
-    int nonNullFieldCount = 0;
-    for(int i=0;i<fieldCount;i++) {
-      SimpleFieldWriter field = fields.get(i);
-      if (field.numIndexTerms > 0) {
-        nonNullFieldCount++;
+    boolean success = false;
+    try {
+      final long dirStart = out.getFilePointer();
+      final int fieldCount = fields.size();
+      
+      int nonNullFieldCount = 0;
+      for(int i=0;i<fieldCount;i++) {
+        SimpleFieldWriter field = fields.get(i);
+        if (field.numIndexTerms > 0) {
+          nonNullFieldCount++;
+        }
       }
-    }
-
-    out.writeVInt(nonNullFieldCount);
-    for(int i=0;i<fieldCount;i++) {
-      SimpleFieldWriter field = fields.get(i);
-      if (field.numIndexTerms > 0) {
-        out.writeVInt(field.fieldInfo.number);
-        out.writeVInt(field.numIndexTerms);
-        out.writeVLong(field.termsStart);
-        out.writeVLong(field.indexStart);
-        out.writeVLong(field.packedIndexStart);
-        out.writeVLong(field.packedOffsetsStart);
+      
+      out.writeVInt(nonNullFieldCount);
+      for(int i=0;i<fieldCount;i++) {
+        SimpleFieldWriter field = fields.get(i);
+        if (field.numIndexTerms > 0) {
+          out.writeVInt(field.fieldInfo.number);
+          out.writeVInt(field.numIndexTerms);
+          out.writeVLong(field.termsStart);
+          out.writeVLong(field.indexStart);
+          out.writeVLong(field.packedIndexStart);
+          out.writeVLong(field.packedOffsetsStart);
+        }
       }
+      writeTrailer(dirStart);
+      success = true;
+    } finally {
+      IOUtils.closeSafely(!success, out);
     }
-    writeTrailer(dirStart);
-    out.close();
   }
 
   protected void writeTrailer(long dirStart) throws IOException {

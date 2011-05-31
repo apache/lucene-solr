@@ -53,8 +53,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
   @Override
   void abort() {
-    consumer.abort();
-    endConsumer.abort();
+    try {
+      consumer.abort();
+    } finally {
+      endConsumer.abort();
+    }
   }
 
   @Override

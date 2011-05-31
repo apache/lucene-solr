@@ -18,7 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
@@ -178,8 +178,7 @@ public class TermsComponent extends SearchComponent {
 
       int i = 0;
       BoundedTreeSet<CountPair<BytesRef, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<BytesRef, Integer>>(limit) : null);
-      CharArr external = new CharArr();
-
+      CharsRef external = new CharsRef();
       while (term != null && (i<limit || sort)) {
         boolean externalized = false; // did we fill in "external" yet for this term?
 
@@ -189,8 +188,8 @@ public class TermsComponent extends SearchComponent {
         if (pattern != null) {
           // indexed text or external text?
           // TODO: support "raw" mode?
-          external.reset();
           ft.indexedToReadable(term, external);
+          externalized = true;
           if (!pattern.matcher(external).matches()) {
             term = termsEnum.next();
             continue;
@@ -213,13 +212,9 @@ public class TermsComponent extends SearchComponent {
 
             // TODO: handle raw somehow
             if (!externalized) {
-              external.reset();
               ft.indexedToReadable(term, external);
             }
-            String label = external.toString();
-            
-
-            fieldTerms.add(label, docFreq);
+            fieldTerms.add(external.toString(), docFreq);
             i++;
           }
         }
@@ -230,7 +225,6 @@ public class TermsComponent extends SearchComponent {
       if (sort) {
         for (CountPair<BytesRef, Integer> item : queue) {
           if (i >= limit) break;
-          external.reset();
           ft.indexedToReadable(item.key, external);          
           fieldTerms.add(external.toString(), item.val);
           i++;

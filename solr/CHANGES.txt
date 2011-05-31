@@ -24,14 +24,13 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Lucene trunk
 Apache Tika 0.8
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 
 
-Upgrading from Solr 3.2-dev
+Upgrading from Solr 3.3-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -144,6 +143,11 @@ New Features
     fq={!join from=name to=parent}eyes:blue
   (yonik)
 
+* SOLR-1942: Added the ability to select codec per fieldType in schema.xml
+  as well as support custom CodecProviders in solrconfig.xml.
+  NOTE: IndexReaderFactory now has a codecProvider that should be passed
+  to IndexReader.open (in the case you have a custom IndexReaderFactory).
+  (simonw via rmuir)
 
 
 Optimizations
@@ -246,15 +250,27 @@ Other Changes
   variance in asserting score comparisons in unit tests.
   (David Smiley, Chris Hostetter)
 
+* LUCENE-2995: Moved some spellchecker and suggest APIs to modules/suggest:
+  HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
+  suggester APIs and implementations. (rmuir)
+
 Documentation
 ----------------------
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
 
-* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+======================= 3.x (not yet released) ================
 
-==================  3.2.0-dev ==================
+Bug Fixes
+----------------------
+
+* SOLR-2519: Improve text_* fieldTypes in example schema.xml: improve
+  cross-language defaults for text_general; break out separate
+  English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
+  yonik, Mike McCandless)
+
+==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
@@ -333,6 +349,12 @@ Bug Fixes
   in strings since those characters are not valid in javascript strings
   (although they are valid in JSON strings).  (yonik)
 
+* SOLR-2536: Add ReloadCacheRequestHandler to fix ExternalFileField bug (if reopenReaders
+  set to true and no index segments have been changed, commit cannot trigger reload
+  external file). (koji)
+
+* SOLR-2539: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
+  (Tom Liu via yonik)
 
 Other Changes
 ----------------------
@@ -345,6 +367,9 @@ Other Changes
 
 Build
 ----------------------
+
+* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
 
 Documentation
 ----------------------
@@ -1804,7 +1829,7 @@ Documentation
 
  3. SOLR-1409: Added Solr Powered By Logos    
 
-================== Release 1.3.0 20080915 ==================
+================== Release 1.3.0 ==================
 
 Upgrading from Solr 1.2
 -----------------------
@@ -2465,7 +2490,7 @@ Build
               client and contrib. The target can publish artifacts with source and javadocs.
               (Spencer Crissman, Craig McClanahan, shalin)
 
-================== Release 1.2, 20070602 ==================
+================== Release 1.2 ==================
 
 Upgrading from Solr 1.1
 -------------------------------------
@@ -2814,7 +2839,7 @@ Other Changes
 
  2. Updated to Lucene 2007-05-20_00-04-53
 
-================== Release 1.1.0, 20061222 ==================
+================== Release 1.1.0 ==================
 
 Status
 ------

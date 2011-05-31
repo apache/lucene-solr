@@ -26,6 +26,7 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 
 /**
  * <code>FieldTermStack</code> is a stack that keeps query terms in the specified field
@@ -80,16 +81,16 @@ public class FieldTermStack {
     Set<String> termSet = fieldQuery.getTermSet( fieldName );
     // just return to make null snippet if un-matched fieldName specified when fieldMatch == true
     if( termSet == null ) return;
-    
+    final CharsRef spare = new CharsRef();
     for( BytesRef term : tpv.getTerms() ){
-      if( !termSet.contains( term.utf8ToString() ) ) continue;
+      if( !termSet.contains( term.utf8ToChars(spare).toString() ) ) continue;
       int index = tpv.indexOf( term );
       TermVectorOffsetInfo[] tvois = tpv.getOffsets( index );
       if( tvois == null ) return; // just return to make null snippets
       int[] poss = tpv.getTermPositions( index );
       if( poss == null ) return; // just return to make null snippets
       for( int i = 0; i < tvois.length; i++ )
-        termList.add( new TermInfo( term.utf8ToString(), tvois[i].getStartOffset(), tvois[i].getEndOffset(), poss[i] ) );
+        termList.add( new TermInfo( term.utf8ToChars(spare).toString(), tvois[i].getStartOffset(), tvois[i].getEndOffset(), poss[i] ) );
     }
     
     // sort by position

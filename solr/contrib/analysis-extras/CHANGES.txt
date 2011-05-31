@@ -11,17 +11,21 @@ analyzers for Chinese and Polish.
 
 
 $Id$
-================== Release 4.0-dev ==================
+==================  4.0.0-dev ==============
 
 * SOLR-2396: Add ICUCollationField, which is much more efficient than
   the Solr 3.x ICUCollationKeyFilterFactory, and also supports
   Locale-sensitive range queries.  (rmuir)
 
-================== Release 3.2-dev ==================
+==================  3.3.0-dev ==============
 
 (No Changes)
 
-================== Release 3.1-dev ==================
+==================  3.2.0 ==================
+
+(No Changes)
+
+==================  3.1.0 ==================
 
 * SOLR-2210: Add icu-based tokenizer and filters to contrib/analysis-extras (rmuir)
 

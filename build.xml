@@ -18,7 +18,6 @@
  -->
 
 <project name="lucene-solr" default="test" basedir=".">
-  <import file="common-build.xml"/>
   <target name="test" description="Test both Lucene and Solr" depends="validate">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
@@ -73,6 +72,7 @@
   </target>
 
   <target name="eclipse" description="Setup Eclipse configuration">
+    <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
     <copy file="dev-tools/eclipse/resources.prefs" 

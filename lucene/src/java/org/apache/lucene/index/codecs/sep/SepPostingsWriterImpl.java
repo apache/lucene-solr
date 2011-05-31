@@ -31,6 +31,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 
 /** Writes frq to .frq, docs to .doc, pos to .pos, payloads
  *  to .pyl, skip data to .skp
@@ -49,18 +50,18 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  final IntIndexOutput freqOut;
-  final IntIndexOutput.Index freqIndex;
+  IntIndexOutput freqOut;
+  IntIndexOutput.Index freqIndex;
 
-  final IntIndexOutput posOut;
-  final IntIndexOutput.Index posIndex;
+  IntIndexOutput posOut;
+  IntIndexOutput.Index posIndex;
 
-  final IntIndexOutput docOut;
-  final IntIndexOutput.Index docIndex;
+  IntIndexOutput docOut;
+  IntIndexOutput.Index docIndex;
 
-  final IndexOutput payloadOut;
+  IndexOutput payloadOut;
 
-  final IndexOutput skipOut;
+  IndexOutput skipOut;
   IndexOutput termsOut;
 
   final SepSkipListWriter skipListWriter;
@@ -107,45 +108,51 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   }
 
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory, int skipInterval) throws IOException {
-    super();
-    final String codecIdAsString = state.codecIdAsString();
-    this.skipInterval = skipInterval;
-    this.skipMinimum = skipInterval; /* set to the same for now */
-    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, DOC_EXTENSION);
-    docOut = factory.createOutput(state.directory, docFileName);
-    docIndex = docOut.index();
+    freqOut = null;
+    freqIndex = null;
+    posOut = null;
+    posIndex = null;
+    payloadOut = null;
+    boolean success = false;
+    try {
+      this.skipInterval = skipInterval;
+      this.skipMinimum = skipInterval; /* set to the same for now */
+      final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), DOC_EXTENSION);
+      docOut = factory.createOutput(state.directory, docFileName);
+      docIndex = docOut.index();
+      
+      if (state.fieldInfos.hasProx()) {
+        final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), FREQ_EXTENSION);
+        freqOut = factory.createOutput(state.directory, frqFileName);
+        freqIndex = freqOut.index();
+        
+        final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), POS_EXTENSION);
+        posOut = factory.createOutput(state.directory, posFileName);
+        posIndex = posOut.index();
+        
+        // TODO: -- only if at least one field stores payloads?
+        final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), PAYLOAD_EXTENSION);
+        payloadOut = state.directory.createOutput(payloadFileName);
+      }
+      
+      final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), SKIP_EXTENSION);
+      skipOut = state.directory.createOutput(skipFileName);
+      
+      totalNumDocs = state.numDocs;
+      
+      skipListWriter = new SepSkipListWriter(skipInterval,
+          maxSkipLevels,
+          state.numDocs,
+          freqOut, docOut,
+          posOut, payloadOut);
+      
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, docOut, skipOut, freqOut, posOut, payloadOut);
+      }
 
-    if (state.fieldInfos.hasProx()) {
-      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, FREQ_EXTENSION);
-      freqOut = factory.createOutput(state.directory, frqFileName);
-      freqIndex = freqOut.index();
-
-      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, POS_EXTENSION);
-      posOut = factory.createOutput(state.directory, posFileName);
-      posIndex = posOut.index();
-
-      // TODO: -- only if at least one field stores payloads?
-      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, PAYLOAD_EXTENSION);
-      payloadOut = state.directory.createOutput(payloadFileName);
-
-    } else {
-      freqOut = null;
-      freqIndex = null;
-      posOut = null;
-      posIndex = null;
-      payloadOut = null;
     }
-
-    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, codecIdAsString, SKIP_EXTENSION);
-    skipOut = state.directory.createOutput(skipFileName);
-
-    totalNumDocs = state.numDocs;
-
-    skipListWriter = new SepSkipListWriter(skipInterval,
-                                           maxSkipLevels,
-                                           state.numDocs,
-                                           freqOut, docOut,
-                                           posOut, payloadOut);
   }
 
   @Override
@@ -307,25 +314,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
-    try {
-      docOut.close();
-    } finally {
-      try {
-        skipOut.close();
-      } finally {
-        if (freqOut != null) {
-          try {
-            freqOut.close();
-          } finally {
-            try {
-              posOut.close();
-            } finally {
-              payloadOut.close();
-            }
-          }
-        }
-      }
-    }
+    IOUtils.closeSafely(false, docOut, skipOut, freqOut, posOut, payloadOut);
   }
 
   public static void getExtensions(Set<String> extensions) {

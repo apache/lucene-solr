@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.regex.Pattern;
+
 import org.apache.lucene.index.codecs.Codec;  // for javadocs
 
 /**
@@ -236,6 +238,17 @@ public final class IndexFileNames {
       filename = filename.substring(idx);
     }
     return filename;
+  }
+
+  /**
+   * Returns true if the given filename ends with the separate norms file
+   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
+   */
+  public static boolean isSeparateNormsFile(String filename) {
+    int idx = filename.lastIndexOf('.');
+    if (idx == -1) return false;
+    String ext = filename.substring(idx + 1);
+    return Pattern.matches(SEPARATE_NORMS_EXTENSION + "[0-9]+", ext);
   }
   
 }

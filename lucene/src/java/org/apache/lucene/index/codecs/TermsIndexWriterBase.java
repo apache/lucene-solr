@@ -19,10 +19,12 @@ package org.apache.lucene.index.codecs;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.Closeable;
 import java.io.IOException;
 
 /** @lucene.experimental */
-public abstract class TermsIndexWriterBase {
+public abstract class TermsIndexWriterBase implements Closeable {
 
   public abstract class FieldWriter {
     public abstract boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException;
@@ -31,6 +33,4 @@ public abstract class TermsIndexWriterBase {
   }
 
   public abstract FieldWriter addField(FieldInfo fieldInfo, long termsFilePointer) throws IOException;
-
-  public abstract void close() throws IOException;
 }

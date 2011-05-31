@@ -474,9 +474,9 @@ SimplePostTool: COMMITting Solr index changes..
 <p>
 You may have noticed that even though the file <span class="codefrag">solr.xml</span> has now
 been POSTed to the server twice, you still only get 1 result when searching for
-"solr".  This is because the example schema.xml specifies a "uniqueKey" field
+"solr".  This is because the example <span class="codefrag">schema.xml</span> specifies a "<span class="codefrag">uniqueKey</span>" field
 called "<span class="codefrag">id</span>".  Whenever you POST instructions to Solr to add a
-document with the same value for the uniqueKey as an existing document, it
+document with the same value for the <span class="codefrag">uniqueKey</span> as an existing document, it
 automatically replaces it for you.  You can see that that has happened by
 looking at the values for <span class="codefrag">numDocs</span> and <span class="codefrag">maxDoc</span> in the
 "CORE"/searcher section of the statistics page...  </p>
@@ -487,20 +487,20 @@ looking at the values for <span class="codefrag">numDocs</span> and <span class=
 </p>
 <p>
   
-<strong>numDocs</strong> represents the number of searchable documents in the
+<strong><span class="codefrag">numDocs</span></strong> represents the number of searchable documents in the
   index (and will be larger than the number of XML files since some files
-  contained more than one <span class="codefrag">&lt;doc&gt;</span>). <strong>maxDoc</strong>
-  may be larger as the maxDoc count includes logically deleted documents that
+  contained more than one <span class="codefrag">&lt;doc&gt;</span>). <strong><span class="codefrag">maxDoc</span></strong>
+  may be larger as the <span class="codefrag">maxDoc</span> count includes logically deleted documents that
   have not yet been removed from the index. You can re-post the sample XML
-  files over and over again as much as you want and numDocs will never
-  increase,because the new documents will constantly be replacing the old.
+  files over and over again as much as you want and <span class="codefrag">numDocs</span> will never
+  increase, because the new documents will constantly be replacing the old.
 </p>
 <p>
 Go ahead and edit the existing XML files to change some of the data, and re-run
 the <span class="codefrag">java -jar post.jar</span> command, you'll see your changes reflected
 in subsequent searches.
 </p>
-<a name="N1011B"></a><a name="Deleting+Data"></a>
+<a name="N1012C"></a><a name="Deleting+Data"></a>
 <h3 class="boxed">Deleting Data</h3>
 <p>You can delete data by POSTing a delete command to the update URL and specifying the value
       of the document's unique key field, or a query that matches multiple documents (be careful with that one!).  Since these commands
@@ -511,7 +511,7 @@ in subsequent searches.
 <p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
        to the UPDATE_HANDLERS section and verify that "<span class="codefrag">deletesById : 1</span>"</p>
 <p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
-       because index changes are not visible until, and a new searcher is opened.  To cause
+       because index changes are not visible until changes are committed and a new searcher is opened.  To cause
        this to happen, send a commit command to Solr (post.jar does this for you by default):</p>
 <pre class="code">java -jar post.jar</pre>
 <p>Now re-execute the previous search and verify that no matching documents are found.  Also revisit the
@@ -520,7 +520,7 @@ in subsequent searches.
       <a href="http://localhost:8983/solr/select?q=name:DDR&fl=name">DDR</a> in the name:</p>
 <pre class="code">java -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
 <p>Commit can be an expensive operation so it's best to make many changes to an index in a batch and
-      then send the commit command at the end.  There is also an optimize command that does the same thing as commit,
+      then send the <span class="codefrag">commit</span> command at the end.  There is also an <span class="codefrag">optimize</span> command that does the same thing as <span class="codefrag">commit</span>,
       in addition to merging all index segments into a single segment, making it faster to search and causing any
       deleted documents to be removed.  All of the update commands are documented <a href="http://wiki.apache.org/solr/UpdateXmlMessages">here</a>.
     </p>
@@ -529,14 +529,14 @@ in subsequent searches.
 </div>
 
 
-<a name="N10161"></a><a name="Querying+Data"></a>
+<a name="N1017B"></a><a name="Querying+Data"></a>
 <h2 class="boxed">Querying Data</h2>
 <div class="section">
 <p>
-    Searches are done via HTTP GET on the select URL with the query string in the q parameter.
+    Searches are done via HTTP GET on the <span class="codefrag">select</span> URL with the query string in the <span class="codefrag">q</span> parameter.
     You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
-    to the request handler to control what information is returned.  For example, you can use the "fl" parameter
-    to control what stored fields are returned, and if the relevancy score is returned...
+    to the request handler to control what information is returned.  For example, you can use the "<span class="codefrag">fl</span>" parameter
+    to control what stored fields are returned, and if the relevancy score is returned:
   </p>
 <ul>
       
@@ -558,13 +558,13 @@ in subsequent searches.
 </ul>
 <p>
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
-    that allows setting the various request parameters and is useful when trying out or debugging queries.
+    that allows setting the various request parameters and is useful when testing or debugging queries.
   </p>
-<a name="N10196"></a><a name="Sorting"></a>
+<a name="N101B9"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
       Solr provides a simple method to sort on one or more indexed fields.
-      Use the 'sort' parameter to specify "field direction" pairs...
+      Use the "<span class="codefrag">sort</span>' parameter to specify "field direction" pairs, separated by commas if there's more than one sort field:
     </p>
 <ul>
       
@@ -582,7 +582,7 @@ in subsequent searches.
     
 </ul>
 <p>
-      "score" can also be used as a field name when specifying a sort...
+      "<span class="codefrag">score</span>" can also be used as a field name when specifying a sort:
     </p>
 <ul>
       
@@ -596,7 +596,7 @@ in subsequent searches.
     
 </ul>
 <p>
-      Complex functions may also be used to sort results...
+      Complex functions may also be used to sort results:
     </p>
 <ul>
       
@@ -612,12 +612,12 @@ in subsequent searches.
 
 
 
-<a name="N101D4"></a><a name="Highlighting"></a>
+<a name="N101FD"></a><a name="Highlighting"></a>
 <h2 class="boxed">Highlighting</h2>
 <div class="section">
 <p>
     Hit highlighting returns relevent snippets of each returned document, and highlights
-    keywords from the query within those context snippets.
+    terms from the query within those context snippets.
   </p>
 <p>
     The following example searches for <span class="codefrag">video card</span> and requests
@@ -639,7 +639,7 @@ in subsequent searches.
 
 
 
-<a name="N101FD"></a><a name="Faceted+Search"></a>
+<a name="N10226"></a><a name="Faceted+Search"></a>
 <h2 class="boxed">Faceted Search</h2>
 <div class="section">
 <p>
@@ -698,7 +698,7 @@ in subsequent searches.
 
 
 
-<a name="N1024E"></a><a name="Search+UI"></a>
+<a name="N10277"></a><a name="Search+UI"></a>
 <h2 class="boxed">Search UI</h2>
 <div class="section">
 <p>
@@ -716,28 +716,44 @@ in subsequent searches.
 
 
 
-<a name="N10261"></a><a name="Text+Analysis"></a>
+<a name="N1028A"></a><a name="Text+Analysis"></a>
 <h2 class="boxed">Text Analysis</h2>
 <div class="section">
 <p>
-    Text fields are typically indexed by breaking the field into words and applying various transformations such as
+    Text fields are typically indexed by breaking the text into words and applying various transformations such as
     lowercasing, removing plurals, or stemming to increase relevancy.  The same text transformations are normally
     applied to any queries in order to match what is indexed.
   </p>
-<p>Example queries demonstrating relevancy improving transformations:</p>
+<p>
+    The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
+    the fields in the index and what type of analysis is applied to them.  The current schema your server is using
+    may be accessed via the <span class="codefrag">[SCHEMA]</span> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
+  </p>
+<p>
+    The best analysis components (tokenization and filtering) for your textual content depends heavily on language.
+    As you can see in the above <span class="codefrag">[SCHEMA]</span> link, the fields in the example schema are using a <span class="codefrag">fieldType</span>
+    named <span class="codefrag">text_general</span>, which has defaults appropriate for all languages.
+  </p>
+<p>
+    If you know your textual content is English, as is the case for the example documents in this tutorial,
+    and you'd like to apply English-specific stemming and stop word removal, as well as split compound words, you can use the <span class="codefrag">text_en_splitting</span> fieldType instead.
+    Go ahead and edit the <span class="codefrag">schema.xml</span> under the <span class="codefrag">solr/example/solr/conf</span> directory,
+    and change the <span class="codefrag">type</span> for fields <span class="codefrag">text</span> and <span class="codefrag">features</span> from <span class="codefrag">text_general</span> to <span class="codefrag">text_en_splitting</span>.
+    Restart the server and then re-post all of the documents, and then these queries will show the English-specific transformations:
+  </p>
 <ul>
     
 <li>A search for
        <a href="http://localhost:8983/solr/select/?indent=on&q=power-shot&fl=name">power-shot</a>
        matches <span class="codefrag">PowerShot</span>, and
       <a href="http://localhost:8983/solr/select/?indent=on&q=adata&fl=name">adata</a>
-      matches <span class="codefrag">A-DATA</span> due to the use of WordDelimiterFilter and LowerCaseFilter.
+      matches <span class="codefrag">A-DATA</span> due to the use of <span class="codefrag">WordDelimiterFilter</span> and <span class="codefrag">LowerCaseFilter</span>.
     </li>
 
     
 <li>A search for
       <a href="http://localhost:8983/solr/select/?indent=on&q=features:recharging&fl=name,features">features:recharging</a>
-       matches <span class="codefrag">Rechargeable</span> due to stemming with the EnglishPorterFilter.
+       matches <span class="codefrag">Rechargeable</span> due to stemming with the <span class="codefrag">EnglishPorterFilter</span>.
     </li>
 
     
@@ -745,20 +761,15 @@ in subsequent searches.
        <a href="http://localhost:8983/solr/select/?indent=on&q=%221 gigabyte%22&fl=name">"1 gigabyte"</a>
        matches things with <span class="codefrag">GB</span>, and the misspelled
       <a href="http://localhost:8983/solr/select/?indent=on&q=pixima&fl=name">pixima</a>
-       matches <span class="codefrag">Pixma</span> due to use of a SynonymFilter.
+       matches <span class="codefrag">Pixma</span> due to use of a <span class="codefrag">SynonymFilter</span>.
     </li>
 
   
 </ul>
-<p>
-    The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
-    the fields in the index and what type of analysis is applied to them.  The current schema your server is using
-    may be accessed via the <span class="codefrag">[SCHEMA]</span> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
-  </p>
 <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
   </p>
-<a name="N102B1"></a><a name="Analysis+Debugging"></a>
+<a name="N1030A"></a><a name="Analysis+Debugging"></a>
 <h3 class="boxed">Analysis Debugging</h3>
 <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
       debugging page where you can see how a text value is broken down into words,
@@ -768,7 +779,7 @@ in subsequent searches.
       
 <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&val=Canon+Power-Shot+SD500">This</a>
       shows how "<span class="codefrag">Canon Power-Shot SD500</span>" would be indexed as a value in the name field.  Each row of
-      the table shows the resulting tokens after having passed through the next TokenFilter in the Analyzer for the <span class="codefrag">name</span> field.
+      the table shows the resulting tokens after having passed through the next <span class="codefrag">TokenFilter</span> in the analyzer for the <span class="codefrag">name</span> field.
       Notice how both <span class="codefrag">powershot</span> and <span class="codefrag">power</span>, <span class="codefrag">shot</span> are indexed.  Tokens generated at the same position
       are shown in the same column, in this case <span class="codefrag">shot</span> and <span class="codefrag">powershot</span>.
     </p>
@@ -787,12 +798,12 @@ in subsequent searches.
 </div>
 
 
-<a name="N102F0"></a><a name="Conclusion"></a>
+<a name="N1034C"></a><a name="Conclusion"></a>
 <h2 class="boxed">Conclusion</h2>
 <div class="section">
 <p>
   Congratulations!  You successfully ran a small Solr instance, added some
-  documents, and made changes to the index.  You learned about queries, text
+  documents, and made changes to the index and schema.  You learned about queries, text
   analysis, and the Solr admin interface.  You're ready to start using Solr on
   your own project!  Continue on with the following steps:
 </p>
@@ -800,22 +811,21 @@ in subsequent searches.
   
 <li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
   
-<li>Make a copy of the Solr example directory as a template for your project.</li>
+<li>Make a copy of the Solr <span class="codefrag">example</span> directory as a template for your project.</li>
   
-<li>Customize the schema and other config in solr/conf/ to meet your needs.</li> 
+<li>Customize the schema and other config in <span class="codefrag">solr/conf/</span> to meet your needs.</li> 
 
 </ul>
 <p>
-  Solr as a ton of other features that we haven't touched on here, including
+  Solr has a ton of other features that we haven't touched on here, including
   <a href="http://wiki.apache.org/solr/DistributedSearch">distributed search</a>
   to handle huge document collections,
   <a href="http://wiki.apache.org/solr/FunctionQuery">function queries</a>,
   <a href="http://wiki.apache.org/solr/StatsComponent">numeric field statistics</a>,
   and
   <a href="http://wiki.apache.org/solr/ClusteringComponent">search results clustering</a>.
-  Explore the <a href="http://wiki.apache.org/solr/FrontPage">Solr Wiki</a> to find out
-  more details about Solr's many
-  <a href="features.html">features</a>.
+  Explore the <a href="http://wiki.apache.org/solr/FrontPage">Solr Wiki</a> to find
+  more details about Solr's many <a href="features.html">features</a>.
 </p>
 <p>
   Have Fun, and we'll see you on the Solr mailing lists!

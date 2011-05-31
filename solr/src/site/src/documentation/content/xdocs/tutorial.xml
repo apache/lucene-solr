@@ -210,9 +210,9 @@ SimplePostTool: COMMITting Solr index changes..
 <p>
 You may have noticed that even though the file <code>solr.xml</code> has now
 been POSTed to the server twice, you still only get 1 result when searching for
-"solr".  This is because the example schema.xml specifies a "uniqueKey" field
+"solr".  This is because the example <code>schema.xml</code> specifies a "<code>uniqueKey</code>" field
 called "<code>id</code>".  Whenever you POST instructions to Solr to add a
-document with the same value for the uniqueKey as an existing document, it
+document with the same value for the <code>uniqueKey</code> as an existing document, it
 automatically replaces it for you.  You can see that that has happened by
 looking at the values for <code>numDocs</code> and <code>maxDoc</code> in the
 "CORE"/searcher section of the statistics page...  </p>
@@ -221,13 +221,13 @@ looking at the values for <code>numDocs</code> and <code>maxDoc</code> in the
 </p>
 
 <p>
-  <strong>numDocs</strong> represents the number of searchable documents in the
+  <strong><code>numDocs</code></strong> represents the number of searchable documents in the
   index (and will be larger than the number of XML files since some files
-  contained more than one <code>&lt;doc&gt;</code>). <strong>maxDoc</strong>
-  may be larger as the maxDoc count includes logically deleted documents that
+  contained more than one <code>&lt;doc&gt;</code>). <strong><code>maxDoc</code></strong>
+  may be larger as the <code>maxDoc</code> count includes logically deleted documents that
   have not yet been removed from the index. You can re-post the sample XML
-  files over and over again as much as you want and numDocs will never
-  increase,because the new documents will constantly be replacing the old.
+  files over and over again as much as you want and <code>numDocs</code> will never
+  increase, because the new documents will constantly be replacing the old.
 </p>
 <p>
 Go ahead and edit the existing XML files to change some of the data, and re-run
@@ -246,7 +246,7 @@ in subsequent searches.
     <p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
        to the UPDATE_HANDLERS section and verify that "<code>deletesById : 1</code>"</p>
     <p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
-       because index changes are not visible until, and a new searcher is opened.  To cause
+       because index changes are not visible until changes are committed and a new searcher is opened.  To cause
        this to happen, send a commit command to Solr (post.jar does this for you by default):</p>
     <source>java -jar post.jar</source>
     <p>Now re-execute the previous search and verify that no matching documents are found.  Also revisit the
@@ -256,7 +256,7 @@ in subsequent searches.
     <source>java -Ddata=args -jar post.jar "&lt;delete>&lt;query>name:DDR&lt;/query>&lt;/delete>"</source>
 
     <p>Commit can be an expensive operation so it's best to make many changes to an index in a batch and
-      then send the commit command at the end.  There is also an optimize command that does the same thing as commit,
+      then send the <code>commit</code> command at the end.  There is also an <code>optimize</code> command that does the same thing as <code>commit</code>,
       in addition to merging all index segments into a single segment, making it faster to search and causing any
       deleted documents to be removed.  All of the update commands are documented <a href="http://wiki.apache.org/solr/UpdateXmlMessages">here</a>.
     </p>
@@ -272,10 +272,10 @@ in subsequent searches.
   <title>Querying Data</title>
 
   <p>
-    Searches are done via HTTP GET on the select URL with the query string in the q parameter.
+    Searches are done via HTTP GET on the <code>select</code> URL with the query string in the <code>q</code> parameter.
     You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
-    to the request handler to control what information is returned.  For example, you can use the "fl" parameter
-    to control what stored fields are returned, and if the relevancy score is returned...
+    to the request handler to control what information is returned.  For example, you can use the "<code>fl</code>" parameter
+    to control what stored fields are returned, and if the relevancy score is returned:
   </p>
 
     <ul>
@@ -288,7 +288,7 @@ in subsequent searches.
 
   <p>
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
-    that allows setting the various request parameters and is useful when trying out or debugging queries.
+    that allows setting the various request parameters and is useful when testing or debugging queries.
   </p>
 
   <section>
@@ -296,7 +296,7 @@ in subsequent searches.
 
     <p>
       Solr provides a simple method to sort on one or more indexed fields.
-      Use the 'sort' parameter to specify "field direction" pairs...
+      Use the "<code>sort</code>' parameter to specify "field direction" pairs, separated by commas if there's more than one sort field:
     </p>
 
     <ul>
@@ -306,7 +306,7 @@ in subsequent searches.
     </ul>
 
     <p>
-      "score" can also be used as a field name when specifying a sort...
+      "<code>score</code>" can also be used as a field name when specifying a sort:
     </p>
     <ul>
       <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=score+desc">q=video&amp;sort=score desc</a></li>
@@ -314,7 +314,7 @@ in subsequent searches.
     </ul>
 
     <p>
-      Complex functions may also be used to sort results...
+      Complex functions may also be used to sort results:
     </p>
     <ul>
       <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a></li>
@@ -334,7 +334,7 @@ in subsequent searches.
   <title>Highlighting</title>
   <p>
     Hit highlighting returns relevent snippets of each returned document, and highlights
-    keywords from the query within those context snippets.
+    terms from the query within those context snippets.
   </p>
   <p>
     The following example searches for <code>video card</code> and requests
@@ -429,34 +429,10 @@ in subsequent searches.
   <title>Text Analysis</title>
 
   <p>
-    Text fields are typically indexed by breaking the field into words and applying various transformations such as
+    Text fields are typically indexed by breaking the text into words and applying various transformations such as
     lowercasing, removing plurals, or stemming to increase relevancy.  The same text transformations are normally
     applied to any queries in order to match what is indexed.
   </p>
-
-  <p>Example queries demonstrating relevancy improving transformations:</p>
-  <ul>
-    <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
-       matches <code>PowerShot</code>, and
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
-      matches <code>A-DATA</code> due to the use of WordDelimiterFilter and LowerCaseFilter.
-    </li>
-
-    <li>A search for
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
-       matches <code>Rechargeable</code> due to stemming with the EnglishPorterFilter.
-    </li>
-
-    <li>A search for
-       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=&quot;1 gigabyte&quot;&amp;fl=name">"1 gigabyte"</a>
-       matches things with <code>GB</code>, and the misspelled
-      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
-       matches <code>Pixma</code> due to use of a SynonymFilter.
-    </li>
-
-  </ul>
-
 
   <p>
     The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
@@ -464,6 +440,40 @@ in subsequent searches.
     may be accessed via the <code>[SCHEMA]</code> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
   </p>
 
+  <p>
+    The best analysis components (tokenization and filtering) for your textual content depends heavily on language.
+    As you can see in the above <code>[SCHEMA]</code> link, the fields in the example schema are using a <code>fieldType</code>
+    named <code>text_general</code>, which has defaults appropriate for all languages.
+  </p>
+
+  <p>
+    If you know your textual content is English, as is the case for the example documents in this tutorial,
+    and you'd like to apply English-specific stemming and stop word removal, as well as split compound words, you can use the <code>text_en_splitting</code> fieldType instead.
+    Go ahead and edit the <code>schema.xml</code> under the <code>solr/example/solr/conf</code> directory,
+    and change the <code>type</code> for fields <code>text</code> and <code>features</code> from <code>text_general</code> to <code>text_en_splitting</code>.
+    Restart the server and then re-post all of the documents, and then these queries will show the English-specific transformations:
+  </p>
+  <ul>
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
+       matches <code>PowerShot</code>, and
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
+      matches <code>A-DATA</code> due to the use of <code>WordDelimiterFilter</code> and <code>LowerCaseFilter</code>.
+    </li>
+
+    <li>A search for
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
+       matches <code>Rechargeable</code> due to stemming with the <code>EnglishPorterFilter</code>.
+    </li>
+
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=&quot;1 gigabyte&quot;&amp;fl=name">"1 gigabyte"</a>
+       matches things with <code>GB</code>, and the misspelled
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
+       matches <code>Pixma</code> due to use of a <code>SynonymFilter</code>.
+    </li>
+
+  </ul>
 
   <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
@@ -479,7 +489,7 @@ in subsequent searches.
     <p>
       <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;val=Canon+Power-Shot+SD500">This</a>
       shows how "<code>Canon Power-Shot SD500</code>" would be indexed as a value in the name field.  Each row of
-      the table shows the resulting tokens after having passed through the next TokenFilter in the Analyzer for the <code>name</code> field.
+      the table shows the resulting tokens after having passed through the next <code>TokenFilter</code> in the analyzer for the <code>name</code> field.
       Notice how both <code>powershot</code> and <code>power</code>, <code>shot</code> are indexed.  Tokens generated at the same position
       are shown in the same column, in this case <code>shot</code> and <code>powershot</code>.
     </p>
@@ -501,27 +511,26 @@ in subsequent searches.
   <title>Conclusion</title>
   <p>
   Congratulations!  You successfully ran a small Solr instance, added some
-  documents, and made changes to the index.  You learned about queries, text
+  documents, and made changes to the index and schema.  You learned about queries, text
   analysis, and the Solr admin interface.  You're ready to start using Solr on
   your own project!  Continue on with the following steps:
 </p>
 <ul>
   <li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
-  <li>Make a copy of the Solr example directory as a template for your project.</li>
-  <li>Customize the schema and other config in solr/conf/ to meet your needs.</li> 
+  <li>Make a copy of the Solr <code>example</code> directory as a template for your project.</li>
+  <li>Customize the schema and other config in <code>solr/conf/</code> to meet your needs.</li> 
 </ul>
 
 <p>
-  Solr as a ton of other features that we haven't touched on here, including
+  Solr has a ton of other features that we haven't touched on here, including
   <a href="http://wiki.apache.org/solr/DistributedSearch">distributed search</a>
   to handle huge document collections,
   <a href="http://wiki.apache.org/solr/FunctionQuery">function queries</a>,
   <a href="http://wiki.apache.org/solr/StatsComponent">numeric field statistics</a>,
   and
   <a href="http://wiki.apache.org/solr/ClusteringComponent">search results clustering</a>.
-  Explore the <a href="http://wiki.apache.org/solr/FrontPage">Solr Wiki</a> to find out
-  more details about Solr's many
-  <a href="features.html">features</a>.
+  Explore the <a href="http://wiki.apache.org/solr/FrontPage">Solr Wiki</a> to find
+  more details about Solr's many <a href="features.html">features</a>.
 </p>
 
 <p>

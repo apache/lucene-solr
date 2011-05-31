@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -120,11 +121,47 @@ public class RandomIndexWriter implements Closeable {
    * Adds a Document.
    * @see IndexWriter#addDocument(Document)
    */
-  public void addDocument(Document doc) throws IOException {
+  public void addDocument(final Document doc) throws IOException {
     if (doDocValues) {
       randomPerDocFieldValues(r, doc);
     }
-    w.addDocument(doc);
+
+    if (r.nextInt(5) == 3) {
+      // TODO: maybe, we should simply buffer up added docs
+      // (but we need to clone them), and only when
+      // getReader, commit, etc. are called, we do an
+      // addDocuments?  Would be better testing.
+      w.addDocuments(new Iterable<Document>() {
+
+        // @Override -- not until Java 1.6
+        public Iterator<Document> iterator() {
+          return new Iterator<Document>() {
+            boolean done;
+            
+            // @Override -- not until Java 1.6
+            public boolean hasNext() {
+              return !done;
+            }
+
+            // @Override -- not until Java 1.6
+            public void remove() {
+              throw new UnsupportedOperationException();
+            }
+
+            // @Override -- not until Java 1.6
+            public Document next() {
+              if (done) {
+                throw new IllegalStateException();
+              }
+              done = true;
+              return doc;
+            }
+          };
+        }
+        });
+    } else {
+      w.addDocument(doc);
+    }
     
     maybeCommit();
   }
@@ -188,15 +225,57 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
+  public void addDocuments(Iterable<Document> docs) throws IOException {
+    w.addDocuments(docs);
+    maybeCommit();
+  }
+
+  public void updateDocuments(Term delTerm, Iterable<Document> docs) throws IOException {
+    w.updateDocuments(delTerm, docs);
+    maybeCommit();
+  }
+
   /**
    * Updates a document.
    * @see IndexWriter#updateDocument(Term, Document)
    */
-  public void updateDocument(Term t, Document doc) throws IOException {
+  public void updateDocument(final Term t, final Document doc) throws IOException {
     if (doDocValues) {
       randomPerDocFieldValues(r, doc);
     }
-    w.updateDocument(t, doc);
+    
+    if (r.nextInt(5) == 3) {
+      w.updateDocuments(t, new Iterable<Document>() {
+
+        // @Override -- not until Java 1.6
+        public Iterator<Document> iterator() {
+          return new Iterator<Document>() {
+            boolean done;
+            
+            // @Override -- not until Java 1.6
+            public boolean hasNext() {
+              return !done;
+            }
+
+            // @Override -- not until Java 1.6
+            public void remove() {
+              throw new UnsupportedOperationException();
+            }
+
+            // @Override -- not until Java 1.6
+            public Document next() {
+              if (done) {
+                throw new IllegalStateException();
+              }
+              done = true;
+              return doc;
+            }
+          };
+        }
+        });
+    } else {
+      w.updateDocument(t, doc);
+    }
     maybeCommit();
   }
   

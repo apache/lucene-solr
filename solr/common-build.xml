@@ -22,7 +22,6 @@
   </description>
 
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
-  <import file="${common-solr.dir}/../common-build.xml"/>
   
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
   <property name="tests.luceneMatchVersion" value="4.0"/>
@@ -188,12 +187,12 @@
     <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/analysis/build/common/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/analysis/build/phonetic/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/suggest/build/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
-    <pathelement location="${common-solr.dir}/../lucene/build/contrib/spellchecker/classes/java" />
   </path>   
 
   <target name="prep-lucene-jars">
@@ -204,12 +203,12 @@
       <subant target="jar" inheritall="false" failonerror="true">
         <fileset dir="../modules/analysis/common" includes="build.xml" />
         <fileset dir="../modules/analysis/phonetic" includes="build.xml" />
+      	<fileset dir="../modules/suggest" includes="build.xml" />
         <fileset dir="../lucene/contrib/highlighter" includes="build.xml" />
         <fileset dir="../lucene/contrib/memory" includes="build.xml" />
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
         <fileset dir="../lucene/contrib/queries" includes="build.xml" />
         <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
-        <fileset dir="../lucene/contrib/spellchecker" includes="build.xml" />
       </subant>
     </sequential>
   </target>
@@ -226,6 +225,9 @@
       <fileset dir="../modules/analysis/build/phonetic">
         <include name="lucene-analyzers-phonetic-${version}.jar" />
       </fileset>
+      <fileset dir="../modules/suggest/build">
+        <include name="lucene-suggest-${version}.jar" />
+      </fileset>
       <fileset dir="../lucene/build/contrib/highlighter">
         <include name="lucene-highlighter-${version}.jar" />
       </fileset>
@@ -241,9 +243,6 @@
       <fileset dir="../lucene/build/contrib/spatial">
         <include name="lucene-spatial-${version}.jar" />
       </fileset>
-      <fileset dir="../lucene/build/contrib/spellchecker">
-        <include name="lucene-spellchecker-${version}.jar" />
-      </fileset>
       </copy>
   </target>  
   
@@ -252,12 +251,12 @@
     <subant target="default">
       <fileset dir="../modules/analysis/common" includes="build.xml"/>
       <fileset dir="../modules/analysis/phonetic" includes="build.xml"/>
+      <fileset dir="../modules/suggest" includes="build.xml"/>
       <fileset dir="../lucene/contrib/highlighter" includes="build.xml"/>
       <fileset dir="../lucene/contrib/memory" includes="build.xml"/>
       <fileset dir="../lucene/contrib/misc" includes="build.xml"/>
       <fileset dir="../lucene/contrib/queries" includes="build.xml"/>
       <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
-      <fileset dir="../lucene/contrib/spellchecker" includes="build.xml"/>
     </subant>
   </target>
    
@@ -635,5 +634,17 @@
       <arg value="${basedir}/src/test-files/solr/lib" />
     </java>
   </target>
+
+  <path id="tools.runtime.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/tools"/>
+  </path>
+  <target name="compile-tools" description="Compile the Test Framework and Validation tools">
+    <sequential>
+      <subant target="compile-tools" inheritall="false" failonerror="true">
+        <fileset dir="${common-solr.dir}/../lucene" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
+
 
 </project>

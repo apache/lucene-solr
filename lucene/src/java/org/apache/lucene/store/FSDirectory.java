@@ -22,8 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import java.util.Collection;
 import static java.util.Collections.synchronizedSet;
@@ -111,15 +109,6 @@ import org.apache.lucene.util.Constants;
  * @see Directory
  */
 public abstract class FSDirectory extends Directory {
-  private final static MessageDigest DIGESTER;
-
-  static {
-    try {
-      DIGESTER = MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e.toString(), e);
-    }
-  }
 
   /**
    * Default read chunk size.  This is a conditional default: on 32bit JVMs, it defaults to 100 MB.  On 64bit JVMs, it's
@@ -337,12 +326,6 @@ public abstract class FSDirectory extends Directory {
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
-  /**
-   * So we can do some byte-to-hexchar conversion below
-   */
-  private static final char[] HEX_DIGITS =
-  {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-  
   @Override
   public String getLockID() {
     ensureOpen();
@@ -353,19 +336,12 @@ public abstract class FSDirectory extends Directory {
       throw new RuntimeException(e.toString(), e);
     }
 
-    byte digest[];
-    synchronized (DIGESTER) {
-      digest = DIGESTER.digest(dirName.getBytes());
+    int digest = 0;
+    for(int charIDX=0;charIDX<dirName.length();charIDX++) {
+      final char ch = dirName.charAt(charIDX);
+      digest = 31 * digest + ch;
     }
-    StringBuilder buf = new StringBuilder();
-    buf.append("lucene-");
-    for (int i = 0; i < digest.length; i++) {
-      int b = digest[i];
-      buf.append(HEX_DIGITS[(b >> 4) & 0xf]);
-      buf.append(HEX_DIGITS[b & 0xf]);
-    }
-
-    return buf.toString();
+    return "lucene-" + Integer.toHexString(digest);
   }
 
   /** Closes the store to future operations. */

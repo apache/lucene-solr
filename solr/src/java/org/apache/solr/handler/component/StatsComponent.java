@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
@@ -270,19 +271,15 @@ class SimpleStats {
       }
       finfo[i++] = new FieldFacetStats( f, si, ft, 0 );
     }
-
+    final CharsRef spare = new CharsRef();
     final BytesRef tempBR = new BytesRef();
-    final CharArr spare = new CharArr();
-
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
       BytesRef raw = all.getTermText(docID, tempBR);
       Double v = null;
       if( raw != null ) {
-        spare.reset();
-        all.ft.indexedToReadable(raw, spare);
-        v = Double.parseDouble(spare.toString());
+        v = Double.parseDouble(all.ft.indexedToReadable(raw, spare).toString());
         allstats.accumulate(v);
       }
       else {

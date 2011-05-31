@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -455,7 +456,7 @@ public class QueryComponent extends SearchComponent
   {
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
-
+    final CharsRef spare = new CharsRef();
     // The query cache doesn't currently store sort field values, and SolrIndexSearcher doesn't
     // currently have an option to return sort field values.  Because of this, we
     // take the documents given and re-derive the sort values.
@@ -524,7 +525,7 @@ public class QueryComponent extends SearchComponent
           // String field in Lucene, which returns the terms
           // data as BytesRef:
           if (val instanceof BytesRef) {
-            field.setValue(((BytesRef)val).utf8ToString());
+            field.setValue(((BytesRef)val).utf8ToChars(spare).toString());
             val = ft.toObject(field);
           }
 

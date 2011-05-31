@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.search.MutableValueFloat;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.QParser;
@@ -29,7 +29,6 @@ import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -77,10 +76,11 @@ public class SortableFloatField extends FieldType {
     return NumberUtils.SortableStr2floatStr(indexedForm);
   }
 
-  @Override
-  public void indexedToReadable(BytesRef input, CharArr out) {
+  public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
-    out.write( indexedToReadable(ByteUtils.UTF8toUTF16(input)) );
+    final char[] indexedToReadable = indexedToReadable(input.utf8ToChars(charsRef).toString()).toCharArray();
+    charsRef.copy(indexedToReadable, 0, indexedToReadable.length);
+    return charsRef;
   }
 
   @Override

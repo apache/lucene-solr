@@ -1,0 +1,217 @@
+<div id="cores" class="clearfix">
+
+	<div id="frame">
+
+		<div id="actions" class="actions clearfix">
+			
+			<div class="button-holder">
+				<div class="button">
+					<a class="reload">Reload</a>
+				</div>
+			</div>
+			
+			<div class="button-holder options rename">
+				<div class="button">
+					<a class="rename">Rename</a>
+				</div>
+				<div class="button-content">
+
+					<form>
+
+						<p class="clearfix"><label for="rename_core">from:</label>
+						<input type="text" name="core" id="rename_core" disabled="disabled"></p>
+
+						<p class="clearfix"><label for="rename_other">to:</label>
+						<input type="text" name="other" id="rename_other"></p>
+
+						<p class="clearfix buttons">
+							<a class="submit"><span>Rename</span></a>
+							<a class="reset"><span>Cancel</span></a>
+						</p>
+
+					</form>
+
+				</div>
+			</div>
+			
+			<div class="button-holder options swap">
+				<div class="button">
+					<a class="swap">Swap</a>
+				</div>
+				<div class="button-content">
+
+					<form>
+
+						<p class="clearfix"><label for="swap_core">this:</label>
+						<select name="core" id="swap_core" class="core" disabled="disabled">
+						</select></p>
+
+						<p class="clearfix"><label for="swap_other">and:</label>
+						<select class="other" id="swap_other" class="other">
+						</select></p>
+
+						<p class="clearfix buttons">
+							<a class="submit"><span>Swap</span></a>
+							<a class="reset"><span>Cancel</span></a>
+						</p>
+
+					</form>
+				
+				</div>
+			</div>
+			
+			<div class="button-holder">
+				<div class="button">
+					<a class="unload">Unload</a>
+				</div>
+			</div>
+			
+			<div class="button-holder">
+				<div class="button">
+					<a class="optimize">Optimize</a>
+				</div>
+			</div>
+
+		</div>
+
+		<div id="data">
+
+			<div class="block" id="core-data">
+
+			    <h2><span></span></h2>
+			    
+			    <div class="message-container">
+			        <div class="message"></div>
+			    </div>
+
+			    <div class="content">
+
+					<ul>
+
+						<li class="startTime"><dl class="clearfix">
+							<dt><span>startTime:</span></dt>
+								<dd class="timeago"></dd>
+						</dl></li>
+
+						<li class="instanceDir"><dl class="clearfix">
+							<dt><span>instanceDir:</span></dt>
+								<dd></dd>
+						</dl></li>
+
+						<li class="dataDir"><dl class="clearfix">
+							<dt><span>dataDir:</span></dt>
+								<dd></dd>
+						</dl></li>
+				
+					</ul>
+				
+				</div>
+			</div>
+
+			<div class="block" id="index-data">
+
+			    <h2><span>Index</span></h2>
+			    
+			    <div class="message-container">
+			        <div class="message"></div>
+			    </div>
+
+			    <div class="content">
+			    
+					<ul>
+
+						<li class="lastModified"><dl class="clearfix">
+							<dt><span>lastModified:</span></dt>
+								<dd class="timeago"></dd>
+						</dl></li>
+
+						<li class="version"><dl class="clearfix">
+							<dt><span>version:</span></dt>
+								<dd></dd>
+						</dl></li>
+
+						<li class="numDocs"><dl class="clearfix">
+							<dt><span>numDocs:</span></dt>
+								<dd></dd>
+						</dl></li>
+
+						<li class="maxDoc"><dl class="clearfix">
+							<dt><span>maxDoc:</span></dt>
+								<dd></dd>
+						</dl></li>
+
+						<li class="optimized"><dl class="clearfix">
+							<dt><span>optimized:</span></dt>
+								<dd class="ico"><span></span></dd>
+						</dl></li>
+
+						<li class="current"><dl class="clearfix">
+							<dt><span>current:</span></dt>
+								<dd class="ico"><span></span></dd>
+						</dl></li>
+
+						<li class="hasDeletions"><dl class="clearfix">
+							<dt><span>hasDeletions:</span></dt>
+								<dd class="ico"><span></span></dd>
+						</dl></li>
+
+						<li class="directory"><dl class="clearfix">
+							<dt><span>directory:</span></dt>
+								<dd></dd>
+						</dl></li>
+					
+					</ul>
+				
+				</div>
+			</div>
+
+		</div>
+	
+	</div>
+
+	<div id="navigation">
+
+		<div class="actions">
+			
+			<div class="button-holder options add">
+				<div class="button">
+					<a class="add">Add Core</a>
+				</div>
+				<div class="button-content">
+
+					<form>
+
+						<p class="clearfix"><label for="add_name">name:</label>
+						<input type="text" name="name" id="add_name"></p>
+
+						<p class="clearfix"><label for="add_instanceDir">instanceDir:</label>
+						<input type="text" name="instanceDir" id="add_instanceDir"></p>
+
+						<p class="clearfix"><label for="add_config">config:</label>
+						<input type="text" name="config" id="add_config"></p>
+
+						<p class="clearfix"><label for="add_schema">schema:</label>
+						<input type="text" name="schema" id="add_schema"></p>
+
+						<p class="clearfix"><label for="add_dataDir">dataDir:</label>
+						<input type="text" name="dataDir" id="dataDir"></p>
+
+						<p class="clearfix buttons">
+							<a class="submit"><span>Add Core</span></a>
+							<a class="reset"><span>Cancel</span></a>
+						</p>
+
+					</form>
+
+				</div>
+			</div>
+		
+		</div>
+
+		<div id="list">
+
+		</div>
+	
+	</div>
+
+</div>

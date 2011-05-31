@@ -18,12 +18,9 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.StringIndexDocValues;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.Map;

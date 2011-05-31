@@ -22,7 +22,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -43,8 +42,7 @@ public class IDFValueSource extends DocFreqValueSource {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     Similarity sim = searcher.getSimilarityProvider().get(field);
     // todo: we need docFreq that takes a BytesRef
-    String strVal = ByteUtils.UTF8toUTF16(indexedBytes);
-    int docfreq = searcher.docFreq(new Term(indexedField, strVal));
+    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes.utf8ToString()));
     float idf = sim.idf(docfreq, searcher.maxDoc());
     return new ConstDoubleDocValues(idf, this);
   }

@@ -20,8 +20,12 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -127,4 +131,50 @@ public class TestSegmentMerger extends LuceneTestCase {
     TestSegmentReader.checkNorms(mergedReader);
     mergedReader.close();
   }
+  
+  // LUCENE-3143
+  public void testInvalidFilesToCreateCompound() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    
+    // Create an index w/ .del file
+    w.addDocument(new Document());
+    Document doc = new Document();
+    doc.add(new Field("c", "test", Store.NO, Index.ANALYZED));
+    w.addDocument(doc);
+    w.commit();
+    w.deleteDocuments(new Term("c", "test"));
+    w.close();
+    
+    // Assert that SM fails if .del exists
+    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null);
+    try {
+      sm.createCompoundFile("b1", w.segmentInfos.info(0));
+      fail("should not have been able to create a .cfs with .del and .s* files");
+    } catch (AssertionError e) {
+      // expected
+    }
+    
+    // Create an index w/ .s*
+    w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
+    doc = new Document();
+    doc.add(new Field("c", "test", Store.NO, Index.ANALYZED));
+    w.addDocument(doc);
+    w.close();
+    IndexReader r = IndexReader.open(dir, false);
+    r.setNorm(0, "c", (byte) 1);
+    r.close();
+    
+    // Assert that SM fails if .s* exists
+    try {
+      sm.createCompoundFile("b2", w.segmentInfos.info(0));
+      fail("should not have been able to create a .cfs with .del and .s* files");
+    } catch (AssertionError e) {
+      // expected
+    }
+
+    dir.close();
+  }
+
 }

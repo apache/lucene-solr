@@ -41,6 +41,7 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
   protected final IndexOutput out;
 
   private int upto;
+  private boolean hitExcDuringWrite;
 
   // TODO what Var-Var codecs exist in practice... and what are there blocksizes like?
   // if its less than 128 we should set that as max and use byte?
@@ -105,19 +106,23 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
 
   @Override
   public void write(int v) throws IOException {
+    hitExcDuringWrite = true;
     upto -= add(v)-1;
+    hitExcDuringWrite = false;
     assert upto >= 0;
   }
 
   @Override
   public void close() throws IOException {
     try {
-      // stuff 0s in until the "real" data is flushed:
-      int stuffed = 0;
-      while(upto > stuffed) {
-        upto -= add(0)-1;
-        assert upto >= 0;
-        stuffed += 1;
+      if (!hitExcDuringWrite) {
+        // stuff 0s in until the "real" data is flushed:
+        int stuffed = 0;
+        while(upto > stuffed) {
+          upto -= add(0)-1;
+          assert upto >= 0;
+          stuffed += 1;
+        }
       }
     } finally {
       out.close();

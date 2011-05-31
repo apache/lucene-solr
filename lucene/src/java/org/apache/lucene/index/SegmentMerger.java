@@ -27,7 +27,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -36,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MultiBits;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -48,10 +48,6 @@ import org.apache.lucene.util.ReaderUtil;
  * @see #add
  */
 final class SegmentMerger {
-
-  /** norms header placeholder */
-  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
-
   private Directory directory;
   private String segment;
   private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
@@ -125,6 +121,12 @@ final class SegmentMerger {
     return mergedDocs;
   }
 
+  /**
+   * NOTE: this method creates a compound file for all files returned by
+   * info.files(). While, generally, this may include separate norms and
+   * deletion files, this SegmentInfo must not reference such files when this
+   * method is called, because they are not allowed within a compound file.
+   */
   final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
           throws IOException {
 
@@ -132,6 +134,10 @@ final class SegmentMerger {
     Collection<String> files = info.files();
     CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
     for (String file : files) {
+      assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                : ".del file is not allowed in .cfs: " + file;
+      assert !IndexFileNames.isSeparateNormsFile(file) 
+                : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
       cfsWriter.addFile(file);
     }
 
@@ -140,7 +146,7 @@ final class SegmentMerger {
 
     return files;
   }
-
+  
   private static void addIndexed(IndexReader reader, FieldInfos fInfos,
       Collection<String> names, boolean storeTermVectors,
       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
@@ -557,14 +563,13 @@ final class SegmentMerger {
     }
     codec = segmentWriteState.segmentCodecs.codec();
     final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
-
-    // NOTE: this is silly, yet, necessary -- we create a
-    // MultiBits as our skip docs only to have it broken
-    // apart when we step through the docs enums in
-    // MultiDocsEnum.
-    mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
-
     try {
+      // NOTE: this is silly, yet, necessary -- we create a
+      // MultiBits as our skip docs only to have it broken
+      // apart when we step through the docs enums in
+      // MultiDocsEnum.
+      mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
+      
       consumer.merge(mergeState,
                      new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
@@ -604,12 +609,13 @@ final class SegmentMerger {
 
   private void mergeNorms() throws IOException {
     IndexOutput output = null;
+    boolean success = false;
     try {
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
-            output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
+            output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
           for (IndexReader reader : readers) {
             final int maxDoc = reader.maxDoc();
@@ -637,10 +643,9 @@ final class SegmentMerger {
           }
         }
       }
+      success = true;
     } finally {
-      if (output != null) {
-        output.close();
-      }
+      IOUtils.closeSafely(!success, output);
     }
   }
 }

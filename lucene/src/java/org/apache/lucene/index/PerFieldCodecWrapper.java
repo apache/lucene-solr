@@ -36,6 +36,7 @@ import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Enables native per field codec support. This class selects the codec used to
@@ -67,7 +68,15 @@ final class PerFieldCodecWrapper extends Codec {
       assert segmentCodecs == state.segmentCodecs;
       final Codec[] codecs = segmentCodecs.codecs;
       for (int i = 0; i < codecs.length; i++) {
-        consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, i)));
+        boolean success = false;
+        try {
+          consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, i)));
+          success = true;
+        } finally {
+          if (!success) {
+            IOUtils.closeSafely(true, consumers);
+          }
+        }
       }
     }
 
@@ -80,22 +89,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public void close() throws IOException {
-      Iterator<FieldsConsumer> it = consumers.iterator();
-      IOException err = null;
-      while (it.hasNext()) {
-        try {
-          it.next().close();
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
-          }
-        }
-      }
-      if (err != null) {
-        throw err;
-      }
+      IOUtils.closeSafely(false, consumers);
     }
   }
 
@@ -128,14 +122,7 @@ final class PerFieldCodecWrapper extends Codec {
           // If we hit exception (eg, IOE because writer was
           // committing, or, for any other reason) we must
           // go back and close all FieldsProducers we opened:
-          for(FieldsProducer fp : producers.values()) {
-            try {
-              fp.close();
-            } catch (Throwable t) {
-              // Suppress all exceptions here so we continue
-              // to throw the original one
-            }
-          }
+          IOUtils.closeSafely(true, producers.values());
         }
       }
     }
@@ -184,22 +171,7 @@ final class PerFieldCodecWrapper extends Codec {
     
     @Override
     public void close() throws IOException {
-      Iterator<FieldsProducer> it = codecs.values().iterator();
-      IOException err = null;
-      while (it.hasNext()) {
-        try {
-          it.next().close();
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
-          }
-        }
-      }
-      if (err != null) {
-        throw err;
-      }
+      IOUtils.closeSafely(false, codecs.values());
     }
 
     @Override

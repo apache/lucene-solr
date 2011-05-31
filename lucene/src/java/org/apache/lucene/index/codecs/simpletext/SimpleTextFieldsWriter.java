@@ -143,8 +143,11 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
   @Override
   public void close() throws IOException {
-    write(END);
-    newline();
-    out.close();
+    try {
+      write(END);
+      newline();
+    } finally {
+      out.close();
+    }
   }
 }

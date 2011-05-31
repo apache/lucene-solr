@@ -217,6 +217,7 @@ public class TestFieldCache extends LuceneTestCase {
     IndexReader r = IndexReader.open(writer, true);
     FieldCache.DocTerms terms = FieldCache.DEFAULT.getTerms(r, "foobar");
     FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(r, "foobar");
+    writer.close();
     r.close();
     dir.close();
   }

@@ -65,6 +65,10 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
           addCount++;
         } catch (IOException ioe) {
+          if (VERBOSE) {
+            System.out.println("TEST: expected exc:");
+            ioe.printStackTrace(System.out);
+          }
           //System.out.println(Thread.currentThread().getName() + ": hit exc");
           //ioe.printStackTrace(System.out);
           if (ioe.getMessage().startsWith("fake disk full at") ||
@@ -218,6 +222,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     int NUM_THREADS = 3;
 
     for(int iter=0;iter<2;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
       MockDirectoryWrapper dir = newDirectory();
 
       IndexWriter writer = new IndexWriter(
@@ -228,6 +235,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(4))
       );
       ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
+      writer.setInfoStream(VERBOSE ? System.out : null);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
 

@@ -135,15 +135,6 @@ document.write("Last Published: " + document.lastModified);
 <div onclick="SwitchMenu('menu_1.1.3.4', '../skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
 <div id="menu_1.1.3.4" class="menuitemgroup">
 <div class="menuitem">
-<a href="../api/contrib-ant/index.html">Ant</a>
-</div>
-<div class="menuitem">
-<a href="../api/contrib-bdb/index.html">Bdb</a>
-</div>
-<div class="menuitem">
-<a href="../api/contrib-bdb-je/index.html">Bdb-je</a>
-</div>
-<div class="menuitem">
 <a href="../api/contrib-benchmark/index.html">Benchmark</a>
 </div>
 <div class="menuitem">
@@ -154,9 +145,6 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="../api/contrib-instantiated/index.html">Instantiated</a>
-</div>
-<div class="menuitem">
-<a href="../api/contrib-lucli/index.html">Lucli</a>
 </div>
 <div class="menuitem">
 <a href="../api/contrib-memory/index.html">Memory</a>
@@ -178,9 +166,6 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div class="menuitem">
 <a href="../api/contrib-spellchecker/index.html">Spellchecker</a>
-</div>
-<div class="menuitem">
-<a href="../api/contrib-swing/index.html">Swing</a>
 </div>
 <div class="menuitem">
 <a href="../api/contrib-wordnet/index.html">Wordnet</a>
@@ -249,25 +234,16 @@ document.write("Last Published: " + document.lastModified);
 <a href="#Contrib">Lucene Contrib</a>
 <ul class="minitoc">
 <li>
-<a href="#ant">ant</a>
-</li>
-<li>
 <a href="#benchmark">benchmark</a>
 </li>
 <li>
 <a href="#demo">demo</a>
 </li>
 <li>
-<a href="#db">db</a>
-</li>
-<li>
 <a href="#highlighter">highlighter</a>
 </li>
 <li>
 <a href="#instantiated">instantiated</a>
-</li>
-<li>
-<a href="#lucli">lucli</a>
 </li>
 <li>
 <a href="#memory">memory</a>
@@ -289,9 +265,6 @@ document.write("Last Published: " + document.lastModified);
 </li>
 <li>
 <a href="#spellchecker">spellchecker</a>
-</li>
-<li>
-<a href="#swing">swing</a>
 </li>
 <li>
 <a href="#wordnet">wordnet</a>
@@ -350,88 +323,68 @@ document.write("Last Published: " + document.lastModified);
                 You can access the current trunk Contrib repository at
                 <a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/">http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/</a>.
             </p>
-<a name="N10035"></a><a name="ant"></a>
-<h3 class="boxed">ant</h3>
-<p>Ant task to create Lucene indexes.</p>
-<p>See <a href="../api/contrib-ant/index.html">ant javadoc</a>
-</p>
-<a name="N10044"></a><a name="benchmark"></a>
+<a name="N10035"></a><a name="benchmark"></a>
 <h3 class="boxed">benchmark</h3>
 <p>The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.</p>
 <p>See <a href="../api/contrib-benchmark/index.html">benchmark javadoc</a>
 </p>
-<a name="N10053"></a><a name="demo"></a>
+<a name="N10044"></a><a name="demo"></a>
 <h3 class="boxed">demo</h3>
 <p>The demo contrib contains the Lucene demo: IndexFiles and SearchFiles, described under
                    <a href="../gettingstarted.html">Getting Started</a>.</p>
 <p>See <a href="../api/contrib-demo/index.html">demo javadoc</a>
 </p>
-<a name="N10066"></a><a name="db"></a>
-<h3 class="boxed">db</h3>
-<p>Provides integration with Berkley DB.</p>
-<p>See <a href="../api/contrib-db/index.html">db javadoc</a>
-</p>
-<a name="N10075"></a><a name="highlighter"></a>
+<a name="N10057"></a><a name="highlighter"></a>
 <h3 class="boxed">highlighter</h3>
 <p>A set of classes for highlighting matching terms in search results.</p>
 <p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a>
 </p>
-<a name="N10084"></a><a name="instantiated"></a>
+<a name="N10066"></a><a name="instantiated"></a>
 <h3 class="boxed">instantiated</h3>
 <p>RAM-based index that enables much faster searching than RAMDirectory in certain situations.</p>
 <p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a>
 </p>
-<a name="N10093"></a><a name="lucli"></a>
-<h3 class="boxed">lucli</h3>
-<p>An application that allows Lucene index manipulation from the command-line.</p>
-<p>See <a href="../api/contrib-lucli/index.html">lucli javadoc</a>
-</p>
-<a name="N100A2"></a><a name="memory"></a>
+<a name="N10075"></a><a name="memory"></a>
 <h3 class="boxed">memory</h3>
 <p>High-performance single-document main memory index.</p>
 <p>See <a href="../api/contrib-memory/index.html">memory javadoc</a>
 </p>
-<a name="N100B1"></a><a name="misc"></a>
+<a name="N10084"></a><a name="misc"></a>
 <h3 class="boxed">misc</h3>
 <p>A variety of miscellaneous files, including QueryParsers, and other alternate Lucene class implementations and tools.</p>
 <p>See <a href="../api/contrib-misc/index.html">misc javadoc</a>
 </p>
-<a name="N100C0"></a><a name="queryparser"></a>
+<a name="N10093"></a><a name="queryparser"></a>
 <h3 class="boxed">queryparser</h3>
 <p>A new Lucene query parser implementation, which matches the syntax of the core QueryParser but offers a more modular architecture to enable customization.</p>
 <p>See <a href="../api/contrib-queryparser/index.html">queryparser javadoc</a>
 </p>
-<a name="N100CF"></a><a name="queries"></a>
+<a name="N100A2"></a><a name="queries"></a>
 <h3 class="boxed">queries</h3>
 <p>Additional queries for Lucene.</p>
 <p>See <a href="../api/contrib-queries/index.html">queries javadoc</a>
 </p>
-<a name="N100DE"></a><a name="remote"></a>
+<a name="N100B1"></a><a name="remote"></a>
 <h3 class="boxed">remote</h3>
 <p>Classes to help use Lucene with RMI.</p>
 <p>See <a href="../api/contrib-remote/index.html">remote javadoc</a>
 </p>
-<a name="N100ED"></a><a name="spatial"></a>
+<a name="N100C0"></a><a name="spatial"></a>
 <h3 class="boxed">spatial</h3>
 <p>Classes to help with efficient distance based sorting.</p>
 <p>See <a href="../api/contrib-spatial/index.html">spatial javadoc</a>
 </p>
-<a name="N100FC"></a><a name="spellchecker"></a>
+<a name="N100CF"></a><a name="spellchecker"></a>
 <h3 class="boxed">spellchecker</h3>
 <p>Provides tools for spellchecking and suggestions with Lucene.</p>
 <p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a>
 </p>
-<a name="N1010B"></a><a name="swing"></a>
-<h3 class="boxed">swing</h3>
-<p>Swing components designed to integrate with Lucene.</p>
-<p>See <a href="../api/contrib-swing/index.html">swing javadoc</a>
-</p>
-<a name="N1011A"></a><a name="wordnet"></a>
+<a name="N100DE"></a><a name="wordnet"></a>
 <h3 class="boxed">wordnet</h3>
 <p>Tools to help utilize wordnet synonyms with Lucene</p>
 <p>See <a href="../api/contrib-wordnet/index.html">wordnet javadoc</a>
 </p>
-<a name="N10129"></a><a name="xml-query-parser"></a>
+<a name="N100ED"></a><a name="xml-query-parser"></a>
 <h3 class="boxed">xml-query-parser</h3>
 <p>A QueryParser that can read queries written in an XML format.</p>
 <p>See <a href="../api/contrib-wordnet/index.html">xml-query-parser javadoc</a>

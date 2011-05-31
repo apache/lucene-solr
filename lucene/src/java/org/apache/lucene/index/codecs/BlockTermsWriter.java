@@ -31,6 +31,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: currently we encode all terms between two indexed
@@ -66,24 +67,29 @@ public class BlockTermsWriter extends FieldsConsumer {
 
   //private final String segment;
 
-  public BlockTermsWriter(
-      TermsIndexWriterBase termsIndexWriter,
-      SegmentWriteState state,
-      PostingsWriterBase postingsWriter)
-    throws IOException
-  {
+  public BlockTermsWriter(TermsIndexWriterBase termsIndexWriter,
+      SegmentWriteState state, PostingsWriterBase postingsWriter)
+      throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecIdAsString(), TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
     out = state.directory.createOutput(termsFileName);
-    fieldInfos = state.fieldInfos;
-    writeHeader(out);
-    currentField = null;
-    this.postingsWriter = postingsWriter;
-    //segment = state.segmentName;
-
-    //System.out.println("BTW.init seg=" + state.segmentName);
-
-    postingsWriter.start(out);                          // have consumer write its format/header
+    boolean success = false;
+    try {
+      fieldInfos = state.fieldInfos;
+      writeHeader(out);
+      currentField = null;
+      this.postingsWriter = postingsWriter;
+      //segment = state.segmentName;
+      
+      //System.out.println("BTW.init seg=" + state.segmentName);
+      
+      postingsWriter.start(out); // have consumer write its format/header
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
+    }
   }
   
   protected void writeHeader(IndexOutput out) throws IOException {
@@ -130,20 +136,11 @@ public class BlockTermsWriter extends FieldsConsumer {
       }
       writeTrailer(dirStart);
     } finally {
-      try {
-        out.close();
-      } finally {
-        try {
-          postingsWriter.close();
-        } finally {
-          termsIndexWriter.close();
-        }
-      }
+      IOUtils.closeSafely(false, out, postingsWriter, termsIndexWriter);
     }
   }
 
   protected void writeTrailer(long dirStart) throws IOException {
-    // TODO Auto-generated method stub
     out.seek(CodecUtil.headerLength(CODEC_NAME));
     out.writeLong(dirStart);    
   }

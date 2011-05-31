@@ -91,11 +91,18 @@ final class DocFieldProcessor extends DocConsumer {
 
   @Override
   public void abort() {
-    for(int i=0;i<fieldHash.length;i++) {
-      DocFieldProcessorPerField field = fieldHash[i];
-      while(field != null) {
+    Throwable th = null;
+    
+    for (DocFieldProcessorPerField field : fieldHash) {
+      while (field != null) {
         final DocFieldProcessorPerField next = field.next;
-        field.abort();
+        try {
+          field.abort();
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          }
+        }
         field = next;
       }
     }
@@ -107,11 +114,29 @@ final class DocFieldProcessor extends DocConsumer {
         // ignore on abort!
       }
     }
-
+    
     try {
       fieldsWriter.abort();
-    } finally {
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
+    
+    try {
       consumer.abort();
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
+    
+    // If any errors occured, throw it.
+    if (th != null) {
+      if (th instanceof RuntimeException) throw (RuntimeException) th;
+      if (th instanceof Error) throw (Error) th;
+      // defensive code - we should not hit unchecked exceptions
+      throw new RuntimeException(th);
     }
   }
 

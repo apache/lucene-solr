@@ -20,8 +20,6 @@
 	<classpathentry kind="src" path="lucene/contrib/queryparser/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/wordnet/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/wordnet/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>
@@ -44,6 +42,8 @@
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
 	<classpathentry kind="src" path="modules/grouping/src/java"/>
 	<classpathentry kind="src" path="modules/grouping/src/test"/>
+	<classpathentry kind="src" path="modules/suggest/src/java"/>
+	<classpathentry kind="src" path="modules/suggest/src/test"/>
 	<classpathentry kind="src" path="solr/src/java"/>
 	<classpathentry kind="src" path="solr/src/webapp/src"/>
 	<classpathentry kind="src" path="solr/src/common"/>

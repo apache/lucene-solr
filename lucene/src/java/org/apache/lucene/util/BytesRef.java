@@ -18,8 +18,6 @@ package org.apache.lucene.util;
  */
 
 import java.util.Comparator;
-import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].
@@ -123,6 +121,7 @@ public final class BytesRef implements Comparable<BytesRef> {
   public void copy(char text[], int offset, int length) {
     UnicodeUtil.UTF16toUTF8(text, offset, length, this);
   }
+  
   public boolean bytesEquals(BytesRef other) {
     if (length == other.length) {
       int otherUpto = other.offset;
@@ -199,13 +198,15 @@ public final class BytesRef implements Comparable<BytesRef> {
   /** Interprets stored bytes as UTF8 bytes, returning the
    *  resulting string */
   public String utf8ToString() {
-    try {
-      return new String(bytes, offset, length, "UTF-8");
-    } catch (UnsupportedEncodingException uee) {
-      // should not happen -- UTF8 is presumably supported
-      // by all JREs
-      throw new RuntimeException(uee);
-    }
+    final CharsRef ref = new CharsRef(length);
+    UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
+    return ref.toString(); 
+  }
+  
+  /** Interprets stored bytes as UTF8 bytes into the given {@link CharsRef} */
+  public CharsRef utf8ToChars(CharsRef ref) {
+    UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref);
+    return ref;
   }
 
   /** Returns hex encoded bytes, eg [0x6c 0x75 0x63 0x65 0x6e 0x65] */
@@ -272,13 +273,12 @@ public final class BytesRef implements Comparable<BytesRef> {
   }
 
   private final static Comparator<BytesRef> utf8SortedAsUnicodeSortOrder = new UTF8SortedAsUnicodeComparator();
-  
+
   public static Comparator<BytesRef> getUTF8SortedAsUnicodeComparator() {
     return utf8SortedAsUnicodeSortOrder;
   }
 
-  @SuppressWarnings("serial") // serializable to work with contrib/remote
-  private static final class UTF8SortedAsUnicodeComparator implements Serializable, Comparator<BytesRef> {
+  private static class UTF8SortedAsUnicodeComparator implements Comparator<BytesRef> {
     // Only singleton
     private UTF8SortedAsUnicodeComparator() {};
 

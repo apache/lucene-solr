@@ -27,6 +27,7 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeReflector;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.SorterTemplate;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -38,8 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
-
-import org.apache.noggit.CharArr;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -235,18 +234,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     FieldType fieldType = context.getFieldType();
 
-    final CharArr textBuf = new CharArr();
     for (int i = 0, c = tokens.size(); i < c; i++) {
       AttributeSource token = tokens.get(i);
       final NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
       termAtt.fillBytesRef();
-
-      textBuf.reset();
-      fieldType.indexedToReadable(rawBytes, textBuf);
-      final String text = textBuf.toString();
-
+      final String text = fieldType.indexedToReadable(rawBytes, new CharsRef(rawBytes.length)).toString();
       tokenNamedList.add("text", text);
       
       if (token.hasAttribute(CharTermAttribute.class)) {

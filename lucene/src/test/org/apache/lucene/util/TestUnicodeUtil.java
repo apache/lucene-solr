@@ -85,37 +85,6 @@ package org.apache.lucene.util;
  */
 
 public class TestUnicodeUtil extends LuceneTestCase {
-  public void testNextValidUTF16String() {
-    // valid UTF-16
-    assertEquals("dogs", UnicodeUtil.nextValidUTF16String("dogs"));
-    assertEquals("dogs\uD802\uDC02", UnicodeUtil
-        .nextValidUTF16String("dogs\uD802\uDC02"));
-    
-    // an illegal combination, where we have not yet enumerated into the supp
-    // plane so we increment to H + \uDC00 (the lowest possible trail surrogate)
-    assertEquals("dogs\uD801\uDC00", UnicodeUtil
-        .nextValidUTF16String("dogs\uD801"));
-    assertEquals("dogs\uD801\uDC00", UnicodeUtil
-        .nextValidUTF16String("dogs\uD801b"));
-    assertEquals("dogs\uD801\uDC00", UnicodeUtil
-        .nextValidUTF16String("dogs\uD801\uD800"));
-    
-    // an illegal combination where we have already enumerated the trail
-    // we must increment the lead and start the trail back at the beginning.
-    assertEquals("dogs\uD802\uDC00", UnicodeUtil
-        .nextValidUTF16String("dogs\uD801\uE001"));
-    
-    // an illegal combination where we have exhausted the supp plane
-    // we must now move to the lower bmp.
-    assertEquals("dogs\uE000", UnicodeUtil
-        .nextValidUTF16String("dogs\uDBFF\uE001"));
-
-    // an unpaired trail surrogate. this is invalid when not preceded by a lead
-    // surrogate. in this case we have to bump to \uE000 (the lowest possible
-    // "upper BMP")
-    assertEquals("dogs\uE000", UnicodeUtil.nextValidUTF16String("dogs\uDC00"));
-    assertEquals("\uE000", UnicodeUtil.nextValidUTF16String("\uDC00dogs"));
-  }
 
   public void testCodePointCount() {
     BytesRef utf8 = new BytesRef(20);
@@ -195,6 +164,21 @@ public class TestUnicodeUtil extends LuceneTestCase {
         e = e2;
       }
       assertTrue(rc == -1);
+    }
+  }
+  
+  public void testUTF8UTF16CharsRef() {
+    for (int i = 0; i < 3989 * RANDOM_MULTIPLIER; i++) {
+      String unicode = _TestUtil.randomRealisticUnicodeString(random);
+      BytesRef ref = new BytesRef(unicode);
+      char[] arr = new char[1 + random.nextInt(100)];
+      int offset = random.nextInt(arr.length);
+      int len = random.nextInt(arr.length - offset);
+      CharsRef cRef = new CharsRef(arr, offset, len);
+      UnicodeUtil.UTF8toUTF16(ref, cRef);
+      assertEquals(cRef.toString(), unicode);
+      assertEquals(cRef, unicode); // CharSeq
+      assertEquals(cRef, ref.utf8ToString()); // CharSeq
     }
   }
 }

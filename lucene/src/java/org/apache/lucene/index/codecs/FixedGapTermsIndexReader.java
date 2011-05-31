@@ -24,6 +24,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -108,6 +109,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
       success = true;
     } finally {
+      if (!success) IOUtils.closeSafely(true, in);
       if (indexDivisor > 0) {
         in.close();
         in = null;
