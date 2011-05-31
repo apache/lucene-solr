@@ -292,10 +292,10 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-tgz" depends="package"
-    description="--> Generates the lucene distribution as .tar.gz">
+    description="--> Generates the lucene distribution as .tgz">
 
     <delete file="${build.dir}/lucene-${version}.tar"/>
-    <delete file="${dist.dir}/lucene-${version}.tar.gz"/>
+    <delete file="${dist.dir}/lucene-${version}.tgz"/>
     <tar tarfile="${build.dir}/lucene-${version}.tar" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
@@ -305,10 +305,10 @@
       </tarfileset>
     </tar>
 
-    <gzip zipfile="${dist.dir}/lucene-${version}.tar.gz"
+    <gzip zipfile="${dist.dir}/lucene-${version}.tgz"
       src="${build.dir}/lucene-${version}.tar"
       />
-	<lucene-checksum file="${dist.dir}/lucene-${version}.tar.gz"/>
+	<lucene-checksum file="${dist.dir}/lucene-${version}.tgz"/>
   </target>
 
   <!-- ================================================================== -->
@@ -317,7 +317,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-all-binary" depends="package-zip, package-tgz"
-    description="--> Generates the .tar.gz and .zip distributions"/>
+    description="--> Generates the .tgz and .zip distributions"/>
 
   <!-- ================================================================== -->
   <!-- same as package-all. it is just here for compatibility.            -->
@@ -344,9 +344,9 @@
   <!-- Packages the sources from "svn export" with tar-gzip               -->
   <!-- ================================================================== -->
   <target name="package-tgz-src" depends="init, init-dist, svn-export-source"
-    description="--> Generates the Lucene distribution as .tar.gz">
+    description="--> Generates the Lucene distribution as .tgz">
     <property name="source.package.file"
-              value="${dist.dir}/lucene-${version}-src.tar.gz"/>
+              value="${dist.dir}/lucene-${version}-src.tgz"/>
     <delete file="${source.package.file}"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
@@ -493,7 +493,7 @@
       <fileset dir="${dist.dir}">
         <include name="**/*.jar"/>
         <include name="**/*.zip"/>
-        <include name="**/*.tar.gz"/>
+        <include name="**/*.tgz"/>
         <include name="**/*.pom"/>
       </fileset>
       <globmapper from="*" to="*.asc"/>
