@@ -183,6 +183,8 @@
       <sysproperty key="jetty.testMode" value="1"/>
       <sysproperty key="tempDir" file="${tempDir}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>
+      <sysproperty key="tests.directory" value="${tests.directory}"/>
+      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
       <jvmarg line="${args}"/>
       <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
@@ -245,6 +247,8 @@
       <sysproperty key="jetty.testMode" value="1"/>
       <sysproperty key="tempDir" file="${tempDir}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>
+      <sysproperty key="tests.directory" value="${tests.directory}"/>
+      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
       <jvmarg line="${args}"/>
       <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
       <classpath refid="test.extras.classpath"/>

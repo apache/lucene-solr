@@ -463,9 +463,8 @@
       <sysproperty key="testmethod" value="${testmethod}"/>
       <!-- set whether or not nightly tests should run -->
       <sysproperty key="tests.nightly" value="${tests.nightly}"/>
-      <!-- TODO: why is this unconditionally set to "" above? disable for now
-         <jvmarg line="${dir.prop}"/>
-      -->
+      <sysproperty key="tests.directory" value="${tests.directory}"/>
+      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
       <jvmarg line="${args}"/>
 
       <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>

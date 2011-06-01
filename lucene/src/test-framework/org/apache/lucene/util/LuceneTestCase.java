@@ -221,7 +221,7 @@ public abstract class LuceneTestCase extends Assert {
   private static TimeZone timeZone;
   private static TimeZone savedTimeZone;
 
-  private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
+  protected static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "MockRandom"};
 
