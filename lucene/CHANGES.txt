@@ -236,6 +236,9 @@ Changes in Runtime Behavior
   
   (Mike McCandless, Michael Busch, Simon Willnauer)
 
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+  
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer

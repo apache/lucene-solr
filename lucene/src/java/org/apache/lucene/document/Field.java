@@ -96,7 +96,7 @@ public final class Field extends AbstractField implements Fieldable {
     },
 
     /** Expert: Index the field's value without an Analyzer,
-     * and also disable the storing of norms.  Note that you
+     * and also disable the indexing of norms.  Note that you
      * can also separately enable/disable norms by calling
      * {@link Field#setOmitNorms}.  No norms means that
      * index-time field and document boosting and field
@@ -104,11 +104,11 @@ public final class Field extends AbstractField implements Fieldable {
      * less memory usage as norms take up one byte of RAM
      * per indexed field for every document in the index,
      * during searching.  Note that once you index a given
-     * field <i>with</i> norms enabled, disabling norms will
+     * field <i>with</i> norms disabled, enabling norms will
      * have no effect.  In other words, for this to have the
-     * above described effect on a field, all instances of
+     * above described effect on a field, one instance of
      * that field must be indexed with NOT_ANALYZED_NO_NORMS
-     * from the beginning. */
+     * at some point. */
     NOT_ANALYZED_NO_NORMS {
       @Override
       public boolean isIndexed()  { return true;  }
