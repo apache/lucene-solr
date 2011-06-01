@@ -31,19 +31,8 @@
   </target>
   
   <target name="compile-core" depends="build-solr, common.compile-core"/>
+
+  <!-- redefine common-solr.test, and exclude 'validate-solr' dependency, since it should only run at solr/ level --> 
+  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
   
-  <macrodef name="solr-contrib-uptodate">
-    <attribute name="name"/>
-    <attribute name="property" default="solr-@{name}.uptodate"/>
-    <attribute name="classpath.property" default="solr-@{name}.jar"/>
-    <!-- set jarfile only, if the target jar file has no generic name -->
-    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/apache-solr-@{name}-${version}.jar"/>
-    <sequential>
-      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/main/java'"/>-->
-      <property name="@{classpath.property}" location="@{jarfile}"/>
-      <uptodate property="@{property}" targetfile="@{jarfile}">
-        <srcfiles dir="../@{name}/src/main/java" includes="**/*.java"/>
-      </uptodate>
-    </sequential>
-  </macrodef>
 </project>

@@ -51,6 +51,7 @@
   <property name="tests.threadspercpu" value="2"/>
 
   <import file="../lucene/contrib/contrib-build.xml"/>
+  <property name="tests.directory" value="random" />
 
   <!-- solr depends on the following modules/contribs -->	
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
@@ -114,7 +115,7 @@
       <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
       <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
-        <srcfiles dir="${common-solr.dir}/contrib/@{name}/src/main/java" includes="**/*.java"/>
+        <srcfiles dir="${common-solr.dir}/contrib/@{name}/src/java" includes="**/*.java"/>
       </uptodate>
     </sequential>
   </macrodef>
@@ -155,4 +156,17 @@
       <arg value="${basedir}/src/test-files/solr/lib" />
     </java>
   </target>
+  <path id="tools.runtime.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/tools"/>
+  </path>
+  <target name="compile-tools" description="Compile the Test Framework and Validation tools">
+    <sequential>
+      <subant target="compile-tools" inheritall="false" failonerror="true">
+        <fileset dir="${common-solr.dir}/../lucene" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
+
+  <target name="test" depends="compile-test,validate-solr,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+  
 </project>

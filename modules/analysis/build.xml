@@ -57,6 +57,13 @@
     <ant dir="smartcn" target="clean" />
     <ant dir="stempel" target="clean" />
   </target>
+  <target name="validate">
+    <ant dir="common" target="validate" />
+    <ant dir="icu" target="validate" />
+    <ant dir="phonetic" target="validate" />
+    <ant dir="smartcn" target="validate" />
+    <ant dir="stempel" target="validate" />
+  </target>
   <target name="compile-core">
     <ant dir="common" target="compile-core" />
     <ant dir="icu" target="compile-core" />

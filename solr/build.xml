@@ -35,7 +35,7 @@
   <target name="compile" description="Compile the source code." 
   	      depends="compile-core, build-contrib"/>
   <target name="test" description="Validate, then run core and contrib unit tests."
-  	      depends="validate-solr, common.test, test-contrib"/>
+  	      depends="validate-solr, common-solr.test, test-contrib"/>
   <target name="test-core" description="Runs the core unit tests."
           depends="common.test"/>
   <target name="compile-test" description="Compile unit tests." 

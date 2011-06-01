@@ -1,5 +1,8 @@
 Lucene contrib change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
   
 Build
@@ -442,7 +445,7 @@ Other
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
 
-================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+================== Release 2.9.4 / 3.0.3 ====================
 
 Bug Fixes
 
@@ -477,11 +480,11 @@ Documentation
    as expected on all JRE's. For example, on an IBM JRE, it does nothing.
    (Robert Muir)
 
-================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+================== Release 2.9.3 / 3.0.2 ====================
 
 No changes.
 
-================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
+================== Release 2.9.2 / 3.0.1 ====================
 
 New features
 
@@ -520,7 +523,7 @@ API Changes
  * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
    stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
    
-======================= Release 3.0.0 2009-11-25 =======================
+======================= Release 3.0.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -597,7 +600,7 @@ Build
  * LUCENE-2031: Moved PatternAnalyzer from contrib/memory into
    contrib/analyzers/common, under miscellaneous.  (Robert Muir)
    
-======================= Release 2.9.1 2009-11-06 =======================
+======================= Release 2.9.1 =======================
 
 Changes in backwards compatibility policy
 
@@ -640,7 +643,7 @@ Bug fixes
  * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
    (Benjamin Keil via Mark Miller)
 
-======================= Release 2.9.0 2009-09-23 =======================
+======================= Release 2.9.0 =======================
 
 Changes in runtime behavior
 
@@ -829,7 +832,7 @@ Build
 Test Cases
 
 
-======================= Release 2.4.0 2008-10-06 =======================
+======================= Release 2.4.0 =======================
 
 Changes in runtime behavior
 
