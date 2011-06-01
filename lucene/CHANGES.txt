@@ -35,7 +35,7 @@ New Features
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.
-  (Luca Stancapiano via ryan)
+  (Nicolas Lalevée, Luca Stancapiano via ryan)
 
 
 ======================= Lucene 3.2.0 =======================
