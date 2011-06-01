@@ -230,6 +230,12 @@ public abstract class LuceneTestCase extends Assert {
     random.setSeed(staticSeed);
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
+    // enable this by default, for IDE consistency with ant tests (as its the default from ant)
+    // TODO: really should be in solr base classes, but some extend LTC directly.
+    // we do this in beforeClass, because some tests currently disable it
+    if (System.getProperty("solr.directoryFactory") == null) {
+      System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+    }
     // this code consumes randoms where 4.0's lucenetestcase would: to make seeds work across both branches.
     // TODO: doesn't completely work, because what if we get mockrandom codec?!
     if (random.nextInt(4) != 0) {
@@ -489,12 +495,6 @@ public abstract class LuceneTestCase extends Assert {
     // just a hack for things like eclipse test-runner threads
     for (Thread t : Thread.getAllStackTraces().keySet()) {
       rogueThreads.put(t, true);
-    }
-    
-    // enable this by default, for IDE consistency with ant tests (as its the default from ant)
-    // TODO: really should be in solr base classes, but some extend LTC directly.
-    if (System.getProperty("solr.directoryFactory") == null) {
-      System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
   }
   
