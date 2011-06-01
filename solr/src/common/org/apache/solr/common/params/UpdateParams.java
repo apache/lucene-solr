@@ -25,11 +25,11 @@ package org.apache.solr.common.params;
  */
 public interface UpdateParams 
 {
-  /** wait till the command has flushed */
-  public static String WAIT_FLUSH = "waitFlush";
   
   /** wait for the search to warm up */
   public static String WAIT_SEARCHER = "waitSearcher";
+  
+  public static String SOFT_COMMIT = "softCommit";
   
   /** overwrite indexing fields */
   public static String OVERWRITE = "overwrite";

@@ -66,8 +66,8 @@ public class RequestHandlerUtils
     
     if( optimize || commit || force ) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
-      cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
+      cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
       cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);
       cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
       req.getCore().getUpdateHandler().commit( cmd );
@@ -100,8 +100,8 @@ public class RequestHandlerUtils
     
     if( optimize || commit || force ) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize );
-      cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
+      cmd.softCommit = params.getBool( UpdateParams.SOFT_COMMIT, cmd.softCommit );
       cmd.expungeDeletes = params.getBool( UpdateParams.EXPUNGE_DELETES, cmd.expungeDeletes);      
       cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
       processor.processCommit( cmd );

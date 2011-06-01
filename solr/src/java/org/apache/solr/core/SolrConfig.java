@@ -20,11 +20,7 @@ package org.apache.solr.core;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.RegexFileFilter;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -36,7 +32,6 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
-import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.codecs.Codec;
@@ -217,7 +212,9 @@ public class SolrConfig extends Config {
     return new UpdateHandlerInfo(get("updateHandler/@class",null),
             getInt("updateHandler/autoCommit/maxDocs",-1),
             getInt("updateHandler/autoCommit/maxTime",-1),
-            getInt("updateHandler/commitIntervalLowerBound",-1));
+            getInt("updateHandler/commitIntervalLowerBound",-1),
+            getInt("updateHandler/autoSoftCommit/maxDocs",-1),
+            getInt("updateHandler/autoSoftCommit/maxTime",-1));
   }
 
   private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
@@ -374,7 +371,8 @@ public class SolrConfig extends Config {
 
   public static class UpdateHandlerInfo{
     public final String className;
-    public final int autoCommmitMaxDocs,autoCommmitMaxTime,commitIntervalLowerBound;
+    public final int autoCommmitMaxDocs,autoCommmitMaxTime,commitIntervalLowerBound,
+        autoSoftCommmitMaxDocs,autoSoftCommmitMaxTime;
 
     /**
      * @param className
@@ -382,11 +380,15 @@ public class SolrConfig extends Config {
      * @param autoCommmitMaxTime set -1 as default
      * @param commitIntervalLowerBound set -1 as default
      */
-    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, int commitIntervalLowerBound) {
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, int commitIntervalLowerBound,
+        int autoSoftCommmitMaxDocs, int autoSoftCommmitMaxTime) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
       this.commitIntervalLowerBound = commitIntervalLowerBound;
+      
+      this.autoSoftCommmitMaxDocs = autoSoftCommmitMaxDocs;
+      this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
     } 
   }
 

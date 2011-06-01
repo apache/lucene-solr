@@ -1,3 +1,5 @@
+package org.apache.solr.update;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,41 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
 
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.common.util.NamedList;
+import java.io.IOException;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.index.IndexWriter;
 
-public class MockEventListener implements SolrEventListener {
-
-  final static AtomicInteger createCounter = new AtomicInteger(0);
-
-  public static final int getCreateCount() {
-    return createCounter.intValue();
-  }
-
-  public MockEventListener() {
-    createCounter.incrementAndGet();
-  }
-
-  public void init(NamedList args) {
-    /* NOOP */
-  }
-
-  public void postCommit() {
-    /* NOOP */
-  }
+public interface IndexWriterProvider {
   
-  @Override
-  public void postSoftCommit() {
-    /* NOOP */
-  }
+  public void newIndexWriter() throws IOException;
+  
+  public IndexWriter getIndexWriter() throws IOException;
 
-  public void newSearcher(SolrIndexSearcher newSearcher, 
-                          SolrIndexSearcher currentSearcher) {
-    /* NOOP */
-  }
+  public void decref() throws IOException;
+  
+  public void incref();
 
+  public void rollbackIndexWriter() throws IOException;
+  
 }

@@ -17,8 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -35,21 +33,9 @@ public class TestLegacyMergeSchedulerPolicyConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testLegacy() throws Exception {
-    ExposeWriterHandler duh = new ExposeWriterHandler();
-    IndexWriter writer = duh.getWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
     assertTrue(writer.getConfig().getMergePolicy().getClass().getName().equals(LogDocMergePolicy.class.getName()));
     assertTrue(writer.getConfig().getMergeScheduler().getClass().getName().equals(SerialMergeScheduler.class.getName()));
-    duh.close();
   }
-  
-  class ExposeWriterHandler extends DirectUpdateHandler2 {
-    public ExposeWriterHandler() throws IOException {
-      super(h.getCore());
-    }
 
-    public IndexWriter getWriter() throws IOException {
-      forceOpenWriter();
-      return writer;
-    }
-  }
 }

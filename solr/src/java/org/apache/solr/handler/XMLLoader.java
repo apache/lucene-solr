@@ -130,16 +130,13 @@ class XMLLoader extends ContentStreamLoader {
 
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, XmlUpdateRequestHandler.OPTIMIZE.equals(currTag));
 
-            boolean sawWaitSearcher = false, sawWaitFlush = false;
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
-              if (XmlUpdateRequestHandler.WAIT_FLUSH.equals(attrName)) {
-                cmd.waitFlush = StrUtils.parseBoolean(attrVal);
-                sawWaitFlush = true;
-              } else if (XmlUpdateRequestHandler.WAIT_SEARCHER.equals(attrName)) {
+              if (XmlUpdateRequestHandler.WAIT_SEARCHER.equals(attrName)) {
                 cmd.waitSearcher = StrUtils.parseBoolean(attrVal);
-                sawWaitSearcher = true;
+              } else if (XmlUpdateRequestHandler.SOFT_COMMIT.equals(attrName)) {
+                cmd.softCommit = StrUtils.parseBoolean(attrVal);
               } else if (UpdateParams.MAX_OPTIMIZE_SEGMENTS.equals(attrName)) {
                 cmd.maxOptimizeSegments = Integer.parseInt(attrVal);
               } else if (UpdateParams.EXPUNGE_DELETES.equals(attrName)) {
@@ -149,11 +146,6 @@ class XMLLoader extends ContentStreamLoader {
               }
             }
 
-            // If waitFlush is specified and waitSearcher wasn't, then
-            // clear waitSearcher.
-            if (sawWaitFlush && !sawWaitSearcher) {
-              cmd.waitSearcher = false;
-            }
             processor.processCommit(cmd);
           } // end commit
           else if (XmlUpdateRequestHandler.ROLLBACK.equals(currTag)) {

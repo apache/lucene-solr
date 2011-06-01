@@ -24,17 +24,15 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.ReplicationHandler.*;
 
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +60,6 @@ import java.util.zip.InflaterInputStream;
  */
 public class SnapPuller {
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
-
-  private static final List<Map<String,Object>> EMPTY_LIST_OF_MAPS 
-    = Collections.emptyList();
 
   private final String masterUrl;
 
@@ -475,21 +470,15 @@ public class SnapPuller {
   }
 
   private void doCommit() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
+        new ModifiableSolrParams());
     try {
-      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
-      cmd.waitFlush = true;
-      cmd.waitSearcher = true;
-      solrCore.getUpdateHandler().commit(cmd);
-      if (solrCore.getUpdateHandler() instanceof DirectUpdateHandler2) {
-        LOG.info("Force open index writer to make sure older index files get deleted");
-        DirectUpdateHandler2 handler = (DirectUpdateHandler2) solrCore.getUpdateHandler();
-        handler.forceOpenWriter();
-        replicationHandler.refreshCommitpoint();
-      } else  {
-        LOG.warn("The update handler is not an instance or sub-class of DirectUpdateHandler2. " +
-            "ReplicationHandler may not be able to cleanup un-used index files.");
-      }
+      
+      // reboot the writer on the new index and get a new searcher
+      solrCore.getUpdateHandler().newIndexWriter();
+      solrCore.getSearcher(true, false, null);
+      
+      replicationHandler.refreshCommitpoint();
     } finally {
       req.close();
     }
@@ -605,6 +594,7 @@ public class SnapPuller {
               + " to: " + indexFileInIndex , e);
       }
     }
+
     if (!success) {
       for (String f : copiedfiles) {
         File indexFile = new File(indexDir, f);
@@ -715,11 +705,10 @@ public class SnapPuller {
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
-      return EMPTY_LIST_OF_MAPS;
-
+      return Collections.EMPTY_LIST;
     //build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<String, Map<String, Object>>();
-    NamedList<String> names = new NamedList<String>();
+    NamedList names = new NamedList();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the slave
       String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
@@ -737,7 +726,7 @@ public class SnapPuller {
         nameVsFile.remove(name); //checksums are same so the file need not be downloaded
       }
     }
-    return nameVsFile.isEmpty() ? EMPTY_LIST_OF_MAPS : nameVsFile.values();
+    return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
   }
 
   /**
@@ -800,25 +789,25 @@ public class SnapPuller {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     //create a new instance. or else iterator may fail
-    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? EMPTY_LIST_OF_MAPS : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
   }
 
   Map<String, Object> getCurrentFile() {

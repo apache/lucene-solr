@@ -250,7 +250,7 @@ public class CoreContainer
     }
   }
 
-  private static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
+  static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
     if(file == null) file = "conf"+File.separator+ "solrcore.properties";
     File corePropsFile = new File(file);
     if(!corePropsFile.isAbsolute()){
@@ -648,9 +648,8 @@ public class CoreContainer
         schema = new IndexSchema(config, dcore.getSchemaName(), null);
       }
     }
-    String dataDir = null;
 
-    SolrCore core = new SolrCore(dcore.getName(), dataDir, config, schema, dcore);
+    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
     return core;
   }
     
@@ -712,7 +711,7 @@ public class CoreContainer
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
-    SolrCore newCore = create(core.getCoreDescriptor());
+    SolrCore newCore = core.reload(libLoader);
     register(name, newCore, false);
   }
 

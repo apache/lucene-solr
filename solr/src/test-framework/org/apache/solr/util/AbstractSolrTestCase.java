@@ -97,11 +97,13 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassAbstractSolrTestCase() throws Exception {
     SolrTestCaseJ4.startTrackingSearchers();
+    SolrTestCaseJ4.startTrackingWriters();
   }
   
   @AfterClass
   public static void afterClassAbstractSolrTestCase() throws Exception {
     SolrTestCaseJ4.endTrackingSearchers();
+    SolrTestCaseJ4.endTrackingWriters();
   }
   
   /**
