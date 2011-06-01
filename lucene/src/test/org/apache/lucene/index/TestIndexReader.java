@@ -957,7 +957,7 @@ public class TestIndexReader extends LuceneTestCase {
               int docId = 12;
               for(int i=0;i<13;i++) {
                 reader.deleteDocument(docId);
-                reader.setNorm(docId, "contents", (float) 2.0);
+                reader.setNorm(docId, "content", (float) 2.0);
                 docId += 12;
               }
             }

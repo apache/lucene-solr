@@ -913,8 +913,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * int) length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
-   * <b>NOTE:</b> If this field does not store norms, then
-   * this method call will silently do nothing.
+   * <b>NOTE:</b> If this field does not index norms, then
+   * this method throws {@link IllegalStateException}.
    *
    * @see #norms(String)
    * @see Similarity#decodeNormValue(byte)
@@ -925,6 +925,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
+   * @throws IllegalStateException if the field does not index norms
    */
   public synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {

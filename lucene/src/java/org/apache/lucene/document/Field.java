@@ -97,7 +97,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     },
 
     /** Expert: Index the field's value without an Analyzer,
-     * and also disable the storing of norms.  Note that you
+     * and also disable the indexing of norms.  Note that you
      * can also separately enable/disable norms by calling
      * {@link Field#setOmitNorms}.  No norms means that
      * index-time field and document boosting and field

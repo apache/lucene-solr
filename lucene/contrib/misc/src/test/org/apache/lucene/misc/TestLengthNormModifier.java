@@ -83,12 +83,12 @@ public class TestLengthNormModifier extends LuceneTestCase {
       super.tearDown();
     }
     
-    public void testMissingField() {
+    public void testMissingField() throws Exception {
 	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	try {
 	    fnm.reSetNorms("nobodyherebutuschickens");
-	} catch (Exception e) {
-	    assertNull("caught something", e);
+	} catch (IllegalStateException e) {
+	    // expected
 	}
     }
 	
@@ -106,8 +106,8 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	try {
 	    fnm.reSetNorms("nonorm");
-	} catch (Exception e) {
-	    assertNull("caught something", e);
+	} catch (IllegalStateException e) {
+	  // expected
 	}
 
 	// nothing should have changed

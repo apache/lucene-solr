@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Collector;
@@ -81,8 +80,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
     FieldNormModifier fnm = new FieldNormModifier(store, s);
     try {
       fnm.reSetNorms("nobodyherebutuschickens");
-    } catch (Exception e) {
-      assertNull("caught something", e);
+    } catch (IllegalStateException e) {
+      // expected
     }
   }
   
@@ -100,8 +99,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
     FieldNormModifier fnm = new FieldNormModifier(store, s);
     try {
       fnm.reSetNorms("nonorm");
-    } catch (Exception e) {
-      assertNull("caught something", e);
+    } catch (IllegalStateException e) {
+      // expected
     }
     
     // nothing should have changed
