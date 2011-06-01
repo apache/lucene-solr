@@ -32,6 +32,8 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
 
   @Override public void setUp() throws Exception 
   {
+    // TODO: fix this test to use MockDirectoryFactory
+    System.clearProperty("solr.directoryFactory");
     super.setUp();
     
     File home = new File( getSolrHome() );
