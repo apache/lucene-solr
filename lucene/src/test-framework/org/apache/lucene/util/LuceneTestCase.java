@@ -620,6 +620,12 @@ public abstract class LuceneTestCase extends Assert {
     for (Thread t : Thread.getAllStackTraces().keySet()) {
       rogueThreads.put(t, true);
     }
+    
+    // enable this by default, for IDE consistency with ant tests (as its the default from ant)
+    // TODO: really should be in solr base classes, but some extend LTC directly.
+    if (System.getProperty("solr.directoryFactory") == null) {
+      System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+    }
   }
 
   /**
