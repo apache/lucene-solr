@@ -121,9 +121,9 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-icu4j</artifactId>
-        <version>${project.version}</version>
+        <groupId>com.ibm.icu</groupId>
+        <artifactId>icu4j</artifactId>
+        <version>4.8</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -597,20 +597,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
-              <execution>
-                <id>install-icu4j</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.lucene</groupId>
-                  <artifactId>lucene-icu4j</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>modules/analysis/icu/lib/icu4j-4_8.jar</file>
-                </configuration>
-              </execution>
               <execution>
                 <id>install-xercesImpl</id>
                 <phase>install</phase>
