@@ -59,11 +59,6 @@ Detailed Change List
 
 New Features
 ----------------------
-
-* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete) 
-  component, offering an order of magnitude smaller memory consumption
-  compared to ternary trees and jaspell and very fast lookups at runtime.
-  (Dawid Weiss)
   
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
@@ -261,6 +256,14 @@ Documentation
   (Eric Pugh and hossman)
 
 ======================= 3.x (not yet released) ================
+
+New Features
+----------------------
+
+* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete) 
+  component, offering an order of magnitude smaller memory consumption
+  compared to ternary trees and jaspell and very fast lookups at runtime.
+  (Dawid Weiss)
 
 Bug Fixes
 ----------------------

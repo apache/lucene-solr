@@ -59,6 +59,10 @@ New Features
 
  * LUCENE-152: Add KStem (light stemmer for English).
    (Yonik Seeley via Robert Muir)
+
+ * LUCENE-3135: Add suggesters (autocomplete) to contrib/spellchecker,
+   with three implementations: Jaspell, Ternary Trie, and Finite State.
+   (Andrzej Bialecki, Dawid Weiss, Mike Mccandless, Robert Muir)
  
 API Changes
 
