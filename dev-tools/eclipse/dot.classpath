@@ -79,7 +79,7 @@
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-digester-1.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/benchmark/lib/xercesImpl-2.9.1-patched-XERCESJ-1257.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/icu/lib/icu4j-4_6.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/icu/lib/icu4j-4_8.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/apache-solr-noggit-r1099557.jar"/>
 	<classpathentry kind="lib" path="solr/lib/commons-beanutils-1.7.0.jar"/>

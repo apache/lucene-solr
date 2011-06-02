@@ -25,8 +25,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.reflect.Method;
 
 import com.ibm.icu.text.RuleBasedBreakIterator;
 
@@ -80,11 +78,7 @@ public class RBBIRuleCompiler {
         System.exit(1);
       }
       FileOutputStream os = new FileOutputStream(outputFile);
-      // RBBIRuleBuilder.compileRules(rules, os);
-      Class<?> builderClass = Class.forName("com.ibm.icu.text.RBBIRuleBuilder");
-      Method method = builderClass.getDeclaredMethod("compileRules", String.class, OutputStream.class);
-      method.setAccessible(true);
-      method.invoke(null, rules, os);
+      RuleBasedBreakIterator.compileRules(rules, os);
       os.close();
       System.err.println(outputFile.length() + " bytes.");
     }
