@@ -170,10 +170,10 @@ public abstract class CachingCollector extends Collector {
       int curUpto = 0;
       int curBase = 0;
       int chunkUpto = 0;
-      other.setScorer(cachedScorer);
       curDocs = EMPTY_INT_ARRAY;
       for (SegStart seg : cachedSegs) {
         other.setNextReader(seg.reader, seg.base);
+        other.setScorer(cachedScorer);
         while (curBase + curUpto < seg.end) {
           if (curUpto == curDocs.length) {
             curBase += curDocs.length;
