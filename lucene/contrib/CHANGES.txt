@@ -55,6 +55,11 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+New Features
+
+ * LUCENE-152: Add KStem (light stemmer for English).
+   (Yonik Seeley via Robert Muir)
+ 
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
