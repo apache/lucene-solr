@@ -458,6 +458,9 @@ Bug fixes
   including locks, and fails if the test fails to release all of them.
   (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
 
+* LUCENE-3102: CachingCollector.replay was failing to call setScorer
+  per-segment (Martijn van Groningen via Mike McCandless)
+
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
