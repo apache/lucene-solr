@@ -608,7 +608,7 @@
                   <artifactId>lucene-icu4j</artifactId>
                   <version>${project.version}</version>
                   <packaging>jar</packaging>
-                  <file>modules/analysis/icu/lib/icu4j-4_6.jar</file>
+                  <file>modules/analysis/icu/lib/icu4j-4_8.jar</file>
                 </configuration>
               </execution>
               <execution>
