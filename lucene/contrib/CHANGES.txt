@@ -75,6 +75,10 @@ API Changes
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
    (Sujit Pal via Koji Sekiguchi)
 
+ * LUCENE-3099: Allow subclasses to determine the group value for
+   First/SecondPassGroupingCollector.  (Martijn van Groningen, Mike
+   McCandless)
+
 Build
 
  * LUCENE-3149: Upgrade contrib/icu's ICU jar file to ICU 4.8. 

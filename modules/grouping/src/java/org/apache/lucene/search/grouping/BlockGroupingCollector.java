@@ -49,7 +49,7 @@ import org.apache.lucene.util.PriorityQueue;
  *  being that the documents in each group must always be
  *  indexed as a block.  This collector also fills in
  *  TopGroups.totalGroupCount without requiring the separate
- *  {@link AllGroupsCollector}.  However, this collector does
+ *  {@link TermAllGroupsCollector}.  However, this collector does
  *  not fill in the groupValue of each group; this field
  *  will always be null.
  *
@@ -317,7 +317,8 @@ public class BlockGroupingCollector extends Collector {
 
     final FakeScorer fakeScorer = new FakeScorer();
 
-    final GroupDocs[] groups = new GroupDocs[groupQueue.size() - groupOffset];
+    @SuppressWarnings("unchecked")
+    final GroupDocs<Object>[] groups = new GroupDocs[groupQueue.size() - groupOffset];
     for(int downTo=groupQueue.size()-groupOffset-1;downTo>=0;downTo--) {
       final OneGroup og = groupQueue.pop();
 
@@ -360,7 +361,7 @@ public class BlockGroupingCollector extends Collector {
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, maxDocsPerGroup);
 
-      groups[downTo] = new GroupDocs(topDocs.getMaxScore(),
+      groups[downTo] = new GroupDocs<Object>(topDocs.getMaxScore(),
                                      og.count,
                                      topDocs.scoreDocs,
                                      null,
@@ -375,7 +376,7 @@ public class BlockGroupingCollector extends Collector {
     }
     */
 
-    return new TopGroups(new TopGroups(groupSort.getSort(),
+    return new TopGroups<Object>(new TopGroups<Object>(groupSort.getSort(),
                                        withinGroupSort == null ? null : withinGroupSort.getSort(),
                                        totalHitCount, totalGroupedHitCount, groups),
                          totalGroupCount);

@@ -18,15 +18,14 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.util.BytesRef;
 
 /** Represents one group in the results.
  * 
  * @lucene.experimental */
-public class GroupDocs {
+public class GroupDocs<GROUP_VALUE_TYPE> {
   /** The groupField value for all docs in this group; this
    *  may be null if hits did not have the groupField. */
-  public final BytesRef groupValue;
+  public final GROUP_VALUE_TYPE groupValue;
 
   /** Max score in this group */
   public final float maxScore;
@@ -40,13 +39,13 @@ public class GroupDocs {
   public final int totalHits;
 
   /** Matches the groupSort passed to {@link
-   *  FirstPassGroupingCollector}. */
+   *  AbstractFirstPassGroupingCollector}. */
   public final Comparable[] groupSortValues;
 
   public GroupDocs(float maxScore,
                    int totalHits,
                    ScoreDoc[] scoreDocs,
-                   BytesRef groupValue,
+                   GROUP_VALUE_TYPE groupValue,
                    Comparable[] groupSortValues) {
     this.maxScore = maxScore;
     this.totalHits = totalHits;

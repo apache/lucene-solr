@@ -18,9 +18,7 @@ package org.apache.lucene.search.grouping;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -43,45 +41,42 @@ import java.util.List;
  *
  * @lucene.experimental
  */
-public class AllGroupsCollector extends Collector {
+public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef> {
 
   private static final int DEFAULT_INITIAL_SIZE = 128;
 
   private final String groupField;
   private final SentinelIntSet ordSet;
   private final List<BytesRef> groups;
-  private final BytesRef spareBytesRef = new BytesRef();
 
   private FieldCache.DocTermsIndex index;
+  private final BytesRef spareBytesRef = new BytesRef();
 
   /**
-   * Expert: Constructs a {@link AllGroupsCollector}
+   * Expert: Constructs a {@link AbstractAllGroupsCollector}
    *
    * @param groupField  The field to group by
    * @param initialSize The initial allocation size of the
-   * internal int set and group list
-   * which should roughly match the total
-   * number of expected unique groups. Be aware that the
-   * heap usage is 4 bytes * initialSize.
+   *                    internal int set and group list
+   *                    which should roughly match the total
+   *                    number of expected unique groups. Be aware that the
+   *                    heap usage is 4 bytes * initialSize.
    */
-  public AllGroupsCollector(String groupField, int initialSize) {
-    this.groupField = groupField;
+  public TermAllGroupsCollector(String groupField, int initialSize) {
     ordSet = new SentinelIntSet(initialSize, -1);
     groups = new ArrayList<BytesRef>(initialSize);
+    this.groupField = groupField;
   }
 
   /**
-   * Constructs a {@link AllGroupsCollector}. This sets the
+   * Constructs a {@link AbstractAllGroupsCollector}. This sets the
    * initial allocation size for the internal int set and group
    * list to 128.
    *
    * @param groupField The field to group by
    */
-  public AllGroupsCollector(String groupField) {
+  public TermAllGroupsCollector(String groupField) {
     this(groupField, DEFAULT_INITIAL_SIZE);
-  }
-
-  public void setScorer(Scorer scorer) throws IOException {
   }
 
   public void collect(int doc) throws IOException {
@@ -94,22 +89,7 @@ public class AllGroupsCollector extends Collector {
   }
 
   /**
-   * Returns the total number of groups for the executed search.
-   * This is a convenience method. The following code snippet has the same effect: <pre>getGroups().size()</pre>
-   *
-   * @return The total number of groups for the executed search
-   */
-  public int getGroupCount() {
-    return groups.size();
-  }
-
-  /**
-   * Returns the group values
-   * <p/>
-   * This is an unordered collections of group values. For each group that matched the query there is a {@link BytesRef}
-   * representing a group value.
-   *
-   * @return the group values
+   * {@inheritDoc}
    */
   public Collection<BytesRef> getGroups() {
     return groups;
@@ -128,7 +108,4 @@ public class AllGroupsCollector extends Collector {
     }
   }
 
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
-  }
 }
