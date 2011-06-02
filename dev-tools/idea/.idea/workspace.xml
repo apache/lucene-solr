@@ -5,7 +5,7 @@
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build" />
-      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.1 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.3 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="benchmark contrib" type="JUnit" factoryName="JUnit">
@@ -19,7 +19,7 @@
       <module name="clustering" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/clustering/build" />
-      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.1 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.3 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="common analyzer contrib" type="JUnit" factoryName="JUnit">
@@ -89,7 +89,7 @@
       <module name="lucene" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build" />
-      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=3.1-SNAPSHOT -DtempDir=temp -Dtests.linedocsfile=europarl.lines.txt.gz" />
+      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=3.3-SNAPSHOT -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="memory contrib" type="JUnit" factoryName="JUnit">
@@ -138,7 +138,7 @@
       <module name="solr" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/tests/solr" />
-      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.1 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.3 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="spatial contrib" type="JUnit" factoryName="JUnit">
@@ -166,7 +166,7 @@
       <module name="uima" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/uima/build" />
-      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.1 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.3 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="wordnet contrib" type="JUnit" factoryName="JUnit">
