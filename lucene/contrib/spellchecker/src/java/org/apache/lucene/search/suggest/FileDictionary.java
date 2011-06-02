@@ -1,4 +1,6 @@
-/*
+package org.apache.lucene.search.suggest;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,12 +17,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.spelling.suggest;
 
 import java.io.*;
 
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.solr.util.TermFreqIterator;
+import org.apache.lucene.search.spell.TermFreqIterator;
 
 
 /**

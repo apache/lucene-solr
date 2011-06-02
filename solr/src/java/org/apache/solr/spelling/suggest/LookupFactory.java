@@ -1,4 +1,6 @@
-/*
+package org.apache.solr.spelling.suggest;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +17,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.spelling.suggest;
-
-import java.util.Collections;
-
-import org.apache.solr.util.TermFreqIterator;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 
 /**
- * This wrapper buffers the incoming elements and makes sure they are in
- * random order.
+ * Suggester factory for creating {@link Lookup} instances.
  */
-public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper {
-
-  public UnsortedTermFreqIteratorWrapper(TermFreqIterator source) {
-    super(source);
-    Collections.shuffle(entries);
-  }
+public abstract class LookupFactory {
+  public abstract Lookup create(NamedList params, SolrCore core);
 }

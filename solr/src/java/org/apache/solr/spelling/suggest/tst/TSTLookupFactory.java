@@ -1,4 +1,6 @@
-/*
+package org.apache.solr.spelling.suggest.tst;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,28 +17,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.spelling.suggest.tst;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.tst.TSTLookup;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.spelling.suggest.LookupFactory;
 
 /**
- * The class creates a TST node.
+ * Factory for {@link TSTLookup}
  */
+public class TSTLookupFactory extends LookupFactory {
 
-public class TernaryTreeNode {
-  /** the character stored by a node. */
-	char splitchar;
-	/** a reference object to the node containing character smaller than this node's character. */
-	TernaryTreeNode loKid;
-	/** 
-	 *  a reference object to the node containing character next to this node's character as 
-	 *  occurring in the inserted token.
-	 */
-	TernaryTreeNode eqKid;
-	/** a reference object to the node containing character higher than this node's character. */
-	TernaryTreeNode hiKid;
-	/** 
-	 * used by leaf nodes to store the complete tokens to be added to suggest list while 
-	 * auto-completing the prefix.
-	 */
-	String token;
-	Object val;
+  @Override
+  public Lookup create(NamedList params, SolrCore core) {
+    return new TSTLookup();
+  }
 }

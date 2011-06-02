@@ -1,21 +1,4 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package org.apache.solr.spelling.suggest;
+package org.apache.lucene.search.suggest;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,19 +6,16 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.TermFreqIterator;
 
 public abstract class Lookup {
-  
   /**
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
-    String key;
-    float value;
+    public final String key;
+    public final float value;
     
     public LookupResult(String key, float value) {
       this.key = key;
@@ -74,9 +54,6 @@ public abstract class Lookup {
     }
   }
   
-  /** Initialize the lookup. */
-  public abstract void init(NamedList config, SolrCore core);
-  
   /** Build lookup from a dictionary. Some implementations may require sorted
    * or unsorted keys from the dictionary's iterator - use
    * {@link SortedTermFreqIteratorWrapper} or
@@ -93,7 +70,7 @@ public abstract class Lookup {
     build(tfit);
   }
   
-  protected abstract void build(TermFreqIterator tfit) throws IOException;
+  public abstract void build(TermFreqIterator tfit) throws IOException;
   
   /**
    * Persist the constructed lookup data to a directory. Optional operation.

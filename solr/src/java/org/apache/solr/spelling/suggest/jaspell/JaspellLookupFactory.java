@@ -1,4 +1,6 @@
-/*
+package org.apache.solr.spelling.suggest.jaspell;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,36 +17,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.spelling.suggest.LookupFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
+/**
+ * Factory for {@link JaspellLookup}
+ */
+public class JaspellLookupFactory extends LookupFactory {
+  private static final Logger LOG = LoggerFactory.getLogger(JaspellLookup.class);
 
-public interface TermFreqIterator extends Iterator<String> {
-
-  public float freq();
-  
-  public static class TermFreqIteratorWrapper implements TermFreqIterator {
-    private Iterator wrapped;
-    
-    public TermFreqIteratorWrapper(Iterator wrapped) {
-      this.wrapped = wrapped;
-    }
-
-    public float freq() {
-      return 1.0f;
-    }
-
-    public boolean hasNext() {
-      return wrapped.hasNext();
-    }
-
-    public String next() {
-      return wrapped.next().toString();
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
-    
+  @Override
+  public Lookup create(NamedList params, SolrCore core) {
+    LOG.info("init: " + params);
+    return new JaspellLookup();
   }
 }

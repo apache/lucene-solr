@@ -1,4 +1,6 @@
-/*
+package org.apache.lucene.search.suggest;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,14 +17,41 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
-
+import java.util.Arrays;
 import java.util.Iterator;
 
-/**
- * Marker interface to signal that elements coming from {@link Iterator}
- * come in ascending lexicographic order.
- */
-public interface SortedIterator {
+import org.apache.lucene.search.spell.TermFreqIterator;
 
+/**
+ * A {@link TermFreqIterator} over a sequence of {@link TermFreq}s.
+ */
+public final class TermFreqArrayIterator implements TermFreqIterator {
+  private final Iterator<TermFreq> i;
+  private TermFreq current;
+
+  public TermFreqArrayIterator(Iterator<TermFreq> i) {
+    this.i = i;
+  }
+
+  public TermFreqArrayIterator(TermFreq [] i) {
+    this(Arrays.asList(i));
+  }
+
+  public TermFreqArrayIterator(Iterable<TermFreq> i) {
+    this(i.iterator());
+  }
+  
+  public float freq() {
+    return current.v;
+  }
+  
+  public boolean hasNext() {
+    return i.hasNext();
+  }
+  
+  public String next() {
+    return (current = i.next()).term;
+  }
+
+  public void remove() { throw new UnsupportedOperationException(); }
 }

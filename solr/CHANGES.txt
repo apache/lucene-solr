@@ -23,6 +23,14 @@ on how to get started.
 
 ======================= 3.x (not yet released) ================
 
+New Features
+----------------------
+
+* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete)
+  component, offering an order of magnitude smaller memory consumption
+  compared to ternary trees and jaspell and very fast lookups at runtime.
+  (Dawid Weiss)
+
 Bug Fixes
 ----------------------
 

@@ -21,7 +21,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.HighFrequencyDictionary;
+import org.apache.lucene.search.spell.HighFrequencyDictionary;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.lucene.search.spell;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -50,7 +50,7 @@ public class HighFrequencyDictionary implements Dictionary {
     this.thresh = thresh;
   }
 
-  public final Iterator getWordsIterator() {
+  public final Iterator<String> getWordsIterator() {
     return new HighFrequencyIterator();
   }
 

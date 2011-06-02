@@ -1,4 +1,6 @@
-/*
+package org.apache.lucene.search.suggest;
+
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +17,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.spelling.suggest;
+public final class TermFreq {
+  public final String term;
+  public final float v;
 
-import java.util.Collections;
-
-import org.apache.solr.util.SortedIterator;
-import org.apache.solr.util.TermFreqIterator;
-
-/**
- * This wrapper buffers incoming elements and makes sure they are sorted in
- * ascending lexicographic order.
- */
-public class SortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWrapper implements SortedIterator {
-
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source) {
-    super(source);
-    Collections.sort(entries);
+  public TermFreq(String term, float v) {
+    this.term = term;
+    this.v = v;
   }
 }
