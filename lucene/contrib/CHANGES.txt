@@ -130,6 +130,12 @@ New Features
    case where the indexing rate is lowish but the reopen rate is
    highish, to take load off the IO system.  (Mike McCandless)
 
+ * LUCENE-3129: Added BlockGroupingCollector, a single pass
+   grouping collector which is faster than the two-pass approach, and
+   also computes the total group count, but requires that every
+   document sharing the same group was indexed as a doc block
+   (IndexWriter.add/updateDocuments).  (Mike McCandless)
+
 Optimizations
 
  * LUCENE-3040: Switch all analysis consumers (highlighter, morelikethis, memory, ...)
