@@ -22,6 +22,7 @@ Changes in runtime behavior
   does not store norms. (Shai Erera, Mike McCandless)
   
 Bug fixes
+
 * LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
   code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
   including locks, and fails if the test fails to release all of them.
@@ -35,8 +36,7 @@ New Features
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.
-  (Nicolas Lalevée, Luca Stancapiano via ryan)
-
+  (Nicolas LalevÃ©e, Luca Stancapiano via ryan)
 
 ======================= Lucene 3.2.0 =======================
 
