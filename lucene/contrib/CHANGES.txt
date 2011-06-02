@@ -64,6 +64,12 @@ New Features
    with three implementations: Jaspell, Ternary Trie, and Finite State.
    (Andrzej Bialecki, Dawid Weiss, Mike Mccandless, Robert Muir)
  
+ * LUCENE-3129: Added BlockGroupingCollector, a single pass
+   grouping collector which is faster than the two-pass approach, and
+   also computes the total group count, but requires that every
+   document sharing the same group was indexed as a doc block
+   (IndexWriter.add/updateDocuments).  (Mike McCandless)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
@@ -129,12 +135,6 @@ New Features
    caches small segments in RAM.  This is useful, in the near-real-time
    case where the indexing rate is lowish but the reopen rate is
    highish, to take load off the IO system.  (Mike McCandless)
-
- * LUCENE-3129: Added BlockGroupingCollector, a single pass
-   grouping collector which is faster than the two-pass approach, and
-   also computes the total group count, but requires that every
-   document sharing the same group was indexed as a doc block
-   (IndexWriter.add/updateDocuments).  (Mike McCandless)
 
 Optimizations
 

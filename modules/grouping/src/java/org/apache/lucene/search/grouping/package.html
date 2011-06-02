@@ -89,6 +89,7 @@ But the downside is it's somewhat slower to run, and requires more RAM
 <ul>
   <li> For the two-pass grouping collector, the group field must be a
     single-valued indexed field.
+    {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.search.FieldCache.DocTermsIndex} for this field.
   <li> Unlike Solr's implementation, this module cannot group by
     function query values nor by arbitrary queries.
   <li> Sharding is not directly supported, though is not too
