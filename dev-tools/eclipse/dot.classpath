@@ -54,27 +54,27 @@
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/main/java"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/test/java"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/test/resources"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/main/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test/resources"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/extras/main/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/extras/test/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/extras/test/resources"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/main/java"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/test/java"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/test/resources"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/main/java"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/main/resources"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/test/java"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/test/resources"/>
+	<classpathentry kind="src" path="solr/contrib/clustering/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/clustering/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/clustering/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/uima/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/uima/src/resources"/>
+	<classpathentry kind="src" path="solr/contrib/uima/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/uima/src/test-files"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_6.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-collections-3.1.jar"/>

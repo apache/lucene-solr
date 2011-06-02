@@ -102,11 +102,11 @@
     <directory>${build-directory}</directory>
     <outputDirectory>${build-directory}/classes</outputDirectory>
     <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>src/test-files</directory>
       </testResource>
       <testResource>
         <directory>../../src/test-files</directory>

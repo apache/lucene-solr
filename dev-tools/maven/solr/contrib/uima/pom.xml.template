@@ -106,14 +106,16 @@
     <directory>${build-directory}</directory>
     <outputDirectory>${build-directory}/classes</outputDirectory>
     <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <resources>
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>src/resources</directory>
       </resource>
     </resources>
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>

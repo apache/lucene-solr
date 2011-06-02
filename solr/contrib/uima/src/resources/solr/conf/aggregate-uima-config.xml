@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+  <!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements. See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version
+    2.0 (the "License"); you may not use this file except in compliance
+    with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0 Unless required by
+    applicable law or agreed to in writing, software distributed under
+    the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+    OR CONDITIONS OF ANY KIND, either express or implied. See the
+    License for the specific language governing permissions and
+    limitations under the License.
+  -->
+
+  <updateRequestProcessorChain name="uima">
+    <processor class="org.apache.solr.uima.processor.UIMAUpdateRequestProcessorFactory">
+      <lst name="uimaConfig">
+        <lst name="runtimeParameters">
+          <str name="keyword_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="concept_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="lang_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="cat_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="entities_apikey">VALID_ALCHEMYAPI_KEY</str>
+          <str name="oc_licenseID">VALID_OPENCALAIS_KEY</str>
+        </lst>
+        <str name="analysisEngine">/org/apache/uima/desc/OverridingParamsExtServicesAE.xml</str>
+        <lst name="analyzeFields">
+          <bool name="merge">false</bool>
+          <arr name="fields">
+            <str>text</str>
+            <str>title</str>
+          </arr>
+        </lst>
+        <lst name="fieldMappings">
+          <lst name="mapping">
+            <str name="type">org.apache.uima.jcas.tcas.Annotation</str>
+            <str name="feature">convertText</str>
+            <str name="field">tag</str>
+          </lst>
+        </lst>
+      </lst>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
