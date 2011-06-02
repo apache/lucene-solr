@@ -89,3 +89,6 @@ See http://junit.sourceforge.net/cpl-v10.html
 JLine (under contrib/lucli/lib/jline.jar) is licensed under the BSD License.
 See http://jline.sourceforge.net/
 
+This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
+
