@@ -1,0 +1,8 @@
+Apache Lucene Suggest
+Copyright 2011 The Apache Software Foundation
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
+
+This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)

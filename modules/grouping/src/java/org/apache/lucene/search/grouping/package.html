@@ -3,50 +3,50 @@
 
 <p>This module enables search result grouping with Lucene, where hits
 with the same value in the specified single-valued group field are
-grouped together.  For example, if you group by the <tt>author</tt>
-field, then all documents with the same value in the <tt>author</tt>
+grouped together.  For example, if you group by the <code>author</code>
+field, then all documents with the same value in the <code>author</code>
 field fall into a single group.</p>
 
 <p>Grouping requires a number of inputs:</p>
 
   <ul>
-    <li> <tt>groupField</tt>: this is the field used for grouping.
-      For example, if you use the <tt>author</tt> field then each
+    <li> <code>groupField</code>: this is the field used for grouping.
+      For example, if you use the <code>author</code> field then each
       group has all books by the same author.  Documents that don't
       have this field are grouped under a single group with
-      a <tt>null</tt> group value.
+      a <code>null</code> group value.
 
-    <li> <tt>groupSort</tt>: how the groups are sorted.  For sorting
+    <li> <code>groupSort</code>: how the groups are sorted.  For sorting
       purposes, each group is "represented" by the highest-sorted
-      document according to the <tt>groupSort</tt> within it.  For
+      document according to the <code>groupSort</code> within it.  For
       example, if you specify "price" (ascending) then the first group
       is the one with the lowest price book within it.  Or if you
       specify relevance group sort, then the first group is the one
       containing the highest scoring book.
 
-    <li> <tt>topNGroups</tt>: how many top groups to keep.  For
+    <li> <code>topNGroups</code>: how many top groups to keep.  For
       example, 10 means the top 10 groups are computed.
 
-    <li> <tt>groupOffset</tt>: which "slice" of top groups you want to
+    <li> <code>groupOffset</code>: which "slice" of top groups you want to
       retrieve.  For example, 3 means you'll get 7 groups back
-      (assuming <tt>topNGroups</tt> is 10).  This is useful for
+      (assuming <code>topNGroups</code> is 10).  This is useful for
       paging, where you might show 5 groups per page.
 
-    <li> <tt>withinGroupSort</tt>: how the documents within each group
+    <li> <code>withinGroupSort</code>: how the documents within each group
       are sorted.  This can be different from the group sort.
 
-    <li> <tt>maxDocsPerGroup</tt>: how many top documents within each
+    <li> <code>maxDocsPerGroup</code>: how many top documents within each
       group to keep.
 
-    <li> <tt>withinGroupOffset</tt>: which "slice" of top
+    <li> <code>withinGroupOffset</code>: which "slice" of top
       documents you want to retrieve from each group.
 
   </ul>
 
 <p>The implementation is two-pass: the first pass ({@link
-  org.apache.lucene.search.grouping.FirstPassGroupingCollector})
+  org.apache.lucene.search.grouping.TermFirstPassGroupingCollector})
   gathers the top groups, and the second pass ({@link
-  org.apache.lucene.search.grouping.SecondPassGroupingCollector})
+  org.apache.lucene.search.grouping.TermSecondPassGroupingCollector})
   gathers documents within those groups.  If the search is costly to
   run you may want to use the {@link
   org.apache.lucene.search.CachingCollector} class, which
@@ -55,28 +55,42 @@ field fall into a single group.</p>
   hold all hits.  Results are returned as a {@link
   org.apache.lucene.search.grouping.TopGroups} instance.</p>
 
+<p>
+  This module abstracts away what defines group and how it is collected. All grouping collectors
+  are abstract and have currently term based implementations. One can implement
+  collectors that for example group on multiple fields.
+</p>
+
+<p>
+  This module abstracts away what defines group and how it is collected. All grouping collectors
+  are abstract and have currently term based implementations. One can implement
+  collectors that for example group on multiple fields.
+</p>
+
 <p>Known limitations:</p>
 <ul>
-  <li> The group field must be a single-valued indexed field.
+  <li> For the two-pass grouping collector, the group field must be a
+    single-valued indexed field.
     {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.search.FieldCache.DocTermsIndex} for this field.
-  <li> Unlike Solr's implementation, this module cannot group by
-    function query values nor by arbitrary queries.
+  <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
+    implementations for grouping based on terms.
   <li> Sharding is not directly supported, though is not too
     difficult, if you can merge the top groups and top documents per
     group yourself.
 </ul>
 
-<p>Typical usage looks like this (using the {@link org.apache.lucene.search.CachingCollector}):</p>
+<p>Typical usage for the generic two-pass collector looks like this
+  (using the {@link org.apache.lucene.search.CachingCollector}):</p>
 
 <pre class="prettyprint">
-  FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
+  TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
 
   boolean cacheScores = true;
   double maxCacheRAMMB = 4.0;
   CachingCollector cachedCollector = CachingCollector.create(c1, cacheScores, maxCacheRAMMB);
   s.search(new TermQuery(new Term("content", searchTerm)), cachedCollector);
 
-  Collection<SearchGroup> topGroups = c1.getTopGroups(groupOffset, fillFields);
+  Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(groupOffset, fillFields);
 
   if (topGroups == null) {
     // No groups matched
@@ -86,12 +100,12 @@ field fall into a single group.</p>
   boolean getScores = true;
   boolean getMaxScores = true;
   boolean fillFields = true;
-  SecondPassGroupingCollector c2 = new SecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
+  TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
 
   //Optionally compute total group count
-  AllGroupsCollector allGroupsCollector = null;
+  TermAllGroupsCollector allGroupsCollector = null;
   if (requiredTotalGroupCount) {
-    allGroupsCollector = new AllGroupsCollector("author");
+    allGroupsCollector = new TermAllGroupsCollector("author");
     c2 = MultiCollector.wrap(c2, allGroupsCollector);
   }
 
@@ -103,13 +117,58 @@ field fall into a single group.</p>
     s.search(new TermQuery(new Term("content", searchTerm)), c2);
   }
         
-  TopGroups groupsResult = c2.getTopGroups(docOffset);
+  TopGroups<BytesRef> groupsResult = c2.getTopGroups(docOffset);
   if (requiredTotalGroupCount) {
-    groupResult = new TopGroups(groupsResult, allGroupsCollector.getGroupCount());
+    groupResult = new TopGroups<BytesRef>(groupsResult, allGroupsCollector.getGroupCount());
   }
 
   // Render groupsResult...
 </pre>
+
+<p>To use the single-pass <code>BlockGroupingCollector</code>,
+   first, at indexing time, you must ensure all docs in each group
+   are added as a block, and you have some way to find the last
+   document of each group.  One simple way to do this is to add a
+   marker binary field:</p>
+
+<pre class="prettyprint">
+  // Create Documents from your source:
+  List&lt;Document&gt; oneGroup = ...;
+  
+  Field groupEndField = new Field("groupEnd", "x", Field.Store.NO, Field.Index.NOT_ANALYZED);
+  groupEndField.setOmitTermFreqAndPositions(true);
+  groupEndField.setOmitNorms(true);
+  oneGroup.get(oneGroup.size()-1).add(groupEndField);
+
+  // You can also use writer.updateDocuments(); just be sure you
+  // replace an entire previous doc block with this new one.  For
+  // example, each group could have a "groupID" field, with the same
+  // value for all docs in this group:
+  writer.addDocuments(oneGroup);
+</pre>
+
+Then, at search time, do this up front:
+
+<pre class="prettyprint">
+  // Set this once in your app & save away for reusing across all queries:
+  Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("end", "x"))));
+</pre>
+
+Finally, do this per search:
+
+<pre class="prettyprint">
+  // Per search:
+  BlockGroupingCollector c = new BlockGroupingCollector(groupSort, groupOffset+topNGroups, needsScores, groupEndDocs);
+  s.search(new TermQuery(new Term("content", searchTerm)), c);
+  TopGroups groupsResult = c.getTopGroups(withinGroupSort, groupOffset, docOffset, docOffset+docsPerGroup, fillFields);
+
+  // Render groupsResult...
+</pre>
+
+Note that the <code>groupValue</code> of each <code>GroupDocs</code>
+will be <code>null</code>, so if you need to present this value you'll
+have to separately retrieve it (for example using stored
+fields, <code>FieldCache</code>, etc.).
 
 </body>
 </html>

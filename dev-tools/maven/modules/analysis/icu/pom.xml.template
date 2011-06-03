@@ -70,8 +70,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-icu4j</artifactId>
+      <groupId>com.ibm.icu</groupId>
+      <artifactId>icu4j</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

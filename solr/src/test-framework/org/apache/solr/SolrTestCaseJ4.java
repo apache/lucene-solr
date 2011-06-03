@@ -19,6 +19,7 @@
 package org.apache.solr;
 
 
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
@@ -71,6 +72,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     deleteCore();
     resetExceptionIgnores();
     endTrackingSearchers();
+  }
+  
+  // SOLR-2279: hack to shut these directories down
+  // we still keep the ability to track open index files this way
+  public static void closeDirectories() throws Exception {
+    for (MockDirectoryWrapper d : stores.keySet()) {
+      if (d.isOpen()) {
+        d.close();
+      }
+    }
   }
 
   @Override
@@ -270,6 +281,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void deleteCore() throws Exception {
     log.info("###deleteCore" );
     if (h != null) { h.close(); }
+    closeDirectories();
     if (dataDir != null) {
       String skip = System.getProperty("solr.test.leavedatadir");
       if (null != skip && 0 != skip.trim().length()) {

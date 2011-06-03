@@ -1,5 +1,8 @@
 Lucene contrib change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
   
 Build
@@ -52,10 +55,34 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+New Features
+
+ * LUCENE-152: Add KStem (light stemmer for English).
+   (Yonik Seeley via Robert Muir)
+
+ * LUCENE-3135: Add suggesters (autocomplete) to contrib/spellchecker,
+   with three implementations: Jaspell, Ternary Trie, and Finite State.
+   (Andrzej Bialecki, Dawid Weiss, Mike Mccandless, Robert Muir)
+ 
+ * LUCENE-3129: Added BlockGroupingCollector, a single pass
+   grouping collector which is faster than the two-pass approach, and
+   also computes the total group count, but requires that every
+   document sharing the same group was indexed as a doc block
+   (IndexWriter.add/updateDocuments).  (Mike McCandless)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
    (Sujit Pal via Koji Sekiguchi)
+
+ * LUCENE-3099: Allow subclasses to determine the group value for
+   First/SecondPassGroupingCollector.  (Martijn van Groningen, Mike
+   McCandless)
+
+Build
+
+ * LUCENE-3149: Upgrade contrib/icu's ICU jar file to ICU 4.8. 
+   (Robert Muir)
 
 ======================= Lucene 3.2.0 =======================
 

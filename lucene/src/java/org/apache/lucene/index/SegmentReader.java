@@ -568,8 +568,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     SegmentNorms norm = norms.get(field);
-    if (norm == null)                             // not an indexed field
-      return;
+    if (norm == null) {
+      // field does not store norms
+      throw new IllegalStateException("Cannot setNorm for field " + field + ": norms were omitted");
+    }
 
     normsDirty = true;
     norm.copyOnWrite()[doc] = value;                    // set the value

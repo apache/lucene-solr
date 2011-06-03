@@ -1,5 +1,8 @@
 Lucene Change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -233,6 +236,9 @@ Changes in Runtime Behavior
   
   (Mike McCandless, Michael Busch, Simon Willnauer)
 
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+  
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
@@ -427,11 +433,6 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
-  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
-  including locks, and fails if the test fails to release all of them.
-  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
-
 ======================= Lucene 3.x (not yet released) ================
 
 Changes in backwards compatibility policy
@@ -446,11 +447,29 @@ Changes in runtime behavior
   lock file is not stored in the index has changed.  This means you
   will see a different lucene-XXX-write.lock in your lock directory.
   (Robert Muir, Uwe Schindler, Mike McCandless)
+  
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+  
+Bug fixes
+
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+
+* LUCENE-3102: CachingCollector.replay was failing to call setScorer
+  per-segment (Martijn van Groningen via Mike McCandless)
 
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
   (Robert Muir, Dawid Weiss, Mike McCandless)
+
+Build
+
+* LUCENE-1344: Create OSGi bundle using dev-tools/maven.
+  (Nicolas Lalevée, Luca Stancapiano via ryan)
 
 ======================= Lucene 3.2.0 =======================
 

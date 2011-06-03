@@ -121,9 +121,9 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-icu4j</artifactId>
-        <version>${project.version}</version>
+        <groupId>com.ibm.icu</groupId>
+        <artifactId>icu4j</artifactId>
+        <version>4.8</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -561,6 +561,31 @@
           </execution>
         </executions>
       </plugin>
+      
+      <!-- Adding OSGI metadata to the JAR without changing the packaging type. -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.4</version>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      
     </plugins>
   </build>
   <profiles>
@@ -572,20 +597,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-install-plugin</artifactId>
             <executions>
-              <execution>
-                <id>install-icu4j</id>
-                <phase>install</phase>
-                <goals>
-                  <goal>install-file</goal>
-                </goals>
-                <configuration>
-                  <groupId>org.apache.lucene</groupId>
-                  <artifactId>lucene-icu4j</artifactId>
-                  <version>${project.version}</version>
-                  <packaging>jar</packaging>
-                  <file>modules/analysis/icu/lib/icu4j-4_6.jar</file>
-                </configuration>
-              </execution>
               <execution>
                 <id>install-xercesImpl</id>
                 <phase>install</phase>

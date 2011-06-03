@@ -38,6 +38,8 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
   
   @Override public void setUp() throws Exception 
   {    
+    // TODO: fix this test to use MockDirectoryFactory
+    System.clearProperty("solr.directoryFactory");
     super.setUp();
 
     jetty = new JettySolrRunner( context, 0 );

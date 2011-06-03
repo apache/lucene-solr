@@ -68,6 +68,7 @@
   <property name="tests.seed" value="random" />
   <property name="tests.nightly" value="false" />
   <property name="tests.verbose" value="false" />
+  <property name="tests.directory" value="random" />
 
   <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
     <isset property="use.fsdir"/>

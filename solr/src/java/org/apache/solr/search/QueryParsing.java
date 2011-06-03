@@ -32,6 +32,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -382,6 +384,22 @@ public class QueryParsing {
     }
   }
 
+  static void writeFieldVal(BytesRef val, FieldType ft, Appendable out, int flags) throws IOException {
+    if (ft != null) {
+      try {
+        CharsRef readable = new CharsRef();
+        ft.indexedToReadable(val, readable);
+        out.append(readable);
+      } catch (Exception e) {
+        out.append("EXCEPTION(val=");
+        out.append(val.utf8ToString());
+        out.append(")");
+      }
+    } else {
+      out.append(val.utf8ToString());
+    }
+  }
+
   /**
    * @see #toString(Query,IndexSchema)
    */
@@ -392,14 +410,14 @@ public class QueryParsing {
       TermQuery q = (TermQuery) query;
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
-      writeFieldVal(t.text(), ft, out, flags);
+      writeFieldVal(t.bytes(), ft, out, flags);
     } else if (query instanceof TermRangeQuery) {
       TermRangeQuery q = (TermRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesLower() ? '[' : '{');
-      String lt = q.getLowerTerm().utf8ToString();
-      String ut = q.getUpperTerm().utf8ToString();
+      BytesRef lt = q.getLowerTerm();
+      BytesRef ut = q.getUpperTerm();
       if (lt == null) {
         out.append('*');
       } else {
