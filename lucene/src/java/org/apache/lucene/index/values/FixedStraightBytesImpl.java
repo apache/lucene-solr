@@ -155,7 +155,6 @@ class FixedStraightBytesImpl {
           throws IOException {
         super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc);
         this.size = size;
-        this.missingValue.bytesValue = new BytesRef(size);
         this.maxDoc = maxDoc;
       }
 

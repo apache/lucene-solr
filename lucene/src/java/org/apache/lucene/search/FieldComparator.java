@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
@@ -337,7 +336,6 @@ public abstract class FieldComparator {
     private final String field;
     private double bottom;
     private final float missingValue;
-    private MissingValue missing;
 
     FloatDocValuesComparator(int numHits, String field, Float missingValue) {
       values = new double[numHits];
@@ -372,8 +370,7 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      final double value = currentReaderValues.getFloat(doc);
-      values[slot] = value == missing.doubleValue ? missingValue : value; 
+      values[slot] = currentReaderValues.getFloat(doc); 
     }
 
     @Override
@@ -381,7 +378,6 @@ public abstract class FieldComparator {
       final DocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource(); 
-        missing = currentReaderValues.getMissing();
       }
       return this;
     }
@@ -612,7 +608,6 @@ public abstract class FieldComparator {
     private final String field;
     private long bottom;
     private int missingValue;
-    private MissingValue missing;
 
     IntDocValuesComparator(int numHits, String field, Integer missingValue) {
       values = new long[numHits];
@@ -651,8 +646,7 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      final long value = currentReaderValues.getInt(doc);
-      values[slot] = value == missing.longValue ? missingValue : value; 
+      values[slot] = currentReaderValues.getInt(doc); 
     }
 
     @Override
@@ -660,7 +654,6 @@ public abstract class FieldComparator {
       DocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource();
-        missing = currentReaderValues.getMissing();
       }
       return this;
     }

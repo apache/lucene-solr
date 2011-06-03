@@ -17,7 +17,6 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -46,9 +45,9 @@ public class Floats {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
   private static final int INT_DEFAULT = Float
-      .floatToRawIntBits(Float.NEGATIVE_INFINITY);
+      .floatToRawIntBits(0.0f);
   private static final long LONG_DEFAULT = Double
-      .doubleToRawLongBits(Double.NEGATIVE_INFINITY);
+      .doubleToRawLongBits(0.0d);
 
   
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
@@ -298,7 +297,6 @@ public class Floats {
 
       Source4(final float[] values ) throws IOException {
         this.values = values;
-        missingValue.doubleValue = Float.NEGATIVE_INFINITY;
       }
 
       @Override
@@ -309,17 +307,11 @@ public class Floats {
       @Override
       public DocValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
-        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, ValueType.FLOAT_32, this, maxDoc) {
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
               return pos = NO_MORE_DOCS;
-            while (missing.doubleValue == source.getFloat(target)) {
-              if (++target >= numDocs) {
-                return pos = NO_MORE_DOCS;
-              }
-            }
             floatsRef.floats[floatsRef.offset] = source.getFloat(target);
             return pos = target;
           }
@@ -337,7 +329,6 @@ public class Floats {
 
       Source8(final double[] values) throws IOException {
         this.values = values;
-        missingValue.doubleValue = Double.NEGATIVE_INFINITY;
       }
 
       @Override
@@ -348,17 +339,11 @@ public class Floats {
       @Override
       public DocValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
-        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, maxDoc) {
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
               return pos = NO_MORE_DOCS;
-            while (missing.doubleValue == source.getFloat(target)) {
-              if (++target >= numDocs) {
-                return pos = NO_MORE_DOCS;
-              }
-            }
             floatsRef.floats[floatsRef.offset] = source.getFloat(target);
             return pos = target;
           }
@@ -406,11 +391,7 @@ public class Floats {
       if (target >= maxDoc)
         return pos = NO_MORE_DOCS;
       dataIn.seek(fp + (target * precision));
-      int intBits;
-      while ((intBits = dataIn.readInt()) == INT_DEFAULT) {
-        if (++target >= maxDoc)
-          return pos = NO_MORE_DOCS;
-      }
+      final int intBits = dataIn.readInt();
       floatsRef.floats[0] = Float.intBitsToFloat(intBits);
       floatsRef.offset = 0;
       return pos = target;
@@ -443,13 +424,8 @@ public class Floats {
         return pos = NO_MORE_DOCS;
       }
       dataIn.seek(fp + (target * precision));
-      long value;
-      while ((value = dataIn.readLong()) == LONG_DEFAULT) {
-        if (++target >= maxDoc)
-          return pos = NO_MORE_DOCS;
-      }
-      floatsRef.floats[0] = Double.longBitsToDouble(value);
-      floatsRef.offset = 0;
+      final long value = dataIn.readLong();
+      floatsRef.floats[floatsRef.offset] = Double.longBitsToDouble(value);
       return pos = target;
     }
 

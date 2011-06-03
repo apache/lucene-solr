@@ -137,7 +137,6 @@ class VarStraightBytesImpl {
       public Source(IndexInput datIn, IndexInput idxIn) throws IOException {
         super(datIn, idxIn, new PagedBytes(PAGED_BYTES_BITS), idxIn.readVLong());
         addresses = PackedInts.getReader(idxIn);
-        missingValue.bytesValue = new BytesRef(0); // empty
       }
 
       @Override

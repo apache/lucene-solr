@@ -199,11 +199,11 @@ class FixedSortedBytesImpl {
 
       @Override
       public int ord(int docID) {
-        return (int) index.get(docID);
+        return (int) index.get(docID) -1;
       }
 
       @Override
-      public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
+      public int getByValue(BytesRef bytes, BytesRef tmpRef) {
         return binarySearch(bytes, tmpRef, 0, numValue - 1);
       }
 

@@ -169,8 +169,6 @@ public abstract class DocValues implements Closeable {
    * {@link Source} defines 3 {@link ValueType} //TODO finish this
    */
   public static abstract class Source {
-    // TODO we might need a close method here to null out the internal used arrays?!
-    protected final MissingValue missingValue = new MissingValue();
 
     /**
      * Returns a <tt>long</tt> for the given document id or throws an
@@ -179,8 +177,6 @@ public abstract class DocValues implements Closeable {
      * 
      * @throws UnsupportedOperationException
      *           if this source doesn't support <tt>long</tt> values.
-     * @see MissingValue
-     * @see #getMissing()
      */
     public long getInt(int docID) {
       throw new UnsupportedOperationException("ints are not supported");
@@ -193,8 +189,6 @@ public abstract class DocValues implements Closeable {
      * 
      * @throws UnsupportedOperationException
      *           if this source doesn't support <tt>double</tt> values.
-     * @see MissingValue
-     * @see #getMissing()
      */
     public double getFloat(int docID) {
       throw new UnsupportedOperationException("floats are not supported");
@@ -207,8 +201,6 @@ public abstract class DocValues implements Closeable {
      * 
      * @throws UnsupportedOperationException
      *           if this source doesn't support <tt>byte[]</tt> values.
-     * @see MissingValue
-     * @see #getMissing()
      */
     public BytesRef getBytes(int docID, BytesRef ref) {
       throw new UnsupportedOperationException("bytes are not supported");
@@ -227,17 +219,6 @@ public abstract class DocValues implements Closeable {
      */
     public DocValuesEnum getEnum() throws IOException {
       return getEnum(null);
-    }
-
-    /**
-     * Returns a {@link MissingValue} instance for this {@link Source}.
-     * Depending on the type of this {@link Source} consumers of the API should
-     * check if the value returned from on of the getter methods represents a
-     * value for a missing document or rather a value for a document no value
-     * was specified during indexing.
-     */
-    public MissingValue getMissing() {
-      return missingValue;
     }
 
     /**
@@ -310,7 +291,13 @@ public abstract class DocValues implements Closeable {
 
     @Override
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
-      return getByOrd(ord(docID), bytesRef);
+      final int ord = ord(docID);
+      if (ord < 0) {
+        bytesRef.length = 0;
+      } else {
+        getByOrd(ord , bytesRef);
+      }
+      return bytesRef;
     }
 
     /**
@@ -323,22 +310,18 @@ public abstract class DocValues implements Closeable {
     /** Returns value for specified ord. */
     public abstract BytesRef getByOrd(int ord, BytesRef bytesRef);
 
-    public static class LookupResult {
-      /** <code>true</code> iff the values was found */
-      public boolean found;
-      /**
-       * the ordinal of the value if found or the ordinal of the value if it
-       * would be present in the source
-       */
-      public int ord;
-    }
 
     /**
-     * Finds the largest ord whose value is less or equal to the requested
-     * value. If {@link LookupResult#found} is true, then ord is an exact match.
-     * The returned {@link LookupResult} may be reused across calls.
+     * Finds the ordinal whose value is greater or equal to the given value.
+     * 
+     * @return the given values ordinal if found or otherwise
+     *         <code>(-(ord)-1)</code>, defined as the ordinal of the first
+     *         element that is greater than the given value. This guarantees
+     *         that the return value will always be &gt;= 0 if the given value
+     *         is found.
+     * 
      */
-    public final LookupResult getByValue(BytesRef value) {
+    public final int getByValue(BytesRef value) {
       return getByValue(value, new BytesRef());
     }
 
@@ -350,35 +333,12 @@ public abstract class DocValues implements Closeable {
      * @param tmpRef
      *          a temporary {@link BytesRef} instance used to compare internal
      *          values to the given value. Must not be <code>null</code>
-     * @return the {@link LookupResult}
+     * @return the given values ordinal if found or otherwise
+     *         <code>(-(ord)-1)</code>, defined as the ordinal of the first
+     *         element that is greater than the given value. This guarantees
+     *         that the return value will always be &gt;= 0 if the given value
+     *         is found.
      */
-    public abstract LookupResult getByValue(BytesRef value, BytesRef tmpRef);
+    public abstract int getByValue(BytesRef value, BytesRef tmpRef);
   }
-
-  /**
-   * {@link MissingValue} is used by {@link Source} implementations to define an
-   * Implementation dependent value for documents that had no value assigned
-   * during indexing. Its purpose is similar to a default value but since the a
-   * missing value across {@link ValueType} and its implementations can be highly
-   * dynamic the actual values are not constant but defined per {@link Source}
-   * through the {@link MissingValue} struct. The actual value used to indicate
-   * a missing value can even changed within the same field from one segment to
-   * another. Certain {@link Ints} implementations for instance use a value
-   * outside of value set as the missing value.
-   */
-  public final static class MissingValue {
-    public long longValue;
-    public double doubleValue;
-    public BytesRef bytesValue;
-
-    /**
-     * Copies the values from the given {@link MissingValue}.
-     */
-    public final void copy(MissingValue values) {
-      longValue = values.longValue;
-      doubleValue = values.doubleValue;
-      bytesValue = values.bytesValue;
-    }
-  }
-
 }

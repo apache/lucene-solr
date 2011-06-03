@@ -29,7 +29,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -40,7 +39,9 @@ import org.apache.lucene.util.packed.PackedInts;
  * */
 class PackedIntsImpl {
 
-  private static final String CODEC_NAME = "PackedInts";
+  private static final String CODEC_NAME = "Ints";
+  private static final byte PACKED = 0x00;
+  private static final byte FIXED = 0x01;
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
@@ -54,7 +55,6 @@ class PackedIntsImpl {
     private long maxValue;
     private boolean started;
     private final String id;
-    private final OpenBitSet defaultValues = new OpenBitSet(1);
     private int lastDocId = -1;
     private IndexOutput datOut;
 
@@ -93,13 +93,11 @@ class PackedIntsImpl {
           maxValue = v;
         }
       }
-      defaultValues.set(docID);
       lastDocId = docID;
 
       if (docID >= docToValue.length) {
         final long len = docToValue.length;
         docToValue = ArrayUtil.grow(docToValue, 1 + docID);
-        defaultValues.ensureCapacity(docToValue.length);
         bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG
             * ((docToValue.length) - len));
       }
@@ -112,40 +110,51 @@ class PackedIntsImpl {
         if (!started) {
           minValue = maxValue = 0;
         }
-        // TODO -- long can't work right since it's signed
-        datOut.writeLong(minValue);
-        // write a default value to recognize docs without a value for that
-        // field
-        final long defaultValue = ++maxValue - minValue;
-        datOut.writeLong(defaultValue);
-        PackedInts.Writer w = PackedInts.getWriter(datOut, docCount,
-            PackedInts.bitsRequired(maxValue - minValue));
-        final int firstDoc = defaultValues.nextSetBit(0);
-        lastDocId++;
-        if (firstDoc != -1) { 
-          for (int i = 0; i < firstDoc; i++) {
-            w.add(defaultValue); // fill with defaults until first bit set
-          }
+        // if we exceed the range of positive longs we must switch to fixed ints
+        if ((maxValue - minValue) < (((long)1) << 63) && (maxValue - minValue) > 0) {
+          writePackedInts(docCount);
+        } else {
+          writeFixedInts(docCount);
+        }
 
-          for (int i = firstDoc; i < lastDocId;) {
-            w.add(docToValue[i] - minValue);
-            final int nextValue = defaultValues.nextSetBit(++i);
-            for (; i < nextValue; i++) {
-              w.add(defaultValue); // fill all gaps
-            }
-          }
-        }
-        for (int i = lastDocId; i < docCount; i++) {
-          w.add(defaultValue);
-        }
-        w.finish();
       } finally {
         datOut.close();
         bytesUsed
             .addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG * docToValue.length));
         docToValue = null;
       }
+    }
 
+    private void writeFixedInts(int docCount) throws IOException {
+      datOut.writeByte(FIXED);
+      datOut.writeInt(docCount);
+      for (int i = 0; i < docToValue.length; i++) {
+        datOut.writeLong(docToValue[i]); // write full array - we use 0 as default
+      }
+      for (int i = docToValue.length; i < docCount; i++) {
+        datOut.writeLong(0); // fill with defaults values
+      }
+    }
+
+    private void writePackedInts(int docCount) throws IOException {
+      datOut.writeByte(PACKED);
+      // TODO -- long can't work right since it's signed
+      datOut.writeLong(minValue);
+      // write a default value to recognize docs without a value for that
+      // field
+      final long defaultValue = maxValue>= 0 && minValue <=0 ? 0-minValue : ++maxValue-minValue;
+      datOut.writeLong(defaultValue);
+      PackedInts.Writer w = PackedInts.getWriter(datOut, docCount,
+          PackedInts.bitsRequired(maxValue-minValue));
+      final int limit = docToValue.length > docCount ? docCount : docToValue.length;
+      for (int i = 0; i < limit; i++) {
+        w.add(docToValue[i] == 0 ? defaultValue : docToValue[i] - minValue);
+      }
+      for (int i = limit; i < docCount; i++) {
+        w.add(defaultValue);
+      }
+      
+      w.finish();
     }
 
     @Override
@@ -175,6 +184,7 @@ class PackedIntsImpl {
    */
   static class IntsReader extends DocValues {
     private final IndexInput datIn;
+    private final boolean packed;
 
     protected IntsReader(Directory dir, String id) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
@@ -182,6 +192,7 @@ class PackedIntsImpl {
       boolean success = false;
       try {
         CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
+        packed = PACKED == datIn.readByte();
         success = true;
       } finally {
         if (!success) {
@@ -196,20 +207,69 @@ class PackedIntsImpl {
      */
     @Override
     public Source load() throws IOException {
-      return new IntsSource((IndexInput) datIn.clone());
+      final IndexInput input = (IndexInput) datIn.clone();
+      boolean success = false;
+      try {
+        final Source source = packed ? new PackedIntsSource(input)
+            : new FixedIntsSource(input);
+        success = true;
+        return source;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, datIn);
+        }
+      }
+    }
+    
+    private static class FixedIntsSource extends Source {
+      private final long[] values;
+      public FixedIntsSource(IndexInput dataIn) throws IOException {
+        dataIn.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
+        final int numDocs = dataIn.readInt();
+        values = new long[numDocs];
+        for (int i = 0; i < values.length; i++) {
+          values[i] = dataIn.readLong();
+        }
+      }
+      
+      @Override
+      public long getInt(int docID) {
+        assert docID >= 0 && docID < values.length;
+        return values[docID];
+      }
+
+      @Override
+      public ValueType type() {
+        return ValueType.INTS;
+      }
+
+      @Override
+      public DocValuesEnum getEnum(AttributeSource attrSource)
+          throws IOException {
+        return new SourceEnum(attrSource, type(), this, values.length) {
+          
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs)
+              return pos = NO_MORE_DOCS;
+            intsRef.ints[intsRef.offset] = values[target];
+            return pos = target;
+          }
+        };
+      }
+      
     }
 
-    private static class IntsSource extends Source {
+    private static class PackedIntsSource extends Source {
       private final long minValue;
       private final long defaultValue;
       private final PackedInts.Reader values;
 
-      public IntsSource(IndexInput dataIn) throws IOException {
-        dataIn.seek(CodecUtil.headerLength(CODEC_NAME));
+      public PackedIntsSource(IndexInput dataIn) throws IOException {
+        dataIn.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
         minValue = dataIn.readLong();
         defaultValue = dataIn.readLong();
         values = PackedInts.getReader(dataIn);
-        missingValue.longValue = minValue + defaultValue;
       }
 
       @Override
@@ -218,23 +278,18 @@ class PackedIntsImpl {
         // on each get? must push minValue down, and make
         // PackedInts implement Ints.Source
         assert docID >= 0;
-        return minValue + values.get(docID);
+        final long value = values.get(docID);
+        return value == defaultValue ? 0 : minValue + value;
       }
 
       @Override
       public DocValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
-        final MissingValue missing = getMissing();
         return new SourceEnum(attrSource, type(), this, values.size()) {
           @Override
           public int advance(int target) throws IOException {
             if (target >= numDocs)
               return pos = NO_MORE_DOCS;
-            while (source.getInt(target) == missing.longValue) {
-              if (++target >= numDocs) {
-                return pos = NO_MORE_DOCS;
-              }
-            }
             intsRef.ints[intsRef.offset] = source.getInt(target);
             return pos = target;
           }
@@ -255,7 +310,18 @@ class PackedIntsImpl {
 
     @Override
     public DocValuesEnum getEnum(AttributeSource source) throws IOException {
-      return new IntsEnumImpl(source, (IndexInput) datIn.clone());
+      final IndexInput input = (IndexInput) datIn.clone();
+      boolean success = false;
+      try {
+        DocValuesEnum inst = packed ? new PackedIntsEnumImpl(source, input)
+            : new FixedIntsEnumImpl(source, input);
+        success = true;
+        return inst;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, input);
+        }
+      }
     }
 
     @Override
@@ -265,7 +331,7 @@ class PackedIntsImpl {
 
   }
 
-  private static final class IntsEnumImpl extends DocValuesEnum {
+  private static final class PackedIntsEnumImpl extends DocValuesEnum {
     private final PackedInts.ReaderIterator ints;
     private long minValue;
     private final IndexInput dataIn;
@@ -273,12 +339,12 @@ class PackedIntsImpl {
     private final int maxDoc;
     private int pos = -1;
 
-    private IntsEnumImpl(AttributeSource source, IndexInput dataIn)
+    private PackedIntsEnumImpl(AttributeSource source, IndexInput dataIn)
         throws IOException {
       super(source, ValueType.INTS);
       intsRef.offset = 0;
       this.dataIn = dataIn;
-      dataIn.seek(CodecUtil.headerLength(CODEC_NAME));
+      dataIn.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
       minValue = dataIn.readLong();
       defaultValue = dataIn.readLong();
       this.ints = PackedInts.getReaderIterator(dataIn);
@@ -296,15 +362,8 @@ class PackedIntsImpl {
       if (target >= maxDoc) {
         return pos = NO_MORE_DOCS;
       }
-      long val = ints.advance(target);
-      while (val == defaultValue) {
-        if (++target >= maxDoc) {
-          return pos = NO_MORE_DOCS;
-        }
-        val = ints.advance(target);
-      }
-      intsRef.ints[0] = minValue + val;
-      intsRef.offset = 0; // can we skip this?
+      final long val = ints.advance(target);
+      intsRef.ints[intsRef.offset] = val == defaultValue ? 0 : minValue + val;
       return pos = target;
     }
 
@@ -321,4 +380,51 @@ class PackedIntsImpl {
       return advance(pos + 1);
     }
   }
+  
+  private static final class FixedIntsEnumImpl extends DocValuesEnum {
+    private final IndexInput dataIn;
+    private final int maxDoc;
+    private int pos = -1;
+
+    private FixedIntsEnumImpl(AttributeSource source, IndexInput dataIn)
+        throws IOException {
+      super(source, ValueType.INTS);
+      intsRef.offset = 0;
+      this.dataIn = dataIn;
+      dataIn.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
+      maxDoc = dataIn.readInt();
+    }
+
+    @Override
+    public void close() throws IOException {
+      dataIn.close();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target >= maxDoc) {
+        return pos = NO_MORE_DOCS;
+      }
+      assert target > pos;
+      if (target > pos+1) {
+        dataIn.seek(dataIn.getFilePointer() + ((target - pos - 1) * 8));
+      }
+      intsRef.ints[intsRef.offset] = dataIn.readLong();
+      return pos = target;
+    }
+
+    @Override
+    public int docID() {
+      return pos;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      if (pos >= maxDoc) {
+        return pos = NO_MORE_DOCS;
+      }
+      return advance(pos + 1);
+    }
+  }
+ 
 }

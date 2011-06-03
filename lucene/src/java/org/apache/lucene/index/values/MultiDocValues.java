@@ -200,7 +200,6 @@ public class MultiDocValues extends DocValues {
         assert docValuesIdx[idx] != null;
         try {
           current = docValuesIdx[idx].docValues.getSource();
-          missingValue.copy(current.getMissing());
         } catch (IOException e) {
           throw new RuntimeException("load failed", e); // TODO how should we
           // handle this
@@ -243,18 +242,19 @@ public class MultiDocValues extends DocValues {
 
     @Override
     public BytesRef getBytes(int docID, BytesRef ref) {
-      return this.missingValue.bytesValue;
+      ref.length = 0;
+      return ref;
 
     }
 
     @Override
     public double getFloat(int docID) {
-      return missingValue.doubleValue;
+      return 0d;
     }
 
     @Override
     public long getInt(int docID) {
-      return missingValue.longValue;
+      return 0;
     }
 
     @Override

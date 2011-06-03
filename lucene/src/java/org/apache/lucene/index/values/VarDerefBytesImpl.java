@@ -227,7 +227,8 @@ class VarDerefBytesImpl {
       @Override
       public BytesRef getBytes(int docID, BytesRef bytesRef) {
         long address = index.get(docID);
-        return address == 0 ? null : data.fillSliceWithPrefix(bytesRef,
+        bytesRef.length = 0;
+        return address == 0 ? bytesRef : data.fillSliceWithPrefix(bytesRef,
             --address);
       }
 

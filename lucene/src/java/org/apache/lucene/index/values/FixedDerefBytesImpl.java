@@ -161,7 +161,8 @@ class FixedDerefBytesImpl {
       public BytesRef getBytes(int docID, BytesRef bytesRef) {
         final int id = (int) index.get(docID);
         if (id == 0) {
-          return null;
+          bytesRef.length = 0;
+          return bytesRef;
         }
         return data.fillSlice(bytesRef, ((id - 1) * size), size);
       }

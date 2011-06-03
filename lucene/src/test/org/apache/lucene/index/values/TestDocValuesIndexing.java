@@ -41,7 +41,6 @@ import org.apache.lucene.index.MultiPerDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -197,16 +196,22 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     assertEquals(valuesPerIndex * 2, w.maxDoc());
 
     // check values
-
+    
     IndexReader merged = IndexReader.open(w, true);
     DocValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
     DocValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
     DocValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
     DocValuesEnum vE_2_merged = getValuesEnum(getDocValues(merged, second
         .name()));
-    if (second == ValueType.BYTES_VAR_STRAIGHT || second == ValueType.BYTES_FIXED_STRAIGHT) {
+    switch (second) { // these variants don't advance over missing values
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_STRAIGHT:
+    case FLOAT_32:
+    case FLOAT_64:
+    case INTS:  
       assertEquals(msg, valuesPerIndex-1, vE_2_merged.advance(valuesPerIndex-1));
     }
+    
     for (int i = 0; i < valuesPerIndex; i++) {
       assertEquals(msg, i, vE_1.nextDoc());
       assertEquals(msg, i, vE_1_merged.nextDoc());
@@ -263,15 +268,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         assertNotNull(intsReader);
 
         Source ints = getSource(intsReader);
-        MissingValue missing = ints.getMissing();
 
         for (int i = 0; i < base; i++) {
           long value = ints.getInt(i);
-          assertEquals("index " + i, missing.longValue, value);
+          assertEquals("index " + i, 0, value);
         }
 
         DocValuesEnum intsEnum = getValuesEnum(intsReader);
-        assertTrue(intsEnum.advance(0) >= base);
+        assertTrue(intsEnum.advance(base) >= base);
 
         intsEnum = getValuesEnum(intsReader);
         LongsRef enumRef = intsEnum.getInt();
@@ -283,8 +287,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs", i, intsEnum.advance(i));
-          assertEquals(expected, enumRef.get());
           assertEquals(expected, ints.getInt(i));
+          assertEquals(expected, enumRef.get());
 
         }
       }
@@ -294,15 +298,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         DocValues floatReader = getDocValues(r, val.name());
         assertNotNull(floatReader);
         Source floats = getSource(floatReader);
-        MissingValue missing = floats.getMissing();
-
         for (int i = 0; i < base; i++) {
           double value = floats.getFloat(i);
           assertEquals(val + " failed for doc: " + i + " base: " + base,
-              missing.doubleValue, value, 0.0d);
+              0.0d, value, 0.0d);
         }
         DocValuesEnum floatEnum = getValuesEnum(floatReader);
-        assertTrue(floatEnum.advance(0) >= base);
+        assertTrue(floatEnum.advance(base) >= base);
 
         floatEnum = getValuesEnum(floatReader);
         FloatsRef enumRef = floatEnum.getFloat();
@@ -358,7 +360,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       byte upto = 0;
 
       // test the filled up slots for correctness
-      MissingValue missing = bytes.getMissing();
       for (int i = 0; i < base; i++) {
 
         BytesRef br = bytes.getBytes(i, new BytesRef());
@@ -369,18 +370,14 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         case BYTES_FIXED_STRAIGHT:
           // fixed straight returns bytesref with zero bytes all of fixed
           // length
-          if (missing.bytesValue != null) {
-            assertNotNull("expected none null - " + msg, br);
-            if (br.length != 0) {
-              assertEquals("expected zero bytes of length " + bytesSize + " - "
-                  + msg, bytesSize, br.length);
-              for (int j = 0; j < br.length; j++) {
-                assertEquals("Byte at index " + j + " doesn't match - " + msg,
-                    0, br.bytes[br.offset + j]);
-              }
+          assertNotNull("expected none null - " + msg, br);
+          if (br.length != 0) {
+            assertEquals("expected zero bytes of length " + bytesSize + " - "
+                + msg, bytesSize, br.length);
+            for (int j = 0; j < br.length; j++) {
+              assertEquals("Byte at index " + j + " doesn't match - " + msg, 0,
+                  br.bytes[br.offset + j]);
             }
-          } else {
-            assertNull("expected null - " + msg + " " + br, br);
           }
           break;
         case BYTES_VAR_SORTED:
@@ -388,13 +385,21 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         case BYTES_VAR_DEREF:
         case BYTES_FIXED_DEREF:
         default:
-          assertNull("expected null - " + msg + " " + br, br);
+          assertNotNull("expected none null - " + msg, br);
+          assertEquals(0, br.length);
           // make sure we advance at least until base
           DocValuesEnum bytesEnum = getValuesEnum(bytesReader);
+          try {
+          
           final int advancedTo = bytesEnum.advance(0);
           assertTrue(byteIndexValue.name() + " advanced failed base:" + base
               + " advancedTo: " + advancedTo, base <= advancedTo);
+          }catch(Throwable e) {
+            final int advancedTo = bytesEnum.advance(0);
+            assertTrue(byteIndexValue.name() + " advanced failed base:" + base
+                + " advancedTo: " + advancedTo, base <= advancedTo);
 
+          }
         }
       }
 

@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.DocValues.MissingValue;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.index.values.DocValues.SourceEnum;
@@ -225,14 +224,13 @@ public final class Bytes {
 
     @Override
     public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
         @Override
         public int advance(int target) throws IOException {
           if (target >= numDocs) {
             return pos = NO_MORE_DOCS;
           }
-          while (source.getBytes(target, bytesRef) == missing.bytesValue) {
+          while (source.getBytes(target, bytesRef).length == 0) {
             if (++target >= numDocs) {
               return pos = NO_MORE_DOCS;
             }
@@ -251,7 +249,6 @@ public final class Bytes {
     protected final static int PAGED_BYTES_BITS = 15;
     private final PagedBytes pagedBytes;
     protected final PagedBytes.Reader data;
-    protected final LookupResult lookupResult = new LookupResult();
     private final Comparator<BytesRef> comp;
 
     protected BytesBaseSortedSource(IndexInput datIn, IndexInput idxIn,
@@ -271,7 +268,8 @@ public final class Bytes {
 
     @Override
     public BytesRef getByOrd(int ord, BytesRef bytesRef) {
-      return ord == 0 ? null : deref(--ord, bytesRef);
+      assert ord >= 0;
+      return deref(ord, bytesRef);
     }
 
     protected void closeIndexInput() throws IOException {
@@ -297,10 +295,11 @@ public final class Bytes {
      */
     protected abstract BytesRef deref(int ord, BytesRef bytesRef);
 
-    protected LookupResult binarySearch(BytesRef b, BytesRef bytesRef, int low,
+    protected int binarySearch(BytesRef b, BytesRef bytesRef, int low,
         int high) {
+      int mid = 0;
       while (low <= high) {
-        int mid = (low + high) >>> 1;
+        mid = (low + high) >>> 1;
         deref(mid, bytesRef);
         final int cmp = comp.compare(bytesRef, b);
         if (cmp < 0) {
@@ -308,20 +307,15 @@ public final class Bytes {
         } else if (cmp > 0) {
           high = mid - 1;
         } else {
-          lookupResult.ord = mid + 1;
-          lookupResult.found = true;
-          return lookupResult;
+          return mid;
         }
       }
       assert comp.compare(bytesRef, b) != 0;
-      lookupResult.ord = low;
-      lookupResult.found = false;
-      return lookupResult;
+      return -(low + 1);
     }
 
     @Override
     public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      final MissingValue missing = getMissing();
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
 
         @Override
@@ -329,7 +323,7 @@ public final class Bytes {
           if (target >= numDocs) {
             return pos = NO_MORE_DOCS;
           }
-          while (source.getBytes(target, bytesRef) == missing.bytesValue) {
+          while (source.getBytes(target, bytesRef).length == 0) {
             if (++target >= numDocs) {
               return pos = NO_MORE_DOCS;
             }

@@ -191,11 +191,11 @@ class VarSortedBytesImpl {
 
       @Override
       public int ord(int docID) {
-        return (int) docToOrdIndex.get(docID);
+        return (int) docToOrdIndex.get(docID) - 1;
       }
 
       @Override
-      public LookupResult getByValue(BytesRef bytes, BytesRef tmpRef) {
+      public int getByValue(BytesRef bytes, BytesRef tmpRef) {
         return binarySearch(bytes, tmpRef, 0, valueCount - 1);
       }
 
