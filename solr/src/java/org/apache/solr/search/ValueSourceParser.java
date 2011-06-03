@@ -579,6 +579,134 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new NumDocsValueSource();
       }
     });
+
+    addParser("true", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new BoolConstValueSource(true);
+      }
+    });
+
+    addParser("false", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new BoolConstValueSource(false);
+      }
+    });
+
+    addParser("exists", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        ValueSource vs = fp.parseValueSource();
+        return new SimpleBoolFunction(vs) {
+          @Override
+          protected String name() {
+            return "exists";
+          }
+          @Override
+          protected boolean func(int doc, DocValues vals) {
+            return vals.exists(doc);
+          }
+        };
+      }
+    });
+
+    addParser("not", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        ValueSource vs = fp.parseValueSource();
+        return new SimpleBoolFunction(vs) {
+          @Override
+          protected boolean func(int doc, DocValues vals) {
+            return !vals.boolVal(doc);
+          }
+          @Override
+          protected String name() {
+            return "not";
+          }
+        };
+      }
+    });
+
+
+    addParser("and", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new MultiBoolFunction(sources) {
+          @Override
+          protected String name() {
+            return "and";
+          }
+          @Override
+          protected boolean func(int doc, DocValues[] vals) {
+            for (DocValues dv : vals)
+              if (!dv.boolVal(doc)) return false;
+            return true;
+          }
+        };
+      }
+    });
+
+    addParser("or", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new MultiBoolFunction(sources) {
+          @Override
+          protected String name() {
+            return "or";
+          }
+          @Override
+          protected boolean func(int doc, DocValues[] vals) {
+            for (DocValues dv : vals)
+              if (dv.boolVal(doc)) return true;
+            return false;
+          }
+        };
+      }
+    });
+
+    addParser("xor", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new MultiBoolFunction(sources) {
+          @Override
+          protected String name() {
+            return "xor";
+          }
+          @Override
+          protected boolean func(int doc, DocValues[] vals) {
+            int nTrue=0, nFalse=0;
+            for (DocValues dv : vals) {
+              if (dv.boolVal(doc)) nTrue++;
+              else nFalse++;
+            }
+            return nTrue != 0 && nFalse != 0;
+          }
+        };
+      }
+    });
+
+    addParser("if", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        ValueSource ifValueSource = fp.parseValueSource();
+        ValueSource trueValueSource = fp.parseValueSource();
+        ValueSource falseValueSource = fp.parseValueSource();
+
+        return new IfFunction(ifValueSource, trueValueSource, falseValueSource);
+      }
+    });
+
+    addParser("def", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new DefFunction(fp.parseValueSourceList());
+      }
+    });
+
   }
 
   private static TInfo parseTerm(FunctionQParser fp) throws ParseException {
@@ -857,6 +985,11 @@ class LongConstValueSource extends ConstNumberSource {
   public Number getNumber() {
     return constant;
   }
+
+  @Override
+  public boolean getBool() {
+    return constant != 0;
+  }
 }
 
 
@@ -980,4 +1113,70 @@ abstract class Double2Parser extends NamedParser {
     }
   }
 
+}
+
+
+class BoolConstValueSource extends ConstNumberSource {
+  final boolean constant;
+
+  public BoolConstValueSource(boolean constant) {
+    this.constant = constant;
+  }
+
+  @Override
+  public String description() {
+    return "const(" + constant + ")";
+  }
+
+  @Override
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    return new BoolDocValues(this) {
+      @Override
+      public boolean boolVal(int doc) {
+        return constant;
+      }
+    };
+  }
+
+  @Override
+  public int hashCode() {
+    return constant ? 0x12345678 : 0x87654321;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (BoolConstValueSource.class != o.getClass()) return false;
+    BoolConstValueSource other = (BoolConstValueSource) o;
+    return this.constant == other.constant;
+  }
+
+    @Override
+  public int getInt() {
+    return constant ? 1 : 0;
+  }
+
+  @Override
+  public long getLong() {
+    return constant ? 1 : 0;
+  }
+
+  @Override
+  public float getFloat() {
+    return constant ? 1 : 0;
+  }
+
+  @Override
+  public double getDouble() {
+    return constant ? 1 : 0;
+  }
+
+  @Override
+  public Number getNumber() {
+    return constant ? 1 : 0;
+  }
+
+  @Override
+  public boolean getBool() {
+    return constant;
+  }
 }
