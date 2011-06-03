@@ -17,8 +17,16 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-/** @lucene.experimental */
-public class SearchGroup {
-  public String groupValue;
+/**
+ * Represents a group that is found during the first pass search.
+ *
+ * @lucene.experimental
+ */
+public class SearchGroup<GROUP_VALUE_TYPE> {
+
+  /** The value that defines this group  */
+  public GROUP_VALUE_TYPE groupValue;
+
+  /** The sort values used during sorting. Can be <code>null</code>. */
   public Comparable[] sortValues;
 }

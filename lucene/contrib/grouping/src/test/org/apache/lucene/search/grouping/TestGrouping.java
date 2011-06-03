@@ -17,9 +17,6 @@
 
 package org.apache.lucene.search.grouping;
 
-import java.util.*;
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,6 +28,9 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+
+import java.io.IOException;
+import java.util.*;
 
 // TODO
 //   - should test relevance sort too
@@ -102,10 +102,10 @@ public class TestGrouping extends LuceneTestCase {
     w.close();
 
     final Sort groupSort = Sort.RELEVANCE;
-    final FirstPassGroupingCollector c1 = new FirstPassGroupingCollector(groupField, groupSort, 10);
+    final TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(groupField, groupSort, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
 
-    final SecondPassGroupingCollector c2 = new SecondPassGroupingCollector(groupField, c1.getTopGroups(0, true), groupSort, null, 5, true, false, true);
+    final TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector(groupField, c1.getTopGroups(0, true), groupSort, null, 5, true, false, true);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c2);
     
     final TopGroups groups = c2.getTopGroups(0);
@@ -235,18 +235,18 @@ public class TestGrouping extends LuceneTestCase {
   }
   */
 
-  private TopGroups slowGrouping(GroupDoc[] groupDocs,
-                                 String searchTerm,
-                                 boolean fillFields,
-                                 boolean getScores,
-                                 boolean getMaxScores,
-                                 boolean doAllGroups,
-                                 Sort groupSort,
-                                 Sort docSort,
-                                 int topNGroups,
-                                 int docsPerGroup,
-                                 int groupOffset,
-                                 int docOffset) {
+  private TopGroups<String> slowGrouping(GroupDoc[] groupDocs,
+                                         String searchTerm,
+                                         boolean fillFields,
+                                         boolean getScores,
+                                         boolean getMaxScores,
+                                         boolean doAllGroups,
+                                         Sort groupSort,
+                                         Sort docSort,
+                                         int topNGroups,
+                                         int docsPerGroup,
+                                         int groupOffset,
+                                         int docOffset) {
 
     final Comparator<GroupDoc> groupSortComp = getComparator(groupSort);
 
@@ -296,7 +296,8 @@ public class TestGrouping extends LuceneTestCase {
     final int limit = Math.min(groupOffset + topNGroups, groups.size());
 
     final Comparator<GroupDoc> docSortComp = getComparator(docSort);
-    final GroupDocs[] result = new GroupDocs[limit-groupOffset];
+    @SuppressWarnings("unchecked")
+    final GroupDocs<String>[] result = new GroupDocs[limit-groupOffset];
     int totalGroupedHitCount = 0;
     for(int idx=groupOffset;idx < limit;idx++) {
       final String group = sortedGroups.get(idx);
@@ -321,20 +322,20 @@ public class TestGrouping extends LuceneTestCase {
         hits = new ScoreDoc[0];
       }
 
-      result[idx-groupOffset] = new GroupDocs(0.0f,
-                                              docs.size(),
-                                              hits,
-                                              group,
-                                              fillFields ? sortedGroupFields.get(idx) : null);
+      result[idx-groupOffset] = new GroupDocs<String>(0.0f,
+                                                      docs.size(),
+                                                      hits,
+                                                      group,
+                                                      fillFields ? sortedGroupFields.get(idx) : null);
     }
 
     if (doAllGroups) {
-      return new TopGroups(
-          new TopGroups(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result),
-          knownGroups.size()
+      return new TopGroups<String>(
+                  new TopGroups<String>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result),
+                   knownGroups.size()
       );
     } else {
-      return new TopGroups(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result);
+      return new TopGroups<String>(groupSort.getSort(), docSort.getSort(), totalHitCount, totalGroupedHitCount, result);
     }
   }
 
@@ -527,14 +528,14 @@ public class TestGrouping extends LuceneTestCase {
             System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups);
           }
 
-          final AllGroupsCollector allGroupsCollector;
+          final TermAllGroupsCollector allGroupsCollector;
           if (doAllGroups) {
-            allGroupsCollector = new AllGroupsCollector("group");
+            allGroupsCollector = new TermAllGroupsCollector("group");
           } else {
             allGroupsCollector = null;
           }
 
-          final FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("group", groupSort, groupOffset+topNGroups);
+          final TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector("group", groupSort, groupOffset+topNGroups);
           final CachingCollector cCache;
           final Collector c;
 
@@ -585,19 +586,19 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
 
-          final Collection<SearchGroup> topGroups = c1.getTopGroups(groupOffset, fillFields);
+          final Collection<SearchGroup<String>> topGroups = c1.getTopGroups(groupOffset, fillFields);
           final TopGroups groupsResult;
 
           if (topGroups != null) {
 
             if (VERBOSE) {
               System.out.println("TEST: topGroups");
-              for (SearchGroup searchGroup : topGroups) {
+              for (SearchGroup<String> searchGroup : topGroups) {
                 System.out.println("  " + (searchGroup.groupValue == null ? "null" : searchGroup.groupValue) + ": " + Arrays.deepToString(searchGroup.sortValues));
               }
             }
 
-            final SecondPassGroupingCollector c2 = new SecondPassGroupingCollector("group", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
+            final TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("group", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
             if (doCache) {
               if (cCache.isCached()) {
                 if (VERBOSE) {
@@ -615,8 +616,8 @@ public class TestGrouping extends LuceneTestCase {
             }
 
             if (doAllGroups) {
-              TopGroups tempTopGroups = c2.getTopGroups(docOffset);
-              groupsResult = new TopGroups(tempTopGroups, allGroupsCollector.getGroupCount());
+              TopGroups<String> tempTopGroups = c2.getTopGroups(docOffset);
+              groupsResult = new TopGroups<String>(tempTopGroups, allGroupsCollector.getGroupCount());
             } else {
               groupsResult = c2.getTopGroups(docOffset);
             }
@@ -627,14 +628,14 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
         
-          final TopGroups expectedGroups = slowGrouping(groupDocs, searchTerm, fillFields, getScores, getMaxScores, doAllGroups, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
+          final TopGroups<String> expectedGroups = slowGrouping(groupDocs, searchTerm, fillFields, getScores, getMaxScores, doAllGroups, groupSort, docSort, topNGroups, docsPerGroup, groupOffset, docOffset);
 
           if (VERBOSE) {
             if (expectedGroups == null) {
               System.out.println("TEST: no expected groups");
             } else {
               System.out.println("TEST: expected groups");
-              for(GroupDocs gd : expectedGroups.groups) {
+              for(GroupDocs<String> gd : expectedGroups.groups) {
                 System.out.println("  group=" + gd.groupValue);
                 for(ScoreDoc sd : gd.scoreDocs) {
                   System.out.println("    id=" + sd.doc);
@@ -647,21 +648,22 @@ public class TestGrouping extends LuceneTestCase {
 
           final boolean needsScores = getScores || getMaxScores || docSort == null;
           final BlockGroupingCollector c3 = new BlockGroupingCollector(groupSort, groupOffset+topNGroups, needsScores, lastDocInBlock);
-          final AllGroupsCollector allGroupsCollector2;
+          final TermAllGroupsCollector allGroupsCollector2;
           final Collector c4;
           if (doAllGroups) {
-            allGroupsCollector2 = new AllGroupsCollector("group");
+            allGroupsCollector2 = new TermAllGroupsCollector("group");
             c4 = MultiCollector.wrap(c3, allGroupsCollector2);
           } else {
             allGroupsCollector2 = null;
             c4 = c3;
           }
           s2.search(new TermQuery(new Term("content", searchTerm)), c4);
-          final TopGroups tempTopGroups2 = c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup, fillFields);
+          @SuppressWarnings("unchecked")
+          final TopGroups<String> tempTopGroups2 = c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup, fillFields);
           final TopGroups groupsResult2;
           if (doAllGroups && tempTopGroups2 != null) {
             assertEquals((int) tempTopGroups2.totalGroupCount, allGroupsCollector2.getGroupCount());
-            groupsResult2 = new TopGroups(tempTopGroups2, allGroupsCollector2.getGroupCount());
+            groupsResult2 = new TopGroups<String>(tempTopGroups2, allGroupsCollector2.getGroupCount());
           } else {
             groupsResult2 = tempTopGroups2;
           }
