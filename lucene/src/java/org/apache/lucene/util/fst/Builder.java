@@ -69,6 +69,15 @@ public class Builder<T> {
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
 
+  /**
+   * Instantiates an FST/FSA builder without any pruning. A shortcut
+   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, Outputs)} with 
+   * pruning options turned off.
+   */
+  public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+    this(inputType, 0, 0, true, outputs);
+  }
+
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doMinSuffix, Outputs<T> outputs) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
