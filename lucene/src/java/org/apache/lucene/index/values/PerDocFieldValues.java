@@ -18,14 +18,14 @@ package org.apache.lucene.index.values;
  */
 import java.util.Comparator;
 
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Per document and field values consumed by {@link DocValuesConsumer}. 
- * @see DocValuesField
+ * @see IndexDocValuesField
  * @see Fieldable#setDocValues(PerDocFieldValues)
  * 
  * @lucene.experimental

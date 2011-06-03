@@ -29,7 +29,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.DocValuesEnum;
+import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -956,8 +956,8 @@ public class CheckIndex {
           if (docValues == null) {
             continue;
           }
-          final DocValuesEnum values = docValues.getEnum();
-          while (values.nextDoc() != DocValuesEnum.NO_MORE_DOCS) {
+          final ValuesEnum values = docValues.getEnum();
+          while (values.nextDoc() != ValuesEnum.NO_MORE_DOCS) {
             switch (fieldInfo.docValues) {
             case BYTES_FIXED_DEREF:
             case BYTES_FIXED_SORTED:

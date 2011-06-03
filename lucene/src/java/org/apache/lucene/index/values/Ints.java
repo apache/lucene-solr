@@ -20,8 +20,8 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.values.PackedIntsImpl.IntsReader;
-import org.apache.lucene.index.values.PackedIntsImpl.IntsWriter;
+import org.apache.lucene.index.values.IntsImpl.IntsReader;
+import org.apache.lucene.index.values.IntsImpl.IntsWriter;
 import org.apache.lucene.store.Directory;
 
 /**

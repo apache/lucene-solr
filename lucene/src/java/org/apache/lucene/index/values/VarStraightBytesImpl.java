@@ -164,11 +164,11 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new VarStraightBytesEnum(source, cloneData(), cloneIndex());
     }
 
-    private class VarStraightBytesEnum extends DocValuesEnum {
+    private class VarStraightBytesEnum extends ValuesEnum {
       private final PackedInts.Reader addresses;
       private final IndexInput datIn;
       private final IndexInput idxIn;

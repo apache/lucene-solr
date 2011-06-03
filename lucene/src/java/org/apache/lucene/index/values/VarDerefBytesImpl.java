@@ -249,7 +249,7 @@ class VarDerefBytesImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new VarDerefBytesEnum(source, cloneData(), cloneIndex());
     }
 

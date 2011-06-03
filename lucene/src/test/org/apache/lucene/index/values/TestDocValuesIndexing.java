@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.AbstractField;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -64,10 +64,6 @@ import org.junit.Before;
  */
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
-   * TODO: Roadmap to land on trunk
-   * 
-   * - Add documentation for: 
-   *  - DocValues 
    * - add test for unoptimized case with deletes
    * - add multithreaded tests / integrate into stress indexing?
    */
@@ -87,7 +83,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      DocValuesField valuesField = new DocValuesField("docId");
+      IndexDocValuesField valuesField = new IndexDocValuesField("docId");
       valuesField.setInt(i);
       doc.add(valuesField);
       doc.add(new Field("docId", "" + i, Store.NO, Index.ANALYZED));
@@ -198,10 +194,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     // check values
     
     IndexReader merged = IndexReader.open(w, true);
-    DocValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
-    DocValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
-    DocValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
-    DocValuesEnum vE_2_merged = getValuesEnum(getDocValues(merged, second
+    ValuesEnum vE_1 = getValuesEnum(getDocValues(r_1, first.name()));
+    ValuesEnum vE_2 = getValuesEnum(getDocValues(r_2, second.name()));
+    ValuesEnum vE_1_merged = getValuesEnum(getDocValues(merged, first.name()));
+    ValuesEnum vE_2_merged = getValuesEnum(getDocValues(merged, second
         .name()));
     switch (second) { // these variants don't advance over missing values
     case BYTES_FIXED_STRAIGHT:
@@ -219,10 +215,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       assertEquals(msg, i, vE_2.nextDoc());
       assertEquals(msg, i + valuesPerIndex, vE_2_merged.nextDoc());
     }
-    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_1.nextDoc());
-    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_2.nextDoc());
-    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_1_merged.advance(valuesPerIndex*2));
-    assertEquals(msg, DocValuesEnum.NO_MORE_DOCS, vE_2_merged.nextDoc());
+    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_1.nextDoc());
+    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_2.nextDoc());
+    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_1_merged.advance(valuesPerIndex*2));
+    assertEquals(msg, ValuesEnum.NO_MORE_DOCS, vE_2_merged.nextDoc());
 
     // close resources
     r_1.close();
@@ -274,7 +270,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals("index " + i, 0, value);
         }
 
-        DocValuesEnum intsEnum = getValuesEnum(intsReader);
+        ValuesEnum intsEnum = getValuesEnum(intsReader);
         assertTrue(intsEnum.advance(base) >= base);
 
         intsEnum = getValuesEnum(intsReader);
@@ -303,7 +299,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertEquals(val + " failed for doc: " + i + " base: " + base,
               0.0d, value, 0.0d);
         }
-        DocValuesEnum floatEnum = getValuesEnum(floatReader);
+        ValuesEnum floatEnum = getValuesEnum(floatReader);
         assertTrue(floatEnum.advance(base) >= base);
 
         floatEnum = getValuesEnum(floatReader);
@@ -388,7 +384,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertNotNull("expected none null - " + msg, br);
           assertEquals(0, br.length);
           // make sure we advance at least until base
-          DocValuesEnum bytesEnum = getValuesEnum(bytesReader);
+          ValuesEnum bytesEnum = getValuesEnum(bytesReader);
           try {
           
           final int advancedTo = bytesEnum.advance(0);
@@ -403,7 +399,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
 
-      DocValuesEnum bytesEnum = getValuesEnum(bytesReader);
+      ValuesEnum bytesEnum = getValuesEnum(bytesReader);
       final BytesRef enumRef = bytesEnum.bytes();
       // test the actual doc values added in this iteration
       assertEquals(base + numRemainingValues, r.numDocs());
@@ -480,9 +476,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     return source;
   }
 
-  private DocValuesEnum getValuesEnum(IndexDocValues values) throws IOException {
-    DocValuesEnum valuesEnum;
-    if (!(values instanceof MultiDocValues) && random.nextInt(10) == 0) {
+  private ValuesEnum getValuesEnum(IndexDocValues values) throws IOException {
+    ValuesEnum valuesEnum;
+    if (!(values instanceof MultiIndexDocValues) && random.nextInt(10) == 0) {
       // TODO not supported by MultiDocValues yet!
       valuesEnum = getSource(values).getEnum();
     } else {
@@ -511,11 +507,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     OpenBitSet deleted = new OpenBitSet(numValues);
     Document doc = new Document();
     Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
-    AbstractField field = random.nextBoolean() ? new DocValuesField(value.name())
+    AbstractField field = random.nextBoolean() ? new IndexDocValuesField(value.name())
         : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
             10), idx == Index.NO ? Store.YES : Store.NO, idx);
     doc.add(field);
-    DocValuesField valField = new DocValuesField("prototype");
+    IndexDocValuesField valField = new IndexDocValuesField("prototype");
     final BytesRef bytesRef = new BytesRef();
 
     final String idBase = value.name() + "_";

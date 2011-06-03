@@ -24,9 +24,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
 /**
+ * A wrapper for compound IndexReader providing access to per segment
+ * {@link IndexDocValues}
+ * 
  * @lucene.experimental
  */
-public class MultiDocValues extends IndexDocValues {
+public class MultiIndexDocValues extends IndexDocValues {
 
   public static class DocValuesIndex {
     public final static DocValuesIndex[] EMPTY_ARRAY = new DocValuesIndex[0];
@@ -44,17 +47,17 @@ public class MultiDocValues extends IndexDocValues {
   private DocValuesIndex[] docValuesIdx;
   private int[] starts;
 
-  public MultiDocValues() {
+  public MultiIndexDocValues() {
     starts = new int[0];
     docValuesIdx = new DocValuesIndex[0];
   }
 
-  public MultiDocValues(DocValuesIndex[] docValuesIdx) {
+  public MultiIndexDocValues(DocValuesIndex[] docValuesIdx) {
     reset(docValuesIdx);
   }
 
   @Override
-  public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+  public ValuesEnum getEnum(AttributeSource source) throws IOException {
     return new MultiValuesEnum(docValuesIdx, starts);
   }
 
@@ -87,7 +90,7 @@ public class MultiDocValues extends IndexDocValues {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       return emptySoruce.getEnum(attrSource);
     }
 
@@ -107,13 +110,13 @@ public class MultiDocValues extends IndexDocValues {
 
   }
 
-  private static class MultiValuesEnum extends DocValuesEnum {
+  private static class MultiValuesEnum extends ValuesEnum {
     private DocValuesIndex[] docValuesIdx;
     private final int maxDoc;
     private int currentStart;
     private int currentMax;
     private int currentDoc = -1;
-    private DocValuesEnum currentEnum;
+    private ValuesEnum currentEnum;
     private final int[] starts;
 
     public MultiValuesEnum(DocValuesIndex[] docValuesIdx, int[] starts)
@@ -222,7 +225,7 @@ public class MultiDocValues extends IndexDocValues {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       throw new UnsupportedOperationException(); // TODO
     }
 
@@ -258,8 +261,8 @@ public class MultiDocValues extends IndexDocValues {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
-      return DocValuesEnum.emptyEnum(type);
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      return ValuesEnum.emptyEnum(type);
     }
 
     @Override

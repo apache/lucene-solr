@@ -25,7 +25,7 @@ import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
 
 /**
- * {@link DocValuesEnum} is a {@link DocIdSetIterator} iterating <tt>byte[]</tt>
+ * {@link ValuesEnum} is a {@link DocIdSetIterator} iterating <tt>byte[]</tt>
  * , <tt>long</tt> and <tt>double</tt> stored per document. Depending on the
  * enum's {@link ValueType} ({@link #type()}) the enum might skip over documents that
  * have no value stored. Types like {@link ValueType#BYTES_VAR_STRAIGHT} might not
@@ -41,7 +41,7 @@ import org.apache.lucene.util.LongsRef;
  * 
  * @lucene.experimental
  */
-public abstract class DocValuesEnum extends DocIdSetIterator {
+public abstract class ValuesEnum extends DocIdSetIterator {
   private AttributeSource source;
   private final ValueType enumType;
   protected BytesRef bytesRef;
@@ -49,17 +49,17 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
   protected LongsRef intsRef;
 
   /**
-   * Creates a new {@link DocValuesEnum} for the given type. The
+   * Creates a new {@link ValuesEnum} for the given type. The
    * {@link AttributeSource} for this enum is set to <code>null</code>
    */
-  protected DocValuesEnum(ValueType enumType) {
+  protected ValuesEnum(ValueType enumType) {
     this(null, enumType);
   }
 
   /**
-   * Creates a new {@link DocValuesEnum} for the given type.
+   * Creates a new {@link ValuesEnum} for the given type.
    */
-  protected DocValuesEnum(AttributeSource source, ValueType enumType) {
+  protected ValuesEnum(AttributeSource source, ValueType enumType) {
     this.source = source;
     this.enumType = enumType;
     switch (enumType) {
@@ -115,7 +115,7 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
   /**
    * Copies the internal state from the given enum
    */
-  protected void copyFrom(DocValuesEnum valuesEnum) {
+  protected void copyFrom(ValuesEnum valuesEnum) {
     intsRef = valuesEnum.intsRef;
     floatsRef = valuesEnum.floatsRef;
     bytesRef = valuesEnum.bytesRef;
@@ -144,10 +144,10 @@ public abstract class DocValuesEnum extends DocIdSetIterator {
   public abstract void close() throws IOException;
 
   /**
-   * Returns an empty {@link DocValuesEnum} for the given {@link ValueType}.
+   * Returns an empty {@link ValuesEnum} for the given {@link ValueType}.
    */
-  public static DocValuesEnum emptyEnum(ValueType type) {
-    return new DocValuesEnum(type) {
+  public static ValuesEnum emptyEnum(ValueType type) {
+    return new ValuesEnum(type) {
       @Override
       public int nextDoc() throws IOException {
         return NO_MORE_DOCS;

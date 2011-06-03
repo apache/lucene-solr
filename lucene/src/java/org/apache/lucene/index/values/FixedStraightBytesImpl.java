@@ -180,11 +180,11 @@ class FixedStraightBytesImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new FixedStraightBytesEnum(source, cloneData(), size, maxDoc);
     }
 
-    private static final class FixedStraightBytesEnum extends DocValuesEnum {
+    private static final class FixedStraightBytesEnum extends ValuesEnum {
       private final IndexInput datIn;
       private final int size;
       private final int maxDoc;
@@ -203,7 +203,7 @@ class FixedStraightBytesImpl {
         fp = datIn.getFilePointer();
       }
 
-      protected void copyFrom(DocValuesEnum valuesEnum) {
+      protected void copyFrom(ValuesEnum valuesEnum) {
         bytesRef = valuesEnum.bytesRef;
         if (bytesRef.bytes.length < size) {
           bytesRef.grow(size);

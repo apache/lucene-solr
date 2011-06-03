@@ -230,11 +230,11 @@ class VarSortedBytesImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new VarSortedBytesEnum(source, cloneData(), cloneIndex());
     }
 
-    private static class VarSortedBytesEnum extends DocValuesEnum {
+    private static class VarSortedBytesEnum extends ValuesEnum {
       private PackedInts.Reader docToOrdIndex;
       private PackedInts.Reader ordToOffsetIndex;
       private IndexInput idxIn;

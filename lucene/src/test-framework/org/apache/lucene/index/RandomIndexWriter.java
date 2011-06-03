@@ -24,7 +24,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -173,7 +173,7 @@ public class RandomIndexWriter implements Closeable {
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getFieldable(name) != null)
         return;
-    DocValuesField docValuesField = new DocValuesField(name);
+    IndexDocValuesField docValuesField = new IndexDocValuesField(name);
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:

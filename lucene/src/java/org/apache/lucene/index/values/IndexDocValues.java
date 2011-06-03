@@ -20,15 +20,35 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * nocommit - javadoc 
+ * {@link IndexDocValues} provides a dense per-document typed storage for fast
+ * value access based on the lucene internal document id. {@link IndexDocValues}
+ * exposes two distinct APIs:
+ * <ul>
+ * <li>via {@link Source} an entirely RAM resident API for random access</li>
+ * <li>via {@link ValuesEnum} a disk resident API for sequential access</li>
+ * </ul> {@link IndexDocValues} are exposed via
+ * {@link IndexReader#perDocValues()} on a per-segment basis. For best
+ * performance {@link IndexDocValues} should be consumed per-segment just like
+ * IndexReader.
+ * <p>
+ * {@link IndexDocValues} are fully integrated into the {@link Codec} API.
+ * Custom implementations can be exposed on a per field basis via
+ * {@link CodecProvider}.
  * 
+ * @see ValueType for limitations and default implementation documentation
+ * @see IndexDocValuesField for adding values to the index
+ * @see Codec#docsConsumer(org.apache.lucene.index.PerDocWriteState) for
+ *      customization
  * @lucene.experimental
  */
 public abstract class IndexDocValues implements Closeable {
@@ -45,23 +65,23 @@ public abstract class IndexDocValues implements Closeable {
 
   /**
    * Returns an iterator that steps through all documents values for this
-   * {@link IndexDocValues} field instance. {@link DocValuesEnum} will skip document
+   * {@link IndexDocValues} field instance. {@link ValuesEnum} will skip document
    * without a value if applicable.
    */
-  public DocValuesEnum getEnum() throws IOException {
+  public ValuesEnum getEnum() throws IOException {
     return getEnum(null);
   }
 
   /**
    * Returns an iterator that steps through all documents values for this
-   * {@link IndexDocValues} field instance. {@link DocValuesEnum} will skip document
+   * {@link IndexDocValues} field instance. {@link ValuesEnum} will skip document
    * without a value if applicable.
    * <p>
    * If an {@link AttributeSource} is supplied to this method the
-   * {@link DocValuesEnum} will use the given source to access implementation
+   * {@link ValuesEnum} will use the given source to access implementation
    * related attributes.
    */
-  public abstract DocValuesEnum getEnum(AttributeSource attrSource)
+  public abstract ValuesEnum getEnum(AttributeSource attrSource)
       throws IOException;
 
   /**
@@ -215,9 +235,9 @@ public abstract class IndexDocValues implements Closeable {
     }
 
     /**
-     * Returns a {@link DocValuesEnum} for this source.
+     * Returns a {@link ValuesEnum} for this source.
      */
-    public DocValuesEnum getEnum() throws IOException {
+    public ValuesEnum getEnum() throws IOException {
       return getEnum(null);
     }
 
@@ -229,18 +249,18 @@ public abstract class IndexDocValues implements Closeable {
     public abstract ValueType type();
 
     /**
-     * Returns a {@link DocValuesEnum} for this source which uses the given
+     * Returns a {@link ValuesEnum} for this source which uses the given
      * {@link AttributeSource}.
      */
-    public abstract DocValuesEnum getEnum(AttributeSource attrSource)
+    public abstract ValuesEnum getEnum(AttributeSource attrSource)
         throws IOException;
   }
 
   /**
-   * {@link DocValuesEnum} utility for {@link Source} implemenations.
+   * {@link ValuesEnum} utility for {@link Source} implemenations.
    * 
    */
-  public abstract static class SourceEnum extends DocValuesEnum {
+  public abstract static class SourceEnum extends ValuesEnum {
     protected final Source source;
     protected final int numDocs;
     protected int pos = -1;
@@ -284,7 +304,7 @@ public abstract class IndexDocValues implements Closeable {
   /**
    * A sorted variant of {@link Source} for <tt>byte[]</tt> values per document.
    * <p>
-   * Note: {@link DocValuesEnum} obtained from a {@link SortedSource} will
+   * Note: {@link ValuesEnum} obtained from a {@link SortedSource} will
    * enumerate values in document order and not in sorted order.
    */
   public static abstract class SortedSource extends Source {

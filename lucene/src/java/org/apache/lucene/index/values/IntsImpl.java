@@ -37,7 +37,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * 
  * @lucene.experimental
  * */
-class PackedIntsImpl {
+class IntsImpl {
 
   private static final String CODEC_NAME = "Ints";
   private static final byte PACKED = 0x00;
@@ -163,7 +163,7 @@ class PackedIntsImpl {
     }
 
     @Override
-    protected void setNextEnum(DocValuesEnum valuesEnum) {
+    protected void setNextEnum(ValuesEnum valuesEnum) {
       intsRef = valuesEnum.getInt();
     }
 
@@ -244,7 +244,7 @@ class PackedIntsImpl {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource)
+      public ValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
         return new SourceEnum(attrSource, type(), this, values.length) {
           
@@ -283,7 +283,7 @@ class PackedIntsImpl {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource)
+      public ValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
         return new SourceEnum(attrSource, type(), this, values.size()) {
           @Override
@@ -309,11 +309,11 @@ class PackedIntsImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       final IndexInput input = (IndexInput) datIn.clone();
       boolean success = false;
       try {
-        DocValuesEnum inst = packed ? new PackedIntsEnumImpl(source, input)
+        ValuesEnum inst = packed ? new PackedIntsEnumImpl(source, input)
             : new FixedIntsEnumImpl(source, input);
         success = true;
         return inst;
@@ -331,7 +331,7 @@ class PackedIntsImpl {
 
   }
 
-  private static final class PackedIntsEnumImpl extends DocValuesEnum {
+  private static final class PackedIntsEnumImpl extends ValuesEnum {
     private final PackedInts.ReaderIterator ints;
     private long minValue;
     private final IndexInput dataIn;
@@ -381,7 +381,7 @@ class PackedIntsImpl {
     }
   }
   
-  private static final class FixedIntsEnumImpl extends DocValuesEnum {
+  private static final class FixedIntsEnumImpl extends ValuesEnum {
     private final IndexInput dataIn;
     private final int maxDoc;
     private int pos = -1;

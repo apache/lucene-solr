@@ -229,7 +229,7 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       // do unsorted
       return new DerefBytesEnum(source, cloneData(), cloneIndex(), size);
     }

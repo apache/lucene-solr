@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.values.MultiDocValues;
+import org.apache.lucene.index.values.MultiIndexDocValues;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -45,7 +45,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   // Re-used TermsEnum
   private final MultiTermsEnum terms;
-  private final MultiDocValues docValues;
+  private final MultiIndexDocValues docValues;
 
 
   private String currentField;
@@ -55,7 +55,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public MultiFieldsEnum(FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
     terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
-    docValues = new MultiDocValues();
+    docValues = new MultiIndexDocValues();
     top = new FieldsEnumWithSlice[subs.length];
     List<FieldsEnumWithSlice> enumWithSlices = new ArrayList<FieldsEnumWithSlice>();
 

@@ -223,7 +223,7 @@ public final class Bytes {
     protected abstract int maxDoc();
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
         @Override
         public int advance(int target) throws IOException {
@@ -315,7 +315,7 @@ public final class Bytes {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
       return new SourceEnum(attrSource, type(), this, maxDoc()) {
 
         @Override
@@ -400,7 +400,7 @@ public final class Bytes {
     }
 
     @Override
-    protected void setNextEnum(DocValuesEnum valuesEnum) {
+    protected void setNextEnum(ValuesEnum valuesEnum) {
       bytesRef = valuesEnum.bytes();
     }
 

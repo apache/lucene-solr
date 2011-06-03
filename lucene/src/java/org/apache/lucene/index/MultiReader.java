@@ -407,6 +407,6 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   public PerDocValues perDocValues() throws IOException {
-    throw new UnsupportedOperationException("please use MultiPerDoc#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
+    throw new UnsupportedOperationException("please use MultiPerDocValues#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 }

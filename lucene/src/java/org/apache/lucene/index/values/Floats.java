@@ -111,7 +111,7 @@ public class Floats {
     }
 
     @Override
-    protected void setNextEnum(DocValuesEnum valuesEnum) {
+    protected void setNextEnum(ValuesEnum valuesEnum) {
       floatsRef = valuesEnum.getFloat();
     }
 
@@ -305,7 +305,7 @@ public class Floats {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource)
+      public ValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
         return new SourceEnum(attrSource, ValueType.FLOAT_32, this, maxDoc) {
           @Override
@@ -337,7 +337,7 @@ public class Floats {
       }
 
       @Override
-      public DocValuesEnum getEnum(AttributeSource attrSource)
+      public ValuesEnum getEnum(AttributeSource attrSource)
           throws IOException {
         return new SourceEnum(attrSource, type(), this, maxDoc) {
           @Override
@@ -363,7 +363,7 @@ public class Floats {
     }
 
     @Override
-    public DocValuesEnum getEnum(AttributeSource source) throws IOException {
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
       IndexInput indexInput = (IndexInput) datIn.clone();
       indexInput.seek(CodecUtil.headerLength(CODEC_NAME));
       // skip precision:
@@ -443,7 +443,7 @@ public class Floats {
     }
   }
 
-  static abstract class FloatsEnumImpl extends DocValuesEnum {
+  static abstract class FloatsEnumImpl extends ValuesEnum {
     protected final IndexInput dataIn;
     protected int pos = -1;
     protected final int precision;

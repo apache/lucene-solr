@@ -25,7 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.DocValuesField;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
@@ -124,13 +124,13 @@ public class TestSort extends LuceneTestCase {
         doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
         if (data[i][2] != null) {
           Field f = supportsDocValues ? 
-              DocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.INTS)
+              IndexDocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.INTS)
                                : new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED);
           doc.add(f);
         }
         if (data[i][3] != null) {
           Field f = supportsDocValues ?
-              DocValuesField.set(new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_32)
+              IndexDocValuesField.set(new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_32)
                               :  new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED);
           doc.add(f);
         }
@@ -140,7 +140,7 @@ public class TestSort extends LuceneTestCase {
         if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][8] != null) {
           Field f = supportsDocValues ?
-              DocValuesField.set(new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_64)
+              IndexDocValuesField.set(new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_64)
                               :  new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED);
           doc.add(f);
         }

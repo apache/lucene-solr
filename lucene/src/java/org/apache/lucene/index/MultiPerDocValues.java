@@ -25,9 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.MultiDocValues;
+import org.apache.lucene.index.values.MultiIndexDocValues;
 import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
+import org.apache.lucene.index.values.MultiIndexDocValues.DocValuesIndex;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
 
@@ -115,7 +115,7 @@ public class MultiPerDocValues extends PerDocValues {
     if (result == null) {
       // Lazy init: first time this field is requested, we
       // create & add to docValues:
-      final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
+      final List<MultiIndexDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiIndexDocValues.DocValuesIndex>();
       int docsUpto = 0;
       ValueType type = null;
       // Gather all sub-readers that share this field
@@ -126,24 +126,24 @@ public class MultiPerDocValues extends PerDocValues {
         if (values != null) {
           if (docsUpto != start) {
             type = values.type();
-            docValuesIndex.add(new MultiDocValues.DocValuesIndex(
-                new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+            docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
+                new MultiIndexDocValues.DummyDocValues(start, type), docsUpto, start
                     - docsUpto));
           }
-          docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
+          docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(values, start,
               length));
           docsUpto = start + length;
 
         } else if (i + 1 == subs.length && !docValuesIndex.isEmpty()) {
-          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
-              new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+          docValuesIndex.add(new MultiIndexDocValues.DocValuesIndex(
+              new MultiIndexDocValues.DummyDocValues(start, type), docsUpto, start
                   - docsUpto));
         }
       }
       if (docValuesIndex.isEmpty()) {
         return null;
       }
-      result = new MultiDocValues(
+      result = new MultiIndexDocValues(
           docValuesIndex.toArray(DocValuesIndex.EMPTY_ARRAY));
       docValues.put(field, result);
     }

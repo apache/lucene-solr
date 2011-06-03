@@ -34,14 +34,14 @@ import org.apache.lucene.util.BytesRef;
  * example usage, adding an int value:
  * 
  * <pre>
- * document.add(new DocValuesField(name).setInt(value));
+ * document.add(new IndexDocValuesField(name).setInt(value));
  * </pre>
  * 
  * For optimal performance, re-use the <code>DocValuesField</code> and
  * {@link Document} instance for more than one document:
  * 
  * <pre>
- *  DocValuesField field = new DocValuesField(name);
+ *  IndexDocValuesField field = new IndexDocValuesField(name);
  *  Document document = new Document();
  *  document.add(field);
  * 
@@ -55,11 +55,11 @@ import org.apache.lucene.util.BytesRef;
  * 
  * <p>
  * If doc values are stored in addition to an indexed ({@link Index}) or stored
- * ({@link Store}) value it's recommended to use the {@link DocValuesField}'s
+ * ({@link Store}) value it's recommended to use the {@link IndexDocValuesField}'s
  * {@link #set(AbstractField)} API:
  * 
  * <pre>
- *  DocValuesField field = new DocValuesField(name);
+ *  IndexDocValuesField field = new IndexDocValuesField(name);
  *  Field indexedField = new Field(name, stringValue, Stored.NO, Indexed.ANALYZED);
  *  Document document = new Document();
  *  document.add(indexedField);
@@ -73,7 +73,7 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-public class DocValuesField extends AbstractField implements PerDocFieldValues {
+public class IndexDocValuesField extends AbstractField implements PerDocFieldValues {
 
   protected BytesRef bytes;
   protected double doubleValue;
@@ -82,17 +82,17 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
   protected Comparator<BytesRef> bytesComparator;
 
   /**
-   * Creates a new {@link DocValuesField} with the given name.
+   * Creates a new {@link IndexDocValuesField} with the given name.
    */
-  public DocValuesField(String name) {
+  public IndexDocValuesField(String name) {
     super(name, Store.NO, Index.NO, TermVector.NO);
     setDocValues(this);
   }
 
   /**
-   * Creates a {@link DocValuesField} prototype
+   * Creates a {@link IndexDocValuesField} prototype
    */
-  DocValuesField() {
+  IndexDocValuesField() {
     this("");
   }
 
@@ -238,7 +238,7 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
   }
 
   /**
-   * Sets this {@link DocValuesField} to the given {@link AbstractField} and
+   * Sets this {@link IndexDocValuesField} to the given {@link AbstractField} and
    * returns the given field. Any modifications to this instance will be visible
    * to the given field.
    */
@@ -253,9 +253,9 @@ public class DocValuesField extends AbstractField implements PerDocFieldValues {
    * 
    */
   public static <T extends AbstractField> T set(T field, ValueType type) {
-    if (field instanceof DocValuesField)
+    if (field instanceof IndexDocValuesField)
       return field;
-    final DocValuesField valField = new DocValuesField();
+    final IndexDocValuesField valField = new IndexDocValuesField();
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:

@@ -99,15 +99,15 @@ public abstract class Writer extends DocValuesConsumer {
 
   /**
    * Records a value from the given document id. The methods implementation
-   * obtains the value for the document id from the last {@link DocValuesEnum}
-   * set to {@link #setNextEnum(DocValuesEnum)}.
+   * obtains the value for the document id from the last {@link ValuesEnum}
+   * set to {@link #setNextEnum(ValuesEnum)}.
    * <p>
    * This method is used during merging to provide implementation agnostic
    * default merge implementation.
    * </p>
    * <p>
    * The given document id must be the same document id returned from
-   * {@link DocValuesEnum#docID()} when this method is called. All documents IDs
+   * {@link ValuesEnum#docID()} when this method is called. All documents IDs
    * between the given ID and the previously given ID or <tt>0</tt> if the
    * method is call the first time are filled with default values depending on
    * the {@link Writer} implementation. The given document ID must always be
@@ -116,13 +116,13 @@ public abstract class Writer extends DocValuesConsumer {
   protected abstract void add(int docID) throws IOException;
 
   /**
-   * Sets the next {@link DocValuesEnum} to consume values from on calls to
+   * Sets the next {@link ValuesEnum} to consume values from on calls to
    * {@link #add(int)}
    * 
    * @param valuesEnum
-   *          the next {@link DocValuesEnum}, this must not be null
+   *          the next {@link ValuesEnum}, this must not be null
    */
-  protected abstract void setNextEnum(DocValuesEnum valuesEnum);
+  protected abstract void setNextEnum(ValuesEnum valuesEnum);
 
   /**
    * Finish writing and close any files and resources used by this Writer.
@@ -140,7 +140,7 @@ public abstract class Writer extends DocValuesConsumer {
     // simply override this and decide if they want to merge
     // segments using this generic implementation or if a bulk merge is possible
     // / feasible.
-    final DocValuesEnum valEnum = state.reader.getEnum();
+    final ValuesEnum valEnum = state.reader.getEnum();
     assert valEnum != null;
     try {
       setNextEnum(valEnum); // set the current enum we are working on - the
@@ -150,11 +150,11 @@ public abstract class Writer extends DocValuesConsumer {
       final Bits bits = state.bits;
       final int docCount = state.docCount;
       int currentDocId;
-      if ((currentDocId = valEnum.advance(0)) != DocValuesEnum.NO_MORE_DOCS) {
+      if ((currentDocId = valEnum.advance(0)) != ValuesEnum.NO_MORE_DOCS) {
         for (int i = 0; i < docCount; i++) {
           if (bits == null || !bits.get(i)) {
             if (currentDocId < i) {
-              if ((currentDocId = valEnum.advance(i)) == DocValuesEnum.NO_MORE_DOCS) {
+              if ((currentDocId = valEnum.advance(i)) == ValuesEnum.NO_MORE_DOCS) {
                 break; // advance can jump over default values
               }
             }
