@@ -1,56 +1,57 @@
 package org.apache.solr.search.function;
 
 import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueDouble;
+import org.apache.solr.search.MutableValueBool;
+import org.apache.solr.search.MutableValueInt;
 
-public abstract class DoubleDocValues extends DocValues {
+public abstract class BoolDocValues extends DocValues {
   protected final ValueSource vs;
 
-  public DoubleDocValues(ValueSource vs) {
+  public BoolDocValues(ValueSource vs) {
     this.vs = vs;
   }
 
   @Override
+  public abstract boolean boolVal(int doc);
+
+  @Override
   public byte byteVal(int doc) {
-    return (byte)doubleVal(doc);
+    return boolVal(doc) ? (byte)1 : (byte)0;
   }
 
   @Override
   public short shortVal(int doc) {
-    return (short)doubleVal(doc);
+    return boolVal(doc) ? (short)1 : (short)0;
   }
 
   @Override
   public float floatVal(int doc) {
-    return (float)doubleVal(doc);
+    return boolVal(doc) ? (float)1 : (float)0;
   }
 
   @Override
   public int intVal(int doc) {
-    return (int)doubleVal(doc);
+    return boolVal(doc) ? 1 : 0;
   }
 
   @Override
   public long longVal(int doc) {
-    return (long)doubleVal(doc);
+    return boolVal(doc) ? (long)1 : (long)0;
   }
 
   @Override
-  public boolean boolVal(int doc) {
-    return doubleVal(doc) != 0;
+  public double doubleVal(int doc) {
+    return boolVal(doc) ? (double)1 : (double)0;
   }
-
-  @Override
-  public abstract double doubleVal(int doc);
 
   @Override
   public String strVal(int doc) {
-    return Double.toString(doubleVal(doc));
+    return Boolean.toString(boolVal(doc));
   }
 
   @Override
   public Object objectVal(int doc) {
-    return exists(doc) ? doubleVal(doc) : null;
+    return exists(doc) ? boolVal(doc) : null;
   }
 
   @Override
@@ -61,7 +62,7 @@ public abstract class DoubleDocValues extends DocValues {
   @Override
   public ValueFiller getValueFiller() {
     return new ValueFiller() {
-      private final MutableValueDouble mval = new MutableValueDouble();
+      private final MutableValueBool mval = new MutableValueBool();
 
       @Override
       public MutableValue getValue() {
@@ -70,10 +71,9 @@ public abstract class DoubleDocValues extends DocValues {
 
       @Override
       public void fillValue(int doc) {
-        mval.value = doubleVal(doc);
+        mval.value = boolVal(doc);
         mval.exists = exists(doc);
       }
     };
   }
-
 }

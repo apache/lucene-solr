@@ -26,7 +26,7 @@ import java.io.IOException;
 
 /**
  * Concrete implementation of {@link AbstractFirstPassGroupingCollector} that groups based on
- * field values and more specifically uses {@link org.apache.lucene.search.FieldCache.DocTerms}
+ * field values and more specifically uses {@link org.apache.lucene.search.FieldCache.DocTermsIndex}
  * to collect groups.
  *
  * @lucene.experimental

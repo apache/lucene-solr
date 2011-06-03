@@ -78,6 +78,10 @@ public abstract class StringIndexDocValues extends DocValues {
     return spareChars.toString();
   }
 
+  @Override
+  public boolean boolVal(int doc) {
+    return exists(doc);
+  }
 
   @Override
   public abstract Object objectVal(int doc);  // force subclasses to override

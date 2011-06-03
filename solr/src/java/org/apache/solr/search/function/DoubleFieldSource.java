@@ -53,40 +53,15 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
     final double[] arr = vals.values;
     final Bits valid = vals.valid;
     
-    return new DocValues() {
-      @Override
-      public float floatVal(int doc) {
-        return (float) arr[doc];
-      }
-
-      @Override
-      public int intVal(int doc) {
-        return (int) arr[doc];
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long) arr[doc];
-      }
-
+    return new DoubleDocValues(this) {
       @Override
       public double doubleVal(int doc) {
         return arr[doc];
       }
 
       @Override
-      public String strVal(int doc) {
-        return Double.toString(arr[doc]);
-      }
-
-      @Override
-      public Object objectVal(int doc) {
-        return valid.get(doc) ? arr[doc] : null;
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + doubleVal(doc);
+      public boolean exists(int doc) {
+        return valid.get(doc);
       }
 
       @Override
@@ -147,7 +122,7 @@ public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
         }
       }
 
-            @Override
+      @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
           private final double[] doubleArr = arr;

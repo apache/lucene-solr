@@ -18,8 +18,10 @@
 
 					<form>
 
+						<input type="hidden" name="action" value="RENAME">
+
 						<p class="clearfix"><label for="rename_core">from:</label>
-						<input type="text" name="core" id="rename_core" disabled="disabled"></p>
+						<input type="text" name="core" id="rename_core" readonly="readonly"></p>
 
 						<p class="clearfix"><label for="rename_other">to:</label>
 						<input type="text" name="other" id="rename_other"></p>
@@ -42,12 +44,15 @@
 
 					<form>
 
+						<input type="hidden" name="action" value="SWAP">
+						<input type="hidden" name="core">
+
 						<p class="clearfix"><label for="swap_core">this:</label>
-						<select name="core" id="swap_core" class="core" disabled="disabled">
+						<select id="swap_core" class="core" disabled="disabled">
 						</select></p>
 
 						<p class="clearfix"><label for="swap_other">and:</label>
-						<select class="other" id="swap_other" class="other">
+						<select name="other" id="swap_other" class="other">
 						</select></p>
 
 						<p class="clearfix buttons">
@@ -180,6 +185,8 @@
 				<div class="button-content">
 
 					<form>
+
+						<input type="hidden" name="action" value="CREATE">
 
 						<p class="clearfix"><label for="add_name">name:</label>
 						<input type="text" name="name" id="add_name"></p>

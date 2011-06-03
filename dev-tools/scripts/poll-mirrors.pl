@@ -28,14 +28,15 @@ use strict;
 use warnings;
 use Getopt::Long;
 use LWP::Simple;
+require LWP::Parallel::UserAgent;
 
 my $version;
 my $interval = 300;
 my $quiet = 0;
 
-my $result = GetOptions ("version=s" => \$version, "interval=i" => \$interval, "quiet" => \$quiet);
+my $result = GetOptions ("version=s" => \$version, "interval=i" => \$interval);
 
-my $usage = "$0 -v version [ -i interval (seconds; default: 300)] [ -quiet ]";
+my $usage = "$0 -v version [ -i interval (seconds; default: 300) ]";
 
 unless ($result) {
   print STDERR $usage;
@@ -47,26 +48,71 @@ unless (defined($version) && $version =~ /\d+(?:\.\d+)+/) {
 }
 
 my $previously_selected = select STDOUT;
-$| = 1; # turn off buffering of STDOUT, so "."s are printed immediately
+$| = 1; # turn off buffering of STDOUT, so status is printed immediately
 select $previously_selected;
 
-my $apache_backup_url = "http://www.apache.org/dist//lucene/java/$version/lucene-$version.tgz.asc";
-my $maven_url = "http://repo2.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom";
+my $apache_url_suffix = "lucene/java/$version/lucene-$version.tgz.asc";
+my $apache_mirrors_list_url = "http://www.apache.org/mirrors/";
+my $maven_url = "http://repo2.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom.asc";
 
-my $apache_available = 0;
 my $maven_available = 0;
 
-until ($apache_available && $maven_available) {
-  unless ($apache_available) {
-    my $content = get($apache_backup_url);
-    $apache_available = defined($content);
-    print "\nDownloadable: $apache_backup_url\n" if ($apache_available);
+my @apache_mirrors = ();
+
+my $apache_mirrors_list_page = get($apache_mirrors_list_url);
+if (defined($apache_mirrors_list_page)) {
+  #<TR>
+  #  <TD ALIGN=RIGHT><A HREF="http://apache.dattatec.com/">apache.dattatec.com</A>&nbsp;&nbsp;<A HREF="http://apache.dattatec.com/">@</A></TD>
+  #
+  #  <TD>http</TD>
+  #  <TD ALIGN=RIGHT>8 hours<BR><IMG BORDER=1 SRC="icons/mms14.gif" ALT=""></TD>
+  #  <TD ALIGN=RIGHT>5 hours<BR><IMG BORDER=1 SRC="icons/mms14.gif" ALT=""></TD>
+  #  <TD>ok</TD>
+  #</TR>
+  while ($apache_mirrors_list_page =~ m~<TR>(.*?)</TR>~gis) {
+    my $mirror_entry = $1;
+    next unless ($mirror_entry =~ m~<TD>\s*ok\s*</TD>\s*$~i); # skip mirrors with problems
+    if ($mirror_entry =~ m~<A\s+HREF\s*=\s*"([^"]+)"\s*>~i) {
+      my $mirror_url = $1;
+      push @apache_mirrors, "$mirror_url/$apache_url_suffix";
+    }
   }
+} else {
+  print STDERR "Error fetching Apache mirrors list $apache_mirrors_list_url";
+  exit(1);
+}
+
+my $num_apache_mirrors = $#apache_mirrors;
+print "# Apache Mirrors: $num_apache_mirrors\n";
+
+while (1) {
   unless ($maven_available) {
     my $content = get($maven_url);
     $maven_available = defined($content);
-    print "\nDownloadable: $maven_url\n" if ($maven_available);
   }
-  print "." unless ($quiet);
-  sleep($interval) unless ($apache_available && $maven_available);
+  @apache_mirrors = &check_mirrors;
+  my $num_downloadable_apache_mirrors
+    = $num_apache_mirrors - $#apache_mirrors;
+
+  print "Available: ";
+  print "Maven Central; " if ($maven_available);
+  printf "%d/%d Apache Mirrors (%0.1f%%)\n", $num_downloadable_apache_mirrors,
+    $num_apache_mirrors, ($num_downloadable_apache_mirrors*100/$num_apache_mirrors);
+  last if ($maven_available && $num_downloadable_apache_mirrors == $num_apache_mirrors);
+  sleep($interval);
+}
+
+sub check_mirrors {
+  my $agent = LWP::Parallel::UserAgent->new();
+  $agent->timeout(30);
+  $agent->redirect(1);  # follow redirects
+  $agent->register($_) for (@apache_mirrors);
+  my $entries = $agent->wait();
+  my @not_yet_downloadable_apache_mirrors;
+  for my $entry (keys %$entries) {
+    my $response = $entries->{$entry}->response;
+    push @not_yet_downloadable_apache_mirrors, $response->request->uri
+      unless ($response->is_success);
+  }
+  return @not_yet_downloadable_apache_mirrors;
 }

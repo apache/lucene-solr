@@ -17,12 +17,16 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueBool;
+import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.OrdFieldSource;
+import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -50,7 +54,7 @@ public class BoolField extends FieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new OrdFieldSource(field.name);
+    return new BoolFieldSource(field.name);
   }
 
   // avoid instantiating every time...
@@ -121,7 +125,7 @@ public class BoolField extends FieldType {
 
   @Override
   public Object toObject(SchemaField sf, BytesRef term) {
-    return term.bytes[0] == 'T';
+    return term.bytes[term.offset] == 'T';
   }
 
   @Override
@@ -145,6 +149,83 @@ public class BoolField extends FieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    writer.writeBool(name, f.stringValue().charAt(0) =='T');
+    writer.writeBool(name, f.stringValue().charAt(0) == 'T');
   }
+}
+
+// TODO - this can be much more efficient - use OpenBitSet or Bits
+class BoolFieldSource extends ValueSource {
+  protected String field;
+
+  public BoolFieldSource(String field) {
+    this.field = field;
+  }
+
+  @Override
+  public String description() {
+    return "bool(" + field + ')';
+  }
+
+
+  @Override
+  public DocValues getValues(Map context, IndexReader.AtomicReaderContext readerContext) throws IOException {
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(readerContext.reader, field);
+
+    // figure out what ord maps to true
+    int nord = sindex.numOrd();
+    BytesRef br = new BytesRef();
+    int tord = -1;
+    for (int i=1; i<nord; i++) {
+      sindex.lookup(i, br);
+      if (br.length==1 && br.bytes[br.offset]=='T') {
+        tord = i;
+        break;
+      }
+    }
+
+    final int trueOrd = tord;
+
+    return new BoolDocValues(this) {
+      @Override
+      public boolean boolVal(int doc) {
+        return sindex.getOrd(doc) == trueOrd;
+      }
+
+      @Override
+      public boolean exists(int doc) {
+        return sindex.getOrd(doc) != 0;
+      }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueBool mval = new MutableValueBool();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            int ord = sindex.getOrd(doc);
+            mval.value = (ord == trueOrd);
+            mval.exists = (ord != 0);
+          }
+        };
+      }
+    };
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o.getClass() == BoolFieldSource.class && this.field.equals(((BoolFieldSource)o).field);
+  }
+
+  private static final int hcode = OrdFieldSource.class.hashCode();
+  @Override
+  public int hashCode() {
+    return hcode + field.hashCode();
+  };
+
 }

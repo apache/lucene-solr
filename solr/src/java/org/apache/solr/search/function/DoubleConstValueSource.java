@@ -115,4 +115,9 @@ public class DoubleConstValueSource extends ConstNumberSource {
   public Number getNumber() {
     return constant;
   }
+
+  @Override
+  public boolean getBool() {
+    return constant != 0;
+  }
 }

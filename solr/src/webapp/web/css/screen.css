@@ -462,6 +462,7 @@ ul
 
 #content #dashboard .block
 {
+    background-image: none;
     width: 49%;
 }
 
@@ -550,85 +551,13 @@ ul
     display: block;
 }
 
-#content #dashboard #replication.is-master .slave
+#content #dashboard #replication #details table thead td span
 {
     display: none;
-}
-
-#content #dashboard #replication table
-{
-    border-collapse: collapse;
-}
-
-#content #dashboard #replication table th,
-#content #dashboard #replication table td
-{
-    border: 1px solid #f0f0f0;
-    padding: 2px 5px;
-}
-
-#content #dashboard #replication table thead td
-{
-    border: 0;
-}
-
-#content #dashboard #replication table thead th,
-#content #dashboard #replication table tbody td
-{
-    border-right: 0;
-}
-
-#content #dashboard #replication table thead th
-{
-    border-top: 0;
-    font-weight: bold;
-}
-
-#content #dashboard #replication table tbody th,
-#content #dashboard #replication table tbody td
-{
-    border-bottom: 0;
-    text-align: right;
-}
-
-#content #dashboard #replication table tbody th
-{
-    border-left: 0;
-}
-
-#content #dashboard #replication table tbody th,
-#content #dashboard #replication dt
-{
-    width: 100px;
-}
-
-#content #dashboard #replication dl
-{
-    display: none;
-    margin-top: 10px;
-}
-
-#content #dashboard #replication dt,
-#content #dashboard #replication dd
-{
-    display: block;
-    padding-top: 1px;
-    padding-bottom: 1px;
-}
-
-#content #dashboard #replication dt
-{
-    border-right: 1px solid #f0f0f0;
-    float: left;
-    padding-left: 5px;
-    padding-right: 5px;
-    margin-right: 3px;
-    text-align: right;
 }
 
 #content #dashboard #dataimport
 {
-    background-color: #0ff;
     float: right;
 }
 
@@ -709,6 +638,19 @@ ul
     margin-left: 0.5%;
     min-width: 49%;
     max-width: 99%;
+}
+
+#content #analysis #analysis-error
+{
+    background-color: #f00;
+    background-image: url( ../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    display: none;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
 }
 
 #content #analysis .analysis-result h2
@@ -1334,6 +1276,12 @@ ul
     padding-left: 10px;
 }
 
+#content #schema-browser #related #f-df-t
+{
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
 #content #schema-browser #related dl
 {
     margin-top: 15px;
@@ -1367,7 +1315,9 @@ ul
 #content #schema-browser #related .dynamic-field .dynamic-field,
 #content #schema-browser #related .dynamic-field .dynamic-field a,
 #content #schema-browser #related .type .type,
-#content #schema-browser #related .type .type a
+#content #schema-browser #related .type .type a,
+#content #schema-browser #related .active,
+#content #schema-browser #related .active a
 {
     color: #333;
 }
@@ -1376,6 +1326,11 @@ ul
 #content #schema-browser #related .copyfield a
 {
     color: #666;
+}
+
+#content #schema-browser #data
+{
+    display: none;
 }
 
 #content #schema-browser #data #index dt
@@ -1491,6 +1446,7 @@ ul
 
 #content #schema-browser #data #field .topterms-holder
 {
+    display: none;
     float: left;
 }
 
@@ -2830,6 +2786,7 @@ ul
 #content #replication #details table tbody .size
 {
     text-align: right;
+    white-space: nowrap;
 }
 
 #content #replication #details table tbody .generation div
