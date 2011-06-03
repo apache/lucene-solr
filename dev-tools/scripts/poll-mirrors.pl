@@ -111,7 +111,7 @@ while (1) {
   last if ($maven_available && 0 == $#apache_mirrors);
 
   my $stop = time();
-  my $sleep_interval = $interval - 2 * ($stop - $start);
+  my $sleep_interval = $interval - ($stop - $start);
   sleep($interval) if ($sleep_interval > 0);
 }
 
