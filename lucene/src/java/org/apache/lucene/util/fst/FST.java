@@ -147,7 +147,7 @@ public class FST<T> {
       return flag(BIT_LAST_ARC);
     }
 
-    boolean isFinal() {
+    public boolean isFinal() {
       return flag(BIT_FINAL_ARC);
     }
   };
