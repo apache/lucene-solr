@@ -21,6 +21,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.FST.INPUT_TYPE;
 
 import java.io.IOException;
 
@@ -69,6 +70,42 @@ public class Builder<T> {
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
 
+  /**
+   * Instantiates an FST/FSA builder without any pruning. A shortcut
+   * to {@link #Builder(INPUT_TYPE, int, int, boolean, Outputs)} with 
+   * pruning options turned off.
+   */
+  public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs)
+  {
+      this(inputType, 0, 0, true, outputs);
+  }
+
+  /**
+   * Instantiates an FST/FSA builder with all the possible tuning and construction
+   * tweaks. Read parameter documentation carefully.
+   * 
+   * @param inputType 
+   *    The input type (transition labels). Can be anything from {@link INPUT_TYPE}
+   *    enumeration. Shorter types will consume less memory. Strings (character sequences) are 
+   *    represented as {@link INPUT_TYPE#BYTE4} (full unicode codepoints). 
+   *     
+   * @param minSuffixCount1
+   *    If pruning the input graph during construction, this threshold is used for telling
+   *    if a node is kept or pruned. If transition_count(node) &gt;= minSuffixCount1, the node
+   *    is kept. 
+   *    
+   * @param minSuffixCount2
+   *    (Note: only Mike McCandless knows what this one is really doing...) 
+   * 
+   * @param doMinSuffix 
+   *    If <code>true</code>, the shared suffixes will be compacted into unique paths.
+   *    This requires an additional hash map for lookups in memory. Setting this parameter to
+   *    <code>false</code> creates a single path for all input sequences. This will result in a larger
+   *    graph, but may require less memory and will speed up construction.  
+   * @param outputs The output type for each input sequence. Applies only if building an FST. For
+   *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
+   *    singleton output object.
+   */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doMinSuffix, Outputs<T> outputs) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
