@@ -112,7 +112,7 @@ while (1) {
 
   my $stop = time();
   my $sleep_interval = $interval - ($stop - $start);
-  sleep($interval) if ($sleep_interval > 0);
+  sleep($sleep_interval) if ($sleep_interval > 0);
 }
 
 sub check_mirrors {
