@@ -46,6 +46,10 @@ unless (defined($version) && $version =~ /\d+(?:\.\d+)+/) {
   exit(1);
 }
 
+my $previously_selected = select STDOUT;
+$| = 1;
+select $previously_selected;
+
 my $apache_backup_url = "http://www.apache.org/dist//lucene/java/$version/lucene-$version.tgz.asc";
 my $maven_url = "http://repo2.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom";
 
