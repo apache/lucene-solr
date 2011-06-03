@@ -1414,6 +1414,9 @@ var sammy = $.sammy
                                     error : function( xhr, text_status, error_thrown )
                                     {
                                         console.debug( arguments );
+                                        
+                                        $( '#content' )
+                                            .html( 'sorry, no replication-handler defined!' );
                                     },
                                     complete : function( xhr, text_status )
                                     {
@@ -3949,7 +3952,7 @@ var sammy = $.sammy
                         {
                             this
                                 .html( template );
-            
+          
                             var memory_data = {};
                             if( app.dashboard_values['jvm']['memory']['raw'] )
                             {
@@ -4136,6 +4139,8 @@ var solr_admin = function( app_config )
 
     this.init_cores = function()
     {
+        var self = this;
+
         $.ajax
         (
             {
@@ -4148,7 +4153,7 @@ var solr_admin = function( app_config )
                 },
                 success : function( response )
                 {
-                    this.cores_data = response.status;
+                    self.cores_data = response.status;
                     is_multicore = 'undefined' === typeof response.status[''];
 
                     if( is_multicore )
@@ -4204,7 +4209,7 @@ var solr_admin = function( app_config )
                             },
                             success : function( response )
                             {
-                                dashboard_values = response;
+                                self.dashboard_values = response;
 
                                 var environment_args = null;
                                 var cloud_args = null;
