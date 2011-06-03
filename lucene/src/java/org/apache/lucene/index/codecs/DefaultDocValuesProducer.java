@@ -25,7 +25,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.Bytes;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.ValueType;
@@ -33,22 +33,22 @@ import org.apache.lucene.store.Directory;
 
 /**
  * Abstract base class for FieldsProducer implementations supporting
- * {@link DocValues}.
+ * {@link IndexDocValues}.
  * 
  * @lucene.experimental
  */
 public class DefaultDocValuesProducer extends PerDocValues {
 
-  protected final TreeMap<String, DocValues> docValues;
+  protected final TreeMap<String, IndexDocValues> docValues;
 
   /**
    * Creates a new {@link DefaultDocValuesProducer} instance and loads all
-   * {@link DocValues} instances for this segment and codec.
+   * {@link IndexDocValues} instances for this segment and codec.
    * 
    * @param si
-   *          the segment info to load the {@link DocValues} for.
+   *          the segment info to load the {@link IndexDocValues} for.
    * @param dir
-   *          the directory to load the {@link DocValues} from.
+   *          the directory to load the {@link IndexDocValues} from.
    * @param fieldInfo
    *          the {@link FieldInfos}
    * @param codecId
@@ -62,19 +62,19 @@ public class DefaultDocValuesProducer extends PerDocValues {
   }
 
   /**
-   * Returns a {@link DocValues} instance for the given field name or
-   * <code>null</code> if this field has no {@link DocValues}.
+   * Returns a {@link IndexDocValues} instance for the given field name or
+   * <code>null</code> if this field has no {@link IndexDocValues}.
    */
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public IndexDocValues docValues(String field) throws IOException {
     return docValues.get(field);
   }
 
   // Only opens files... doesn't actually load any values
-  protected TreeMap<String, DocValues> load(FieldInfos fieldInfos,
+  protected TreeMap<String, IndexDocValues> load(FieldInfos fieldInfos,
       String segment, int docCount, Directory dir, int codecId)
       throws IOException {
-    TreeMap<String, DocValues> values = new TreeMap<String, DocValues>();
+    TreeMap<String, IndexDocValues> values = new TreeMap<String, IndexDocValues>();
     boolean success = false;
     try {
 
@@ -101,25 +101,25 @@ public class DefaultDocValuesProducer extends PerDocValues {
   
 
   /**
-   * Loads a {@link DocValues} instance depending on the given {@link ValueType}.
+   * Loads a {@link IndexDocValues} instance depending on the given {@link ValueType}.
    * Codecs that use different implementations for a certain {@link ValueType} can
    * simply override this method and return their custom implementations.
    * 
    * @param docCount
    *          number of documents in the segment
    * @param dir
-   *          the {@link Directory} to load the {@link DocValues} from
+   *          the {@link Directory} to load the {@link IndexDocValues} from
    * @param id
    *          the unique file ID within the segment
    * @param type
    *          the type to load
-   * @return a {@link DocValues} instance for the given type
+   * @return a {@link IndexDocValues} instance for the given type
    * @throws IOException
    *           if an {@link IOException} occurs
    * @throws IllegalArgumentException
    *           if the given {@link ValueType} is not supported
    */
-  protected DocValues loadDocValues(int docCount, Directory dir, String id,
+  protected IndexDocValues loadDocValues(int docCount, Directory dir, String id,
       ValueType type) throws IOException {
     switch (type) {
     case INTS:
@@ -149,10 +149,10 @@ public class DefaultDocValuesProducer extends PerDocValues {
     closeDocValues(docValues.values());
   }
 
-  private void closeDocValues(final Collection<DocValues> values)
+  private void closeDocValues(final Collection<IndexDocValues> values)
       throws IOException {
     IOException ex = null;
-    for (DocValues docValues : values) {
+    for (IndexDocValues docValues : values) {
       try {
         docValues.close();
       } catch (IOException e) {

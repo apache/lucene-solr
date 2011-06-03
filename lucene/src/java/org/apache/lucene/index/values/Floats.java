@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -63,7 +63,7 @@ public class Floats {
     }
   }
 
-  public static DocValues getValues(Directory dir, String id, int maxDoc)
+  public static IndexDocValues getValues(Directory dir, String id, int maxDoc)
       throws IOException {
     return new FloatsReader(dir, id, maxDoc);
   }
@@ -232,7 +232,7 @@ public class Floats {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static class FloatsReader extends DocValues {
+  static class FloatsReader extends IndexDocValues {
 
     private final IndexInput datIn;
     private final int precisionBytes;

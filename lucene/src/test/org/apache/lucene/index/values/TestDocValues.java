@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.values.DocValues.SortedSource;
-import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.index.values.IndexDocValues.SortedSource;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
@@ -81,7 +81,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(maxDoc);
     assertEquals(0, trackBytes.get());
 
-    DocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
+    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
     for (int iter = 0; iter < 2; iter++) {
       DocValuesEnum bytesEnum = getEnum(r);
       assertNotNull("enum is null", bytesEnum);
@@ -103,7 +103,7 @@ public class TestDocValues extends LuceneTestCase {
     // Verify we can load source twice:
     for (int iter = 0; iter < 2; iter++) {
       Source s;
-      DocValues.SortedSource ss;
+      IndexDocValues.SortedSource ss;
       if (mode == Bytes.Mode.SORTED) {
         s = ss = getSortedSource(r, comp);
       } else {
@@ -199,7 +199,7 @@ public class TestDocValues extends LuceneTestCase {
         w.finish(NUM_VALUES + additionalDocs);
         assertEquals(0, trackBytes.get());
 
-        DocValues r = Ints.getValues(dir, "test", false);
+        IndexDocValues r = Ints.getValues(dir, "test", false);
         for (int iter = 0; iter < 2; iter++) {
           Source s = getSource(r);
           for (int i = 0; i < NUM_VALUES; i++) {
@@ -263,7 +263,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(NUM_VALUES + additionalValues);
     assertEquals(0, trackBytes.get());
 
-    DocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
+    IndexDocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
     for (int iter = 0; iter < 2; iter++) {
       Source s = getSource(r);
       for (int i = 0; i < NUM_VALUES; i++) {
@@ -308,16 +308,16 @@ public class TestDocValues extends LuceneTestCase {
     runTestFloats(8, 0.0);
   }
   
-  private DocValuesEnum getEnum(DocValues values) throws IOException {
+  private DocValuesEnum getEnum(IndexDocValues values) throws IOException {
     return random.nextBoolean() ? values.getEnum() : getSource(values).getEnum();
   }
 
-  private Source getSource(DocValues values) throws IOException {
+  private Source getSource(IndexDocValues values) throws IOException {
     // getSource uses cache internally
     return random.nextBoolean() ? values.load() : values.getSource();
   }
 
-  private SortedSource getSortedSource(DocValues values,
+  private SortedSource getSortedSource(IndexDocValues values,
       Comparator<BytesRef> comparator) throws IOException {
     // getSortedSource uses cache internally
     return random.nextBoolean() ? values.loadSorted(comparator) : values

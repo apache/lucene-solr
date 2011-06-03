@@ -34,7 +34,7 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
@@ -257,7 +257,7 @@ final class PerFieldCodecWrapper extends Codec {
       return codecs.keySet();
     }
     @Override
-    public DocValues docValues(String field) throws IOException {
+    public IndexDocValues docValues(String field) throws IOException {
       final PerDocValues perDocProducer = codecs.get(field);
       if (perDocProducer == null) {
         return null;

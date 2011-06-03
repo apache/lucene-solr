@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.MultiDocValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;

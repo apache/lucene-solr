@@ -41,7 +41,7 @@ import org.apache.lucene.index.MultiPerDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -107,7 +107,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     TopDocs search = searcher.search(parser.parse("0 OR 1 OR 2 OR 3 OR 4"), 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    DocValues docValues = MultiPerDocValues.getPerDocs(reader).docValues("docId");
+    IndexDocValues docValues = MultiPerDocValues.getPerDocs(reader).docValues("docId");
     Source source = docValues.getSource();
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
@@ -264,7 +264,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       final int base = r.numDocs() - numRemainingValues;
       switch (val) {
       case INTS: {
-        DocValues intsReader = getDocValues(r, val.name());
+        IndexDocValues intsReader = getDocValues(r, val.name());
         assertNotNull(intsReader);
 
         Source ints = getSource(intsReader);
@@ -295,7 +295,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         break;
       case FLOAT_32:
       case FLOAT_64: {
-        DocValues floatReader = getDocValues(r, val.name());
+        IndexDocValues floatReader = getDocValues(r, val.name());
         assertNotNull(floatReader);
         Source floats = getSource(floatReader);
         for (int i = 0; i < base; i++) {
@@ -353,7 +353,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       assertEquals(0, r.numDeletedDocs());
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
-      DocValues bytesReader = getDocValues(r, byteIndexValue.name());
+      IndexDocValues bytesReader = getDocValues(r, byteIndexValue.name());
       assertNotNull("field " + byteIndexValue.name()
           + " returned null reader - maybe merged failed", bytesReader);
       Source bytes = getSource(bytesReader);
@@ -448,7 +448,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     d.close();
   }
 
-  private DocValues getDocValues(IndexReader reader, String field)
+  private IndexDocValues getDocValues(IndexReader reader, String field)
       throws IOException {
     boolean optimized = reader.isOptimized();
     PerDocValues perDoc = optimized ? reader.getSequentialSubReaders()[0].perDocValues()
@@ -457,7 +457,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     case 0:
       return perDoc.docValues(field);
     case 1:
-      DocValues docValues = perDoc.docValues(field);
+      IndexDocValues docValues = perDoc.docValues(field);
       if (docValues != null) {
         return docValues;
       }
@@ -468,7 +468,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     throw new RuntimeException();
   }
 
-  private Source getSource(DocValues values) throws IOException {
+  private Source getSource(IndexDocValues values) throws IOException {
     Source source;
     if (random.nextInt(10) == 0) {
       source = values.load();
@@ -480,7 +480,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     return source;
   }
 
-  private DocValuesEnum getValuesEnum(DocValues values) throws IOException {
+  private DocValuesEnum getValuesEnum(IndexDocValues values) throws IOException {
     DocValuesEnum valuesEnum;
     if (!(values instanceof MultiDocValues) && random.nextInt(10) == 0) {
       // TODO not supported by MultiDocValues yet!

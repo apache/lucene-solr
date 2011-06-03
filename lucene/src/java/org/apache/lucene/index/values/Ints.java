@@ -39,7 +39,7 @@ public class Ints {
     return new IntsWriter(dir, id, bytesUsed);
   }
 
-  public static DocValues getValues(Directory dir, String id,
+  public static IndexDocValues getValues(Directory dir, String id,
       boolean useFixedArray) throws IOException {
     return new IntsReader(dir, id);
   }

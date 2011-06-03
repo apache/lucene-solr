@@ -24,7 +24,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.MultiDocValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
@@ -47,7 +47,7 @@ import org.apache.lucene.util.ReaderUtil.Gather;
 public class MultiPerDocValues extends PerDocValues {
   private final PerDocValues[] subs;
   private final ReaderUtil.Slice[] subSlices;
-  private final Map<String, DocValues> docValues = new ConcurrentHashMap<String, DocValues>();
+  private final Map<String, IndexDocValues> docValues = new ConcurrentHashMap<String, IndexDocValues>();
   private final TreeSet<String> fields;
 
   public MultiPerDocValues(PerDocValues[] subs, ReaderUtil.Slice[] subSlices) {
@@ -110,8 +110,8 @@ public class MultiPerDocValues extends PerDocValues {
     return perDocValues;
   }
 
-  public DocValues docValues(String field) throws IOException {
-    DocValues result = docValues.get(field);
+  public IndexDocValues docValues(String field) throws IOException {
+    IndexDocValues result = docValues.get(field);
     if (result == null) {
       // Lazy init: first time this field is requested, we
       // create & add to docValues:
@@ -120,7 +120,7 @@ public class MultiPerDocValues extends PerDocValues {
       ValueType type = null;
       // Gather all sub-readers that share this field
       for (int i = 0; i < subs.length; i++) {
-        DocValues values = subs[i].docValues(field);
+        IndexDocValues values = subs[i].docValues(field);
         final int start = subSlices[i].start;
         final int length = subSlices[i].length;
         if (values != null) {

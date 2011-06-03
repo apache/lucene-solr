@@ -20,8 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.DocValues.Source;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.cache.ByteValuesCreator;
@@ -375,7 +375,7 @@ public abstract class FieldComparator {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      final DocValues docValues = context.reader.docValues(field);
+      final IndexDocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource(); 
       }
@@ -651,7 +651,7 @@ public abstract class FieldComparator {
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
-      DocValues docValues = context.reader.docValues(field);
+      IndexDocValues docValues = context.reader.docValues(field);
       if (docValues != null) {
         currentReaderValues = docValues.getSource();
       }

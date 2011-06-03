@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -842,7 +842,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   
   @Override
-  public DocValues docValues(String field) throws IOException {
+  public IndexDocValues docValues(String field) throws IOException {
     return core.perDocProducer.docValues(field);
   }
 

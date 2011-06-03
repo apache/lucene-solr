@@ -26,15 +26,15 @@ import org.apache.lucene.util.ReaderUtil;
 /**
  * @lucene.experimental
  */
-public class MultiDocValues extends DocValues {
+public class MultiDocValues extends IndexDocValues {
 
   public static class DocValuesIndex {
     public final static DocValuesIndex[] EMPTY_ARRAY = new DocValuesIndex[0];
     final int start;
     final int length;
-    final DocValues docValues;
+    final IndexDocValues docValues;
 
-    public DocValuesIndex(DocValues docValues, int start, int length) {
+    public DocValuesIndex(IndexDocValues docValues, int start, int length) {
       this.docValues = docValues;
       this.start = start;
       this.length = length;
@@ -67,7 +67,7 @@ public class MultiDocValues extends DocValues {
     super.close();
   }
 
-  public DocValues reset(DocValuesIndex[] docValuesIdx) {
+  public IndexDocValues reset(DocValuesIndex[] docValuesIdx) {
     int[] start = new int[docValuesIdx.length];
     for (int i = 0; i < docValuesIdx.length; i++) {
       start[i] = docValuesIdx[i].start;
@@ -77,7 +77,7 @@ public class MultiDocValues extends DocValues {
     return this;
   }
 
-  public static class DummyDocValues extends DocValues {
+  public static class DummyDocValues extends IndexDocValues {
     final int maxDoc;
     final Source emptySoruce;
 

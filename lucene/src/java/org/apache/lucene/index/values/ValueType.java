@@ -19,10 +19,10 @@ package org.apache.lucene.index.values;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.values.DocValues.SortedSource;
+import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 
 /**
- * {@link ValueType} specifies the type of the {@link DocValues} for a certain field.
+ * {@link ValueType} specifies the type of the {@link IndexDocValues} for a certain field.
  * A {@link ValueType} only defines the data type for a field while the actual
  * Implementation used to encode and decode the values depends on the field's
  * {@link Codec}. It is up to the {@link Codec} implementing

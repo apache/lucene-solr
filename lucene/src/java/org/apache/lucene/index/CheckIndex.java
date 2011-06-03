@@ -28,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.DocValuesEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -952,7 +952,7 @@ public class CheckIndex {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
           final PerDocValues perDocValues = reader.perDocValues();
-          final DocValues docValues = perDocValues.docValues(fieldInfo.name);
+          final IndexDocValues docValues = perDocValues.docValues(fieldInfo.name);
           if (docValues == null) {
             continue;
           }

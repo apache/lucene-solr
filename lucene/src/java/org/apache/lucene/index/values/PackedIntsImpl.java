@@ -182,7 +182,7 @@ class PackedIntsImpl {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static class IntsReader extends DocValues {
+  static class IntsReader extends IndexDocValues {
     private final IndexInput datIn;
     private final boolean packed;
 

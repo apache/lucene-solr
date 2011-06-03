@@ -166,7 +166,7 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public org.apache.lucene.index.values.DocValues.Source load()
+    public org.apache.lucene.index.values.IndexDocValues.Source load()
         throws IOException {
       return loadSorted(null);
     }

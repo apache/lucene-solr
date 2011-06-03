@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
@@ -219,7 +219,7 @@ public interface Fieldable {
    * Sets the {@link PerDocFieldValues} for this field. If
    * {@link PerDocFieldValues} is set this field will store per-document values
    * 
-   * @see DocValues
+   * @see IndexDocValues
    */
   public void setDocValues(PerDocFieldValues docValues);
 

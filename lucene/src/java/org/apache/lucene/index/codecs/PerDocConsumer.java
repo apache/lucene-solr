@@ -19,7 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 
 /**
  * Abstract API that consumes per document values. Concrete implementations of
@@ -48,7 +48,7 @@ public abstract class PerDocConsumer implements Closeable{
       assert mergeState.fieldInfo != null : "FieldInfo for field is null: "
           + field;
       if (mergeState.fieldInfo.hasDocValues()) {
-        final DocValues docValues = producer.docValues(field);
+        final IndexDocValues docValues = producer.docValues(field);
         if (docValues == null) {
           /*
            * It is actually possible that a fieldInfo has a values type but no

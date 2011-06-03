@@ -24,7 +24,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -1585,7 +1585,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  public DocValues docValues(String field) throws IOException {
+  public IndexDocValues docValues(String field) throws IOException {
     final PerDocValues perDoc = perDocValues();
     if (perDoc == null) {
       return null;

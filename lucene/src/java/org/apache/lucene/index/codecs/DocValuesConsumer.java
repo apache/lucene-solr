@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.util.Bits;
@@ -99,7 +99,7 @@ public abstract class DocValuesConsumer {
    *           if an {@link IOException} occurs
    */
   public void merge(org.apache.lucene.index.codecs.MergeState mergeState,
-      DocValues values) throws IOException {
+      IndexDocValues values) throws IOException {
     assert mergeState != null;
     // TODO we need some kind of compatibility notation for values such
     // that two slightly different segments can be merged eg. fixed vs.
@@ -112,7 +112,7 @@ public abstract class DocValuesConsumer {
      * with MultiDocValues the writer can not optimize for bulk-copyable data
      */
     for (final IndexReader reader : mergeState.readers) {
-      final DocValues r = reader.docValues(mergeState.fieldInfo.name);
+      final IndexDocValues r = reader.docValues(mergeState.fieldInfo.name);
       if (r != null) {
         merged = true;
         merge(new Writer.MergeState(r, docBase, reader.maxDoc(), reader
@@ -148,7 +148,7 @@ public abstract class DocValuesConsumer {
      * the source reader for this MergeState - merged values should be read from
      * this instance
      */
-    public final DocValues reader;
+    public final IndexDocValues reader;
     /** the absolute docBase for this MergeState within the resulting segment */
     public final int docBase;
     /** the number of documents in this MergeState */
@@ -156,7 +156,7 @@ public abstract class DocValuesConsumer {
     /** the deleted bits for this MergeState */
     public final Bits bits;
 
-    public MergeState(DocValues reader, int docBase, int docCount, Bits bits) {
+    public MergeState(IndexDocValues reader, int docBase, int docCount, Bits bits) {
       assert reader != null;
       this.reader = reader;
       this.docBase = docBase;

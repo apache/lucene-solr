@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.DocValuesEnum;
 import org.apache.lucene.util.AttributeSource;
 

@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.experimental
  */
-public abstract class DocValues implements Closeable {
+public abstract class IndexDocValues implements Closeable {
   /*
    * TODO: it might be useful to add another Random Access enum for some
    * implementations like packed ints and only return such a random access enum
@@ -39,13 +39,13 @@ public abstract class DocValues implements Closeable {
    * useful or even required in certain environements to have disc based random
    * access
    */
-  public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
+  public static final IndexDocValues[] EMPTY_ARRAY = new IndexDocValues[0];
 
   private SourceCache cache = new SourceCache.DirectSourceCache();
 
   /**
    * Returns an iterator that steps through all documents values for this
-   * {@link DocValues} field instance. {@link DocValuesEnum} will skip document
+   * {@link IndexDocValues} field instance. {@link DocValuesEnum} will skip document
    * without a value if applicable.
    */
   public DocValuesEnum getEnum() throws IOException {
@@ -54,7 +54,7 @@ public abstract class DocValues implements Closeable {
 
   /**
    * Returns an iterator that steps through all documents values for this
-   * {@link DocValues} field instance. {@link DocValuesEnum} will skip document
+   * {@link IndexDocValues} field instance. {@link DocValuesEnum} will skip document
    * without a value if applicable.
    * <p>
    * If an {@link AttributeSource} is supplied to this method the
@@ -65,12 +65,12 @@ public abstract class DocValues implements Closeable {
       throws IOException;
 
   /**
-   * Loads a new {@link Source} instance for this {@link DocValues} field
+   * Loads a new {@link Source} instance for this {@link IndexDocValues} field
    * instance. Source instances returned from this method are not cached. It is
    * the callers responsibility to maintain the instance and release its
    * resources once the source is not needed anymore.
    * <p>
-   * This method will return null iff this {@link DocValues} represent a
+   * This method will return null iff this {@link IndexDocValues} represent a
    * {@link SortedSource}.
    * <p>
    * For managed {@link Source} instances see {@link #getSource()}.
@@ -88,11 +88,11 @@ public abstract class DocValues implements Closeable {
    * instance unless it is not needed for the rest of its life time.
    * <p>
    * {@link Source} instances obtained from this method are closed / released
-   * from the cache once this {@link DocValues} instance is closed by the
+   * from the cache once this {@link IndexDocValues} instance is closed by the
    * {@link IndexReader}, {@link Fields} or {@link FieldsEnum} the
-   * {@link DocValues} was created from.
+   * {@link IndexDocValues} was created from.
    * <p>
-   * This method will return null iff this {@link DocValues} represent a
+   * This method will return null iff this {@link IndexDocValues} represent a
    * {@link SortedSource}.
    */
   public Source getSource() throws IOException {
@@ -100,10 +100,10 @@ public abstract class DocValues implements Closeable {
   }
 
   /**
-   * Returns a {@link SortedSource} instance for this {@link DocValues} field
+   * Returns a {@link SortedSource} instance for this {@link IndexDocValues} field
    * instance like {@link #getSource()}.
    * <p>
-   * This method will return null iff this {@link DocValues} represent a
+   * This method will return null iff this {@link IndexDocValues} represent a
    * {@link Source} instead of a {@link SortedSource}.
    */
   public SortedSource getSortedSorted(Comparator<BytesRef> comparator)
@@ -113,9 +113,9 @@ public abstract class DocValues implements Closeable {
 
   /**
    * Loads and returns a {@link SortedSource} instance for this
-   * {@link DocValues} field instance like {@link #load()}.
+   * {@link IndexDocValues} field instance like {@link #load()}.
    * <p>
-   * This method will return null iff this {@link DocValues} represent a
+   * This method will return null iff this {@link IndexDocValues} represent a
    * {@link Source} instead of a {@link SortedSource}.
    */
   public SortedSource loadSorted(Comparator<BytesRef> comparator)
@@ -124,21 +124,21 @@ public abstract class DocValues implements Closeable {
   }
 
   /**
-   * Returns the {@link ValueType} of this {@link DocValues} instance
+   * Returns the {@link ValueType} of this {@link IndexDocValues} instance
    */
   public abstract ValueType type();
 
   /**
-   * Closes this {@link DocValues} instance. This method should only be called
-   * by the creator of this {@link DocValues} instance. API users should not
-   * close {@link DocValues} instances.
+   * Closes this {@link IndexDocValues} instance. This method should only be called
+   * by the creator of this {@link IndexDocValues} instance. API users should not
+   * close {@link IndexDocValues} instances.
    */
   public void close() throws IOException {
     cache.close(this);
   }
 
   /**
-   * Sets the {@link SourceCache} used by this {@link DocValues} instance. This
+   * Sets the {@link SourceCache} used by this {@link IndexDocValues} instance. This
    * method should be called before {@link #load()} or
    * {@link #loadSorted(Comparator)} is called. All {@link Source} or
    * {@link SortedSource} instances in the currently used cache will be closed
@@ -162,7 +162,7 @@ public abstract class DocValues implements Closeable {
 
   /**
    * Source of per document values like long, double or {@link BytesRef}
-   * depending on the {@link DocValues} fields {@link ValueType}. Source
+   * depending on the {@link IndexDocValues} fields {@link ValueType}. Source
    * implementations provide random access semantics similar to array lookups
    * and typically are entirely memory resident.
    * <p>

@@ -24,9 +24,9 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.DocValues.SortedSource;
-import org.apache.lucene.index.values.DocValues.Source;
-import org.apache.lucene.index.values.DocValues.SourceEnum;
+import org.apache.lucene.index.values.IndexDocValues.SortedSource;
+import org.apache.lucene.index.values.IndexDocValues.Source;
+import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -136,13 +136,13 @@ public final class Bytes {
   }
 
   /**
-   * Creates a new {@link DocValues} instance that provides either memory
+   * Creates a new {@link IndexDocValues} instance that provides either memory
    * resident or iterative access to a per-document stored <tt>byte[]</tt>
-   * value. The returned {@link DocValues} instance will be initialized without
+   * value. The returned {@link IndexDocValues} instance will be initialized without
    * consuming a significant amount of memory.
    * 
    * @param dir
-   *          the directory to load the {@link DocValues} from.
+   *          the directory to load the {@link IndexDocValues} from.
    * @param id
    *          the file ID in the {@link Directory} to load the values from.
    * @param mode
@@ -152,11 +152,11 @@ public final class Bytes {
    *          otherwise <code>false</code>
    * @param maxDoc
    *          the number of document values stored for the given ID
-   * @return an initialized {@link DocValues} instance.
+   * @return an initialized {@link IndexDocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
    */
-  public static DocValues getValues(Directory dir, String id, Mode mode,
+  public static IndexDocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc) throws IOException {
     // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
@@ -421,7 +421,7 @@ public final class Bytes {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static abstract class BytesReaderBase extends DocValues {
+  static abstract class BytesReaderBase extends IndexDocValues {
     protected final IndexInput idxIn;
     protected final IndexInput datIn;
     protected final int version;
