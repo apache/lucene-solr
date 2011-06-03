@@ -72,7 +72,7 @@ public class Builder<T> {
 
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(INPUT_TYPE, int, int, boolean, Outputs)} with 
+   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, Outputs)} with 
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs)
