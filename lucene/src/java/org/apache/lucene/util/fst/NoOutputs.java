@@ -28,7 +28,7 @@ import org.apache.lucene.store.DataOutput;
 
 public final class NoOutputs extends Outputs<Object> {
 
-  final Object NO_OUTPUT = new Object() {
+  static final Object NO_OUTPUT = new Object() {
     // NodeHash calls hashCode for this output; we fix this
     // so we get deterministic hashing.
     @Override
