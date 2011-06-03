@@ -47,7 +47,7 @@ unless (defined($version) && $version =~ /\d+(?:\.\d+)+/) {
 }
 
 my $previously_selected = select STDOUT;
-$| = 1;
+$| = 1; # turn off buffering of STDOUT, so "."s are printed immediately
 select $previously_selected;
 
 my $apache_backup_url = "http://www.apache.org/dist//lucene/java/$version/lucene-$version.tgz.asc";
