@@ -214,7 +214,7 @@ public class BlockGroupingCollector extends Collector {
           // Swap pending scores
           final float[] savScores = og.scores;
           og.scores = pendingSubScores;
-          pendingSubScores = og.scores;
+          pendingSubScores = savScores;
         }
         og.reader = currentReader;
         og.docBase = docBase;
