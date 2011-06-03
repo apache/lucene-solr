@@ -63,96 +63,52 @@
                 <div class="message"></div>
             </div>
 
-            <div class="content">
-                
+            <div class="content clearfix"id="details">
+
                 <table border="0" cellspacing="0" cellpadding="0">
+
                     <thead>
+
                         <tr>
-                            <td>&nbsp;</td>
-                            <th class="slave">slave</th>
-                            <th>master</th>
+                            
+                            <td><span>Index</span></td>
+                            <th>Version</th>
+                            <th><abbr title="Generation">Gen</abbr></th>
+                            <th>Size</th>
+                        
                         </tr>
+                    
                     </thead>
                     <tbody>
-                        <tr>
-                            <th>indexVersion</th>
-                            <td class="slave value details_slave_master-details_index-version"></td>
-                            <td class="value details_index-version"></td>
+
+                        <tr class="master">
+
+                            <th>Master:</th>
+                            <td class="version"><div>x</div></td>
+                            <td class="generation"><div>y</div></td>
+                            <td class="size"><div>z</div></td>
+
                         </tr>
-                        <tr>
-                            <th>generation</th>
-                            <td class="slave value details_slave_master-details_generation"></td>
-                            <td class="value details_generation"></td>
+
+                        <tr class="slave slaveOnly">
+
+                            <th>Slave:</th>
+                            <td class="version"><div>a</div></td>
+                            <td class="generation"><div>c</div></td>
+                            <td class="size"><div>c</div></td>
+
                         </tr>
-                        <tr>
-                            <th>indexSize</th>
-                            <td class="slave value details_slave_master-details_index-size"></td>
-                            <td class="value details_index-size"></td>
-                        </tr>
+
                     </tbody>
+
                 </table>
-
-                <dl class="clearfix slave">
-
-                    <dt class="details_slave_master-url">masterUrl</dt>
-                        <dd class="value details_slave_master-url"></dd>
-
-                    <dt class="details_slave_poll-interval">poll every</dt>
-                        <dd class="value details_slave_poll-interval"></dd>
-
-                    <dt class="details_slave_index-replicated-at">last replicated</dt>
-                        <dd class="value timeago details_slave_index-replicated-at"></dd>
-
-                    <dt class="details_slave_next-execution-at">replicate next</dt>
-                        <dd class="value timeago details_slave_next-execution-at"></dd>
-
-                    <dt class="details_slave_replication-failed-at">last failed</dt>
-                        <dd class="value timeago details_slave_replication-failed-at"></dd>
-
-                </dl>
-
-<!--
-indexVersion:
-    1295900553587
-generation:
-    2
-indexSize:
-    4.25 KB
-
-// slave
-
-indexVersion:
-    1295900553587
-generation:
-    2
-indexSize:
-    4.25 KB
-masterUrl:
-    http://localhost:8985/solr/replication
-pollInterval:
-    00:00:60
-indexReplicatedAt:
-    Tue Mar 01 19:37:00 UTC 2011
-nextExecutionAt:
-    Tue Mar 01 19:38:00 UTC 2011
-replicationFailedAt:
-    Tue Mar 01 19:37:00 UTC 2011
-lastCycleBytesDownloaded:
-    0
-previousCycleTimeInSeconds:
-    0
-isPollingDisabled:
-    false
-isReplicating:
-    false 
--->
             
             </div>
         </div>
 
         <div class="block" id="dataimport">
 
-            <h2><span>DataImport-Handler</span></h2>
+            <h2><span>Dataimport</span></h2>
             
             <div class="message-container">
                 <div class="message"></div>

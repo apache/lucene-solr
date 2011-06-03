@@ -258,7 +258,7 @@ var sammy = $.sammy
         // #/cores
         this.get
         (
-            /^#\/cores$/,
+            /^#\/(cores)$/,
             function( context )
             {
                 sammy.trigger
@@ -286,7 +286,7 @@ var sammy = $.sammy
         // #/cores
         this.get
         (
-            /^#\/cores\//,
+            /^#\/(cores)\//,
             function( context )
             {
                 var content_element = $( '#content' );
@@ -386,25 +386,24 @@ var sammy = $.sammy
                                             );
 
                                         var core_names = [];
-                                        var core_selects = $( '.swap select', cores_element );
+                                        var core_selects = $( '#actions select', cores_element );
 
                                         for( var key in cores )
                                         {
-                                            core_names.push( '<option>' + key + '</option>' )
+                                            core_names.push( '<option value="' + key + '">' + key + '</option>' )
                                         }
 
-                                        
                                         core_selects
                                             .html( core_names.join( "\n") );
                                         
-                                        $( 'option[value=' + current_core + ']', core_selects.filter( '.core' ) )
+                                        $( 'option[value="' + current_core + '"]', core_selects.filter( '#swap_core' ) )
                                             .attr( 'selected', 'selected' );
 
-                                        $( 'option[value=' + current_core + ']', core_selects.filter( '.other' ) )
+                                        $( 'option[value="' + current_core + '"]', core_selects.filter( '.other' ) )
                                             .attr( 'disabled', 'disabled' )
                                             .addClass( 'disabled' );
                                         
-                                        $( '.rename input[name=core]', cores_element )
+                                        $( 'input[name="core"]', cores_element )
                                             .val( current_core );
 
                                         // layout
@@ -445,6 +444,57 @@ var sammy = $.sammy
                                                 }
                                             );
 
+                                        $( 'form a.submit', button_holder_element )
+                                            .die( 'click' )
+                                            .live
+                                            (
+                                                'click',
+                                                function( event )
+                                                {
+                                                    var element = $( this );
+                                                    var form_element = element.parents( 'form' );
+                                                    var action = $( 'input[name="action"]', form_element ).val().toLowerCase();
+
+                                                    form_element
+                                                        .ajaxSubmit
+                                                        (
+                                                            {
+                                                                url : app.config.solr_path + app.config.core_admin_path + '?wt=json',
+                                                                dataType : 'json',
+                                                                beforeSubmit : function( array, form, options )
+                                                                {
+                                                                    //loader
+                                                                },
+                                                                success : function( response, status_text, xhr, form )
+                                                                {
+                                                                    delete app.cores_data;
+
+                                                                    if( 'rename' === action )
+                                                                    {
+                                                                        context.redirect( path_parts[1] + $( 'input[name="other"]', form_element ).val() );
+                                                                    }
+                                                                    else if( 'swap' === action )
+                                                                    {
+                                                                        window.location.reload();
+                                                                    }
+                                                                    
+                                                                    $( 'a.reset', form )
+                                                                        .trigger( 'click' );
+                                                                },
+                                                                error : function( xhr, text_status, error_thrown )
+                                                                {
+                                                                },
+                                                                complete : function()
+                                                                {
+                                                                    //loader
+                                                                }
+                                                            }
+                                                        );
+
+                                                    return false;
+                                                }
+                                            );
+
                                         $( 'form a.reset', button_holder_element )
                                             .die( 'click' )
                                             .live
@@ -452,12 +502,101 @@ var sammy = $.sammy
                                                 'click',
                                                 function( event )
                                                 {
+                                                    $( this ).parents( 'form' )
+                                                        .resetForm();
+
                                                     $( this ).parents( '.button-holder' )
                                                         .trigger( 'toggle' );
+                                                    
+                                                    return false;
                                                 }
                                             );
 
-                                        $( '#actions .optimize', cores_element )
+                                        var reload_button = $( '#actions .reload', cores_element );
+                                        reload_button
+                                            .die( 'click' )
+                                            .live
+                                            (
+                                                'click',
+                                                function( event )
+                                                {
+                                                    $.ajax
+                                                    (
+                                                        {
+                                                            url : app.config.solr_path + app.config.core_admin_path + '?wt=json&action=RELOAD&core=' + current_core,
+                                                            dataType : 'json',
+                                                            context : $( this ),
+                                                            beforeSend : function( xhr, settings )
+                                                            {
+                                                                this
+                                                                    .addClass( 'loader' );
+                                                            },
+                                                            success : function( response, text_status, xhr )
+                                                            {
+                                                                this
+                                                                    .addClass( 'success' );
+
+                                                                window.setTimeout
+                                                                (
+                                                                    function()
+                                                                    {
+                                                                        reload_button
+                                                                            .removeClass( 'success' );
+                                                                    },
+                                                                    5000
+                                                                );
+                                                            },
+                                                            error : function( xhr, text_status, error_thrown )
+                                                            {
+                                                            },
+                                                            complete : function( xhr, text_status )
+                                                            {
+                                                                this
+                                                                    .removeClass( 'loader' );
+                                                            }
+                                                        }
+                                                    );
+                                                }
+                                            );
+                                        
+                                        $( '#actions .unload', cores_element )
+                                            .die( 'click' )
+                                            .live
+                                            (
+                                                'click',
+                                                function( event )
+                                                {
+                                                    $.ajax
+                                                    (
+                                                        {
+                                                            url : app.config.solr_path + app.config.core_admin_path + '?wt=json&action=UNLOAD&core=' + current_core,
+                                                            dataType : 'json',
+                                                            context : $( this ),
+                                                            beforeSend : function( xhr, settings )
+                                                            {
+                                                                this
+                                                                    .addClass( 'loader' );
+                                                            },
+                                                            success : function( response, text_status, xhr )
+                                                            {
+                                                                delete app.cores_data;
+                                                                context.redirect( path_parts[1].substr( 0, path_parts[1].length - 1 ) );
+                                                            },
+                                                            error : function( xhr, text_status, error_thrown )
+                                                            {
+                                                            },
+                                                            complete : function( xhr, text_status )
+                                                            {
+                                                                this
+                                                                    .removeClass( 'loader' );
+                                                            }
+                                                        }
+                                                    );
+                                                }
+                                            );
+
+                                        var optimize_button = $( '#actions .optimize', cores_element );
+                                        optimize_button
                                             .die( 'click' )
                                             .live
                                             (
@@ -477,6 +616,19 @@ var sammy = $.sammy
                                                             },
                                                             success : function( response, text_status, xhr )
                                                             {
+                                                                this
+                                                                    .addClass( 'success' );
+
+                                                                window.setTimeout
+                                                                (
+                                                                    function()
+                                                                    {
+                                                                        optimize_button
+                                                                            .removeClass( 'success' );
+                                                                    },
+                                                                    5000
+                                                                );
+                                                                
                                                                 $( '.optimized dd.ico-0', index_data_element )
                                                                     .removeClass( 'ico-0' )
                                                                     .addClass( 'ico-1' );
@@ -1323,19 +1475,44 @@ var sammy = $.sammy
             'schema_browser_navi',
             function( event, params )
             {
-                var related_navigation_element = $( '#related dl', params.schema_browser_element );
+                var related_navigation_element = $( '#related dl#f-df-t', params.schema_browser_element );
+                var related_navigation_meta = $( '#related dl.ukf-dsf', params.schema_browser_element );
                 var related_select_element = $( '#related select', params.schema_browser_element )
                 var type = 'index';
 
-                if( !params.route_params )
+                var sammy_basepath = '#/' + $( 'p a', params.active_core ).html() + '/schema-browser';
+                
+                if( !related_navigation_meta.hasClass( 'done' ) )
                 {
-                    related_navigation_element
-                        .hide();
-                    
-                    $( 'option:selected', related_select_element )
-                        .removeAttr( 'selected' );
+                    if( app.schema_browser_data.unique_key_field )
+                    {
+                        $( '.unique-key-field', related_navigation_meta )
+                            .show()
+                            .after
+                            (
+                                '<dd class="unique-key-field"><a href="' + sammy_basepath + '/field/' +
+                                app.schema_browser_data.unique_key_field + '">' +
+                                app.schema_browser_data.unique_key_field + '</a></dd>'
+                            );
+                    }
+
+                    if( app.schema_browser_data.default_search_field )
+                    {
+                        $( '.default-search-field', related_navigation_meta )
+                            .show()
+                            .after
+                            (
+                                '<dd class="default-search-field"><a href="' + sammy_basepath + '/field/' +
+                                app.schema_browser_data.default_search_field + '">' +
+                                app.schema_browser_data.default_search_field + '</a></dd>'
+                            );
+                    }
+
+                    related_navigation_meta
+                        .addClass( 'done' );
                 }
-                else
+
+                if( params.route_params )
                 {
                     var type = params.route_params.splat[3];
                     var value = params.route_params.splat[4];
@@ -1348,7 +1525,7 @@ var sammy = $.sammy
                         'types' : []
                     }
 
-                    $( 'option[value=' + params.route_params.splat[2] + ']', related_select_element )
+                    $( 'option[value="' + params.route_params.splat[2] + '"]', related_select_element )
                         .attr( 'selected', 'selected' );
 
                     if( 'field' === type )
@@ -1396,7 +1573,6 @@ var sammy = $.sammy
                         }
                     }
 
-                    var sammy_basepath = '#/' + $( 'p a', params.active_core ).html() + '/schema-browser';
                     var navigation_content = '';
 
                     if( 0 !== navigation_data.fields.length )
@@ -1464,20 +1640,41 @@ var sammy = $.sammy
                         .attr( 'class', type )
                         .html( navigation_content );
                 }
-
-                $.get
-                (
-                        'tpl/schema-browser_'+ type + '.html',
-                    function( template )
-                    {
-                        var data_element = $( '#data', params.schema_browser_element );
+                else
+                {
+                    related_navigation_element
+                        .hide();
                     
-                        data_element
-                            .html( template );
+                    $( 'option:selected', related_select_element )
+                        .removeAttr( 'selected' );
+                }
 
-                        params.callback( app.schema_browser_data, data_element );
-                    }
-                );
+                if( 'field' === type && value === app.schema_browser_data.unique_key_field )
+                {
+                    $( '.unique-key-field', related_navigation_meta )
+                        .addClass( 'active' );
+                }
+                else
+                {
+                    $( '.unique-key-field', related_navigation_meta )
+                        .removeClass( 'active' );
+                }
+
+                if( 'field' === type && value === app.schema_browser_data.default_search_field )
+                {
+                    $( '.default-search-field', related_navigation_meta )
+                        .addClass( 'active' );
+                }
+                else
+                {
+                    $( '.default-search-field', related_navigation_meta )
+                        .removeClass( 'active' );
+                }
+
+                if( params.callback )
+                {
+                    params.callback( app.schema_browser_data, $( '#data', params.schema_browser_element ) );
+                }
             }
         );
 
@@ -1787,22 +1984,9 @@ var sammy = $.sammy
             {
                 var callback = function( schema_browser_data, data_element )
                 {
-                    var sammy_basepath = '#/' + $( 'p a', context.active_core ).html() + '/schema-browser'
-
-                    if( schema_browser_data.unique_key_field )
-                    {
-                        $( '.unique-key-field', data_element )
-                            .show()
-                            .after( '<dd><a href="' + sammy_basepath + '/field/' + schema_browser_data.unique_key_field + '">' + schema_browser_data.unique_key_field + '</a></dd>' );
-                    }
-
-                    if( schema_browser_data.default_search_field )
-                    {
-                        $( '.default-search-field', data_element )
-                            .show()
-                            .after( '<dd><a href="' + sammy_basepath + '/field/' + schema_browser_data.default_search_field + '">' + schema_browser_data.default_search_field + '</a></dd>' );
-                    }
-                }
+                    data_element
+                        .hide();
+                };
 
                 sammy.trigger
                 (
@@ -1815,20 +1999,28 @@ var sammy = $.sammy
             }
         );
 
-        // #/:core/schema-browser/field/$field
+        // #/:core/schema-browser/field|dynamic-field|type/$field
         this.get
         (
-            /^#\/([\w\d]+)\/(schema-browser)(\/(field)\/(.+))$/,
+            /^#\/([\w\d]+)\/(schema-browser)(\/(field|dynamic-field|type)\/(.+))$/,
             function( context )
             {
                 var callback = function( schema_browser_data, data_element )
                 {
                     var field = context.params.splat[4];
+
+                    var type = context.params.splat[3];
+                    var is_f = 'field' === type;
+                    var is_df = 'dynamic-field' === type;
+                    var is_t = 'type' === type;
                     
                     var options_element = $( '.options', data_element );
-                    var sammy_basepath = '#/' + $( 'p a', context.active_core ).html() + '/schema-browser'
+                    var sammy_basepath = context.path.indexOf( '/', context.path.indexOf( '/', 2 ) + 1 );
 
-                    var keystring_to_list = function( keystring )
+                    data_element
+                        .show();
+
+                    var keystring_to_list = function( keystring, element_class )
                     {
                         var key_list = keystring.replace( /-/g, '' ).split( '' );
                         var list = [];
@@ -1849,7 +2041,12 @@ var sammy = $.sammy
 
                             if( option_key )
                             {
-                                list.push( '<dd>' + option_key + ',</dd>' );
+                                list.push
+                                (
+                                    '<dd ' + ( element_class ? ' class="' + element_class + '"' : '' ) + '>' +
+                                    option_key +
+                                    ',</dd>'
+                                );
                             }
                         }
 
@@ -1858,192 +2055,265 @@ var sammy = $.sammy
                         return list;
                     }
 
-                    // -- properties
-                    if( schema_browser_data.fields[field].flags )
+                    var flags = null;
+
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].flags )
                     {
-                        var properties_element = $( '.properties', options_element );
-                        var properties_keys = keystring_to_list( schema_browser_data.fields[field].flags );
+                        flags = schema_browser_data.fields[field].flags;
+                    }
+                    else if( is_df && schema_browser_data.dynamic_fields[field] && schema_browser_data.dynamic_fields[field].flags )
+                    {
+                        flags = schema_browser_data.dynamic_fields[field].flags;
+                    }
+
+                    // -- properties
+                    var properties_element = $( 'dt.properties', options_element );
+                    if( flags )
+                    {
+                        var properties_keys = keystring_to_list( flags, 'properties' );
+
+                        $( 'dd.properties', options_element )
+                            .remove();
 
                         properties_element
                             .show()
                             .after( properties_keys.join( "\n" ) );
                     }
+                    else
+                    {
+                        $( '.properties', options_element )
+                            .hide();
+                    }
 
                     // -- schema
-                    if( schema_browser_data.fields[field].schema )
+                    var schema_element = $( 'dt.schema', options_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].schema )
                     {
-                        var schema_element = $( '.schema', options_element );
-                        var schema_keys = keystring_to_list( schema_browser_data.fields[field].schema );
+                        var schema_keys = keystring_to_list( schema_browser_data.fields[field].schema, 'schema' );
+
+                        $( 'dd.schema', options_element )
+                            .remove();
 
                         schema_element
                             .show()
                             .after( schema_keys.join( "\n" ) );
                     }
+                    else
+                    {
+                        $( '.schema', options_element )
+                            .hide();
+                    }
 
                     // -- index
-                    if( schema_browser_data.fields[field].index )
+                    var index_element = $( 'dt.index', options_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].index )
                     {
-                        var index_element = $( '.index', options_element );
                         var index_keys = [];
 
                         if( 0 === schema_browser_data.fields[field].index.indexOf( '(' ) )
                         {
-                            index_keys.push( '<dd>' + schema_browser_data.fields[field].index + '</dd>' );
+                            index_keys.push( '<dd class="index">' + schema_browser_data.fields[field].index + '</dd>' );
                         }
                         else
                         {
-                            index_keys = keystring_to_list( schema_browser_data.fields[field].index );
+                            index_keys = keystring_to_list( schema_browser_data.fields[field].index, 'index' );
                         }
+
+                        $( 'dd.index', options_element )
+                            .remove();
 
                         index_element
                             .show()
                             .after( index_keys.join( "\n" ) );
                     }
+                    else
+                    {
+                        $( '.index', options_element )
+                            .hide();
+                    }
 
                     // -- docs
-                    if( schema_browser_data.fields[field].docs )
-                    { 
-                        var docs_element = $( '.docs', options_element );
+                    var docs_element = $( 'dt.docs', options_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].docs )
+                    {
+                        $( 'dd.docs', options_element )
+                            .remove();
 
                         docs_element
                             .show()
-                            .after( '<dd>' + schema_browser_data.fields[field].docs + '</dd>' );
+                            .after( '<dd class="docs">' + schema_browser_data.fields[field].docs + '</dd>' );
+                    }
+                    else
+                    {
+                        $( '.docs', options_element )
+                            .hide();
                     }
 
                     // -- distinct 
-                    if( schema_browser_data.fields[field].distinct )
+                    var distinct_element = $( 'dt.distinct', options_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].distinct )
                     {
-                        var distinct_element = $( '.distinct', options_element );
+                        $( 'dd.distinct', options_element )
+                            .remove();
 
                         distinct_element
                             .show()
-                            .after( '<dd>' + schema_browser_data.fields[field].distinct + '</dd>' );
+                            .after( '<dd class="distinct">' + schema_browser_data.fields[field].distinct + '</dd>' );
+                    }
+                    else
+                    {
+                        $( '.distinct', options_element )
+                            .hide();
                     }
 
                     // -- position-increment-gap 
-                    if( schema_browser_data.fields[field].positionIncrementGap )
+                    var pig_element = $( 'dt.position-increment-gap', options_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].positionIncrementGap )
                     {
-                        var pig_element = $( '.position-increment-gap', options_element );
+                        $( 'dt.position-increment-gap', options_element )
+                            .remove();
 
                         pig_element
                             .show()
-                            .after( '<dd>' + schema_browser_data.fields[field].positionIncrementGap + '</dd>' );
+                            .after( '<dd class="position-increment-gap">' + schema_browser_data.fields[field].positionIncrementGap + '</dd>' );
+                    }
+                    else
+                    {
+                        $( '.position-increment-gap', options_element )
+                            .hide();
+                    }
+                    
+                    var analyzer_element = $( '.analyzer', data_element );
+                    var analyzer_data = null;
+
+                    if( is_f )
+                    {
+                        analyzer_data = schema_browser_data.types[schema_browser_data.relations.f_t[field]];
+                    }
+                    else if( is_df )
+                    {
+                        analyzer_data = schema_browser_data.types[schema_browser_data.relations.df_t[field]];
+                    }
+                    else if( is_t )
+                    {
+                        analyzer_data = schema_browser_data.types[field];
                     }
 
-                    var analyzer_data = schema_browser_data.types[schema_browser_data.relations.f_t[field]];
-                    var analyzer_element = $( '.analyzer', data_element );
-
-                    var transform_analyzer_data_into_list = function( analyzer_data )
+                    if( analyzer_data )
                     {
-                        var args = [];
-                        for( var key in analyzer_data.args )
+                        var transform_analyzer_data_into_list = function( analyzer_data )
                         {
-                            var arg_class = '';
-                            var arg_content = '';
+                            var args = [];
+                            for( var key in analyzer_data.args )
+                            {
+                                var arg_class = '';
+                                var arg_content = '';
 
-                            if( 'true' === analyzer_data.args[key] || '1' === analyzer_data.args[key] )
-                            {
-                                arg_class = 'ico-1';
-                                arg_content = key;
-                            }
-                            else if( 'false' === analyzer_data.args[key] || '0' === analyzer_data.args[key] )
-                            {
-                                arg_class = 'ico-0';
-                                arg_content = key;
-                            }
-                            else
-                            {
-                                arg_content = key + ': ';
-
-                                if( 'synonyms' === key || 'words' === key )
+                                if( 'true' === analyzer_data.args[key] || '1' === analyzer_data.args[key] )
                                 {
-                                    // @TODO: set link target for file
-                                    arg_content += '<a>' + analyzer_data.args[key] + '</a>';
+                                    arg_class = 'ico-1';
+                                    arg_content = key;
+                                }
+                                else if( 'false' === analyzer_data.args[key] || '0' === analyzer_data.args[key] )
+                                {
+                                    arg_class = 'ico-0';
+                                    arg_content = key;
                                 }
                                 else
                                 {
-                                    arg_content += analyzer_data.args[key];
+                                    arg_content = key + ': ';
+
+                                    if( 'synonyms' === key || 'words' === key )
+                                    {
+                                        // @TODO: set link target for file
+                                        arg_content += '<a>' + analyzer_data.args[key] + '</a>';
+                                    }
+                                    else
+                                    {
+                                        arg_content += analyzer_data.args[key];
+                                    }
                                 }
+
+                                args.push( '<dd class="' + arg_class + '">' + arg_content + '</dd>' );
                             }
 
-                            args.push( '<dd class="' + arg_class + '">' + arg_content + '</dd>' );
+                            var list_content = '<dt>' + analyzer_data.className + '</dt>';
+                            if( 0 !== args.length )
+                            {
+                                args.sort();
+                                list_content += args.join( "\n" );
+                            }
+
+                            return list_content;
                         }
 
-                        var list_content = '<dt>' + analyzer_data.className + '</dt>';
-                        if( 0 !== args.length )
+                        // -- field-type
+                        var field_type_element = $( 'dt.field-type', options_element );
+
+                        $( 'dd.field-type', options_element )
+                            .remove();
+
+                        field_type_element
+                            .show()
+                            .after( '<dd class="field-type">' + analyzer_data.className + '</dd>' );
+
+
+                        for( var key in analyzer_data )
                         {
-                            args.sort();
-                            list_content += args.join( "\n" );
-                        }
-
-                        return list_content;
-                    }
-
-                    // -- field-type
-                    var field_type_element = $( '.field-type', options_element );
-
-                    field_type_element
-                        .show()
-                        .after( '<dd>' + analyzer_data.className + '</dd>' );
-
-
-                    for( var key in analyzer_data )
-                    {
-                        var key_match = key.match( /^(.+)Analyzer$/ );
-                        if( !key_match )
-                        {
-                            continue;
-                        }
-
-                        var analyzer_key_element = $( '.' + key_match[1], analyzer_element );
-                        var analyzer_key_data = analyzer_data[key];
-
-                        analyzer_element.show();
-                        analyzer_key_element.show();
-
-                        if( analyzer_key_data.className )
-                        {
-                            $( 'dl:first dt', analyzer_key_element )
-                                .html( analyzer_key_data.className );
-                        }
-
-                        for( var type in analyzer_key_data )
-                        {
-                            if( 'object' !== typeof analyzer_key_data[type] )
+                            var key_match = key.match( /^(.+)Analyzer$/ );
+                            if( !key_match )
                             {
                                 continue;
                             }
 
-                            var type_element = $( '.' + type, analyzer_key_element );
-                            var type_content = [];
+                            var analyzer_key_element = $( '.' + key_match[1], analyzer_element );
+                            var analyzer_key_data = analyzer_data[key];
 
-                            type_element.show();
+                            analyzer_element.show();
+                            analyzer_key_element.show();
 
-                            if( analyzer_key_data[type].className )
+                            if( analyzer_key_data.className )
                             {
-                                type_content.push( transform_analyzer_data_into_list( analyzer_key_data[type] ) );
+                                $( 'dl:first dt', analyzer_key_element )
+                                    .html( analyzer_key_data.className );
                             }
-                            else
+
+                            $( 'ul li', analyzer_key_element )
+                                .hide();
+
+                            for( var type in analyzer_key_data )
                             {
-                                for( var entry in analyzer_key_data[type] )
+                                if( 'object' !== typeof analyzer_key_data[type] )
                                 {
-                                    type_content.push( transform_analyzer_data_into_list( analyzer_key_data[type][entry] ) );
+                                    continue;
                                 }
-                            }
 
-                            $( 'dl', type_element )
-                                .append( type_content.join( "\n" ) );
+                                var type_element = $( '.' + type, analyzer_key_element );
+                                var type_content = [];
+
+                                type_element.show();
+
+                                if( analyzer_key_data[type].className )
+                                {
+                                    type_content.push( transform_analyzer_data_into_list( analyzer_key_data[type] ) );
+                                }
+                                else
+                                {
+                                    for( var entry in analyzer_key_data[type] )
+                                    {
+                                        type_content.push( transform_analyzer_data_into_list( analyzer_key_data[type][entry] ) );
+                                    }
+                                }
+
+                                $( 'dl', type_element )
+                                    .empty()
+                                    .append( type_content.join( "\n" ) );
+                            }
                         }
                     }
 
-
                     var topterms_holder_element = $( '.topterms-holder', data_element );
-                    if( !schema_browser_data.fields[field].topTerms_hash )
-                    {
-                        topterms_holder_element
-                            .hide();
-                    }
-                    else
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].topTerms_hash )
                     {
                         topterms_holder_element
                             .show();
@@ -2077,6 +2347,7 @@ var sammy = $.sammy
                         topterms_content += '</tbody>';
 
                         topterms_table_element
+                            .empty()
                             .append( topterms_content );
                         
                         $( 'tbody', topterms_table_element )
@@ -2139,14 +2410,14 @@ var sammy = $.sammy
                                 }
                             );
                     }
-
-                    var histogram_holder_element = $( '.histogram-holder', data_element );
-                    if( !schema_browser_data.fields[field].histogram_hash )
+                    else
                     {
-                        histogram_holder_element
+                        topterms_holder_element
                             .hide();
                     }
-                    else
+
+                    var histogram_holder_element = $( '.histogram-holder', data_element );
+                    if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].histogram_hash )
                     {
                         histogram_holder_element
                             .show();
@@ -2184,52 +2455,11 @@ var sammy = $.sammy
                                 }
                             );
                     }
-                }
-
-                sammy.trigger
-                (
-                    'schema_browser_load',
+                    else
                     {
-                        callback : callback,
-                        active_core : this.active_core,
-                        route_params : this.params
+                        histogram_holder_element
+                            .hide();
                     }
-                );
-            }
-        );
-
-        // #/:core/schema-browser/dynamic-field/$field
-        this.get
-        (
-            /^#\/([\w\d]+)\/(schema-browser)(\/(dynamic-field)\/(.+))$/,
-            function( context )
-            {
-                var callback = function( schema_browser_data, data_element )
-                {
-                    console.debug( data_element );
-                }
-
-                sammy.trigger
-                (
-                    'schema_browser_load',
-                    {
-                        callback : callback,
-                        active_core : this.active_core,
-                        route_params : this.params
-                    }
-                );
-            }
-        );
-
-        // #/:core/schema-browser/type/$type
-        this.get
-        (
-            /^#\/([\w\d]+)\/(schema-browser)(\/(type)\/(.+))$/,
-            function( context )
-            {
-                var callback = function( schema_browser_data, data_element )
-                {
-                    console.debug( data_element );
                 }
 
                 sammy.trigger
@@ -2287,7 +2517,7 @@ var sammy = $.sammy
         // #/:core/dataimport
         this.get
         (
-            /^#\/([\w\d]+)\/dataimport$/,
+            /^#\/([\w\d]+)\/(dataimport)$/,
             function( context )
             {
                 sammy.trigger
@@ -2297,6 +2527,14 @@ var sammy = $.sammy
                         active_core : this.active_core,
                         callback :  function( dataimport_handlers )
                         {
+                            if( 0 === dataimport_handlers.length )
+                            {
+                                $( '#content' )
+                                    .html( 'sorry, no dataimport-handler defined!' );
+
+                                return false;
+                            }
+
                             context.redirect( context.path + '/' + dataimport_handlers[0] );
                         }
                     }
@@ -2307,7 +2545,7 @@ var sammy = $.sammy
         // #/:core/dataimport
         this.get
         (
-            /^#\/([\w\d]+)\/dataimport\//,
+            /^#\/([\w\d]+)\/(dataimport)\//,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -2341,6 +2579,7 @@ var sammy = $.sammy
                                 active_core : context.active_core,
                                 callback :  function( dataimport_handlers )
                                 {
+
                                     var handlers_element = $( '.handler', form_element );
                                     var handlers = [];
 
@@ -2357,7 +2596,7 @@ var sammy = $.sammy
                                     $( 'ul', handlers_element )
                                         .html( handlers.join( "\n") ) ;
                                     
-                                    $( 'a[href=' + context.path + ']', handlers_element ).parent()
+                                    $( 'a[href="' + context.path + '"]', handlers_element ).parent()
                                         .addClass( 'active' );
                                     
                                     handlers_element
@@ -2529,20 +2768,11 @@ var sammy = $.sammy
                                         {
                                             started_at = (new Date()).toGMTString();
                                         }
-                                        console.debug( 'started_at @ ', started_at );
 
                                         function dataimport_compute_details( response, details_element )
                                         {
                                             var details = [];
-
                                             
-                                            console.debug( 'elapsed @ ', $( 'str[name="Time Elapsed"]', response ).text() );
-                                            console.debug( 'taken @ ', $( 'str[name="Time taken "]', response ).text() );
-                                            console.debug( 'requests @ ', $( 'str[name="Total Requests made to DataSource"]', response ).text() );
-                                            console.debug( 'fetched @ ', $( 'str[name="Total Rows Fetched"]', response ).text() );
-                                            console.debug( 'skipped @ ', $( 'str[name="Total Documents Skipped"]', response ).text() );
-                                            console.debug( 'processed @ ', $( 'str[name="Total Documents Processed"]', response ).text() );
-
                                             var requests = parseInt( $( 'str[name="Total Requests made to DataSource"]', response ).text() );
                                             if( NaN !== requests )
                                             {
@@ -2604,7 +2834,6 @@ var sammy = $.sammy
                                             $( '.info strong', state_element )
                                                 .text( $( 'str[name=""]', response ).text() );
                                             
-                                            console.debug( 'failure' );
                                             console.debug( 'rollback @ ', rollback_element.text() );
                                         }
                                         else if( 'idle' === status && 0 !== messages_count )
@@ -2620,7 +2849,6 @@ var sammy = $.sammy
                                             $( '.info strong', state_element )
                                                 .text( $( 'str[name=""]', response ).text() );
 
-                                            console.debug( 'success' );
                                             dataimport_compute_details( response, $( '.info .details', state_element ) );
                                         }
                                         else if( 'busy' === status )
@@ -2639,7 +2867,6 @@ var sammy = $.sammy
                                             $( '.info strong', state_element )
                                                 .text( 'Indexing ...' );
                                             
-                                            console.debug( 'indexing' );
                                             dataimport_compute_details( response, $( '.info .details', state_element ) );
 
                                             window.setTimeout( dataimport_fetch_status, 2000 );
@@ -2781,7 +3008,7 @@ var sammy = $.sammy
                                 content += '<div class="block" id="' + key.toLowerCase() + '">' + "\n";
                                 content += '<h2><span>' + key + '</span></h2>' + "\n";
                                 content += '<div class="content">' + "\n";
-                                content += '<ul>' + "\n";
+                                content += '<ul>';
                                 
                                 for( var sort_key in sort_table[key] )
                                 {
@@ -2860,6 +3087,16 @@ var sammy = $.sammy
                                     {
                                         $( this ).parent()
                                             .toggleClass( 'expanded' );
+                                    }
+                                );
+                            
+                            $( '.block .content > ul:empty', this )
+                                .each
+                                (
+                                    function( index, element )
+                                    {
+                                        $( element ).parents( '.block' )
+                                            .hide();
                                     }
                                 );
                             
@@ -3005,14 +3242,11 @@ var sammy = $.sammy
         // #/:core/analysis
         this.get
         (
-            /^#\/([\w\d]+)\/analysis$/,
+            /^#\/([\w\d]+)\/(analysis)$/,
             function( context )
             {
                 var core_basepath = this.active_core.attr( 'data-basepath' );
                 var content_element = $( '#content' );
-                
-                $( 'li.analysis', this.active_core )
-                    .addClass( 'active' );
                 
                 $.get
                 (
@@ -3073,8 +3307,8 @@ var sammy = $.sammy
                                     
                                     this
                                         .html( content );
-                                    
-                                    $( 'option[value=fieldname\=' + response.schema.defaultSearchField + ']', this )
+
+                                    $( 'option[value="fieldname\=' + response.schema.defaultSearchField + '"]', this )
                                         .attr( 'selected', 'selected' );
                                 },
                                 error : function( xhr, text_status, error_thrown)
@@ -3122,6 +3356,11 @@ var sammy = $.sammy
                                         {
                                             build_analysis_table( 'type', name, response.analysis.field_types[name] );
                                         }
+                                    },
+                                    error : function( xhr, text_status, error_thrown )
+                                    {
+                                        $( '#analysis-error', analysis_element )
+                                            .show();
                                     },
                                     complete : function()
                                     {
@@ -3318,70 +3557,7 @@ var sammy = $.sammy
                             .html( template );
                             
                         var dashboard_element = $( '#dashboard' );
-                        
-                        /*
-                        $.ajax
-                        (
-                            {
-                                url : core_basepath + '/admin/system?wt=json',
-                                dataType : 'json',
-                                context : $( '#system', dashboard_element ),
-                                beforeSend : function( xhr, settings )
-                                {
-                                    $( 'h2', this )
-                                        .addClass( 'loader' );
-                                    
-                                    $( '.message', this )
-                                        .show()
-                                        .html( 'Loading' );
-                                },
-                                success : function( response, text_status, xhr )
-                                {
-                                    $( '.message', this )
-                                        .empty()
-                                        .hide();
-                                    
-                                    $( 'dl', this )
-                                        .show();
-                                        
-                                    var data = {
-                                        'core_now' : response['core']['now'],
-                                        'core_start' : response['core']['start'],
-                                        'core_host' : response['core']['host'],
-                                        'core_schema' : response['core']['schema'],
-                                        'lucene_solr-spec-version' : response['lucene']['solr-spec-version'],
-                                        'lucene_solr-impl-version' : response['lucene']['solr-impl-version'],
-                                        'lucene_lucene-spec-version' : response['lucene']['lucene-spec-version'],
-                                        'lucene_lucene-impl-version' : response['lucene']['lucene-impl-version']
-                                    };
-                                    
-                                    for( var key in data )
-                                    {
-                                        $( '.' + key, this )
-                                            .show();
-                                        
-                                        $( '.value.' + key, this )
-                                            .html( data[key] );
-                                    }
-                                },
-                                error : function( xhr, text_status, error_thrown)
-                                {
-                                    this
-                                        .addClass( 'disabled' );
-                                    
-                                    $( '.message', this )
-                                        .show()
-                                        .html( 'System-Handler is not configured' );
-                                },
-                                complete : function( xhr, text_status )
-                                {
-                                    $( 'h2', this )
-                                        .removeClass( 'loader' );
-                                }
-                            }
-                        );
-                        //*/
-                        
+                                             
                         $.ajax
                         (
                             {
@@ -3515,7 +3691,7 @@ var sammy = $.sammy
                                     $( '.timeago', this )
                                          .timeago();
                                 },
-                                error : function( xhr, text_status, error_thrown)
+                                error : function( xhr, text_status, error_thrown )
                                 {
                                     this
                                         .addClass( 'disabled' );
@@ -3562,68 +3738,68 @@ var sammy = $.sammy
                                     $( '.replication', context.active_core )
                                         .show();
                                     
-                                    var is_master = 'undefined' === typeof( response['details']['slave'] );
+                                    var data = response.details;
+                                    var is_slave = 'undefined' !== typeof( data.slave );
                                     var headline = $( 'h2 span', this );
+                                    var details_element = $( '#details', this );
+                                    var current_type_element = $( ( is_slave ? '.slave' : '.master' ), this );
 
-                                    if( is_master )
+                                    if( is_slave )
                                     {
                                         this
-                                            .addClass( 'is-master' );
-                                        
-                                        headline
-                                            .html( headline.html() + ' (Master)' );
-                                    }
-                                    else
-                                    {
-                                        this
-                                            .addClass( 'is-slave' );
+                                            .addClass( 'slave' );
                                         
                                         headline
                                             .html( headline.html() + ' (Slave)' );
                                     }
-                                    
-                                    var data = {
-                                        'details_index-version' : response['details']['indexVersion'],
-                                        'details_generation' : response['details']['generation'],
-                                        'details_index-size' : response['details']['indexSize']
-                                    };
-                                    
-                                    if( !is_master )
+                                    else
                                     {
-                                        $.extend
-                                        (
-                                            data,
-                                            {
-                                                'details_slave_master-details_index-version' : response['details']['slave']['masterDetails']['indexVersion'],
-                                                'details_slave_master-details_generation' : response['details']['slave']['masterDetails']['generation'],
-                                                'details_slave_master-details_index-size' : response['details']['slave']['masterDetails']['indexSize'],
-                                                'details_slave_master-url' : response['details']['slave']['masterUrl'],
-                                                'details_slave_poll-interval' : response['details']['slave']['pollInterval'],
-                                                'details_slave_next-execution-at' : response['details']['slave']['nextExecutionAt'],
-                                                'details_slave_index-replicated-at' : response['details']['slave']['indexReplicatedAt'],
-                                                'details_slave_last-cycle-bytes-downloaded' : response['details']['slave']['lastCycleBytesDownloaded'],
-                                                'details_slave_replication-failed-at' : response['details']['slave']['replicationFailedAt'],
-                                                'details_slave_previous-cycle-time-in-seconds' : response['details']['slave']['previousCycleTimeInSeconds'],
-                                                'details_slave_is-polling-disabled' : response['details']['slave']['isPollingDisabled'],
-                                                'details_slave_is-replicating' : response['details']['slave']['isReplicating']
-                                            }
-                                        );
-                                    
-                                        $( 'dl', this )
-                                            .show();
-                                    }
-                                    
-                                    for( var key in data )
-                                    {
-                                        $( '.' + key, this )
-                                            .show();
+                                        this
+                                            .addClass( 'master' );
                                         
-                                        $( '.value.' + key, this )
-                                            .html( data[key] );
+                                        headline
+                                            .html( headline.html() + ' (Master)' );
                                     }
 
-                                    // $( '.timeago', this )
-                                    //     .timeago();
+                                    $( '.version div', current_type_element )
+                                        .html( data.indexVersion );
+                                    $( '.generation div', current_type_element )
+                                        .html( data.generation );
+                                    $( '.size div', current_type_element )
+                                        .html( data.indexSize );
+                                    
+                                    if( is_slave )
+                                    {
+                                        var master_element = $( '.master', details_element );
+                                        $( '.version div', master_element )
+                                            .html( data.slave.masterDetails.indexVersion );
+                                        $( '.generation div', master_element )
+                                            .html( data.slave.masterDetails.generation );
+                                        $( '.size div', master_element )
+                                            .html( data.slave.masterDetails.indexSize );
+                                        
+                                        if( data.indexVersion !== data.slave.masterDetails.indexVersion )
+                                        {
+                                            $( '.version', details_element )
+                                                .addClass( 'diff' );
+                                        }
+                                        else
+                                        {
+                                            $( '.version', details_element )
+                                                .removeClass( 'diff' );
+                                        }
+                                        
+                                        if( data.generation !== data.slave.masterDetails.generation )
+                                        {
+                                            $( '.generation', details_element )
+                                                .addClass( 'diff' );
+                                        }
+                                        else
+                                        {
+                                            $( '.generation', details_element )
+                                                .removeClass( 'diff' );
+                                        }
+                                    }
                                 },
                                 error : function( xhr, text_status, error_thrown)
                                 {
@@ -3642,7 +3818,6 @@ var sammy = $.sammy
                             }
                         );
 
-                        /*
                         $.ajax
                         (
                             {
@@ -3688,7 +3863,7 @@ var sammy = $.sammy
                                     
                                     $( '.message', this )
                                         .show()
-                                        .html( 'DataImport is not configured' );
+                                        .html( 'Dataimport is not configured' );
                                 },
                                 complete : function( xhr, text_status )
                                 {
@@ -3697,7 +3872,6 @@ var sammy = $.sammy
                                 }
                             }
                         );
-                        //*/
                         
                         $.ajax
                         (
@@ -3824,31 +3998,36 @@ var sammy = $.sammy
                                     .show();
                             }
 
-                            var cmd_arg_key_element = $( '.command_line_args dt', this );
-                            var cmd_arg_element = $( '.command_line_args dd', this );
-
-                            for( var key in app.dashboard_values['jvm']['jmx']['commandLineArgs'] )
+                            var commandLineArgs = app.dashboard_values['jvm']['jmx']['commandLineArgs'];
+                            if( 0 !== commandLineArgs.length )
                             {
-                                cmd_arg_element = cmd_arg_element.clone();
-                                cmd_arg_element.html( app.dashboard_values['jvm']['jmx']['commandLineArgs'][key] );
+                                var cmd_arg_element = $( '.command_line_args dt', this );
+                                var cmd_arg_key_element = $( '.command_line_args dt', this );
+                                var cmd_arg_element = $( '.command_line_args dd', this );
 
-                                cmd_arg_key_element
-                                    .after( cmd_arg_element );
+                                for( var key in commandLineArgs )
+                                {
+                                    cmd_arg_element = cmd_arg_element.clone();
+                                    cmd_arg_element.html( commandLineArgs[key] );
+
+                                    cmd_arg_key_element
+                                        .after( cmd_arg_element );
+                                }
+
+                                cmd_arg_key_element.closest( 'li' )
+                                    .show();
+
+                                $( '.command_line_args dd:last', this )
+                                    .remove();
+
+                                $( '.command_line_args dd:odd', this )
+                                    .addClass( 'odd' );
                             }
-
-                            cmd_arg_key_element.closest( 'li' )
-                                .show();
-
-                            $( '.command_line_args dd:last', this )
-                                .remove();
 
                             $( '.timeago', this )
                                 .timeago();
 
                             $( 'li:visible:odd', this )
-                                .addClass( 'odd' );
-
-                            $( '.command_line_args dd:odd', this )
                                 .addClass( 'odd' );
                             
                             // -- memory bar
@@ -3912,7 +4091,7 @@ var sammy = $.sammy
     }
 );
 
-var solr_admin = function()
+var solr_admin = function( app_config )
 {
     menu_element = null,
 
@@ -3921,14 +4100,14 @@ var solr_admin = function()
     active_core = null,
     environment_basepath = null,
 
-    config = null,
+    config = app_config,
     params = null,
     dashboard_values = null,
     schema_browser_data = null,
     
     this.init_menu = function()
     {
-        $( '.ping a', this.menu_element )
+        $( '.ping a', menu_element )
             .live
             (
                 'click',
@@ -3943,7 +4122,7 @@ var solr_admin = function()
                 }
             );
         
-        $( 'a[rel]', this.menu_element )
+        $( 'a[rel]', menu_element )
             .live
             (
                 'click',
@@ -3954,30 +4133,13 @@ var solr_admin = function()
                 }
             );
     }
-    
-    this.__construct = function()
-    {
-        this.menu_element = $( '#menu ul' );
-        
-        this.init_menu();
-    }
-    this.__construct();
-}
 
-var app;
-$( document ).ready
-(
-    function()
+    this.init_cores = function()
     {
-        jQuery.timeago.settings.allowFuture = true;
-        
-        app = new solr_admin();
-        app.config = app_config;
-
         $.ajax
         (
             {
-                url : app.config.solr_path + app.config.core_admin_path + '?wt=json',
+                url : config.solr_path + config.core_admin_path + '?wt=json',
                 dataType : 'json',
                 beforeSend : function( arr, form, options )
                 {               
@@ -3986,28 +4148,28 @@ $( document ).ready
                 },
                 success : function( response )
                 {
-                    app.cores_data = response.status;
-                    app.is_multicore = 'undefined' === typeof response.status[''];
+                    this.cores_data = response.status;
+                    is_multicore = 'undefined' === typeof response.status[''];
 
-                    if( app.is_multicore )
+                    if( is_multicore )
                     {
-                        $( '#cores', app.menu_element )
+                        $( '#cores', menu_element )
                             .show();
                     }
 
                     for( var core_name in response.status )
                     {
-                        var core_path = app.config.solr_path + '/' + core_name;
+                        var core_path = config.solr_path + '/' + core_name;
 
                         if( !core_name )
                         {
                             core_name = 'singlecore';
-                            core_path = app.config.solr_path
+                            core_path = config.solr_path
                         }
 
-                        if( !app.environment_basepath )
+                        if( !environment_basepath )
                         {
-                            app.environment_basepath = core_path;
+                            environment_basepath = core_path;
                         }
 
                         var core_tpl = '<li id="' + core_name + '" data-basepath="' + core_path + '">' + "\n"
@@ -4017,32 +4179,32 @@ $( document ).ready
                                      + '        <li class="query"><a rel="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
                                      + '        <li class="schema"><a href="' + core_path + '/admin/file/?file=schema.xml" rel="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
                                      + '        <li class="config"><a href="' +core_path + '/admin/file/?file=solrconfig.xml" rel="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
-                                     + '        <li class="replication optional"><a href="' + core_path + '/admin/replication/index.jsp" rel="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
-                                     + '        <li class="analysis"><a href="' + core_path + '/admin/analysis.jsp?highlight=on" rel="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
-                                     + '        <li class="schema-browser"><a href="' + core_path + '/admin/schema.jsp" rel="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                                     + '        <li class="stats"><a href="' +core_path + '/admin/stats.jsp" rel="#/' + core_name + '/info/stats"><span>Statistics</span></a></li>' + "\n"
+                                     + '        <li class="replication"><a rel="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
+                                     + '        <li class="analysis"><a rel="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
+                                     + '        <li class="schema-browser"><a rel="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
+                                     + '        <li class="stats"><a rel="#/' + core_name + '/info/stats"><span>Statistics</span></a></li>' + "\n"
                                      + '        <li class="ping"><a href="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
-                                     + '        <li class="plugins"><a href="' + core_path + '/admin/plugins" rel="#/' + core_name + '/info"><span>Plugins</span></a></li>' + "\n"
+                                     + '        <li class="plugins"><a rel="#/' + core_name + '/info"><span>Plugins</span></a></li>' + "\n"
                                      + '        <li class="dataimport"><a rel="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
 
                                      + '    </ul>' + "\n"
                                      + '</li>';
 
-                        app.menu_element
+                        menu_element
                             .append( core_tpl );
                     }
 
                     $.ajax
                     (
                         {
-                            url : app.environment_basepath + '/admin/system?wt=json',
+                            url : environment_basepath + '/admin/system?wt=json',
                             dataType : 'json',
                             beforeSend : function( arr, form, options )
                             {
                             },
                             success : function( response )
                             {
-                                app.dashboard_values = response;
+                                dashboard_values = response;
 
                                 var environment_args = null;
                                 var cloud_args = null;
@@ -4115,5 +4277,28 @@ $( document ).ready
                 }
             }
         );
+    }
+    
+    this.__construct = function()
+    {
+        menu_element = $( '#menu ul' );
+        
+        this.init_menu();
+        this.init_cores();
+
+        this.menu_element = menu_element;
+        this.config = config;
+    }
+    this.__construct();
+}
+
+var app;
+$( document ).ready
+(
+    function()
+    {
+        jQuery.timeago.settings.allowFuture = true;
+        
+        app = new solr_admin( app_config );
     }
 );  
