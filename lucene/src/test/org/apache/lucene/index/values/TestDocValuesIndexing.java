@@ -207,13 +207,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     case INTS:  
       assertEquals(msg, valuesPerIndex-1, vE_2_merged.advance(valuesPerIndex-1));
     }
-//    switch (first) { // these variants don't advance over missing values
-//  case BYTES_FIXED_STRAIGHT:
-//  case FLOAT_32:
-//  case FLOAT_64:
-//  case INTS:  
-//    assertEquals(msg, valuesPerIndex-1, vE_1_merged.advance(valuesPerIndex-1));
-//  }
     
     for (int i = 0; i < valuesPerIndex; i++) {
       assertEquals(msg, i, vE_1.nextDoc());
