@@ -51,7 +51,7 @@ my $previously_selected = select STDOUT;
 $| = 1; # turn off buffering of STDOUT, so status is printed immediately
 select $previously_selected;
 
-my $apache_url_suffix = "lucene/java/$version/lucene-$version.tgz.asc";
+my $apache_url_suffix = "lucene/java/$version/lucene-$version.zip.asc";
 my $apache_mirrors_list_url = "http://www.apache.org/mirrors/";
 my $maven_url = "http://repo1.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom.asc";
 
