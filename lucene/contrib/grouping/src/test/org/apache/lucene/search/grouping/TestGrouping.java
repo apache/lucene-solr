@@ -556,11 +556,15 @@ public class TestGrouping extends LuceneTestCase {
         // Reader2 only increases maxDoc() vs reader, which
         // means a monotonic shift in scores, so we can
         // reliably remap them w/ Map:
-        final Map<Float,Float> scoreMap = new HashMap<Float,Float>();
+        final Map<String,Map<Float,Float>> scoreMap = new HashMap<String,Map<Float,Float>>();
 
         // Tricky: must separately set .score2, because the doc
         // block index was created with possible deletions!
+        //System.out.println("fixup score2");
         for(int contentID=0;contentID<3;contentID++) {
+          //System.out.println("  term=real" + contentID);
+          final Map<Float,Float> termScoreMap = new HashMap<Float,Float>();
+          scoreMap.put("real"+contentID, termScoreMap);
           //System.out.println("term=real" + contentID + " dfold=" + s.docFreq(new Term("content", "real"+contentID)) +
           //" dfnew=" + s2.docFreq(new Term("content", "real"+contentID)));
           final ScoreDoc[] hits = s2.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
@@ -569,8 +573,8 @@ public class TestGrouping extends LuceneTestCase {
             assertTrue(gd.score2 == 0.0);
             gd.score2 = hit.score;
             assertEquals(gd.id, docIDToID2[hit.doc]);
-            //System.out.println("  score=" + hit.score + " id=" + docIDToID2[hit.doc]);
-            scoreMap.put(gd.score, gd.score2);
+            //System.out.println("    score=" + gd.score + " score2=" + hit.score + " id=" + docIDToID2[hit.doc]);
+            termScoreMap.put(gd.score, gd.score2);
           }
         }
 
@@ -768,11 +772,13 @@ public class TestGrouping extends LuceneTestCase {
             }
 
             final SortField[] sortFields = groupSort.getSort();
+            final Map<Float,Float> termScoreMap = scoreMap.get(searchTerm);
             for(int groupSortIDX=0;groupSortIDX<sortFields.length;groupSortIDX++) {
               if (sortFields[groupSortIDX].getType() == SortField.SCORE) {
                 for (GroupDocs groupDocsHits : expectedGroups.groups) {
                   if (groupDocsHits.groupSortValues != null) {
-                    groupDocsHits.groupSortValues[groupSortIDX] = scoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]);
+                    //System.out.println("remap " + groupDocsHits.groupSortValues[groupSortIDX] + " to " + termScoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]));
+                    groupDocsHits.groupSortValues[groupSortIDX] = termScoreMap.get(groupDocsHits.groupSortValues[groupSortIDX]);
                     assertNotNull(groupDocsHits.groupSortValues[groupSortIDX]);
                   }
                 }
@@ -786,7 +792,7 @@ public class TestGrouping extends LuceneTestCase {
                   for(ScoreDoc _hit : groupDocsHits.scoreDocs) {
                     FieldDoc hit = (FieldDoc) _hit;
                     if (hit.fields != null) {
-                      hit.fields[docSortIDX] = scoreMap.get(hit.fields[docSortIDX]);
+                      hit.fields[docSortIDX] = termScoreMap.get(hit.fields[docSortIDX]);
                       assertNotNull(hit.fields[docSortIDX]);
                     }
                   }
