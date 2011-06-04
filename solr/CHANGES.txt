@@ -144,6 +144,10 @@ New Features
   to IndexReader.open (in the case you have a custom IndexReaderFactory).
   (simonw via rmuir)
 
+* SOLR-2136: Boolean type added to function queries, along with
+  new functions exists(), if(), and(), or(), xor(), not(), def(),
+  and true and false constants. (yonik) 
+
 
 Optimizations
 ----------------------

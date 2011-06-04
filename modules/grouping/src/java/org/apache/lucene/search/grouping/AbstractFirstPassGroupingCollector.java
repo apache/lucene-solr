@@ -17,56 +17,39 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.TreeSet;
-
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.search.*;
+
+import java.io.IOException;
+import java.util.*;
 
 /** FirstPassGroupingCollector is the first of two passes necessary
  *  to collect grouped hits.  This pass gathers the top N sorted
- *  groups.
+ *  groups. Concrete subclasses define what a group is and how it
+ *  is internally collected.
  *
  *  <p>See {@link org.apache.lucene.search.grouping} for more
  *  details including a full code example.</p>
  *
  * @lucene.experimental
  */
+abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Collector {
 
-public class FirstPassGroupingCollector extends Collector {
-
-  private final String groupField;
   private final Sort groupSort;
   private final FieldComparator[] comparators;
   private final int[] reversed;
   private final int topNGroups;
-  private final HashMap<BytesRef, CollectedSearchGroup> groupMap;
-  private final BytesRef scratchBytesRef = new BytesRef();
+  private final HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>> groupMap;
   private final int compIDXEnd;
 
   // Set once we reach topNGroups unique groups:
-  private TreeSet<CollectedSearchGroup> orderedGroups;
+  private TreeSet<CollectedSearchGroup<GROUP_VALUE_TYPE>> orderedGroups;
   private int docBase;
   private int spareSlot;
-  private FieldCache.DocTermsIndex index;
 
   /**
    * Create the first pass collector.
    *
-   *  @param groupField The field used to group
-   *    documents. This field must be single-valued and
-   *    indexed (FieldCache is used to access its value
-   *    per-document).
    *  @param groupSort The {@link Sort} used to sort the
    *    groups.  The top sorted document within each group
    *    according to groupSort, determines how that group
@@ -74,13 +57,13 @@ public class FirstPassGroupingCollector extends Collector {
    *    ie, if you want to groupSort by relevance use
    *    Sort.RELEVANCE.
    *  @param topNGroups How many top groups to keep.
+   *  @throws IOException If I/O related errors occur
    */
-  public FirstPassGroupingCollector(String groupField, Sort groupSort, int topNGroups) throws IOException {
+  public AbstractFirstPassGroupingCollector(Sort groupSort, int topNGroups) throws IOException {
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
     }
 
-    this.groupField = groupField;
     // TODO: allow null groupSort to mean "by relevance",
     // and specialize it?
     this.groupSort = groupSort;
@@ -100,13 +83,19 @@ public class FirstPassGroupingCollector extends Collector {
     }
 
     spareSlot = topNGroups;
-    groupMap = new HashMap<BytesRef, CollectedSearchGroup>(topNGroups);
+    groupMap = new HashMap<GROUP_VALUE_TYPE, CollectedSearchGroup<GROUP_VALUE_TYPE>>(topNGroups);
   }
 
-  /** Returns top groups, starting from offset.  This may
-   *  return null, if no groups were collected, or if the
-   *  number of unique groups collected is <= offset. */
-  public Collection<SearchGroup> getTopGroups(int groupOffset, boolean fillFields) {
+  /**
+   * Returns top groups, starting from offset.  This may
+   * return null, if no groups were collected, or if the
+   * number of unique groups collected is <= offset.
+   *
+   * @param groupOffset The offset in the collected groups
+   * @param fillFields Whether to fill to {@link SearchGroup#sortValues}
+   * @return top groups, starting from offset
+   */
+  public Collection<SearchGroup<GROUP_VALUE_TYPE>> getTopGroups(int groupOffset, boolean fillFields) {
 
     //System.out.println("FP.getTopGroups groupOffset=" + groupOffset + " fillFields=" + fillFields + " groupMap.size()=" + groupMap.size());
 
@@ -122,15 +111,15 @@ public class FirstPassGroupingCollector extends Collector {
       buildSortedSet();
     }
 
-    final Collection<SearchGroup> result = new ArrayList<SearchGroup>();
+    final Collection<SearchGroup<GROUP_VALUE_TYPE>> result = new ArrayList<SearchGroup<GROUP_VALUE_TYPE>>();
     int upto = 0;
     final int sortFieldCount = groupSort.getSort().length;
-    for(CollectedSearchGroup group : orderedGroups) {
+    for(CollectedSearchGroup<GROUP_VALUE_TYPE> group : orderedGroups) {
       if (upto++ < groupOffset) {
         continue;
       }
       //System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      SearchGroup searchGroup = new SearchGroup();
+      SearchGroup<GROUP_VALUE_TYPE> searchGroup = new SearchGroup<GROUP_VALUE_TYPE>();
       searchGroup.groupValue = group.groupValue;
       if (fillFields) {
         searchGroup.sortValues = new Comparable[sortFieldCount];
@@ -142,10 +131,6 @@ public class FirstPassGroupingCollector extends Collector {
     }
     //System.out.println("  return " + result.size() + " groups");
     return result;
-  }
-
-  public String getGroupField() {
-    return groupField;
   }
 
   @Override
@@ -189,13 +174,9 @@ public class FirstPassGroupingCollector extends Collector {
     // TODO: should we add option to mean "ignore docs that
     // don't have the group field" (instead of stuffing them
     // under null group)?
-    final int ord = index.getOrd(doc);
-    //System.out.println("  ord=" + ord);
+    final GROUP_VALUE_TYPE groupValue = getDocGroupValue(doc);
 
-    final BytesRef br = ord == 0 ? null : index.lookup(ord, scratchBytesRef);
-    //System.out.println("  group=" + (br == null ? "null" : br.utf8ToString()));
-
-    final CollectedSearchGroup group = groupMap.get(br);
+    final CollectedSearchGroup<GROUP_VALUE_TYPE> group = groupMap.get(groupValue);
 
     if (group == null) {
 
@@ -210,8 +191,8 @@ public class FirstPassGroupingCollector extends Collector {
         // just keep collecting them
 
         // Add a new CollectedSearchGroup:
-        CollectedSearchGroup sg = new CollectedSearchGroup();
-        sg.groupValue = ord == 0 ? null : new BytesRef(scratchBytesRef);
+        CollectedSearchGroup<GROUP_VALUE_TYPE> sg = new CollectedSearchGroup<GROUP_VALUE_TYPE>();
+        sg.groupValue = copyDocGroupValue(groupValue, null);
         sg.comparatorSlot = groupMap.size();
         sg.topDoc = docBase + doc;
         for (FieldComparator fc : comparators) {
@@ -233,20 +214,14 @@ public class FirstPassGroupingCollector extends Collector {
       // the bottom group with this new group.
 
       // java 6-only: final CollectedSearchGroup bottomGroup = orderedGroups.pollLast();
-      final CollectedSearchGroup bottomGroup = orderedGroups.last();
+      final CollectedSearchGroup<GROUP_VALUE_TYPE> bottomGroup = orderedGroups.last();
       orderedGroups.remove(bottomGroup);
       assert orderedGroups.size() == topNGroups -1;
 
       groupMap.remove(bottomGroup.groupValue);
 
       // reuse the removed CollectedSearchGroup
-      if (br == null) {
-        bottomGroup.groupValue = null;
-      } else if (bottomGroup.groupValue != null) {
-        bottomGroup.groupValue.copy(br);
-      } else {
-        bottomGroup.groupValue = new BytesRef(br);
-      }
+      bottomGroup.groupValue = copyDocGroupValue(groupValue, bottomGroup.groupValue);
       bottomGroup.topDoc = docBase + doc;
 
       for (FieldComparator fc : comparators) {
@@ -291,7 +266,7 @@ public class FirstPassGroupingCollector extends Collector {
     // Remove before updating the group since lookup is done via comparators
     // TODO: optimize this
 
-    final CollectedSearchGroup prevLast;
+    final CollectedSearchGroup<GROUP_VALUE_TYPE> prevLast;
     if (orderedGroups != null) {
       prevLast = orderedGroups.last();
       orderedGroups.remove(group);
@@ -336,7 +311,7 @@ public class FirstPassGroupingCollector extends Collector {
       }
     };
 
-    orderedGroups = new TreeSet<CollectedSearchGroup>(comparator);
+    orderedGroups = new TreeSet<CollectedSearchGroup<GROUP_VALUE_TYPE>>(comparator);
     orderedGroups.addAll(groupMap.values());
     assert orderedGroups.size() > 0;
 
@@ -353,15 +328,31 @@ public class FirstPassGroupingCollector extends Collector {
   @Override
   public void setNextReader(AtomicReaderContext readerContext) throws IOException {
     docBase = readerContext.docBase;
-    index = FieldCache.DEFAULT.getTermsIndex(readerContext.reader, groupField);
-    
     for (int i=0; i<comparators.length; i++) {
       comparators[i] = comparators[i].setNextReader(readerContext);
     }
   }
+
+  /**
+   * Returns the group value for the specified doc.
+   *
+   * @param doc The specified doc
+   * @return the group value for the specified doc
+   */
+  protected abstract GROUP_VALUE_TYPE getDocGroupValue(int doc);
+
+  /**
+   * Returns a copy of the specified group value by creating a new instance and copying the value from the specified
+   * groupValue in the new instance. Or optionally the reuse argument can be used to copy the group value in.
+   *
+   * @param groupValue The group value to copy
+   * @param reuse Optionally a reuse instance to prevent a new instance creation
+   * @return a copy of the specified group value
+   */
+  protected abstract GROUP_VALUE_TYPE copyDocGroupValue(GROUP_VALUE_TYPE groupValue, GROUP_VALUE_TYPE reuse);
 }
 
-class CollectedSearchGroup extends SearchGroup {
+class CollectedSearchGroup<T> extends SearchGroup<T> {
   int topDoc;
   int comparatorSlot;
 }

@@ -181,9 +181,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // term text into textStart address
     // Get the text & hash of this term.
     int termID;
-    try{
-       termID = bytesHash.add(termBytesRef, termAtt.fillBytesRef());
-    }catch (MaxBytesLengthExceededException e) {
+    try {
+      termID = bytesHash.add(termBytesRef, termAtt.fillBytesRef());
+    } catch (MaxBytesLengthExceededException e) {
       // Not enough room in current block
       // Just skip this term, to remain as robust as
       // possible during indexing.  A TokenFilter

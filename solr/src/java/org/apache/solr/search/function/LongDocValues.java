@@ -39,6 +39,11 @@ public abstract class LongDocValues extends DocValues {
   }
 
   @Override
+  public boolean boolVal(int doc) {
+    return longVal(doc) != 0;
+  }
+
+  @Override
   public String strVal(int doc) {
     return Long.toString(longVal(doc));
   }

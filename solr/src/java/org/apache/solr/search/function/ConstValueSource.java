@@ -66,6 +66,10 @@ public class ConstValueSource extends ConstNumberSource {
       public Object objectVal(int doc) {
         return constant;
       }
+      @Override
+      public boolean boolVal(int doc) {
+        return constant != 0.0f;
+      }
     };
   }
 
@@ -104,5 +108,10 @@ public class ConstValueSource extends ConstNumberSource {
   @Override
   public Number getNumber() {
     return constant;
+  }
+
+  @Override
+  public boolean getBool() {
+    return constant != 0.0f;
   }
 }

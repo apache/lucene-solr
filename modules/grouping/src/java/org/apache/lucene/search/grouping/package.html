@@ -43,55 +43,37 @@ field fall into a single group.</p>
 
   </ul>
 
+<p>The implementation is two-pass: the first pass ({@link
+  org.apache.lucene.search.grouping.TermFirstPassGroupingCollector})
+  gathers the top groups, and the second pass ({@link
+  org.apache.lucene.search.grouping.TermSecondPassGroupingCollector})
+  gathers documents within those groups.  If the search is costly to
+  run you may want to use the {@link
+  org.apache.lucene.search.CachingCollector} class, which
+  caches hits and can (quickly) replay them for the second pass.  This
+  way you only run the query once, but you pay a RAM cost to (briefly)
+  hold all hits.  Results are returned as a {@link
+  org.apache.lucene.search.grouping.TopGroups} instance.</p>
+
 <p>
-There are two grouping implementations here:
-<ul>
-  <li>
-    Arbitrary grouping that can group by any single-valued indexed
-    field, implemented as a two-pass collector: the first pass ({@link
-    org.apache.lucene.search.grouping.FirstPassGroupingCollector})
-    gathers the top groups, and the second pass ({@link
-    org.apache.lucene.search.grouping.SecondPassGroupingCollector})
-    gathers documents within those groups.  If the search is costly to
-    run you may want to use the {@link
-    org.apache.lucene.search.CachingCollector} class, which caches
-    hits and can (quickly) replay them for the second pass.  This way
-    you only run the query once, but you pay a RAM cost to (briefly)
-    hold all hits.  Results are returned as a {@link
-    org.apache.lucene.search.grouping.TopGroups} instance.</p>
-  </li>
-  <li>
-    Indexed groups, using a single pass collector (<code>BlockGroupingCollectorDoc</code>) that
-    is able to group according to the doc blocks created during
-    indexing using <code>IndexWriter</code>'s <code>add/updateDocuments</code> API.
-    This is faster (~25% faster QPS) than the generic two-pass
-    collector, but it only works for doc blocks so you must statically
-    commit (during indexing) to which grouping you'll need at search
-    time.
+  This module abstracts away what defines group and how it is collected. All grouping collectors
+  are abstract and have currently term based implementations. One can implement
+  collectors that for example group on multiple fields.
+</p>
 
-    <p>This implementation does not rely on a single valued grouping
-    field; rather, the blocks in the index define the groups, so your
-    application is free to determine what the grouping criteria is.
-    At search time, you must provide a <code>Filter</code> that marks
-    the last document in each group.  This is a substantial memory
-    savings because this collector does not load
-    a <code>DocTermsIndex</code> from the
-    <code>FieldCache</code>.
-  </li>
-</ul>
-
-<p>The benefit of the arbitrary grouping implementation is you don't have
-to commit at indexing time to a static grouping of your documents.
-But the downside is it's somewhat slower to run, and requires more RAM
-(a <code>FieldCache.DocTermsIndex</code> entry is created).
+<p>
+  This module abstracts away what defines group and how it is collected. All grouping collectors
+  are abstract and have currently term based implementations. One can implement
+  collectors that for example group on multiple fields.
+</p>
 
 <p>Known limitations:</p>
 <ul>
   <li> For the two-pass grouping collector, the group field must be a
     single-valued indexed field.
     {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.search.FieldCache.DocTermsIndex} for this field.
-  <li> Unlike Solr's implementation, this module cannot group by
-    function query values nor by arbitrary queries.
+  <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
+    implementations for grouping based on terms.
   <li> Sharding is not directly supported, though is not too
     difficult, if you can merge the top groups and top documents per
     group yourself.
@@ -101,14 +83,14 @@ But the downside is it's somewhat slower to run, and requires more RAM
   (using the {@link org.apache.lucene.search.CachingCollector}):</p>
 
 <pre class="prettyprint">
-  FirstPassGroupingCollector c1 = new FirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
+  TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector("author", groupSort, groupOffset+topNGroups);
 
   boolean cacheScores = true;
   double maxCacheRAMMB = 4.0;
   CachingCollector cachedCollector = CachingCollector.create(c1, cacheScores, maxCacheRAMMB);
   s.search(new TermQuery(new Term("content", searchTerm)), cachedCollector);
 
-  Collection<SearchGroup> topGroups = c1.getTopGroups(groupOffset, fillFields);
+  Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(groupOffset, fillFields);
 
   if (topGroups == null) {
     // No groups matched
@@ -118,12 +100,12 @@ But the downside is it's somewhat slower to run, and requires more RAM
   boolean getScores = true;
   boolean getMaxScores = true;
   boolean fillFields = true;
-  SecondPassGroupingCollector c2 = new SecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
+  TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset+docsPerGroup, getScores, getMaxScores, fillFields);
 
   //Optionally compute total group count
-  AllGroupsCollector allGroupsCollector = null;
+  TermAllGroupsCollector allGroupsCollector = null;
   if (requiredTotalGroupCount) {
-    allGroupsCollector = new AllGroupsCollector("author");
+    allGroupsCollector = new TermAllGroupsCollector("author");
     c2 = MultiCollector.wrap(c2, allGroupsCollector);
   }
 
@@ -135,9 +117,9 @@ But the downside is it's somewhat slower to run, and requires more RAM
     s.search(new TermQuery(new Term("content", searchTerm)), c2);
   }
         
-  TopGroups groupsResult = c2.getTopGroups(docOffset);
+  TopGroups<BytesRef> groupsResult = c2.getTopGroups(docOffset);
   if (requiredTotalGroupCount) {
-    groupResult = new TopGroups(groupsResult, allGroupsCollector.getGroupCount());
+    groupResult = new TopGroups<BytesRef>(groupsResult, allGroupsCollector.getGroupCount());
   }
 
   // Render groupsResult...

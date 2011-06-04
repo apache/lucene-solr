@@ -1,5 +1,3 @@
-package org.apache.lucene.search.grouping;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,16 +15,9 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-/**
- * Represents a group that is found during the first pass search.
- *
- * @lucene.experimental
- */
-public class SearchGroup<GROUP_VALUE_TYPE> {
+package org.apache.solr.search.function;
 
-  /** The value that defines this group  */
-  public GROUP_VALUE_TYPE groupValue;
 
-  /** The sort values used during sorting. Can be <code>null</code>. */
-  public Comparable[] sortValues;
+public abstract class BoolFunction extends ValueSource {
+  // TODO: placeholder to return type, among other common future functionality
 }
