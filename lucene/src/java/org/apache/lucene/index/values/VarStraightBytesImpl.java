@@ -146,6 +146,20 @@ class VarStraightBytesImpl {
             : (int) (addresses.get(1 + docID) - address);
         return data.fillSlice(bytesRef, address, length);
       }
+      
+      @Override
+      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+        return new SourceEnum(attrSource, type(), this, maxDoc()) {
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs) {
+              return pos = NO_MORE_DOCS;
+            }
+            source.getBytes(target, bytesRef);
+            return pos = target;
+          }
+        };
+      }
 
       @Override
       public int getValueCount() {
