@@ -584,7 +584,7 @@ public class ParallelReader extends IndexReader {
       fields.put(field, perDocs.docValues(field));
     }
 
-    @Override
+    //@Override -- not until Java 1.6
     public void close() throws IOException {
       // nothing to do here
     }
