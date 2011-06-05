@@ -13,7 +13,7 @@ body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
 
 body
 {
-    padding: 20px;
+    padding: 30px;
     text-align: center;
 }
 
@@ -62,7 +62,6 @@ ul
     margin: 0 auto;
     margin-bottom: 30px;
     text-align: left;
-    width: 1002px;
 }
 
 #header
@@ -109,9 +108,6 @@ ul
 
 #main
 {
-    background-image: url( ../img/div.gif );
-    background-position: 200px 0;
-    background-repeat: repeat-y;
     border: 1px solid #c0c0c0;
     min-height: 600px;
     position: relative;
@@ -186,7 +182,7 @@ ul
 #menu-wrapper
 {
     float: left;
-    width: 201px;
+    width: 20%;
 }
 
 #menu p.loader
@@ -285,7 +281,11 @@ ul
 #menu li
 {
     border-bottom: 1px solid #c0c0c0;
-    /*border-right: 1px solid #f0f0f0;*/
+}
+
+#menu li p
+{
+    border-right: 1px solid #c0c0c0;
 }
 
 #menu li.optional
@@ -293,13 +293,16 @@ ul
     display: none;
 }
 
-#menu li:last-child
+#menu .singlecore li:last-child
 {
     border-bottom: 0;
 }
 
 #menu ul ul
 {
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
     display: none;
     padding-top: 5px;
     padding-bottom: 10px;
@@ -307,6 +310,7 @@ ul
 
 #menu ul .active ul
 {
+    border-bottom: 1px solid #f0f0f0;
     display: block;
 }
 
@@ -405,7 +409,7 @@ ul
 #content-wrapper
 {
     float: right;
-    width: 799px;
+    width: 80%;
 }
 
 #content
@@ -865,14 +869,14 @@ ul
 #content #query
 {
     background-image: url( ../img/div.gif );
-    background-position: 210px 0;
+    background-position: 22% 0;
     background-repeat: repeat-y;
 }
 
 #content #query #form
 {
     float: left;
-    width: 200px;
+    width: 21%;
 }
 
 #content #query #form label
@@ -960,7 +964,7 @@ ul
 {
     display: none;
     float: right;
-    width: 560px;
+    width: 77%;
 }
 
 #content #query #result #url
@@ -2439,20 +2443,20 @@ ul
 #content #replication
 {
     background-image: url( ../img/div.gif );
-    background-position: 165px 0;
+    background-position: 21% 0;
     background-repeat: repeat-y;
 }
 
 #content #replication #frame
 {
     float: right;
-    width: 600px;
+    width: 78%;
 }
 
 #content #replication #navigation
 {
     float: left;
-    width: 161px;
+    width: 20%;
 }
 
 #content #replication #error

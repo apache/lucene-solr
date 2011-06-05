@@ -4158,8 +4158,16 @@ var solr_admin = function( app_config )
 
                     if( is_multicore )
                     {
+                        menu_element
+                            .addClass( 'multicore' );
+
                         $( '#cores', menu_element )
                             .show();
+                    }
+                    else
+                    {
+                        menu_element
+                            .addClass( 'singlecore' );
                     }
 
                     for( var core_name in response.status )
