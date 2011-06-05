@@ -1241,6 +1241,7 @@ public abstract class LuceneTestCase extends Assert {
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
+    if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
     return sb.toString();
   }
 
