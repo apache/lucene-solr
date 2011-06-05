@@ -442,14 +442,14 @@ public class SortField {
 
     case SortField.INT:
       if (useIndexValues) {
-        return new FieldComparator.IntDocValuesComparator(numHits, field, (Integer) missingValue);
+        return new FieldComparator.IntDocValuesComparator(numHits, field);
       } else {
         return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer) missingValue);
       }
 
     case SortField.FLOAT:
       if (useIndexValues) {
-        return new FieldComparator.FloatDocValuesComparator(numHits, field, (Float) missingValue);
+        return new FieldComparator.FloatDocValuesComparator(numHits, field);
       } else {
         return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator) creator, (Float) missingValue);
       }

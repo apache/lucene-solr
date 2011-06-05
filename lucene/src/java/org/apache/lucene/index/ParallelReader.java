@@ -22,6 +22,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MapBackedSet;
@@ -61,7 +62,8 @@ public class ParallelReader extends IndexReader {
   private int numDocs;
   private boolean hasDeletions;
 
-  private ParallelFields fields = new ParallelFields();
+  private final ParallelFields fields = new ParallelFields();
+  private final ParallelPerDocs perDocs = new ParallelPerDocs();
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -135,6 +137,7 @@ public class ParallelReader extends IndexReader {
         fieldToReader.put(field, reader);
       }
       this.fields.addField(field, reader);
+      this.perDocs.addField(field, reader);
     }
 
     if (!ignoreStoredFields)
@@ -569,8 +572,32 @@ public class ParallelReader extends IndexReader {
 
   @Override
   public PerDocValues perDocValues() throws IOException {
-    // TODO Auto-generated method stub
-    return null;
+    return perDocs;
+  }
+  
+  // Single instance of this, per ParallelReader instance
+  private static final class ParallelPerDocs extends PerDocValues {
+    final TreeMap<String,IndexDocValues> fields = new TreeMap<String,IndexDocValues>();
+
+    void addField(String field, IndexReader r) throws IOException {
+      PerDocValues perDocs = MultiPerDocValues.getPerDocs(r);
+      fields.put(field, perDocs.docValues(field));
+    }
+
+    @Override
+    public void close() throws IOException {
+      // nothing to do here
+    }
+
+    @Override
+    public IndexDocValues docValues(String field) throws IOException {
+      return fields.get(field);
+    }
+
+    @Override
+    public Collection<String> fields() {
+      return fields.keySet();
+    }
   }
 }
 

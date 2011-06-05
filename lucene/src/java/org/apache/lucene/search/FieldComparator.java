@@ -335,12 +335,10 @@ public abstract class FieldComparator {
     private Source currentReaderValues;
     private final String field;
     private double bottom;
-    private final float missingValue;
 
-    FloatDocValuesComparator(int numHits, String field, Float missingValue) {
+    FloatDocValuesComparator(int numHits, String field) {
       values = new double[numHits];
       this.field = field;
-      this.missingValue = missingValue == null ? 0 : missingValue.floatValue();
     }
 
     @Override
@@ -607,12 +605,10 @@ public abstract class FieldComparator {
     private Source currentReaderValues;
     private final String field;
     private long bottom;
-    private int missingValue;
 
-    IntDocValuesComparator(int numHits, String field, Integer missingValue) {
+    IntDocValuesComparator(int numHits, String field) {
       values = new long[numHits];
       this.field = field;
-      this.missingValue = missingValue == null ? 0 : missingValue.intValue();
     }
 
     @Override
