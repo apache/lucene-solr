@@ -181,26 +181,4 @@ public class CodecProvider {
   public synchronized void setDefaultFieldCodec(String codec) {
     defaultFieldCodec = codec;
   }
-  
-  /**
-   * Registers all codecs from the given provider including the field to codec
-   * mapping and the default field codec.
-   * <p>
-   * NOTE: This method will pass any codec from the given codec to
-   * {@link #register(Codec)} and sets fiels codecs via
-   * {@link #setFieldCodec(String, String)}.
-   * @return this
-   */
-  public CodecProvider copyFrom(CodecProvider other) {
-    final Collection<Codec> values = other.codecs.values();
-    for (Codec codec : values) {
-      register(codec);
-    }
-    final Set<Entry<String, String>> entrySet = other.perFieldMap.entrySet();
-    for (Entry<String, String> entry : entrySet) {
-      setFieldCodec(entry.getKey(), entry.getValue());
-    }
-    setDefaultFieldCodec(other.getDefaultFieldCodec());
-    return this;
-  }
 }
