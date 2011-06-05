@@ -111,7 +111,7 @@ class IntsImpl {
           minValue = maxValue = 0;
         }
         // if we exceed the range of positive longs we must switch to fixed ints
-        if ((maxValue - minValue) < (((long)1) << 63) && (maxValue - minValue) > 0) {
+        if ((maxValue - minValue) < (((long)1) << 63) && (maxValue - minValue) >= 0) {
           writePackedInts(docCount);
         } else {
           writeFixedInts(docCount);
