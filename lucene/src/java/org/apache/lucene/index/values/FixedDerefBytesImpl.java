@@ -70,7 +70,7 @@ class FixedDerefBytesImpl {
     }
 
     @Override
-     public void add(int docID, BytesRef bytes) throws IOException {
+    public void add(int docID, BytesRef bytes) throws IOException {
       if (bytes.length == 0) // default value - skip it
         return;
       if (size == -1) {

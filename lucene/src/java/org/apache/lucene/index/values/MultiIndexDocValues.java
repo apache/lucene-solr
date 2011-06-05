@@ -66,10 +66,6 @@ public class MultiIndexDocValues extends IndexDocValues {
     return new MultiSource(docValuesIdx, starts);
   }
 
-  public void close() throws IOException {
-    super.close();
-  }
-
   public IndexDocValues reset(DocValuesIndex[] docValuesIdx) {
     int[] start = new int[docValuesIdx.length];
     for (int i = 0; i < docValuesIdx.length; i++) {
@@ -103,11 +99,6 @@ public class MultiIndexDocValues extends IndexDocValues {
     public ValueType type() {
       return emptySoruce.type();
     }
-
-    public void close() throws IOException {
-      super.close();
-    }
-
   }
 
   private static class MultiValuesEnum extends ValuesEnum {

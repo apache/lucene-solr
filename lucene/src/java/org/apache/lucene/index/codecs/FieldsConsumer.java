@@ -48,11 +48,10 @@ public abstract class FieldsConsumer implements Closeable {
       mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);
       assert mergeState.fieldInfo != null : "FieldInfo for field is null: "+ field;
       TermsEnum terms = fieldsEnum.terms();
-      if(terms != null) {
+      if (terms != null) {
         final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
         termsConsumer.merge(mergeState, terms);
       }
     }
   }
- 
 }

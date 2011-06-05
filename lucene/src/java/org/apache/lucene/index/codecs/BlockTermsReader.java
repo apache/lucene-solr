@@ -35,7 +35,6 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
-import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -116,7 +115,7 @@ public class BlockTermsReader extends FieldsProducer {
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     //this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, BlockTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
                        readBufferSize);
 
     boolean success = false;
@@ -197,7 +196,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, BlockTermsWriter.TERMS_EXTENSION));
   }
 

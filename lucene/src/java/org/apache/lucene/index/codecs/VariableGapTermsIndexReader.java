@@ -60,7 +60,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId)
     throws IOException {
 
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     this.segment = segment;
     boolean success = false;
 
@@ -236,7 +236,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, id, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 

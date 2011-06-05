@@ -52,13 +52,13 @@ public class StandardPostingsReader extends PostingsReaderBase {
   //private String segment;
 
   public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, int codecId) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, ""+codecId, StandardCodec.FREQ_EXTENSION),
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
     //this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, ""+codecId, StandardCodec.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.PROX_EXTENSION),
                                readBufferSize);
         success = true;
       } finally {
@@ -71,7 +71,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) throws IOException {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
       files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.PROX_EXTENSION));

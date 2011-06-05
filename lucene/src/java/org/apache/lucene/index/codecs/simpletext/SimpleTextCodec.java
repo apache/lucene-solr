@@ -26,7 +26,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -63,13 +62,13 @@ public class SimpleTextCodec extends Codec {
   /** Extension of freq postings file */
   static final String POSTINGS_EXTENSION = "pst";
 
-  static String getPostingsFileName(String segment, String id) {
+  static String getPostingsFileName(String segment, int id) {
     return IndexFileNames.segmentFileName(segment, id, POSTINGS_EXTENSION);
   }
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    files.add(getPostingsFileName(segmentInfo.name, ""+id));
+    files.add(getPostingsFileName(segmentInfo.name, id));
     DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 

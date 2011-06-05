@@ -73,7 +73,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     this.termComp = termComp;
 
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, ""+codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 
@@ -406,7 +406,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, id, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 

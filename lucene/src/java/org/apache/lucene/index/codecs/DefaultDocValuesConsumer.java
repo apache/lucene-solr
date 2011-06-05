@@ -58,6 +58,7 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
         directory, comparator, bytesUsed);
   }
   
+  @SuppressWarnings("fallthrough")
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecId,
       Set<String> files) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();

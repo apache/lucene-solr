@@ -21,12 +21,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
-
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.MultiIndexDocValues;
-import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.index.values.MultiIndexDocValues.DocValuesIndex;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
 import org.apache.lucene.util.Bits;
@@ -275,6 +271,5 @@ public final class MultiFields extends Fields {
 
     return result;
   }
-  
 }
 

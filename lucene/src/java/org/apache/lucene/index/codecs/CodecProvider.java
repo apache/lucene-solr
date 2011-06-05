@@ -189,8 +189,9 @@ public class CodecProvider {
    * NOTE: This method will pass any codec from the given codec to
    * {@link #register(Codec)} and sets fiels codecs via
    * {@link #setFieldCodec(String, String)}.
+   * @return this
    */
-  public void copyFrom(CodecProvider other) {
+  public CodecProvider copyFrom(CodecProvider other) {
     final Collection<Codec> values = other.codecs.values();
     for (Codec codec : values) {
       register(codec);
@@ -200,5 +201,6 @@ public class CodecProvider {
       setFieldCodec(entry.getKey(), entry.getValue());
     }
     setDefaultFieldCodec(other.getDefaultFieldCodec());
+    return this;
   }
 }

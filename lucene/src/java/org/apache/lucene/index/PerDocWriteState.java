@@ -67,8 +67,4 @@ public class PerDocWriteState {
     this.codecId = codecId;
     this.bytesUsed = state.bytesUsed;
   }
-
-  public String codecIdAsString() {
-    return "" + codecId;
-  }
 }

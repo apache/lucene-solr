@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.Floats;

@@ -154,10 +154,9 @@ public class PulsingCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    final String codecId = "" + id;
-    StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    BlockTermsReader.files(dir, segmentInfo, id, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 

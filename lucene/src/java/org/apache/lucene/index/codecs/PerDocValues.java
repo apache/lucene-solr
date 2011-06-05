@@ -27,7 +27,7 @@ import org.apache.lucene.index.values.IndexDocValues;
  * storage on a per-document basis corresponding to their actual
  * {@link PerDocConsumer} counterpart.
  * <p>
- * The {@link PerDocValues} API is accessible through flexible indexing / the
+ * The {@link PerDocValues} API is accessible through the
  * {@link Codec} - API providing per field consumers and producers for inverted
  * data (terms, postings) as well as per-document data.
  * 

@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.FieldInvertState;  // for javadocs
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.StringHelper; // for javadocs

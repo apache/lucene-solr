@@ -79,8 +79,4 @@ public class SegmentWriteState {
     this.codecId = codecId;
     segDeletes = state.segDeletes;
   }
-  
-  public String codecIdAsString() {
-    return "" + codecId;
-  }
 }

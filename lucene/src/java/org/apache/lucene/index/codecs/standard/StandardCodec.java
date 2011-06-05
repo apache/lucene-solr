@@ -25,7 +25,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -40,7 +39,6 @@ import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
-import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -139,10 +137,9 @@ public class StandardCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    final String codecId = "" + id;
-    StandardPostingsReader.files(dir, segmentInfo, codecId, files);
-    BlockTermsReader.files(dir, segmentInfo, codecId, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    BlockTermsReader.files(dir, segmentInfo, id, files);
+    VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
   }
 

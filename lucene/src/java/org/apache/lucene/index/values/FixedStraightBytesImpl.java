@@ -78,8 +78,9 @@ class FixedStraightBytesImpl {
       if (state.bits == null && state.reader instanceof Reader) {
         Reader reader = (Reader) state.reader;
         final int maxDocs = reader.maxDoc;
-        if (maxDocs == 0)
+        if (maxDocs == 0) {
           return;
+        }
         if (size == -1) {
           size = reader.size;
           datOut.writeInt(size);
@@ -124,7 +125,6 @@ class FixedStraightBytesImpl {
     public long ramBytesUsed() {
       return oneRecord == null ? 0 : oneRecord.length;
     }
-
   }
 
   public static class Reader extends BytesReaderBase {

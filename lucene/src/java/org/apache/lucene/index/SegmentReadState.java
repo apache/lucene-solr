@@ -54,8 +54,4 @@ public class SegmentReadState {
     this.termsIndexDivisor = termsIndexDivisor;
     this.codecId = codecId;
   }
-  
-  public String codecIdAsString() {
-    return "" + codecId;
-  }
 }

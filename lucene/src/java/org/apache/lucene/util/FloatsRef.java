@@ -18,11 +18,11 @@ package org.apache.lucene.util;
  */
 
 /**
- * Represents double[], as a slice (offset + length) into an existing float[].
+ * Represents double[], as a slice (offset + length) into an existing double[].
  * 
  * @lucene.internal
  */
-public final class FloatsRef implements Cloneable{
+public final class FloatsRef implements Cloneable {
   public double[] floats;
   public int offset;
   public int length;

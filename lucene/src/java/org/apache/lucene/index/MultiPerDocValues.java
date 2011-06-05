@@ -32,10 +32,10 @@ import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
 
 /**
- * Exposes per-document flex API, merged from per-document flex API of
- * sub-segments. This is useful when you're interacting with an
- * {@link IndexReader} implementation that consists of sequential sub-readers
- * (eg DirectoryReader or {@link MultiReader}).
+ * Exposes per-document values, merged from per-document values API of
+ * sub-segments. This is useful when you're interacting with an {@link IndexReader}
+ * implementation that consists of sequential sub-readers (eg DirectoryReader
+ * or {@link MultiReader}). 
  * 
  * <p>
  * <b>NOTE</b>: for multi readers, you'll get better performance by gathering

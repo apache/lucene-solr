@@ -34,7 +34,6 @@ import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
@@ -227,10 +226,9 @@ public class MockVariableIntBlockCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    final String codecIdAsString = "" + codecId;
-    SepPostingsReaderImpl.files(segmentInfo, codecIdAsString, files);
-    BlockTermsReader.files(dir, segmentInfo, codecIdAsString, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecIdAsString, files);
+    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    BlockTermsReader.files(dir, segmentInfo, codecId, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
   }
 

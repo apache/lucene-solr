@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;

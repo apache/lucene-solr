@@ -136,10 +136,9 @@ public class MockSepCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    final String codecIdAsString = "" + codecId;
-    SepPostingsReaderImpl.files(segmentInfo, codecIdAsString, files);
-    BlockTermsReader.files(dir, segmentInfo, codecIdAsString, files);
-    FixedGapTermsIndexReader.files(dir, segmentInfo, codecIdAsString, files);
+    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    BlockTermsReader.files(dir, segmentInfo, codecId, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
   }
 

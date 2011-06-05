@@ -95,7 +95,6 @@ public class Floats {
       }
     }
 
-
     public long ramBytesUsed() {
       return 0;
     }
@@ -140,7 +139,6 @@ public class Floats {
     public void files(Collection<String> files) throws IOException {
       files.add(IndexFileNames.segmentFileName(id, "", Writer.DATA_EXTENSION));
     }
-
   }
 
   // Writes 4 bytes (float) per value

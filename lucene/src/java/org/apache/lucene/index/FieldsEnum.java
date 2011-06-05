@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.values.IndexDocValues;
-import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.AttributeSource;
 
 /** Enumerates indexed fields.  You must first call {@link

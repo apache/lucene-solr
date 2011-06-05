@@ -65,6 +65,14 @@ public class RandomIndexWriter implements Closeable {
       // called from different threads; else test failures may
       // not be reproducible from the original seed
       this.r = new Random(r.nextInt());
+
+      if (r.nextBoolean()) {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("NOTE: RIW ctor is setting new CodecProvider().copyFrom");
+        }
+        // Just to test CP.copyFrom:
+        conf.setCodecProvider(new CodecProvider().copyFrom(conf.getCodecProvider()));
+      }
     }
 
     @Override

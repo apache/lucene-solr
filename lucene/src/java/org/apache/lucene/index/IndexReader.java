@@ -1056,9 +1056,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
   protected abstract void doSetNorm(int doc, String field, byte value)
           throws CorruptIndexException, IOException;
 
-  /** Flex API: returns {@link Fields} for this reader.
-   *  This method may return null if the reader has no
-   *  postings.
+  /**
+   * Returns {@link Fields} for this reader.
+   * This method may return null if the reader has no
+   * postings.
    *
    * <p><b>NOTE</b>: if this is a multi reader ({@link
    * #getSequentialSubReaders} is not null) then this
@@ -1071,9 +1072,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract Fields fields() throws IOException;
   
   /**
-   * Flex API: returns {@link PerDocValues} for this reader.
-   *  This method may return null if the reader has no per-document
-   *  values stored.
+   * Returns {@link PerDocValues} for this reader.
+   * This method may return null if the reader has no per-document
+   * values stored.
    *
    * <p><b>NOTE</b>: if this is a multi reader ({@link
    * #getSequentialSubReaders} is not null) then this

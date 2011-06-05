@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
-import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -198,9 +197,9 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      StandardPostingsReader.files(dir, segmentInfo, ""+id, files);
-      BlockTermsReader.files(dir, segmentInfo, ""+id, files);
-      FixedGapTermsIndexReader.files(dir, segmentInfo, ""+id, files);
+      StandardPostingsReader.files(dir, segmentInfo, id, files);
+      BlockTermsReader.files(dir, segmentInfo, id, files);
+      FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
       DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
     }
 
