@@ -31,6 +31,11 @@ Bug fixes
 * LUCENE-3102: CachingCollector.replay was failing to call setScorer
   per-segment (Martijn van Groningen via Mike McCandless)
 
+Optimizations
+
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
+
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
