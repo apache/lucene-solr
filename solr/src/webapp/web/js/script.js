@@ -36,26 +36,31 @@ var sammy = $.sammy
             'ping',
             function( event )
             {
-                var element = $( this.params.element );
-                
                 $.ajax
                 (
                     {
-                        url : element.attr( 'href' ) + '?wt=json',
+                        url : $( this.params.element ).attr( 'href' ) + '?wt=json',
                         dataType : 'json',
+                        context: this.params.element,
                         beforeSend : function( arr, form, options )
                         {
-                            loader.show( element );
+                            loader.show( this );
                         },
-                        success : function( response )
+                        success : function( response, text_status, xhr )
                         {
-                            var qtime_element = $( '.qtime', element );
+                            $( this )
+                                .removeAttr( 'title' );
+                            
+                            $( this ).parents( 'li' )
+                                .removeClass( 'error' );
+                                
+                            var qtime_element = $( '.qtime', this );
                             
                             if( 0 === qtime_element.size() )
                             {
                                 qtime_element = $( '<small class="qtime"> (<span></span>)</small>' );
                                 
-                                element
+                                $( this )
                                     .append
                                     (
                                         qtime_element
@@ -65,12 +70,17 @@ var sammy = $.sammy
                             $( 'span', qtime_element )
                                 .html( response.responseHeader.QTime + 'ms' );
                         },
-                        error : function()
+                        error : function( xhr, text_status, error_thrown )
                         {
+                            $( this )
+                                .attr( 'title', '/admin/ping is not configured (' + xhr.status + ': ' + error_thrown + ')' );
+                            
+                            $( this ).parents( 'li' )
+                                .addClass( 'error' );
                         },
-                        complete : function()
+                        complete : function( xhr, text_status )
                         {
-                            loader.hide( element );
+                            loader.hide( this );
                         }
                     }
                 );
@@ -261,6 +271,8 @@ var sammy = $.sammy
             /^#\/(cores)$/,
             function( context )
             {
+                delete app.cores_template;
+
                 sammy.trigger
                 (
                     'cores_load_data',
@@ -1991,6 +2003,8 @@ var sammy = $.sammy
                         .hide();
                 };
 
+                delete app.schema_browser_data;
+
                 sammy.trigger
                 (
                     'schema_browser_load',
@@ -3510,13 +3524,33 @@ var sammy = $.sammy
             /^#\/([\w\d]+)\/(schema|config)$/,
             function( context )
             {
-                var content_element = $( '#content' );
+                $.ajax
+                (
+                    {
+                        url : $( '.active a', this.active_core ).attr( 'href' ),
+                        dataType : 'xml',
+                        context : $( '#content' ),
+                        beforeSend : function( xhr, settings )
+                        {
+                            this
+                                .html( '<div class="loader">Loading ...</div>' );
+                        },
+                        complete : function( xhr, text_status )
+                        {
+                            var code = $(
+                                '<pre class="syntax language-xml"><code>' +
+                                xhr.responseText.replace( /\</g, '&lt;' ).replace( /\>/g, '&gt;' ) +
+                                '</code></pre>'
+                            );
+                            this.html( code );
 
-                content_element
-                    .html( '<iframe src="' + $( '.active a', this.active_core ).attr( 'href' ) + '"></iframe>' );
-                
-                $( 'iframe', content_element )
-                    .css( 'height', $( '#main' ).height() );
+                            if( 'success' === text_status )
+                            {
+                                hljs.highlightBlock( code.get(0) );
+                            }
+                        }
+                    }
+                );
             }
         );
         
