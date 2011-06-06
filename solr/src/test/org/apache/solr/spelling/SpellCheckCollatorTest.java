@@ -60,8 +60,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
 		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");		
 		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10");
 		params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
 		params.add(CommonParams.FQ, "NOT(id:1)");
 		
@@ -77,8 +77,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		NamedList spellCheck = (NamedList) values.get("spellcheck");
 		NamedList suggestions = (NamedList) spellCheck.get("suggestions");
 		List<String> collations = suggestions.getAll("collation");
-		assertTrue(collations.size() == 1);
-		assertTrue(collations.get(0).equals("lowerfilt:(+faith +hope +love)"));		
+		assertTrue(collations.size() > 0);
+		for(String collation : collations) {
+			assertTrue(!collation.equals("lowerfilt:(+faith +hope +loaves)"));	
+		}
 	}
 	
 	@Test
@@ -180,7 +182,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		// combination exists.
 		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES);
 		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS);
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
 		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
 		handler = core.getRequestHandler("spellCheckCompRH");
 		rsp = new SolrQueryResponse();

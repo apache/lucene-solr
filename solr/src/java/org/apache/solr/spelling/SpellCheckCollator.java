@@ -36,7 +36,7 @@ public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
 
   public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
-                                           int maxCollations, int maxTries) {
+                                           int maxCollations, int maxTries, int maxEvaluations) {
     List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
 
     QueryComponent queryComponent = null;
@@ -62,7 +62,7 @@ public class SpellCheckCollator {
 
     int tryNo = 0;
     int collNo = 0;
-    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions());
+    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), maxTries, maxEvaluations);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
       RankedSpellPossibility possibility = possibilityIter.next();
