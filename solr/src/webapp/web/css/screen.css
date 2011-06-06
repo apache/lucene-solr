@@ -757,6 +757,11 @@ ul
     padding: 1px 2px;
 }
 
+#content #analysis .analysis-result .row table td div.empty
+{
+    color: #f0f0f0;
+}
+
 #content #analysis .analysis-result .row table td div.match
 {
     background-color: #e9eff7;

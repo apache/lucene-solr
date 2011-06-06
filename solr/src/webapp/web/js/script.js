@@ -1893,7 +1893,7 @@ var sammy = $.sammy
                                                     {
                                                         fields.sort();
                                                         related_options += '<optgroup label="Fields">' + "\n";
-                                                        related_options += fields.join( "\n" ) + "\n";
+                                                        related_options += fields.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
                                                     
@@ -1909,7 +1909,7 @@ var sammy = $.sammy
                                                     {
                                                         dynamic_fields.sort();
                                                         related_options += '<optgroup label="DynamicFields">' + "\n";
-                                                        related_options += dynamic_fields.join( "\n" ) + "\n";
+                                                        related_options += dynamic_fields.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
                                                     
@@ -1925,7 +1925,7 @@ var sammy = $.sammy
                                                     {
                                                         types.sort();
                                                         related_options += '<optgroup label="Types">' + "\n";
-                                                        related_options += types.join( "\n" ) + "\n";
+                                                        related_options += types.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
 
@@ -3289,7 +3289,7 @@ var sammy = $.sammy
                                     if( 0 !== fields.length )
                                     {
                                         content += '<optgroup label="Fields">' + "\n";
-                                        content += fields.join( "\n" ) + "\n";
+                                        content += fields.sort().join( "\n" ) + "\n";
                                         content += '</optgroup>' + "\n";
                                     }
                                     
@@ -3304,7 +3304,7 @@ var sammy = $.sammy
                                     if( 0 !== types.length )
                                     {
                                         content += '<optgroup label="Types">' + "\n";
-                                        content += types.join( "\n" ) + "\n";
+                                        content += types.sort().join( "\n" ) + "\n";
                                         content += '</optgroup>' + "\n";
                                     }
                                     
@@ -3433,7 +3433,14 @@ var sammy = $.sammy
                                                 var length = raw_parts[key].length;
                                                 for( var j = 0; j < length; j++ )
                                                 {
-                                                    parts[key].push( '<td>' + raw_parts[key][j].join( "\n" ) + '</td>' );
+                                                    if( raw_parts[key][j] )
+                                                    {
+                                                        parts[key].push( '<td>' + raw_parts[key][j].join( "\n" ) + '</td>' );
+                                                    }
+                                                    else
+                                                    {
+                                                        parts[key].push( '<td><div class="empty">&empty;</div></td>' );
+                                                    }
                                                 }
                                             }
 
