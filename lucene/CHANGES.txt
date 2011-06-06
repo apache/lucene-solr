@@ -434,7 +434,7 @@ Bug fixes
   deletions, provided they share some segments. (yonik)
 
 * LUCENE-2645: Fix false assertion error when same token was added one
-  after another with 0 posIncr.  (Kurosaka Teruhiko via Mike
+  after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
   McCandless)
 
 ======================= Lucene 3.x (not yet released) ================
