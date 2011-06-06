@@ -17,12 +17,13 @@ package org.apache.solr.spelling;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
 
 import org.apache.lucene.analysis.Token;
 
@@ -38,8 +39,7 @@ import org.apache.lucene.analysis.Token;
  */
 public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 	private List<List<SpellCheckCorrection>> possibilityList = new ArrayList<List<SpellCheckCorrection>>();
-	private List<RankedSpellPossibility> rankedPossibilityList = new ArrayList<RankedSpellPossibility>();
-	private Iterator<RankedSpellPossibility> rankedPossibilityIterator;
+	private Iterator<RankedSpellPossibility> rankedPossibilityIterator = null;
 	private int correctionIndex[];
 	private boolean done = false;
 
@@ -56,7 +56,7 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 	 * 
 	 * @param suggestions
 	 */
-	public PossibilityIterator(Map<Token, LinkedHashMap<String, Integer>> suggestions) {
+	public PossibilityIterator(Map<Token, LinkedHashMap<String, Integer>> suggestions, int maximumRequiredSuggestions, int maxEvaluations) {
 		for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
 			Token token = entry.getKey();
 			List<SpellCheckCorrection> possibleCorrections = new ArrayList<SpellCheckCorrection>();
@@ -84,12 +84,27 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 				correctionIndex[i] = 0;
 			}
 		}
-
-		while (internalHasNext()) {
-			rankedPossibilityList.add(internalNext());
+		
+		long count = 0;
+		PriorityQueue<RankedSpellPossibility> rankedPossibilities = new PriorityQueue<RankedSpellPossibility>();		
+		while (count < maxEvaluations && internalHasNext()) {
+			RankedSpellPossibility rsp = internalNext();
+			count++;			
+			
+			if(rankedPossibilities.size() >= maximumRequiredSuggestions && rsp.getRank() >= rankedPossibilities.peek().getRank()) {
+				continue;
+			}
+			rankedPossibilities.offer(rsp);
+			if(rankedPossibilities.size() > maximumRequiredSuggestions) {
+				rankedPossibilities.poll();
+			}
 		}
-		Collections.sort(rankedPossibilityList);
-		rankedPossibilityIterator = rankedPossibilityList.iterator();
+		
+		RankedSpellPossibility[] rpArr = new RankedSpellPossibility[rankedPossibilities.size()];
+		for(int i=rankedPossibilities.size() - 1  ; i>=0 ; i--) {
+			rpArr[i] = rankedPossibilities.remove();
+		}
+		rankedPossibilityIterator = Arrays.asList(rpArr).iterator();		
 	}
 
 	private boolean internalHasNext() {

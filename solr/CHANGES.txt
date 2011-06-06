@@ -277,6 +277,11 @@ Bug Fixes
   English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
   yonik, Mike McCandless)
 
+* SOLR-2462: Fix extremely high memory usage problems with spellcheck.collate.
+  Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
+  parameter is added to avoid excessive CPU time in extreme cases (e.g. long
+  queries with many misspelled words).  (James Dyer via rmuir)
+
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------

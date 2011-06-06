@@ -22,8 +22,9 @@ public class RankedSpellPossibility implements Comparable<RankedSpellPossibility
 	private List<SpellCheckCorrection> corrections;
 	private int rank;
 
+	//Rank poorer suggestions ahead of better ones for use with a PriorityQueue
 	public int compareTo(RankedSpellPossibility rcl) {
-		return new Integer(rank).compareTo(rcl.rank);
+		return new Integer(rcl.rank).compareTo(rank);		
 	}
 
 	public List<SpellCheckCorrection> getCorrections() {
@@ -40,5 +41,18 @@ public class RankedSpellPossibility implements Comparable<RankedSpellPossibility
 
 	public void setRank(int rank) {
 		this.rank = rank;
+	}
+	
+	
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("rank=").append(rank);
+		if(corrections != null) {
+			for(SpellCheckCorrection corr : corrections) {
+				sb.append("     ");
+				sb.append(corr.getOriginal()).append(">").append(corr.getCorrection()).append(" (").append(corr.getNumberOfOccurences()).append(")");
+			}
+		}
+		return sb.toString();
 	}
 }
