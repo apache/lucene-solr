@@ -82,7 +82,7 @@
       <module name="lucene" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build" />
-      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=4.0-SNAPSHOT -DtempDir=temp -Dtests.linedocsfile=europarl.lines.txt.gz" />
+      <option name="VM_PARAMETERS" value="-ea -Dlucene.version=4.0-SNAPSHOT -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="memory contrib" type="JUnit" factoryName="JUnit">
