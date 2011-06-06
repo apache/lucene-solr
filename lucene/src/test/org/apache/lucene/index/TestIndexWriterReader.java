@@ -810,7 +810,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     writer.close();
 
-    _TestUtil.checkIndex(dir1);
     dir1.close();
   }
 
@@ -898,7 +897,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(0, excs.size());
     writer.close();
 
-    _TestUtil.checkIndex(dir1);
     r.close();
     dir1.close();
   }

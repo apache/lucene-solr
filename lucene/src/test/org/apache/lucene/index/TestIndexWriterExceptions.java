@@ -204,7 +204,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     assertEquals(count, count2);
     r2.close();
 
-    _TestUtil.checkIndex(dir);
     dir.close();
   }
 
@@ -254,7 +253,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     assertEquals(count, count2);
     r2.close();
 
-    _TestUtil.checkIndex(dir);
     dir.close();
   }
   
@@ -316,7 +314,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // expected
     }
     w.close();
-    _TestUtil.checkIndex(dir);
     dir.close();
   }
 

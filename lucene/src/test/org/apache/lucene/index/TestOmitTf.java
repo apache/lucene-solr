@@ -96,7 +96,6 @@ public class TestOmitTf extends LuceneTestCase {
     writer.optimize();
     // flush
     writer.close();
-    _TestUtil.checkIndex(ram);
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
@@ -152,8 +151,6 @@ public class TestOmitTf extends LuceneTestCase {
     // flush
     writer.close();
 
-    _TestUtil.checkIndex(ram);
-
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
@@ -199,8 +196,6 @@ public class TestOmitTf extends LuceneTestCase {
     // flush
     writer.close();
 
-    _TestUtil.checkIndex(ram);
-
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should not be set.", !fi.fieldInfo("f1").omitTermFreqAndPositions);
@@ -244,7 +239,6 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
 
     assertNoPrx(ram);
-    _TestUtil.checkIndex(ram);
     ram.close();
   }
  
@@ -281,7 +275,6 @@ public class TestOmitTf extends LuceneTestCase {
     writer.optimize();
     // flush
     writer.close();
-    _TestUtil.checkIndex(dir);
 
     /*
      * Verify the index

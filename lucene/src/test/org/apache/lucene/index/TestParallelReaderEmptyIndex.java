@@ -62,7 +62,6 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 		
     iwOut.optimize();
     iwOut.close();
-    _TestUtil.checkIndex(rdOut);
     rdOut.close();
     rd1.close();
     rd2.close();
@@ -122,7 +121,6 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     iwOut.optimize();
     iwOut.close();
     
-    _TestUtil.checkIndex(rdOut);
     rdOut.close();
   }
 }

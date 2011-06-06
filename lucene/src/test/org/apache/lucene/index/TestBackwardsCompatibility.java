@@ -193,8 +193,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), VERBOSE ? System.out : null, false)
         .upgrade();
 
-      _TestUtil.checkIndex(dir);
-      
       if (oldNames[i].startsWith("29.")) {
         assertCompressedFields29(dir, false);
         hasTested29++;
@@ -218,8 +216,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       w.addIndexes(new Directory[] { dir });
       w.close();
-
-      _TestUtil.checkIndex(targetDir);
       
       dir.close();
       targetDir.close();
@@ -240,9 +236,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       w.addIndexes(new IndexReader[] { reader });
       w.close();
       reader.close();
-      
-      _TestUtil.checkIndex(targetDir);
-      
+            
       dir.close();
       targetDir.close();
       _TestUtil.rmDir(oldIndxeDir);
@@ -740,8 +734,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         .upgrade();
 
       checkAllSegmentsUpgraded(dir);
-
-      _TestUtil.checkIndex(dir);
       
       dir.close();
       _TestUtil.rmDir(oldIndxeDir);

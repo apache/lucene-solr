@@ -35,6 +35,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -1237,6 +1238,54 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       r = r2;
     }
     r.close();
+    dir.close();
+  }
+  
+  // LUCENE-1579: Make sure all SegmentReaders are new when
+  // reopen switches readOnly
+  public void testReopenChangeReadonly() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMaxBufferedDocs(-1).
+            setMergePolicy(newLogMergePolicy(10))
+    );
+    Document doc = new Document();
+    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Open reader1
+    IndexReader r = IndexReader.open(dir, false);
+    assertTrue(r instanceof DirectoryReader);
+    IndexReader r1 = SegmentReader.getOnlySegmentReader(r);
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
+    assertEquals(1, ints.length);
+    assertEquals(17, ints[0]);
+
+    // Reopen to readonly w/ no chnages
+    IndexReader r3 = r.reopen(true);
+    assertTrue(r3 instanceof ReadOnlyDirectoryReader);
+    r3.close();
+
+    // Add new segment
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Reopen reader1 --> reader2
+    IndexReader r2 = r.reopen(true);
+    r.close();
+    assertTrue(r2 instanceof ReadOnlyDirectoryReader);
+    IndexReader[] subs = r2.getSequentialSubReaders();
+    final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
+    r2.close();
+
+    assertTrue(subs[0] instanceof ReadOnlySegmentReader);
+    assertTrue(subs[1] instanceof ReadOnlySegmentReader);
+    assertTrue(ints == ints2);
+
+    writer.close();
     dir.close();
   }
 }

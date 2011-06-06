@@ -31,6 +31,8 @@ import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 
 /**
@@ -39,8 +41,8 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestLazyBug extends LuceneTestCase {
 
-  public static int NUM_DOCS = 500;
-  public static int NUM_FIELDS = 100;
+  public static int NUM_DOCS = TEST_NIGHTLY ? 500 : 50;
+  public static int NUM_FIELDS = TEST_NIGHTLY ? 100 : 10;
 
   private static String[] data = new String[] {
     "now",
@@ -56,6 +58,19 @@ public class TestLazyBug extends LuceneTestCase {
   
   private static String MAGIC_FIELD = "f"+(NUM_FIELDS/3);
   
+  private static Directory directory;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    directory = makeIndex();
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    directory.close();
+    directory = null;
+  }
+
   private static FieldSelector SELECTOR = new FieldSelector() {
       public FieldSelectorResult accept(String f) {
         if (f.equals(MAGIC_FIELD)) {
@@ -64,8 +79,8 @@ public class TestLazyBug extends LuceneTestCase {
         return FieldSelectorResult.LAZY_LOAD;
       }
     };
-  
-  private Directory makeIndex() throws Exception { 
+
+  private static Directory makeIndex() throws Exception {
     Directory dir = newDirectory();
     try {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -76,10 +91,10 @@ public class TestLazyBug extends LuceneTestCase {
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();
         for (int f = 1; f <= NUM_FIELDS; f++ ) {
-          doc.add(newField("f"+f, 
-                            data[f % data.length] 
-                            + '#' + data[random.nextInt(data.length)], 
-                            Field.Store.YES, 
+          doc.add(newField("f"+f,
+                            data[f % data.length]
+                            + '#' + data[random.nextInt(data.length)],
+                            Field.Store.NO,
                             Field.Index.ANALYZED));
         }
         writer.addDocument(doc);
@@ -92,8 +107,7 @@ public class TestLazyBug extends LuceneTestCase {
   }
   
   public void doTest(int[] docs) throws Exception {
-    Directory dir = makeIndex();
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = IndexReader.open(directory, true);
     for (int i = 0; i < docs.length; i++) {
       Document d = reader.document(docs[i], SELECTOR);
       d.get(MAGIC_FIELD);
@@ -116,7 +130,6 @@ public class TestLazyBug extends LuceneTestCase {
       }
     }
     reader.close();
-    dir.close();
   }
 
   public void testLazyWorks() throws Exception {

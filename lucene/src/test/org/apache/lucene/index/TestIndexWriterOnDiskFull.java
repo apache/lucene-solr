@@ -114,7 +114,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             
             // Make sure reader can open the index:
             IndexReader.open(dir, true).close();
-            _TestUtil.checkIndex(dir);
           }
             
           dir.close();
@@ -494,7 +493,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
 
-    _TestUtil.checkIndex(dir);
     dir.close();
   }
   

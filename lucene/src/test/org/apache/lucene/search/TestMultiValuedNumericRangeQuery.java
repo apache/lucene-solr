@@ -46,7 +46,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     
-    int num = 5000 * RANDOM_MULTIPLIER;
+    int num = (TEST_NIGHTLY ? 5000 : 500) * RANDOM_MULTIPLIER;
     for (int l = 0; l < num; l++) {
       Document doc = new Document();
       for (int m=0, c=random.nextInt(10); m<=c; m++) {

@@ -807,8 +807,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     c.joinThreads();
 
-    _TestUtil.checkIndex(c.dir2);
-
     c.closeDir();
 
     assertTrue(c.failures.size() == 0);
@@ -899,8 +897,6 @@ public class TestAddIndexes extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: done join threads");
     }
-    _TestUtil.checkIndex(c.dir2);
-
     c.closeDir();
 
     assertTrue(c.failures.size() == 0);
@@ -923,8 +919,6 @@ public class TestAddIndexes extends LuceneTestCase {
     c.writer2.rollback();
 
     c.joinThreads();
-
-    _TestUtil.checkIndex(c.dir2);
 
     c.closeDir();
 
