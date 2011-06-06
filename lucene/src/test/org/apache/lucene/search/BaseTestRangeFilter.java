@@ -115,9 +115,9 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     /* build an index */
     
     Document doc = new Document();
-    Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
-    Field randField = newField(random, "rand", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
-    Field bodyField = newField(random, "body", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+    Field randField = newField(random, "rand", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+    Field bodyField = newField(random, "body", "", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
     doc.add(idField);
     doc.add(randField);
     doc.add(bodyField);

@@ -287,7 +287,7 @@ public class TestSurrogates extends LuceneTestCase {
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
-      final int numTerms = 10000 * RANDOM_MULTIPLIER;
+      final int numTerms = (TEST_NIGHTLY ? 10000 : 1000) * RANDOM_MULTIPLIER;
 
       final Set<String> uniqueTerms = new HashSet<String>();
 

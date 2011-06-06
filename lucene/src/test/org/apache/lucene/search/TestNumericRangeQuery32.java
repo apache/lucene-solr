@@ -44,7 +44,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   // shift the starting of the values to the left, to also have negative values:
   private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
-  private static final int noDocs = 10000 * RANDOM_MULTIPLIER;
+  private static final int noDocs = (TEST_NIGHTLY ? 10000 : 5000) * RANDOM_MULTIPLIER;
   
   private static Directory directory = null;
   private static IndexReader reader = null;

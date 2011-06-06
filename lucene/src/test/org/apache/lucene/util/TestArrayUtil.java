@@ -126,7 +126,8 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   public void testQuickSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
       ArrayUtil.quickSort(a1);
       Arrays.sort(a2);
@@ -154,7 +155,8 @@ public class TestArrayUtil extends LuceneTestCase {
   
   // This is a test for LUCENE-3054 (which fails without the merge sort fall back with stack overflow in most cases)
   public void testQuickToMergeSortFallback() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       Integer[] a1 = createSparseRandomArray(40000), a2 = a1.clone();
       ArrayUtil.quickSort(a1);
       Arrays.sort(a2);
@@ -163,7 +165,8 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   public void testMergeSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
       ArrayUtil.mergeSort(a1);
       Arrays.sort(a2);

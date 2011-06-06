@@ -18,11 +18,21 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -858,6 +868,81 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.commit();
     assertEquals(5, modifier.numDocs());
     modifier.close();
+    dir.close();
+  }
+  
+  public void testDeleteAllSlowly() throws Exception {
+    final Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
+    for(int id=0;id<NUM_DOCS;id++) {
+      ids.add(id);
+    }
+    Collections.shuffle(ids, random);
+    for(int id : ids) {
+      Document doc = new Document();
+      doc.add(newField("id", ""+id, Field.Index.NOT_ANALYZED));
+      w.addDocument(doc);
+    }
+    Collections.shuffle(ids, random);
+    int upto = 0;
+    while(upto < ids.size()) {
+      final int left = ids.size() - upto;
+      final int inc = Math.min(left, _TestUtil.nextInt(random, 1, 20));
+      final int limit = upto + inc;
+      while(upto < limit) {
+        w.deleteDocuments(new Term("id", ""+ids.get(upto++)));
+      }
+      final IndexReader r = w.getReader();
+      assertEquals(NUM_DOCS - upto, r.numDocs());
+      r.close();
+    }
+
+    w.close();
+    dir.close();
+  }
+  
+  public void testIndexingThenDeleting() throws Exception {
+    final Random r = random;
+    Directory dir = newDirectory();
+    // note this test explicitly disables payloads
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+      }
+    };
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer).setRAMBufferSizeMB(1.0).setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    w.setInfoStream(VERBOSE ? System.out : null);
+    Document doc = new Document();
+    doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
+    int num = TEST_NIGHTLY ? 6 * RANDOM_MULTIPLIER : 3 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
+      int count = 0;
+
+      final boolean doIndexing = r.nextBoolean();
+      if (VERBOSE) {
+        System.out.println("TEST: iter doIndexing=" + doIndexing);
+      }
+      if (doIndexing) {
+        // Add docs until a flush is triggered
+        final int startFlushCount = w.getFlushCount();
+        while(w.getFlushCount() == startFlushCount) {
+          w.addDocument(doc);
+          count++;
+        }
+      } else {
+        // Delete docs until a flush is triggered
+        final int startFlushCount = w.getFlushCount();
+        while(w.getFlushCount() == startFlushCount) {
+          w.deleteDocuments(new Term("foo", ""+count));
+          count++;
+        }
+      }
+      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 3000);
+    }
+    w.close();
     dir.close();
   }
 }

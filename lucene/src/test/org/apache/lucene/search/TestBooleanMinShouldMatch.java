@@ -24,6 +24,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -32,14 +34,12 @@ import java.util.Random;
  */
 public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
-    private Directory index;
-    private IndexReader r;
-    private IndexSearcher s;
+    private static Directory index;
+    private static IndexReader r;
+    private static IndexSearcher s;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
+    @BeforeClass
+    public static void beforeClass() throws Exception {
         String[] data = new String [] {
             "A 1 2 3 4 5 6",
             "Z       4 5 6",
@@ -70,12 +70,14 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 //System.out.println("Set up " + getName());
     }
     
-    @Override
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void afterClass() throws Exception {
       s.close();
+      s = null;
       r.close();
+      r = null;
       index.close();
-      super.tearDown();
+      index = null;
     }
 
 
@@ -312,7 +314,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
       // increase number of iterations for more complete testing      
-      int num = 50 * RANDOM_MULTIPLIER;
+      int num = (TEST_NIGHTLY ? 50 : 10) * RANDOM_MULTIPLIER;
       for (int i=0; i<num; i++) {
         int lev = random.nextInt(maxLev);
         final long seed = random.nextLong();

@@ -39,16 +39,17 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
-  private Directory dir;
-  private Document testDoc = new Document();
-  private FieldInfos fieldInfos = null;
+  private static Directory dir;
+  private static Document testDoc = new Document();
+  private static FieldInfos fieldInfos = null;
   private final static String TEST_SEGMENT_NAME = "_0";
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     _TestUtil.add(testDoc, fieldInfos);
@@ -61,10 +62,12 @@ public class TestFieldsReader extends LuceneTestCase {
     FaultyIndexInput.doFail = false;
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     dir.close();
-    super.tearDown();
+    dir = null;
+    fieldInfos = null;
+    testDoc = null;
   }
   public void test() throws IOException {
     assertTrue(dir != null);
@@ -302,7 +305,7 @@ public class TestFieldsReader extends LuceneTestCase {
     FieldsReader reader;
     long lazyTime = 0;
     long regularTime = 0;
-    int length = 50;
+    int length = 10;
     Set<String> lazyFieldNames = new HashSet<String>();
     lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections. <String> emptySet(), lazyFieldNames);
