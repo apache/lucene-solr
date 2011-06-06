@@ -214,7 +214,7 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testRandom() throws Exception {
     MockDirectoryWrapper dir = newDirectory();
 
-    final int NUM_TERMS = 100 * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = (TEST_NIGHTLY ? 100 : 20) * RANDOM_MULTIPLIER;
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = _TestUtil.randomRealisticUnicodeString(random);
@@ -226,7 +226,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = (TEST_NIGHTLY ? 1000 : 100) * RANDOM_MULTIPLIER;
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
@@ -264,7 +264,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED);
+        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -317,7 +317,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
 
-    final int NUM_TERMS = 100 * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = (TEST_NIGHTLY ? 100 : 20) * RANDOM_MULTIPLIER;
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomRealisticUnicodeString(random);
@@ -329,7 +329,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = (TEST_NIGHTLY ? 1000 : 100) * RANDOM_MULTIPLIER;
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
@@ -367,7 +367,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED);
+        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -458,9 +458,9 @@ public class TestDocTermOrds extends LuceneTestCase {
     final TermsEnum te = dto.getOrdTermsEnum(r);
     if (te == null) {
       if (prefixRef == null) {
-        assertNull(r.fields().terms("field"));
+        assertNull(MultiFields.getTerms(r, "field"));
       } else {
-        Terms terms = r.fields().terms("field");
+        Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           TermsEnum.SeekStatus result = termsEnum.seek(prefixRef, false);

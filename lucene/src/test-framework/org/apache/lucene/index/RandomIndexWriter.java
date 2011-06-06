@@ -272,7 +272,7 @@ public class RandomIndexWriter implements Closeable {
   public void close() throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
     // maybeOptimize since presumably they might open a reader on the dir.
-    if (getReaderCalled == false && r.nextInt(4) == 2) {
+    if (getReaderCalled == false && r.nextInt(8) == 2) {
       doRandomOptimize();
     }
     w.close();

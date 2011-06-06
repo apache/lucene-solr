@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util._TestUtil;
 
@@ -123,7 +124,8 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
    */
   public boolean checkIndexes(File file) throws IOException {
     if (file.isDirectory()) {
-      Directory dir = newFSDirectory(file);
+      MockDirectoryWrapper dir = newFSDirectory(file);
+      dir.setCheckIndexOnClose(false); // don't double-checkindex
       if (IndexReader.indexExists(dir)) {
         if (VERBOSE) {
           System.err.println("Checking index: " + file);

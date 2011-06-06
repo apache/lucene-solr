@@ -615,8 +615,6 @@ public class TestPayloads extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    _TestUtil.checkIndex(dir);
-
     dir.close();
   }
 }
