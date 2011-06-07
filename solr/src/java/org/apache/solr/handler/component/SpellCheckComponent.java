@@ -435,7 +435,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       if (extendedResults) {
         Integer o = origVsFreq.get(original);
-        if (o != null) result.add(token, o);
+        if (o != null) result.addFrequency(token, o);
         for (SuggestWord word : suggestions)
           result.add(token, word.string, word.freq);
       } else {

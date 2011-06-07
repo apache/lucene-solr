@@ -201,7 +201,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     public void testThresholdTokenFrequency() throws Exception {
     	
   	  	//"document" is in 2 documents but "another" is only in 1.  
-  	  	//So with a threshold of 15%, "another" is absent from the dictionary 
+  	  	//So with a threshold of 29%, "another" is absent from the dictionary 
   	  	//while "document" is present.
     	
   	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")

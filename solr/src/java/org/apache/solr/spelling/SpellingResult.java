@@ -66,7 +66,19 @@ public class SpellingResult {
     }
   }
 
+  /** @deprecated: use {@link #addFrequency(Token, int)} instead. */
+  @Deprecated
   public void add(Token token, int docFreq) {
+    addFrequency(token, docFreq);
+  }
+
+  /**
+   * Adds an original token with its document frequency
+   * 
+   * @param token original token
+   * @param docFreq original token's document frequency
+   */
+  public void addFrequency(Token token, int docFreq) {
     if (tokenFrequency == null) {
       tokenFrequency = new LinkedHashMap<Token, Integer>();
     }
