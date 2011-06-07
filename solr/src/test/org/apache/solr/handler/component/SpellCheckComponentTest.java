@@ -21,10 +21,15 @@ import java.io.File;
 import java.util.*;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.junit.BeforeClass;
@@ -40,6 +45,11 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU((adoc("id", "1", "lowerfilt",
             "The quick reb fox jumped over the lazy brown dogs.")));
@@ -53,6 +63,15 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertU((adoc("id", "8", "lowerfilt", "blee")));
     assertU((adoc("id", "9", "lowerfilt", "pixmaa")));
     assertU((commit()));
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    assertU(delQ("*:*"));
+    optimize();
+    assertU((commit()));
+
   }
   
   @Test
@@ -177,4 +196,40 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     
     assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
   }
+    
+    @Test
+    public void testThresholdTokenFrequency() throws Exception {
+    	
+  	  	//"document" is in 2 documents but "another" is only in 1.  
+  	  	//So with a threshold of 15%, "another" is absent from the dictionary 
+  	  	//while "document" is present.
+    	
+  	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
+  	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
+  	    );
+  	  	
+  	  	//TODO:  how do we make this into a 1-liner using "assertQ()" ???
+  	  	SolrCore core = h.getCore();
+  	  	SearchComponent speller = core.getSearchComponent("spellcheck");
+  	  	assertTrue("speller is null and it shouldn't be", speller != null);
+  	  	
+  	  	ModifiableSolrParams params = new ModifiableSolrParams();		
+  			params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+  			params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");	
+  			params.add(SpellCheckComponent.SPELLCHECK_DICT, "threshold");
+  			params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true");
+  			params.add(CommonParams.Q, "anotheq");
+  			
+  			SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+  			SolrQueryResponse rsp = new SolrQueryResponse();
+  			rsp.add("responseHeader", new SimpleOrderedMap());
+  			SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+  			handler.handleRequest(req, rsp);
+  			req.close();
+  			NamedList values = rsp.getValues();
+  			NamedList spellCheck = (NamedList) values.get("spellcheck");
+  			NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+  			assertTrue(suggestions.get("suggestion")==null);
+  			assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+    }
 }

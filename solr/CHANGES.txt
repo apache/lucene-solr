@@ -44,6 +44,13 @@ Bug Fixes
   parameter is added to avoid excessive CPU time in extreme cases (e.g. long
   queries with many misspelled words).  (James Dyer via rmuir)
 
+Other Changes
+----------------------
+
+* SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
+  parameter to the example solrconfig.xml, and also add a unit test for this feature.
+  (James Dyer via rmuir)
+  
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
