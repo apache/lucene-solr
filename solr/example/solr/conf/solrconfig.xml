@@ -1095,7 +1095,7 @@
          <str name="name">direct</str>
          <str name="field">name</str>
          <str name="classname">solr.DirectSolrSpellChecker</str>
-         <str name="minPrefix">1</str>
+         <int name="minPrefix">1</int>
        </lst>
       -->
 
