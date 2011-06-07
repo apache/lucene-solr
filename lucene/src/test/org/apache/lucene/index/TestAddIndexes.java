@@ -760,7 +760,7 @@ public class TestAddIndexes extends LuceneTestCase {
   // from multiple threads
   public void testAddIndexesWithThreads() throws Throwable {
 
-    final int NUM_ITER = 15;
+    final int NUM_ITER = TEST_NIGHTLY ? 15 : 5;
     final int NUM_COPY = 3;
     CommitAndAddIndexes c = new CommitAndAddIndexes(NUM_COPY);
     c.writer2.setInfoStream(VERBOSE ? System.out : null);
@@ -777,8 +777,6 @@ public class TestAddIndexes extends LuceneTestCase {
     c.close(true);
 
     assertTrue("found unexpected failures: " + c.failures, c.failures.isEmpty());
-
-    _TestUtil.checkIndex(c.dir2);
 
     IndexReader reader = IndexReader.open(c.dir2, true);
     assertEquals(expectedNumDocs, reader.numDocs());
@@ -914,11 +912,11 @@ public class TestAddIndexes extends LuceneTestCase {
   // LUCENE-1335: test simultaneous addIndexes & close
   public void testAddIndexesWithRollback() throws Throwable {
 
-    final int NUM_COPY = 50;
+    final int NUM_COPY = TEST_NIGHTLY ? 50 : 5;
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(_TestUtil.nextInt(random, 100, 500));
+    Thread.sleep(_TestUtil.nextInt(random, 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {

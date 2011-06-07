@@ -126,15 +126,15 @@ public class TestLazyBug extends LuceneTestCase {
   }
 
   public void testLazyWorks() throws Exception {
-    doTest(new int[] { TEST_NIGHTLY ? 499 : 49 });
+    doTest(new int[] { NUM_DOCS-1 });
   }
 
   public void testLazyAlsoWorks() throws Exception {
-    doTest(TEST_NIGHTLY ? new int[] { 499, 150 } : new int[] { 49, 15 });
+    doTest(new int[] { NUM_DOCS-1, NUM_DOCS/2 });
   }
 
   public void testLazyBroken() throws Exception {
-    doTest(TEST_NIGHTLY ? new int[] { 150, 499 } : new int[] { 15, 49 });
+    doTest(new int[] { NUM_DOCS/2, NUM_DOCS-1 });
   }
 
 }

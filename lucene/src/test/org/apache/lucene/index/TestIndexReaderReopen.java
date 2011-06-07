@@ -50,8 +50,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
-    
-  private File indexDir;
   
   public void testReopen() throws Exception {
     final Directory dir1 = newDirectory();
@@ -151,22 +149,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // at the end of every iteration, commit the index and reopen/recreate the reader.
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
-  public void testCommitReopenFS () throws IOException {
-    Directory dir = newFSDirectory(indexDir);
-    doTestReopenWithCommit(random, dir, true);
-    dir.close();
-  }
-  public void testCommitRecreateFS () throws IOException {
-    Directory dir = newFSDirectory(indexDir);
-    doTestReopenWithCommit(random, dir, false);
-    dir.close();
-  }
-  public void testCommitReopenRAM () throws IOException {
+  public void testCommitReopen () throws IOException {
     Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
-  public void testCommitRecreateRAM () throws IOException {
+  public void testCommitRecreate () throws IOException {
     Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, false);
     dir.close();
@@ -1085,13 +1073,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   private abstract static class TestReopen {
     protected abstract IndexReader openReader() throws IOException;
     protected abstract void modifyIndex(int i) throws IOException;
-  }
-
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    indexDir = _TestUtil.getTempDir("IndexReaderReopen");
   }
   
   public void testCloseOrig() throws Throwable {

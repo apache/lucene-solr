@@ -120,7 +120,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       Document doc = new Document();
       ArrayList<Integer> positions = new ArrayList<Integer>();
       StringBuilder builder = new StringBuilder();
-      int num = TEST_NIGHTLY ? 3049 : 499;
+      int num = TEST_NIGHTLY ? 3049 : 131;
       for (int j = 0; j < num; j++) {
         int nextInt = random.nextInt(max);
         builder.append(nextInt).append(" ");
@@ -193,7 +193,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    int numDocs = TEST_NIGHTLY ? 499 : 131;
+    int numDocs = TEST_NIGHTLY ? 499 : 49;
     int max = 15678;
     int term = random.nextInt(max);
     int[] freqInDoc = new int[numDocs];
@@ -202,7 +202,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < 199; j++) {
         int nextInt = random.nextInt(max);
-        builder.append(nextInt).append(" ");
+        builder.append(nextInt).append(' ');
         if (nextInt == term) {
           freqInDoc[i]++;
         }

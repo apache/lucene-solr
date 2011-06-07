@@ -274,7 +274,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     Index[] indexValue = new Index[] { Index.ANALYZED, Index.ANALYZED_NO_NORMS,
         Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS };
     final int docsPerRound = 97;
-    for (int i = 0; i < 5; i++) {
+    int numRounds = (TEST_NIGHTLY ? 5 : 1 ) * RANDOM_MULTIPLIER;
+    for (int i = 0; i < numRounds; i++) {
       CodecProvider provider = new CodecProvider();
       Codec[] codecs = new Codec[] { new StandardCodec(),
           new SimpleTextCodec(), new MockSepCodec(),
@@ -308,7 +309,6 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       writer.commit();
       assertEquals((i + 1) * docsPerRound, writer.maxDoc());
       writer.close();
-      _TestUtil.checkIndex(dir, provider);
     }
     dir.close();
   }

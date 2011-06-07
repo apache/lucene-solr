@@ -930,7 +930,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       addDoc(w);
     w.close();
 
-    for(int i=0;i<200;i++) {
+    int iter = TEST_NIGHTLY ? 200 : 20;
+    for(int i=0;i<iter;i++) {
       if (VERBOSE) {
         System.out.println("TEST: iter " + i);
       }
