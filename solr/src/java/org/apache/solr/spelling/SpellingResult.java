@@ -66,7 +66,7 @@ public class SpellingResult {
     }
   }
 
-  /** @deprecated: use {@link #addFrequency(Token, int)} instead. */
+  /** @deprecated use {@link #addFrequency(Token, int)} instead. */
   @Deprecated
   public void add(Token token, int docFreq) {
     addFrequency(token, docFreq);
