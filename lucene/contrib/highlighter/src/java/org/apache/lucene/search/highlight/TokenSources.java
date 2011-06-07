@@ -165,7 +165,7 @@ public class TokenSources {
         this.tokens = tokens;
         termAtt = addAttribute(CharTermAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
-        posincAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+        posincAtt = addAttribute(PositionIncrementAttribute.class);
       }
 
       @Override
