@@ -154,6 +154,7 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1, expressed as milliseconds since January 1, 1970, 00:00:00 GMT
    */
+  @SuppressWarnings("fallthrough")
   public static long round(long time, Resolution resolution) {
     final Calendar calInstance = TL_CAL.get();
     calInstance.setTimeInMillis(time);
