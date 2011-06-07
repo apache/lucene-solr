@@ -1084,6 +1084,9 @@
       <str name="name">default</str>
       <str name="field">name</str>
       <str name="spellcheckIndexDir">spellchecker</str>
+      <!-- uncomment this to require terms to occur in 1% of the documents in order to be included in the dictionary
+      	<float name="thresholdTokenFrequency">.01</float>
+      -->
     </lst>
 
     <!-- a spellchecker that uses no auxiliary on disk index -->

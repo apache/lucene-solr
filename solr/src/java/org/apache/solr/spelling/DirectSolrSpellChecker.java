@@ -59,31 +59,29 @@ import org.slf4j.LoggerFactory;
 public class DirectSolrSpellChecker extends SolrSpellChecker {
   private static final Logger LOG = LoggerFactory.getLogger(DirectSolrSpellChecker.class);
   
-  /** Field to use as the source of terms */
-  public static final String FIELD = "field";
+  // configuration params shared with other spellcheckers
+  public static final String COMPARATOR_CLASS = AbstractLuceneSpellChecker.COMPARATOR_CLASS;
+  public static final String SCORE_COMP = AbstractLuceneSpellChecker.SCORE_COMP;
+  public static final String FREQ_COMP = AbstractLuceneSpellChecker.FREQ_COMP;
+  public static final String FIELD = AbstractLuceneSpellChecker.FIELD;
+  public static final String STRING_DISTANCE = AbstractLuceneSpellChecker.STRING_DISTANCE;
+  public static final String ACCURACY = AbstractLuceneSpellChecker.ACCURACY;
+  public static final String THRESHOLD_TOKEN_FREQUENCY = IndexBasedSpellChecker.THRESHOLD_TOKEN_FREQUENCY;
   
-  public static final String STRING_DISTANCE = "distanceMeasure";
   public static final String INTERNAL_DISTANCE = "internal";
-  
-  public static final String ACCURACY = "accuracy";
   public static final float DEFAULT_ACCURACY = 0.5f;
-  
+  public static final float DEFAULT_THRESHOLD_TOKEN_FREQUENCY = 0.0f;
+
   public static final String MAXEDITS = "maxEdits";
   public static final int DEFAULT_MAXEDITS = 2;
   
+  // params specific to this implementation
   public static final String MINPREFIX = "minPrefix";
   public static final int DEFAULT_MINPREFIX = 1;
   
   public static final String MAXINSPECTIONS = "maxInspections";
   public static final int DEFAULT_MAXINSPECTIONS = 5;
 
-  public static final String COMPARATOR_CLASS = "comparatorClass";
-  public static final String SCORE_COMP = "score";
-  public static final String FREQ_COMP = "freq";
-
-  public static final String THRESHOLD = "thresholdTokenFrequency";
-  public static final float DEFAULT_THRESHOLD = 0.0f;
-  
   public static final String MINQUERYLENGTH = "minQueryLength";
   public static final int DEFAULT_MINQUERYLENGTH = 4;
   
@@ -117,39 +115,39 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     field = (String) config.get(FIELD);
     
     float minAccuracy = DEFAULT_ACCURACY;
-    String accuracy = (String) config.get(ACCURACY);
+    Float accuracy = (Float) config.get(ACCURACY);
     if (accuracy != null)
-      minAccuracy = Float.parseFloat(accuracy);
+      minAccuracy = accuracy;
     
     int maxEdits = DEFAULT_MAXEDITS;
-    String edits = (String) config.get(MAXEDITS);
+    Integer edits = (Integer) config.get(MAXEDITS);
     if (edits != null)
-      maxEdits = Integer.parseInt(edits);
+      maxEdits = edits;
     
     int minPrefix = DEFAULT_MINPREFIX;
-    String prefix = (String) config.get(MINPREFIX);
+    Integer prefix = (Integer) config.get(MINPREFIX);
     if (prefix != null)
-      minPrefix = Integer.parseInt(prefix);
+      minPrefix = prefix;
     
     int maxInspections = DEFAULT_MAXINSPECTIONS;
-    String inspections = (String) config.get(MAXINSPECTIONS);
+    Integer inspections = (Integer) config.get(MAXINSPECTIONS);
     if (inspections != null)
-      maxInspections = Integer.parseInt(inspections);
+      maxInspections = inspections;
     
-    float minThreshold = DEFAULT_THRESHOLD;
-    String threshold = (String) config.get(THRESHOLD);
+    float minThreshold = DEFAULT_THRESHOLD_TOKEN_FREQUENCY;
+    Float threshold = (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
     if (threshold != null)
-      minThreshold = Float.parseFloat(threshold);
+      minThreshold = threshold;
     
     int minQueryLength = DEFAULT_MINQUERYLENGTH;
-    String queryLength = (String) config.get(MINQUERYLENGTH);
+    Integer queryLength = (Integer) config.get(MINQUERYLENGTH);
     if (queryLength != null)
-      minQueryLength = Integer.parseInt(queryLength);
+      minQueryLength = queryLength;
     
     float maxQueryFrequency = DEFAULT_MAXQUERYFREQUENCY;
-    String queryFreq = (String) config.get(MAXQUERYFREQUENCY);
+    Float queryFreq = (Float) config.get(MAXQUERYFREQUENCY);
     if (queryFreq != null)
-      maxQueryFrequency = Float.parseFloat(queryFreq);
+      maxQueryFrequency = queryFreq;
     
     checker.setComparator(comp);
     checker.setDistance(sd);

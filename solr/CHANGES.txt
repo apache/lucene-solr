@@ -94,9 +94,9 @@ New Features
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
   (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
-* LUCENE-2507: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
+* LUCENE-2507, SOLR-2571: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
   to retrieve correction candidates directly from the term dictionary using
-  levenshtein automata.  (rmuir)
+  levenshtein automata.  (James Dyer, rmuir)
    
 * SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
@@ -282,6 +282,13 @@ Bug Fixes
   parameter is added to avoid excessive CPU time in extreme cases (e.g. long
   queries with many misspelled words).  (James Dyer via rmuir)
 
+Other Changes
+----------------------
+
+* SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
+  parameter to the example solrconfig.xml, and also add a unit test for this feature.
+  (James Dyer via rmuir)
+  
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------

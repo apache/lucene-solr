@@ -21,10 +21,15 @@ import java.io.File;
 import java.util.*;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.junit.BeforeClass;
@@ -188,4 +193,60 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     
     assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
   }
+    
+    @Test
+    public void testThresholdTokenFrequency() throws Exception {
+    	
+  	  	//"document" is in 2 documents but "another" is only in 1.  
+  	  	//So with a threshold of 15%, "another" is absent from the dictionary 
+  	  	//while "document" is present.
+    	
+  	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
+  	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
+  	    );
+  	  	
+  	  	//TODO:  DirectSolrSpellChecker returns a different format.  Is this OK?  Does SOLRJ need tweaking to handle this???
+  	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold_direct", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
+  	        ,"/spellcheck/suggestions/[1]/suggestion==['document']]"
+  	    );
+  	  	
+  	  	//TODO:  how do we make this into a 1-liner using "assertQ()" ???
+  	  	SolrCore core = h.getCore();
+  	  	SearchComponent speller = core.getSearchComponent("spellcheck");
+  	  	assertTrue("speller is null and it shouldn't be", speller != null);
+  	  	
+  	  	ModifiableSolrParams params = new ModifiableSolrParams();		
+  			params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+  			params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");	
+  			params.add(SpellCheckComponent.SPELLCHECK_DICT, "threshold");
+  			params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true");
+  			params.add(CommonParams.Q, "anotheq");
+  			
+  			SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+  			SolrQueryResponse rsp = new SolrQueryResponse();
+  			rsp.add("responseHeader", new SimpleOrderedMap());
+  			SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+  			handler.handleRequest(req, rsp);
+  			req.close();
+  			NamedList values = rsp.getValues();
+  			NamedList spellCheck = (NamedList) values.get("spellcheck");
+  			NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+  			assertTrue(suggestions.get("suggestion")==null);
+  			assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+  			
+  			params.remove(SpellCheckComponent.SPELLCHECK_DICT);
+  			params.add(SpellCheckComponent.SPELLCHECK_DICT, "threshold_direct");
+  			rsp = new SolrQueryResponse();
+  			rsp.add("responseHeader", new SimpleOrderedMap());
+  			req = new LocalSolrQueryRequest(core, params);
+  			handler.handleRequest(req, rsp);
+  			req.close();
+  			values = rsp.getValues();
+  			spellCheck = (NamedList) values.get("spellcheck");
+  			suggestions = (NamedList) spellCheck.get("suggestions");
+  			assertTrue(suggestions.get("suggestion")==null);
+  			
+  			//TODO: Why is DirectSolrSpellChecker returning "true" here?  Is that OK?
+  			//assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+    }
 }
