@@ -294,6 +294,10 @@ Other Changes
 * SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
   parameter to the example solrconfig.xml, and also add a unit test for this feature.
   (James Dyer via rmuir)
+
+* SOLR-2576: Deprecate SpellingResult.add(Token token, int docFreq), please use
+  SpellingResult.addFrequency(Token token, int docFreq) instead.
+  (James Dyer via rmuir)
   
 ==================  3.2.0  ==================
 Versions of Major Components
