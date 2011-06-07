@@ -27,6 +27,7 @@ import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -179,10 +180,13 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;
     
     for (Token token : options.tokens) {
-      SuggestWord[] suggestions = checker.suggestSimilar(new Term(field, token.toString()), 
+    	Term term = new Term(field, token.toString());
+      SuggestWord[] suggestions = checker.suggestSimilar(term, 
           options.count, options.reader, options.onlyMorePopular, accuracy);
-      for (SuggestWord suggestion : suggestions)
-        result.add(token, suggestion.string, suggestion.freq);
+      result.addFrequency(token, options.reader.docFreq(term));
+      for (SuggestWord suggestion : suggestions) {
+        result.add(token, suggestion.string, suggestion.freq);      	
+      }
     }
     return result;
   }

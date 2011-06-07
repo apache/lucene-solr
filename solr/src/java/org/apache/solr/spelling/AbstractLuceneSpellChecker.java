@@ -182,7 +182,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
       if (options.extendedResults == true && reader != null && field != null) {
         term = term.createTerm(tokenText);
-        result.add(token, reader.docFreq(term));
+        result.addFrequency(token, reader.docFreq(term));
         int countLimit = Math.min(options.count, suggestions.length);
         if(countLimit>0)
         {

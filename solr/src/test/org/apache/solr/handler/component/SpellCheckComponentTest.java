@@ -198,16 +198,15 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     public void testThresholdTokenFrequency() throws Exception {
     	
   	  	//"document" is in 2 documents but "another" is only in 1.  
-  	  	//So with a threshold of 15%, "another" is absent from the dictionary 
+  	  	//So with a threshold of 29%, "another" is absent from the dictionary 
   	  	//while "document" is present.
     	
   	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
   	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
   	    );
   	  	
-  	  	//TODO:  DirectSolrSpellChecker returns a different format.  Is this OK?  Does SOLRJ need tweaking to handle this???
   	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellCheckComponent.SPELLCHECK_DICT, "threshold_direct", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
-  	        ,"/spellcheck/suggestions/[1]/suggestion==['document']]"
+  	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
   	    );
   	  	
   	  	//TODO:  how do we make this into a 1-liner using "assertQ()" ???
@@ -246,7 +245,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   			suggestions = (NamedList) spellCheck.get("suggestions");
   			assertTrue(suggestions.get("suggestion")==null);
   			
-  			//TODO: Why is DirectSolrSpellChecker returning "true" here?  Is that OK?
-  			//assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+  			assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
     }
 }

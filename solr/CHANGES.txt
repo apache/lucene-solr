@@ -94,8 +94,8 @@ New Features
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
   (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
-* LUCENE-2507, SOLR-2571: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
-  to retrieve correction candidates directly from the term dictionary using
+* LUCENE-2507, SOLR-2571, SOLR-2576: Added DirectSolrSpellChecker, which uses Lucene's
+  DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (James Dyer, rmuir)
    
 * SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
@@ -255,6 +255,9 @@ Other Changes
 * LUCENE-2995: Moved some spellchecker and suggest APIs to modules/suggest:
   HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
   suggester APIs and implementations. (rmuir)
+
+* SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
+  (James Dyer via rmuir)
 
 Documentation
 ----------------------
