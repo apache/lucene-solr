@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * Create an index with terms from 0000-9999.
+ * Create an index with terms from 000-999.
  * Generates random wildcards according to patterns,
  * and validates the correct number of hits are returned.
  */
@@ -52,14 +52,14 @@ public class TestWildcardRandom extends LuceneTestCase {
     
     Document doc = new Document();
     Field bogus1 = newField("bogus1", "", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS);
     Field bogus2 = newField("zbogus2", "", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
     doc.add(field);
     doc.add(bogus1);
     doc.add(bogus2);
     
-    NumberFormat df = new DecimalFormat("0000", new DecimalFormatSymbols(Locale.ENGLISH));
-    for (int i = 0; i < 10000; i++) {
+    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));
+    for (int i = 0; i < 1000; i++) {
       field.setValue(df.format(i));
       bogus1.setValue(_TestUtil.randomUnicodeString(random, 10));
       bogus2.setValue(_TestUtil.randomUnicodeString(random, 10));
@@ -105,48 +105,36 @@ public class TestWildcardRandom extends LuceneTestCase {
   }
   
   public void testWildcards() throws Exception {;
-    int num = 50 * RANDOM_MULTIPLIER;
+    int num = (TEST_NIGHTLY ? 100 : 1) * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      assertPatternHits("NNNN", 1);
-      assertPatternHits("?NNN", 10);
-      assertPatternHits("N?NN", 10);
-      assertPatternHits("NN?N", 10);
-      assertPatternHits("NNN?", 10);
+      assertPatternHits("NNN", 1);
+      assertPatternHits("?NN", 10);
+      assertPatternHits("N?N", 10);
+      assertPatternHits("NN?", 10);
     }
     
-    num = 5 * RANDOM_MULTIPLIER;
+    num = (TEST_NIGHTLY ? 10 : 1) * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      assertPatternHits("??NN", 100);
-      assertPatternHits("N??N", 100);
-      assertPatternHits("NN??", 100);
-      assertPatternHits("???N", 1000);
-      assertPatternHits("N???", 1000);
-      assertPatternHits("????", 10000);
+      assertPatternHits("??N", 100);
+      assertPatternHits("N??", 100);
+      assertPatternHits("???", 1000);
       
-      assertPatternHits("NNN*", 10);
-      assertPatternHits("NN*", 100);
-      assertPatternHits("N*", 1000);
-      assertPatternHits("*", 10000);
+      assertPatternHits("NN*", 10);
+      assertPatternHits("N*", 100);
+      assertPatternHits("*", 1000);
       
-      assertPatternHits("*NNN", 10);
-      assertPatternHits("*NN", 100);
-      assertPatternHits("*N", 1000);
+      assertPatternHits("*NN", 10);
+      assertPatternHits("*N", 100);
       
-      assertPatternHits("N*NN", 10);
-      assertPatternHits("NN*N", 10);
+      assertPatternHits("N*N", 10);
       
       // combo of ? and * operators
-      assertPatternHits("?NN*", 100);
-      assertPatternHits("N?N*", 100);
-      assertPatternHits("NN?*", 100);
-      assertPatternHits("?N?*", 1000);
-      assertPatternHits("N??*", 1000);
+      assertPatternHits("?N*", 100);
+      assertPatternHits("N?*", 100);
       
-      assertPatternHits("*NN?", 100);
-      assertPatternHits("*N??", 1000);
-      assertPatternHits("*???", 10000);
-      assertPatternHits("*?N?", 1000);
-      assertPatternHits("*??N", 1000);
+      assertPatternHits("*N?", 100);
+      assertPatternHits("*??", 1000);
+      assertPatternHits("*?N", 100);
     }
   }
 }

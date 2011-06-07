@@ -30,6 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderOnDiskFull extends LuceneTestCase {
   /**
@@ -74,7 +75,7 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
     }
 
     long diskUsage = startDir.getRecomputedActualSizeInBytes();
-    long diskFree = diskUsage+100;
+    long diskFree = diskUsage+_TestUtil.nextInt(random, 50, 200);
 
     IOException err = null;
 
@@ -219,8 +220,8 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
 
       dir.close();
 
-      // Try again with 10 more bytes of free space:
-      diskFree += 10;
+      // Try again with more bytes of free space:
+      diskFree += TEST_NIGHTLY ? _TestUtil.nextInt(random, 5, 20) : _TestUtil.nextInt(random, 50, 200);
     }
 
     startDir.close();

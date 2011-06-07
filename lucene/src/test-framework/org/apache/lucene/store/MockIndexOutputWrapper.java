@@ -110,7 +110,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       }
       throw new IOException(message);
     } else {
-      if (dir.randomState.nextBoolean()) {
+      if (dir.randomState.nextInt(200) == 0) {
         final int half = len/2;
         delegate.writeBytes(b, offset, half);
         Thread.yield();
