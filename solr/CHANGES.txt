@@ -148,6 +148,9 @@ New Features
   new functions exists(), if(), and(), or(), xor(), not(), def(),
   and true and false constants. (yonik) 
 
+* SOLR-2491: Add support for using spellcheck collation in conjunction
+  with grouping. Note that the number of hits returned for collations
+  is the number of ungrouped hits.  (James Dyer via rmuir)
 
 Optimizations
 ----------------------
