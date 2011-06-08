@@ -42,7 +42,8 @@ import org.apache.lucene.util._TestUtil;
 public class TestGlobalFieldNumbers extends LuceneTestCase {
 
   public void testGlobalFieldNumberFiles() throws IOException {
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 3); i++) {
+    int num = atLeast(3);
+    for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
         IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -113,7 +114,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
   }
 
   public void testIndexReaderCommit() throws IOException {
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 3); i++) {
+    int num = atLeast(3);
+    for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
         IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -156,7 +158,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
   }
 
   public void testGlobalFieldNumberFilesAcrossCommits() throws IOException {
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 3); i++) {
+    int num = atLeast(3);
+    for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -207,7 +210,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
   }
 
   public void testGlobalFieldNumberOnOldCommit() throws IOException {
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 3); i++) {
+    int num = atLeast(3);
+    for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(

@@ -157,7 +157,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final int NUM_INDEX_THREADS = 2;
     final int NUM_SEARCH_THREADS = 3;
 
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : 5;
+    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger addCount = new AtomicInteger();

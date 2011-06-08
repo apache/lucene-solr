@@ -66,7 +66,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
-    int num = 2000 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random);
       field.setValue(s);

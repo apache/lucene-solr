@@ -915,7 +915,7 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   public void testRandomWords() throws IOException {
-    testRandomWords(1000, 5 * RANDOM_MULTIPLIER);
+    testRandomWords(1000, atLeast(2));
     //testRandomWords(20, 100);
   }
 
@@ -983,13 +983,13 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     final LineFileDocs docs = new LineFileDocs(random);
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
+    final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
-    final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC * 1000;
+    final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {

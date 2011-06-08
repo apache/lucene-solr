@@ -27,15 +27,14 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.Ignore;
 
 /**
  * Setup for function tests
  */
 @Ignore
-public class FunctionTestSetup extends LuceneTestCase {
+public abstract class FunctionTestSetup extends LuceneTestCase {
 
   /**
    * Actual score computation order is slightly different than assumptios
@@ -67,32 +66,17 @@ public class FunctionTestSetup extends LuceneTestCase {
           "text for the test, but oh much much safer. ",
   };
   
-  protected Directory dir;
-  protected Analyzer anlzr;
+  protected static Directory dir;
+  protected static Analyzer anlzr;
   
-  private final boolean doMultiSegment;
-
-  public FunctionTestSetup(boolean doMultiSegment) {
-    this.doMultiSegment = doMultiSegment;
-  }
-
-  public FunctionTestSetup() {
-    this(false);
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClassFunctionTestSetup() throws Exception {
     dir.close();
     dir = null;
     anlzr = null;
-    super.tearDown();
   }
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  protected static void createIndex(boolean doMultiSegment) throws Exception {
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
@@ -130,7 +114,7 @@ public class FunctionTestSetup extends LuceneTestCase {
     }
   }
 
-  private void addDoc(RandomIndexWriter iw, int i) throws Exception {
+  private static void addDoc(RandomIndexWriter iw, int i) throws Exception {
     Document d = new Document();
     Fieldable f;
     int scoreAndID = i + 1;
@@ -156,7 +140,7 @@ public class FunctionTestSetup extends LuceneTestCase {
   }
 
   // 17 --> ID00017
-  protected String id2String(int scoreAndID) {
+  protected static String id2String(int scoreAndID) {
     String s = "000000000" + scoreAndID;
     int n = ("" + N_DOCS).length() + 3;
     int k = s.length() - n;
@@ -164,17 +148,17 @@ public class FunctionTestSetup extends LuceneTestCase {
   }
 
   // some text line for regular search
-  private String textLine(int docNum) {
+  private static String textLine(int docNum) {
     return DOC_TEXT_LINES[docNum % DOC_TEXT_LINES.length];
   }
 
   // extract expected doc score from its ID Field: "ID7" --> 7.0
-  protected float expectedFieldScore(String docIDFieldVal) {
+  protected static float expectedFieldScore(String docIDFieldVal) {
     return Float.parseFloat(docIDFieldVal.substring(2));
   }
 
   // debug messages (change DBG to true for anything to print) 
-  protected void log(Object o) {
+  protected static void log(Object o) {
     if (VERBOSE) {
       System.out.println(o.toString());
     }

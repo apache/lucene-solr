@@ -214,7 +214,7 @@ public class TestDocTermOrds extends LuceneTestCase {
   public void testRandom() throws Exception {
     MockDirectoryWrapper dir = newDirectory();
 
-    final int NUM_TERMS = (TEST_NIGHTLY ? 100 : 20) * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = _TestUtil.randomRealisticUnicodeString(random);
@@ -226,7 +226,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = (TEST_NIGHTLY ? 1000 : 100) * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = atLeast(100);
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
@@ -317,7 +317,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
 
-    final int NUM_TERMS = (TEST_NIGHTLY ? 100 : 20) * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomRealisticUnicodeString(random);
@@ -329,7 +329,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = (TEST_NIGHTLY ? 1000 : 100) * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = atLeast(100);
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 

@@ -33,7 +33,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   private List<String> terms = new ArrayList<String>();
   
   public void testLexicon() throws Exception {
-    int num = 3 * RANDOM_MULTIPLIER;
+    int num = atLeast(1);
     for (int i = 0; i < num; i++) {
       automata.clear();
       terms.clear();

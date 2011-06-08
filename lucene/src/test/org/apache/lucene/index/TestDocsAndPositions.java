@@ -57,7 +57,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 13) * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -112,7 +113,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    int numDocs = TEST_NIGHTLY ? 131 : 47;
+    int numDocs = atLeast(47);
     int max = 1051;
     int term = random.nextInt(max);
     Integer[][] positionsInDoc = new Integer[numDocs][];
@@ -120,7 +121,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       Document doc = new Document();
       ArrayList<Integer> positions = new ArrayList<Integer>();
       StringBuilder builder = new StringBuilder();
-      int num = TEST_NIGHTLY ? 3049 : 131;
+      int num = atLeast(131);
       for (int j = 0; j < num; j++) {
         int nextInt = random.nextInt(max);
         builder.append(nextInt).append(" ");
@@ -141,7 +142,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 13) * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -193,7 +195,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    int numDocs = TEST_NIGHTLY ? 499 : 49;
+    int numDocs = atLeast(49);
     int max = 15678;
     int term = random.nextInt(max);
     int[] freqInDoc = new int[numDocs];
@@ -215,7 +217,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 13) * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -291,7 +294,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < (TEST_NIGHTLY ? 39 : 13) * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("even");
 
       ReaderContext topReaderContext = reader.getTopReaderContext();

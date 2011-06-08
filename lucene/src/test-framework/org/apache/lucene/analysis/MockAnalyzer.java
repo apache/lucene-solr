@@ -129,7 +129,7 @@ public final class MockAnalyzer extends Analyzer {
     Integer val = previousMappings.get(fieldName);
     if (val == null) {
       val = -1; // no payloads
-      if (LuceneTestCase.TEST_NIGHTLY || random.nextInt(20) == 0) {
+      if (LuceneTestCase.rarely(random)) {
         switch(random.nextInt(3)) {
           case 0: val = -1; // no payloads
                   break;

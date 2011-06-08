@@ -724,6 +724,47 @@ public abstract class LuceneTestCase extends Assert {
 
     }
   }
+  
+  /**
+   * Returns a number of at least <code>i</code>
+   * <p>
+   * The actual number returned will be influenced by whether {@link TEST_NIGHTLY}
+   * is active and {@link RANDOM_MULTIPLIER}, but also with some random fudge.
+   */
+  public static int atLeast(Random random, int i) {
+    int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
+    int max = min+(min/2);
+    return _TestUtil.nextInt(random, min, max);
+  }
+  
+  public static int atLeast(int i) {
+    return atLeast(random, i);
+  }
+  
+  /**
+   * Returns true if something should happen rarely,
+   * <p>
+   * The actual number returned will be influenced by whether {@link TEST_NIGHTLY}
+   * is active and {@link RANDOM_MULTIPLIER}.
+   */
+  public static boolean rarely(Random random) {
+    int p = TEST_NIGHTLY ? 25 : 5;
+    p += (p * Math.log(RANDOM_MULTIPLIER));
+    int min = 100 - Math.min(p, 90); // never more than 90
+    return random.nextInt(100) >= min;
+  }
+  
+  public static boolean rarely() {
+    return rarely(random);
+  }
+  
+  public static boolean usually(Random random) {
+    return !rarely(random);
+  }
+  
+  public static boolean usually() {
+    return usually(random);
+  }
 
   // @deprecated (4.0) These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
   @Deprecated
@@ -836,7 +877,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
     if (r.nextBoolean()) {
-      if ((TEST_NIGHTLY && random.nextBoolean()) || r.nextInt(20) == 17) {
+      if (rarely(r)) {
         // crazy value
         c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
       } else {
@@ -845,7 +886,7 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (r.nextBoolean()) {
-      if ((TEST_NIGHTLY && random.nextBoolean()) || r.nextInt(20) == 17) {
+      if (rarely(r)) {
         // crazy value
         c.setTermIndexInterval(random.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
       } else {
@@ -882,7 +923,7 @@ public abstract class LuceneTestCase extends Assert {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-    if ((TEST_NIGHTLY && random.nextBoolean()) || r.nextInt(20) == 17) {
+    if (rarely(r)) {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 4));
     } else {
       logmp.setMergeFactor(_TestUtil.nextInt(r, 5, 50));
@@ -892,7 +933,7 @@ public abstract class LuceneTestCase extends Assert {
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
-    if ((TEST_NIGHTLY && random.nextBoolean()) || r.nextInt(20) == 17) {
+    if (rarely(r)) {
       tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 4));
       tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 4));
     } else {
@@ -1060,7 +1101,7 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
-    if (!TEST_NIGHTLY && random.nextInt(20) > 0) {
+    if (usually(random)) {
       // most of the time, don't modify the params
       return new Field(name, value, store, index, tv);
     }
@@ -1128,7 +1169,7 @@ public abstract class LuceneTestCase extends Assert {
   };
 
   public static String randomDirectory(Random random) {
-    if (random.nextInt(20) == 0) {
+    if (rarely(random)) {
       return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
     } else {
       return "RAMDirectory";
@@ -1192,7 +1233,7 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
 
     if (random.nextBoolean()) {
-      if (maybeWrap && random.nextInt(20) == 0) {
+      if (maybeWrap && rarely()) {
         return new IndexSearcher(new SlowMultiReaderWrapper(r));
       } else {
         return new IndexSearcher(r);
