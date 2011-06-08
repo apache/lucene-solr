@@ -113,8 +113,6 @@ New Features
   for more complex results in responses and open the door for function queries
   as results. (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl)
 
-* SOLR-2417: Add explain info directly to return documents using ?fl=_explain_ (ryan)
-
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
   Locale-sensitive range queries. (rmuir)
@@ -158,6 +156,10 @@ New Features
   
 * SOLR-705: Optionally return shard info with each document in distributed
   search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
+
+* SOLR-2417: Add explain info directly to return documents using 
+  ?fl=id,[explain] (ryan)
+
   
 
 Optimizations
