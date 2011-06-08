@@ -16,17 +16,14 @@
  */
 package org.apache.solr.search;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -211,9 +208,24 @@ public class ReturnFields
           sp.pos = start;
         }
 
-        // let's try it as a function instead
         String funcStr = sp.val.substring(start);
 
+        // Is it an augmenter of the form [augmenter_name foo=1 bar=myfield]?
+        // This is identical to localParams syntax except it uses [] instead of {!}
+
+        if (funcStr.startsWith("[")) {
+          Map<String,String> augmenterArgs = new HashMap<String,String>();
+          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterArgs, req.getParams(), "[", ']');
+          sp.pos += end;
+          String augmenterName = augmenterArgs.get("type");    // [foo] is short for [type=foo] in localParams syntax
+          // TODO: look up and add the augmenter.  If the form was myalias:[myaugmenter], then "key" will be myalias
+          SolrParams augmenterParams = new MapSolrParams(augmenterArgs);
+          log.info("Parsed augmenter " + augmenterParams + " with alias " + key);  // TODO: remove log statement after augmenter works
+          continue;
+        }
+
+
+        // let's try it as a function instead
         QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
         Query q = null;
         ValueSource vs = null;
