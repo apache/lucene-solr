@@ -156,6 +156,9 @@ New Features
   now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
   functions with fast random access are reccomended. (yonik, ryan)
   
+* SOLR-705: Optionally return shard info with each document in distributed
+  search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
+  
 
 Optimizations
 ----------------------
