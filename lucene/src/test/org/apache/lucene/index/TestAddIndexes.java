@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -865,6 +866,8 @@ public class TestAddIndexes extends LuceneTestCase {
       boolean report = true;
 
       if (t instanceof AlreadyClosedException || t instanceof MergePolicy.MergeAbortedException || t instanceof NullPointerException) {
+        report = !didClose;
+      } else if (t instanceof FileNotFoundException)  {
         report = !didClose;
       } else if (t instanceof IOException)  {
         Throwable t2 = t.getCause();
