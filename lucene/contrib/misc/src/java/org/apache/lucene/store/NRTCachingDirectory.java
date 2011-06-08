@@ -89,10 +89,10 @@ public class NRTCachingDirectory extends Directory {
   private final long maxCachedBytes;
 
   private static final boolean VERBOSE = false;
-  
+
   /**
    *  We will cache a newly created output if 1) it's a
-   *  flush or a merge and the estimated size of the merged segmnt is <=
+   *  flush or a merge and the estimated size of the merged segment is <=
    *  maxMergeSizeMB, and 2) the total cached bytes is <=
    *  maxCachedMB */
   public NRTCachingDirectory(Directory delegate, double maxMergeSizeMB, double maxCachedMB) {
@@ -102,13 +102,45 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
+  public LockFactory getLockFactory() {
+    return delegate.getLockFactory();
+  }
+
+  @Override
+  public void setLockFactory(LockFactory lf) throws IOException {
+    delegate.setLockFactory(lf);
+  }
+
+  @Override
+  public String getLockID() {
+    return delegate.getLockID();
+  }
+
+  @Override
+  public Lock makeLock(String name) {
+    return delegate.makeLock(name);
+  }
+
+  @Override
+  public void clearLock(String name) throws IOException {
+    delegate.clearLock(name);
+  }
+
+  @Override
+  public String toString() {
+    return "NRTCachingDirectory(" + delegate + "; maxCacheMB=" + (maxCachedBytes/1024/1024.) + " maxMergeSizeMB=" + (maxMergeSizeBytes/1024/1024.) + ")";
+  }
+
+  @Override
   public synchronized String[] listAll() throws IOException {
     final Set<String> files = new HashSet<String>();
     for(String f : cache.listAll()) {
       files.add(f);
     }
     for(String f : delegate.listAll()) {
-      assert !files.contains(f);
+      // Cannot do this -- if lucene calls createOutput but
+      // file already exists then this falsely trips:
+      //assert !files.contains(f): "file \"" + f + "\" is in both dirs";
       files.add(f);
     }
     return files.toArray(new String[files.size()]);
@@ -136,12 +168,15 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized void deleteFile(String name) throws IOException {
-    // Delete from both, in case we are currently uncaching:
     if (VERBOSE) {
       System.out.println("nrtdir.deleteFile name=" + name);
     }
-    cache.deleteFile(name);
-    delegate.deleteFile(name);
+    if (cache.fileExists(name)) {
+      assert !delegate.fileExists(name);
+      cache.deleteFile(name);
+    } else {
+      delegate.deleteFile(name);
+    }
   }
 
   @Override
@@ -205,16 +240,6 @@ public class NRTCachingDirectory extends Directory {
     } else {
       return delegate.openInput(name, bufferSize);
     }
-  }
-
-  @Override
-  public Lock makeLock(String name) {
-    return delegate.makeLock(name);
-  }
-
-  @Override
-  public void clearLock(String name) throws IOException {
-    delegate.clearLock(name);
   }
 
   /** Close this directory, which flushes any cached files

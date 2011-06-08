@@ -111,4 +111,12 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     conf.setMergeScheduler(cachedFSDir.getMergeScheduler());
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
   }
+
+  public void testDeleteFile() throws Exception {
+    Directory dir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
+    dir.createOutput("foo.txt").close();
+    dir.deleteFile("foo.txt");
+    assertEquals(0, dir.listAll().length);
+    dir.close();
+  }
 }
