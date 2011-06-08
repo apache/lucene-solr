@@ -16,11 +16,10 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.Map;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,15 +59,15 @@ public class ValueAugmenterFactory extends TransformerFactory
   }
 
   @Override
-  public DocTransformer create(String field, Map<String,String> args, SolrQueryRequest req) {
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     Object val = value;
     if( val == null ) {
-      String v = args.get("v");
+      String v = params.get("v");
       if( v == null ) {
         val = defaultValue;
       }
       else {
-        val = getObjectFrom(v, args.get("t"));
+        val = getObjectFrom(v, params.get("t"));
       }
       if( val == null ) {
         throw new SolrException( ErrorCode.BAD_REQUEST,

@@ -226,7 +226,8 @@ public class ReturnFields
 
           TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
           if( factory != null ) {
-            augmenters.addTransformer( factory.create(disp, augmenterArgs, req) );
+            MapSolrParams augmenterParams = new MapSolrParams( augmenterArgs );
+            augmenters.addTransformer( factory.create(disp, augmenterParams, req) );
           }
           else {
             // unknown transformer?

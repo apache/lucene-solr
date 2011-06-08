@@ -16,9 +16,8 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.Map;
-
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 
@@ -29,7 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class ShardAugmenterFactory extends TransformerFactory
 {
   @Override
-  public DocTransformer create(String field, Map<String,String> args, SolrQueryRequest req) {
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     String v = req.getParams().get(ShardParams.SHARD_URL);
     if( v == null ) {
       if( req.getParams().getBool(ShardParams.IS_SHARD, false) ) {

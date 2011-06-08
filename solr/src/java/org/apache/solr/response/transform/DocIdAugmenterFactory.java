@@ -16,11 +16,8 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.Map;
-
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -30,11 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class DocIdAugmenterFactory extends TransformerFactory
 {
   @Override
-  public DocTransformer create(String field, Map<String,String> args, SolrQueryRequest req) {
-    if( !args.isEmpty() ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST,
-          "DocIdAugmenter does not take any arguments" );
-    }
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     return new DocIdAugmenter( field );
   }
 }

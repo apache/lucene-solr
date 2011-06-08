@@ -17,12 +17,12 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
@@ -64,8 +64,8 @@ public class ExplainAugmenterFactory extends TransformerFactory
   }
 
   @Override
-  public DocTransformer create(String field, Map<String,String> args, SolrQueryRequest req) {
-    String s = args.get("style");
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    String s = params.get("style");
     Style style = (s==null)?defaultStyle:getStyle(s);
     return new ExplainAugmenter( field, style );
   }
