@@ -151,6 +151,11 @@ New Features
 * SOLR-2491: Add support for using spellcheck collation in conjunction
   with grouping. Note that the number of hits returned for collations
   is the number of ungrouped hits.  (James Dyer via rmuir)
+  
+* SOLR-1298: Return FunctionQuery as pseudo field.  The solr 'fl' param
+  now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
+  functions with fast random access are reccomended. (yonik, ryan)
+  
 
 Optimizations
 ----------------------
