@@ -95,6 +95,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
     final MockDirectoryWrapper dir = newFSDirectory(tempDir);
+    dir.setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
       @Override
@@ -540,8 +541,10 @@ public class TestNRTThreads extends LuceneTestCase {
 
     assertFalse(writer.anyNonBulkMerges);
     writer.close(false);
+    _TestUtil.checkIndex(dir);
     s.close();
     dir.close();
+    _TestUtil.rmDir(tempDir);
     docs.close();
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");
