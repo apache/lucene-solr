@@ -137,7 +137,9 @@
     <!-- Expert: Merge Policy 
 
          The Merge Policy in Lucene controls how merging is handled by
-         Lucene.  The default in 2.3 is the LogByteSizeMergePolicy,
+         Lucene.  The default in Solr 3.3 is TieredMergePolicy.
+         
+         The default in 2.3 was the LogByteSizeMergePolicy,
          previous versions used LogDocMergePolicy.
          
          LogByteSizeMergePolicy chooses segments to merge based on
@@ -148,7 +150,7 @@
          constructor
       -->
     <!--
-       <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>
+       <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
        -->
 
     <!-- Expert: Merge Scheduler

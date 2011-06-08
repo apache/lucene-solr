@@ -73,7 +73,7 @@
 
      Other implementations of MergePolicy must have a no-argument constructor
      -->
-    <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>
+    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
 
     <!--
      Expert:
