@@ -51,12 +51,17 @@ import org.junit.Assert;
 
 public class _TestUtil {
 
-  /** Returns temp dir, containing String arg in its name;
+  /** Returns temp dir, based on String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    File f = new File(LuceneTestCase.TEMP_DIR, desc + "." + LuceneTestCase.random.nextLong());
-    LuceneTestCase.registerTempFile(f);
-    return f;
+    try {
+      File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
+      f.delete();
+      LuceneTestCase.registerTempFile(f);
+      return f;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
