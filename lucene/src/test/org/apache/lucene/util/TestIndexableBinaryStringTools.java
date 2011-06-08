@@ -21,8 +21,8 @@ import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
 
 public class TestIndexableBinaryStringTools extends LuceneTestCase {
-  private static final int NUM_RANDOM_TESTS = 2000 * RANDOM_MULTIPLIER;
-  private static final int MAX_RANDOM_BINARY_LENGTH = 300 * RANDOM_MULTIPLIER;
+  private static final int NUM_RANDOM_TESTS = atLeast(200);
+  private static final int MAX_RANDOM_BINARY_LENGTH = atLeast(300);
   
   /** @deprecated remove this test for Lucene 4.0 */
   @Deprecated

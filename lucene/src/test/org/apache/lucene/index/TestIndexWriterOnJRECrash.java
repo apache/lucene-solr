@@ -64,7 +64,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       }
     } else {
       // we are the fork, setup a crashing thread
-      final int crashTime = _TestUtil.nextInt(random, 500, 4000);
+      final int crashTime = TEST_NIGHTLY ? _TestUtil.nextInt(random, 500, 4000) : _TestUtil.nextInt(random, 300, 1000);
       Thread t = new Thread() {
         @Override
         public void run() {

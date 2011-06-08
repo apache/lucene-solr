@@ -20,6 +20,7 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,9 +34,9 @@ import org.apache.lucene.index.Term;
  */
 public class TestCustomScoreQuery extends FunctionTestSetup {
 
-  /* @override constructor */
-  public TestCustomScoreQuery() {
-    super(true);
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    createIndex(true);
   }
 
   /**
@@ -193,7 +194,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     final Query q = new CustomExternalQuery(q1);
     log(q);
 
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
     for(int i=0;i<N_DOCS;i++) {

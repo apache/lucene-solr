@@ -32,6 +32,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
@@ -43,17 +45,16 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     return doc;
   }
   
-  protected Field field(String name, String value) {
+  protected static Field field(String name, String value) {
     return newField(name, value, Field.Store.NO, Field.Index.ANALYZED);
   }
 
-  protected IndexSearcher searcher;
-  protected Directory directory;
-  protected IndexReader reader;
+  protected static IndexSearcher searcher;
+  protected static Directory directory;
+  protected static IndexReader reader;
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     
@@ -115,12 +116,14 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     searcher = newSearcher(reader);
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
 
   protected void check(SpanQuery q, int[] docs) throws Exception {

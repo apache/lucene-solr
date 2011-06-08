@@ -54,7 +54,7 @@ public class TestByteSlices extends LuceneTestCase {
   public void testBasic() throws Throwable {
     ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator());
 
-    final int NUM_STREAM = 100 * RANDOM_MULTIPLIER;
+    final int NUM_STREAM = atLeast(100);
 
     ByteSliceWriter writer = new ByteSliceWriter(pool);
 
@@ -71,7 +71,7 @@ public class TestByteSlices extends LuceneTestCase {
         counters[stream] = 0;
       }
       
-      int num = 10000 * RANDOM_MULTIPLIER;
+      int num = atLeast(10000);
       for (int iter = 0; iter < num; iter++) {
         int stream = random.nextInt(NUM_STREAM);
         if (VERBOSE)

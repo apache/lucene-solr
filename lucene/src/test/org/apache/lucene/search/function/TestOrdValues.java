@@ -20,6 +20,7 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -35,9 +36,9 @@ import org.junit.Test;
  */
 public class TestOrdValues extends FunctionTestSetup {
 
-  /* @override constructor */
-  public TestOrdValues() {
-    super(false);
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    createIndex(false);
   }
 
   /**
