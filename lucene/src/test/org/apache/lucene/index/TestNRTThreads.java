@@ -43,7 +43,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -328,11 +327,11 @@ public class TestNRTThreads extends LuceneTestCase {
                 if (addedField != null) {
                   doc.removeField(addedField);
                 }
-              } catch (Exception exc) {
+              } catch (Throwable t) {
                 System.out.println(Thread.currentThread().getName() + ": hit exc");
-                exc.printStackTrace();
+                t.printStackTrace();
                 failed.set(true);
-                throw new RuntimeException(exc);
+                throw new RuntimeException(t);
               }
             }
             if (VERBOSE) {
@@ -448,6 +447,7 @@ public class TestNRTThreads extends LuceneTestCase {
                     System.out.println(Thread.currentThread().getName() + ": search done");
                   }
                 } catch (Throwable t) {
+                  System.out.println(Thread.currentThread().getName() + ": hit exc");
                   failed.set(true);
                   t.printStackTrace(System.out);
                   throw new RuntimeException(t);
