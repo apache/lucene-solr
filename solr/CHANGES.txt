@@ -275,6 +275,12 @@ New Features
   compared to ternary trees and jaspell and very fast lookups at runtime.
   (Dawid Weiss)
 
+Optimizations
+----------------------
+
+* SOLR-2567: Solr now defaults to TieredMergePolicy. See http://s.apache.org/merging
+  for more information.  (rmuir)
+
 Bug Fixes
 ----------------------
 
