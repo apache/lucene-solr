@@ -26,7 +26,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
@@ -217,10 +216,22 @@ public class ReturnFields
           Map<String,String> augmenterArgs = new HashMap<String,String>();
           int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterArgs, req.getParams(), "[", ']');
           sp.pos += end;
-          String augmenterName = augmenterArgs.get("type");    // [foo] is short for [type=foo] in localParams syntax
-          // TODO: look up and add the augmenter.  If the form was myalias:[myaugmenter], then "key" will be myalias
-          SolrParams augmenterParams = new MapSolrParams(augmenterArgs);
-          log.info("Parsed augmenter " + augmenterParams + " with alias " + key);  // TODO: remove log statement after augmenter works
+          
+          // [foo] is short for [type=foo] in localParams syntax
+          String augmenterName = augmenterArgs.remove("type"); 
+          String disp = key;
+          if( disp == null ) {
+            disp = '['+augmenterName+']';
+          }
+
+          TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
+          if( factory != null ) {
+            augmenters.addTransformer( factory.create(disp, augmenterArgs, req) );
+          }
+          else {
+            // unknown transformer?
+          }
+          addField(field, disp, augmenters, req);
           continue;
         }
 
@@ -322,26 +333,6 @@ public class ReturnFields
     if(SCORE.equals(field)) {
       _wantsScore = true;
       augmenters.addTransformer( new ScoreAugmenter( disp ) );
-    }
-    else if( field.charAt(0)=='_'&& field.charAt(field.length()-1)=='_' ) {
-      String name = field;
-      String args = null;
-      int idx = field.indexOf( ':' );
-      if( idx > 0 ) {
-        name = field.substring(1,idx);
-        args = field.substring(idx+1,field.length()-1);
-      }
-      else {
-        name = field.substring(1,field.length()-1 );
-      }
-
-      TransformerFactory factory = req.getCore().getTransformerFactory( name );
-      if( factory != null ) {
-        augmenters.addTransformer( factory.create(disp, args, req) );
-      }
-      else {
-        // unknown field?
-      }
     }
   }
 

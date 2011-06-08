@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
@@ -63,11 +64,11 @@ public class ExplainAugmenterFactory extends TransformerFactory
   }
 
   @Override
-  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
-    Style style = (arg==null)?defaultStyle:getStyle(arg);
+  public DocTransformer create(String field, Map<String,String> args, SolrQueryRequest req) {
+    String s = args.get("style");
+    Style style = (s==null)?defaultStyle:getStyle(s);
     return new ExplainAugmenter( field, style );
   }
-
 
   static class ExplainAugmenter extends TransformerWithContext
   {
