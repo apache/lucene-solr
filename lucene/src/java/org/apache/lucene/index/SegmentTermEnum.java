@@ -154,8 +154,12 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     return true;
   }
 
-  /** Optimized scan, without allocating new terms. 
-   *  Return number of invocations to next(). */
+  /* Optimized scan, without allocating new terms. 
+   *  Return number of invocations to next().
+   *
+   * NOTE: LUCENE-3183: if you pass Term("", "") here then this
+   * will incorrectly return before positioning the enum,
+   * and position will be -1; caller must detect this. */
   final int scanTo(Term term) throws IOException {
     scanBuffer.set(term);
     int count = 0;

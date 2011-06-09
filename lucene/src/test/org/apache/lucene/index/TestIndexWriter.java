@@ -1885,4 +1885,24 @@ public class TestIndexWriter extends LuceneTestCase {
 
     dir.close();
   }
+
+  // LUCENE-3183
+  public void testEmptyFieldNameTIIOne() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    iwc.setTermIndexInterval(1);
+    iwc.setReaderTermsIndexDivisor(1);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    final IndexReader r = IndexReader.open(writer, true);
+    writer.close();
+    r.terms(new Term("", ""));
+    r.terms(new Term("", ""));
+    r.terms(new Term("", "a"));
+    r.terms(new Term("", ""));
+    r.close();
+    dir.close();
+  }
 }

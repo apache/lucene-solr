@@ -49,6 +49,7 @@ final class TermInfosReader {
     final long termOrd;
     public TermInfoAndOrd(TermInfo ti, long termOrd) {
       super(ti);
+      assert termOrd >= 0;
       this.termOrd = termOrd;
     }
   }
@@ -274,7 +275,13 @@ final class TermInfosReader {
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
-        termsCache.put(cacheKey, new TermInfoAndOrd(ti, enumerator.position));
+        // LUCENE-3183: it's possible, if term is Term("",
+        // ""), for the STE to be incorrectly un-positioned
+        // after scan-to; work around this by not caching in
+        // this case:
+        if (enumerator.position >= 0) {
+          termsCache.put(cacheKey, new TermInfoAndOrd(ti, enumerator.position));
+        }
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
         assert enumerator.position == tiOrd.termOrd;
