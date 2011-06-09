@@ -24,13 +24,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link ValueType} specifies the type of the {@link IndexDocValues} for a
- * certain field. A {@link ValueType} only defines the data type for a field
- * while the actual Implementation used to encode and decode the values depends
- * on the field's {@link Codec}. It is up to the {@link Codec} implementing
- * {@link PerDocConsumer#addValuesField(org.apache.lucene.index.FieldInfo)} and
- * using a different low-level implementations to write the stored values for a
- * field.
+ * <code>ValueType</code> specifies the {@link IndexDocValues} type for a
+ * certain field. A <code>ValueType</code> only defines the data type for a field
+ * while the actual implementation used to encode and decode the values depends
+ * on the the {@link Codec#docsConsumer} and {@link Codec#docsProducer} methods.
  * 
  * @lucene.experimental
  */
@@ -39,10 +36,11 @@ public enum ValueType {
    * TODO: Add INT_32 INT_64 INT_16 & INT_8?!
    */
   /**
-   * Defines an 64 bit integer value. By default this type uses a simple
-   * compression technique based on {@link PackedInts}. Internally only the used
-   * value range is encoded if it fits into 2<sup>63</sup>-1. If that range is
-   * exceeded the default implementation falls back to fixed size 64bit
+   * A 64 bit integer value. By default this type uses
+   * {@link PackedInts} to compress the values, as an offset
+   * from the minimum value, as long as the value range
+   * fits into 2<sup>63</sup>-1. Otherwise,
+   * the default implementation falls back to fixed size 64bit
    * integers.
    * <p>
    * NOTE: this type uses <tt>0</tt> as the default value without any
@@ -55,7 +53,7 @@ public enum ValueType {
   INTS,
 
   /**
-   * Defines a 32 bit floating point values. By default there is no compression
+   * A 32 bit floating point value. By default there is no compression
    * applied. To fit custom float values into less than 32bit either a custom
    * implementation is needed or values must be encoded into a
    * {@link #BYTES_FIXED_STRAIGHT} type.
@@ -69,7 +67,7 @@ public enum ValueType {
    */
   FLOAT_32,
   /**
-   * Defines a 64 bit floating point values. By default there is no compression
+   * A 64 bit floating point value. By default there is no compression
    * applied. To fit custom float values into less than 64bit either a custom
    * implementation is needed or values must be encoded into a
    * {@link #BYTES_FIXED_STRAIGHT} type.
@@ -86,12 +84,12 @@ public enum ValueType {
   // TODO(simonw): -- shouldn't lucene decide/detect straight vs
   // deref, as well fixed vs var?
   /**
-   * Defines a fixed length straight stored byte variant. All values added to
+   * A fixed length straight byte[]. All values added to
    * such a field must be of the same length. All bytes are stored sequentially
    * for fast offset access.
    * <p>
-   * NOTE: this type uses <tt>0-bytes</tt> based on the length of the first seen
-   * values as the default value without any distinction between explicitly
+   * NOTE: this type uses <tt>0 byte</tt> filled byte[] based on the length of the first seen
+   * value as the default value without any distinction between explicitly
    * provided values during indexing. All documents without an explicit value
    * will use the default instead. In turn, {@link ValuesEnum} instances will
    * not skip documents without an explicit value assigned. Custom default
@@ -101,9 +99,10 @@ public enum ValueType {
   BYTES_FIXED_STRAIGHT,
 
   /**
-   * Defines a fixed length dereferenced (indexed) byte variant. Fields with
+   * A fixed length dereferenced byte[] variant. Fields with
    * this type only store distinct byte values and store an additional offset
-   * pointer per document to dereference the payload.
+   * pointer per document to dereference the shared byte[].
+   * Use this type if your documents may share the same byte[].
    * <p>
    * NOTE: Fields of this type will not store values for documents without and
    * explicitly provided value. If a documents value is accessed while no
@@ -116,10 +115,12 @@ public enum ValueType {
   BYTES_FIXED_DEREF,
 
   /**
-   * Defines a fixed length pre-sorted byte variant. Fields with this type only
+   * A fixed length pre-sorted byte[] variant. Fields with this type only
    * store distinct byte values and store an additional offset pointer per
-   * document to dereference the payload. The stored byte payload is presorted
+   * document to dereference the shared byte[]. The stored
+   * byte[] is presorted, by default by unsigned byte order,
    * and allows access via document id, ordinal and by-value.
+   * Use this type if your documents may share the same byte[].
    * <p>
    * NOTE: Fields of this type will not store values for documents without and
    * explicitly provided value. If a documents value is accessed while no
@@ -134,24 +135,25 @@ public enum ValueType {
   BYTES_FIXED_SORTED,
 
   /**
-   * Defines a variable length straight stored byte variant. All bytes are
+   * Variable length straight stored byte[] variant. All bytes are
    * stored sequentially for compactness. Usage of this type via the
    * disk-resident API might yield performance degradation since no additional
-   * index is used to advance by more than one documents value at a time.
+   * index is used to advance by more than one document value at a time.
    * <p>
-   * NOTE: Fields of this type will not store values for documents without and
+   * NOTE: Fields of this type will not store values for documents without an
    * explicitly provided value. If a documents value is accessed while no
    * explicit value is stored the returned {@link BytesRef} will be a 0-length
-   * reference. Yet, in contrast to dereferences variants {@link ValuesEnum}
+   * byte[] reference.  In contrast to dereferenced variants, {@link ValuesEnum}
    * instances will <b>not</b> skip over documents without an explicit value
-   * assigned. Custom default values must be assigned explicitly.
+   * assigned.  Custom default values must be assigned explicitly.
    * </p>
    */
   BYTES_VAR_STRAIGHT,
 
   /**
-   * Defines a variable length dereferenced (indexed) byte variant. Just as
-   * {@link #BYTES_FIXED_DEREF} yet supporting variable length values.
+   * A variable length dereferenced byte[]. Just like
+   * {@link #BYTES_FIXED_DEREF}, but allowing each
+   * document's value to be a different length.
    * <p>
    * NOTE: Fields of this type will not store values for documents without and
    * explicitly provided value. If a documents value is accessed while no
@@ -164,8 +166,9 @@ public enum ValueType {
   BYTES_VAR_DEREF,
 
   /**
-   * Defines a variable length pre-sorted byte variant. Just as
-   * {@link #BYTES_FIXED_SORTED} yet supporting variable length values.
+   * A variable length pre-sorted byte[] variant. Just like
+   * {@link #BYTES_FIXED_SORTED}, but allowing each
+   * document's value to be a different length.
    * <p>
    * NOTE: Fields of this type will not store values for documents without and
    * explicitly provided value. If a documents value is accessed while no
