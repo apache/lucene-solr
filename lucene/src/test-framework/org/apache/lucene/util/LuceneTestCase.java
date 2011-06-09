@@ -728,8 +728,8 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Returns a number of at least <code>i</code>
    * <p>
-   * The actual number returned will be influenced by whether {@link TEST_NIGHTLY}
-   * is active and {@link RANDOM_MULTIPLIER}, but also with some random fudge.
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}, but also with some random fudge.
    */
   public static int atLeast(Random random, int i) {
     int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
@@ -744,8 +744,8 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Returns true if something should happen rarely,
    * <p>
-   * The actual number returned will be influenced by whether {@link TEST_NIGHTLY}
-   * is active and {@link RANDOM_MULTIPLIER}.
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}.
    */
   public static boolean rarely(Random random) {
     int p = TEST_NIGHTLY ? 25 : 5;
