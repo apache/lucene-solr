@@ -175,7 +175,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     BytesRef utf8 = new BytesRef(20);
     CharsRef utf16 = new CharsRef(20);
 
-    int num = 100000 * RANDOM_MULTIPLIER;
+    int num = atLeast(100000);
     for (int iter = 0; iter < num; iter++) {
       boolean hasIllegal = fillUnicode(buffer, expected, 0, 20);
 
@@ -281,7 +281,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     char[] chars = new char[2];
     final Set<String> allTerms = new HashSet<String>();
 
-    int num = 200 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
 
       final String s;

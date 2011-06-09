@@ -874,7 +874,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeleteAllSlowly() throws Exception {
     final Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
-    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = atLeast(1000);
     final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
     for(int id=0;id<NUM_DOCS;id++) {
       ids.add(id);
@@ -917,7 +917,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
-    int num = TEST_NIGHTLY ? 6 * RANDOM_MULTIPLIER : 3 * RANDOM_MULTIPLIER;
+    int num = atLeast(3);
     for (int iter = 0; iter < num; iter++) {
       int count = 0;
 

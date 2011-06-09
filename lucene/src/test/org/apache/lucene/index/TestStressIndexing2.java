@@ -93,7 +93,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public void testMultiConfig() throws Throwable {
     // test lots of smaller different params together
 
-    int num = 3 * RANDOM_MULTIPLIER;
+    int num = atLeast(3);
     for (int i = 0; i < num; i++) { // increase iterations for better testing
       if (VERBOSE) {
         System.out.println("\n\nTEST: top iter=" + i);

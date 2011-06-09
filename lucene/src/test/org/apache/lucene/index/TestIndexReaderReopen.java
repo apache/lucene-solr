@@ -687,7 +687,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testThreadSafety() throws Exception {
     final Directory dir = newDirectory();
-    final int n = 30 * RANDOM_MULTIPLIER;
+    final int n = atLeast(30);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < n; i++) {

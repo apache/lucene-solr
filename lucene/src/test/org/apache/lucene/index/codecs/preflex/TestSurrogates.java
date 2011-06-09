@@ -134,7 +134,7 @@ public class TestSurrogates extends LuceneTestCase {
       System.out.println("\nTEST: top now seek");
     }
 
-    int num = 100 * RANDOM_MULTIPLIER;
+    int num = atLeast(100);
     for (int iter = 0; iter < num; iter++) {
 
       // pick random field+term
@@ -197,7 +197,7 @@ public class TestSurrogates extends LuceneTestCase {
     }
 
     {
-      int num = 100 * RANDOM_MULTIPLIER;
+      int num = atLeast(100);
       for (int iter = 0; iter < num; iter++) {
       
         // seek to random spot
@@ -287,7 +287,7 @@ public class TestSurrogates extends LuceneTestCase {
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
-      final int numTerms = (TEST_NIGHTLY ? 10000 : 1000) * RANDOM_MULTIPLIER;
+      final int numTerms = atLeast(1000);
 
       final Set<String> uniqueTerms = new HashSet<String>();
 

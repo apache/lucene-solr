@@ -98,7 +98,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   }
   
   public void testRegexps() throws Exception {
-    int num = (TEST_NIGHTLY ? 100 : 1) * RANDOM_MULTIPLIER;
+    int num = atLeast(1);
     for (int i = 0; i < num; i++) {
       assertPatternHits("NNN", 1);
       assertPatternHits(".NN", 10);
@@ -106,7 +106,6 @@ public class TestRegexpRandom extends LuceneTestCase {
       assertPatternHits("NN.", 10);
     }
     
-    num = (TEST_NIGHTLY ? 10 : 1) * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       assertPatternHits(".{1,2}N", 100);
       assertPatternHits("N.{1,2}", 100);

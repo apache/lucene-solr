@@ -27,7 +27,7 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testRandom() throws Exception {
 
-    int num = 2 * RANDOM_MULTIPLIER;
+    int num = atLeast(2);
     for (int iter = 0; iter < num; iter++) {
       Directory dir = newDirectory();
 

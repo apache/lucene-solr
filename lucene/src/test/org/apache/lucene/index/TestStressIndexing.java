@@ -27,7 +27,7 @@ public class TestStressIndexing extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
     int count;
-    private static int RUN_TIME_SEC = 1 * RANDOM_MULTIPLIER;
+    private static int RUN_TIME_MSEC = atLeast(1000);
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;
@@ -38,7 +38,7 @@ public class TestStressIndexing extends LuceneTestCase {
 
     @Override
     public void run() {
-      final long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
+      final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
 
       count = 0;
 

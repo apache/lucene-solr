@@ -1223,7 +1223,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     FailOnTermVectors[] failures = new FailOnTermVectors[] {
         new FailOnTermVectors(FailOnTermVectors.AFTER_INIT_STAGE),
         new FailOnTermVectors(FailOnTermVectors.INIT_STAGE), };
-    for (int j = 0; j < 3 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(3);
+    for (int j = 0; j < num; j++) {
       for (FailOnTermVectors failure : failures) {
         MockDirectoryWrapper dir = newDirectory();
         IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(

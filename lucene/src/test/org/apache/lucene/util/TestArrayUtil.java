@@ -49,7 +49,7 @@ public class TestArrayUtil extends LuceneTestCase {
   }
 
   public void testInvalidElementSizes() {
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = atLeast(10000);
     for (int iter = 0; iter < num; iter++) {
       final int minTargetSize = random.nextInt(Integer.MAX_VALUE);
       final int elemSize = random.nextInt(11);
@@ -126,7 +126,7 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   public void testQuickSort() {
-    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
       ArrayUtil.quickSort(a1);
@@ -155,7 +155,7 @@ public class TestArrayUtil extends LuceneTestCase {
   
   // This is a test for LUCENE-3054 (which fails without the merge sort fall back with stack overflow in most cases)
   public void testQuickToMergeSortFallback() {
-    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createSparseRandomArray(40000), a2 = a1.clone();
       ArrayUtil.quickSort(a1);
@@ -165,7 +165,7 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   public void testMergeSort() {
-    int num = (TEST_NIGHTLY ? 500 : 50) * RANDOM_MULTIPLIER;
+    int num = atLeast(50);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
       ArrayUtil.mergeSort(a1);
@@ -185,7 +185,7 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   public void testInsertionSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    for (int i = 0, c = atLeast(500); i < c; i++) {
       Integer[] a1 = createRandomArray(30), a2 = a1.clone();
       ArrayUtil.insertionSort(a1);
       Arrays.sort(a2);

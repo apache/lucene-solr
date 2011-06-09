@@ -99,7 +99,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   }
   
   public void testWildcards() throws Exception {;
-    int num = (TEST_NIGHTLY ? 100 : 1) * RANDOM_MULTIPLIER;
+    int num = atLeast(1);
     for (int i = 0; i < num; i++) {
       assertPatternHits("NNN", 1);
       assertPatternHits("?NN", 10);
@@ -107,7 +107,6 @@ public class TestWildcardRandom extends LuceneTestCase {
       assertPatternHits("NN?", 10);
     }
     
-    num = (TEST_NIGHTLY ? 10 : 1) * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       assertPatternHits("??N", 100);
       assertPatternHits("N??", 100);

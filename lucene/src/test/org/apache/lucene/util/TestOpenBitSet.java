@@ -172,8 +172,8 @@ public class TestOpenBitSet extends LuceneTestCase {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() {
-    doRandomSets(1200 * RANDOM_MULTIPLIER, 1000 * RANDOM_MULTIPLIER, 1);
-    doRandomSets(1200 * RANDOM_MULTIPLIER, 1000 * RANDOM_MULTIPLIER, 2);
+    doRandomSets(atLeast(1200), atLeast(1000), 1);
+    doRandomSets(atLeast(1200), atLeast(1000), 2);
   }
 
   public void testBig() {

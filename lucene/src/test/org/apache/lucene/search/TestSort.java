@@ -62,7 +62,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestSort extends LuceneTestCase {
 
-  private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
+  private static final int NUM_STRINGS = atLeast(6000);
   private IndexSearcher full;
   private IndexSearcher searchX;
   private IndexSearcher searchY;

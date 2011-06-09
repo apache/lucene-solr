@@ -314,9 +314,9 @@ public class TestScorerPerf extends LuceneTestCase {
     // test many small sets... the bugs will be found on boundary conditions
     createDummySearcher();
     validate=true;
-    sets=randBitSets(1000 * RANDOM_MULTIPLIER, 10 * RANDOM_MULTIPLIER);
-    doConjunctions(10000 * RANDOM_MULTIPLIER, 5 * RANDOM_MULTIPLIER);
-    doNestedConjunctions(10000 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER);
+    sets=randBitSets(atLeast(1000), atLeast(10));
+    doConjunctions(atLeast(10000), atLeast(5));
+    doNestedConjunctions(atLeast(10000), atLeast(3), atLeast(3));
     s.close();
     d.close();
   }
