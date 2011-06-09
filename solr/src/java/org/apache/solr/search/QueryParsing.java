@@ -465,7 +465,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0) {
+      if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled()) {
         needParens = true;
       }
       if (needParens) {
@@ -510,6 +510,9 @@ public class QueryParsing {
       if (q.getMinimumNumberShouldMatch() > 0) {
         out.append('~');
         out.append(Integer.toString(q.getMinimumNumberShouldMatch()));
+      }
+      if (q.isCoordDisabled()) {
+        out.append("/no_coord");
       }
 
     } else if (query instanceof PrefixQuery) {
