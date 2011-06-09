@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.util.*;             // for javadoc
+import java.util.*;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
 import org.apache.lucene.index.IndexReader;  // for javadoc
@@ -35,13 +35,20 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
-public final class Document {
+public final class Document implements Iterable<Fieldable> {
+
   List<Fieldable> fields = new ArrayList<Fieldable>();
   private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
   public Document() {}
 
+  // @Override not until Java 1.6
+  public Iterator<Fieldable> iterator() {
+    // nocommit -- must multiply in docBoost to each
+    // provided field
+    return fields.iterator();
+  }
 
   /** Sets a boost factor for hits on any field of this document.  This value
    * will be multiplied into the score of all hits on this document.
@@ -70,6 +77,7 @@ public final class Document {
    *
    * @see #setBoost(float)
    */
+  // @Override not until Java 1.6
   public float getBoost() {
     return boost;
   }
@@ -275,7 +283,7 @@ public final class Document {
     List<byte[]> result = new ArrayList<byte[]>();
     for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
-        result.add(field.getBinaryValue());
+        result.add(field.binaryValue(null).bytes);
     }
   
     if (result.size() == 0)
@@ -296,7 +304,7 @@ public final class Document {
   public final byte[] getBinaryValue(String name) {
     for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
-        return field.getBinaryValue();
+        return field.binaryValue(null).bytes;
     }
     return null;
   }

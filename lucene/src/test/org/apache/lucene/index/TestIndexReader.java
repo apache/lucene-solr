@@ -349,10 +349,10 @@ public class TestIndexReader extends LuceneTestCase
         assertEquals(1, fields.length);
         Field b1 = fields[0];
         assertTrue(b1.isBinary());
-        byte[] data1 = b1.getBinaryValue();
-        assertEquals(bin.length, b1.getBinaryLength());
+        BytesRef bytesRef = b1.binaryValue(null);
+        assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+          assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
         }
         Set<String> lazyFields = new HashSet<String>();
         lazyFields.add("bin1");
@@ -363,11 +363,11 @@ public class TestIndexReader extends LuceneTestCase
         assertEquals(1, fieldables.length);
         Fieldable fb1 = fieldables[0];
         assertTrue(fb1.isBinary());
-        assertEquals(bin.length, fb1.getBinaryLength());
-        data1 = fb1.getBinaryValue();
-        assertEquals(bin.length, fb1.getBinaryLength());
+        bytesRef = fb1.binaryValue(null);
+        assertEquals(bin.length, bytesRef.bytes.length);
+        assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], data1[i + fb1.getBinaryOffset()]);
+          assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
         }
         reader.close();
         // force optimize
@@ -383,10 +383,10 @@ public class TestIndexReader extends LuceneTestCase
         assertEquals(1, fields.length);
         b1 = fields[0];
         assertTrue(b1.isBinary());
-        data1 = b1.getBinaryValue();
-        assertEquals(bin.length, b1.getBinaryLength());
+        bytesRef = b1.binaryValue(null);
+        assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+          assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
         }
         reader.close();
         dir.close();

@@ -15,10 +15,11 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.FieldInvertState; // for javadocs
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper; // for javadocs
 
 
@@ -156,27 +157,42 @@ public abstract class AbstractField implements Fieldable {
   }
 
   /** True iff the value of the filed is stored as binary */
-  public final boolean  isBinary() {
+  public final boolean isBinary() {
     return isBinary;
   }
 
 
-  /**
-   * Return the raw byte[] for the binary field.  Note that
-   * you must also call {@link #getBinaryLength} and {@link
-   * #getBinaryOffset} to know which range of bytes in this
-   * returned array belong to the field.
-   * @return reference to the Field value as byte[].
-   */
-  public byte[] getBinaryValue() {
+  private byte[] getBinaryValue() {
     return getBinaryValue(null);
   }
   
-  public byte[] getBinaryValue(byte[] result){
+  private byte[] getBinaryValue(byte[] result /* unused */){
     if (isBinary || fieldsData instanceof byte[])
       return (byte[]) fieldsData;
     else
       return null;
+  }
+
+  public boolean isNumeric() {
+    return false;
+  }
+
+  public BytesRef binaryValue(BytesRef reuse) {
+    final byte[] bytes = getBinaryValue();
+    if (bytes != null) {
+      if (reuse == null) {
+        return new BytesRef(bytes,
+                            getBinaryOffset(),
+                            getBinaryLength());
+      } else {
+        reuse.bytes = bytes;
+        reuse.offset = getBinaryOffset();
+        reuse.length = getBinaryLength();
+        return reuse;
+      }
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -184,7 +200,7 @@ public abstract class AbstractField implements Fieldable {
    * returned value is undefined
    * @return length of byte[] segment that represents this Field value
    */
-  public int getBinaryLength() {
+  private int getBinaryLength() {
     if (isBinary) {
       return binaryLength;
     } else if (fieldsData instanceof byte[])

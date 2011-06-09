@@ -253,9 +253,9 @@ public class LukeRequestHandler extends RequestHandlerBase
       // TODO: this really should be "stored"
       f.add( "internal", fieldable.stringValue() );  // may be a binary number
 
-      byte[] arr = fieldable.getBinaryValue();
-      if (arr != null) {
-        f.add( "binary", Base64.byteArrayToBase64(arr, 0, arr.length));
+      BytesRef bytes = fieldable.binaryValue(null);
+      if (bytes != null) {
+        f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
       f.add( "boost", fieldable.getBoost() );
       f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields

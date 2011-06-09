@@ -109,19 +109,19 @@ public class TrieField extends FieldType {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final byte[] arr = f.getBinaryValue();
-      if (arr==null) return badFieldString(f);
+      final BytesRef bytes = f.binaryValue(null);
+      if (bytes==null) return badFieldString(f);
       switch (type) {
         case INTEGER:
-          return toInt(arr);
+          return toInt(bytes.bytes);
         case FLOAT:
-          return Float.intBitsToFloat(toInt(arr));
+          return Float.intBitsToFloat(toInt(bytes.bytes));
         case LONG:
-          return toLong(arr);
+          return toLong(bytes.bytes);
         case DOUBLE:
-          return Double.longBitsToDouble(toLong(arr));
+          return Double.longBitsToDouble(toLong(bytes.bytes));
         case DATE:
-          return new Date(toLong(arr));
+          return new Date(toLong(bytes.bytes));
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
@@ -432,31 +432,31 @@ public class TrieField extends FieldType {
       }
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final byte[] arr = f.getBinaryValue();
-      if (arr==null)
+      final BytesRef bytesRef = f.binaryValue(null);
+      if (bytesRef==null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {
         case INTEGER:
-          NumericUtils.intToPrefixCoded(toInt(arr), 0, bytes);
+          NumericUtils.intToPrefixCoded(toInt(bytesRef.bytes), 0, bytes);
           break;
         case FLOAT: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
           // copied from NumericUtils to not convert to/from float two times
           // code in next 2 lines is identical to: int v = NumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
-          int v = toInt(arr);
+          int v = toInt(bytesRef.bytes);
           if (v<0) v ^= 0x7fffffff;
           NumericUtils.intToPrefixCoded(v, 0, bytes);
           break;
         }
         case LONG: //fallthrough!
         case DATE:
-          NumericUtils.longToPrefixCoded(toLong(arr), 0, bytes);
+          NumericUtils.longToPrefixCoded(toLong(bytesRef.bytes), 0, bytes);
           break;
         case DOUBLE: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
           // copied from NumericUtils to not convert to/from double two times
           // code in next 2 lines is identical to: long v = NumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
-          long v = toLong(arr);
+          long v = toLong(bytesRef.bytes);
           if (v<0) v ^= 0x7fffffffffffffffL;
           NumericUtils.longToPrefixCoded(v, 0, bytes);
           break;

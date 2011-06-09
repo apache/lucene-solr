@@ -16,12 +16,11 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
-
-import java.io.Reader;
+import org.apache.lucene.util.BytesRef;          // for javadocs
 
 /**
  * Synonymous with {@link Field}.
@@ -33,7 +32,8 @@ import java.io.Reader;
  * </p>
  *
  **/
-public interface Fieldable {
+public interface Fieldable extends IndexableField {
+
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
    * document.
@@ -66,46 +66,46 @@ public interface Fieldable {
    *
    * @see #setBoost(float)
    */
-  float getBoost();
+  //float getBoost();
 
   /** Returns the name of the field as an interned string.
    * For example "date", "title", "body", ...
    */
-  String name();
+  //String name();
 
   /** The value of the field as a String, or null.
    * <p>
    * For indexing, if isStored()==true, the stringValue() will be used as the stored field value
-   * unless isBinary()==true, in which case getBinaryValue() will be used.
+   * unless isBinary()==true, in which case binaryValue() will be used.
    *
    * If isIndexed()==true and isTokenized()==false, this String value will be indexed as a single token.
    * If isIndexed()==true and isTokenized()==true, then tokenStreamValue() will be used to generate indexed tokens if not null,
    * else readerValue() will be used to generate indexed tokens if not null, else stringValue() will be used to generate tokens.
    */
-  public String stringValue();
+  //public String stringValue();
   
   /** The value of the field as a Reader, which can be used at index time to generate indexed tokens.
    * @see #stringValue()
    */
-  public Reader readerValue();
+  //public Reader readerValue();
   
   /** The TokenStream for this field to be used when indexing, or null.
    * @see #stringValue()
    */
-  public TokenStream tokenStreamValue();
+  //public TokenStream tokenStreamValue();
 
   /** True if the value of the field is to be stored in the index for return
     with search hits. */
-  boolean  isStored();
+  //boolean  isStored();
 
   /** True if the value of the field is to be indexed, so that it may be
     searched on. */
-  boolean  isIndexed();
+  //boolean  isIndexed();
 
   /** True if the value of the field should be tokenized as text prior to
     indexing.  Un-tokenized fields are indexed as a single word and may not be
     Reader-valued. */
-  boolean  isTokenized();
+  //boolean  isTokenized();
 
   /** True if the term or terms used to index this field are stored as a term
    *  vector, available from {@link org.apache.lucene.index.IndexReader#getTermFreqVector(int,String)}.
@@ -115,24 +115,24 @@ public interface Fieldable {
    *
    * @see org.apache.lucene.index.IndexReader#getTermFreqVector(int, String)
    */
-  boolean isTermVectorStored();
+  //boolean isTermVectorStored();
 
   /**
    * True if terms are stored as term vector together with their offsets 
    * (start and end positon in source text).
    */
-  boolean isStoreOffsetWithTermVector();
+  //boolean isStoreOffsetWithTermVector();
 
   /**
    * True if terms are stored as term vector together with their token positions.
    */
-  boolean isStorePositionWithTermVector();
+  //boolean isStorePositionWithTermVector();
 
   /** True if the value of the field is stored as binary */
-  boolean  isBinary();
+  boolean isBinary();
 
   /** True if norms are omitted for this indexed field */
-  boolean getOmitNorms();
+  //boolean getOmitNorms();
 
   /** Expert:
    *
@@ -143,7 +143,7 @@ public interface Fieldable {
 
   /**
    * Indicates whether a Field is Lazy or not.  The semantics of Lazy loading are such that if a Field is lazily loaded, retrieving
-   * it's values via {@link #stringValue()} or {@link #getBinaryValue()} is only valid as long as the {@link org.apache.lucene.index.IndexReader} that
+   * it's values via {@link #stringValue()} or {@link #binaryValue(BytesRef)} is only valid as long as the {@link org.apache.lucene.index.IndexReader} that
    * retrieved the {@link Document} is still open.
    *  
    * @return true if this field can be loaded lazily
@@ -155,14 +155,14 @@ public interface Fieldable {
    * returned value is undefined
    * @return index of the first character in byte[] segment that represents this Field value
    */
-  abstract int getBinaryOffset();
+  //abstract int getBinaryOffset();
   
   /**
    * Returns length of byte[] segment that is used as value, if Field is not binary
    * returned value is undefined
    * @return length of byte[] segment that represents this Field value
    */
-  abstract int getBinaryLength();
+  //abstract int getBinaryLength();
 
   /**
    * Return the raw byte[] for the binary field.  Note that
@@ -171,17 +171,24 @@ public interface Fieldable {
    * returned array belong to the field.
    * @return reference to the Field value as byte[].
    */
-  abstract byte[] getBinaryValue();
+  //abstract byte[] getBinaryValue();
+
+  // nocommit api break
+  //abstract BytesRef binaryValue();
+
+  //abstract NumericField.DataType getDataType();
+
+  //abstract Number getNumericValue();
 
   /**
    * Return the raw byte[] for the binary field.  Note that
-   * you must also call {@link #getBinaryLength} and {@link
-   * #getBinaryOffset} to know which range of bytes in this
+   * you must also call {@link #binaryValue}
+   * to know which range of bytes in this
    * returned array belong to the field.<p>
    * About reuse: if you pass in the result byte[] and it is
    * used, likely the underlying implementation will hold
    * onto this byte[] and return it in future calls to
-   * {@link #getBinaryValue()}.
+   * {@link #binaryValue(BytesRef)}.
    * So if you subsequently re-use the same byte[] elsewhere
    * it will alter this Fieldable's value.
    * @param result  User defined buffer that will be used if
@@ -189,10 +196,11 @@ public interface Fieldable {
    *  buffer is allocated
    * @return reference to the Field value as byte[].
    */
-  abstract byte[] getBinaryValue(byte[] result);
+  // nocommit -- remove this too; add resuse param to binaryValue
+  //abstract byte[] getBinaryValue(byte[] result);
   
   /** @see #setOmitTermFreqAndPositions */
-  boolean getOmitTermFreqAndPositions();
+  //boolean getOmitTermFreqAndPositions();
   
   /** Expert:
   *

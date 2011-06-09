@@ -1,0 +1,7 @@
+Issues:
+
+  - LUCENE-3177 -- decouple indexer from doc/field impls
+  - LUCENE-2308 -- FieldType hierarhcy
+  - LUCENE-2309 -- decouple indexer from analysis
+
+maybe also need extensiblity for a Field to save itself into stored fields; this would shrink IndexableField API

@@ -17,14 +17,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.List;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 final class FieldsWriter {
@@ -137,15 +134,22 @@ final class FieldsWriter {
     }
   }
 
-  final void writeField(int fieldNumber, Fieldable field) throws IOException {
+  final void writeField(int fieldNumber, IndexableField field) throws IOException {
     fieldsStream.writeVInt(fieldNumber);
     int bits = 0;
-    if (field.isTokenized())
+    // nocommit -- when we decouple analysis we should stop
+    // recording this:
+    if (field.isIndexed() && field.isTokenized()) {
       bits |= FIELD_IS_TOKENIZED;
-    if (field.isBinary())
-      bits |= FIELD_IS_BINARY;
-    if (field instanceof NumericField) {
-      switch (((NumericField) field).getDataType()) {
+    }
+    final BytesRef bytes;
+    final String string;
+    // nocommit -- maybe a field should serialize itself?
+    // this way we don't bake into indexer all these
+    // specific encodings for different fields?  and apps
+    // can customize...
+    if (field.isNumeric()) {
+      switch (field.getDataType()) {
         case INT:
           bits |= FIELD_IS_NUMERIC_INT; break;
         case LONG:
@@ -157,23 +161,31 @@ final class FieldsWriter {
         default:
           assert false : "Should never get here";
       }
+      string = null;
+      bytes = null;
+    } else {
+      bytes = field.binaryValue(null);
+      if (bytes != null) {
+        bits |= FIELD_IS_BINARY;
+        string = null;
+      } else {
+        string = field.stringValue();
+      }
     }
+
     fieldsStream.writeByte((byte) bits);
 
-    if (field.isBinary()) {
-      final byte[] data;
-      final int len;
-      final int offset;
-      data = field.getBinaryValue();
-      len = field.getBinaryLength();
-      offset =  field.getBinaryOffset();
-
-      fieldsStream.writeVInt(len);
-      fieldsStream.writeBytes(data, offset, len);
-    } else if (field instanceof NumericField) {
-      final NumericField nf = (NumericField) field;
-      final Number n = nf.getNumericValue();
-      switch (nf.getDataType()) {
+    if (bytes != null) {
+      fieldsStream.writeVInt(bytes.length);
+      fieldsStream.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+    } else if (string != null) {
+      fieldsStream.writeString(field.stringValue());
+    } else {
+      final Number n = field.getNumericValue();
+      if (n == null) {
+        throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
+      }
+      switch (field.getDataType()) {
         case INT:
           fieldsStream.writeInt(n.intValue()); break;
         case LONG:
@@ -185,8 +197,6 @@ final class FieldsWriter {
         default:
           assert false : "Should never get here";
       }
-    } else {
-      fieldsStream.writeString(field.stringValue());
     }
   }
 
@@ -206,21 +216,21 @@ final class FieldsWriter {
     assert fieldsStream.getFilePointer() == position;
   }
 
-  final void addDocument(Document doc, FieldInfos fieldInfos) throws IOException {
+  final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
 
     int storedCount = 0;
-    List<Fieldable> fields = doc.getFields();
-    for (Fieldable field : fields) {
-      if (field.isStored())
-          storedCount++;
+    for (IndexableField field : doc) {
+      if (field.isStored()) {
+        storedCount++;
+      }
     }
     fieldsStream.writeVInt(storedCount);
 
-
-    for (Fieldable field : fields) {
-      if (field.isStored())
+    for (IndexableField field : doc) {
+      if (field.isStored()) {
         writeField(fieldInfos.fieldNumber(field.name()), field);
+      }
     }
   }
 }

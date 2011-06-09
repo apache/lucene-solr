@@ -17,14 +17,15 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.common.util.Base64;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.search.SortField;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.response.TextResponseWriter;
 
 
 public class BinaryField extends FieldType  {
@@ -51,7 +52,8 @@ public class BinaryField extends FieldType  {
   
   @Override
   public ByteBuffer toObject(Fieldable f) {
-    return  ByteBuffer.wrap(f.getBinaryValue(), f.getBinaryOffset(), f.getBinaryLength() ) ;
+    BytesRef bytes = f.binaryValue(null);
+    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 
   @Override

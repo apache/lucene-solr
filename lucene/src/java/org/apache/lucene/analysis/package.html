@@ -120,7 +120,7 @@ There are many post tokenization steps that can be done, including (but not limi
   Applications usually do not invoke analysis &ndash; Lucene does it for them:
   <ul>
     <li>At indexing, as a consequence of 
-        {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document) addDocument(doc)},
+        {@link org.apache.lucene.index.IndexWriter#addDocument(Iterable) addDocument(doc)},
         the Analyzer in effect for indexing is invoked for each indexed field of the added document.
     </li>
     <li>At search, as a consequence of

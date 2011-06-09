@@ -226,12 +226,6 @@ public final class NumericField extends AbstractField {
   }
   
   /** Returns always <code>null</code> for numeric fields */
-  @Override
-  public byte[] getBinaryValue(byte[] result){
-    return null;
-  }
-
-  /** Returns always <code>null</code> for numeric fields */
   public Reader readerValue() {
     return null;
   }
@@ -259,6 +253,10 @@ public final class NumericField extends AbstractField {
    */
   public DataType getDataType() {
     return type;
+  }
+
+  public boolean isNumeric() {
+    return true;
   }
   
   /**

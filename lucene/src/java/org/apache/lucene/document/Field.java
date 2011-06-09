@@ -274,7 +274,14 @@ public final class Field extends AbstractField implements Fieldable {
   /** The TokesStream for this field to be used when indexing, or null.  If null, the Reader value
    * or String value is analyzed to produce the indexed tokens. */
   public TokenStream tokenStreamValue()   { return tokenStream; }
-  
+
+  public Number getNumericValue() {
+    return null;
+  }
+
+  public NumericField.DataType getDataType() {
+    return null;
+  }
 
   /** <p>Expert: change the value of this field.  This can
    *  be used during indexing to re-use a single Field
@@ -426,7 +433,7 @@ public final class Field extends AbstractField implements Fieldable {
   /**
    * Create a tokenized and indexed field that is not stored. Term vectors will
    * not be stored.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Iterable)}
    * has been called.
    * 
    * @param name The name of the field
@@ -440,7 +447,7 @@ public final class Field extends AbstractField implements Fieldable {
   /**
    * Create a tokenized and indexed field that is not stored, optionally with 
    * storing term vectors.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Iterable)}
    * has been called.
    * 
    * @param name The name of the field
@@ -471,7 +478,7 @@ public final class Field extends AbstractField implements Fieldable {
    * Create a tokenized and indexed field that is not stored. Term vectors will
    * not be stored. This is useful for pre-analyzed fields.
    * The TokenStream is read only when the Document is added to the index,
-   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Iterable)}
    * has been called.
    * 
    * @param name The name of the field
@@ -486,7 +493,7 @@ public final class Field extends AbstractField implements Fieldable {
    * Create a tokenized and indexed field that is not stored, optionally with 
    * storing term vectors.  This is useful for pre-analyzed fields.
    * The TokenStream is read only when the Document is added to the index,
-   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Iterable)}
    * has been called.
    * 
    * @param name The name of the field

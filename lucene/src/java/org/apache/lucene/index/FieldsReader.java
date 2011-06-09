@@ -17,22 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.AbstractField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /**
  * Class responsible for access to stored document fields.
@@ -407,10 +407,10 @@ public final class FieldsReader implements Cloneable {
   }
 
   /**
-   * A Lazy implementation of Fieldable that defers loading of fields until asked for, instead of when the Document is
+   * A Lazy field implementation that defers loading of fields until asked for, instead of when the Document is
    * loaded.
    */
-  private class LazyField extends AbstractField implements Fieldable {
+  private class LazyField extends AbstractField {
     private int toRead;
     private long pointer;
     private final boolean cacheResult;
@@ -435,6 +435,14 @@ public final class FieldsReader implements Cloneable {
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
+    }
+
+    public Number getNumericValue() {
+      return null;
+    }
+
+    public NumericField.DataType getDataType() {
+      return null;
     }
 
     private IndexInput getFieldStream() {
@@ -491,8 +499,7 @@ public final class FieldsReader implements Cloneable {
       }
     }
 
-    @Override
-    public byte[] getBinaryValue(byte[] result) {
+    private byte[] getBinaryValue(byte[] result) {
       ensureOpen();
 
       if (isBinary) {
@@ -526,6 +533,16 @@ public final class FieldsReader implements Cloneable {
         }
       } else
         return null;     
+    }
+
+    @Override
+    public BytesRef binaryValue(BytesRef reuse) {
+      final byte[] bytes = getBinaryValue(reuse != null ? reuse.bytes : null);
+      if (bytes != null) {
+        return new BytesRef(bytes, 0, bytes.length);
+      } else {
+        return null;
+      }
     }
   }
 }

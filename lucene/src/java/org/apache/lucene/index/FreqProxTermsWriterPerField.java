@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
@@ -81,15 +80,17 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   }
 
   @Override
-  boolean start(Fieldable[] fields, int count) {
-    for(int i=0;i<count;i++)
-      if (fields[i].isIndexed())
+  boolean start(IndexableField[] fields, int count) {
+    for(int i=0;i<count;i++) {
+      if (fields[i].isIndexed()) {
         return true;
+      }
+    }
     return false;
   }
 
   @Override
-  void start(Fieldable f) {
+  void start(IndexableField f) {
     if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
       payloadAttribute = fieldState.attributeSource.getAttribute(PayloadAttribute.class);
     } else {

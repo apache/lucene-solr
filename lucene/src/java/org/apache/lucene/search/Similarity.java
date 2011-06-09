@@ -555,7 +555,7 @@ public abstract class Similarity {
    * and larger values when <code>state.getLength()</code> is small.
    * 
    * <p>Note that the return values are computed under 
-   * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
+   * {@link org.apache.lucene.index.IndexWriter#addDocument(Iterable)} 
    * and then stored using
    * {@link #encodeNormValue(float)}.  
    * Thus they have limited precision, and documents

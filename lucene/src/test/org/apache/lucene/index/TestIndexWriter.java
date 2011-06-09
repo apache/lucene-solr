@@ -972,11 +972,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Document doc = new Document();
     Field f = new Field("binary", b, 10, 17);
-    byte[] bx = f.getBinaryValue();
+    byte[] bx = f.binaryValue(null).bytes;
     assertTrue(bx != null);
     assertEquals(50, bx.length);
-    assertEquals(10, f.getBinaryOffset());
-    assertEquals(17, f.getBinaryLength());
+    assertEquals(10, f.binaryValue(null).offset);
+    assertEquals(17, f.binaryValue(null).length);
     doc.add(f);
     w.addDocument(doc);
     w.close();
@@ -984,7 +984,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = IndexReader.open(dir, true);
     doc = ir.document(0);
     f = doc.getField("binary");
-    b = f.getBinaryValue();
+    b = f.binaryValue(null).bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);
@@ -1239,7 +1239,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = IndexReader.open(dir, true);
     doc = ir.document(0);
     f = doc.getField("binary");
-    b = f.getBinaryValue();
+    b = f.binaryValue(null).bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);

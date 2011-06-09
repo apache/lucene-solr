@@ -22,11 +22,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.ArrayUtil;
 
 
@@ -181,22 +178,16 @@ final class DocFieldProcessor extends DocConsumer {
     consumer.startDocument();
     fieldsWriter.startDocument();
 
-    final Document doc = docState.doc;
-
     fieldCount = 0;
 
     final int thisFieldGen = fieldGen++;
-
-    final List<Fieldable> docFields = doc.getFields();
-    final int numDocFields = docFields.size();
 
     // Absorb any new fields first seen in this document.
     // Also absorb any changes to fields we had already
     // seen before (eg suddenly turning on norms or
     // vectors, etc.):
 
-    for(int i=0;i<numDocFields;i++) {
-      Fieldable field = docFields.get(i);
+    for(IndexableField field : docState.doc) {
       final String fieldName = field.name();
 
       // Make sure we have a PerField allocated
@@ -214,20 +205,21 @@ final class DocFieldProcessor extends DocConsumer {
         // to have a new "thing" my Fields can do, I can
         // easily add it
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
-                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+                                              field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
+                                              field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
         fieldHash[hashPos] = fp;
         totalFieldCount++;
 
-        if (totalFieldCount >= fieldHash.length/2)
+        if (totalFieldCount >= fieldHash.length/2) {
           rehash();
+        }
       } else {
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
-                            field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+                               field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
+                               field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
       }
 
       if (thisFieldGen != fp.lastGen) {
