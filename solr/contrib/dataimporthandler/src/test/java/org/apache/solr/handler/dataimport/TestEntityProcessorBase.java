@@ -28,7 +28,7 @@ import java.util.Map;
  * Test for EntityProcessorBase
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {

@@ -37,7 +37,7 @@ import org.apache.solr.search.ReturnFields;
 
 /** Base class for text-oriented response writers.
  *
- * @version $Id$
+ *
  */
 public abstract class TextResponseWriter {
 

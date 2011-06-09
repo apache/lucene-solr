@@ -29,7 +29,7 @@ import java.util.Map;
  * <br>
  * Normally Used as an argument to a {@link org.apache.solr.search.function.FunctionQuery}
  *
- * @version $Id$
+ *
  */
 public class RangeMapFloatFunction extends ValueSource {
   protected final ValueSource source;

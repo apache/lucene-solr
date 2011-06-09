@@ -18,7 +18,7 @@ package org.apache.solr.common.luke;
 
 
 /**
- * @version $Id: AdminHandlers.java 608150 2008-01-02 17:15:30Z ryan $
+ *
  * @since solr 1.3
  */
 public enum FieldFlag {

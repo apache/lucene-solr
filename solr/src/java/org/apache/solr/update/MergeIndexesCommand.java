@@ -24,7 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * A merge indexes command encapsulated in an object.
  *
  * @since solr 1.4
- * @version $Id$
+ *
  */
 public class MergeIndexesCommand extends UpdateCommand {
   public Directory[] dirs;

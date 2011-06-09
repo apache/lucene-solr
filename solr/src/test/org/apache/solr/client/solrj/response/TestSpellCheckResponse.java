@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Test for SpellCheckComponent's response in Solrj
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestSpellCheckResponse extends SolrJettyTestBase {

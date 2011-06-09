@@ -41,7 +41,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  * @since Solr 1.4
  *
  */

@@ -21,7 +21,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class DocIdAugmenterFactory extends TransformerFactory

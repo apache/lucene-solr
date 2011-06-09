@@ -50,7 +50,7 @@ import java.util.HashMap;
 /**
  * Test for ReplicationHandler
  *
- * @version $Id$
+ *
  * @since 1.4
  */
 public class TestReplicationHandler extends SolrTestCaseJ4 {

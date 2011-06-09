@@ -21,7 +21,7 @@ import org.apache.solr.core.PluginInfo;
 /**
  * A plugin that can be initialized with a PluginInfo
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public interface PluginInfoInitialized {

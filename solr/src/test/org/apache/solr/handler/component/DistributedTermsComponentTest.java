@@ -22,7 +22,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 /**
  * Test for TermsComponent distributed querying
  *
- * @version $Id$
+ *
  * @since solr 1.5
  */
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {

@@ -38,7 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p/>
  * Also see <a href="http://wiki.apache.org/solr/SolrCaching">SolrCaching</a>
  *
- * @version $Id$
+ *
  * @see org.apache.solr.common.util.ConcurrentLRUCache
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4

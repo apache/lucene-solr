@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A class representing the return fields
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ReturnFields

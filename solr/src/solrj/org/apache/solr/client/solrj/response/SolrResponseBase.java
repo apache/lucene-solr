@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrResponseBase extends SolrResponse

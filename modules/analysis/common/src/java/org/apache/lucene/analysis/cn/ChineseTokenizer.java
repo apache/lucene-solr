@@ -52,7 +52,6 @@ import org.apache.lucene.util.AttributeSource;
  * C4C2, C1C2C3 ... the ChineseTokenizer works, but the
  * CJKTokenizer will not work.
  * </p>
- * @version 1.0
  * @deprecated (3.1) Use {@link StandardTokenizer} instead, which has the same functionality.
  * This filter will be removed in Lucene 5.0
  */

@@ -40,7 +40,6 @@ import org.apache.lucene.util.Bits;
  * prefix using IndexReader.terms(Term), and use MultiPhraseQuery.add(Term[]
  * terms) to add them to the query.
  *
- * @version 1.0
  */
 public class MultiPhraseQuery extends Query {
   private String field;

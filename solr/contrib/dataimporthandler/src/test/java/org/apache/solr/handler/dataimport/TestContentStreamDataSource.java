@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * Test for ContentStreamDataSource
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {

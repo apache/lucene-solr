@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
  *     &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class RemoveDuplicatesTokenFilterFactory extends BaseTokenFilterFactory {
   public RemoveDuplicatesTokenFilter create(TokenStream input) {

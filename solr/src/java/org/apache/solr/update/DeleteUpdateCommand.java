@@ -20,7 +20,7 @@ package org.apache.solr.update;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @version $Id$
+ *
  */
 public class DeleteUpdateCommand extends UpdateCommand {
   public String id;    // external (printable) id, for delete-by-id

@@ -38,7 +38,7 @@ import java.util.Locale;
  * for certain amounts of time to support features such as index replication
  * or snapshooting directly out of a live index directory.
  *
- * @version $Id$
+ *
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitializedPlugin {

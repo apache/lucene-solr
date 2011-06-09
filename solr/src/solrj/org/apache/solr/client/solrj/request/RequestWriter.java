@@ -33,7 +33,7 @@ import java.nio.charset.Charset;
  * <p/>
  * A subclass can override the methods in this class to supply a custom format in which a request can be sent.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class RequestWriter {

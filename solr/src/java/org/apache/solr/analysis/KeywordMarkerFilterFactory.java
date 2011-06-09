@@ -34,7 +34,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";

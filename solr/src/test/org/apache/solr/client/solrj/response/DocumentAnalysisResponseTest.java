@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * A test for the {@link DocumentAnalysisResponse} class.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class DocumentAnalysisResponseTest extends LuceneTestCase {

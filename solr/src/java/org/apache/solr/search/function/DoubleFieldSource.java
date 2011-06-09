@@ -33,7 +33,7 @@ import java.util.Map;
  * using <code>getFloats()</code>
  * and makes those values available as other numeric types, casting as needed.
  *
- * @version $Id$
+ *
  */
 
 public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {

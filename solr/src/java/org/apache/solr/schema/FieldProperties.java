@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * @version $Id$
+ *
  * 
  * @lucene.internal
  */

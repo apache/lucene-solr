@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>Container for a request to execute a query.</p>
  * <p><code>SolrQueryRequest</code> is not thread safe.</p>
  * 
- * @version $Id$
+ *
  */
 public interface SolrQueryRequest {
 

@@ -29,7 +29,7 @@ import org.apache.solr.common.util.StrUtils;
 
 /**  SolrParams hold request parameters.
  *
- * @version $Id$
+ *
  */
 public abstract class SolrParams implements Serializable {
   

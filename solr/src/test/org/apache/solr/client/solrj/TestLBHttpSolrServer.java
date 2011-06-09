@@ -41,7 +41,7 @@ import java.util.Set;
 /**
  * Test for LBHttpSolrServer
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestLBHttpSolrServer extends LuceneTestCase {

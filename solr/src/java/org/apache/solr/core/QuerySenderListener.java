@@ -30,7 +30,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import java.util.List;
 
 /**
- * @version $Id$
+ *
  */
 public class QuerySenderListener extends AbstractSolrEventListener {
   public QuerySenderListener(SolrCore core) {

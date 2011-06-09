@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * <p> Test for TestLineEntityProcessor </p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {

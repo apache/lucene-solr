@@ -33,7 +33,7 @@ import org.apache.solr.search.function.ValueSource;
  *
  * NOT really sure how or if this could work...
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ValueSourceAugmenter extends DocTransformer

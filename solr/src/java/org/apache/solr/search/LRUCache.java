@@ -29,7 +29,7 @@ import java.net.URL;
 
 
 /**
- * @version $Id$
+ *
  */
 public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 

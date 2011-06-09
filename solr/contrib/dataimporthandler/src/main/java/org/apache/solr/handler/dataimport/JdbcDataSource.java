@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
  * @since solr 1.3
  */
 public class JdbcDataSource extends

@@ -31,7 +31,7 @@ import org.apache.solr.common.util.ContentStream;
 /**
  * Send arbitrary XML to a request handler
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class DirectXmlRequest extends SolrRequest

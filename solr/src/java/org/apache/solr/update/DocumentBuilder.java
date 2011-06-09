@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.*;
 
 /**
- * @version $Id$
+ *
  */
 
 

@@ -25,7 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class PropertiesRequestHandler extends RequestHandlerBase

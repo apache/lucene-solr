@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.ar.ArabicStemFilter;
  *     &lt;filter class="solr.ArabicStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ArabicStemFilterFactory extends BaseTokenFilterFactory{
 

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class ReverseStringFilterFactory extends BaseTokenFilterFactory {

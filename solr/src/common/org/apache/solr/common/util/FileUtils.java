@@ -21,7 +21,7 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 
 /**
- * @version $Id$
+ *
  */
 public class FileUtils {
 

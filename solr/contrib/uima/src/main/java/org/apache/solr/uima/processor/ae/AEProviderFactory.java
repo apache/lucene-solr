@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Singleton factory class responsible of {@link AEProvider}s' creation
  * 
- * @version $Id$
+ *
  */
 public class AEProviderFactory {
 

@@ -27,7 +27,7 @@ import static java.util.Collections.unmodifiableMap;
 
 /**
  * An Object which represents a Plugin of any type 
- * @version $Id$
+ *
  */
 public class PluginInfo {
   public final String name, className, type;

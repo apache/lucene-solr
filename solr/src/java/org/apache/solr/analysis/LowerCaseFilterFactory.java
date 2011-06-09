@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class LowerCaseFilterFactory extends BaseTokenFilterFactory {
   @Override

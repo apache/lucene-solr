@@ -40,7 +40,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * A single instance of any registered QueryResponseWriter is created
  * via the default constructor and is reused for all relevant queries.
  *
- * @version $Id$
+ *
  */
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
   public static String CONTENT_TYPE_XML_UTF8="application/xml; charset=UTF-8";

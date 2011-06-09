@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  * Test for TemplateString
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestTemplateString extends AbstractDataImportHandlerTestCase {

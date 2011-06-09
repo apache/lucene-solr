@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
  *     &lt;filter class="solr.TurkishLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class TurkishLowerCaseFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

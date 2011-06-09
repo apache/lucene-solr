@@ -81,7 +81,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * For more documentation see:
  *  http://wiki.apache.org/solr/LukeRequestHandler
  * 
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class LukeRequestHandler extends RequestHandlerBase 

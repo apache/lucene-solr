@@ -28,7 +28,7 @@ import java.util.Map;
  * using <code>getInts()</code>
  * and makes those values available as other numeric types, casting as needed. *
  *
- * @version $Id$
+ *
  */
 
 public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {

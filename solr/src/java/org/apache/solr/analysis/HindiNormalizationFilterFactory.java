@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.hi.HindiNormalizationFilter;
  *     &lt;filter class="solr.HindiNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$  
+ *
  */
 public class HindiNormalizationFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

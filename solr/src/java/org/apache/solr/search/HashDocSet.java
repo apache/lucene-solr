@@ -26,7 +26,7 @@ import org.apache.lucene.util.BitUtil;
  * in the set because it takes up less memory and is faster to iterate and take
  * set intersections.
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public final class HashDocSet extends DocSetBase {

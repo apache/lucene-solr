@@ -38,7 +38,7 @@ import java.util.*;
 /**
  * TODO!
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class FacetComponent extends SearchComponent

@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * This is an augmented SolrParams with get/set/add fields for common fields used
  * in the Standard and Dismax request handlers
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrQuery extends ModifiableSolrParams 

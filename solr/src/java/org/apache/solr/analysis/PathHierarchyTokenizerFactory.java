@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
  *     &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="\" replace="/"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class PathHierarchyTokenizerFactory extends BaseTokenizerFactory {
   

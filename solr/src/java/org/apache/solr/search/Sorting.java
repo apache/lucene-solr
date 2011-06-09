@@ -22,7 +22,7 @@ import org.apache.lucene.search.*;
 /**
  * Extra lucene sorting utilities & convenience methods
  *
- * @version $Id$
+ *
  *
  */
 

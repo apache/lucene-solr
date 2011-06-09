@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * SolrIndexSearcher adds schema awareness and caching functionality
  * over the lucene IndexSearcher.
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {

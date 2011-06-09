@@ -38,7 +38,7 @@ import java.io.IOException;
  *             words="stopwords.txt" enablePositionIncrements="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class StopFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 

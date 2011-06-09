@@ -32,7 +32,7 @@ import org.apache.solr.search.MutableValueFloat;
  * using <code>getFloats()</code>
  * and makes those values available as other numeric types, casting as needed.
  *
- * @version $Id$
+ *
  */
 
 public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {

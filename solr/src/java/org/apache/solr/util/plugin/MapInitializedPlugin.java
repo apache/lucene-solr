@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * A plugin that can be initialized with a Map<String,String>
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public interface MapInitializedPlugin {

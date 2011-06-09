@@ -41,7 +41,6 @@ import org.apache.lucene.util.Version;
  * <li>Intelligent Chinese word extraction
  * </ol>
  * 
- * @version 1.0
  * @deprecated (3.1) Use {@link StopFilter} instead, which has the same functionality.
  * This filter will be removed in Lucene 5.0
  */

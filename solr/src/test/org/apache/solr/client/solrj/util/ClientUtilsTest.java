@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class ClientUtilsTest extends LuceneTestCase {

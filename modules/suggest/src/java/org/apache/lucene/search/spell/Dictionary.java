@@ -23,7 +23,6 @@ import java.util.Iterator;
  * here is just a list of words.
  * 
  *
- * @version 1.0
  */
 public interface Dictionary {
 

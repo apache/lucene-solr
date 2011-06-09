@@ -28,7 +28,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 /**
  * TODO!
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public abstract class SearchComponent implements SolrInfoMBean, NamedListInitializedPlugin

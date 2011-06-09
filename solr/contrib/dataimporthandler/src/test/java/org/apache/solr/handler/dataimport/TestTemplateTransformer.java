@@ -28,7 +28,7 @@ import java.util.Arrays;
  * Test for TemplateTransformer
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {

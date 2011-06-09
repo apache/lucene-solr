@@ -38,7 +38,7 @@ import java.util.Set;
 /**
  * Test for JmxMonitoredMap
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestJmxMonitoredMap extends LuceneTestCase {

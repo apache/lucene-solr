@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Map UIMA types and features over fields of a Solr document
  * 
- * @version $Id$
+ *
  */
 public class UIMAToSolrMapper {
 

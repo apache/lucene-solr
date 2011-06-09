@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * <p> Test for XPathRecordReader </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {

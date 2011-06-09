@@ -30,7 +30,7 @@ import java.util.List;
  * </p>
  * 
  *
- * @version $Id: TestSqlEntityProcessor2.java 723824 2008-12-05 19:14:11Z shalin $
+ *
  * @since solr 1.3
  */
 public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestCase {

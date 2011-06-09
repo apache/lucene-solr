@@ -43,7 +43,7 @@ import org.junit.Test;
 /**
  * TestCase for {@link UIMAUpdateRequestProcessor}
  * 
- * @version $Id$
+ *
  */
 public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 

@@ -20,7 +20,7 @@ package org.apache.solr.update;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @version $Id$
+ *
  */
 public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;

@@ -30,7 +30,7 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.LowerCaseTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class LowerCaseTokenizerFactory extends BaseTokenizerFactory {
   @Override

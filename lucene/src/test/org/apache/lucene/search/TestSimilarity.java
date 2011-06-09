@@ -35,7 +35,6 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 /** Similarity unit test.
  *
  *
- * @version $Revision$
  */
 public class TestSimilarity extends LuceneTestCase {
   

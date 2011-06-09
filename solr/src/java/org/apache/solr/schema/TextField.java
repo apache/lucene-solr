@@ -43,7 +43,7 @@ import java.io.StringReader;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
  * Analyzers for field types using this implementation should be defined in the schema.
- * @version $Id$
+ *
  */
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;

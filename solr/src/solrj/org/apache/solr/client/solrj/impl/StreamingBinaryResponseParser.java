@@ -32,7 +32,7 @@ import java.util.List;
  * A BinaryResponseParser that sends callback events rather then build
  * a large response 
  * 
- * @version $Id: StreamingBinaryResponseParser.java 990180 2010-08-27 15:40:17Z rmuir $
+ *
  * @since solr 4.0
  */
 public class StreamingBinaryResponseParser extends BinaryResponseParser {

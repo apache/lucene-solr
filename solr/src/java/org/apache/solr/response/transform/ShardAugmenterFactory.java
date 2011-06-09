@@ -22,7 +22,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ShardAugmenterFactory extends TransformerFactory

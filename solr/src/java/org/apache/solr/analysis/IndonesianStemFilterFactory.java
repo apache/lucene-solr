@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.id.IndonesianStemFilter;
  *     &lt;filter class="solr.IndonesianStemFilterFactory" stemDerivational="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$  
+ *
  */
 public class IndonesianStemFilterFactory extends BaseTokenFilterFactory {
   private boolean stemDerivational = true;

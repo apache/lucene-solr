@@ -23,7 +23,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 /**
  * provide an Apache UIMA {@link AnalysisEngine}
  * 
- * @version $Id$
+ *
  */
 public interface AEProvider {
 

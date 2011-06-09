@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.es.SpanishLightStemFilter;
  *     &lt;filter class="solr.SpanishLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class SpanishLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

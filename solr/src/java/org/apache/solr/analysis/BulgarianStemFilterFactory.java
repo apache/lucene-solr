@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.bg.BulgarianStemFilter;
  *     &lt;filter class="solr.BulgarianStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class BulgarianStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

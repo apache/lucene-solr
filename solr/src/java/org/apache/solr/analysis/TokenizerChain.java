@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import java.io.Reader;
 
 /**
- * @version $Id$
+ *
  */
 
 //

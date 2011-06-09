@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @see XPathRecordReader
  * @since solr 1.3
  */

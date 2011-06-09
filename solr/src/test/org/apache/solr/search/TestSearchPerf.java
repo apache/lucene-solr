@@ -31,7 +31,7 @@ import java.util.*;
 import java.io.IOException;
 
 /**
- * @version $Id$
+ *
  */
 public class TestSearchPerf extends AbstractSolrTestCase {
 

@@ -38,7 +38,7 @@ import java.util.Map;
 import java.io.Reader;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  */
 public class BoolField extends FieldType {
   @Override

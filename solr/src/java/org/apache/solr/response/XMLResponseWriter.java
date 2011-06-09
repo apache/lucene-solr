@@ -24,7 +24,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @version $Id$
+ *
  */
 public class XMLResponseWriter implements QueryResponseWriter {
   public void init(NamedList n) {

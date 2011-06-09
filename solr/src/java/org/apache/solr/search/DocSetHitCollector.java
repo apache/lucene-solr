@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import java.io.IOException;
 
 /**
- * @version $Id$
+ *
  */
 
 class DocSetCollector extends Collector {

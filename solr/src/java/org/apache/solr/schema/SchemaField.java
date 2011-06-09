@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Encapsulates all information about a Field in a Solr Schema
  *
- * @version $Id$
+ *
  */
 public final class SchemaField extends FieldProperties {
   final String name;

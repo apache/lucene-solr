@@ -34,7 +34,7 @@ import java.util.Map;
  * using <code>getFloats()</code>
  * and makes those values available as other numeric types, casting as needed.
  *
- * @version $Id$
+ *
  */
 
 public class LongFieldSource extends NumericFieldCacheSource<LongValues> {

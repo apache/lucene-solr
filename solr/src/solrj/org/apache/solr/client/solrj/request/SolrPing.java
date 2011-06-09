@@ -29,7 +29,7 @@ import org.apache.solr.common.util.ContentStream;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrPing extends SolrRequest

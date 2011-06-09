@@ -27,7 +27,7 @@ import org.apache.solr.search.MutableValueFloat;
  * Represents field values as different types.
  * Normally created via a {@link ValueSource} for a particular field and reader.
  *
- * @version $Id$
+ *
  */
 
 // DocValues is distinct from ValueSource because
