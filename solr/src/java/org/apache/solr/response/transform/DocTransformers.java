@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrDocument;
 /**
  * Transform a document before it gets sent out
  *
- * @version $Id$
+ *
  */
 public class DocTransformers extends DocTransformer
 {

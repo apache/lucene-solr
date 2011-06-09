@@ -74,7 +74,7 @@ import java.util.Map;
  *   &lt;/arr&gt;
  * &lt;/requestHandler&gt;</pre>
  *
- * @version $Id$
+ *
  */
 public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
 

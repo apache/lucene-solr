@@ -32,7 +32,6 @@ import java.util.Properties;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
  * @since solr 1.5
  */
 public class BinURLDataSource extends DataSource<InputStream>{

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Simple abstract implementation that handles init arg processing.
  * 
- * @version $Id$
+ *
  */
 public abstract class BaseTokenFilterFactory extends BaseTokenStreamFactory implements TokenFilterFactory {
   public static final Logger log = LoggerFactory.getLogger(BaseTokenFilterFactory.class);

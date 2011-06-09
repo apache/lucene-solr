@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.in.IndicNormalizationFilter;
  *     &lt;filter class="solr.IndicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$   
+ *
  */
 public class IndicNormalizationFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

@@ -40,7 +40,6 @@ import org.apache.lucene.util.Version;
  * become <code>h?user</code> when using this parser and thus no match would be found (i.e.
  * using this parser will be no improvement over QueryParser in such cases). 
  *
- * @version $Revision$, $Date$
  */
 public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryParser {
 

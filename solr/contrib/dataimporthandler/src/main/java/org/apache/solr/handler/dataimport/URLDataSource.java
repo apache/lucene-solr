@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class URLDataSource extends DataSource<Reader> {

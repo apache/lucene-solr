@@ -72,7 +72,7 @@ import org.xml.sax.InputSource;
 /**
  * A component to elevate some documents to the top of the result set.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class QueryElevationComponent extends SearchComponent implements SolrCoreAware

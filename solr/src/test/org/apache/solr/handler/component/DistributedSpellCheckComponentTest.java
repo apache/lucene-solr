@@ -25,7 +25,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * Test for SpellCheckComponent's distributed querying
  *
  * @since solr 1.5
- * @version $Id$
+ *
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {

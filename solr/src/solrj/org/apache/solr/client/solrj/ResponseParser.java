@@ -23,7 +23,7 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public abstract class ResponseParser

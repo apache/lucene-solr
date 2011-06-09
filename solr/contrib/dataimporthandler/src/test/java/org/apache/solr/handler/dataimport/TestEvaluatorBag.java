@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * <p> Test for EvaluatorBag </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {

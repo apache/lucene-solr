@@ -38,7 +38,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 /**
  * Update document(s) to be indexed with UIMA extracted information
  *
- * @version $Id$
+ *
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 

@@ -48,7 +48,7 @@ import org.apache.solr.schema.IndexSchema;
  * This class is designed to be as simple as possible and allow for more flexibility
  * in how you interface to Solr.
  * 
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class DirectSolrConnection 

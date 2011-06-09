@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @version $Id$
+ *
  */
 public class DoubleField extends FieldType {
   @Override

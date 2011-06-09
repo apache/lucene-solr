@@ -38,7 +38,7 @@ import java.io.IOException;
  *     	     minWordSize="5" minSubwordSize="2" maxSubwordSize="15" onlyLongestMatch="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFactory  implements ResourceLoaderAware {
   private CharArraySet dictionary;

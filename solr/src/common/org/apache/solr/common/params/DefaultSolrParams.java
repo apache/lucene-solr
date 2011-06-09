@@ -22,7 +22,7 @@ import java.util.Iterator;
 import org.apache.solr.common.util.IteratorChain;
 
 /**
- * @version $Id$
+ *
  */
 public class DefaultSolrParams extends SolrParams {
   protected final SolrParams params;

@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.ElisionFilterFactory" articles="stopwordarticles.txt"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ElisionFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 

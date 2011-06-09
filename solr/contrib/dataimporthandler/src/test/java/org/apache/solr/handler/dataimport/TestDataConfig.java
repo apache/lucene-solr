@@ -31,7 +31,7 @@ import java.util.List;
  * Test for DataConfig
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestDataConfig extends AbstractDataImportHandlerTestCase {

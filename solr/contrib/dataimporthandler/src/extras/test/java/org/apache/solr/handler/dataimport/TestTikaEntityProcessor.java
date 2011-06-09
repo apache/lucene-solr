@@ -20,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**Testcase for TikaEntityProcessor
- * @version $Id$
  * @since solr 1.5 
  */
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {

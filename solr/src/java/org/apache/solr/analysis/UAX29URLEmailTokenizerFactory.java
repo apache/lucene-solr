@@ -34,7 +34,7 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.UAX29URLEmailTokenizerFactory" maxTokenLength="255"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  * 
  */
 

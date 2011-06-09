@@ -33,7 +33,7 @@ import java.util.Iterator;
  * Test for SOLR-1038
  *
  * @since solr 1.4
- * @version $Id$
+ *
  */
 public class TestBatchUpdate extends SolrJettyTestBase {
 

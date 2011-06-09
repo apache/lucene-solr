@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @version $Id$
+ *
  */
 public class ByteField extends FieldType {
   @Override

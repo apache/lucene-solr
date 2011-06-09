@@ -32,7 +32,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 /**
  * Common helper functions for RequestHandlers
  * 
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class RequestHandlerUtils

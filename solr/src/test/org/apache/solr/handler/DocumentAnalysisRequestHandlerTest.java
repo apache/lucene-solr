@@ -40,7 +40,7 @@ import java.io.Reader;
 /**
  * A test for {@link DocumentAnalysisRequestHandler}.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestBase {

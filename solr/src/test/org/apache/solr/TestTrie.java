@@ -32,7 +32,7 @@ import java.util.TimeZone;
 /**
  * Tests for TrieField functionality
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestTrie extends SolrTestCaseJ4 {

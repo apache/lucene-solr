@@ -33,7 +33,7 @@ import org.apache.solr.response.TextResponseWriter;
  *
  * @see UUID#toString
  * @see UUID#randomUUID
- * @version $Id$
+ *
  */
 public class UUIDField extends StrField {
   private static final String NEW = "NEW";

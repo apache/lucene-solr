@@ -47,7 +47,7 @@ import java.util.*;
 /**
  * A base class for all analysis request handlers.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {

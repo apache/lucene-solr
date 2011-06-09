@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Please see http://wiki.apache.org/solr/SolrJmx for instructions on usage and configuration
  * </p>
  *
- * @version $Id$
+ *
  * @see org.apache.solr.core.SolrConfig.JmxConfiguration
  * @since solr 1.3
  */

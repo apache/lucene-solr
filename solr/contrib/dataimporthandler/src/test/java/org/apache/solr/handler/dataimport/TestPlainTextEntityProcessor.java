@@ -24,7 +24,7 @@ import java.util.Properties;
 /**
  * Test for PlainTextEntityProcessor
  *
- * @version $Id$
+ *
  * @see org.apache.solr.handler.dataimport.PlainTextEntityProcessor
  * @since solr 1.4
  */

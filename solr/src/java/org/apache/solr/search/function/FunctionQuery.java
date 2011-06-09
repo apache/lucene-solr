@@ -34,7 +34,7 @@ import java.util.Map;
  *
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
  *
- * @version $Id$
+ *
  */
 public class FunctionQuery extends Query {
   ValueSource func;

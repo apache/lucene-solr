@@ -42,7 +42,7 @@ import org.apache.solr.request.UnInvertedField;
 /**
  * Stats component calculates simple statistics on numeric field values
  * 
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class StatsComponent extends SearchComponent {

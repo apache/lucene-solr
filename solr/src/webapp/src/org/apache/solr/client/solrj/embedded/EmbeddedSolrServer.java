@@ -56,7 +56,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
  * TODO -- this implementation sends the response to XML and then parses it.  
  * It *should* be able to convert the response directly into a named list.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class EmbeddedSolrServer extends SolrServer

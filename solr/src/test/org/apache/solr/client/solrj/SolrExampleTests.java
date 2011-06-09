@@ -58,7 +58,7 @@ import org.junit.Test;
  * 
  * This lets us try various SolrServer implementations with the same tests.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 abstract public class SolrExampleTests extends SolrJettyTestBase

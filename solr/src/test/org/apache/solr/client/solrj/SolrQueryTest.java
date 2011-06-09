@@ -24,7 +24,7 @@ import junit.framework.Assert;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrQueryTest extends LuceneTestCase {

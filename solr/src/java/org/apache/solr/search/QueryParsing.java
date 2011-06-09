@@ -54,7 +54,7 @@ import java.util.Map;
 /**
  * Collection of static utilities useful for query parsing.
  *
- * @version $Id$
+ *
  */
 public class QueryParsing {
   public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"

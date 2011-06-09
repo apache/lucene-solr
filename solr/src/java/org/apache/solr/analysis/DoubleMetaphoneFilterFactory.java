@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
  *     &lt;filter class="solr.DoubleMetaphoneFilterFactory" inject="true" maxCodeLength="4"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class DoubleMetaphoneFilterFactory extends BaseTokenFilterFactory 
 {

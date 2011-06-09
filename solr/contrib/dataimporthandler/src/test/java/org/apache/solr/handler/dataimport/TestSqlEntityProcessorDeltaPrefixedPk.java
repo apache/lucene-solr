@@ -31,7 +31,7 @@ import java.util.logging.*;
  * </p>
  * 
  *
- * @version $Id$
+ *
  * @since solr 3.1
  */
 public class TestSqlEntityProcessorDeltaPrefixedPk extends AbstractDataImportHandlerTestCase {

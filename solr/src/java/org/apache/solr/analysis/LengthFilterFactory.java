@@ -31,7 +31,7 @@ import java.util.Map;
  *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" enablePositionIncrements="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class LengthFilterFactory extends BaseTokenFilterFactory {
   int min,max;

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.ASCIIFoldingFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ASCIIFoldingFilterFactory extends BaseTokenFilterFactory {
   public ASCIIFoldingFilter create(TokenStream input) {

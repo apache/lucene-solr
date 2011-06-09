@@ -64,7 +64,6 @@ import org.apache.lucene.util.Version;
  * </pre>
  * 
  *
- * @version 1.0
  */
 public class SpellChecker implements java.io.Closeable {
 

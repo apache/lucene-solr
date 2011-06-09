@@ -27,7 +27,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import java.util.List;
 
 /**
- * @version $Id$
+ *
  */
 public class TestQueryUtils extends AbstractSolrTestCase {
 

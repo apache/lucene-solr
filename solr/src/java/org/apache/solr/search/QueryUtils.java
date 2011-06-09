@@ -25,7 +25,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import java.util.List;
 
 /**
- * @version $Id$
+ *
  */
 public class QueryUtils {
 

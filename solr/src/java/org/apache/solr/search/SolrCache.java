@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * Primary API for dealing with Solr's internal caches.
  * 
- * @version $Id$
+ *
  */
 public interface SolrCache<K,V> extends SolrInfoMBean {
   public final static Logger log = LoggerFactory.getLogger(SolrCache.class);

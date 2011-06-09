@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 /**
  * This runs SolrServer test using 
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrExampleEmbeddedTest extends SolrExampleTests {

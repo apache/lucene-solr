@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * A test case for the {@link FieldAnalysisResponse} class.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 @SuppressWarnings("unchecked")

@@ -25,7 +25,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * @version $Id$
+ *
  */
 public class DOMUtil {
 

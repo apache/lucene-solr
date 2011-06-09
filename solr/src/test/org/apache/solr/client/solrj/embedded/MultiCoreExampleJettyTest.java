@@ -37,7 +37,7 @@ import org.junit.Test;
  *  http://docs.codehaus.org/display/JETTY/ServletTester
  * rather then open a real connection?
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {

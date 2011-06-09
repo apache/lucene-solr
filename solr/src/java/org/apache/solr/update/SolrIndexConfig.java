@@ -36,7 +36,7 @@ import java.util.HashMap;
 // This config object encapsulates IndexWriter config params.
 //
 /**
- * @version $Id$
+ *
  */
 public class SolrIndexConfig {
   public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);

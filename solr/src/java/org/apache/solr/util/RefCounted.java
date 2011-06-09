@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * is safe since the count can only hit zero if it's unregistered (and
  * hence incref() will not be called again on it).
  *
- * @version $Id$
+ *
  */
 
 public abstract class RefCounted<Type> {

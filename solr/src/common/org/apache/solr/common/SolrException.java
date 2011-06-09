@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @version $Id$
+ *
  */
 public class SolrException extends RuntimeException {
 

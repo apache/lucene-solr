@@ -25,7 +25,6 @@ import java.io.StringReader;
 import java.util.regex.Pattern;
 
 /**
- * @version $Id:$
  */
 public class TestPatternReplaceFilter extends BaseTokenStreamTestCase {
 

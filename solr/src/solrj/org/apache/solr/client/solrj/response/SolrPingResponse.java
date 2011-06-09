@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.response;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrPingResponse extends SolrResponseBase

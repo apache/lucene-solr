@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.Reader;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class BinaryResponseParser extends ResponseParser {

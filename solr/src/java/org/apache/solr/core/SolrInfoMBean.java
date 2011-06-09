@@ -26,7 +26,7 @@ import org.apache.solr.common.util.NamedList;
  * for use by objects which are 'pluggable' to make server administration
  * easier.
  *
- * @version $Id$
+ *
  */
 public interface SolrInfoMBean {
 

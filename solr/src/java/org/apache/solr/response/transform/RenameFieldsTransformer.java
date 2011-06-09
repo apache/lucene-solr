@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  * Return a field with a name that is different that what is indexed
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class RenameFieldsTransformer extends DocTransformer

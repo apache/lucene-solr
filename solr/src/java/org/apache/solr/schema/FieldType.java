@@ -50,7 +50,7 @@ import java.util.Map;
 /**
  * Base class for all field types used by an index schema.
  *
- * @version $Id$
+ *
  */
 public abstract class FieldType extends FieldProperties {
   public static final Logger log = LoggerFactory.getLogger(FieldType.class);

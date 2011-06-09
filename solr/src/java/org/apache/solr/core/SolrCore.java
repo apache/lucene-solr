@@ -71,7 +71,7 @@ import java.lang.reflect.Constructor;
 
 
 /**
- * @version $Id$
+ *
  */
 public final class SolrCore implements SolrInfoMBean {
   public static final String version="1.0";  

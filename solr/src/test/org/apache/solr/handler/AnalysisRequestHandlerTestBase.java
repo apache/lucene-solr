@@ -23,7 +23,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  * A base class for all analysis request handler tests.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {

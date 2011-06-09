@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.Map;
 
 /**
- * @version $Id$
+ *
  */
 public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
 

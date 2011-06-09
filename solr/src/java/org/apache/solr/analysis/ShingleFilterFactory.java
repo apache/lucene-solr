@@ -36,7 +36,7 @@ import java.util.Map;
  *             outputUnigrams="true" outputUnigramsIfNoShingles="false" tokenSeparator=" "/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ShingleFilterFactory extends BaseTokenFilterFactory {
   private int minShingleSize;

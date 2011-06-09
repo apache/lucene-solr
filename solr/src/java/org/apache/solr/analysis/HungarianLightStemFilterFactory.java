@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.hu.HungarianLightStemFilter;
  *     &lt;filter class="solr.HungarianLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class HungarianLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

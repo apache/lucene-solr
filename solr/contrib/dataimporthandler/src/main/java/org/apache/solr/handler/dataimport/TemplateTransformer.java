@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TemplateTransformer extends Transformer {

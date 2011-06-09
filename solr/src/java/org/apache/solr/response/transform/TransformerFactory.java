@@ -28,7 +28,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 /**
  * New instance for each request
  *
- * @version $Id$
+ *
  */
 public abstract class TransformerFactory implements NamedListInitializedPlugin
 {

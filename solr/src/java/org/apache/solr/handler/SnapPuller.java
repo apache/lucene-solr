@@ -57,7 +57,7 @@ import java.util.zip.InflaterInputStream;
  * <p/> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
  * master. </p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class SnapPuller {

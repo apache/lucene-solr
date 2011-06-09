@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.TypeAsPayloadTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class TypeAsPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   public TypeAsPayloadTokenFilter create(TokenStream input) {

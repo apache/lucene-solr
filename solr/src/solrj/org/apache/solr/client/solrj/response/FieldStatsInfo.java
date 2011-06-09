@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Holds stats info
  *
- * @version $Id: SpellCheckResponse.java 693622 2008-09-09 21:21:06Z gsingers $
+ *
  * @since solr 1.4
  */
 public class FieldStatsInfo implements Serializable {

@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrException;
  *     &lt;filter class="solr.TrimFilterFactory" updateOffsets="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  * @see TrimFilter
  */
 public class TrimFilterFactory extends BaseTokenFilterFactory {

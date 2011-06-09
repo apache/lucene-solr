@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Obtains float field values from an external file.
- * @version $Id$
+ *
  */
 
 public class FileFloatSource extends ValueSource {

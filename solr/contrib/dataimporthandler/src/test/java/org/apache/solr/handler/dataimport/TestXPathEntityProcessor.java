@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * Test for XPathEntityProcessor
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase {

@@ -37,7 +37,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 
 /**
- * @version $Id$
+ *
  */
 
 public class JSONResponseWriter implements QueryResponseWriter {

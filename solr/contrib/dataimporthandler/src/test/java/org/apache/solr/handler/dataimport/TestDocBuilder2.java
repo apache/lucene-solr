@@ -32,7 +32,7 @@ import java.io.File;
  * Test for DocBuilder using the test harness
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {

@@ -23,7 +23,7 @@ import org.apache.lucene.search.FieldCache;
  * A base class for ValueSource implementations that retrieve values for
  * a single field from the {@link org.apache.lucene.search.FieldCache}.
  *
- * @version $Id$
+ *
  */
 public abstract class FieldCacheSource extends ValueSource {
   protected String field;

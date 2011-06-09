@@ -26,7 +26,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 /**
  * Factory for {@link UIMAUpdateRequestProcessor}
  * 
- * @version $Id$
+ *
  */
 public class UIMAUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
 

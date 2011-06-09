@@ -27,7 +27,7 @@ import java.util.Iterator;
  * DocIterator instance was retrieved.
  * </p>
  *
- * @version $Id$
+ *
  */
 public interface DocIterator extends Iterator<Integer> {
   // already declared in superclass, redeclaring prevents javadoc inheritance

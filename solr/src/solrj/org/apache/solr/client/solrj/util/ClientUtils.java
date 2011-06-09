@@ -42,7 +42,7 @@ import org.apache.solr.common.util.*;
 /**
  * TODO? should this go in common?
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class ClientUtils 

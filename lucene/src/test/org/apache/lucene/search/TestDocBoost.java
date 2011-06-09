@@ -31,7 +31,6 @@ import org.apache.lucene.util.LuceneTestCase;
 /** Document boost unit test.
  *
  *
- * @version $Revision$
  */
 public class TestDocBoost extends LuceneTestCase {
 

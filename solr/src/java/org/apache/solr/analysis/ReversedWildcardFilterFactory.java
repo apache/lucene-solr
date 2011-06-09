@@ -59,7 +59,7 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ReversedWildcardFilterFactory extends BaseTokenFilterFactory {
   

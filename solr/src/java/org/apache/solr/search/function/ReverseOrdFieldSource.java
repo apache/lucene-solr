@@ -43,7 +43,7 @@ import java.util.Map;
  * at the top level reader, while sorting and function queries now use entries at the segment level.  Hence sorting
  * or using a different function query, in addition to ord()/rord() will double memory use.
  * 
- * @version $Id$
+ *
  */
 
 public class ReverseOrdFieldSource extends ValueSource {

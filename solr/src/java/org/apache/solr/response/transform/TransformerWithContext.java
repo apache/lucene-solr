@@ -18,7 +18,7 @@ package org.apache.solr.response.transform;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public abstract class TransformerWithContext extends DocTransformer

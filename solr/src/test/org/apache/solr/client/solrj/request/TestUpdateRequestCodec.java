@@ -37,7 +37,7 @@ import java.util.ArrayList;
  * Test for UpdateRequestCodec
  *
  * @since solr 1.4
- * @version $Id$
+ *
  * @see org.apache.solr.client.solrj.request.UpdateRequest
  */
 public class TestUpdateRequestCodec extends LuceneTestCase {

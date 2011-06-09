@@ -34,7 +34,7 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  * @see org.apache.lucene.analysis.position.PositionFilter
  * @since solr 1.4
  */

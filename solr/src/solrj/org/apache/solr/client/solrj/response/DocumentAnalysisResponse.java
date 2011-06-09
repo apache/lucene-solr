@@ -28,7 +28,7 @@ import java.util.Map;
  * A response that is returned by processing the {@link org.apache.solr.client.solrj.request.DocumentAnalysisRequest}.
  * Holds a map of {@link DocumentAnalysis} objects by a document id (unique key).
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class DocumentAnalysisResponse extends AnalysisResponseBase implements Iterable<Map.Entry<String, DocumentAnalysisResponse.DocumentAnalysis>> {

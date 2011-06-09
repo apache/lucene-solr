@@ -33,7 +33,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 /**
  * A SolrInfoMBean that provides introspection of the Lucene FiledCache, this is <b>NOT</b> a cache that is manged by Solr.
  *
- * @version $Id$
+ *
  */
 public class SolrFieldCacheMBean implements SolrInfoMBean {
 

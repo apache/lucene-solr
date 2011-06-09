@@ -23,7 +23,7 @@ package org.apache.solr.search;
  * This list contains a subset of the complete list of documents actually matched: <code>size()</code>
  * document ids starting at <code>offset()</code>.
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public interface DocList extends DocSet {

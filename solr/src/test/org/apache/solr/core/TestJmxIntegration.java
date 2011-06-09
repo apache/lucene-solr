@@ -31,7 +31,7 @@ import java.util.Hashtable;
 /**
  * Test for JMX Integration
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestJmxIntegration extends AbstractSolrTestCase {

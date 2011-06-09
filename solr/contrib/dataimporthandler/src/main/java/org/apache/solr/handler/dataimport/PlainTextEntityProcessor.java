@@ -33,7 +33,6 @@ import java.util.Map;
  * <p>An implementation of {@link EntityProcessor} which reads data from a url/file and give out a row which contains one String
  * value. The name of the field is 'plainText'.
  *
- * @version $Id$
  * @since solr 1.4
  */
 public class PlainTextEntityProcessor extends EntityProcessorBase {

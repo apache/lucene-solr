@@ -28,7 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ExplainAugmenterFactory extends TransformerFactory
