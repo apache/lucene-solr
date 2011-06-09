@@ -139,7 +139,7 @@ final class FieldsWriter {
     int bits = 0;
     // nocommit -- when we decouple analysis we should stop
     // recording this:
-    if (field.isIndexed() && field.isTokenized()) {
+    if (field.indexed() && field.tokenized()) {
       bits |= FIELD_IS_TOKENIZED;
     }
     final BytesRef bytes;
@@ -148,8 +148,8 @@ final class FieldsWriter {
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...
-    if (field.isNumeric()) {
-      switch (field.getDataType()) {
+    if (field.numeric()) {
+      switch (field.numericDataType()) {
         case INT:
           bits |= FIELD_IS_NUMERIC_INT; break;
         case LONG:
@@ -181,11 +181,11 @@ final class FieldsWriter {
     } else if (string != null) {
       fieldsStream.writeString(field.stringValue());
     } else {
-      final Number n = field.getNumericValue();
+      final Number n = field.numericValue();
       if (n == null) {
         throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
       }
-      switch (field.getDataType()) {
+      switch (field.numericDataType()) {
         case INT:
           fieldsStream.writeInt(n.intValue()); break;
         case LONG:
@@ -221,14 +221,14 @@ final class FieldsWriter {
 
     int storedCount = 0;
     for (IndexableField field : doc) {
-      if (field.isStored()) {
+      if (field.stored()) {
         storedCount++;
       }
     }
     fieldsStream.writeVInt(storedCount);
 
     for (IndexableField field : doc) {
-      if (field.isStored()) {
+      if (field.stored()) {
         writeField(fieldInfos.fieldNumber(field.name()), field);
       }
     }

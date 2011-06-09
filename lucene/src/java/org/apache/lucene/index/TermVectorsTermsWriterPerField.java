@@ -61,10 +61,10 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     for(int i=0;i<count;i++) {
       IndexableField field = fields[i];
-      if (field.isIndexed() && field.isTermVectorStored()) {
+      if (field.indexed() && field.storeTermVectors()) {
         doVectors = true;
-        doVectorPositions |= field.isStorePositionWithTermVector();
-        doVectorOffsets |= field.isStoreOffsetWithTermVector();
+        doVectorPositions |= field.storeTermVectorPositions();
+        doVectorOffsets |= field.storeTermVectorOffsets();
       }
     }
 

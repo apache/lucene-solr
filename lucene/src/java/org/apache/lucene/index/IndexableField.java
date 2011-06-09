@@ -25,10 +25,22 @@ import org.apache.lucene.util.BytesRef;
 
 // nocommit jdocs
 
+// nocommit maybe abstract class instead...?  or maybe we
+// have versioned interfaces over time, so indexer can
+// consume JARs w/ older doc/field impls?  IndexableField1,
+// IndexableField2, ...?
+
 // nocommit maybe take this further and push analysis into Document
 
 // nocommit what to do about multi-valued fields?  really,
 // indexer should not know?
+
+// nocommit make test case showing how you can index
+// Iterable<IndexableField> that is not a Document
+// instance...
+
+// nocommit -- rename all this stuff -- remove get/is?  --
+// this is all read only APIs
 
 /** @lucene.experimental */
 public interface IndexableField {
@@ -38,31 +50,39 @@ public interface IndexableField {
 
   public String name();
 
-  // nocommit -- make sure doc multplies its own boost in here:
-  public float getBoost();
+  // NOTE: if doc/field impl has the notion of "doc level boost"
+  // it must be multiplied in w/ this field's boost
+  public float boost();
   
-  public boolean isStored();
+  public boolean stored();
 
   // nocommit -- isBinary?
   public BytesRef binaryValue(BytesRef reuse);
   public String stringValue();
   public Reader readerValue();
+
+  // nocommit -- decouple analyzers here: field impl should
+  // go and ask analyzer for the token stream, so indexer
+  // doesn't have to ask for string/reader value and then consult
+  // analyzer 
   public TokenStream tokenStreamValue();
 
   // Numeric field:
-  public boolean isNumeric();
-  public NumericField.DataType getDataType();
-  public Number getNumericValue();
+  public boolean numeric();
+  public NumericField.DataType numericDataType();
+  public Number numericValue();
 
   // If this returns non-null then we index this field:
-  public boolean isIndexed();
-  // nocommit maybe remove?  only needed because stored
-  // fields records this!
-  public boolean isTokenized();
-  public boolean getOmitNorms();
-  public boolean getOmitTermFreqAndPositions();
+  public boolean indexed();
 
-  public boolean isTermVectorStored();
-  public boolean isStoreOffsetWithTermVector();
-  public boolean isStorePositionWithTermVector();
+  // nocommit maybe remove?  only needed because stored
+  // fields records this!  (well, and because analysis isn't
+  // yet decoupled)
+  public boolean tokenized();
+  public boolean omitNorms();
+  public boolean omitTermFreqAndPositions();
+
+  public boolean storeTermVectors();
+  public boolean storeTermVectorOffsets();
+  public boolean storeTermVectorPositions();
 }

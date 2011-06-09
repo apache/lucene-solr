@@ -74,7 +74,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // TODO FI: this should be "genericized" to querying
       // consumer if it wants to see this particular field
       // tokenized.
-      if (field.isIndexed() && doInvert) {
+      if (field.indexed() && doInvert) {
         
         if (i > 0)
           fieldState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
@@ -82,7 +82,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         // nocommit -- this logic should be outside of
         // indexer
 
-        if (!field.isTokenized()) {		  // un-tokenized field
+        if (!field.tokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           final int valueLength = stringValue.length();
           parent.singleToken.reinit(stringValue, 0, valueLength);
@@ -191,7 +191,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         }
 
         fieldState.offset += docState.analyzer.getOffsetGap(field);
-        fieldState.boost *= field.getBoost();
+        fieldState.boost *= field.boost();
       }
 
       // LUCENE-2387: don't hang onto the field, so GC can

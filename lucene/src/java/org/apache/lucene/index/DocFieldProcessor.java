@@ -204,9 +204,9 @@ final class DocFieldProcessor extends DocConsumer {
         // needs to be more "pluggable" such that if I want
         // to have a new "thing" my Fields can do, I can
         // easily add it
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
-                                              field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                              field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.indexed(), field.storeTermVectors(),
+                                              field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
+                                              field.omitNorms(), false, field.omitTermFreqAndPositions());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -217,9 +217,9 @@ final class DocFieldProcessor extends DocConsumer {
           rehash();
         }
       } else {
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
-                               field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                               field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.indexed(), field.storeTermVectors(),
+                               field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
+                               field.omitNorms(), false, field.omitTermFreqAndPositions());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -240,7 +240,7 @@ final class DocFieldProcessor extends DocConsumer {
 
       fp.addField(field);
 
-      if (field.isStored()) {
+      if (field.stored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
     }

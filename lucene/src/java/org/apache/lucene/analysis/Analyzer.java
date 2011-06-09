@@ -139,7 +139,7 @@ public abstract class Analyzer implements Closeable {
    */
   // nocommit cut to IndexableField
   public int getOffsetGap(IndexableField field) {
-    if (field.isTokenized()) {
+    if (field.tokenized()) {
       return 1;
     } else {
       return 0;

@@ -17,10 +17,15 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.util.*;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.IndexReader;  // for javadoc
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
-import org.apache.lucene.index.IndexReader;  // for javadoc
+import org.apache.lucene.util.BytesRef;
 
 /** Documents are the unit of indexing and search.
  *
@@ -35,7 +40,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
-public final class Document implements Iterable<Fieldable> {
+public final class Document implements Iterable<IndexableField> {
 
   List<Fieldable> fields = new ArrayList<Fieldable>();
   private float boost = 1.0f;
@@ -44,10 +49,97 @@ public final class Document implements Iterable<Fieldable> {
   public Document() {}
 
   // @Override not until Java 1.6
-  public Iterator<Fieldable> iterator() {
+  public Iterator<IndexableField> iterator() {
+    // nocommit this shim code is temporary!!  only here as an
+    // example... we will fix it "properly" for LUCENE-2308
+
     // nocommit -- must multiply in docBoost to each
     // provided field
-    return fields.iterator();
+
+    return new Iterator<IndexableField>() {
+      private int fieldUpto = 0;
+      
+      public boolean hasNext() {
+        return fieldUpto < fields.size();
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      public IndexableField next() {
+        final Fieldable field = fields.get(fieldUpto++);
+        return new IndexableField() {
+          public String name() {
+            return field.name();
+          }
+
+          public float boost() {
+            return boost * field.getBoost();
+          }
+
+          public boolean stored() {
+            return field.isStored();
+          }
+
+          public BytesRef binaryValue(BytesRef reuse) {
+            return field.binaryValue(reuse);
+          }
+
+          public String stringValue() {
+            return field.stringValue();
+          }
+
+          public Reader readerValue() {
+            return field.readerValue();
+          }
+
+          public TokenStream tokenStreamValue() {
+            return field.tokenStreamValue();
+          }
+
+          public boolean numeric() {
+            return field instanceof NumericField;
+          }
+
+          public NumericField.DataType numericDataType() {
+            return field.getDataType();
+          }
+
+          public Number numericValue() {
+            return field.getNumericValue();
+          }
+
+          public boolean indexed() {
+            return field.isIndexed();
+          }
+
+          public boolean tokenized() {
+            return field.isTokenized();
+          }
+
+          public boolean omitNorms() {
+            return field.getOmitNorms();
+          }
+
+          public boolean omitTermFreqAndPositions() {
+            return field.getOmitTermFreqAndPositions();
+          }
+
+          public boolean storeTermVectors() {
+            return field.isTermVectorStored();
+          }
+
+          public boolean storeTermVectorOffsets() {
+            return field.isStoreOffsetWithTermVector();
+          }
+
+          public boolean storeTermVectorPositions() {
+            return field.isStorePositionWithTermVector();
+          }
+        };
+      }
+    };
   }
 
   /** Sets a boost factor for hits on any field of this document.  This value

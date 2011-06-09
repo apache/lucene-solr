@@ -95,7 +95,7 @@ public class RandomIndexWriter implements Closeable {
 
   /**
    * Adds a Document.
-   * @see IndexWriter#addDocument(IndexableDocument)
+   * @see IndexWriter#addDocument(Iterable)
    */
   public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
     if (r.nextInt(5) == 3) {
@@ -163,7 +163,7 @@ public class RandomIndexWriter implements Closeable {
 
   /**
    * Updates a document.
-   * @see IndexWriter#updateDocument(Term, IndexableDocument)
+   * @see IndexWriter#updateDocument(Term, Iterable)
    */
   public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
     if (r.nextInt(5) == 3) {

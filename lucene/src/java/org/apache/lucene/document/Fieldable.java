@@ -16,8 +16,10 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.Reader;
+
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.util.BytesRef;          // for javadocs
@@ -32,7 +34,7 @@ import org.apache.lucene.util.BytesRef;          // for javadocs
  * </p>
  *
  **/
-public interface Fieldable extends IndexableField {
+public interface Fieldable {
 
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
@@ -66,12 +68,12 @@ public interface Fieldable extends IndexableField {
    *
    * @see #setBoost(float)
    */
-  //float getBoost();
+  float getBoost();
 
   /** Returns the name of the field as an interned string.
    * For example "date", "title", "body", ...
    */
-  //String name();
+  String name();
 
   /** The value of the field as a String, or null.
    * <p>
@@ -82,30 +84,30 @@ public interface Fieldable extends IndexableField {
    * If isIndexed()==true and isTokenized()==true, then tokenStreamValue() will be used to generate indexed tokens if not null,
    * else readerValue() will be used to generate indexed tokens if not null, else stringValue() will be used to generate tokens.
    */
-  //public String stringValue();
+  public String stringValue();
   
   /** The value of the field as a Reader, which can be used at index time to generate indexed tokens.
    * @see #stringValue()
    */
-  //public Reader readerValue();
+  public Reader readerValue();
   
   /** The TokenStream for this field to be used when indexing, or null.
    * @see #stringValue()
    */
-  //public TokenStream tokenStreamValue();
+  public TokenStream tokenStreamValue();
 
   /** True if the value of the field is to be stored in the index for return
     with search hits. */
-  //boolean  isStored();
+  boolean  isStored();
 
   /** True if the value of the field is to be indexed, so that it may be
     searched on. */
-  //boolean  isIndexed();
+  boolean  isIndexed();
 
   /** True if the value of the field should be tokenized as text prior to
     indexing.  Un-tokenized fields are indexed as a single word and may not be
     Reader-valued. */
-  //boolean  isTokenized();
+  boolean  isTokenized();
 
   /** True if the term or terms used to index this field are stored as a term
    *  vector, available from {@link org.apache.lucene.index.IndexReader#getTermFreqVector(int,String)}.
@@ -115,24 +117,24 @@ public interface Fieldable extends IndexableField {
    *
    * @see org.apache.lucene.index.IndexReader#getTermFreqVector(int, String)
    */
-  //boolean isTermVectorStored();
+  boolean isTermVectorStored();
 
   /**
    * True if terms are stored as term vector together with their offsets 
    * (start and end positon in source text).
    */
-  //boolean isStoreOffsetWithTermVector();
+  boolean isStoreOffsetWithTermVector();
 
   /**
    * True if terms are stored as term vector together with their token positions.
    */
-  //boolean isStorePositionWithTermVector();
+  boolean isStorePositionWithTermVector();
 
   /** True if the value of the field is stored as binary */
   boolean isBinary();
 
   /** True if norms are omitted for this indexed field */
-  //boolean getOmitNorms();
+  boolean getOmitNorms();
 
   /** Expert:
    *
@@ -164,21 +166,14 @@ public interface Fieldable extends IndexableField {
    */
   //abstract int getBinaryLength();
 
-  /**
-   * Return the raw byte[] for the binary field.  Note that
-   * you must also call {@link #getBinaryLength} and {@link
-   * #getBinaryOffset} to know which range of bytes in this
-   * returned array belong to the field.
-   * @return reference to the Field value as byte[].
-   */
   //abstract byte[] getBinaryValue();
 
   // nocommit api break
-  //abstract BytesRef binaryValue();
+  abstract BytesRef binaryValue(BytesRef reuse);
 
-  //abstract NumericField.DataType getDataType();
+  abstract NumericField.DataType getDataType();
 
-  //abstract Number getNumericValue();
+  abstract Number getNumericValue();
 
   /**
    * Return the raw byte[] for the binary field.  Note that
@@ -200,7 +195,7 @@ public interface Fieldable extends IndexableField {
   //abstract byte[] getBinaryValue(byte[] result);
   
   /** @see #setOmitTermFreqAndPositions */
-  //boolean getOmitTermFreqAndPositions();
+  boolean getOmitTermFreqAndPositions();
   
   /** Expert:
   *
