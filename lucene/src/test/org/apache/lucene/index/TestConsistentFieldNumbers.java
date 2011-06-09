@@ -155,7 +155,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
   }
   
   public void testFieldNumberGaps() throws IOException {
-    for (int i = 0; i < 39; i++) {
+    int numIters = atLeast(13);
+    for (int i = 0; i < numIters; i++) {
       Directory dir = newDirectory();
       {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -270,8 +271,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
   @Test
   public void testManyFields() throws Exception {
-    final int NUM_DOCS = 2000;
-    final int MAX_FIELDS = 50;
+    final int NUM_DOCS = atLeast(200);
+    final int MAX_FIELDS = atLeast(50);
 
     int[][] docs = new int[NUM_DOCS][4];
     for (int i = 0; i < docs.length; i++) {

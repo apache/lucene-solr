@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -60,8 +61,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
 		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");		
 		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "10");
 		params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
 		params.add(CommonParams.FQ, "NOT(id:1)");
 		
@@ -77,8 +78,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		NamedList spellCheck = (NamedList) values.get("spellcheck");
 		NamedList suggestions = (NamedList) spellCheck.get("suggestions");
 		List<String> collations = suggestions.getAll("collation");
-		assertTrue(collations.size() == 1);
-		assertTrue(collations.get(0).equals("lowerfilt:(+faith +hope +love)"));		
+		assertTrue(collations.size() > 0);
+		for(String collation : collations) {
+			assertTrue(!collation.equals("lowerfilt:(+faith +hope +loaves)"));	
+		}
 	}
 	
 	@Test
@@ -180,7 +183,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 		// combination exists.
 		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES);
 		params.remove(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS);
-		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "10");
 		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "2");
 		handler = core.getRequestHandler("spellCheckCompRH");
 		rsp = new SolrQueryResponse();
@@ -233,5 +236,38 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 			assertTrue(correctionForHome.equals("hope"));
 			assertTrue(correctionForLoane.equals("love") || correctionForLoane.equals("loaves"));
 		}
+	}
+	
+	@Test
+	public void testCollateWithGrouping() throws Exception
+	{
+		SolrCore core = h.getCore();
+		SearchComponent speller = core.getSearchComponent("spellcheck");
+		assertTrue("speller is null and it shouldn't be", speller != null);
+		
+		ModifiableSolrParams params = new ModifiableSolrParams();		
+		params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+		params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+		params.add(SpellCheckComponent.SPELLCHECK_COUNT, "10");		
+		params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATION_TRIES, "5");
+		params.add(SpellCheckComponent.SPELLCHECK_MAX_COLLATIONS, "1");
+		params.add(CommonParams.Q, "lowerfilt:(+fauth)");
+		params.add(GroupParams.GROUP, "true");
+		params.add(GroupParams.GROUP_FIELD, "id");
+		
+		//Because a FilterQuery is applied which removes doc id#1 from possible hits, we would
+		//not want the collations to return us "lowerfilt:(+faith +hope +loaves)" as this only matches doc id#1.
+		SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+		SolrQueryResponse rsp = new SolrQueryResponse();
+		rsp.add("responseHeader", new SimpleOrderedMap());
+		SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+		handler.handleRequest(req, rsp);
+		req.close();
+		NamedList values = rsp.getValues();
+		NamedList spellCheck = (NamedList) values.get("spellcheck");
+		NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+		List<String> collations = suggestions.getAll("collation");
+		assertTrue(collations.size() == 1);
 	}
 }

@@ -561,7 +561,8 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: verify random accepted terms");
       }
       final IntsRef scratch = new IntsRef(10);
-      for(int iter=0;iter<500*RANDOM_MULTIPLIER;iter++) {
+      int num = atLeast(500);
+      for(int iter=0;iter<num;iter++) {
         T output = randomAcceptedWord(fst, scratch);
         assertTrue("accepted word " + inputToString(inputMode, scratch) + " is not valid", termsMap.containsKey(scratch));
         assertEquals(termsMap.get(scratch), output);
@@ -572,7 +573,8 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: verify seek");
       }
       IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
-      for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+      num = atLeast(100);
+      for(int iter=0;iter<num;iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter);
         }
@@ -645,7 +647,8 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // test mixed next/seek
-      for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+      num = atLeast(100);
+      for(int iter=0;iter<num;iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter " + iter);
         }
@@ -915,7 +918,7 @@ public class TestFSTs extends LuceneTestCase {
   }
 
   public void testRandomWords() throws IOException {
-    testRandomWords(1000, 5 * RANDOM_MULTIPLIER);
+    testRandomWords(1000, atLeast(2));
     //testRandomWords(20, 100);
   }
 
@@ -960,7 +963,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(50000, RANDOM_MULTIPLIER);
+    testRandomWords(atLeast(50000), atLeast(1));
   }
 
   private static String inputToString(int inputMode, IntsRef term) {
@@ -983,13 +986,13 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     final LineFileDocs docs = new LineFileDocs(random);
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 100 : 1;
+    final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
     final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
     final IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
-    final long stopTime = System.currentTimeMillis() + RUN_TIME_SEC * 1000;
+    final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
@@ -1049,7 +1052,8 @@ public class TestFSTs extends LuceneTestCase {
         // Now confirm BytesRefFSTEnum and TermsEnum act the
         // same:
         final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
-        for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+        int num = atLeast(1000);
+        for(int iter=0;iter<num;iter++) {
           final BytesRef randomTerm = new BytesRef(getRandomString());
         
           if (VERBOSE) {

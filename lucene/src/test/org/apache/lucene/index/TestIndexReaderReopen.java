@@ -36,6 +36,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
@@ -49,8 +50,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
-    
-  private File indexDir;
   
   public void testReopen() throws Exception {
     final Directory dir1 = newDirectory();
@@ -150,22 +149,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // at the end of every iteration, commit the index and reopen/recreate the reader.
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
-  public void testCommitReopenFS () throws IOException {
-    Directory dir = newFSDirectory(indexDir);
-    doTestReopenWithCommit(random, dir, true);
-    dir.close();
-  }
-  public void testCommitRecreateFS () throws IOException {
-    Directory dir = newFSDirectory(indexDir);
-    doTestReopenWithCommit(random, dir, false);
-    dir.close();
-  }
-  public void testCommitReopenRAM () throws IOException {
+  public void testCommitReopen () throws IOException {
     Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
-  public void testCommitRecreateRAM () throws IOException {
+  public void testCommitRecreate () throws IOException {
     Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, false);
     dir.close();
@@ -698,7 +687,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testThreadSafety() throws Exception {
     final Directory dir = newDirectory();
-    final int n = 30 * RANDOM_MULTIPLIER;
+    final int n = atLeast(30);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < n; i++) {
@@ -1085,13 +1074,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     protected abstract IndexReader openReader() throws IOException;
     protected abstract void modifyIndex(int i) throws IOException;
   }
-
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    indexDir = _TestUtil.getTempDir("IndexReaderReopen");
-  }
   
   public void testCloseOrig() throws Throwable {
     Directory dir = newDirectory();
@@ -1242,6 +1224,54 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       r = r2;
     }
     r.close();
+    dir.close();
+  }
+  
+  // LUCENE-1579: Make sure all SegmentReaders are new when
+  // reopen switches readOnly
+  public void testReopenChangeReadonly() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+            setMaxBufferedDocs(-1).
+            setMergePolicy(newLogMergePolicy(10))
+    );
+    Document doc = new Document();
+    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Open reader1
+    IndexReader r = IndexReader.open(dir, false);
+    assertTrue(r instanceof DirectoryReader);
+    IndexReader r1 = getOnlySegmentReader(r);
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
+    assertEquals(1, ints.length);
+    assertEquals(17, ints[0]);
+
+    // Reopen to readonly w/ no chnages
+    IndexReader r3 = r.reopen(true);
+    assertTrue(((DirectoryReader) r3).readOnly);
+    r3.close();
+
+    // Add new segment
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Reopen reader1 --> reader2
+    IndexReader r2 = r.reopen(true);
+    r.close();
+    assertTrue(((DirectoryReader) r2).readOnly);
+    IndexReader[] subs = r2.getSequentialSubReaders();
+    final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
+    r2.close();
+
+    assertTrue(((SegmentReader) subs[0]).readOnly);
+    assertTrue(((SegmentReader) subs[1]).readOnly);
+    assertTrue(ints == ints2);
+
+    writer.close();
     dir.close();
   }
 }

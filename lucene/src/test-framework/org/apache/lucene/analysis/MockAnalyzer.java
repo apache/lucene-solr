@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -127,13 +128,16 @@ public final class MockAnalyzer extends Analyzer {
   private synchronized TokenFilter maybePayload(TokenFilter stream, String fieldName) {
     Integer val = previousMappings.get(fieldName);
     if (val == null) {
-      switch(random.nextInt(3)) {
-        case 0: val = -1; // no payloads
-                break;
-        case 1: val = Integer.MAX_VALUE; // variable length payload
-                break;
-        case 2: val = random.nextInt(12); // fixed length payload
-                break;
+      val = -1; // no payloads
+      if (LuceneTestCase.rarely(random)) {
+        switch(random.nextInt(3)) {
+          case 0: val = -1; // no payloads
+                  break;
+          case 1: val = Integer.MAX_VALUE; // variable length payload
+                  break;
+          case 2: val = random.nextInt(12); // fixed length payload
+                  break;
+        }
       }
       previousMappings.put(fieldName, val); // save it so we are consistent for this field
     }

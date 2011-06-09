@@ -16,20 +16,16 @@
  */
 package org.apache.solr.search;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
@@ -211,9 +207,37 @@ public class ReturnFields
           sp.pos = start;
         }
 
-        // let's try it as a function instead
         String funcStr = sp.val.substring(start);
 
+        // Is it an augmenter of the form [augmenter_name foo=1 bar=myfield]?
+        // This is identical to localParams syntax except it uses [] instead of {!}
+
+        if (funcStr.startsWith("[")) {
+          Map<String,String> augmenterArgs = new HashMap<String,String>();
+          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterArgs, req.getParams(), "[", ']');
+          sp.pos += end;
+          
+          // [foo] is short for [type=foo] in localParams syntax
+          String augmenterName = augmenterArgs.remove("type"); 
+          String disp = key;
+          if( disp == null ) {
+            disp = '['+augmenterName+']';
+          }
+
+          TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
+          if( factory != null ) {
+            MapSolrParams augmenterParams = new MapSolrParams( augmenterArgs );
+            augmenters.addTransformer( factory.create(disp, augmenterParams, req) );
+          }
+          else {
+            // unknown transformer?
+          }
+          addField(field, disp, augmenters, req);
+          continue;
+        }
+
+
+        // let's try it as a function instead
         QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
         Query q = null;
         ValueSource vs = null;
@@ -310,26 +334,6 @@ public class ReturnFields
     if(SCORE.equals(field)) {
       _wantsScore = true;
       augmenters.addTransformer( new ScoreAugmenter( disp ) );
-    }
-    else if( field.charAt(0)=='_'&& field.charAt(field.length()-1)=='_' ) {
-      String name = field;
-      String args = null;
-      int idx = field.indexOf( ':' );
-      if( idx > 0 ) {
-        name = field.substring(1,idx);
-        args = field.substring(idx+1,field.length()-1);
-      }
-      else {
-        name = field.substring(1,field.length()-1 );
-      }
-
-      TransformerFactory factory = req.getCore().getTransformerFactory( name );
-      if( factory != null ) {
-        augmenters.addTransformer( factory.create(disp, args, req) );
-      }
-      else {
-        // unknown field?
-      }
     }
   }
 

@@ -27,8 +27,8 @@
 use strict;
 use warnings;
 use Getopt::Long;
-use LWP::Simple;
-require LWP::Parallel::UserAgent;
+use POSIX qw/strftime/;
+use LWP::UserAgent;
 
 my $version;
 my $interval = 300;
@@ -51,15 +51,18 @@ my $previously_selected = select STDOUT;
 $| = 1; # turn off buffering of STDOUT, so status is printed immediately
 select $previously_selected;
 
-my $apache_url_suffix = "lucene/java/$version/lucene-$version.tgz.asc";
+my $apache_url_suffix = "lucene/java/$version/lucene-$version.zip.asc";
 my $apache_mirrors_list_url = "http://www.apache.org/mirrors/";
-my $maven_url = "http://repo2.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom.asc";
+my $maven_url = "http://repo1.maven.org/maven2/org/apache/lucene/lucene-core/$version/lucene-core-$version.pom.asc";
+
+my $agent = LWP::UserAgent->new();
+$agent->timeout(2);
 
 my $maven_available = 0;
 
 my @apache_mirrors = ();
 
-my $apache_mirrors_list_page = get($apache_mirrors_list_url);
+my $apache_mirrors_list_page = $agent->get($apache_mirrors_list_url)->decoded_content;
 if (defined($apache_mirrors_list_page)) {
   #<TR>
   #  <TD ALIGN=RIGHT><A HREF="http://apache.dattatec.com/">apache.dattatec.com</A>&nbsp;&nbsp;<A HREF="http://apache.dattatec.com/">@</A></TD>
@@ -83,36 +86,43 @@ if (defined($apache_mirrors_list_page)) {
 }
 
 my $num_apache_mirrors = $#apache_mirrors;
-print "# Apache Mirrors: $num_apache_mirrors\n";
 
+my $sleep_interval = 0;
 while (1) {
-  unless ($maven_available) {
-    my $content = get($maven_url);
-    $maven_available = defined($content);
-  }
-  @apache_mirrors = &check_mirrors;
-  my $num_downloadable_apache_mirrors
-    = $num_apache_mirrors - $#apache_mirrors;
+  print "\n", strftime('%d-%b-%Y %H:%M:%S', localtime);
+  print "\nPolling $#apache_mirrors Apache Mirrors";
+  print " and Maven Central" unless ($maven_available);
+  print "...\n";
 
-  print "Available: ";
-  print "Maven Central; " if ($maven_available);
-  printf "%d/%d Apache Mirrors (%0.1f%%)\n", $num_downloadable_apache_mirrors,
-    $num_apache_mirrors, ($num_downloadable_apache_mirrors*100/$num_apache_mirrors);
-  last if ($maven_available && $num_downloadable_apache_mirrors == $num_apache_mirrors);
-  sleep($interval);
+  my $start = time();
+  $maven_available = (200 == $agent->get($maven_url)->code)
+    unless ($maven_available);
+  @apache_mirrors = &check_mirrors;
+  my $stop = time();
+  $sleep_interval = $interval - ($stop - $start);
+
+  my $num_downloadable_apache_mirrors = $num_apache_mirrors - $#apache_mirrors;
+  print "$version is ", ($maven_available ? "" : "not "),
+    "downloadable from Maven Central.\n";
+  printf "$version is downloadable from %d/%d Apache Mirrors (%0.1f%%)\n",
+    $num_downloadable_apache_mirrors, $num_apache_mirrors,
+    ($num_downloadable_apache_mirrors*100/$num_apache_mirrors);
+
+  last if ($maven_available && 0 == $#apache_mirrors);
+
+  if ($sleep_interval > 0) {
+    print "Sleeping for $sleep_interval seconds...\n";
+    sleep($sleep_interval)
+  }
 }
 
 sub check_mirrors {
-  my $agent = LWP::Parallel::UserAgent->new();
-  $agent->timeout(30);
-  $agent->redirect(1);  # follow redirects
-  $agent->register($_) for (@apache_mirrors);
-  my $entries = $agent->wait();
   my @not_yet_downloadable_apache_mirrors;
-  for my $entry (keys %$entries) {
-    my $response = $entries->{$entry}->response;
-    push @not_yet_downloadable_apache_mirrors, $response->request->uri
-      unless ($response->is_success);
+  for my $mirror (@apache_mirrors) {
+    push @not_yet_downloadable_apache_mirrors, $mirror
+      unless (200 == $agent->get($mirror)->code);
+    print ".";
   }
+  print "\n";
   return @not_yet_downloadable_apache_mirrors;
 }

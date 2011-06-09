@@ -94,9 +94,9 @@ New Features
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
   (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
-* LUCENE-2507: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
-  to retrieve correction candidates directly from the term dictionary using
-  levenshtein automata.  (rmuir)
+* LUCENE-2507, SOLR-2571, SOLR-2576: Added DirectSolrSpellChecker, which uses Lucene's
+  DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
+  levenshtein automata.  (James Dyer, rmuir)
    
 * SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
@@ -112,8 +112,6 @@ New Features
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
   as results. (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl)
-
-* SOLR-2417: Add explain info directly to return documents using ?fl=_explain_ (ryan)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
@@ -148,6 +146,21 @@ New Features
   new functions exists(), if(), and(), or(), xor(), not(), def(),
   and true and false constants. (yonik) 
 
+* SOLR-2491: Add support for using spellcheck collation in conjunction
+  with grouping. Note that the number of hits returned for collations
+  is the number of ungrouped hits.  (James Dyer via rmuir)
+  
+* SOLR-1298: Return FunctionQuery as pseudo field.  The solr 'fl' param
+  now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
+  functions with fast random access are reccomended. (yonik, ryan)
+  
+* SOLR-705: Optionally return shard info with each document in distributed
+  search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
+
+* SOLR-2417: Add explain info directly to return documents using 
+  ?fl=id,[explain] (ryan)
+
+  
 
 Optimizations
 ----------------------
@@ -253,6 +266,9 @@ Other Changes
   HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
   suggester APIs and implementations. (rmuir)
 
+* SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
+  (James Dyer via rmuir)
+
 Documentation
 ----------------------
 
@@ -269,6 +285,12 @@ New Features
   compared to ternary trees and jaspell and very fast lookups at runtime.
   (Dawid Weiss)
 
+Optimizations
+----------------------
+
+* SOLR-2567: Solr now defaults to TieredMergePolicy. See http://s.apache.org/merging
+  for more information.  (rmuir)
+
 Bug Fixes
 ----------------------
 
@@ -277,6 +299,22 @@ Bug Fixes
   English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
   yonik, Mike McCandless)
 
+* SOLR-2462: Fix extremely high memory usage problems with spellcheck.collate.
+  Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
+  parameter is added to avoid excessive CPU time in extreme cases (e.g. long
+  queries with many misspelled words).  (James Dyer via rmuir)
+
+Other Changes
+----------------------
+
+* SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
+  parameter to the example solrconfig.xml, and also add a unit test for this feature.
+  (James Dyer via rmuir)
+
+* SOLR-2576: Deprecate SpellingResult.add(Token token, int docFreq), please use
+  SpellingResult.addFrequency(Token token, int docFreq) instead.
+  (James Dyer via rmuir)
+  
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------

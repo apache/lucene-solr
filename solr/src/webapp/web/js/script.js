@@ -36,26 +36,31 @@ var sammy = $.sammy
             'ping',
             function( event )
             {
-                var element = $( this.params.element );
-                
                 $.ajax
                 (
                     {
-                        url : element.attr( 'href' ) + '?wt=json',
+                        url : $( this.params.element ).attr( 'href' ) + '?wt=json',
                         dataType : 'json',
+                        context: this.params.element,
                         beforeSend : function( arr, form, options )
                         {
-                            loader.show( element );
+                            loader.show( this );
                         },
-                        success : function( response )
+                        success : function( response, text_status, xhr )
                         {
-                            var qtime_element = $( '.qtime', element );
+                            $( this )
+                                .removeAttr( 'title' );
+                            
+                            $( this ).parents( 'li' )
+                                .removeClass( 'error' );
+                                
+                            var qtime_element = $( '.qtime', this );
                             
                             if( 0 === qtime_element.size() )
                             {
                                 qtime_element = $( '<small class="qtime"> (<span></span>)</small>' );
                                 
-                                element
+                                $( this )
                                     .append
                                     (
                                         qtime_element
@@ -65,12 +70,17 @@ var sammy = $.sammy
                             $( 'span', qtime_element )
                                 .html( response.responseHeader.QTime + 'ms' );
                         },
-                        error : function()
+                        error : function( xhr, text_status, error_thrown )
                         {
+                            $( this )
+                                .attr( 'title', '/admin/ping is not configured (' + xhr.status + ': ' + error_thrown + ')' );
+                            
+                            $( this ).parents( 'li' )
+                                .addClass( 'error' );
                         },
-                        complete : function()
+                        complete : function( xhr, text_status )
                         {
-                            loader.hide( element );
+                            loader.hide( this );
                         }
                     }
                 );
@@ -261,6 +271,8 @@ var sammy = $.sammy
             /^#\/(cores)$/,
             function( context )
             {
+                delete app.cores_template;
+
                 sammy.trigger
                 (
                     'cores_load_data',
@@ -1893,7 +1905,7 @@ var sammy = $.sammy
                                                     {
                                                         fields.sort();
                                                         related_options += '<optgroup label="Fields">' + "\n";
-                                                        related_options += fields.join( "\n" ) + "\n";
+                                                        related_options += fields.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
                                                     
@@ -1909,7 +1921,7 @@ var sammy = $.sammy
                                                     {
                                                         dynamic_fields.sort();
                                                         related_options += '<optgroup label="DynamicFields">' + "\n";
-                                                        related_options += dynamic_fields.join( "\n" ) + "\n";
+                                                        related_options += dynamic_fields.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
                                                     
@@ -1925,7 +1937,7 @@ var sammy = $.sammy
                                                     {
                                                         types.sort();
                                                         related_options += '<optgroup label="Types">' + "\n";
-                                                        related_options += types.join( "\n" ) + "\n";
+                                                        related_options += types.sort().join( "\n" ) + "\n";
                                                         related_options += '</optgroup>' + "\n";
                                                     }
 
@@ -1990,6 +2002,8 @@ var sammy = $.sammy
                     data_element
                         .hide();
                 };
+
+                delete app.schema_browser_data;
 
                 sammy.trigger
                 (
@@ -3289,7 +3303,7 @@ var sammy = $.sammy
                                     if( 0 !== fields.length )
                                     {
                                         content += '<optgroup label="Fields">' + "\n";
-                                        content += fields.join( "\n" ) + "\n";
+                                        content += fields.sort().join( "\n" ) + "\n";
                                         content += '</optgroup>' + "\n";
                                     }
                                     
@@ -3304,7 +3318,7 @@ var sammy = $.sammy
                                     if( 0 !== types.length )
                                     {
                                         content += '<optgroup label="Types">' + "\n";
-                                        content += types.join( "\n" ) + "\n";
+                                        content += types.sort().join( "\n" ) + "\n";
                                         content += '</optgroup>' + "\n";
                                     }
                                     
@@ -3433,7 +3447,14 @@ var sammy = $.sammy
                                                 var length = raw_parts[key].length;
                                                 for( var j = 0; j < length; j++ )
                                                 {
-                                                    parts[key].push( '<td>' + raw_parts[key][j].join( "\n" ) + '</td>' );
+                                                    if( raw_parts[key][j] )
+                                                    {
+                                                        parts[key].push( '<td>' + raw_parts[key][j].join( "\n" ) + '</td>' );
+                                                    }
+                                                    else
+                                                    {
+                                                        parts[key].push( '<td><div class="empty">&empty;</div></td>' );
+                                                    }
                                                 }
                                             }
 
@@ -3503,13 +3524,33 @@ var sammy = $.sammy
             /^#\/([\w\d]+)\/(schema|config)$/,
             function( context )
             {
-                var content_element = $( '#content' );
+                $.ajax
+                (
+                    {
+                        url : $( '.active a', this.active_core ).attr( 'href' ),
+                        dataType : 'xml',
+                        context : $( '#content' ),
+                        beforeSend : function( xhr, settings )
+                        {
+                            this
+                                .html( '<div class="loader">Loading ...</div>' );
+                        },
+                        complete : function( xhr, text_status )
+                        {
+                            var code = $(
+                                '<pre class="syntax language-xml"><code>' +
+                                xhr.responseText.replace( /\</g, '&lt;' ).replace( /\>/g, '&gt;' ) +
+                                '</code></pre>'
+                            );
+                            this.html( code );
 
-                content_element
-                    .html( '<iframe src="' + $( '.active a', this.active_core ).attr( 'href' ) + '"></iframe>' );
-                
-                $( 'iframe', content_element )
-                    .css( 'height', $( '#main' ).height() );
+                            if( 'success' === text_status )
+                            {
+                                hljs.highlightBlock( code.get(0) );
+                            }
+                        }
+                    }
+                );
             }
         );
         
@@ -4158,8 +4199,16 @@ var solr_admin = function( app_config )
 
                     if( is_multicore )
                     {
+                        menu_element
+                            .addClass( 'multicore' );
+
                         $( '#cores', menu_element )
                             .show();
+                    }
+                    else
+                    {
+                        menu_element
+                            .addClass( 'singlecore' );
                     }
 
                     for( var core_name in response.status )

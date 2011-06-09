@@ -38,7 +38,7 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
     defaultUserArgs = (String)args.get( "args" );
   }
 
-  public abstract DocTransformer create(String field, String args, SolrQueryRequest req);
+  public abstract DocTransformer create(String field, SolrParams params, SolrQueryRequest req);
 
   public static final Map<String,TransformerFactory> defaultFactories = new HashMap<String,TransformerFactory>();
   static {

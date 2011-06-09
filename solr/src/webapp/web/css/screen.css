@@ -13,7 +13,7 @@ body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
 
 body
 {
-    padding: 20px;
+    padding: 30px;
     text-align: center;
 }
 
@@ -62,7 +62,6 @@ ul
     margin: 0 auto;
     margin-bottom: 30px;
     text-align: left;
-    width: 1002px;
 }
 
 #header
@@ -109,9 +108,6 @@ ul
 
 #main
 {
-    background-image: url( ../img/div.gif );
-    background-position: 200px 0;
-    background-repeat: repeat-y;
     border: 1px solid #c0c0c0;
     min-height: 600px;
     position: relative;
@@ -186,7 +182,7 @@ ul
 #menu-wrapper
 {
     float: left;
-    width: 201px;
+    width: 20%;
 }
 
 #menu p.loader
@@ -285,7 +281,11 @@ ul
 #menu li
 {
     border-bottom: 1px solid #c0c0c0;
-    /*border-right: 1px solid #f0f0f0;*/
+}
+
+#menu li p
+{
+    border-right: 1px solid #c0c0c0;
 }
 
 #menu li.optional
@@ -293,13 +293,16 @@ ul
     display: none;
 }
 
-#menu li:last-child
+#menu li.active:last-child
 {
     border-bottom: 0;
 }
 
 #menu ul ul
 {
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
     display: none;
     padding-top: 5px;
     padding-bottom: 10px;
@@ -308,6 +311,11 @@ ul
 #menu ul .active ul
 {
     display: block;
+}
+
+#menu ul li.active:last-child ul
+{
+    border-bottom: 1px solid #f0f0f0;
 }
 
 #menu ul ul li
@@ -402,10 +410,22 @@ ul
 #menu .plugins a { background-image: url( ../img/ico/block.png ); }
 #menu .dataimport a { background-image: url( ../img/ico/document-import.png ); }
 
+#menu .ping.error
+{
+    background-color: #f7f7e9;
+}
+
+#menu .ping.error a
+{
+    background-color: transparent;
+    background-image: url( ../img/ico/system-monitor--exclamation.png );
+    cursor: help;
+}
+
 #content-wrapper
 {
     float: right;
-    width: 799px;
+    width: 80%;
 }
 
 #content
@@ -413,17 +433,16 @@ ul
     padding: 10px;
 }
 
-#content.single
+#content > .loader
 {
-    padding: 0;
+    background-position: 0 50%;
+    padding-left: 21px;
 }
 
-#content iframe
+#content > pre
 {
-    border: 0;
-    display: block;
-    min-height: 400px;
-    width: 100%;
+    max-height: 600px;
+    overflow: auto;
 }
 
 #content .block
@@ -456,6 +475,155 @@ ul
 #content .block .message
 {
     display: none;
+}
+
+/* syntax */
+
+pre.syntax
+{
+    overflow: auto;
+}
+
+pre.syntax code
+{
+    display: block;
+    color: #000;
+}
+
+pre.syntax .comment,
+pre.syntax .template_comment,
+pre.syntax .diff .header,
+pre.syntax .javadoc
+{
+    color: #998;
+    font-style: italic;
+}
+
+pre.syntax .keyword,
+pre.syntax .css .rule .keyword,
+pre.syntax .winutils,
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+    color: #000;
+    font-weight: bold;
+}
+
+pre.syntax .number,
+pre.syntax .hexcolor
+{
+    color: #40a070;
+}
+
+pre.syntax .string,
+pre.syntax .tag .value,
+pre.syntax .phpdoc,
+pre.syntax .tex .formula
+{
+    color: #d14;
+}
+
+pre.syntax .title,
+pre.syntax .id
+{
+    color: #900;
+    font-weight: bold;
+}
+
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+    font-weight: normal;
+}
+
+pre.syntax .class .title,
+pre.syntax .tex .command
+{
+    color: #458;
+    font-weight: bold;
+}
+
+pre.syntax .tag,
+pre.syntax .css .keyword,
+pre.syntax .html .keyword,
+pre.syntax .tag .title,
+pre.syntax .django .tag .keyword
+{
+    color: #000080;
+    font-weight: normal;
+}
+
+pre.syntax .attribute,
+pre.syntax .variable,
+pre.syntax .instancevar,
+pre.syntax .lisp .body
+{
+    color: #008080;
+}
+
+pre.syntax .regexp
+{
+    color: #009926;
+}
+
+pre.syntax .class
+{
+    color: #458;
+    font-weight: bold;
+}
+
+pre.syntax .symbol,
+pre.syntax .ruby .symbol .string,
+pre.syntax .ruby .symbol .keyword,
+pre.syntax .ruby .symbol .keymethods,
+pre.syntax .lisp .keyword,
+pre.syntax .tex .special
+{
+    color: #990073;
+}
+
+pre.syntax .builtin,
+pre.syntax .built_in,
+pre.syntax .lisp .title
+{
+    color: #0086b3;
+}
+
+pre.syntax .preprocessor,
+pre.syntax .pi,
+pre.syntax .doctype,
+pre.syntax .shebang,
+pre.syntax .cdata
+{
+    color: #999;
+    font-weight: bold;
+}
+
+pre.syntax .deletion
+{
+    background: #fdd;
+}
+
+pre.syntax .addition
+{
+    background: #dfd;
+}
+
+pre.syntax .diff .change
+{
+    background: #0086b3;
+}
+
+pre.syntax .chunk
+{
+    color: #aaa;
+}
+
+pre.syntax .tex .formula
+{
+    opacity: 0.5;
 }
 
 /* dashboard */
@@ -753,6 +921,11 @@ ul
     padding: 1px 2px;
 }
 
+#content #analysis .analysis-result .row table td div.empty
+{
+    color: #f0f0f0;
+}
+
 #content #analysis .analysis-result .row table td div.match
 {
     background-color: #e9eff7;
@@ -865,14 +1038,14 @@ ul
 #content #query
 {
     background-image: url( ../img/div.gif );
-    background-position: 210px 0;
+    background-position: 22% 0;
     background-repeat: repeat-y;
 }
 
 #content #query #form
 {
     float: left;
-    width: 200px;
+    width: 21%;
 }
 
 #content #query #form label
@@ -960,7 +1133,7 @@ ul
 {
     display: none;
     float: right;
-    width: 560px;
+    width: 77%;
 }
 
 #content #query #result #url
@@ -2168,22 +2341,27 @@ ul
 
 #content #cores
 {
-    background-image: url( ../img/div.gif );
-    background-position: 150px 0;
-    background-repeat: repeat-y;
 }
 
 #content #cores #frame
 {
     float: right;
-    width: 610px;
+    width: 78%;
+}
+
+#content #cores #navigation
+{
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
+    width: 20%;
 }
 
 #content #cores #list
 {
     float: left;
     padding-top: 15px;
-    width: 151px;
+    width: 100%;
 }
 
 #content #cores #list a
@@ -2439,20 +2617,20 @@ ul
 #content #replication
 {
     background-image: url( ../img/div.gif );
-    background-position: 165px 0;
+    background-position: 21% 0;
     background-repeat: repeat-y;
 }
 
 #content #replication #frame
 {
     float: right;
-    width: 600px;
+    width: 78%;
 }
 
 #content #replication #navigation
 {
     float: left;
-    width: 161px;
+    width: 20%;
 }
 
 #content #replication #error

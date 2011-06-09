@@ -28,6 +28,7 @@ import org.junit.Test;
 public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
 	private static Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+	private static Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
 
 	@Override
   @Before
@@ -72,21 +73,57 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 		suggestions.put(new Token("AYE", 0, 2), AYE);
 		suggestions.put(new Token("BEE", 0, 2), BEE);
 		suggestions.put(new Token("CEE", 0, 2), CEE);
+		
+		lotsaSuggestions.put(new Token("AYE", 0, 2), AYE);
+		lotsaSuggestions.put(new Token("BEE", 0, 2), BEE);
+		lotsaSuggestions.put(new Token("CEE", 0, 2), CEE);
+		
+		lotsaSuggestions.put(new Token("AYE1", 0, 3), AYE);
+		lotsaSuggestions.put(new Token("BEE1", 0, 3), BEE);
+		lotsaSuggestions.put(new Token("CEE1", 0, 3), CEE);
+		
+		lotsaSuggestions.put(new Token("AYE2", 0, 3), AYE);
+		lotsaSuggestions.put(new Token("BEE2", 0, 3), BEE);
+		lotsaSuggestions.put(new Token("CEE2", 0, 3), CEE);
+		
+		lotsaSuggestions.put(new Token("AYE3", 0, 3), AYE);
+		lotsaSuggestions.put(new Token("BEE3", 0, 3), BEE);
+		lotsaSuggestions.put(new Token("CEE3", 0, 3), CEE);
+		
+		lotsaSuggestions.put(new Token("AYE4", 0, 3), AYE);
+		lotsaSuggestions.put(new Token("BEE4", 0, 3), BEE);
+		lotsaSuggestions.put(new Token("CEE4", 0, 3), CEE);
+	}
+	
+	@Test
+	public void testScalability() throws Exception {
+		PossibilityIterator iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000);
+		int count = 0;
+		while (iter.hasNext()) {			
+			RankedSpellPossibility rsp = iter.next();
+			count++;
+		}
+		assertTrue(count==1000);
 	}
 	
 	@Test
 	public void testSpellPossibilityIterator() throws Exception {
-		PossibilityIterator iter = new PossibilityIterator(suggestions);
+		PossibilityIterator iter = new PossibilityIterator(suggestions, 1000, 10000);
 		int count = 0;
 		while (iter.hasNext()) {
 			
-			iter.next();
+			RankedSpellPossibility rsp = iter.next();
+			if(count==0) {
+				assertTrue("I".equals(rsp.getCorrections().get(0).getCorrection()));
+				assertTrue("alpha".equals(rsp.getCorrections().get(1).getCorrection()));
+				assertTrue("one".equals(rsp.getCorrections().get(2).getCorrection()));
+			}
 			count++;
 		}
 		assertTrue(("Three maps (8*9*10) should return 720 iterations but instead returned " + count), count == 720);
 
 		suggestions.remove(new Token("CEE", 0, 2));
-		iter = new PossibilityIterator(suggestions);
+		iter = new PossibilityIterator(suggestions, 100, 10000);
 		count = 0;
 		while (iter.hasNext()) {
 			iter.next();
@@ -95,16 +132,16 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 		assertTrue(("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
 
 		suggestions.remove(new Token("BEE", 0, 2));
-		iter = new PossibilityIterator(suggestions);
+		iter = new PossibilityIterator(suggestions, 5, 10000);
 		count = 0;
 		while (iter.hasNext()) {
 			iter.next();
 			count++;
 		}
-		assertTrue(("One map of 8 should return 8 iterations but instead returned " + count), count == 8);
+		assertTrue(("We requested 5 suggestions but got " + count), count == 5);
 
 		suggestions.remove(new Token("AYE", 0, 2));
-		iter = new PossibilityIterator(suggestions);
+		iter = new PossibilityIterator(suggestions, Integer.MAX_VALUE, 10000);
 		count = 0;
 		while (iter.hasNext()) {
 			iter.next();

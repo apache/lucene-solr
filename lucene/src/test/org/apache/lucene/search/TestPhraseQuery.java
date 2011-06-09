@@ -27,6 +27,8 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -45,14 +47,13 @@ public class TestPhraseQuery extends LuceneTestCase {
   /** threshold for comparing floats */
   public static final float SCORE_COMP_THRESH = 1e-6f;
   
-  private IndexSearcher searcher;
-  private IndexReader reader;
+  private static IndexSearcher searcher;
+  private static IndexReader reader;
   private PhraseQuery query;
-  private Directory directory;
+  private static Directory directory;
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     directory = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
@@ -87,15 +88,22 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     query = new PhraseQuery();
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
 
   public void testNotCloseEnough() throws Exception {
@@ -606,10 +614,10 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     Random r = random;
 
-    int NUM_DOCS = 10 * RANDOM_MULTIPLIER;
+    int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
       // must be > 4096 so it spans multiple chunks
-      int termCount = _TestUtil.nextInt(r, 10000, 30000);
+      int termCount = atLeast(5000);
 
       List<String> doc = new ArrayList<String>();
 
@@ -656,7 +664,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     w.close();
 
     // now search
-    int num = 100 * RANDOM_MULTIPLIER;
+    int num = atLeast(10);
     for(int i=0;i<num;i++) {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);

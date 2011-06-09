@@ -423,6 +423,9 @@ Optimizations
   
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
+  
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
 
 Bug fixes
 
@@ -432,6 +435,10 @@ Bug fixes
 * LUCENE-2803: The FieldCache can miss values if an entry for a reader
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
+
+* LUCENE-2645: Fix false assertion error when same token was added one
+  after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
+  McCandless)
 
 ======================= Lucene 3.x (not yet released) ================
 

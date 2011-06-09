@@ -172,11 +172,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 			NamedList response) {
 		int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
 		int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
+		int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
 		boolean collationExtendedResults = params.getBool(SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
 		boolean shard = params.getBool(ShardParams.IS_SHARD, false);
 
 		SpellCheckCollator collator = new SpellCheckCollator();
-		List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries);
+		List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations);
 		//by sorting here we guarantee a non-distributed request returns all 
 		//results in the same order as a distributed request would, 
 		//even in cases when the internal rank is the same.
@@ -434,7 +435,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       if (extendedResults) {
         Integer o = origVsFreq.get(original);
-        if (o != null) result.add(token, o);
+        if (o != null) result.addFrequency(token, o);
         for (SuggestWord word : suggestions)
           result.add(token, word.string, word.freq);
       } else {

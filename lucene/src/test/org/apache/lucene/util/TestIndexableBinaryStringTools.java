@@ -22,8 +22,8 @@ package org.apache.lucene.util;
  */
 @Deprecated
 public class TestIndexableBinaryStringTools extends LuceneTestCase {
-  private static final int NUM_RANDOM_TESTS = 2000 * RANDOM_MULTIPLIER;
-  private static final int MAX_RANDOM_BINARY_LENGTH = 300 * RANDOM_MULTIPLIER;
+  private static final int NUM_RANDOM_TESTS = atLeast(200);
+  private static final int MAX_RANDOM_BINARY_LENGTH = atLeast(300);
   
   public void testSingleBinaryRoundTrip() {
     byte[] binary = new byte[] { (byte) 0x23, (byte) 0x98, (byte) 0x13,

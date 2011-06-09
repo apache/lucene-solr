@@ -1999,6 +1999,9 @@ public class IndexWriter implements Closeable {
         // will always write to a new generation ("write
         // once").
         segmentInfos.rollbackSegmentInfos(rollbackSegments);
+        if (infoStream != null ) {
+          message("rollback: infos=" + segString(segmentInfos));
+        }
 
         docWriter.abort();
 
@@ -2439,6 +2442,8 @@ public class IndexWriter implements Closeable {
       flush(false, true);
 
       String mergedName = newSegmentName();
+      // TODO: somehow we should fix this merge so it's
+      // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
                                                globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
@@ -2456,6 +2461,11 @@ public class IndexWriter implements Closeable {
 
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
+        if (stopMerges) {
+          deleter.deleteNewFiles(info.files());
+          return;
+        }
+        ensureOpen();
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, info);
       }
 
@@ -2471,6 +2481,11 @@ public class IndexWriter implements Closeable {
 
       // Register the new segment
       synchronized(this) {
+        if (stopMerges) {
+          deleter.deleteNewFiles(info.files());
+          return;
+        }
+        ensureOpen();
         segmentInfos.add(info);
         checkpoint();
       }
@@ -3076,6 +3091,7 @@ public class IndexWriter implements Closeable {
     boolean success = false;
 
     final long t0 = System.currentTimeMillis();
+    //System.out.println(Thread.currentThread().getName() + ": merge start: size=" + (merge.estimatedMergeBytes/1024./1024.) + " MB\n  merge=" + merge.segString(directory) + "\n  idx=" + segString());
 
     try {
       try {
@@ -3116,6 +3132,7 @@ public class IndexWriter implements Closeable {
     if (infoStream != null && merge.info != null) {
       message("merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
     }
+    //System.out.println(Thread.currentThread().getName() + ": merge end");
   }
 
   /** Hook that's called when the specified merge is complete. */
@@ -3734,6 +3751,8 @@ public class IndexWriter implements Closeable {
 
       assert testPoint("midStartCommit");
 
+      boolean pendingCommitSet = false;
+
       try {
         // This call can take a long time -- 10s of seconds
         // or more.  We do it without sync:
@@ -3753,6 +3772,7 @@ public class IndexWriter implements Closeable {
           toSync.prepareCommit(directory);
 
           pendingCommit = toSync;
+          pendingCommitSet = true;
           pendingCommitChangeCount = myChangeCount;
         }
 
@@ -3770,7 +3790,7 @@ public class IndexWriter implements Closeable {
           // double-write a segments_N file.
           segmentInfos.updateGeneration(toSync);
 
-          if (pendingCommit == null) {
+          if (!pendingCommitSet) {
             if (infoStream != null) {
               message("hit exception committing segments file");
             }

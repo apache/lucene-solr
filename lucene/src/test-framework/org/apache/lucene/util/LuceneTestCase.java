@@ -724,6 +724,47 @@ public abstract class LuceneTestCase extends Assert {
 
     }
   }
+  
+  /**
+   * Returns a number of at least <code>i</code>
+   * <p>
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}, but also with some random fudge.
+   */
+  public static int atLeast(Random random, int i) {
+    int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
+    int max = min+(min/2);
+    return _TestUtil.nextInt(random, min, max);
+  }
+  
+  public static int atLeast(int i) {
+    return atLeast(random, i);
+  }
+  
+  /**
+   * Returns true if something should happen rarely,
+   * <p>
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}.
+   */
+  public static boolean rarely(Random random) {
+    int p = TEST_NIGHTLY ? 25 : 5;
+    p += (p * Math.log(RANDOM_MULTIPLIER));
+    int min = 100 - Math.min(p, 90); // never more than 90
+    return random.nextInt(100) >= min;
+  }
+  
+  public static boolean rarely() {
+    return rarely(random);
+  }
+  
+  public static boolean usually(Random random) {
+    return !rarely(random);
+  }
+  
+  public static boolean usually() {
+    return usually(random);
+  }
 
   // @deprecated (4.0) These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
   @Deprecated
@@ -836,14 +877,22 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
     if (r.nextBoolean()) {
-      if (r.nextInt(20) == 17) {
-        c.setMaxBufferedDocs(2);
+      if (rarely(r)) {
+        // crazy value
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
       } else {
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+        // reasonable value
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 8, 1000));
       }
     }
     if (r.nextBoolean()) {
-      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
+      if (rarely(r)) {
+        // crazy value
+        c.setTermIndexInterval(random.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
+      } else {
+        // reasonable value
+        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
+      }
     }
     if (r.nextBoolean()) {
       c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 20)));
@@ -874,22 +923,22 @@ public abstract class LuceneTestCase extends Assert {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-    if (r.nextInt(3) == 2) {
-      logmp.setMergeFactor(2);
+    if (rarely(r)) {
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 4));
     } else {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 5, 50));
     }
     return logmp;
   }
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
-    if (r.nextInt(3) == 2) {
-      tmp.setMaxMergeAtOnce(2);
-      tmp.setMaxMergeAtOnceExplicit(2);
+    if (rarely(r)) {
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 4));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 4));
     } else {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 20));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 30));
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 5, 50));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 5, 50));
     }
     tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
@@ -1052,8 +1101,13 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
+    if (usually(random)) {
+      // most of the time, don't modify the params
+      return new Field(name, value, store, index, tv);
+    }
+
     if (!index.isIndexed())
-      return new Field(name, value, store, index);
+      return new Field(name, value, store, index, tv);
 
     if (!store.isStored() && random.nextBoolean())
       store = Store.YES; // randomly store it
@@ -1115,7 +1169,7 @@ public abstract class LuceneTestCase extends Assert {
   };
 
   public static String randomDirectory(Random random) {
-    if (random.nextInt(10) == 0) {
+    if (rarely(random)) {
       return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
     } else {
       return "RAMDirectory";
@@ -1179,7 +1233,7 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
 
     if (random.nextBoolean()) {
-      if (maybeWrap && random.nextBoolean()) {
+      if (maybeWrap && rarely()) {
         return new IndexSearcher(new SlowMultiReaderWrapper(r));
       } else {
         return new IndexSearcher(r);
@@ -1241,6 +1295,7 @@ public abstract class LuceneTestCase extends Assert {
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
+    if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
     return sb.toString();
   }
 
@@ -1407,6 +1462,10 @@ public abstract class LuceneTestCase extends Assert {
       Codec codec = previousMappings.get(name);
       if (codec == null) {
         codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
+        if (codec instanceof SimpleTextCodec && perFieldSeed % 5 != 0) {
+          // make simpletext rarer, choose again
+          codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
+        }
         previousMappings.put(name, codec);
       }
       return codec.name;

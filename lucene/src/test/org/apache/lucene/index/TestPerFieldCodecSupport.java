@@ -274,7 +274,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     Index[] indexValue = new Index[] { Index.ANALYZED, Index.ANALYZED_NO_NORMS,
         Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS };
     final int docsPerRound = 97;
-    for (int i = 0; i < 5; i++) {
+    int numRounds = atLeast(1);
+    for (int i = 0; i < numRounds; i++) {
       CodecProvider provider = new CodecProvider();
       Codec[] codecs = new Codec[] { new StandardCodec(),
           new SimpleTextCodec(), new MockSepCodec(),
@@ -284,7 +285,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       for (Codec codec : codecs) {
         provider.register(codec);
       }
-      for (int j = 0; j < 30 * RANDOM_MULTIPLIER; j++) {
+      int num = atLeast(30);
+      for (int j = 0; j < num; j++) {
         provider.setFieldCodec("" + j, codecs[random.nextInt(codecs.length)].name);
       }
       IndexWriterConfig config = newIndexWriterConfig(random,
@@ -294,7 +296,8 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
         final Document doc = new Document();
-        for (int k = 0; k < 30 * RANDOM_MULTIPLIER; k++) {
+        num = atLeast(30);
+        for (int k = 0; k < num; k++) {
           Field field = newField("" + k, _TestUtil
               .randomRealisticUnicodeString(random, 128), indexValue[random
               .nextInt(indexValue.length)]);
@@ -308,7 +311,6 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       writer.commit();
       assertEquals((i + 1) * docsPerRound, writer.maxDoc());
       writer.close();
-      _TestUtil.checkIndex(dir, provider);
     }
     dir.close();
   }

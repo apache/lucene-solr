@@ -50,6 +50,27 @@ Config for testing spellcheck component
       <str name="buildOnCommit">true</str>
     </lst>
     <lst name="spellchecker">
+      <str name="name">direct</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      <int name="minQueryLength">3</int>
+      <str name="field">teststop</str>
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">threshold</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerThreshold</str>
+      <str name="buildOnCommit">true</str>
+      <float name="thresholdTokenFrequency">.29</float>
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">threshold_direct</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerThreshold</str>
+      <str name="buildOnCommit">true</str>
+      <float name="thresholdTokenFrequency">.29</float>
+    </lst>
+    <lst name="spellchecker">
 			<str name="name">multipleFields</str>
 			<str name="field">lowerfilt1and2</str>
 			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>

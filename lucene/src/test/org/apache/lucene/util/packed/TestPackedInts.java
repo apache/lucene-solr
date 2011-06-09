@@ -47,7 +47,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedInts() throws IOException {
-    int num = 5 * RANDOM_MULTIPLIER;
+    int num = atLeast(5);
     for (int iter = 0; iter < num; iter++) {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {

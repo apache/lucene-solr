@@ -66,7 +66,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestSort extends LuceneTestCase {
   // true if our codec supports docvalues: true unless codec is preflex (3.x)
   boolean supportsDocValues = CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex") == false;
-  private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
+  private static final int NUM_STRINGS = atLeast(6000);
   private IndexSearcher full;
   private IndexSearcher searchX;
   private IndexSearcher searchY;
