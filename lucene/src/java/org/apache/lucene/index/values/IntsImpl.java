@@ -138,7 +138,6 @@ class IntsImpl {
 
     private void writePackedInts(int docCount) throws IOException {
       datOut.writeByte(PACKED);
-      // TODO -- long can't work right since it's signed
       datOut.writeLong(minValue);
       // write a default value to recognize docs without a value for that
       // field

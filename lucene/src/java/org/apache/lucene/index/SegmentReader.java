@@ -841,13 +841,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // longer used (all SegmentReaders sharing it have been
     // closed).
   }
-
   
-  @Override
-  public IndexDocValues docValues(String field) throws IOException {
-    return core.perDocProducer.docValues(field);
-  }
-
   @Override
   public PerDocValues perDocValues() throws IOException {
     return core.perDocProducer;

@@ -1587,7 +1587,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
   
-  public IndexDocValues docValues(String field) throws IOException {
+  public final IndexDocValues docValues(String field) throws IOException {
     final PerDocValues perDoc = perDocValues();
     if (perDoc == null) {
       return null;
