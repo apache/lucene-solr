@@ -36,8 +36,7 @@ import org.apache.lucene.util.Bits;
  * @lucene.experimental
  */
 public abstract class DocValuesConsumer {
-  // TODO this might need to go in the codec package since is a direct relative
-  // to TermsConsumer
+
   protected final AtomicLong bytesUsed;
 
   /**
