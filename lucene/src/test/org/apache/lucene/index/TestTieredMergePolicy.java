@@ -66,7 +66,8 @@ public class TestTieredMergePolicy extends LuceneTestCase {
   }
 
   public void testPartialOptimize() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    int num = atLeast(10);
+    for(int iter=0;iter<num;iter++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }

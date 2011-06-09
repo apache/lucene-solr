@@ -559,7 +559,8 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: verify random accepted terms");
       }
       final IntsRef scratch = new IntsRef(10);
-      for(int iter=0;iter<500*RANDOM_MULTIPLIER;iter++) {
+      int num = atLeast(500);
+      for(int iter=0;iter<num;iter++) {
         T output = randomAcceptedWord(fst, scratch);
         assertTrue("accepted word " + inputToString(inputMode, scratch) + " is not valid", termsMap.containsKey(scratch));
         assertEquals(termsMap.get(scratch), output);
@@ -570,7 +571,8 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: verify seek");
       }
       IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
-      for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+      num = atLeast(100);
+      for(int iter=0;iter<num;iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter);
         }
@@ -643,7 +645,8 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // test mixed next/seek
-      for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+      num = atLeast(100);
+      for(int iter=0;iter<num;iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter " + iter);
         }
@@ -958,7 +961,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(50000, RANDOM_MULTIPLIER);
+    testRandomWords(atLeast(50000), atLeast(1));
   }
 
   private static String inputToString(int inputMode, IntsRef term) {
@@ -1076,7 +1079,8 @@ public class TestFSTs extends LuceneTestCase {
       // Now confirm BytesRefFSTEnum and TermEnum act the
       // same:
       final IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
-      for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+      int num = atLeast(1000);
+      for(int iter=0;iter<num;iter++) {
         final String randomTerm = getRandomString();
 
         if (VERBOSE) {

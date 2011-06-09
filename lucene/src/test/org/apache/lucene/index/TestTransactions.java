@@ -42,7 +42,7 @@ public class TestTransactions extends LuceneTestCase {
 
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
-    private static float RUN_TIME_SEC = 0.5f * RANDOM_MULTIPLIER;
+    private static float RUN_TIME_MSEC = atLeast(500);
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;
@@ -53,7 +53,7 @@ public class TestTransactions extends LuceneTestCase {
 
     @Override
     public void run() {
-      final long stopTime = System.currentTimeMillis() + (long) (1000*RUN_TIME_SEC);
+      final long stopTime = System.currentTimeMillis() + (long) (RUN_TIME_MSEC);
 
       try {
         do {

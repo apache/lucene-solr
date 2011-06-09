@@ -139,7 +139,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
-    int num = 100000 * RANDOM_MULTIPLIER;
+    int num = atLeast(100000);
     for (int iter = 0; iter < num; iter++) {
       boolean hasIllegal = fillUnicode(buffer, expected, 0, 20);
 
@@ -243,7 +243,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     boolean hasIllegal = false;
     byte[] last = new byte[60];
 
-    int num = 100000 * RANDOM_MULTIPLIER;
+    int num = atLeast(100000);
     for (int iter = 0; iter < num; iter++) {
 
       final int prefix;

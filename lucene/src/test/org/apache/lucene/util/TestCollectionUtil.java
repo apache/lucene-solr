@@ -34,7 +34,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   }
   
   public void testQuickSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    for (int i = 0, c = atLeast(500); i < c; i++) {
       List<Integer> list1 = createRandomList(1000), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.quickSort(list1);
       Collections.sort(list2);
@@ -53,7 +53,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   }
   
   public void testMergeSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    for (int i = 0, c = atLeast(500); i < c; i++) {
       List<Integer> list1 = createRandomList(1000), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.mergeSort(list1);
       Collections.sort(list2);
@@ -72,7 +72,7 @@ public class TestCollectionUtil extends LuceneTestCase {
   }
   
   public void testInsertionSort() {
-    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+    for (int i = 0, c = atLeast(500); i < c; i++) {
       List<Integer> list1 = createRandomList(30), list2 = new ArrayList<Integer>(list1);
       CollectionUtil.insertionSort(list1);
       Collections.sort(list2);

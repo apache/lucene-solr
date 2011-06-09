@@ -29,7 +29,7 @@ import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
-  private static final int NUM_DOCS = 1000;
+  private static final int NUM_DOCS = atLeast(1000);
   private Directory directory;
 
   @Override

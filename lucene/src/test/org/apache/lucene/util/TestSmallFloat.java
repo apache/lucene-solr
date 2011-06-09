@@ -112,7 +112,7 @@ public class TestSmallFloat extends LuceneTestCase {
 
 
     // up iterations for more exhaustive test after changing something
-    int num = 100000 * RANDOM_MULTIPLIER;
+    int num = atLeast(100000);
     for (int i = 0; i < num; i++) {
       float f = Float.intBitsToFloat(random.nextInt());
       if (Float.isNaN(f)) continue;    // skip NaN

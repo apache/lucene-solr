@@ -1773,7 +1773,7 @@ public class TestIndexWriter extends LuceneTestCase {
     if (VERBOSE) {
       w.w.setInfoStream(System.out);
     }
-    final int docCount = 200*RANDOM_MULTIPLIER;
+    final int docCount = atLeast(200);
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
       
     final List<Integer> fieldIDs = new ArrayList<Integer>();
@@ -1835,7 +1835,8 @@ public class TestIndexWriter extends LuceneTestCase {
           System.out.println("TEST: cycle x=" + x + " r=" + r);
         }
 
-        for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+        int num = atLeast(1000);
+        for(int iter=0;iter<num;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);

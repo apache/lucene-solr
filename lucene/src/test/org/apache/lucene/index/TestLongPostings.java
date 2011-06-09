@@ -64,7 +64,7 @@ public class TestLongPostings extends LuceneTestCase {
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(_TestUtil.getTempDir("longpostings" + "." + random.nextLong()));
 
-    final int NUM_DOCS = (int) ((TEST_NIGHTLY ? 4e6 : (RANDOM_MULTIPLIER*2e3)) * (1+random.nextDouble()));
+    final int NUM_DOCS = atLeast(2000);
 
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
@@ -141,7 +141,8 @@ public class TestLongPostings extends LuceneTestCase {
 
     final byte[] payload = new byte[100];
 
-    for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+    int num = atLeast(1000);
+    for(int iter=0;iter<num;iter++) {
 
       final String term;
       final boolean doS1;
