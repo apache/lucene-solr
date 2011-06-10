@@ -1373,6 +1373,10 @@ public class KStemmer {
     return word.toString();
   }
   
+  CharSequence asCharSequence() {
+    return result != null ? result : word;
+  }
+  
   String getString() {
     return result;
   }

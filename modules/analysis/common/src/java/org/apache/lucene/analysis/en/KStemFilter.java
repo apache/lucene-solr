@@ -55,8 +55,7 @@ public final class KStemFilter extends TokenFilter {
     char[] term = termAttribute.buffer();
     int len = termAttribute.length();
     if ((!keywordAtt.isKeyword()) && stemmer.stem(term, len)) {
-      char[] chars = stemmer.asString().toCharArray();
-      termAttribute.copyBuffer(chars, 0, chars.length);
+      termAttribute.setEmpty().append(stemmer.asCharSequence());
     }
 
     return true;
