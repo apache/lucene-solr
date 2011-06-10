@@ -1859,7 +1859,7 @@ document.write("Last Published: " + document.lastModified);
                                     (if compression is enabled, the algorithm used is ZLIB),
                                     only available for indexes until Lucene version 2.9.x</li>
                                 
-<li>4th to 6th bits (mask: 0x7&lt;&lt;3) define the type of a
+<li>4th to 6th bit (mask: 0x7&lt;&lt;3) define the type of a
                                 numeric field: <ul>
                                   
 <li>all bits in mask are cleared if no numeric field at all</li>
@@ -1868,7 +1868,7 @@ document.write("Last Published: " + document.lastModified);
                                   
 <li>2&lt;&lt;3: Value is Long</li>
                                   
-<li>3&lt;&lt;3: Value is Int as Float (as of Integer.intBitsToFloat)</li>
+<li>3&lt;&lt;3: Value is Int as Float (as of Float.intBitsToFloat)</li>
                                   
 <li>4&lt;&lt;3: Value is Long as Double (as of Double.longBitsToDouble)</li>
                                 

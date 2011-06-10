@@ -491,6 +491,11 @@ Bug fixes
 * LUCENE-3102: CachingCollector.replay was failing to call setScorer
   per-segment (Martijn van Groningen via Mike McCandless)
 
+* LUCENE-3183: Fix rare corner case where seeking to empty term
+  (field="", term="") with terms index interval 1 could hit
+  ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
+  McCandless)
+
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
