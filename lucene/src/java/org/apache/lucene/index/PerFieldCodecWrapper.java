@@ -237,17 +237,7 @@ final class PerFieldCodecWrapper extends Codec {
         success = true;
       } finally {
         if (!success) {
-          // If we hit exception (eg, IOE because writer was
-          // committing, or, for any other reason) we must
-          // go back and close all FieldsProducers we opened:
-          for(PerDocValues producer : producers.values()) {
-            try {
-              producer.close();
-            } catch (Throwable t) {
-              // Suppress all exceptions here so we continue
-              // to throw the original one
-            }
-          }
+          IOUtils.closeSafely(true, producers.values());
         }
       }
     }
@@ -266,24 +256,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
     
     public void close() throws IOException {
-      final Collection<PerDocValues> values = codecs.values();
-      IOException err = null;
-      for (PerDocValues perDocValues : values) {
-        try {
-          if (perDocValues != null) {
-            perDocValues.close();
-          }
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
-          }
-        }
-      }
-      if (err != null) {
-        throw err;
-      }
+      IOUtils.closeSafely(false, codecs.values());
     }
   }
   
@@ -300,24 +273,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
 
     public void close() throws IOException {
-      IOException err = null;
-      for (int i = 0; i < consumers.length; i++) {
-        try {
-          final PerDocConsumer next = consumers[i];
-          if (next != null) {
-            next.close();
-          }
-        } catch (IOException ioe) {
-          // keep first IOException we hit but keep
-          // closing the rest
-          if (err == null) {
-            err = ioe;
-          }
-        }
-      }
-      if (err != null) {
-        throw err;
-      }
+      IOUtils.closeSafely(false, consumers);
     }
 
     @Override
