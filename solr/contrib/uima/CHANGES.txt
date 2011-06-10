@@ -19,6 +19,14 @@ WhitespaceTokenizer v2.3.1-SNAPSHOT rev. 1076132
 
 $Id$
 
+==================  3.2.1 ==============
+  
+Bug Fixes
+----------------------
+
+* SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
+  (Elmer Garduno via koji)
+
 ==================  3.2.0 ==================
 
 Upgrading from Solr 3.1
