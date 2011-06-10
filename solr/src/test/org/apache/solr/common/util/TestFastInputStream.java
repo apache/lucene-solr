@@ -26,7 +26,7 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Test for FastInputStream.
  *
- * @version $Id$
+ *
  * @see org.apache.solr.common.util.FastInputStream
  */
 public class TestFastInputStream extends LuceneTestCase {

@@ -31,7 +31,7 @@ import java.util.Iterator;
 // retained more for backward compatibility.
 
 /**
- * @version $Id$
+ *
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public final static Map emptyArgs = new HashMap(0,1);

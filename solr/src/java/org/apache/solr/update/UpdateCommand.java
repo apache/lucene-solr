@@ -22,7 +22,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /** An index update command encapsulated in an object (Command pattern)
  *
- * @version $Id$
+ *
  */
   public class UpdateCommand {
     protected final SolrQueryRequest req;

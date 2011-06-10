@@ -86,7 +86,11 @@ public class TestFieldNormModifier extends LuceneTestCase {
   
   public void testMissingField() throws Exception {
     FieldNormModifier fnm = new FieldNormModifier(store, s);
-    fnm.reSetNorms("nobodyherebutuschickens");
+    try {
+      fnm.reSetNorms("nobodyherebutuschickens");
+    } catch (IllegalStateException e) {
+      // expected
+    }
   }
   
   public void testFieldWithNoNorm() throws Exception {
@@ -101,7 +105,11 @@ public class TestFieldNormModifier extends LuceneTestCase {
     r.close();
     
     FieldNormModifier fnm = new FieldNormModifier(store, s);
-    fnm.reSetNorms("nonorm");
+    try {
+      fnm.reSetNorms("nonorm");
+    } catch (IllegalStateException e) {
+      // expected
+    }
     
     // nothing should have changed
     r = IndexReader.open(store, false);

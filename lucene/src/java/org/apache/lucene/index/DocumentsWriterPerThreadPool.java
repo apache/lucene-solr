@@ -193,6 +193,21 @@ public abstract class DocumentsWriterPerThreadPool {
     return null;
   }
   
+  /**
+   * Deactivate all unreleased threadstates 
+   */
+  protected synchronized void deactivateUnreleasedStates() {
+    for (int i = numThreadStatesActive; i < perThreads.length; i++) {
+      final ThreadState threadState = perThreads[i];
+      threadState.lock();
+      try {
+        threadState.resetWriter(null);
+      } finally {
+        threadState.unlock();
+      }
+    }
+  }
+  
   protected DocumentsWriterPerThread replaceForFlush(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
     final DocumentsWriterPerThread dwpt = threadState.perThread;

@@ -46,12 +46,13 @@ public class TestMultiMMap extends LuceneTestCase {
   }
   
   public void testRandomChunkSizes() throws Exception {
-    for (int i = 0; i < 10*RANDOM_MULTIPLIER; i++)
+    int num = atLeast(10);
+    for (int i = 0; i < num; i++)
       assertChunking(random, _TestUtil.nextInt(random, 20, 100));
   }
   
   private void assertChunking(Random random, int chunkSize) throws Exception {
-    File path = File.createTempFile("mmap" + chunkSize, "tmp", workDir);
+    File path = _TestUtil.createTempFile("mmap" + chunkSize, "tmp", workDir);
     path.delete();
     path.mkdirs();
     MMapDirectory dir = new MMapDirectory(path);
@@ -75,7 +76,7 @@ public class TestMultiMMap extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    int numAsserts = 100*RANDOM_MULTIPLIER;
+    int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {
       int docID = random.nextInt(numDocs);
       assertEquals("" + docID, reader.document(docID).get("docid"));

@@ -46,7 +46,7 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @version $Id$
+ *
  */
 public class Config {
   public static final Logger log = LoggerFactory.getLogger(Config.class);

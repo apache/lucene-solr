@@ -43,7 +43,7 @@ import java.io.Writer;
 import java.util.*;
 
 /**
- * @version $Id$
+ *
  */
 
 public class CSVResponseWriter implements QueryResponseWriter {

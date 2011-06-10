@@ -26,4 +26,5 @@ public abstract class ConstNumberSource extends ValueSource {
   public abstract float getFloat();
   public abstract double getDouble();  
   public abstract Number getNumber();  
+  public abstract boolean getBool();
 }

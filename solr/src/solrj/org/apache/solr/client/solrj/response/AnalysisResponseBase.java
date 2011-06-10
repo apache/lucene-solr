@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * A base class for all analysis responses.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class AnalysisResponseBase extends SolrResponseBase {

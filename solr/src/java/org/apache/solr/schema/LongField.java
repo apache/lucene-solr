@@ -29,7 +29,7 @@ import org.apache.solr.search.function.LongFieldSource;
 import java.io.IOException;
 import java.util.Map;
 /**
- * @version $Id$
+ *
  */
 public class LongField extends FieldType {
   @Override

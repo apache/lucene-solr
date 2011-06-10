@@ -28,7 +28,7 @@ import java.util.*;
  * Test for DocBuilder
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestDocBuilder extends AbstractDataImportHandlerTestCase {

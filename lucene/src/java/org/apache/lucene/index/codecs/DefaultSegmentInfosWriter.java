@@ -24,6 +24,7 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Default implementation of {@link SegmentInfosWriter}.
@@ -56,16 +57,24 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
   public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos)
           throws IOException {
     IndexOutput out = createOutput(dir, segmentFileName);
-    out.writeInt(FORMAT_CURRENT); // write FORMAT
-    out.writeLong(infos.version);
-    out.writeInt(infos.counter); // write counter
-    out.writeLong(infos.getGlobalFieldMapVersion());
-    out.writeInt(infos.size()); // write infos
-    for (SegmentInfo si : infos) {
-      si.write(out);
+    boolean success = false;
+    try {
+      out.writeInt(FORMAT_CURRENT); // write FORMAT
+      out.writeLong(infos.version);
+      out.writeInt(infos.counter); // write counter
+      out.writeLong(infos.getGlobalFieldMapVersion());
+      out.writeInt(infos.size()); // write infos
+      for (SegmentInfo si : infos) {
+        si.write(out);
+      }
+      out.writeStringStringMap(infos.getUserData());
+      success = true;
+      return out;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, out);
+      }
     }
-    out.writeStringStringMap(infos.getUserData());
-    return out;
   }
   
   protected IndexOutput createOutput(Directory dir, String segmentFileName)

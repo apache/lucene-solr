@@ -89,7 +89,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-spellchecker</artifactId>
+      <artifactId>lucene-suggest</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -151,10 +151,6 @@
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

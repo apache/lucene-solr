@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * A RequestWriter which writes requests in the javabin format
  *
- * @version $Id$
+ *
  * @see org.apache.solr.client.solrj.request.RequestWriter
  * @since solr 1.4
  */

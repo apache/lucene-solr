@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * injecting runtime parameters defined in the solrconfig.xml Solr configuration file and assigning
  * them as overriding parameters in the aggregate AE
  * 
- * @version $Id$
+ *
  */
 public class OverridingParamsAEProvider implements AEProvider {
 

@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
- * @version $Id:$
  */
 public class TestTrimFilter extends BaseTokenStreamTestCase {
 

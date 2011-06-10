@@ -34,7 +34,7 @@ import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.jetty.webapp.WebAppContext;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class JettyWebappTest extends LuceneTestCase 
@@ -78,6 +78,7 @@ public class JettyWebappTest extends LuceneTestCase
     try {
       server.stop();
     } catch( Exception ex ) {}
+    SolrTestCaseJ4.closeDirectories();
     super.tearDown();
   }
   

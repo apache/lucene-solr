@@ -36,7 +36,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *     &lt;filter class="solr.StemmerOverrideFilterFactory" dictionary="dictionary.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id
+ *
  */
 public class StemmerOverrideFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   private CharArrayMap<String> dictionary = null;

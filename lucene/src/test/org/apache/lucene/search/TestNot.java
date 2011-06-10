@@ -30,7 +30,6 @@ import org.apache.lucene.document.Field;
 /** Similarity unit test.
  *
  *
- * @version $Revision$
  */
 public class TestNot extends LuceneTestCase {
 

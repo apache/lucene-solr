@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -436,7 +437,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public String getNormFileName(int number) {
     if (hasSeparateNorms(number)) {
-      return IndexFileNames.fileNameFromGeneration(name, "s" + number, normGen.get(number));
+      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + number, normGen.get(number));
     } else {
       // single file for all norms
       return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
@@ -652,7 +653,7 @@ public final class SegmentInfo implements Cloneable {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-
+   
     if (normGen != null) {
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
         long gen = entry.getValue();

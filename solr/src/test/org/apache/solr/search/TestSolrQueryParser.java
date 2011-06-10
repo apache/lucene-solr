@@ -65,10 +65,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertTrue( rf.wantsAllFields() );
     assertNull( rf.getTransformer() );
     
-    rf = new ReturnFields( req("fl", "_explain_") );
+    rf = new ReturnFields( req("fl", "[explain]") );
     assertFalse( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
-    assertEquals( "_explain_", rf.getTransformer().getName() );
+    assertEquals( "[explain]", rf.getTransformer().getName() );
 
     // Check that we want wildcards
     rf = new ReturnFields( req("fl", "id,aaa*,*bbb") );

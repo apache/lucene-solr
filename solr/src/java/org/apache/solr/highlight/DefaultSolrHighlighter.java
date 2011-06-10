@@ -284,7 +284,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   /**
    * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. If a fragmenter
    * has not been configured for this field, fall back to the configured
-   * default or the solr default ({@link org.apache.lucene.search.highlight.GapFragmenter}).
+   * default or the solr default ({@link GapFragmenter}).
    * 
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting

@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Test for ClobTransformer
  *
- * @version $Id$
+ *
  * @see org.apache.solr.handler.dataimport.ClobTransformer
  * @since solr 1.4
  */

@@ -39,7 +39,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
   private IndexReader reader;
   private Query query = null;
   // reduced from 20000 to 2000 to speed up test...
-  private final static int INDEX_SIZE = 2000 * RANDOM_MULTIPLIER;
+  private final static int INDEX_SIZE = atLeast(2000);
   
   /**
    * Create index and query for test cases.

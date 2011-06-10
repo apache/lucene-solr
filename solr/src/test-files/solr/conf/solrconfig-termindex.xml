@@ -38,7 +38,7 @@
   <indexDefaults>
     <ramBufferSizeMB>32</ramBufferSizeMB>
     <termIndexInterval>256</termIndexInterval>
-    <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>
+    <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
   </indexDefaults>
 

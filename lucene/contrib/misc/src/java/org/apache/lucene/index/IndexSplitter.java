@@ -26,6 +26,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.IndexWriter;  // Required for javadocs
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.FSDirectory;
 

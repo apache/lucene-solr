@@ -52,7 +52,6 @@ import org.apache.commons.io.IOUtils;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
  * @since solr 1.4
  * @see Pattern
  */

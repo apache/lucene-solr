@@ -26,12 +26,12 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.util.HighFrequencyDictionary;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**

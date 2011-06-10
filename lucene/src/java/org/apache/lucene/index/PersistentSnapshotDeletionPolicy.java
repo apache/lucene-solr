@@ -59,7 +59,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
 
   /**
    * Reads the snapshots information from the given {@link Directory}. This
-   * method does can be used if the snapshots information is needed, however you
+   * method can be used if the snapshots information is needed, however you
    * cannot instantiate the deletion policy (because e.g., some other process
    * keeps a lock on the snapshots directory).
    */
@@ -122,11 +122,19 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
       writer.commit();
     }
 
-    // Initializes the snapshots information. This code should basically run
-    // only if mode != CREATE, but if it is, it's no harm as we only open the
-    // reader once and immediately close it.
-    for (Entry<String, String> e : readSnapshotsInfo(dir).entrySet()) {
-      registerSnapshotInfo(e.getKey(), e.getValue(), null);
+    try {
+      // Initializes the snapshots information. This code should basically run
+      // only if mode != CREATE, but if it is, it's no harm as we only open the
+      // reader once and immediately close it.
+      for (Entry<String, String> e : readSnapshotsInfo(dir).entrySet()) {
+        registerSnapshotInfo(e.getKey(), e.getValue(), null);
+      }
+    } catch (RuntimeException e) {
+      writer.close(); // don't leave any open file handles
+      throw e;
+    } catch (IOException e) {
+      writer.close(); // don't leave any open file handles
+      throw e;
     }
   }
 

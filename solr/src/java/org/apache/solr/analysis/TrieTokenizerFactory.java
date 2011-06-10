@@ -33,7 +33,7 @@ import java.io.Reader;
  * <p/>
  * Refer to {@link org.apache.lucene.search.NumericRangeQuery} for more details.
  *
- * @version $Id$
+ *
  * @see org.apache.lucene.search.NumericRangeQuery
  * @see org.apache.solr.schema.TrieField
  * @since solr 1.4

@@ -33,11 +33,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.automaton.fst.Builder;
-import org.apache.lucene.util.automaton.fst.BytesRefFSTEnum;
-import org.apache.lucene.util.automaton.fst.FST;
-import org.apache.lucene.util.automaton.fst.PositiveIntOutputs;
-import org.apache.lucene.util.automaton.fst.Util; // for toDot
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util; // for toDot
 
 /** See {@link VariableGapTermsIndexWriter}
  * 
@@ -57,8 +57,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   protected long dirOffset;
 
   final String segment;
-
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String codecId)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId)
     throws IOException {
 
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
@@ -159,15 +158,11 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final class FieldIndexData {
 
-    private final FieldInfo fieldInfo;
     private final long indexStart;
-
     // Set only if terms index is loaded:
     private volatile FST<Long> fst;
 
     public FieldIndexData(FieldInfo fieldInfo, long indexStart) throws IOException {
-
-      this.fieldInfo = fieldInfo;
       this.indexStart = indexStart;
 
       if (indexDivisor > 0) {
@@ -241,7 +236,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, id, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 

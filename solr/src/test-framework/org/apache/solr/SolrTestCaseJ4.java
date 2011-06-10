@@ -19,6 +19,7 @@
 package org.apache.solr;
 
 
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONUtil;
@@ -36,12 +37,8 @@ import org.apache.solr.handler.JsonUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.ResultContext;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
@@ -66,6 +63,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
+    startTrackingSearchers();
     ignoreException("ignore_exception");
   }
 
@@ -73,6 +71,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void afterClassSolrTestCase() throws Exception {
     deleteCore();
     resetExceptionIgnores();
+    endTrackingSearchers();
+  }
+  
+  // SOLR-2279: hack to shut these directories down
+  // we still keep the ability to track open index files this way
+  public static void closeDirectories() throws Exception {
+    for (MockDirectoryWrapper d : stores.keySet()) {
+      if (d.isOpen()) {
+        d.close();
+      }
+    }
   }
 
   @Override
@@ -96,7 +105,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema, String solrHome) throws Exception {
-    startTrackingSearchers();
     configString = config;
     schemaString = schema;
     if (solrHome != null) {
@@ -108,12 +116,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   static long numOpens;
   static long numCloses;
-  protected static void startTrackingSearchers() {
+  public static void startTrackingSearchers() {
     numOpens = SolrIndexSearcher.numOpens.get();
     numCloses = SolrIndexSearcher.numCloses.get();
   }
 
-  protected static void endTrackingSearchers() {
+  public static void endTrackingSearchers() {
      long endNumOpens = SolrIndexSearcher.numOpens.get();
      long endNumCloses = SolrIndexSearcher.numCloses.get();
 
@@ -273,6 +281,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void deleteCore() throws Exception {
     log.info("###deleteCore" );
     if (h != null) { h.close(); }
+    closeDirectories();
     if (dataDir != null) {
       String skip = System.getProperty("solr.test.leavedatadir");
       if (null != skip && 0 != skip.trim().length()) {
@@ -293,8 +302,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     h = null;
     lrf = null;
     configString = schemaString = null;
-
-    endTrackingSearchers();
   }
 
 

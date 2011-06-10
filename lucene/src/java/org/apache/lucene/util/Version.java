@@ -27,6 +27,9 @@ package org.apache.lucene.util;
  * change the version at search-time, but instead also adjust
  * your indexing code to match, and re-index.
  */
+// remove me when java 5 is no longer supported
+// this is a workaround for a JDK bug that wrongly emits a warning.
+@SuppressWarnings("dep-ann")
 public enum Version {
   /**
    * Match settings and bugs in Lucene's 3.0 release.
@@ -48,6 +51,13 @@ public enum Version {
    */
   @Deprecated
   LUCENE_32,
+  
+  /**
+   * Match settings and bugs in Lucene's 3.3 release.
+   * @deprecated (4.0) Use latest
+   */
+  @Deprecated
+  LUCENE_33,
 
   /** Match settings and bugs in Lucene's 4.0 release. 
    *  <p>

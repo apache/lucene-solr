@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.fa.PersianCharFilter;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class PersianCharFilterFactory extends BaseCharFilterFactory {
 

@@ -47,7 +47,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     SolrCore core = h.getCore();
     SolrIndexWriter writer = new SolrIndexWriter("testWriter", core
         .getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(),
-        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
+        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
     writer.close();
     

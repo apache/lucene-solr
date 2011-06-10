@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
- * @version $Id$
  */
 public class TestSynonymFilter extends BaseTokenStreamTestCase {
 

@@ -24,6 +24,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -38,53 +40,48 @@ import org.apache.lucene.store.Directory;
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
   private static final String FIELD = "name";
-  private Directory directory;
-  private IndexReader reader;
-  private IndexSearcher searcher;
+  private static Directory directory;
+  private static IndexReader reader;
+  private static IndexSearcher searcher;
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
+    Document doc = new Document();
+    Field field = newField(FIELD, "meaninglessnames", Field.Store.NO,
+        Field.Index.NOT_ANALYZED_NO_NORMS);
+    doc.add(field);
+    
     for (int i = 0; i < 5137; ++i) {
-      Document doc = new Document();
-      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
-                        Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
-    { 
-      Document doc = new Document();
-      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
-                        Field.Index.NOT_ANALYZED));
-      writer.addDocument(doc);
-    }
+    
+    field.setValue("tangfulin");
+    writer.addDocument(doc);
 
+    field.setValue("meaninglessnames");
     for (int i = 5138; i < 11377; ++i) {
-      Document doc = new Document();
-      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
-                        Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
-    {
-      Document doc = new Document();
-      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
-                        Field.Index.NOT_ANALYZED));
-      writer.addDocument(doc);
-    }
+    
+    field.setValue("tangfulin");
+    writer.addDocument(doc);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
   }
   
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
   
   public void testPrefixQuery() throws Exception {

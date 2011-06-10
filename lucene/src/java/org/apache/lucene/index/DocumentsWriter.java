@@ -228,14 +228,19 @@ final class DocumentsWriter {
       }
 
       final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
-
       while (threadsIterator.hasNext()) {
-        ThreadState perThread = threadsIterator.next();
+        final ThreadState perThread = threadsIterator.next();
         perThread.lock();
         try {
           if (perThread.isActive()) { // we might be closed
-            perThread.perThread.abort();
-            perThread.perThread.checkAndResetHasAborted();
+            try {
+              perThread.perThread.abort();
+            } catch (IOException ex) {
+              // continue
+            } finally {
+              perThread.perThread.checkAndResetHasAborted();
+              flushControl.doOnAbort(perThread);
+            }
           } else {
             assert closed;
           }
@@ -243,7 +248,6 @@ final class DocumentsWriter {
           perThread.unlock();
         }
       }
-
       success = true;
     } finally {
       if (infoStream != null) {
@@ -582,4 +586,20 @@ final class DocumentsWriter {
       return (!isSegmentFlush || segment != null);  
     }
   }
+  
+  // use by IW during close to assert all DWPT are inactive after final flush
+  boolean assertNoActiveDWPT() {
+    Iterator<ThreadState> activePerThreadsIterator = perThreadPool.getAllPerThreadsIterator();
+    while(activePerThreadsIterator.hasNext()) {
+      ThreadState next = activePerThreadsIterator.next();
+      next.lock();
+      try {
+        assert !next.isActive();
+      } finally  {
+        next.unlock();
+      }
+    }
+    return true;
+  }
+ 
 }

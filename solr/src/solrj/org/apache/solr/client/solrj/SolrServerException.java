@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj;
 
 /** Exception to catch all types of communication / parsing issues associated with talking to SOLR
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrServerException extends Exception {

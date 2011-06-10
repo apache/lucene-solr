@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
@@ -50,6 +51,10 @@ public abstract class Codec {
    *  returns, it must hold open any files it will need to
    *  use; else, those files may be deleted. */
   public abstract FieldsProducer fieldsProducer(SegmentReadState state) throws IOException;
+  
+  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
+  
+  public abstract PerDocValues docsProducer(SegmentReadState state) throws IOException;
 
   /**
    * Gathers files associated with this segment
@@ -59,7 +64,7 @@ public abstract class Codec {
    * @param id the codec id within this segment
    * @param files the of files to add the codec files to.
    */
-  public abstract void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException;
+  public abstract void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException;
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);

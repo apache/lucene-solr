@@ -36,6 +36,11 @@ public abstract class DoubleDocValues extends DocValues {
   }
 
   @Override
+  public boolean boolVal(int doc) {
+    return doubleVal(doc) != 0;
+  }
+
+  @Override
   public abstract double doubleVal(int doc);
 
   @Override

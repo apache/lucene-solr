@@ -35,7 +35,7 @@ import java.util.jar.*;
 /**
  * Given a list of Jar files, suggest missing analysis factories.
  *
- * @version $Id$
+ *
  */
 public class SuggestMissingFactories {
 

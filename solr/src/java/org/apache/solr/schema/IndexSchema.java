@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * <code>IndexSchema</code> contains information about the valid fields in an index
  * and the types of those fields.
  *
- * @version $Id$
+ *
  */
 public final class IndexSchema {
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";

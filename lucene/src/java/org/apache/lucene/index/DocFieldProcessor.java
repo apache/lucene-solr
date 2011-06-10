@@ -27,6 +27,10 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 
 
@@ -80,23 +84,59 @@ final class DocFieldProcessor extends DocConsumer {
     // FieldInfo.storePayload.
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELD_INFOS_EXTENSION);
     state.fieldInfos.write(state.directory, fileName);
+    for (DocValuesConsumer consumers : docValues.values()) {
+      consumers.finish(state.numDocs);
+    };
   }
 
   @Override
   public void abort() {
-    for(int i=0;i<fieldHash.length;i++) {
-      DocFieldProcessorPerField field = fieldHash[i];
-      while(field != null) {
+    Throwable th = null;
+    
+    for (DocFieldProcessorPerField field : fieldHash) {
+      while (field != null) {
         final DocFieldProcessorPerField next = field.next;
-        field.abort();
+        try {
+          field.abort();
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          }
+        }
         field = next;
       }
     }
-
+    
+    for(PerDocConsumer consumer : perDocConsumers.values()) {
+      try {
+        consumer.close();  // TODO add abort to PerDocConsumer!
+      } catch (IOException e) {
+        // ignore on abort!
+      }
+    }
+    
     try {
       fieldsWriter.abort();
-    } finally {
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
+    
+    try {
       consumer.abort();
+    } catch (Throwable t) {
+      if (th == null) {
+        th = t;
+      }
+    }
+    
+    // If any errors occured, throw it.
+    if (th != null) {
+      if (th instanceof RuntimeException) throw (RuntimeException) th;
+      if (th instanceof Error) throw (Error) th;
+      // defensive code - we should not hit unchecked exceptions
+      throw new RuntimeException(th);
     }
   }
 
@@ -125,6 +165,15 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
+    for(PerDocConsumer consumer : perDocConsumers.values()) {
+      try {
+        consumer.close();  
+      } catch (IOException e) {
+        // ignore and continue closing remaining consumers
+      }
+    }
+    perDocConsumers.clear();
+    docValues.clear();
   }
 
   private void rehash() {
@@ -190,7 +239,7 @@ final class DocFieldProcessor extends DocConsumer {
         // easily add it
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -202,7 +251,7 @@ final class DocFieldProcessor extends DocConsumer {
       } else {
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
                             field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -225,6 +274,10 @@ final class DocFieldProcessor extends DocConsumer {
 
       if (field.isStored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
+      }
+      if (field.hasDocValues()) {
+        final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo);
+        docValuesConsumer.add(docState.docID, field.getDocValues());
       }
     }
 
@@ -259,6 +312,38 @@ final class DocFieldProcessor extends DocConsumer {
     } finally {
       consumer.finishDocument();
     }
+  }
+
+  final private Map<String, DocValuesConsumer> docValues = new HashMap<String, DocValuesConsumer>();
+  final private Map<Integer, PerDocConsumer> perDocConsumers = new HashMap<Integer, PerDocConsumer>();
+
+  DocValuesConsumer docValuesConsumer(DocState docState, FieldInfo fieldInfo) 
+      throws IOException {
+    DocValuesConsumer docValuesConsumer = docValues.get(fieldInfo.name);
+    if (docValuesConsumer != null) {
+      return docValuesConsumer;
+    }
+    PerDocConsumer perDocConsumer = perDocConsumers.get(fieldInfo.getCodecId());
+    if (perDocConsumer == null) {
+      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState(fieldInfo.getCodecId());
+      SegmentCodecs codecs = perDocWriteState.segmentCodecs;
+      assert codecs.codecs.length > fieldInfo.getCodecId();
+      Codec codec = codecs.codecs[fieldInfo.getCodecId()];
+      perDocConsumer = codec.docsConsumer(perDocWriteState);
+      perDocConsumers.put(Integer.valueOf(fieldInfo.getCodecId()), perDocConsumer);
+    }
+    boolean success = false;
+    try {
+      docValuesConsumer = perDocConsumer.addValuesField(fieldInfo);
+      fieldInfo.commitDocValues();
+      success = true;
+    } finally {
+      if (!success) {
+        fieldInfo.revertUncommitted();
+      }
+    }
+    docValues.put(fieldInfo.name, docValuesConsumer);
+    return docValuesConsumer;
   }
 
 }

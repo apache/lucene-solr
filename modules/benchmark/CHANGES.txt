@@ -2,6 +2,12 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
+05/25/2011
+  LUCENE-3137: ExtractReuters supports out-dir param suffixed by a slash. (Doron Cohen)
+
 03/31/2011
   Updated ReadTask to the new method for obtaining a top-level deleted docs
   bitset.  Also checking the bitset for null, when there are no deleted docs.

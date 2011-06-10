@@ -51,12 +51,17 @@ import org.junit.Assert;
 
 public class _TestUtil {
 
-  /** Returns temp dir, containing String arg in its name;
+  /** Returns temp dir, based on String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    File f = new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
-    LuceneTestCase.tempDirs.add(f.getAbsolutePath());
-    return f;
+    try {
+      File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
+      f.delete();
+      LuceneTestCase.registerTempFile(f);
+      return f;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -91,7 +96,7 @@ public class _TestUtil {
     rmDir(destDir);
     
     destDir.mkdir();
-    LuceneTestCase.tempDirs.add(destDir.getAbsolutePath());
+    LuceneTestCase.registerTempFile(destDir);
     
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
@@ -286,6 +291,48 @@ public class _TestUtil {
       sb.appendCodePoint(nextInt(r, blockStarts[block], blockEnds[block]));
     return sb.toString();
   }
+  
+  /** Returns random string, with a given UTF-8 byte length*/
+  public static String randomFixedByteLengthUnicodeString(Random r, int length) {
+    
+    final char[] buffer = new char[length*3];
+    int bytes = length;
+    int i = 0;
+    for (; i < buffer.length && bytes != 0; i++) {
+      int t;
+      if (bytes >= 4) {
+        t = r.nextInt(5);
+      } else if (bytes >= 3) {
+        t = r.nextInt(4);
+      } else if (bytes >= 2) {
+        t = r.nextInt(2);
+      } else {
+        t = 0;
+      }
+      if (t == 0) {
+        buffer[i] = (char) r.nextInt(0x80);
+        bytes--;
+      } else if (1 == t) {
+        buffer[i] = (char) nextInt(r, 0x80, 0x7ff);
+        bytes -= 2;
+      } else if (2 == t) {
+        buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
+        bytes -= 3;
+      } else if (3 == t) {
+        buffer[i] = (char) nextInt(r, 0xe000, 0xffff);
+        bytes -= 3;
+      } else if (4 == t) {
+        // Make a surrogate pair
+        // High surrogate
+        buffer[i++] = (char) nextInt(r, 0xd800, 0xdbff);
+        // Low surrogate
+        buffer[i] = (char) nextInt(r, 0xdc00, 0xdfff);
+        bytes -= 4;
+      }
+
+    }
+    return new String(buffer, 0, i);
+  }
 
   public static CodecProvider alwaysCodec(final Codec c) {
     CodecProvider p = new CodecProvider() {
@@ -370,7 +417,54 @@ public class _TestUtil {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
       fieldInfos.addOrUpdate(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
     }
+  }
+  
+  /** 
+   * insecure, fast version of File.createTempFile
+   * uses Random instead of SecureRandom.
+   */
+  public static File createTempFile(String prefix, String suffix, File directory)
+      throws IOException {
+    // Force a prefix null check first
+    if (prefix.length() < 3) {
+      throw new IllegalArgumentException("prefix must be 3");
+    }
+    String newSuffix = suffix == null ? ".tmp" : suffix;
+    File result;
+    do {
+      result = genTempFile(prefix, newSuffix, directory);
+    } while (!result.createNewFile());
+    return result;
+  }
+
+  /* Temp file counter */
+  private static int counter = 0;
+
+  /* identify for differnt VM processes */
+  private static int counterBase = 0;
+
+  private static class TempFileLocker {};
+  private static TempFileLocker tempFileLocker = new TempFileLocker();
+
+  private static File genTempFile(String prefix, String suffix, File directory) {
+    int identify = 0;
+
+    synchronized (tempFileLocker) {
+      if (counter == 0) {
+        int newInt = new Random().nextInt();
+        counter = ((newInt / 65535) & 0xFFFF) + 0x2710;
+        counterBase = counter;
+      }
+      identify = counter++;
+    }
+
+    StringBuilder newName = new StringBuilder();
+    newName.append(prefix);
+    newName.append(counterBase);
+    newName.append(identify);
+    newName.append(suffix);
+    return new File(directory, newName.toString());
   }
 }

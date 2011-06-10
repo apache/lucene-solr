@@ -1,10 +1,15 @@
 Lucene contrib change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
   
 Build
 
  * LUCENE-2845: Moved contrib/benchmark to modules.
+
+ * LUCENE-2995: Moved contrib/spellchecker into modules/suggest.
 
 New Features
 
@@ -48,7 +53,44 @@ Bug Fixes
  * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
    not lowercasing the key before checking for the tag (Adriano Crestani)
 
-======================= Lucene 3.x (not yet released) =======================
+======================= Lucene 3.x (not yet released) ================
+
+New Features
+
+ * LUCENE-152: Add KStem (light stemmer for English).
+   (Yonik Seeley via Robert Muir)
+
+ * LUCENE-3135: Add suggesters (autocomplete) to contrib/spellchecker,
+   with three implementations: Jaspell, Ternary Trie, and Finite State.
+   (Andrzej Bialecki, Dawid Weiss, Mike Mccandless, Robert Muir)
+ 
+ * LUCENE-3129: Added BlockGroupingCollector, a single pass
+   grouping collector which is faster than the two-pass approach, and
+   also computes the total group count, but requires that every
+   document sharing the same group was indexed as a doc block
+   (IndexWriter.add/updateDocuments).  (Mike McCandless)
+
+API Changes
+
+ * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
+   (Sujit Pal via Koji Sekiguchi)
+
+ * LUCENE-3099: Allow subclasses to determine the group value for
+   First/SecondPassGroupingCollector.  (Martijn van Groningen, Mike
+   McCandless)
+
+Bug Fixes
+
+  * LUCENE-3185: Fix bug in NRTCachingDirectory.deleteFile that would
+    always throw exception and sometimes fail to actually delete the
+    file.  (Mike McCandless)
+
+Build
+
+ * LUCENE-3149: Upgrade contrib/icu's ICU jar file to ICU 4.8. 
+   (Robert Muir)
+
+======================= Lucene 3.2.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -433,7 +475,7 @@ Other
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
 
-================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+================== Release 2.9.4 / 3.0.3 ====================
 
 Bug Fixes
 
@@ -468,11 +510,11 @@ Documentation
    as expected on all JRE's. For example, on an IBM JRE, it does nothing.
    (Robert Muir)
 
-================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+================== Release 2.9.3 / 3.0.2 ====================
 
 No changes.
 
-================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
+================== Release 2.9.2 / 3.0.1 ====================
 
 New features
 
@@ -511,7 +553,7 @@ API Changes
  * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
    stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
    
-======================= Release 3.0.0 2009-11-25 =======================
+======================= Release 3.0.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -588,7 +630,7 @@ Build
  * LUCENE-2031: Moved PatternAnalyzer from contrib/memory into
    contrib/analyzers/common, under miscellaneous.  (Robert Muir)
    
-======================= Release 2.9.1 2009-11-06 =======================
+======================= Release 2.9.1 =======================
 
 Changes in backwards compatibility policy
 
@@ -631,7 +673,7 @@ Bug fixes
  * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
    (Benjamin Keil via Mark Miller)
 
-======================= Release 2.9.0 2009-09-23 =======================
+======================= Release 2.9.0 =======================
 
 Changes in runtime behavior
 
@@ -820,7 +862,7 @@ Build
 Test Cases
 
 
-======================= Release 2.4.0 2008-10-06 =======================
+======================= Release 2.4.0 =======================
 
 Changes in runtime behavior
 

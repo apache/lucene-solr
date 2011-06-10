@@ -39,7 +39,7 @@ import java.util.Map;
  * <p/>
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
  *
- * @version $Id$
+ *
  */
 public class DisMaxQParser extends QParser {
 

@@ -36,7 +36,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * that it works nicely with an XSLT transformation.  Until we have a nice
  * XSLT front end for /admin, the format is still open to change.
  * 
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class PluginInfoHandler extends RequestHandlerBase

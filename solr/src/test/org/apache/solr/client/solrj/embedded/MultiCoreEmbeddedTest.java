@@ -25,13 +25,15 @@ import org.apache.solr.client.solrj.SolrServer;
 /**
  * This runs SolrServer test using 
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
 
   @Override public void setUp() throws Exception 
   {
+    // TODO: fix this test to use MockDirectoryFactory
+    System.clearProperty("solr.directoryFactory");
     super.setUp();
     
     File home = new File( getSolrHome() );

@@ -31,7 +31,7 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory" maxTokenLength="255"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 
 public class StandardTokenizerFactory extends BaseTokenizerFactory {

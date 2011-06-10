@@ -55,7 +55,7 @@ import java.util.*;
  * that QueryResponseWriters will be able to deal with unexpected types.
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public class SolrQueryResponse {

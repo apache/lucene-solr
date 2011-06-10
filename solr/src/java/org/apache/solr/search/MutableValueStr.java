@@ -17,14 +17,13 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.util.ByteUtils;
 
 public class MutableValueStr extends MutableValue {
   public BytesRef value = new BytesRef();
 
   @Override
   public Object toObject() {
-    return exists ? ByteUtils.UTF8toUTF16(value) : null;
+    return exists ? value.utf8ToString() : null;
   }
 
   @Override

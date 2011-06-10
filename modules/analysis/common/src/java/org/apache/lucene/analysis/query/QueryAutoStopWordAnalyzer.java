@@ -24,6 +24,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.BytesRef;
 
@@ -143,13 +144,14 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public int addStopWords(IndexReader reader, String fieldName, int maxDocFreq) throws IOException {
     HashSet<String> stopWords = new HashSet<String>();
-    Terms terms = MultiFields.getTerms(reader, fieldName);
+    final Terms terms = MultiFields.getTerms(reader, fieldName);
+    final CharsRef spare = new CharsRef();
     if (terms != null) {
-      TermsEnum te = terms.iterator();
+      final TermsEnum te = terms.iterator();
       BytesRef text;
       while ((text = te.next()) != null) {
         if (te.docFreq() > maxDocFreq) {
-          stopWords.add(text.utf8ToString());
+          stopWords.add(text.utf8ToChars(spare).toString());
         }
       }
     }

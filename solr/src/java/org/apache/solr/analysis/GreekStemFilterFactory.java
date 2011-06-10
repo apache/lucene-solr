@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.el.GreekStemFilter;
  *     &lt;filter class="solr.GreekStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$  
+ *
  */
 public class GreekStemFilterFactory extends BaseTokenFilterFactory {
 

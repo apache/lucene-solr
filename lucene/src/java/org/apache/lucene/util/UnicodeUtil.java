@@ -94,6 +94,19 @@ package org.apache.lucene.util;
  */
 
 public final class UnicodeUtil {
+  
+  /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
+   *  one would normally encounter, and definitely bigger than any UTF-8 terms.
+   *  <p>
+   *  WARNING: This is not a valid UTF8 Term  
+   **/
+  public static final BytesRef BIG_TERM = new BytesRef(
+      new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
+  ); // TODO this is unrelated here find a better place for it
+  
+  public static void main(String[] args) {
+    System.out.println(Character.toChars(0x10FFFF + 1));
+  }
 
   private UnicodeUtil() {} // no instance
 
@@ -111,33 +124,6 @@ public final class UnicodeUtil {
   private static final int SURROGATE_OFFSET = 
     Character.MIN_SUPPLEMENTARY_CODE_POINT - 
     (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
-
-  /**
-   * @lucene.internal
-   */
-  public static final class UTF16Result {
-    public char[] result = new char[10];
-    public int[] offsets = new int[10];
-    public int length;
-
-    public void setLength(int newLength) {
-      if (result.length < newLength)
-        result = ArrayUtil.grow(result, newLength);
-      length = newLength;
-    }
-
-    public void copyText(UTF16Result other) {
-      setLength(other.length);
-      System.arraycopy(other.result, 0, result, 0, length);
-    }
-
-    public void copyText(String other) {
-      final int otherLength = other.length();
-      setLength(otherLength);
-      other.getChars(0, otherLength, result, 0);
-      length = otherLength;
-    }
-  }
 
   /** Encode characters from a char[] source, starting at
    *  offset for length chars.  Returns a hash of the resulting bytes.  After encoding, result.offset will always be 0. */
@@ -302,135 +288,6 @@ public final class UnicodeUtil {
     result.length = upto;
   }
 
-  /** Convert UTF8 bytes into UTF16 characters.  If offset
-   *  is non-zero, conversion starts at that starting point
-   *  in utf8, re-using the results from the previous call
-   *  up until offset. */
-  public static void UTF8toUTF16(final byte[] utf8, final int offset, final int length, final UTF16Result result) {
-
-    final int end = offset + length;
-    char[] out = result.result;
-    if (result.offsets.length <= end) {
-      result.offsets = ArrayUtil.grow(result.offsets, end+1);
-    }
-    final int[] offsets = result.offsets;
-
-    // If incremental decoding fell in the middle of a
-    // single unicode character, rollback to its start:
-    int upto = offset;
-    while(offsets[upto] == -1)
-      upto--;
-
-    int outUpto = offsets[upto];
-
-    // Pre-allocate for worst case 1-for-1
-    if (outUpto+length >= out.length) {
-      out = result.result = ArrayUtil.grow(out, outUpto+length+1);
-    }
-
-    while (upto < end) {
-
-      final int b = utf8[upto]&0xff;
-      final int ch;
-
-      offsets[upto++] = outUpto;
-
-      if (b < 0xc0) {
-        assert b < 0x80;
-        ch = b;
-      } else if (b < 0xe0) {
-        ch = ((b&0x1f)<<6) + (utf8[upto]&0x3f);
-        offsets[upto++] = -1;
-      } else if (b < 0xf0) {
-        ch = ((b&0xf)<<12) + ((utf8[upto]&0x3f)<<6) + (utf8[upto+1]&0x3f);
-        offsets[upto++] = -1;
-        offsets[upto++] = -1;
-      } else {
-        assert b < 0xf8;
-        ch = ((b&0x7)<<18) + ((utf8[upto]&0x3f)<<12) + ((utf8[upto+1]&0x3f)<<6) + (utf8[upto+2]&0x3f);
-        offsets[upto++] = -1;
-        offsets[upto++] = -1;
-        offsets[upto++] = -1;
-      }
-
-      if (ch <= UNI_MAX_BMP) {
-        // target is a character <= 0xFFFF
-        out[outUpto++] = (char) ch;
-      } else {
-        // target is a character in range 0xFFFF - 0x10FFFF
-        out[outUpto++] = (char) ((ch >> HALF_SHIFT) + 0xD7C0 /* UNI_SUR_HIGH_START - 64 */);
-        out[outUpto++] = (char) ((ch & HALF_MASK) + UNI_SUR_LOW_START);
-      }
-    }
-    offsets[upto] = outUpto;
-    result.length = outUpto;
-  }
-
-  /**
-   * Get the next valid UTF-16 String in UTF-16 order.
-   * <p>
-   * If the input String is already valid, it is returned.
-   * Otherwise the next String in code unit order is returned.
-   * </p>
-   * @param s input String (possibly with unpaired surrogates)
-   * @return next valid UTF-16 String in UTF-16 order
-   */
-  public static String nextValidUTF16String(String s) {
-    if (validUTF16String(s))
-        return s;
-    else {
-      UTF16Result chars = new UTF16Result();
-      chars.copyText(s);
-      nextValidUTF16String(chars);
-      return new String(chars.result, 0, chars.length);
-    }
-  }
-  
-  public static void nextValidUTF16String(UTF16Result s) {
-    final int size = s.length;
-    for (int i = 0; i < size; i++) {
-      char ch = s.result[i];
-      if (ch >= UnicodeUtil.UNI_SUR_HIGH_START
-          && ch <= UnicodeUtil.UNI_SUR_HIGH_END) {
-        if (i < size - 1) {
-          i++;
-          char nextCH = s.result[i];
-          if (nextCH >= UnicodeUtil.UNI_SUR_LOW_START
-              && nextCH <= UnicodeUtil.UNI_SUR_LOW_END) {
-            // Valid surrogate pair
-          } else
-          // Unmatched high surrogate
-            if (nextCH < UnicodeUtil.UNI_SUR_LOW_START) { // SMP not enumerated
-              s.setLength(i + 1);
-              s.result[i] = (char) UnicodeUtil.UNI_SUR_LOW_START;             
-              return;
-            } else { // SMP already enumerated
-              if (s.result[i - 1] == UnicodeUtil.UNI_SUR_HIGH_END) {
-                s.result[i - 1] = (char) (UnicodeUtil.UNI_SUR_LOW_END + 1);
-                s.setLength(i);               
-              } else {
-                s.result[i - 1]++;
-                s.result[i] = (char) UnicodeUtil.UNI_SUR_LOW_START;
-                s.setLength(i + 1);
-              }            
-              return;
-            }
-        } else {
-        // Unmatched high surrogate in final position, SMP not yet enumerated
-          s.setLength(i + 2);
-          s.result[i + 1] = (char) UnicodeUtil.UNI_SUR_LOW_START;
-          return;
-        }
-      } else if (ch >= UnicodeUtil.UNI_SUR_LOW_START
-          && ch <= UnicodeUtil.UNI_SUR_LOW_END) {
-      // Unmatched low surrogate, SMP already enumerated
-        s.setLength(i + 1);
-        s.result[i] = (char) (UnicodeUtil.UNI_SUR_LOW_END + 1);
-        return;
-      }
-    }
-  }
-  
   // Only called from assert
   /*
   private static boolean matches(char[] source, int offset, int length, byte[] result, int upto) {
@@ -705,4 +562,51 @@ public final class UnicodeUtil {
     }
     return sb.toString();
   }
+  
+  /**
+   * Interprets the given byte array as UTF-8 and converts to UTF-16. The {@link CharsRef} will be extended if 
+   * it doesn't provide enough space to hold the worst case of each byte becoming a UTF-16 codepoint.
+   * <p>
+   * NOTE: Full characters are read, even if this reads past the length passed (and
+   * can result in an ArrayOutOfBoundsException if invalid UTF-8 is passed).
+   * Explicit checks for valid UTF-8 are not performed. 
+   */
+  public static void UTF8toUTF16(byte[] utf8, int offset, int length, CharsRef chars) {
+    int out_offset = chars.offset = 0;
+    final char[] out = chars.chars =  ArrayUtil.grow(chars.chars, length);
+    final int limit = offset + length;
+    while (offset < limit) {
+      int b = utf8[offset++]&0xff;
+      if (b < 0xc0) {
+        assert b < 0x80;
+        out[out_offset++] = (char)b;
+      } else if (b < 0xe0) {
+        out[out_offset++] = (char)(((b&0x1f)<<6) + (utf8[offset++]&0x3f));
+      } else if (b < 0xf0) {
+        out[out_offset++] = (char)(((b&0xf)<<12) + ((utf8[offset]&0x3f)<<6) + (utf8[offset+1]&0x3f));
+        offset += 2;
+      } else {
+        assert b < 0xf8;
+        int ch = ((b&0x7)<<18) + ((utf8[offset]&0x3f)<<12) + ((utf8[offset+1]&0x3f)<<6) + (utf8[offset+2]&0x3f);
+        offset += 3;
+        if (ch < UNI_MAX_BMP) {
+          out[out_offset++] = (char)ch;
+        } else {
+          int chHalf = ch - 0x0010000;
+          out[out_offset++] = (char) ((chHalf >> 10) + 0xD800);
+          out[out_offset++] = (char) ((chHalf & HALF_MASK) + 0xDC00);          
+        }
+      }
+    }
+    chars.length = out_offset - chars.offset;
+  }
+  
+  /**
+   * Utility method for {@link #UTF8toUTF16(byte[], int, int, CharsRef)}
+   * @see #UTF8toUTF16(byte[], int, int, CharsRef)
+   */
+  public static void UTF8toUTF16(BytesRef bytesRef, CharsRef chars) {
+    UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
+  }
+
 }

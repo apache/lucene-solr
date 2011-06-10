@@ -43,7 +43,8 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(
                                                 random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     // make sure we have more than one segment occationally
-    for (int i = 0; i < 31 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(31);
+    for (int i = 0; i < num; i++) {
       Document doc = new Document();
       doc.add(newField("f", "a b c d b c d c d d", Field.Store.NO,
           Field.Index.ANALYZED));

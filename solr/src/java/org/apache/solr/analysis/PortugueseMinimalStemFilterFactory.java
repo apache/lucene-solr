@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.pt.PortugueseMinimalStemFilter;
  *     &lt;filter class="solr.PortugueseMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class PortugueseMinimalStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

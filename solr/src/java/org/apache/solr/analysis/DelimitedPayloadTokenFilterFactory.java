@@ -39,7 +39,7 @@ import java.util.Map;
  *     &lt;filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  * 
  */
 public class DelimitedPayloadTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {

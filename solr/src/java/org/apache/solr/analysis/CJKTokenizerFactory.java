@@ -30,7 +30,7 @@ import java.io.Reader;
  *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class CJKTokenizerFactory extends BaseTokenizerFactory {
   public CJKTokenizer create(Reader in) {

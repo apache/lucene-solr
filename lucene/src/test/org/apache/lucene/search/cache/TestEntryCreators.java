@@ -37,7 +37,7 @@ import static org.hamcrest.CoreMatchers.*;
 
 public class TestEntryCreators extends LuceneTestCase {
   protected IndexReader reader;
-  private static final int NUM_DOCS = 500 * RANDOM_MULTIPLIER;
+  private static final int NUM_DOCS = atLeast(500);
   private Directory directory;
 
   static class NumberTypeTester {

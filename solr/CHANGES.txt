@@ -24,14 +24,13 @@ $Id$
 ==================  4.0.0-dev ==================
 Versions of Major Components
 ---------------------
-Apache Lucene trunk
 Apache Tika 0.8
 Carrot2 3.5.0
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1-SNAPSHOT
 
 
-Upgrading from Solr 3.2-dev
+Upgrading from Solr 3.3-dev
 ----------------------
 
 * The Lucene index format has changed and as a result, once you upgrade, 
@@ -60,11 +59,6 @@ Detailed Change List
 
 New Features
 ----------------------
-
-* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete) 
-  component, offering an order of magnitude smaller memory consumption
-  compared to ternary trees and jaspell and very fast lookups at runtime.
-  (Dawid Weiss)
   
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
@@ -100,9 +94,9 @@ New Features
 * SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
   (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
-* LUCENE-2507: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
-  to retrieve correction candidates directly from the term dictionary using
-  levenshtein automata.  (rmuir)
+* LUCENE-2507, SOLR-2571, SOLR-2576: Added DirectSolrSpellChecker, which uses Lucene's
+  DirectSpellChecker to retrieve correction candidates directly from the term dictionary using
+  levenshtein automata.  (James Dyer, rmuir)
    
 * SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
   built-in load balancing, and infrastructure for future SolrCloud work. (yonik, Mark Miller)
@@ -118,8 +112,6 @@ New Features
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
   as results. (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl)
-
-* SOLR-2417: Add explain info directly to return documents using ?fl=_explain_ (ryan)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 
@@ -144,7 +136,31 @@ New Features
     fq={!join from=name to=parent}eyes:blue
   (yonik)
 
+* SOLR-1942: Added the ability to select codec per fieldType in schema.xml
+  as well as support custom CodecProviders in solrconfig.xml.
+  NOTE: IndexReaderFactory now has a codecProvider that should be passed
+  to IndexReader.open (in the case you have a custom IndexReaderFactory).
+  (simonw via rmuir)
 
+* SOLR-2136: Boolean type added to function queries, along with
+  new functions exists(), if(), and(), or(), xor(), not(), def(),
+  and true and false constants. (yonik) 
+
+* SOLR-2491: Add support for using spellcheck collation in conjunction
+  with grouping. Note that the number of hits returned for collations
+  is the number of ungrouped hits.  (James Dyer via rmuir)
+  
+* SOLR-1298: Return FunctionQuery as pseudo field.  The solr 'fl' param
+  now supports functions.  For example:  fl=id,sum(x,y) -- NOTE: only
+  functions with fast random access are reccomended. (yonik, ryan)
+  
+* SOLR-705: Optionally return shard info with each document in distributed
+  search.  Use fl=id,[shard]  to return the shard url.  (ryan)  
+
+* SOLR-2417: Add explain info directly to return documents using 
+  ?fl=id,[explain] (ryan)
+
+  
 
 Optimizations
 ----------------------
@@ -246,15 +262,60 @@ Other Changes
   variance in asserting score comparisons in unit tests.
   (David Smiley, Chris Hostetter)
 
+* LUCENE-2995: Moved some spellchecker and suggest APIs to modules/suggest:
+  HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
+  suggester APIs and implementations. (rmuir)
+
+* SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
+  (James Dyer via rmuir)
+
 Documentation
 ----------------------
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
 
-* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+======================= 3.x (not yet released) ================
 
-==================  3.2.0-dev ==================
+New Features
+----------------------
+
+* SOLR-2378: A new, automaton-based, implementation of suggest (autocomplete) 
+  component, offering an order of magnitude smaller memory consumption
+  compared to ternary trees and jaspell and very fast lookups at runtime.
+  (Dawid Weiss)
+
+Optimizations
+----------------------
+
+* SOLR-2567: Solr now defaults to TieredMergePolicy. See http://s.apache.org/merging
+  for more information.  (rmuir)
+
+Bug Fixes
+----------------------
+
+* SOLR-2519: Improve text_* fieldTypes in example schema.xml: improve
+  cross-language defaults for text_general; break out separate
+  English-specific fieldTypes (Jan Høydahl, hossman, Robert Muir,
+  yonik, Mike McCandless)
+
+* SOLR-2462: Fix extremely high memory usage problems with spellcheck.collate.
+  Separately, an additional spellcheck.maxCollationEvaluations (default=10000)
+  parameter is added to avoid excessive CPU time in extreme cases (e.g. long
+  queries with many misspelled words).  (James Dyer via rmuir)
+
+Other Changes
+----------------------
+
+* SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
+  parameter to the example solrconfig.xml, and also add a unit test for this feature.
+  (James Dyer via rmuir)
+
+* SOLR-2576: Deprecate SpellingResult.add(Token token, int docFreq), please use
+  SpellingResult.addFrequency(Token token, int docFreq) instead.
+  (James Dyer via rmuir)
+  
+==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
@@ -337,6 +398,8 @@ Bug Fixes
   set to true and no index segments have been changed, commit cannot trigger reload
   external file). (koji)
 
+* SOLR-2539: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
+  (Tom Liu via yonik)
 
 Other Changes
 ----------------------
@@ -349,6 +412,9 @@ Other Changes
 
 Build
 ----------------------
+
+* LUCENE-3006: Building javadocs will fail on warnings by default.  Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
 
 Documentation
 ----------------------
@@ -1808,7 +1874,7 @@ Documentation
 
  3. SOLR-1409: Added Solr Powered By Logos    
 
-================== Release 1.3.0 20080915 ==================
+================== Release 1.3.0 ==================
 
 Upgrading from Solr 1.2
 -----------------------
@@ -2469,7 +2535,7 @@ Build
               client and contrib. The target can publish artifacts with source and javadocs.
               (Spencer Crissman, Craig McClanahan, shalin)
 
-================== Release 1.2, 20070602 ==================
+================== Release 1.2 ==================
 
 Upgrading from Solr 1.1
 -------------------------------------
@@ -2818,7 +2884,7 @@ Other Changes
 
  2. Updated to Lucene 2007-05-20_00-04-53
 
-================== Release 1.1.0, 20061222 ==================
+================== Release 1.1.0 ==================
 
 Status
 ------

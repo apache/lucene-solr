@@ -35,6 +35,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -65,7 +66,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
-    int num = 2000 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random);
       field.setValue(s);
@@ -114,7 +115,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
 
     private class SimpleAutomatonTermsEnum extends FilteredTermsEnum {
       CharacterRunAutomaton runAutomaton = new CharacterRunAutomaton(automaton);
-      UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+      CharsRef utf16 = new CharsRef(10);
 
       private SimpleAutomatonTermsEnum(TermsEnum tenum) throws IOException {
         super(tenum);
@@ -124,7 +125,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       @Override
       protected AcceptStatus accept(BytesRef term) throws IOException {
         UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
-        return runAutomaton.run(utf16.result, 0, utf16.length) ? 
+        return runAutomaton.run(utf16.chars, 0, utf16.length) ? 
             AcceptStatus.YES : AcceptStatus.NO;
       }
     }
@@ -139,7 +140,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void testRegexps() throws Exception {
     // we generate aweful regexps: good for testing.
     // but for preflex codec, the test can be very slow, so use less iterations.
-    int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
+    int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       assertSame(reg);

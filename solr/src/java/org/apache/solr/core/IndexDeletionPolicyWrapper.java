@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * commit points for certain amounts of time to support features such as index replication
  * or snapshooting directly out of a live index directory.
  *
- * @version $Id$
+ *
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {

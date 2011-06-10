@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.io.IOException;
 
 /**
- * @version $Id$
+ *
  */
 public abstract class SolrAnalyzer extends Analyzer {
   int posIncGap=0;

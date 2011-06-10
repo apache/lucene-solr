@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.apache.solr.common.SolrException;
 
 /**
- * @version $Id$
+ *
  */
 public class StrUtils {
   public static final char[] HEX_DIGITS = { '0', '1', '2', '3', '4', '5', '6',

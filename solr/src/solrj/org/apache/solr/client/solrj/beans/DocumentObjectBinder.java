@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 /**
  * A class to map objects to and from solr documents.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class DocumentObjectBinder {

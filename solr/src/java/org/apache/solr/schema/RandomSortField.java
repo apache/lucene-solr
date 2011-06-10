@@ -59,7 +59,7 @@ import org.apache.solr.search.function.ValueSource;
  * </ul>
  * Note that multiple calls to the same URL will return the same sorting order.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class RandomSortField extends FieldType {

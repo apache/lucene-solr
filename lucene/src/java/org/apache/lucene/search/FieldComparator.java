@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.FieldCache.DocTermsIndex;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
+import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArray;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -38,9 +40,9 @@ import org.apache.lucene.search.cache.CachedArray.LongValues;
 import org.apache.lucene.search.cache.CachedArray.ShortValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
+import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -156,7 +158,6 @@ public abstract class FieldComparator {
    * @return the comparator to use for this segment; most
    *   comparators can just return "this" to reuse the same
    *   comparator across segments
-   * @throws IOException
    * @throws IOException
    */
   public abstract FieldComparator setNextReader(AtomicReaderContext context) throws IOException;
@@ -324,6 +325,68 @@ public abstract class FieldComparator {
 
     @Override
     public Comparable<?> value(int slot) {
+      return Double.valueOf(values[slot]);
+    }
+  }
+
+  /** Uses float index values to sort by ascending value */
+  public static final class FloatDocValuesComparator extends FieldComparator {
+    private final double[] values;
+    private Source currentReaderValues;
+    private final String field;
+    private double bottom;
+
+    FloatDocValuesComparator(int numHits, String field) {
+      values = new double[numHits];
+      this.field = field;
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      final double v1 = values[slot1];
+      final double v2 = values[slot2];
+      if (v1 > v2) {
+        return 1;
+      } else if (v1 < v2) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      final double v2 = currentReaderValues.getFloat(doc);
+      if (bottom > v2) {
+        return 1;
+      } else if (bottom < v2) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      values[slot] = currentReaderValues.getFloat(doc); 
+    }
+
+    @Override
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      final IndexDocValues docValues = context.reader.docValues(field);
+      if (docValues != null) {
+        currentReaderValues = docValues.getSource(); 
+      }
+      return this;
+    }
+    
+    @Override
+    public void setBottom(final int bottom) {
+      this.bottom = values[bottom];
+    }
+
+    @Override
+    public Comparable<Double> value(int slot) {
       return Double.valueOf(values[slot]);
     }
   }
@@ -533,6 +596,72 @@ public abstract class FieldComparator {
     @Override
     public Comparable<?> value(int slot) {
       return Integer.valueOf(values[slot]);
+    }
+  }
+
+  /** Loads int index values and sorts by ascending value. */
+  public static final class IntDocValuesComparator extends FieldComparator {
+    private final long[] values;
+    private Source currentReaderValues;
+    private final String field;
+    private long bottom;
+
+    IntDocValuesComparator(int numHits, String field) {
+      values = new long[numHits];
+      this.field = field;
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      // TODO: there are sneaky non-branch ways to compute
+      // -1/+1/0 sign
+      final long v1 = values[slot1];
+      final long v2 = values[slot2];
+      if (v1 > v2) {
+        return 1;
+      } else if (v1 < v2) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      // TODO: there are sneaky non-branch ways to compute
+      // -1/+1/0 sign
+      final long v2 = currentReaderValues.getInt(doc);
+      if (bottom > v2) {
+        return 1;
+      } else if (bottom < v2) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      values[slot] = currentReaderValues.getInt(doc); 
+    }
+
+    @Override
+    public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
+      IndexDocValues docValues = context.reader.docValues(field);
+      if (docValues != null) {
+        currentReaderValues = docValues.getSource();
+      }
+      return this;
+    }
+    
+    @Override
+    public void setBottom(final int bottom) {
+      this.bottom = values[bottom];
+    }
+
+    @Override
+    public Comparable<Long> value(int slot) {
+      return Long.valueOf(values[slot]);
     }
   }
 

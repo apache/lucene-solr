@@ -23,7 +23,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -50,8 +49,7 @@ public class IDFValueSource extends DocFreqValueSource {
       throw new UnsupportedOperationException("only works with TF/IDF Similarity");
     }
     // todo: we need docFreq that takes a BytesRef
-    String strVal = ByteUtils.UTF8toUTF16(indexedBytes);
-    int docfreq = searcher.docFreq(new Term(indexedField, strVal));
+    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes.utf8ToString()));
     float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.maxDoc());
     return new ConstDoubleDocValues(idf, this);
   }

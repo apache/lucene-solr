@@ -125,7 +125,7 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </java>
   </target>
 			
-  <target name="compile-tools">
+  <target name="compile-tools" depends="common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">
@@ -133,11 +133,6 @@ are part of the ICU4C package. See http://site.icu-project.org/ </echo>
     </compile>
   </target>
   
-  <target name="dist-maven" depends="contrib-build.dist-maven">
-    <m2-deploy-with-pom-template pom.xml="lib/lucene-icu4j-pom.xml.template"
-                                 jar.file="lib/icu4j-4_6.jar" />
-  </target>
-
   <target name="javadocs" depends="compile-core">
    	<sequential>
        <mkdir dir="${javadoc.dir}/contrib-${name}"/>

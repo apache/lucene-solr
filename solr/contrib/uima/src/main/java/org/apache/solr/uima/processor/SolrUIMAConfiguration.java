@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Configuration holding all the configurable parameters for calling UIMA inside Solr
  *
- * @version $Id$
+ *
  */
 public class SolrUIMAConfiguration {
 

@@ -61,7 +61,7 @@ import java.util.zip.DeflaterOutputStream;
  * <li>Abort a snap pull (command=abort)</li> <li>Enable/Disable polling the master for new versions (command=enablepoll
  * or command=disablepoll)</li> </ol> </p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {

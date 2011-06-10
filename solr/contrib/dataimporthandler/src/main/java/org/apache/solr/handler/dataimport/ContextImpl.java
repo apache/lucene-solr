@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  * <b>This API is experimental and subject to change</b>
  *
- * @version $Id$
  * @since solr 1.3
  */
 public class ContextImpl extends Context {

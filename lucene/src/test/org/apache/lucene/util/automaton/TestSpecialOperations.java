@@ -24,7 +24,7 @@ public class TestSpecialOperations extends LuceneTestCase {
    * tests against the original brics implementation.
    */
   public void testIsFinite() {
-    int num = 2000 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random);
       Automaton b = a.clone();

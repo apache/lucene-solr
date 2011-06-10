@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.regex.Pattern;
+
 import org.apache.lucene.index.codecs.Codec;  // for javadocs
 
 /**
@@ -78,10 +80,9 @@ public final class IndexFileNames {
 
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
-  
+
   /** Extension of global field numbers */
   public static final String GLOBAL_FIELD_NUM_MAP_EXTENSION = "fnx";
-  
 
   /**
    * This array contains all filename extensions used by
@@ -206,7 +207,12 @@ public final class IndexFileNames {
       return segmentName;
     }
   }
-  
+
+  /** Sugar for passing "" + name instead */
+  public static String segmentFileName(String segmentName, int name, String ext) {
+    return segmentFileName(segmentName, ""+name, ext);
+  }
+
   /**
    * Returns true if the given filename ends with the given extension. One
    * should provide a <i>pure</i> extension, without '.'.
@@ -237,6 +243,17 @@ public final class IndexFileNames {
       filename = filename.substring(idx);
     }
     return filename;
+  }
+
+  /**
+   * Returns true if the given filename ends with the separate norms file
+   * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.
+   */
+  public static boolean isSeparateNormsFile(String filename) {
+    int idx = filename.lastIndexOf('.');
+    if (idx == -1) return false;
+    String ext = filename.substring(idx + 1);
+    return Pattern.matches(SEPARATE_NORMS_EXTENSION + "[0-9]+", ext);
   }
   
 }

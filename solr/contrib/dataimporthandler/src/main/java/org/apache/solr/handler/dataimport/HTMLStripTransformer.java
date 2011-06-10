@@ -30,7 +30,6 @@ import java.util.Map;
  * A {@link Transformer} implementation which strip off HTML tags using {@link HTMLStripCharFilter} This is useful
  * in case you don't need this HTML anyway.
  *
- * @version $Id$
  * @see HTMLStripCharFilter
  * @since solr 1.4
  */

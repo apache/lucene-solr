@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.List;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
- * @version $Id$
+ *
  */
 public final class QueryResultKey {
   final Query query;

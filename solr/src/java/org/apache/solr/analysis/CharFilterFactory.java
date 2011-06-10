@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.CharStream;
 
 /**
 *
-* @version $Id$
 * @since Solr 1.4
 *
 */

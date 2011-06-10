@@ -54,7 +54,7 @@ import org.xml.sax.InputSource;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class CoreContainer 

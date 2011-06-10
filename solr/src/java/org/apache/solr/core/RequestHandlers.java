@@ -209,7 +209,6 @@ final class RequestHandlers {
    * This is a private class - if there is a real need for it to be public, it could
    * move
    * 
-   * @version $Id$
    * @since solr 1.2
    */
   private static final class LazyRequestHandlerWrapper implements SolrRequestHandler, SolrInfoMBean

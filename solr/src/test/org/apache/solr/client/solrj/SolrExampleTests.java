@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -52,7 +51,6 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -60,7 +58,7 @@ import org.junit.Test;
  * 
  * This lets us try various SolrServer implementations with the same tests.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 abstract public class SolrExampleTests extends SolrJettyTestBase
@@ -381,7 +379,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   }
 
 
-  @Test @Ignore   // TODO: re-enable when new transformer syntax is implemented
+  @Test
   public void testAugmentFields() throws Exception
   {    
     SolrServer server = getSolrServer();
@@ -406,7 +404,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );
-    query.set( CommonParams.FL, "id,price,_docid_,_explain:nl_,score,aaa:_value:aaa_,ten:_value:int:10_" );
+    query.set( CommonParams.FL, "id,price,[docid],[explain style=nl],score,aaa:[value v=aaa],ten:[value v=10 t=int]" );
     query.addSortField( "price", SolrQuery.ORDER.asc );
     QueryResponse rsp = server.query( query );
     
@@ -420,12 +418,12 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( 1.0f, out2.getFieldValue( "score" ) );
     
     // check that the docid is one bigger
-    int id1 = (Integer)out1.getFieldValue( "_docid_" );
-    int id2 = (Integer)out2.getFieldValue( "_docid_" );
+    int id1 = (Integer)out1.getFieldValue( "[docid]" );
+    int id2 = (Integer)out2.getFieldValue( "[docid]" );
     assertTrue( "should be bigger ["+id1+","+id2+"]", id2 > id1 );
     
     // The score from explain should be the same as the score
-    NamedList explain = (NamedList)out1.getFieldValue( "_explain:nl_" );
+    NamedList explain = (NamedList)out1.getFieldValue( "[explain]" );
     assertEquals( out1.get( "score"), explain.get( "value" ) );
     
     // Augmented _value_ with alias
@@ -912,11 +910,33 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
         
         // Make sure the transformer works for streaming
         Float score = (Float)doc.get( "score" );
-        Integer docid = (Integer)doc.get( "_docid_" );
         assertEquals( "should have score", new Float(1.0), score );
       }
      
     });
     assertEquals(10, cnt.get() );
+  }
+
+  @Test
+  public void testChineseDefaults() throws Exception {
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+
+    // Beijing medical University
+    UpdateRequest req = new UpdateRequest();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "42");
+    doc.addField("text", "北京医科大学");
+    req.add(doc);
+
+    req.setAction(ACTION.COMMIT, true, true );
+    req.process( server );
+
+    // Beijing university should match:
+    SolrQuery query = new SolrQuery("北京大学");
+    QueryResponse rsp = server.query( query );
+    assertEquals(1, rsp.getResults().getNumFound());
   }
 }

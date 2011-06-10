@@ -18,7 +18,7 @@
 package org.apache.solr.common.params;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public interface HighlightParams {

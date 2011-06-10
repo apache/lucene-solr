@@ -39,7 +39,7 @@ import java.util.Map;
  *
  * @see FunctionQuery
  *
- * @version $Id$
+ *
  */
 public class ReciprocalFloatFunction extends ValueSource {
   protected final ValueSource source;

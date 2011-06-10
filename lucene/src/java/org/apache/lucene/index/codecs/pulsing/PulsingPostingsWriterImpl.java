@@ -71,8 +71,6 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
   public PulsingPostingsWriterImpl(int maxPositions, PostingsWriterBase wrappedPostingsWriter) throws IOException {
-    super();
-
     pending = new Position[maxPositions];
     for(int i=0;i<maxPositions;i++) {
       pending[i] = new Position();

@@ -28,7 +28,7 @@
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="phonetic" />
-    <orderEntry type="module" module-name="spellchecker" />
+    <orderEntry type="module" module-name="suggest" />
     <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="lucene" />
   </component>

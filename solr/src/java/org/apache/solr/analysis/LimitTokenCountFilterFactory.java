@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
  *     &lt;filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class LimitTokenCountFilterFactory extends BaseTokenFilterFactory {
 

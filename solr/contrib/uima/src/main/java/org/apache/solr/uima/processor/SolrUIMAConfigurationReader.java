@@ -27,7 +27,7 @@ import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 /**
  * Read configuration for Solr-UIMA integration
  * 
- * @version $Id$
+ *
  * 
  */
 public class SolrUIMAConfigurationReader {

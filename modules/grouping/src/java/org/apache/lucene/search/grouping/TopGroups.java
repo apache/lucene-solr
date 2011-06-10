@@ -22,7 +22,7 @@ import org.apache.lucene.search.SortField;
 /** Represents result returned by a grouping search.
  *
  * @lucene.experimental */
-public class TopGroups {
+public class TopGroups<GROUP_VALUE_TYPE> {
   /** Number of documents matching the search */
   public final int totalHitCount;
 
@@ -33,7 +33,7 @@ public class TopGroups {
   public final Integer totalGroupCount;
 
   /** Group results in groupSort order */
-  public final GroupDocs[] groups;
+  public final GroupDocs<GROUP_VALUE_TYPE>[] groups;
 
   /** How groups are sorted against each other */
   public final SortField[] groupSort;
@@ -41,7 +41,7 @@ public class TopGroups {
   /** How docs are sorted within each group */
   public final SortField[] withinGroupSort;
 
-  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs[] groups) {
+  public TopGroups(SortField[] groupSort, SortField[] withinGroupSort, int totalHitCount, int totalGroupedHitCount, GroupDocs<GROUP_VALUE_TYPE>[] groups) {
     this.groupSort = groupSort;
     this.withinGroupSort = withinGroupSort;
     this.totalHitCount = totalHitCount;
@@ -50,7 +50,7 @@ public class TopGroups {
     this.totalGroupCount = null;
   }
 
-  public TopGroups(TopGroups oldTopGroups, Integer totalGroupCount) {
+  public TopGroups(TopGroups<GROUP_VALUE_TYPE> oldTopGroups, Integer totalGroupCount) {
     this.groupSort = oldTopGroups.groupSort;
     this.withinGroupSort = oldTopGroups.withinGroupSort;
     this.totalHitCount = oldTopGroups.totalHitCount;

@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 
 /**
- * @version $Id$
+ *
  */
 public class TestPhoneticFilterFactory extends BaseTokenTestCase {
   

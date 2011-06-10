@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * Create an index with terms from 0000-9999.
+ * Create an index with terms from 000-999.
  * Generates random regexps according to simple patterns,
  * and validates the correct number of hits are returned.
  */
@@ -51,11 +51,11 @@ public class TestRegexpRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS);
     doc.add(field);
     
-    NumberFormat df = new DecimalFormat("0000", new DecimalFormatSymbols(Locale.ENGLISH));
-    for (int i = 0; i < 10000; i++) {
+    NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));
+    for (int i = 0; i < 1000; i++) {
       field.setValue(df.format(i));
       writer.addDocument(doc);
     }
@@ -98,56 +98,42 @@ public class TestRegexpRandom extends LuceneTestCase {
   }
   
   public void testRegexps() throws Exception {
-    int num = 100 * RANDOM_MULTIPLIER;
+    int num = atLeast(1);
     for (int i = 0; i < num; i++) {
-      assertPatternHits("NNNN", 1);
-      assertPatternHits(".NNN", 10);
-      assertPatternHits("N.NN", 10);
-      assertPatternHits("NN.N", 10);
-      assertPatternHits("NNN.", 10);
+      assertPatternHits("NNN", 1);
+      assertPatternHits(".NN", 10);
+      assertPatternHits("N.N", 10);
+      assertPatternHits("NN.", 10);
     }
     
-    num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      assertPatternHits(".{1,2}NN", 100);
-      assertPatternHits("N.{1,2}N", 100);
-      assertPatternHits("NN.{1,2}", 100);
-      assertPatternHits(".{1,3}N", 1000);
-      assertPatternHits("N.{1,3}", 1000);
-      assertPatternHits(".{1,4}", 10000);
+      assertPatternHits(".{1,2}N", 100);
+      assertPatternHits("N.{1,2}", 100);
+      assertPatternHits(".{1,3}", 1000);
       
-      assertPatternHits("NNN[3-7]", 5);
-      assertPatternHits("NN[2-6][3-7]", 25);
-      assertPatternHits("N[1-5][2-6][3-7]", 125);
-      assertPatternHits("[0-4][3-7][4-8][5-9]", 625);
-      assertPatternHits("[3-7][2-6][0-4]N", 125);
-      assertPatternHits("[2-6][3-7]NN", 25);
-      assertPatternHits("[3-7]NNN", 5);
+      assertPatternHits("NN[3-7]", 5);
+      assertPatternHits("N[2-6][3-7]", 25);
+      assertPatternHits("[1-5][2-6][3-7]", 125);
+      assertPatternHits("[0-4][3-7][4-8]", 125);
+      assertPatternHits("[2-6][0-4]N", 25);
+      assertPatternHits("[2-6]NN", 5);
       
-      assertPatternHits("NNN.*", 10);
-      assertPatternHits("NN.*", 100);
-      assertPatternHits("N.*", 1000);
-      assertPatternHits(".*", 10000);
+      assertPatternHits("NN.*", 10);
+      assertPatternHits("N.*", 100);
+      assertPatternHits(".*", 1000);
       
-      assertPatternHits(".*NNN", 10);
-      assertPatternHits(".*NN", 100);
-      assertPatternHits(".*N", 1000);
+      assertPatternHits(".*NN", 10);
+      assertPatternHits(".*N", 100);
       
-      assertPatternHits("N.*NN", 10);
-      assertPatternHits("NN.*N", 10);
+      assertPatternHits("N.*N", 10);
       
       // combo of ? and * operators
-      assertPatternHits(".NN.*", 100);
-      assertPatternHits("N.N.*", 100);
-      assertPatternHits("NN..*", 100);
-      assertPatternHits(".N..*", 1000);
-      assertPatternHits("N...*", 1000);
+      assertPatternHits(".N.*", 100);
+      assertPatternHits("N..*", 100);
       
-      assertPatternHits(".*NN.", 100);
-      assertPatternHits(".*N..", 1000);
-      assertPatternHits(".*...", 10000);
-      assertPatternHits(".*.N.", 1000);
-      assertPatternHits(".*..N", 1000);
+      assertPatternHits(".*N.", 100);
+      assertPatternHits(".*..", 1000);
+      assertPatternHits(".*.N", 100);
     }
   }
 }

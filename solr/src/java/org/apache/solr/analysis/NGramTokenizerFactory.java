@@ -31,7 +31,7 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.NGramTokenizerFactory" minGramSize="1" maxGramSize="2"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class NGramTokenizerFactory extends BaseTokenizerFactory {
     private int maxGramSize = 0;

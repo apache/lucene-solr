@@ -34,7 +34,7 @@ import org.apache.solr.common.util.ContentStream;
 
 /**
  * This class is experimental and subject to change.
- * @version $Id: CoreAdminRequest.java 606335 2007-12-21 22:23:39Z ryan $
+ *
  * @since solr 1.3
  */
 public class CoreAdminRequest extends SolrRequest

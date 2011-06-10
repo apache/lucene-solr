@@ -23,7 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * @version $Id$
+ *
  *
  * All of the following options may be configured for this handler
  * in the solrconfig as defaults, and may be overriden as request parameters.

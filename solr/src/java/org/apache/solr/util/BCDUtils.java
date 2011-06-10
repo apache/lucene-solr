@@ -19,7 +19,7 @@ package org.apache.solr.util;
 
 
 /**
- * @version $Id$
+ *
  */
 public class BCDUtils {
   // idiv is expensive...

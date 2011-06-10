@@ -57,6 +57,7 @@ public final class TermInfosReader {
     final long termOrd;
     public TermInfoAndOrd(TermInfo ti, long termOrd) {
       super(ti);
+      assert termOrd >= 0;
       this.termOrd = termOrd;
     }
   }
@@ -306,7 +307,13 @@ public final class TermInfosReader {
       ti = enumerator.termInfo;
       if (tiOrd == null) {
         if (useCache) {
-          termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+          // LUCENE-3183: it's possible, if term is Term("",
+          // ""), for the STE to be incorrectly un-positioned
+          // after scan-to; work around this by not caching in
+          // this case:
+          if (enumerator.position >= 0) {
+            termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+          }
         }
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);

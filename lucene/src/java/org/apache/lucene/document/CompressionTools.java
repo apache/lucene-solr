@@ -23,6 +23,7 @@ import java.util.zip.DataFormatException;
 import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Simple utility class providing static methods to
@@ -118,9 +119,9 @@ public class CompressionTools {
   /** Decompress the byte array previously returned by
    *  compressString back into a String */
   public static String decompressString(byte[] value) throws DataFormatException {
-    UnicodeUtil.UTF16Result result = new UnicodeUtil.UTF16Result();
     final byte[] bytes = decompress(value);
+    CharsRef result = new CharsRef(bytes.length);
     UnicodeUtil.UTF8toUTF16(bytes, 0, bytes.length, result);
-    return new String(result.result, 0, result.length);
+    return new String(result.chars, 0, result.length);
   }
 }

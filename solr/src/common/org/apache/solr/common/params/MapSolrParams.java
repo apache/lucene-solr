@@ -24,7 +24,7 @@ import java.util.Map;
 import java.io.IOException;
 
 /**
- * @version $Id$
+ *
  */
 public class MapSolrParams extends SolrParams {
   protected final Map<String,String> map;

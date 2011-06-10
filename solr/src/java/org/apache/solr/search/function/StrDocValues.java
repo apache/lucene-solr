@@ -22,6 +22,11 @@ public abstract class StrDocValues extends DocValues {
   }
 
   @Override
+  public boolean boolVal(int doc) {
+    return exists(doc);
+  }
+
+  @Override
   public String toString(int doc) {
     return vs.description() + "='" + strVal(doc) + "'";
   }

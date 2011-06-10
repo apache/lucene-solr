@@ -21,10 +21,9 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueStr;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 
@@ -36,7 +35,7 @@ public abstract class StringIndexDocValues extends DocValues {
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final BytesRef spare = new BytesRef();
-  protected final CharArr spareChars = new CharArr();
+  protected final CharsRef spareChars = new CharsRef();
 
   public StringIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
     try {
@@ -75,11 +74,14 @@ public abstract class StringIndexDocValues extends DocValues {
     int ord=termsIndex.getOrd(doc);
     if (ord==0) return null;
     termsIndex.lookup(ord, spare);
-    spareChars.reset();
-    ByteUtils.UTF8toUTF16(spare, spareChars);
+    spare.utf8ToChars(spareChars);
     return spareChars.toString();
   }
 
+  @Override
+  public boolean boolVal(int doc) {
+    return exists(doc);
+  }
 
   @Override
   public abstract Object objectVal(int doc);  // force subclasses to override

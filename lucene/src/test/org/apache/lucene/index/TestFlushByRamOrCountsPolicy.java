@@ -30,17 +30,22 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
-  private LineFileDocs lineDocFile;
+  private static LineFileDocs lineDocFile;
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     lineDocFile = new LineFileDocs(random);
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    lineDocFile.close();
+    lineDocFile = null;
   }
 
   public void testFlushByRam() throws CorruptIndexException,
@@ -231,8 +236,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     for (int i = 0; i < numThreads.length; i++) {
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       MockDirectoryWrapper dir = newDirectory();
-      // mock a very slow harddisk here so that flushing is very slow
-      dir.setThrottling(MockDirectoryWrapper.Throttling.ALWAYS);
+      // mock a very slow harddisk sometimes here so that flushing is very slow
+      dir.setThrottling(MockDirectoryWrapper.Throttling.SOMETIMES);
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);

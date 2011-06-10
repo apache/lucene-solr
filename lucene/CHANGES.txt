@@ -1,5 +1,8 @@
 Lucene Change Log
 
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
 ======================= Trunk (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -233,6 +236,9 @@ Changes in Runtime Behavior
   
   (Mike McCandless, Michael Busch, Simon Willnauer)
 
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+  
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
@@ -397,6 +403,31 @@ New features
   that it inverts the index to compute the ords, but differs in that
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
+  
+* LUCENE-3108, LUCENE-2935, LUCENE-2168, LUCENE-1231: Changes from 
+  IndexDocValues (ColumnStrideFields):
+  
+  - IndexWriter now supports typesafe dense per-document values stored in
+    a column like storage. IndexDocValues are stored on a per-document
+    basis where each documents field can hold exactly one value of a given
+    type. IndexDocValues are provided via Fieldable and can be used in
+    conjunction with stored and indexed values.
+     
+  - IndexDocValues provides an entirely RAM resident document id to value
+    mapping per field as well as a DocIdSetIterator based disk-resident
+    sequential access API relying on filesystem-caches.
+    
+  - Both APIs are exposed via IndexReader and the Codec / Flex API allowing
+    expert users to integrate customized IndexDocValues reader and writer
+    implementations by extending existing Codecs.
+    
+  - IndexDocValues provides implementations for primitive datatypes like int,
+    long, float, double and arrays of byte. Byte based implementations further
+    provide storage variants like straight or dereferenced stored bytes, fixed
+    and variable length bytes as well as index time sorted based on user-provided
+    comparators.
+  
+  (Mike McCandless, Simon Willnauer)  
 
 Optimizations
 
@@ -417,6 +448,9 @@ Optimizations
   
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
+  
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
 
 Bug fixes
 
@@ -427,7 +461,54 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-======================= Lucene 3.x (not yet released) =======================
+* LUCENE-2645: Fix false assertion error when same token was added one
+  after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
+  McCandless)
+
+======================= Lucene 3.x (not yet released) ================
+
+Changes in backwards compatibility policy
+
+* LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
+  of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
+  Mike McCandless)
+
+Changes in runtime behavior
+
+* LUCENE-2834: the hash used to compute the lock file name when the
+  lock file is not stored in the index has changed.  This means you
+  will see a different lucene-XXX-write.lock in your lock directory.
+  (Robert Muir, Uwe Schindler, Mike McCandless)
+  
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+  
+Bug fixes
+
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+
+* LUCENE-3102: CachingCollector.replay was failing to call setScorer
+  per-segment (Martijn van Groningen via Mike McCandless)
+
+* LUCENE-3183: Fix rare corner case where seeking to empty term
+  (field="", term="") with terms index interval 1 could hit
+  ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
+  McCandless)
+
+New Features
+
+* LUCENE-3140: Added experimental FST implementation to Lucene.
+  (Robert Muir, Dawid Weiss, Mike McCandless)
+
+Build
+
+* LUCENE-1344: Create OSGi bundle using dev-tools/maven.
+  (Nicolas Lalevée, Luca Stancapiano via ryan)
+
+======================= Lucene 3.2.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -511,6 +592,9 @@ Optimizations
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
 
+* LUCENE-3126: IndexWriter.addIndexes copies incoming segments into CFS if they
+  aren't already and MergePolicy allows that. (Shai Erera)
+
 Bug fixes
 
 * LUCENE-2996: addIndexes(IndexReader) did not flush before adding the new 
@@ -544,6 +628,9 @@ Build
 
 * LUCENE-3006: Building javadocs will fail on warnings by default. 
   Override with -Dfailonjavadocwarning=false (sarowe, gsingers)
+
+* LUCENE-3128: "ant eclipse" creates a .project file for easier Eclipse
+  integration (unless one already exists). (Daniel Serodio via Shai Erera)
 
 Test Cases
 
@@ -1284,7 +1371,7 @@ Documentation
 * LUCENE-2894: Use google-code-prettify for syntax highlighting in javadoc.
   (Shinichiro Abe, Koji Sekiguchi)
   
-================== Release 2.9.4 / 3.0.3 2010-12-03 ====================
+================== Release 2.9.4 / 3.0.3 ====================
 
 Changes in runtime behavior
 
@@ -1437,7 +1524,7 @@ Documentation
   Java NIO behavior when a Thread is interrupted while blocking on IO.
   (Simon Willnauer, Robert Muir)
 
-================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+================== Release 2.9.3 / 3.0.2 ====================
 
 Changes in backwards compatibility policy
 
@@ -1582,7 +1669,7 @@ Build
   compiling/testing/packaging. This marks the benchmark contrib also
   as Java 1.5, as it depends on fast-vector-highlighter. (Uwe Schindler)
 
-================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
+================== Release 2.9.2 / 3.0.1 ====================
 
 Changes in backwards compatibility policy
 
@@ -1685,7 +1772,7 @@ Documentation
    provided reader is per-segment (Simon Willnauer via Mike
    McCandless)
  
-======================= Release 3.0.0 2009-11-25 =======================
+======================= Release 3.0.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -1886,7 +1973,7 @@ Build
 * LUCENE-2024: Raise build requirements to Java 1.5 and ANT 1.7.0
   (Uwe Schindler, Mike McCandless)
 
-======================= Release 2.9.1 2009-11-06 =======================
+======================= Release 2.9.1 =======================
 
 Changes in backwards compatibility policy
 
@@ -1956,7 +2043,7 @@ Documentation
  * LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
    (Luke Nezda via Mike McCandless)
 
-======================= Release 2.9.0 2009-09-23 =======================
+======================= Release 2.9.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -2870,7 +2957,7 @@ Test Cases
  * LUCENE-1836: Added a new LocalizedTestCase as base class for localization
     junit tests.  (Robert Muir, Uwe Schindler via Michael Busch)
 
-======================= Release 2.4.1 2009-03-09 =======================
+======================= Release 2.4.1 =======================
 
 API Changes
 
@@ -2938,7 +3025,7 @@ Bug fixes
     rollback IndexWriter's internal state on hitting an
     exception. (Scott Garland via Mike McCandless)
 
-======================= Release 2.4.0 2008-10-06 =======================
+======================= Release 2.4.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -3303,7 +3390,7 @@ Test Cases
  2. LUCENE-1348: relax TestTimeLimitedCollector to not fail due to 
     timeout exceeded (just because test machine is very busy).
 	
-======================= Release 2.3.2 2008-05-05 =======================
+======================= Release 2.3.2 =======================
 
 Bug fixes
 
@@ -3353,7 +3440,7 @@ Build
  1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
 
  
-======================= Release 2.3.1 2008-02-22 =======================
+======================= Release 2.3.1 =======================
 
 Bug fixes
     
@@ -3382,7 +3469,7 @@ Bug fixes
     preventing Fields with empty-string field name from working.
     (Sergey Kabashnyuk via Mike McCandless)
 
-======================= Release 2.3.0 2008-01-21 =======================
+======================= Release 2.3.0 =======================
 
 Changes in runtime behavior
 
@@ -3774,7 +3861,7 @@ Test Cases
  1. LUCENE-766: Test adding two fields with the same name but different 
     term vector setting.  (Nicolas Lalevée via Doron Cohen)  
     
-======================= Release 2.2.0 2007-06-19 =======================
+======================= Release 2.2.0 =======================
 
 Changes in runtime behavior
 
@@ -4083,7 +4170,7 @@ Build
     of the Lucene core and the contrib modules. 
     (Sami Siren, Karl Wettin, Michael Busch)
 
-======================= Release 2.1.0 2007-02-14 =======================
+======================= Release 2.1.0 =======================
 
 Changes in runtime behavior
 
@@ -4571,7 +4658,7 @@ Build
      distribution of both binary and source distributions.  Called by package 
      and package-*-src
 
-======================= Release 2.0.0 2006-05-26 =======================
+======================= Release 2.0.0 =======================
 
 API Changes
 
@@ -5675,7 +5762,7 @@ Infrastructure
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
-1.2 RC2, 19 October 2001:
+1.2 RC2:
  - added sources to distribution
  - removed broken build scripts and libraries from distribution
  - SegmentsReader: fixed potential race condition
@@ -5690,7 +5777,7 @@ Infrastructure
  - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
    since they rely on a feature added in JDK 1.2.
 
-1.2 RC1 (first Apache release), 2 October 2001:
+1.2 RC1 (first Apache release):
   - packages renamed from com.lucene to org.apache.lucene
   - license switched from LGPL to Apache
   - ant-only build -- no more makefiles
@@ -5701,18 +5788,18 @@ Infrastructure
   - Analyzers can choose tokenizer based on field name
   - misc bug fixes.
 
-1.01b (last Sourceforge release), 2 July 2001
+1.01b (last Sourceforge release)
  . a few bug fixes
  . new Query Parser
  . new prefix query (search for "foo*" matches "food")
 
-1.0, 2000-10-04
+1.0
 
 This release fixes a few serious bugs and also includes some
 performance optimizations, a stemmer, and a few other minor
 enhancements.
 
-0.04 2000-04-19
+0.04
 
 Lucene now includes a grammar-based tokenizer, StandardTokenizer.
 
@@ -5737,7 +5824,7 @@ StandardTokenizer serves two purposes:
     the new tokenizer into the application and modifying it
     accordingly.
 
-0.01, 2000-03-30
+0.01
 
 First open source release.
 

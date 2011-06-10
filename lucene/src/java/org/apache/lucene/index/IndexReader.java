@@ -23,6 +23,8 @@ import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -174,6 +176,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
     public static final FieldOption TERMVECTOR_WITH_OFFSET = new FieldOption ("TERMVECTOR_WITH_OFFSET");
     /** All fields with termvectors with offset values and position values enabled */
     public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
+    /** All fields holding doc values */
+    public static final FieldOption DOC_VALUES = new FieldOption ("DOC_VALUES");
+
   }
 
   private boolean closed;
@@ -1025,8 +1030,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
-   * <b>NOTE:</b> If this field does not store norms, then
-   * this method call will silently do nothing.
+   * <b>NOTE:</b> If this field does not index norms, then
+   * this method throws {@link IllegalStateException}.
    *
    * @see #norms(String)
    * @see Similarity#decodeNormValue(byte)
@@ -1037,6 +1042,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws IOException if there is a low-level IO error
+   * @throws IllegalStateException if the field does not index norms
    */
   public synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
@@ -1057,9 +1063,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract long getSumOfNorms(String field) throws IOException;
   
-  /** Flex API: returns {@link Fields} for this reader.
-   *  This method may return null if the reader has no
-   *  postings.
+  /**
+   * Returns {@link Fields} for this reader.
+   * This method may return null if the reader has no
+   * postings.
    *
    * <p><b>NOTE</b>: if this is a multi reader ({@link
    * #getSequentialSubReaders} is not null) then this
@@ -1070,6 +1077,21 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * using {@link ReaderUtil#gatherSubReaders} and iterate
    * through them yourself. */
   public abstract Fields fields() throws IOException;
+  
+  /**
+   * Returns {@link PerDocValues} for this reader.
+   * This method may return null if the reader has no per-document
+   * values stored.
+   *
+   * <p><b>NOTE</b>: if this is a multi reader ({@link
+   * #getSequentialSubReaders} is not null) then this
+   * method will throw UnsupportedOperationException.  If
+   * you really need {@link PerDocValues} for such a reader,
+   * use {@link MultiPerDocValues#getPerDocs(IndexReader)}.  However, for
+   * performance reasons, it's best to get all sub-readers
+   * using {@link ReaderUtil#gatherSubReaders} and iterate
+   * through them yourself. */
+  public abstract PerDocValues perDocValues() throws IOException;
 
   public int docFreq(Term term) throws IOException {
     return docFreq(term.field(), term.bytes());
@@ -1571,7 +1593,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public int getTermInfosIndexDivisor() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
-
+  
+  public final IndexDocValues docValues(String field) throws IOException {
+    final PerDocValues perDoc = perDocValues();
+    if (perDoc == null) {
+      return null;
+    }
+    return perDoc.docValues(field);
+  }
 
   private volatile Fields fields;
 
@@ -1584,6 +1613,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
   Fields retrieveFields() {
     return fields;
   }
+  
+  private volatile PerDocValues perDocValues;
+  
+  /** @lucene.internal */
+  void storePerDoc(PerDocValues perDocValues) {
+    this.perDocValues = perDocValues;
+  }
+
+  /** @lucene.internal */
+  PerDocValues retrievePerDoc() {
+    return perDocValues;
+  }  
+  
 
   /**
    * A struct like class that represents a hierarchical relationship between

@@ -463,9 +463,8 @@
       <sysproperty key="testmethod" value="${testmethod}"/>
       <!-- set whether or not nightly tests should run -->
       <sysproperty key="tests.nightly" value="${tests.nightly}"/>
-      <!-- TODO: why is this unconditionally set to "" above? disable for now
-         <jvmarg line="${dir.prop}"/>
-      -->
+      <sysproperty key="tests.directory" value="${tests.directory}"/>
+      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
       <jvmarg line="${args}"/>
 
       <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
@@ -859,7 +858,7 @@
     <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt example/** client/** contrib/**/lib/ contrib/**/lucene-libs/ contrib/**/README.txt contrib/**/CHANGES.txt"
+        includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/** client/** contrib/**/lib/ contrib/**/lucene-libs/ contrib/**/README.txt contrib/**/CHANGES.txt"
         excludes="${dist}/** ${dest}/** lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/** src/site/build/** **/target/** client/ruby/flare/** client/python/** client/javascript/** contrib/**/build/** **/*.iml **/*.ipr **/*.iws **/*pom.xml.template" />
       <tarfileset dir="."
         mode="755"

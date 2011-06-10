@@ -45,7 +45,7 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class CoreAdminHandler extends RequestHandlerBase {

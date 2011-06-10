@@ -59,7 +59,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   public void testRun() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTest(random, pw, false);
+      final int MAX_DOCS = atLeast(225);
+      doTest(random, pw, false, MAX_DOCS);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -67,7 +68,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTest(random, pw, true);
+      doTest(random, pw, true, MAX_DOCS);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -76,7 +77,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   }
 
 
-  private void doTest(Random random, PrintWriter out, boolean useCompoundFiles) throws Exception {
+  private void doTest(Random random, PrintWriter out, boolean useCompoundFiles, int MAX_DOCS) throws Exception {
       Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer(random);
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
@@ -89,8 +90,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
         System.out.println("TEST: now build index");
         writer.setInfoStream(System.out);
       }
-
-      final int MAX_DOCS = 225;
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();

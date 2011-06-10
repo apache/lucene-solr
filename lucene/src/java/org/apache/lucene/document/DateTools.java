@@ -17,14 +17,15 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.NumericRangeQuery; // for javadocs
+import org.apache.lucene.util.NumericUtils;        // for javadocs
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
 import java.util.Locale;
-import org.apache.lucene.search.NumericRangeQuery; // for javadocs
-import org.apache.lucene.util.NumericUtils; // for javadocs
+import java.util.TimeZone;
 
 /**
  * Provides support for converting dates to strings and vice-versa.
@@ -47,38 +48,27 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  */
 public class DateTools {
   
-  private static final class DateFormats {
-    final static TimeZone GMT = TimeZone.getTimeZone("GMT");
+  final static TimeZone GMT = TimeZone.getTimeZone("GMT");
 
-    final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy", Locale.US);
-    final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM", Locale.US);
-    final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd", Locale.US);
-    final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH", Locale.US);
-    final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
-    final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
-    final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
-    {
-      // times need to be normalized so the value doesn't depend on the 
-      // location the index is created/used:
-      YEAR_FORMAT.setTimeZone(GMT);
-      MONTH_FORMAT.setTimeZone(GMT);
-      DAY_FORMAT.setTimeZone(GMT);
-      HOUR_FORMAT.setTimeZone(GMT);
-      MINUTE_FORMAT.setTimeZone(GMT);
-      SECOND_FORMAT.setTimeZone(GMT);
-      MILLISECOND_FORMAT.setTimeZone(GMT);
-    }
-    
-    final Calendar calInstance = Calendar.getInstance(GMT, Locale.US);
-  }
-  
-  private static final ThreadLocal<DateFormats> FORMATS = new ThreadLocal<DateFormats>() {
+  private static final ThreadLocal<Calendar> TL_CAL = new ThreadLocal<Calendar>() {
     @Override
-    protected DateFormats initialValue() {
-      return new DateFormats();
+    protected Calendar initialValue() {
+      return Calendar.getInstance(GMT, Locale.US);
     }
   };
-  
+
+  //indexed by format length
+  private static final ThreadLocal<SimpleDateFormat[]> TL_FORMATS = new ThreadLocal<SimpleDateFormat[]>() {
+    @Override
+    protected SimpleDateFormat[] initialValue() {
+      SimpleDateFormat[] arr = new SimpleDateFormat[Resolution.MILLISECOND.formatLen+1];
+      for (Resolution resolution : Resolution.values()) {
+        arr[resolution.formatLen] = (SimpleDateFormat)resolution.format.clone();
+      }
+      return arr;
+    }
+  };
+
   // cannot create, the class has static methods only
   private DateTools() {}
 
@@ -105,22 +95,8 @@ public class DateTools {
    *  depending on <code>resolution</code>; using GMT as timezone
    */
   public static String timeToString(long time, Resolution resolution) {
-    final DateFormats formats = FORMATS.get();
-    
-    formats.calInstance.setTimeInMillis(round(time, resolution));
-    final Date date = formats.calInstance.getTime();
-    
-    switch (resolution) {
-      case YEAR: return formats.YEAR_FORMAT.format(date);
-      case MONTH:return formats.MONTH_FORMAT.format(date);
-      case DAY: return formats.DAY_FORMAT.format(date);
-      case HOUR: return formats.HOUR_FORMAT.format(date);
-      case MINUTE: return formats.MINUTE_FORMAT.format(date);
-      case SECOND: return formats.SECOND_FORMAT.format(date);
-      case MILLISECOND: return formats.MILLISECOND_FORMAT.format(date);
-    }
-    
-    throw new IllegalArgumentException("unknown resolution " + resolution);
+    final Date date = new Date(round(time, resolution));
+    return TL_FORMATS.get()[resolution.formatLen].format(date);
   }
   
   /**
@@ -148,24 +124,11 @@ public class DateTools {
    *  expected format 
    */
   public static Date stringToDate(String dateString) throws ParseException {
-    final DateFormats formats = FORMATS.get();
-    
-    if (dateString.length() == 4) {
-      return formats.YEAR_FORMAT.parse(dateString);
-    } else if (dateString.length() == 6) {
-      return formats.MONTH_FORMAT.parse(dateString);
-    } else if (dateString.length() == 8) {
-      return formats.DAY_FORMAT.parse(dateString);
-    } else if (dateString.length() == 10) {
-      return formats.HOUR_FORMAT.parse(dateString);
-    } else if (dateString.length() == 12) {
-      return formats.MINUTE_FORMAT.parse(dateString);
-    } else if (dateString.length() == 14) {
-      return formats.SECOND_FORMAT.parse(dateString);
-    } else if (dateString.length() == 17) {
-      return formats.MILLISECOND_FORMAT.parse(dateString);
+    try {
+      return TL_FORMATS.get()[dateString.length()].parse(dateString);
+    } catch (Exception e) {
+      throw new ParseException("Input is not a valid date string: " + dateString, 0);
     }
-    throw new ParseException("Input is not valid date string: " + dateString, 0);
   }
   
   /**
@@ -191,44 +154,25 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1, expressed as milliseconds since January 1, 1970, 00:00:00 GMT
    */
+  @SuppressWarnings("fallthrough")
   public static long round(long time, Resolution resolution) {
-    final Calendar calInstance = FORMATS.get().calInstance;
+    final Calendar calInstance = TL_CAL.get();
     calInstance.setTimeInMillis(time);
     
     switch (resolution) {
+      //NOTE: switch statement fall-through is deliberate
       case YEAR:
         calInstance.set(Calendar.MONTH, 0);
-        calInstance.set(Calendar.DAY_OF_MONTH, 1);
-        calInstance.set(Calendar.HOUR_OF_DAY, 0);
-        calInstance.set(Calendar.MINUTE, 0);
-        calInstance.set(Calendar.SECOND, 0);
-        calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case MONTH:
         calInstance.set(Calendar.DAY_OF_MONTH, 1);
-        calInstance.set(Calendar.HOUR_OF_DAY, 0);
-        calInstance.set(Calendar.MINUTE, 0);
-        calInstance.set(Calendar.SECOND, 0);
-        calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case DAY:
         calInstance.set(Calendar.HOUR_OF_DAY, 0);
-        calInstance.set(Calendar.MINUTE, 0);
-        calInstance.set(Calendar.SECOND, 0);
-        calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case HOUR:
         calInstance.set(Calendar.MINUTE, 0);
-        calInstance.set(Calendar.SECOND, 0);
-        calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case MINUTE:
         calInstance.set(Calendar.SECOND, 0);
-        calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case SECOND:
         calInstance.set(Calendar.MILLISECOND, 0);
-        break;
       case MILLISECOND:
         // don't cut off anything
         break;
@@ -241,7 +185,18 @@ public class DateTools {
   /** Specifies the time granularity. */
   public static enum Resolution {
     
-    YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MILLISECOND;
+    YEAR(4), MONTH(6), DAY(8), HOUR(10), MINUTE(12), SECOND(14), MILLISECOND(17);
+
+    final int formatLen;
+    final SimpleDateFormat format;//should be cloned before use, since it's not threadsafe
+
+    Resolution(int formatLen) {
+      this.formatLen = formatLen;
+      // formatLen 10's place:                     11111111
+      // formatLen  1's place:            12345678901234567
+      this.format = new SimpleDateFormat("yyyyMMddHHmmssSSS".substring(0,formatLen),Locale.US);
+      this.format.setTimeZone(GMT);
+    }
 
     /** this method returns the name of the resolution
      * in lowercase (for backwards compatibility) */

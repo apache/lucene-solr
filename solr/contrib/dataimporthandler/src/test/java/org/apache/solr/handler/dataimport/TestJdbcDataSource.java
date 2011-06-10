@@ -39,7 +39,7 @@ import org.junit.Test;
  * Note: The tests are ignored for the lack of DB support for testing
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {

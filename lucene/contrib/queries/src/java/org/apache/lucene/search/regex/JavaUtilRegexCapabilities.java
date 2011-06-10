@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -95,25 +96,11 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
   class JavaUtilRegexMatcher implements RegexCapabilities.RegexMatcher {
     private final Pattern pattern;
     private final Matcher matcher;
-    private final UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
-    private final CharSequence utf16wrapper = new CharSequence() {
-
-      public int length() {
-        return utf16.length;
-      }
-
-      public char charAt(int index) {
-        return utf16.result[index];
-      }
-
-      public CharSequence subSequence(int start, int end) {
-        return new String(utf16.result, start, end - start);
-      }  
-    };
+    private final CharsRef utf16 = new CharsRef(10);
     
     public JavaUtilRegexMatcher(String regex, int flags) {
       this.pattern = Pattern.compile(regex, flags);
-      this.matcher = this.pattern.matcher(utf16wrapper);
+      this.matcher = this.pattern.matcher(utf16);
     }
     
     public boolean match(BytesRef term) {

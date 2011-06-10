@@ -32,7 +32,6 @@ import org.apache.lucene.util.Version;
 /**
  * A QueryParser which constructs queries to search multiple fields.
  *
- * @version $Revision$
  */
 public class MultiFieldQueryParser extends QueryParser
 {

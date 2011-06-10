@@ -35,7 +35,7 @@ import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * 
- * @version $Id$
+ *
  * @since Solr 3.1
  */
 public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {

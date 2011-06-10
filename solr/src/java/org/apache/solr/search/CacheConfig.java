@@ -34,7 +34,7 @@ import javax.xml.xpath.XPathConstants;
  * stored in the solrconfig.xml file, and implements a
  * factory to create caches.
  *
- * @version $Id$
+ *
  */
 public class CacheConfig {
   private String nodeName;

@@ -114,6 +114,6 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random, new MockAnalyzer(random), 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random, new MockAnalyzer(random), atLeast(1000));
   }
 }

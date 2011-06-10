@@ -42,7 +42,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * defaults to the "standard" writer.
  * </p>
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class RawResponseWriter implements BinaryQueryResponseWriter 

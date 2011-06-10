@@ -28,7 +28,8 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.*;
-import org.apache.solr.util.TestHarness;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import org.xml.sax.SAXException;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,16 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
    */
   public String getSolrHome() {
     return SolrTestCaseJ4.TEST_HOME();
+  }
+  
+  @BeforeClass
+  public static void beforeClassAbstractSolrTestCase() throws Exception {
+    SolrTestCaseJ4.startTrackingSearchers();
+  }
+  
+  @AfterClass
+  public static void afterClassAbstractSolrTestCase() throws Exception {
+    SolrTestCaseJ4.endTrackingSearchers();
   }
   
   /**
@@ -180,6 +191,7 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     }
 
     if (h != null) { h.close(); }
+    SolrTestCaseJ4.closeDirectories();
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {
       System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());

@@ -80,7 +80,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     writer.commit();
     IndexSearcher searcher = new IndexSearcher(dir, true);
     
-    int num = 1000 * RANDOM_MULTIPLIER;
+    int num = atLeast(1000);
     for(int dx = 0; dx < num; dx ++) {
       String f = randomField();
       Document doc = new Document();

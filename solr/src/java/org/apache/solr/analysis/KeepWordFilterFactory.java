@@ -36,7 +36,7 @@ import java.io.IOException;
  *     &lt;filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="false" enablePositionIncrements="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class KeepWordFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 

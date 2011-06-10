@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.PersianNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class PersianNormalizationFilterFactory extends BaseTokenFilterFactory {
   public PersianNormalizationFilter create(TokenStream input) {

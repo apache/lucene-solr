@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -575,8 +577,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     SegmentNorms norm = norms.get(field);
-    if (norm == null)                             // not an indexed field
-      return;
+    if (norm == null) {
+      // field does not store norms
+      throw new IllegalStateException("Cannot setNorm for field " + field + ": norms were omitted");
+    }
 
     normsDirty = true;
     norm.copyOnWrite()[doc] = value;                    // set the value
@@ -848,5 +852,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // SegmentReaders.  We only notify once that core is no
     // longer used (all SegmentReaders sharing it have been
     // closed).
+  }
+  
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    return core.perDocProducer;
   }
 }

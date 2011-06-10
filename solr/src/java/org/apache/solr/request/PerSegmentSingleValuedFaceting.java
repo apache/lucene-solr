@@ -23,9 +23,11 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
@@ -37,7 +39,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -244,7 +245,7 @@ class PerSegmentSingleValuedFaceting {
         BytesRef prefixRef = new BytesRef(prefix);
         startTermIndex = si.binarySearchLookup(prefixRef, tempBR);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
-        prefixRef.append(ByteUtils.bigTerm);
+        prefixRef.append(UnicodeUtil.BIG_TERM);
         // TODO: we could constrain the lower endpoint if we had a binarySearch method that allowed passing start/end
         endTermIndex = si.binarySearchLookup(prefixRef, tempBR);
         assert endTermIndex < 0;
@@ -339,6 +340,8 @@ abstract class FacetCollector {
 
 // This collector expects facets to be collected in index order
 class CountSortedFacetCollector extends FacetCollector {
+  private final CharsRef spare = new CharsRef();
+
   final int offset;
   final int limit;
   final int maxsize;
@@ -360,7 +363,7 @@ class CountSortedFacetCollector extends FacetCollector {
       // NOTE: we use c>min rather than c>=min as an optimization because we are going in
       // index order, so we already know that the keys are ordered.  This can be very
       // important if a lot of the counts are repeated (like zero counts would be).
-      queue.add(new SimpleFacets.CountPair<String,Integer>(term.utf8ToString(), count));
+      queue.add(new SimpleFacets.CountPair<String,Integer>(term.utf8ToChars(spare).toString(), count));
       if (queue.size()>=maxsize) min=queue.last().val;
     }
     return false;
@@ -383,11 +386,12 @@ class CountSortedFacetCollector extends FacetCollector {
 
 // This collector expects facets to be collected in index order
 class IndexSortedFacetCollector extends FacetCollector {
+  private final CharsRef spare = new CharsRef();
+
   int offset;
   int limit;
   final int mincount;
   final NamedList<Integer> res = new NamedList<Integer>();
-
 
   public IndexSortedFacetCollector(int offset, int limit, int mincount) {
     this.offset = offset;
@@ -407,7 +411,7 @@ class IndexSortedFacetCollector extends FacetCollector {
     }
 
     if (limit > 0) {
-      res.add(term.utf8ToString(), count);
+      res.add(term.utf8ToChars(spare).toString(), count);
       limit--;
     }
 

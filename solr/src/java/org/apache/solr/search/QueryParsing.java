@@ -32,6 +32,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -52,7 +54,7 @@ import java.util.Map;
 /**
  * Collection of static utilities useful for query parsing.
  *
- * @version $Id$
+ *
  */
 public class QueryParsing {
   public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
@@ -86,11 +88,16 @@ public class QueryParsing {
 
 
   // note to self: something needs to detect infinite recursion when parsing queries
-  static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {
+  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {
+    return parseLocalParams(txt, start, target, params, LOCALPARAM_START, LOCALPARAM_END);
+  }
+
+
+  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params, String startString, char endChar) throws ParseException {
     int off = start;
-    if (!txt.startsWith(LOCALPARAM_START, off)) return start;
+    if (!txt.startsWith(startString, off)) return start;
     StrParser p = new StrParser(txt, start, txt.length());
-    p.pos += 2; // skip over "{!"
+    p.pos += startString.length(); // skip over "{!"
 
     for (; ;) {
       /*
@@ -99,13 +106,13 @@ public class QueryParsing {
       }
       */
       char ch = p.peek();
-      if (ch == LOCALPARAM_END) {
+      if (ch == endChar) {
         return p.pos + 1;
       }
 
       String id = p.getId();
       if (id.length() == 0) {
-        throw new ParseException("Expected identifier '}' parsing local params '" + txt + '"');
+        throw new ParseException("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
 
       }
       String val = null;
@@ -129,7 +136,7 @@ public class QueryParsing {
         if (ch == '\"' || ch == '\'') {
           val = p.getQuotedString();
         } else {
-          // read unquoted literal ended by whitespace or '}'
+          // read unquoted literal ended by whitespace or endChar (normally '}')
           // there is no escaping.
           int valStart = p.pos;
           for (; ;) {
@@ -137,7 +144,7 @@ public class QueryParsing {
               throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
             }
             char c = p.val.charAt(p.pos);
-            if (c == LOCALPARAM_END || Character.isWhitespace(c)) {
+            if (c == endChar || Character.isWhitespace(c)) {
               val = p.val.substring(valStart, p.pos);
               break;
             }
@@ -154,6 +161,7 @@ public class QueryParsing {
       if (target != null) target.put(id, val);
     }
   }
+
 
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
@@ -382,6 +390,22 @@ public class QueryParsing {
     }
   }
 
+  static void writeFieldVal(BytesRef val, FieldType ft, Appendable out, int flags) throws IOException {
+    if (ft != null) {
+      try {
+        CharsRef readable = new CharsRef();
+        ft.indexedToReadable(val, readable);
+        out.append(readable);
+      } catch (Exception e) {
+        out.append("EXCEPTION(val=");
+        out.append(val.utf8ToString());
+        out.append(")");
+      }
+    } else {
+      out.append(val.utf8ToString());
+    }
+  }
+
   /**
    * @see #toString(Query,IndexSchema)
    */
@@ -392,14 +416,14 @@ public class QueryParsing {
       TermQuery q = (TermQuery) query;
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
-      writeFieldVal(t.text(), ft, out, flags);
+      writeFieldVal(t.bytes(), ft, out, flags);
     } else if (query instanceof TermRangeQuery) {
       TermRangeQuery q = (TermRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append(q.includesLower() ? '[' : '{');
-      String lt = q.getLowerTerm().utf8ToString();
-      String ut = q.getUpperTerm().utf8ToString();
+      BytesRef lt = q.getLowerTerm();
+      BytesRef ut = q.getUpperTerm();
       if (lt == null) {
         out.append('*');
       } else {
@@ -441,7 +465,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0) {
+      if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0 || q.isCoordDisabled()) {
         needParens = true;
       }
       if (needParens) {
@@ -486,6 +510,9 @@ public class QueryParsing {
       if (q.getMinimumNumberShouldMatch() > 0) {
         out.append('~');
         out.append(Integer.toString(q.getMinimumNumberShouldMatch()));
+      }
+      if (q.isCoordDisabled()) {
+        out.append("/no_coord");
       }
 
     } else if (query instanceof PrefixQuery) {

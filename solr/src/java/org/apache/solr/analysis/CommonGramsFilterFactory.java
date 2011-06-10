@@ -35,7 +35,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *     &lt;filter class="solr.CommonGramsFilterFactory" words="commongramsstopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 
 /*

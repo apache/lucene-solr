@@ -26,7 +26,6 @@ import org.apache.lucene.util.Version;
 /**
  * Test case for FrenchAnalyzer.
  *
- * @version   $version$
  */
 
 public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {

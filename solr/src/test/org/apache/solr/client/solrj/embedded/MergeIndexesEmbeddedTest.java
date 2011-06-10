@@ -27,12 +27,14 @@ import org.apache.solr.core.SolrCore;
  * Test for merge indexes command
  *
  * @since solr 1.4
- * @version $Id$
+ *
  */
 public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
 
   @Override
   public void setUp() throws Exception {
+    // TODO: fix this test to use MockDirectoryFactory
+    System.clearProperty("solr.directoryFactory");
     super.setUp();
 
     File home = new File(getSolrHome());
