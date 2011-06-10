@@ -89,15 +89,16 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
         new StringBuilder(". ").append(logField).append("=")
         .append((String)cmd.getSolrInputDocument().getField(logField).getValue())
         .append(", ").toString();
-      if (solrUIMAConfiguration.isIgnoreErrors())
+      int len = Math.min(text.length(), 100);
+      if (solrUIMAConfiguration.isIgnoreErrors()) {
         log.warn(new StringBuilder("skip the text processing due to ")
           .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-          .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString());
-      else{
+          .append(" text=\"").append(text.substring(0, len)).append("...\"").toString());
+      } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             new StringBuilder("processing error: ")
               .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-              .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString(), e);
+              .append(" text=\"").append(text.substring(0, len)).append("...\"").toString(), e);
       }
     }
     super.processAdd(cmd);
