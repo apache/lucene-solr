@@ -93,12 +93,12 @@ final class PackedReaderIterator implements PackedInts.ReaderIterator {
     final long bits = (long) bitsPerValue;
     final int posToSkip = ord - 1 - position;
     final long bitsToSkip = (bits * (long)posToSkip);
-    if(bitsToSkip < pendingBitsLeft ){ // enough bits left - no seek required
+    if (bitsToSkip < pendingBitsLeft) { // enough bits left - no seek required
       pendingBitsLeft -= bitsToSkip;
-    }else {
+    } else {
       final long skip = bitsToSkip-pendingBitsLeft;
       final long closestByte = (skip >> 6) << 3;
-      if(closestByte != 0) { // need to seek 
+      if (closestByte != 0) { // need to seek 
         final long filePointer = in.getFilePointer();
         in.seek(filePointer + closestByte);
       }

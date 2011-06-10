@@ -108,7 +108,7 @@ public class BlockTermsReader extends FieldsProducer {
   //private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
-                          int termsCacheSize, String codecId)
+                          int termsCacheSize, int codecId)
     throws IOException {
     
     this.postingsReader = postingsReader;
@@ -196,7 +196,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, BlockTermsWriter.TERMS_EXTENSION));
   }
 

@@ -22,11 +22,14 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 
 /** Codec that reads the pre-flex-indexing postings
  *  format.  It does not provide a writer because newly
@@ -66,7 +69,7 @@ public class PreFlexCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, String id, Set<String> files) throws IOException {
+  public void files(Directory dir, SegmentInfo info, int id, Set<String> files) throws IOException {
     // preflex fields have no codec ID - we ignore it here
     PreFlexFields.files(dir, info, files);
   }
@@ -77,5 +80,15 @@ public class PreFlexCodec extends Codec {
     extensions.add(PROX_EXTENSION);
     extensions.add(TERMS_EXTENSION);
     extensions.add(TERMS_INDEX_EXTENSION);
+  }
+
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    throw new UnsupportedOperationException("PerDocConsumer is not supported by Preflex codec");
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    throw new UnsupportedOperationException("PerDocValues is not supported by Preflex codec");
   }
 }

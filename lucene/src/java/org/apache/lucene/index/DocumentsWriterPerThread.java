@@ -32,6 +32,7 @@ import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 public class DocumentsWriterPerThread {
@@ -169,6 +170,7 @@ public class DocumentsWriterPerThread {
   DocumentsWriterDeleteQueue deleteQueue;
   DeleteSlice deleteSlice;
   private final NumberFormat nf = NumberFormat.getInstance();
+  final Allocator byteBlockAllocator;
 
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent,
@@ -181,9 +183,9 @@ public class DocumentsWriterPerThread {
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
-
-    consumer = indexingChain.getChain(this);
     bytesUsed = new AtomicLong(0);
+    byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
+    consumer = indexingChain.getChain(this);
     pendingDeletes = new BufferedDeletes(false);
     initialize();
   }
@@ -538,36 +540,13 @@ public class DocumentsWriterPerThread {
     bytesUsed.addAndGet(-(length *(INT_BLOCK_SIZE*RamUsageEstimator.NUM_BYTES_INT)));
   }
 
-  final Allocator byteBlockAllocator = new DirectTrackingAllocator();
-    
-    
- private class DirectTrackingAllocator extends Allocator {
-    public DirectTrackingAllocator() {
-      this(BYTE_BLOCK_SIZE);
-    }
-
-    public DirectTrackingAllocator(int blockSize) {
-      super(blockSize);
-    }
-
-    @Override
-    public byte[] getByteBlock() {
-      bytesUsed.addAndGet(blockSize);
-      return new byte[blockSize];
-    }
-    @Override
-    public void recycleByteBlocks(byte[][] blocks, int start, int end) {
-      bytesUsed.addAndGet(-((end-start)* blockSize));
-      for (int i = start; i < end; i++) {
-        blocks[i] = null;
-      }
-    }
-    
+  PerDocWriteState newPerDocWriteState(int codecId) {
+    assert segment != null;
+    return new PerDocWriteState(infoStream, directory, segment, fieldInfos, bytesUsed, codecId);
   }
   
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
     docState.infoStream = infoStream;
   }
-  
 }

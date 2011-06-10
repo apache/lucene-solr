@@ -31,6 +31,6 @@ public abstract class Fields {
   /** Get the {@link Terms} for this field.  This will return
    *  null if the field does not exist. */
   public abstract Terms terms(String field) throws IOException;
-
+  
   public final static Fields[] EMPTY_ARRAY = new Fields[0];
 }

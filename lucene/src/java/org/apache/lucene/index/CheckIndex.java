@@ -27,6 +27,9 @@ import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -195,6 +198,9 @@ public class CheckIndex {
 
       /** Status for testing of term vectors (null if term vectors could not be tested). */
       public TermVectorStatus termVectorStatus;
+      
+      /** Status for testing of DocValues (null if DocValues could not be tested). */
+      public DocValuesStatus docValuesStatus;
     }
 
     /**
@@ -252,6 +258,15 @@ public class CheckIndex {
       public long totVectors = 0;
       
       /** Exception thrown during term vector test (null on success) */
+      public Throwable error = null;
+    }
+    
+    public static final class DocValuesStatus {
+      /** Number of documents tested. */
+      public int docCount;
+      /** Total number of docValues tested. */
+      public long totalValueFields;
+      /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
   }
@@ -499,6 +514,8 @@ public class CheckIndex {
 
         // Test Term Vectors
         segInfoStat.termVectorStatus = testTermVectors(info, reader, nf);
+        
+        segInfoStat.docValuesStatus = testDocValues(info, reader);
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
@@ -510,6 +527,8 @@ public class CheckIndex {
           throw new RuntimeException("Stored Field test failed");
         } else if (segInfoStat.termVectorStatus.error != null) {
           throw new RuntimeException("Term Vector test failed");
+        }  else if (segInfoStat.docValuesStatus.error != null) {
+          throw new RuntimeException("DocValues test failed");
         }
 
         msg("");
@@ -918,6 +937,60 @@ public class CheckIndex {
       }
     }
 
+    return status;
+  }
+  
+  private Status.DocValuesStatus testDocValues(SegmentInfo info,
+      SegmentReader reader) {
+    final Status.DocValuesStatus status = new Status.DocValuesStatus();
+    try {
+      if (infoStream != null) {
+        infoStream.print("    test: DocValues........");
+      }
+      final FieldInfos fieldInfos = info.getFieldInfos();
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (fieldInfo.hasDocValues()) {
+          status.totalValueFields++;
+          final PerDocValues perDocValues = reader.perDocValues();
+          final IndexDocValues docValues = perDocValues.docValues(fieldInfo.name);
+          if (docValues == null) {
+            continue;
+          }
+          final ValuesEnum values = docValues.getEnum();
+          while (values.nextDoc() != ValuesEnum.NO_MORE_DOCS) {
+            switch (fieldInfo.docValues) {
+            case BYTES_FIXED_DEREF:
+            case BYTES_FIXED_SORTED:
+            case BYTES_FIXED_STRAIGHT:
+            case BYTES_VAR_DEREF:
+            case BYTES_VAR_SORTED:
+            case BYTES_VAR_STRAIGHT:
+              values.bytes();
+              break;
+            case FLOAT_32:
+            case FLOAT_64:
+              values.getFloat();
+              break;
+            case INTS:
+              values.getInt();
+              break;
+            default:
+              throw new IllegalArgumentException("Field: " + fieldInfo.name
+                  + " - no such DocValues type: " + fieldInfo.docValues);
+            }
+          }
+        }
+      }
+
+      msg("OK [" + status.docCount + " total doc Count; Num DocValues Fields "
+          + status.totalValueFields);
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
     return status;
   }
 

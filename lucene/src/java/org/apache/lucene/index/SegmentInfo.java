@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -652,7 +653,7 @@ public final class SegmentInfo implements Cloneable {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-
+   
     if (normGen != null) {
       for (Entry<Integer,Long> entry : normGen.entrySet()) {
         long gen = entry.getValue();

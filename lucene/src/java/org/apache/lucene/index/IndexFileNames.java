@@ -80,10 +80,9 @@ public final class IndexFileNames {
 
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
-  
+
   /** Extension of global field numbers */
   public static final String GLOBAL_FIELD_NUM_MAP_EXTENSION = "fnx";
-  
 
   /**
    * This array contains all filename extensions used by
@@ -208,7 +207,12 @@ public final class IndexFileNames {
       return segmentName;
     }
   }
-  
+
+  /** Sugar for passing "" + name instead */
+  public static String segmentFileName(String segmentName, int name, String ext) {
+    return segmentFileName(segmentName, ""+name, ext);
+  }
+
   /**
    * Returns true if the given filename ends with the given extension. One
    * should provide a <i>pure</i> extension, without '.'.

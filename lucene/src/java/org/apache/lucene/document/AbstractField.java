@@ -18,7 +18,9 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.FieldInvertState;  // for javadocs
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.StringHelper; // for javadocs
 
 
@@ -47,6 +49,8 @@ public abstract class AbstractField implements Fieldable {
   // length/offset for all primitive types
   protected int binaryLength;
   protected int binaryOffset;
+  protected PerDocFieldValues docValues;
+
 
   protected AbstractField()
   {
@@ -288,5 +292,21 @@ public abstract class AbstractField implements Fieldable {
 
     result.append('>');
     return result.toString();
+  }
+
+  public PerDocFieldValues getDocValues() {
+    return docValues;
+  }
+  
+  public void setDocValues(PerDocFieldValues docValues) {
+    this.docValues = docValues;
+  }
+  
+  public boolean hasDocValues() {
+    return docValues != null && docValues.type() != null;
+  }
+  
+  public ValueType docValuesType() {
+    return docValues == null? null : docValues.type();
   }
 }

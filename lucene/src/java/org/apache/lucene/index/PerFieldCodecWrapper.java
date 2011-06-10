@@ -19,16 +19,22 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
@@ -64,7 +70,7 @@ final class PerFieldCodecWrapper extends Codec {
       for (int i = 0; i < codecs.length; i++) {
         boolean success = false;
         try {
-          consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, "" + i)));
+          consumers.add(codecs[i].fieldsConsumer(new SegmentWriteState(state, i)));
           success = true;
         } finally {
           if (!success) {
@@ -99,13 +105,13 @@ final class PerFieldCodecWrapper extends Codec {
       boolean success = false;
       try {
         for (FieldInfo fi : fieldInfos) {
-          if (fi.isIndexed) { // TODO this does not work for non-indexed fields
+          if (fi.isIndexed) { 
             fields.add(fi.name);
             assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, readBufferSize, indexDivisor, ""+fi.getCodecId())));
+                                                                             si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }
@@ -120,6 +126,7 @@ final class PerFieldCodecWrapper extends Codec {
         }
       }
     }
+    
 
     private final class FieldsIterator extends FieldsEnum {
       private final Iterator<String> it;
@@ -161,7 +168,7 @@ final class PerFieldCodecWrapper extends Codec {
       FieldsProducer fields = codecs.get(field);
       return fields == null ? null : fields.terms(field);
     }
-
+    
     @Override
     public void close() throws IOException {
       IOUtils.closeSafely(false, codecs.values());
@@ -184,7 +191,7 @@ final class PerFieldCodecWrapper extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo info, String codecId, Set<String> files)
+  public void files(Directory dir, SegmentInfo info, int codecId, Set<String> files)
       throws IOException {
     // ignore codecid since segmentCodec will assign it per codec
     segmentCodecs.files(dir, info, files);
@@ -195,5 +202,136 @@ final class PerFieldCodecWrapper extends Codec {
     for (Codec codec : segmentCodecs.codecs) {
       codec.getExtensions(extensions);
     }
+  }
+
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new PerDocConsumers(state);
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new PerDocProducers(state.dir, state.fieldInfos, state.segmentInfo,
+    state.readBufferSize, state.termsIndexDivisor);
+  }
+  
+  private final class PerDocProducers extends PerDocValues {
+    private final TreeMap<String, PerDocValues> codecs = new TreeMap<String, PerDocValues>();
+
+    public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
+        int readBufferSize, int indexDivisor) throws IOException {
+      final Map<Codec, PerDocValues> producers = new HashMap<Codec, PerDocValues>();
+      boolean success = false;
+      try {
+        for (FieldInfo fi : fieldInfos) {
+          if (fi.hasDocValues()) { 
+            assert fi.getCodecId() != FieldInfo.UNASSIGNED_CODEC_ID;
+            Codec codec = segmentCodecs.codecs[fi.getCodecId()];
+            if (!producers.containsKey(codec)) {
+              producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
+                si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
+            }
+            codecs.put(fi.name, producers.get(codec));
+          }
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          // If we hit exception (eg, IOE because writer was
+          // committing, or, for any other reason) we must
+          // go back and close all FieldsProducers we opened:
+          for(PerDocValues producer : producers.values()) {
+            try {
+              producer.close();
+            } catch (Throwable t) {
+              // Suppress all exceptions here so we continue
+              // to throw the original one
+            }
+          }
+        }
+      }
+    }
+    
+    @Override
+    public Collection<String> fields() {
+      return codecs.keySet();
+    }
+    @Override
+    public IndexDocValues docValues(String field) throws IOException {
+      final PerDocValues perDocProducer = codecs.get(field);
+      if (perDocProducer == null) {
+        return null;
+      }
+      return perDocProducer.docValues(field);
+    }
+    
+    public void close() throws IOException {
+      final Collection<PerDocValues> values = codecs.values();
+      IOException err = null;
+      for (PerDocValues perDocValues : values) {
+        try {
+          if (perDocValues != null) {
+            perDocValues.close();
+          }
+        } catch (IOException ioe) {
+          // keep first IOException we hit but keep
+          // closing the rest
+          if (err == null) {
+            err = ioe;
+          }
+        }
+      }
+      if (err != null) {
+        throw err;
+      }
+    }
+  }
+  
+  private final class PerDocConsumers extends PerDocConsumer {
+    private final PerDocConsumer[] consumers;
+    private final Codec[] codecs;
+    private final PerDocWriteState state;
+
+    public PerDocConsumers(PerDocWriteState state) throws IOException {
+      assert segmentCodecs == state.segmentCodecs;
+      this.state = state;
+      codecs = segmentCodecs.codecs;
+      consumers = new PerDocConsumer[codecs.length];
+    }
+
+    public void close() throws IOException {
+      IOException err = null;
+      for (int i = 0; i < consumers.length; i++) {
+        try {
+          final PerDocConsumer next = consumers[i];
+          if (next != null) {
+            next.close();
+          }
+        } catch (IOException ioe) {
+          // keep first IOException we hit but keep
+          // closing the rest
+          if (err == null) {
+            err = ioe;
+          }
+        }
+      }
+      if (err != null) {
+        throw err;
+      }
+    }
+
+    @Override
+    public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
+      final int codecId = field.getCodecId();
+      assert codecId != FieldInfo.UNASSIGNED_CODEC_ID;
+      PerDocConsumer perDoc = consumers[codecId];
+      if (perDoc == null) {
+        perDoc = codecs[codecId].docsConsumer(new PerDocWriteState(state, codecId));
+        assert perDoc != null;
+        consumers[codecId] = perDoc;
+      }
+      return perDoc.addValuesField(field);
+    }
+    
   }
 }

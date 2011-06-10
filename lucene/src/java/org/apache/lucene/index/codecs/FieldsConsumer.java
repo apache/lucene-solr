@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.TermsEnum;
 
 import java.io.IOException;
 import java.io.Closeable;
@@ -35,7 +36,7 @@ public abstract class FieldsConsumer implements Closeable {
 
   /** Add a new field */
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
-
+  
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
 
@@ -45,8 +46,12 @@ public abstract class FieldsConsumer implements Closeable {
     String field;
     while((field = fieldsEnum.next()) != null) {
       mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);
-      final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
-      termsConsumer.merge(mergeState, fieldsEnum.terms());
+      assert mergeState.fieldInfo != null : "FieldInfo for field is null: "+ field;
+      TermsEnum terms = fieldsEnum.terms();
+      if (terms != null) {
+        final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
+        termsConsumer.merge(mergeState, terms);
+      }
     }
   }
 }

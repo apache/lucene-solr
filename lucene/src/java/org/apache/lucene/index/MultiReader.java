@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
@@ -402,5 +403,10 @@ public class MultiReader extends IndexReader implements Cloneable {
     for(IndexReader sub : subReaders) {
       sub.removeReaderFinishedListener(listener);
     }
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    throw new UnsupportedOperationException("please use MultiPerDocValues#getPerDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 }

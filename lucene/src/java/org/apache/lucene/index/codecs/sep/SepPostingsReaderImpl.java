@@ -58,8 +58,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   int maxSkipLevels;
   int skipMinimum;
 
-  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, String codecId) throws IOException {
-
+  public SepPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize, IntStreamFactory intFactory, int codecId) throws IOException {
     boolean success = false;
     try {
 
@@ -85,7 +84,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     }
   }
 
-  public static void files(SegmentInfo segmentInfo, String codecId, Collection<String> files) throws IOException {
+  public static void files(SegmentInfo segmentInfo, int codecId, Collection<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.DOC_EXTENSION));
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, SepPostingsWriterImpl.SKIP_EXTENSION));
 

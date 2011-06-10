@@ -20,7 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 
 /** Holds core readers that are shared (unchanged) when
@@ -39,7 +41,8 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  
+  final PerDocValues perDocProducer;
+
   final Directory dir;
   final Directory cfsDir;
   final int readBufferSize;
@@ -51,6 +54,8 @@ final class SegmentCoreReaders {
   TermVectorsReader termVectorsReaderOrig;
   CompoundFileReader cfsReader;
   CompoundFileReader storeCFSReader;
+
+  
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
     
@@ -76,11 +81,12 @@ final class SegmentCoreReaders {
       fieldInfos = si.getFieldInfos();
       
       this.termsIndexDivisor = termsIndexDivisor;
-      
+      final Codec codec = segmentCodecs.codec();
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor);
       // Ask codec for its Fields
-      fields = segmentCodecs.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+      fields = codec.fieldsProducer(segmentReadState);
       assert fields != null;
-      
+      perDocProducer = codec.docsProducer(segmentReadState);
       success = true;
     } finally {
       if (!success) {
@@ -117,6 +123,10 @@ final class SegmentCoreReaders {
       
       if (fields != null) {
         fields.close();
+      }
+      
+      if (perDocProducer != null) {
+        perDocProducer.close();
       }
       
       if (termVectorsReaderOrig != null) {

@@ -18,6 +18,8 @@ package org.apache.lucene.util;
  */
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
 /** 
@@ -78,6 +80,33 @@ public final class ByteBlockPool {
     }
     
   }
+  
+  public static class DirectTrackingAllocator extends Allocator {
+    private final AtomicLong bytesUsed;
+    
+    public DirectTrackingAllocator(AtomicLong bytesUsed) {
+      this(BYTE_BLOCK_SIZE, bytesUsed);
+    }
+
+    public DirectTrackingAllocator(int blockSize, AtomicLong bytesUsed) {
+      super(blockSize);
+      this.bytesUsed = bytesUsed;
+    }
+
+    public byte[] getByteBlock() {
+      bytesUsed.addAndGet(blockSize);
+      return new byte[blockSize];
+    }
+    @Override
+    public void recycleByteBlocks(byte[][] blocks, int start, int end) {
+      bytesUsed.addAndGet(-((end-start)* blockSize));
+      for (int i = start; i < end; i++) {
+        blocks[i] = null;
+      }
+    }
+    
+  };
+
 
   public byte[][] buffers = new byte[10][];
 
@@ -91,6 +120,20 @@ public final class ByteBlockPool {
 
   public ByteBlockPool(Allocator allocator) {
     this.allocator = allocator;
+  }
+  
+  public void dropBuffersAndReset() {
+    if (bufferUpto != -1) {
+      // Recycle all but the first buffer
+      allocator.recycleByteBlocks(buffers, 0, 1+bufferUpto);
+
+      // Re-use the first buffer
+      bufferUpto = -1;
+      byteUpto = BYTE_BLOCK_SIZE;
+      byteOffset = -BYTE_BLOCK_SIZE;
+      buffers = new byte[10][];
+      buffer = null;
+    }
   }
 
   public void reset() {
@@ -115,7 +158,7 @@ public final class ByteBlockPool {
       buffer = buffers[0];
     }
   }
-
+  
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
       byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1,
