@@ -28,7 +28,7 @@ import java.util.Properties;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MockDataSource extends

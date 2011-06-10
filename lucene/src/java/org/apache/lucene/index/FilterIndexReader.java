@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -462,5 +462,10 @@ public class FilterIndexReader extends IndexReader {
   public void removeReaderFinishedListener(ReaderFinishedListener listener) {
     super.removeReaderFinishedListener(listener);
     in.removeReaderFinishedListener(listener);
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    return in.perDocValues();
   }
 }

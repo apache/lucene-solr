@@ -42,7 +42,7 @@ import java.util.Properties;
  * <p/>
  * Supports String, BLOB, CLOB data types and there is an extra field (in the entity) 'encoding' for BLOB types
  *
- * @version $Id$
+ *
  * @since 1.4
  */
 public class FieldReaderDataSource extends DataSource<Reader> {

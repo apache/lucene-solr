@@ -474,7 +474,7 @@ public class TestPayloads extends LuceneTestCase {
     
     public void testThreadSafety() throws Exception {
         final int numThreads = 5;
-        final int numDocs = 50 * RANDOM_MULTIPLIER;
+        final int numDocs = atLeast(50);
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = newDirectory();

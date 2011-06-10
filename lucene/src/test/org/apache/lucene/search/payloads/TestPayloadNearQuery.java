@@ -46,17 +46,19 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 
 public class TestPayloadNearQuery extends LuceneTestCase {
-  private IndexSearcher searcher;
-  private IndexReader reader;
-  private Directory directory;
-  private BoostingSimilarityProvider similarityProvider = new BoostingSimilarityProvider();
-  private byte[] payload2 = new byte[]{2};
-  private byte[] payload4 = new byte[]{4};
+  private static IndexSearcher searcher;
+  private static IndexReader reader;
+  private static Directory directory;
+  private static BoostingSimilarityProvider similarityProvider = new BoostingSimilarityProvider();
+  private static byte[] payload2 = new byte[]{2};
+  private static byte[] payload4 = new byte[]{4};
 
-  private class PayloadAnalyzer extends Analyzer {
+  private static class PayloadAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
@@ -65,7 +67,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     }
   }
 
-  private class PayloadFilter extends TokenFilter {
+  private static class PayloadFilter extends TokenFilter {
     String fieldName;
     int numSeen = 0;
     protected PayloadAttribute payAtt;
@@ -101,9 +103,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     return new PayloadNearQuery(clauses, 0, inOrder, function);
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
@@ -123,12 +124,14 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     searcher.setSimilarityProvider(similarityProvider);
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
 
   public void test() throws IOException {

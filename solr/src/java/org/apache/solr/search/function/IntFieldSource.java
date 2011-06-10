@@ -32,7 +32,7 @@ import java.util.Map;
  * Obtains int field values from the {@link org.apache.lucene.search.FieldCache}
  * using <code>getInts()</code>
  * and makes those values available as other numeric types, casting as needed. *
- * @version $Id$
+ *
  */
 
 public class IntFieldSource extends NumericFieldCacheSource<IntValues> {

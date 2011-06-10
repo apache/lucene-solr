@@ -79,6 +79,12 @@ API Changes
    First/SecondPassGroupingCollector.  (Martijn van Groningen, Mike
    McCandless)
 
+Bug Fixes
+
+  * LUCENE-3185: Fix bug in NRTCachingDirectory.deleteFile that would
+    always throw exception and sometimes fail to actually delete the
+    file.  (Mike McCandless)
+
 Build
 
  * LUCENE-3149: Upgrade contrib/icu's ICU jar file to ICU 4.8. 

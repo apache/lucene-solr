@@ -32,7 +32,7 @@ import java.util.Comparator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
@@ -486,5 +486,10 @@ public class InstantiatedIndexReader extends IndexReader {
         mapper.map(tdi.getTerm().getTerm().bytes(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
       }
     }
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    return null;
   }
 }

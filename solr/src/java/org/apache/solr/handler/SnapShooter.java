@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p/> Provides functionality equivalent to the snapshooter script </p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class SnapShooter {

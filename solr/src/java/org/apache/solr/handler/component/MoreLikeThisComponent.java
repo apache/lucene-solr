@@ -34,7 +34,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 /**
  * TODO!
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MoreLikeThisComponent extends SearchComponent

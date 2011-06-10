@@ -21,7 +21,7 @@ package org.apache.solr.handler.dataimport;
  *
  * <b>This API is experimental and subject to change</b>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public interface EventListener {

@@ -22,10 +22,14 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,12 +42,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
     //Index something with a title
     assertNull(h.validateUpdate(adoc("id", "0", "teststop", "This is a title")));
     assertNull(h.validateUpdate(adoc("id", "1", "teststop", "The quick reb fox jumped over the lazy brown dogs.")));
     assertNull(h.validateUpdate(adoc("id", "2", "teststop", "This is a Solr")));
     assertNull(h.validateUpdate(adoc("id", "3", "teststop", "solr foo")));
+    assertNull(h.validateUpdate(adoc("id", "4", "teststop", "another foo")));
     assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
     queryConverter.init(new NamedList());
@@ -55,7 +60,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(DirectSolrSpellChecker.FIELD, "teststop");
-    spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, "2"); // we will try "fob"
+    spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"
 
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
@@ -77,4 +82,15 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue("suggestions is not null and it should be", suggestions == null);
     searcher.decref();
   }
+  
+  @Test
+  public void testOnlyMorePopularWithExtendedResults() throws Exception {
+  	assertQ(req("q", "teststop:fox", "qt", "spellCheckCompRH", SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_DICT, "direct", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/int[@name='origFreq']=1",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/str[@name='word']='foo'",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/int[@name='freq']=2",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/bool[@name='correctlySpelled']='true'"
+  	);
+  }  
+  
 }

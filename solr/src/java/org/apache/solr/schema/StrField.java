@@ -27,7 +27,7 @@ import org.apache.solr.search.QParser;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  */
 public class StrField extends FieldType {
   @Override

@@ -30,7 +30,7 @@ import org.junit.Test;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 

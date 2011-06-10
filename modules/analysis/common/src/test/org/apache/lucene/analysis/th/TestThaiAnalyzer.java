@@ -27,7 +27,6 @@ import org.apache.lucene.util.Version;
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
  *
- * @version   0.1
  */
 
 public class TestThaiAnalyzer extends BaseTokenStreamTestCase {

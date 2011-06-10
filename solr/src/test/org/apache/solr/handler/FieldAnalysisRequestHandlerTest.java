@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * A test for {@link FieldAnalysisRequestHandler}.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestBase {

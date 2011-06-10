@@ -40,7 +40,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  *     &lt;filter class="solr.CommonGramsQueryFilterFactory" words="commongramsquerystopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
     implements ResourceLoaderAware {

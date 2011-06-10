@@ -44,7 +44,7 @@ import org.apache.solr.common.util.XMLErrorLogger;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class XMLResponseParser extends ResponseParser

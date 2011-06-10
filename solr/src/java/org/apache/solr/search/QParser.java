@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
  * 
- * @version $Id$
+ *
  */
 public abstract class QParser {
   protected String qstr;

@@ -73,6 +73,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -1524,7 +1525,7 @@ public class TestIndexWriter extends LuceneTestCase {
     if (VERBOSE) {
       w.w.setInfoStream(System.out);
     }
-    final int docCount = 200*RANDOM_MULTIPLIER;
+    final int docCount = atLeast(200);
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
 
     final List<Integer> fieldIDs = new ArrayList<Integer>();
@@ -1589,7 +1590,8 @@ public class TestIndexWriter extends LuceneTestCase {
           System.out.println("TEST: cycle x=" + x + " r=" + r);
         }
 
-        for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+        int num = atLeast(1000);
+        for(int iter=0;iter<num;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
           if (VERBOSE) {
             System.out.println("TEST: test id=" + testID);
@@ -1760,6 +1762,20 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(4, dti.size());
     assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
     reader.close();
+    dir.close();
+  }
+
+  // LUCENE-3183
+  public void testEmptyFieldNameTIIOne() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    iwc.setTermIndexInterval(1);
+    iwc.setReaderTermsIndexDivisor(1);
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
     dir.close();
   }
 }

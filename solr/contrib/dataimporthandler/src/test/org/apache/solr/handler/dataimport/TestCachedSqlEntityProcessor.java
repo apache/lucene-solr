@@ -28,7 +28,7 @@ import java.util.Map;
  * Test for CachedSqlEntityProcessor
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestCachedSqlEntityProcessor extends AbstractDataImportHandlerTestCase {

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.fi.FinnishLightStemFilter;
  *     &lt;filter class="solr.FinnishLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class FinnishLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

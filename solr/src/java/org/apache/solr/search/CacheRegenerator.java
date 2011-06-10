@@ -26,7 +26,7 @@ import java.io.IOException;
  * Implementations should have a noarg constructor and be thread safe (a single instance will be
  * used for all cache autowarmings).
  *
- * @version $Id$
+ *
  */
 public interface CacheRegenerator {
   /**

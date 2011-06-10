@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Encapsulates responses from SpellCheckComponent
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SpellCheckResponse {

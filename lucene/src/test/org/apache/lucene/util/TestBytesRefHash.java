@@ -65,7 +65,8 @@ public class TestBytesRefHash extends LuceneTestCase {
   @Test
   public void testSize() {
     BytesRef ref = new BytesRef();
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       final int mod = 1+random.nextInt(39);
       for (int i = 0; i < 797; i++) {
         String str;
@@ -97,7 +98,8 @@ public class TestBytesRefHash extends LuceneTestCase {
   public void testGet() {
     BytesRef ref = new BytesRef();
     BytesRef scratch = new BytesRef();
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       Map<String, Integer> strings = new HashMap<String, Integer>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
@@ -134,7 +136,8 @@ public class TestBytesRefHash extends LuceneTestCase {
   @Test
   public void testCompact() {
     BytesRef ref = new BytesRef();
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       int numEntries = 0;
       final int size = 797;
       BitSet bits = new BitSet(size);
@@ -175,7 +178,8 @@ public class TestBytesRefHash extends LuceneTestCase {
   @Test
   public void testSort() {
     BytesRef ref = new BytesRef();
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       SortedSet<String> strings = new TreeSet<String>();
       for (int i = 0; i < 797; i++) {
         String str;
@@ -212,7 +216,8 @@ public class TestBytesRefHash extends LuceneTestCase {
   public void testAdd() {
     BytesRef ref = new BytesRef();
     BytesRef scratch = new BytesRef();
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       Set<String> strings = new HashSet<String>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
@@ -274,7 +279,8 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef ref = new BytesRef();
     BytesRef scratch = new BytesRef();
     BytesRefHash offsetHash = newHash(pool);
-    for (int j = 0; j < 2 * RANDOM_MULTIPLIER; j++) {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
       Set<String> strings = new HashSet<String>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {

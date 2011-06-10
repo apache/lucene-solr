@@ -37,7 +37,7 @@ import java.util.Map;
  * All tests in this have been ignored because script support is only available
  * in Java 1.6+
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {

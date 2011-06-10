@@ -36,7 +36,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    final int SIZE = (TEST_NIGHTLY ? 200 : 20) * RANDOM_MULTIPLIER;
+    final int SIZE = atLeast(20);
     int id = 0;
     IndexReader r = null;
     final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
@@ -82,7 +82,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     for (int r = 0; r < 3; r++) {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
-      final int numUpdates = (TEST_NIGHTLY ? 200 : 20) * RANDOM_MULTIPLIER;
+      final int numUpdates = atLeast(20);
       int numThreads = _TestUtil.nextInt(random, 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];
       for (int i = 0; i < numThreads; i++) {

@@ -48,7 +48,7 @@ import java.io.IOException;
  *             generateWordParts="1" generateNumberParts="1" stemEnglishPossessive="1"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";

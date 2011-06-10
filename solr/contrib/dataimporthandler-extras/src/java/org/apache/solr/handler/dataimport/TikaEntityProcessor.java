@@ -52,7 +52,7 @@ import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
  * <p>An implementation of {@link EntityProcessor} which reads data from rich docs
  * using <a href="http://tika.apache.org/">Apache Tika</a>
  *
- * @version $Id$
+ *
  * @since solr 3.1
  */
 public class TikaEntityProcessor extends EntityProcessorBase {

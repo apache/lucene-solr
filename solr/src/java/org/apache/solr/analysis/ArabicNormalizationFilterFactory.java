@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
  *     &lt;filter class="solr.ArabicNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory{
 

@@ -26,6 +26,7 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.ReaderUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -41,9 +42,9 @@ import org.junit.Test;
  */
 public class TestFieldScoreQuery extends FunctionTestSetup {
 
-  /* @override constructor */
-  public TestFieldScoreQuery() {
-    super(true);
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    createIndex(true);
   }
 
   /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */

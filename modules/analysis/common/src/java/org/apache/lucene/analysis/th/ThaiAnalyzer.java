@@ -32,7 +32,6 @@ import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
- * @version 0.2
  *
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>

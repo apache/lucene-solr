@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     &lt;filter class="solr.TokenOffsetPayloadTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$ 
+ *
  */
 public class TokenOffsetPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   public TokenOffsetPayloadTokenFilter create(TokenStream input) {

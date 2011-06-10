@@ -25,7 +25,7 @@ import java.util.*;
  * Test for SqlEntityProcessor
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {

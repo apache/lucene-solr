@@ -24,9 +24,13 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
@@ -45,6 +49,10 @@ public class RandomIndexWriter implements Closeable {
   int flushAt;
   private double flushAtFactor = 1.0;
   private boolean getReaderCalled;
+  private final int fixedBytesLength;
+  private final long docValuesFieldPrefix;
+  private volatile boolean doDocValues;
+  private CodecProvider codecProvider;
 
   // Randomly calls Thread.yield so we mixup thread scheduling
   private static final class MockIndexWriter extends IndexWriter {
@@ -92,13 +100,32 @@ public class RandomIndexWriter implements Closeable {
       System.out.println("codec default=" + w.getConfig().getCodecProvider().getDefaultFieldCodec());
       w.setInfoStream(System.out);
     }
+    /* TODO: find some what to make that random...
+     * This must be fixed across all fixed bytes 
+     * fields in one index. so if you open another writer
+     * this might change if I use r.nextInt(x)
+     * maybe we can peek at the existing files here? 
+     */
+    fixedBytesLength = 37; 
+    docValuesFieldPrefix = r.nextLong();
+    codecProvider =  w.getConfig().getCodecProvider();
+    switchDoDocValues();
   } 
 
+  private void switchDoDocValues() {
+    // randomly enable / disable docValues 
+    doDocValues = r.nextInt(10) != 0;
+  }
+  
   /**
    * Adds a Document.
    * @see IndexWriter#addDocument(Document)
    */
   public void addDocument(final Document doc) throws IOException {
+    if (doDocValues) {
+      randomPerDocFieldValues(r, doc);
+    }
+
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
@@ -135,7 +162,52 @@ public class RandomIndexWriter implements Closeable {
     } else {
       w.addDocument(doc);
     }
+    
     maybeCommit();
+  }
+  
+  private void randomPerDocFieldValues(Random random, Document doc) {
+    
+    ValueType[] values = ValueType.values();
+    ValueType type = values[random.nextInt(values.length)];
+    String name = "random_" + type.name() + "" + docValuesFieldPrefix;
+    if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getFieldable(name) != null)
+        return;
+    IndexDocValuesField docValuesField = new IndexDocValuesField(name);
+    switch (type) {
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+      final String randomUnicodeString = _TestUtil.randomUnicodeString(random, fixedBytesLength);
+      BytesRef fixedRef = new BytesRef(randomUnicodeString);
+      if (fixedRef.length > fixedBytesLength) {
+        fixedRef = new BytesRef(fixedRef.bytes, 0, fixedBytesLength);
+      } else {
+        fixedRef.grow(fixedBytesLength);
+        fixedRef.length = fixedBytesLength;
+      }
+      docValuesField.setBytes(fixedRef, type);
+      break;
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      BytesRef ref = new BytesRef(_TestUtil.randomUnicodeString(random, 200));
+      docValuesField.setBytes(ref, type);
+      break;
+    case FLOAT_32:
+      docValuesField.setFloat(random.nextFloat());
+      break;
+    case FLOAT_64:
+      docValuesField.setFloat(random.nextDouble());
+      break;
+    case INTS:
+      docValuesField.setInt(random.nextInt());
+      break;
+    default:
+      throw new IllegalArgumentException("no such type: " + type);
+    }
+
+    doc.add(docValuesField);
   }
 
   private void maybeCommit() throws IOException {
@@ -149,6 +221,7 @@ public class RandomIndexWriter implements Closeable {
         // gradually but exponentially increase time b/w flushes
         flushAtFactor *= 1.05;
       }
+      switchDoDocValues();
     }
   }
   
@@ -166,7 +239,11 @@ public class RandomIndexWriter implements Closeable {
    * Updates a document.
    * @see IndexWriter#updateDocument(Term, Document)
    */
-  public void updateDocument(Term t, final Document doc) throws IOException {
+  public void updateDocument(final Term t, final Document doc) throws IOException {
+    if (doDocValues) {
+      randomPerDocFieldValues(r, doc);
+    }
+    
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Document>() {
 
@@ -212,6 +289,7 @@ public class RandomIndexWriter implements Closeable {
   
   public void commit() throws CorruptIndexException, IOException {
     w.commit();
+    switchDoDocValues();
   }
   
   public int numDocs() throws IOException {
@@ -241,6 +319,7 @@ public class RandomIndexWriter implements Closeable {
       w.optimize(limit);
       assert w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
     }
+    switchDoDocValues();
   }
 
   public IndexReader getReader(boolean applyDeletions) throws IOException {
@@ -261,6 +340,7 @@ public class RandomIndexWriter implements Closeable {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();
+      switchDoDocValues();
       return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10), w.getConfig().getCodecProvider());
     }
   }

@@ -23,7 +23,7 @@ import org.junit.Test;
 /**
  * <p> Test disabling components</p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestPluginEnable extends SolrTestCaseJ4 {

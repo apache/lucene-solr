@@ -33,7 +33,7 @@ import java.util.UUID;
 /**
  * Test for BinaryResponseWriter
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestBinaryResponseWriter extends AbstractSolrTestCase {

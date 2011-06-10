@@ -143,7 +143,8 @@ public class TestNorms extends LuceneTestCase {
   }
 
   private void doTestNorms(Random random, Directory dir) throws IOException {
-    for (int i=0; i<5; i++) {
+    int num = atLeast(1);
+    for (int i=0; i<num; i++) {
       addDocs(random, dir,12,true);
       verifyIndex(dir);
       modifyNormsForF1(dir);

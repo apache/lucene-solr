@@ -56,7 +56,7 @@ import org.xml.sax.InputSource;
  *     	     dictionary="dictionary.txt" minWordSize="5" minSubwordSize="2" maxSubwordSize="15" onlyLongestMatch="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  * @see HyphenationCompoundWordTokenFilter
  */
 public class HyphenationCompoundWordTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {

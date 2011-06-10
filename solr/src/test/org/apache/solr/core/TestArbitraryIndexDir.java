@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 /**
- * @version $Id$
+ *
  */
 public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 

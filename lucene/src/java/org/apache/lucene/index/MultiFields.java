@@ -187,7 +187,7 @@ public final class MultiFields extends Fields {
       return fields.terms(field);
     }
   }
-
+  
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null if the term does not
    *  exist. */

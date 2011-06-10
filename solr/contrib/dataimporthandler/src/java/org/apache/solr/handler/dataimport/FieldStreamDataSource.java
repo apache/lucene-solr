@@ -43,7 +43,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
  * This may be used with any {@link EntityProcessor} which uses a {@link DataSource}&lt;{@link InputStream}&gt; eg: {@link TikaEntityProcessor}
  * <p/>
  *
- * @version $Id$
+ *
  * @since 3.1
  */
 public class FieldStreamDataSource extends DataSource<InputStream> {

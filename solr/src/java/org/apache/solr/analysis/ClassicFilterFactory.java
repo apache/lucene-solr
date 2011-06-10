@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.standard.ClassicFilter;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  */
 public class ClassicFilterFactory extends BaseTokenFilterFactory {
   public TokenFilter create(TokenStream input) {

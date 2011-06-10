@@ -57,18 +57,21 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
   /** epsilon for score comparisons */
   static final float epsilon = 0.00001f;
 
+  static int[][] mappings = new int[][] {
+    new int[] { 0x40, 0x41 },
+    new int[] { 0x40, 0x0195 },
+    new int[] { 0x40, 0x0906 },
+    new int[] { 0x40, 0x1040F },
+    new int[] { 0x0194, 0x0195 },
+    new int[] { 0x0194, 0x0906 },
+    new int[] { 0x0194, 0x1040F },
+    new int[] { 0x0905, 0x0906 },
+    new int[] { 0x0905, 0x1040F },
+    new int[] { 0x1040E, 0x1040F }
+  };
   public void testFromTestData() throws Exception {
     // TODO: randomize!
-    assertFromTestData(new int[] { 0x40, 0x41 });
-    assertFromTestData(new int[] { 0x40, 0x0195 });
-    assertFromTestData(new int[] { 0x40, 0x0906 });
-    assertFromTestData(new int[] { 0x40, 0x1040F });
-    assertFromTestData(new int[] { 0x0194, 0x0195 });
-    assertFromTestData(new int[] { 0x0194, 0x0906 });
-    assertFromTestData(new int[] { 0x0194, 0x1040F });
-    assertFromTestData(new int[] { 0x0905, 0x0906 });
-    assertFromTestData(new int[] { 0x0905, 0x1040F });
-    assertFromTestData(new int[] { 0x1040E, 0x1040F });
+    assertFromTestData(mappings[random.nextInt(mappings.length)]);
   }
 
   public void assertFromTestData(int codePointTable[]) throws Exception {

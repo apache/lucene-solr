@@ -33,7 +33,7 @@ import java.util.regex.PatternSyntaxException;
  *             replace="all"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  * @see PatternReplaceFilter
  */
 public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {

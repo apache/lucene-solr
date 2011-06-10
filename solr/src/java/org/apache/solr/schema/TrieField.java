@@ -55,7 +55,7 @@ import java.util.Date;
  * Note that if you use a precisionStep of 32 for int/float and 64 for long/double/date, then multiple terms will not be
  * generated, range search will be no faster than any other number field, but sorting will still be possible.
  *
- * @version $Id$
+ *
  * @see org.apache.lucene.search.NumericRangeQuery
  * @since solr 1.4
  */

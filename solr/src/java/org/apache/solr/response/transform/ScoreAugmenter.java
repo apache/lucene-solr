@@ -21,7 +21,7 @@ import org.apache.solr.common.SolrDocument;
 /**
  * Simple Augmenter that adds the docId
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ScoreAugmenter extends TransformerWithContext

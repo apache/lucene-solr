@@ -123,7 +123,9 @@
     <!-- Expert: Merge Policy 
 
          The Merge Policy in Lucene controls how merging is handled by
-         Lucene.  The default in 2.3 is the LogByteSizeMergePolicy,
+         Lucene.  The default in Solr 3.3 is TieredMergePolicy.
+         
+         The default in 2.3 was the LogByteSizeMergePolicy,
          previous versions used LogDocMergePolicy.
          
          LogByteSizeMergePolicy chooses segments to merge based on
@@ -134,7 +136,7 @@
          constructor
       -->
     <!--
-       <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>
+       <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
        -->
 
     <!-- Expert: Merge Scheduler
@@ -1084,6 +1086,9 @@
       <str name="name">default</str>
       <str name="field">name</str>
       <str name="spellcheckIndexDir">spellchecker</str>
+      <!-- uncomment this to require terms to occur in 1% of the documents in order to be included in the dictionary
+      	<float name="thresholdTokenFrequency">.01</float>
+      -->
     </lst>
 
     <!-- a spellchecker that uses no auxiliary on disk index -->
@@ -1092,7 +1097,7 @@
          <str name="name">direct</str>
          <str name="field">name</str>
          <str name="classname">solr.DirectSolrSpellChecker</str>
-         <str name="minPrefix">1</str>
+         <int name="minPrefix">1</int>
        </lst>
       -->
 

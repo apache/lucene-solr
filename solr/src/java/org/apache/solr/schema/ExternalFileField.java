@@ -51,7 +51,7 @@ import java.io.IOException;
  * <p/>The external file may be sorted or unsorted by the key field, but it will be substantially slower (untested) if it isn't sorted.
  * <p/>Fields of this type may currently only be used as a ValueSource in a FunctionQuery.
  *
- * @version $Id$
+ *
  */
 public class ExternalFileField extends FieldType {
   private FieldType ftype;

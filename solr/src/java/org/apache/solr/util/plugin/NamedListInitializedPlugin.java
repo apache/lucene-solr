@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  * A plugin that can be initialized with a NamedList
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public interface NamedListInitializedPlugin {

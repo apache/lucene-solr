@@ -16,21 +16,29 @@
  */
 package org.apache.solr.response.transform;
 
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ShardAugmenterFactory extends TransformerFactory
 {
   @Override
-  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
-    String id = "TODO... find ID";
-    // Maybe it is stored in the context?
-    // is it a request variable?
-    return new ValueAugmenter( field, id );
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    String v = req.getParams().get(ShardParams.SHARD_URL);
+    if( v == null ) {
+      if( req.getParams().getBool(ShardParams.IS_SHARD, false) ) {
+        v = "[unknown]";
+      }
+      else {
+        v = "[not a shard request]";
+      }
+    }
+    return new ValueAugmenter( field, v );
   }
 }
 

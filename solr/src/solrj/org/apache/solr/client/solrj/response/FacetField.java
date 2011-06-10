@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
   * A utility class to hold the facet response.  It could use the NamedList container,
   * but for JSTL, it is nice to have something that implements List so it can be iterated
   * 
-  * @version $Id$
   * @since solr 1.3
   */
  public class FacetField implements Serializable

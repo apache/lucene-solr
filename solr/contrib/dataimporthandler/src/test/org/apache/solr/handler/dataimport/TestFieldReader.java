@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * Test for FieldReaderDataSource
  *
- * @version $Id$
+ *
  * @see org.apache.solr.handler.dataimport.FieldReaderDataSource
  * @since 1.4
  */

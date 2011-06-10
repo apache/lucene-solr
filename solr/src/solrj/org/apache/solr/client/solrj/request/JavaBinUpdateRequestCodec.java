@@ -33,7 +33,7 @@ import java.util.*;
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
  * vice versa.
  *
- * @version $Id$
+ *
  * @see org.apache.solr.common.util.JavaBinCodec
  * @since solr 1.4
  */

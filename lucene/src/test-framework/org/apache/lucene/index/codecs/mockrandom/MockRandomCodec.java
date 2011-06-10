@@ -26,16 +26,21 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
@@ -341,7 +346,7 @@ public class MockRandomCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
     final String seedFileName = IndexFileNames.segmentFileName(segmentInfo.name, codecId, SEED_EXT);    
     files.add(seedFileName);
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
@@ -349,7 +354,7 @@ public class MockRandomCodec extends Codec {
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {
@@ -367,7 +372,19 @@ public class MockRandomCodec extends Codec {
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
     extensions.add(SEED_EXT);
     //System.out.println("MockRandom.getExtensions return " + extensions);
+  }
+  
+  // can we make this more evil?
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
   }
 }

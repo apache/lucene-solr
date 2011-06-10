@@ -37,7 +37,7 @@ import java.util.List;
 import java.io.*;
 
 /**
- * @version $Id$
+ *
  */
 
 public class CSVRequestHandler extends ContentStreamHandlerBase {

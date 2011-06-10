@@ -314,7 +314,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
       // increase number of iterations for more complete testing      
-      int num = (TEST_NIGHTLY ? 50 : 10) * RANDOM_MULTIPLIER;
+      int num = atLeast(10);
       for (int i=0; i<num; i++) {
         int lev = random.nextInt(maxLev);
         final long seed = random.nextLong();

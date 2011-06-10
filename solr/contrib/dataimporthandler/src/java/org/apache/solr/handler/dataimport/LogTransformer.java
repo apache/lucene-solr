@@ -29,7 +29,7 @@ import java.util.Map;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class LogTransformer extends Transformer {

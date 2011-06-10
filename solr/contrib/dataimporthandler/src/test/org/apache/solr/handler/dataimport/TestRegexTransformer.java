@@ -31,7 +31,7 @@ import java.util.Map;
 /**
  * <p> Test for RegexTransformer </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {

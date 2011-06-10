@@ -130,8 +130,8 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
   public void testRandomRanges() throws Exception {
     final Random r = random;
-    int ITERS = 10 * RANDOM_MULTIPLIER;
-    int ITERS_PER_DFA = 100 * RANDOM_MULTIPLIER;
+    int ITERS = atLeast(10);
+    int ITERS_PER_DFA = atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
       int x1 = getCodeStart(r);
       int x2 = getCodeStart(r);
@@ -202,7 +202,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   }
   
   public void testRandomRegexes() throws Exception {
-    int num = 250 * RANDOM_MULTIPLIER;
+    int num = atLeast(250);
     for (int i = 0; i < num; i++) {
       assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton());
     }
@@ -213,7 +213,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
     final AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(automaton);
     
-    int num = 1000 * RANDOM_MULTIPLIER;
+    int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       final String string;
       if (random.nextBoolean()) {

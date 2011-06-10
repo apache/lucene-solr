@@ -158,7 +158,7 @@ public class CompoundFileReader extends Directory {
             throw new IOException("Stream closed");
         
         id = IndexFileNames.stripSegmentName(id);
-        FileEntry entry = entries.get(id);
+        final FileEntry entry = entries.get(id);
         if (entry == null)
           throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
 

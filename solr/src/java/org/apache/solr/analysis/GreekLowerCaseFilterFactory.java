@@ -35,7 +35,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  *     &lt;filter class="solr.GreekLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory 
 {

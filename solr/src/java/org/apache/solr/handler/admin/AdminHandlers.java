@@ -31,7 +31,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * A special Handler that registers all standard admin handlers
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class AdminHandlers implements SolrCoreAware, SolrRequestHandler

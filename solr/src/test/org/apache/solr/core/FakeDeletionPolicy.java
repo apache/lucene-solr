@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * @version $Id$
+ *
  */
 public class FakeDeletionPolicy implements IndexDeletionPolicy, NamedListInitializedPlugin {
 

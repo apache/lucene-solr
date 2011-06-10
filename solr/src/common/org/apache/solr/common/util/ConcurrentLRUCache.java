@@ -40,7 +40,7 @@ import java.lang.ref.WeakReference;
  * cleanup does not remove enough items to reach the 'acceptableWaterMark' limit, it can
  * remove more items forcefully regardless of access order.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class ConcurrentLRUCache<K,V> {

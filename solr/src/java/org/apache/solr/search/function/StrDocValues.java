@@ -1,7 +1,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueFloat;
 import org.apache.solr.search.MutableValueStr;

@@ -403,6 +403,31 @@ New features
   that it inverts the index to compute the ords, but differs in that
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
+  
+* LUCENE-3108, LUCENE-2935, LUCENE-2168, LUCENE-1231: Changes from 
+  IndexDocValues (ColumnStrideFields):
+  
+  - IndexWriter now supports typesafe dense per-document values stored in
+    a column like storage. IndexDocValues are stored on a per-document
+    basis where each documents field can hold exactly one value of a given
+    type. IndexDocValues are provided via Fieldable and can be used in
+    conjunction with stored and indexed values.
+     
+  - IndexDocValues provides an entirely RAM resident document id to value
+    mapping per field as well as a DocIdSetIterator based disk-resident
+    sequential access API relying on filesystem-caches.
+    
+  - Both APIs are exposed via IndexReader and the Codec / Flex API allowing
+    expert users to integrate customized IndexDocValues reader and writer
+    implementations by extending existing Codecs.
+    
+  - IndexDocValues provides implementations for primitive datatypes like int,
+    long, float, double and arrays of byte. Byte based implementations further
+    provide storage variants like straight or dereferenced stored bytes, fixed
+    and variable length bytes as well as index time sorted based on user-provided
+    comparators.
+  
+  (Mike McCandless, Simon Willnauer)  
 
 Optimizations
 
@@ -423,6 +448,9 @@ Optimizations
   
 * LUCENE-2897: Apply deleted terms while flushing a segment.  We still
   buffer deleted terms to later apply to past segments.  (Mike McCandless)
+  
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
 
 Bug fixes
 
@@ -434,7 +462,7 @@ Bug fixes
   deletions, provided they share some segments. (yonik)
 
 * LUCENE-2645: Fix false assertion error when same token was added one
-  after another with 0 posIncr.  (Kurosaka Teruhiko via Mike
+  after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
   McCandless)
 
 ======================= Lucene 3.x (not yet released) ================
@@ -464,6 +492,11 @@ Bug fixes
 
 * LUCENE-3102: CachingCollector.replay was failing to call setScorer
   per-segment (Martijn van Groningen via Mike McCandless)
+
+* LUCENE-3183: Fix rare corner case where seeking to empty term
+  (field="", term="") with terms index interval 1 could hit
+  ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
+  McCandless)
 
 New Features
 

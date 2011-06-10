@@ -95,7 +95,15 @@ public interface SpellingParams {
    * Default=0. Ignored of "spellcheck.collate" is false. 
    * </p>
    */
-  public static final String SPELLCHECK_MAX_COLLATION_TRIES = SPELLCHECK_PREFIX + "maxCollationTries";
+  public static final String SPELLCHECK_MAX_COLLATION_TRIES = SPELLCHECK_PREFIX + "maxCollationTries";  
+  /**
+   * <p>
+   * The maximum number of word correction combinations to rank and evaluate prior to deciding which collation
+   * candidates to test against the index.  This is a performance safety-net in cases a user enters a query with
+   * many misspelled words.  The default is 10,000 combinations. 
+   * </p>
+   */
+  public static final String SPELLCHECK_MAX_COLLATION_EVALUATIONS = SPELLCHECK_PREFIX + "maxCollationEvaluations";
   
   /**
    * <p>
@@ -105,7 +113,7 @@ public interface SpellingParams {
    * </p>
    */
   public static final String SPELLCHECK_COLLATE_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "collateExtendedResults";
-  
+    
   /**
    * Certain spelling implementations may allow for an accuracy setting.
    */

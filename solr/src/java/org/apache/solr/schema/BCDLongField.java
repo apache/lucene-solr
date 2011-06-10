@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 /**
- * @version $Id$
+ *
  */
 public class BCDLongField extends BCDIntField {
   @Override

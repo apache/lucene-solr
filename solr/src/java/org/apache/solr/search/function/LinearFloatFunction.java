@@ -29,7 +29,7 @@ import java.util.Map;
  * <br>
  * Normally Used as an argument to a {@link FunctionQuery}
  *
- * @version $Id$
+ *
  */
 public class LinearFloatFunction extends ValueSource {
   protected final ValueSource source;

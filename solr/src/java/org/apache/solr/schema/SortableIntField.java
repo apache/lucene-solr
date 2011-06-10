@@ -35,7 +35,7 @@ import org.apache.solr.response.TextResponseWriter;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  * 
  * @deprecated use {@link IntField} or {@link TrieIntField} - will be removed in 5.x
  */

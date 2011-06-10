@@ -24,7 +24,7 @@ import java.lang.annotation.Retention;
 
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 @Target({FIELD, METHOD})

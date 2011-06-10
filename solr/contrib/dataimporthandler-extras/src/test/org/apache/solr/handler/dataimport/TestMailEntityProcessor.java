@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * TODO: Find a way to make the tests actually test code
  *
- * @version $Id$
+ *
  * @see org.apache.solr.handler.dataimport.MailEntityProcessor
  * @since solr 1.4
  */

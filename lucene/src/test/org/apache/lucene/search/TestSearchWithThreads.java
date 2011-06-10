@@ -31,9 +31,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSearchWithThreads extends LuceneTestCase {
   
-  final int NUM_DOCS = 10000;
+  final int NUM_DOCS = atLeast(10000);
   final int NUM_SEARCH_THREADS = 5;
-  final int RUN_TIME_MSEC = 1000 * RANDOM_MULTIPLIER;
+  final int RUN_TIME_MSEC = atLeast(1000);
 
   public void test() throws Exception {
     final Directory dir = newDirectory();
@@ -47,7 +47,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     final Field body = newField("body", "", Field.Index.ANALYZED);
     doc.add(body);
     final StringBuilder sb = new StringBuilder();
-    for(int docCount=0;docCount<NUM_DOCS*RANDOM_MULTIPLIER;docCount++) {
+    for(int docCount=0;docCount<NUM_DOCS;docCount++) {
       final int numTerms = random.nextInt(10);
       for(int termCount=0;termCount<numTerms;termCount++) {
         sb.append(random.nextBoolean() ? "aaa" : "bbb");

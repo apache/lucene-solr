@@ -43,7 +43,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -105,6 +104,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
     final MockDirectoryWrapper dir = newFSDirectory(tempDir);
+    dir.setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
     if (LuceneTestCase.TEST_NIGHTLY) {
@@ -157,7 +157,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final int NUM_INDEX_THREADS = 2;
     final int NUM_SEARCH_THREADS = 3;
 
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : 5;
+    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger addCount = new AtomicInteger();
@@ -328,11 +328,11 @@ public class TestNRTThreads extends LuceneTestCase {
                 if (addedField != null) {
                   doc.removeField(addedField);
                 }
-              } catch (Exception exc) {
+              } catch (Throwable t) {
                 System.out.println(Thread.currentThread().getName() + ": hit exc");
-                exc.printStackTrace();
+                t.printStackTrace();
                 failed.set(true);
-                throw new RuntimeException(exc);
+                throw new RuntimeException(t);
               }
             }
             if (VERBOSE) {
@@ -448,6 +448,7 @@ public class TestNRTThreads extends LuceneTestCase {
                     System.out.println(Thread.currentThread().getName() + ": search done");
                   }
                 } catch (Throwable t) {
+                  System.out.println(Thread.currentThread().getName() + ": hit exc");
                   failed.set(true);
                   t.printStackTrace(System.out);
                   throw new RuntimeException(t);
@@ -565,8 +566,10 @@ public class TestNRTThreads extends LuceneTestCase {
 
     assertFalse(writer.anyNonBulkMerges);
     writer.close(false);
+    _TestUtil.checkIndex(dir);
     s.close();
     dir.close();
+    _TestUtil.rmDir(tempDir);
     docs.close();
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

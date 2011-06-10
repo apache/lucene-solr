@@ -30,17 +30,22 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
-  private LineFileDocs lineDocFile;
+  private static LineFileDocs lineDocFile;
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     lineDocFile = new LineFileDocs(random);
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    lineDocFile.close();
+    lineDocFile = null;
   }
 
   public void testFlushByRam() throws CorruptIndexException,

@@ -32,7 +32,7 @@ import java.util.Map;
  *     &lt;filter class="solr.NumericPayloadTokenFilterFactory" payload="24" typeMatch="word"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$  
+ *
  */
 public class NumericPayloadTokenFilterFactory extends BaseTokenFilterFactory {
   private float payload;

@@ -516,7 +516,7 @@ public class TestFieldsReader extends LuceneTestCase {
   public void testNumericField() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
-    final int numDocs = _TestUtil.nextInt(random, 500, 1000) * RANDOM_MULTIPLIER;
+    final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
     final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {

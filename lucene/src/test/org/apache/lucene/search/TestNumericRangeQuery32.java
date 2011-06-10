@@ -44,7 +44,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   // shift the starting of the values to the left, to also have negative values:
   private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
-  private static final int noDocs = (TEST_NIGHTLY ? 10000 : 5000) * RANDOM_MULTIPLIER;
+  private static final int noDocs = atLeast(5000);
   
   private static Directory directory = null;
   private static IndexReader reader = null;
@@ -336,7 +336,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
-    int num = 10 * RANDOM_MULTIPLIER;
+    int num = atLeast(10);
     for (int i = 0; i < num; i++) {
       int lower=(int)(random.nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(random.nextDouble()*noDocs*distance)+startOffset;
@@ -414,7 +414,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private void testRangeSplit(int precisionStep) throws Exception {
     String field="ascfield"+precisionStep;
     // 10 random tests
-    int  num = 10 * RANDOM_MULTIPLIER;
+    int  num = atLeast(10);
     for (int  i =0;  i< num; i++) {
       int lower=(int)(random.nextDouble()*noDocs - noDocs/2);
       int upper=(int)(random.nextDouble()*noDocs - noDocs/2);
@@ -490,7 +490,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    int num = 10 * RANDOM_MULTIPLIER;
+    int num = atLeast(10);
     for (int i = 0; i < num; i++) {
       int lower=(int)(random.nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(random.nextDouble()*noDocs*distance)+startOffset;

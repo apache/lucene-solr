@@ -29,6 +29,8 @@ import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.MergeState;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -116,7 +118,6 @@ final class SegmentMerger {
 
     if (fieldInfos.hasVectors())
       mergeVectors();
-
     return mergedDocs;
   }
 
@@ -154,7 +155,7 @@ final class SegmentMerger {
     for (String field : names) {
       fInfos.addOrUpdate(field, true, storeTermVectors,
           storePositionWithTermVector, storeOffsetWithTermVector, !reader
-              .hasNorms(field), storePayloads, omitTFAndPositions);
+              .hasNorms(field), storePayloads, omitTFAndPositions, null);
     }
   }
 
@@ -222,6 +223,7 @@ final class SegmentMerger {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, false);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, false);
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.UNINDEXED), false);
+        fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
     final SegmentCodecs codecInfo = fieldInfos.buildSegmentCodecs(false);
@@ -477,9 +479,16 @@ final class SegmentMerger {
     int docBase = 0;
 
     final List<Fields> fields = new ArrayList<Fields>();
+
     final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
     final List<Bits> bits = new ArrayList<Bits>();
     final List<Integer> bitsStarts = new ArrayList<Integer>();
+    
+    // TODO: move this into its own method - this merges currently only docvalues
+    final List<PerDocValues> perDocProducers = new ArrayList<PerDocValues>();    
+    final List<ReaderUtil.Slice> perDocSlices = new ArrayList<ReaderUtil.Slice>();
+    final List<Bits> perDocBits = new ArrayList<Bits>();
+    final List<Integer> perDocBitsStarts = new ArrayList<Integer>();
 
     for(IndexReader r : readers) {
       final Fields f = r.fields();
@@ -490,10 +499,18 @@ final class SegmentMerger {
         bits.add(r.getDeletedDocs());
         bitsStarts.add(docBase);
       }
+      final PerDocValues producer = r.perDocValues();
+      if (producer != null) {
+        perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, fields.size()));
+        perDocProducers.add(producer);
+        perDocBits.add(r.getDeletedDocs());
+        perDocBitsStarts.add(docBase);
+      }
       docBase += maxDoc;
     }
 
     bitsStarts.add(docBase);
+    perDocBitsStarts.add(docBase);
 
     // we may gather more readers than mergeState.readerCount
     mergeState = new MergeState();
@@ -559,6 +576,20 @@ final class SegmentMerger {
     } finally {
       consumer.close();
     }
+    if (!perDocSlices.isEmpty()) {
+      mergeState.multiDeletedDocs = new MultiBits(perDocBits, perDocBitsStarts);
+      final PerDocConsumer docsConsumer = codec
+          .docsConsumer(new PerDocWriteState(segmentWriteState));
+      try {
+        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(perDocProducers
+            .toArray(PerDocValues.EMPTY_ARRAY), perDocSlices
+            .toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+        docsConsumer.merge(mergeState, multiPerDocValues);
+      } finally {
+        docsConsumer.close();
+      }
+    }
+    
   }
 
   private MergeState mergeState;

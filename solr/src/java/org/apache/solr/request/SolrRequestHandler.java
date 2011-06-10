@@ -37,7 +37,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * A single instance of any registered SolrRequestHandler is created
  * via the default constructor and is reused for all relevant queries.
  *
- * @version $Id$
+ *
  */
 public interface SolrRequestHandler extends SolrInfoMBean {
 

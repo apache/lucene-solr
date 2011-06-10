@@ -44,7 +44,7 @@ import java.util.Map;
  * A single instance of any registered TokenFilterFactory is created
  * via the default constructor and is reused for each FieldType.
  * </p>
- * @version $Id$
+ *
  */
 
 public interface TokenFilterFactory {

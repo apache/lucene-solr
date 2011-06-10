@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * @version $Id$
+ *
  */
 public class TestFaceting extends SolrTestCaseJ4 {
   @BeforeClass

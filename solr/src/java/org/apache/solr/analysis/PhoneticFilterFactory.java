@@ -52,7 +52,7 @@ import org.apache.solr.common.SolrException;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * 
- * @version $Id$
+ *
  * @see PhoneticFilter
  */
 public class PhoneticFilterFactory extends BaseTokenFilterFactory 

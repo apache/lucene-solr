@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.en.PorterStemFilter;
  *     &lt;filter class="solr.PorterStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class PorterStemFilterFactory extends BaseTokenFilterFactory {
   public PorterStemFilter create(TokenStream input) {

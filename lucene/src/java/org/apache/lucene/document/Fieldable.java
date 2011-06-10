@@ -18,6 +18,9 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 
@@ -206,4 +209,29 @@ public interface Fieldable {
   * fail with an exception.
   */
   void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
+  
+  /**
+   * Returns the {@link PerDocFieldValues}
+   */
+  public PerDocFieldValues getDocValues();
+
+  /**
+   * Sets the {@link PerDocFieldValues} for this field. If
+   * {@link PerDocFieldValues} is set this field will store per-document values
+   * 
+   * @see IndexDocValues
+   */
+  public void setDocValues(PerDocFieldValues docValues);
+
+  /**
+   * Returns <code>true</code> iff {@link PerDocFieldValues} are set on this
+   * field.
+   */
+  public boolean hasDocValues();
+
+  /**
+   * Returns the {@link ValueType} of the set {@link PerDocFieldValues} or
+   * <code>null</code> if not set.
+   */
+  public ValueType docValuesType();
 }

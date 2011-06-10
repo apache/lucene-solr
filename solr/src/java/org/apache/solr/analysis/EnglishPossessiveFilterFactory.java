@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
  *     &lt;filter class="solr.EnglishPossessiveFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class EnglishPossessiveFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

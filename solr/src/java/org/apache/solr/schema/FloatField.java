@@ -29,7 +29,7 @@ import org.apache.solr.response.TextResponseWriter;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  */
 public class FloatField extends FieldType {
   @Override

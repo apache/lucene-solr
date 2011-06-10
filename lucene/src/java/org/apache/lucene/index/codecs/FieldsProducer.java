@@ -17,10 +17,12 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Fields;
-
-import java.io.IOException;
 import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.Terms;
 
 /** Abstract API that consumes terms, doc, freq, prox and
  *  payloads postings.  Concrete implementations of this
@@ -33,4 +35,28 @@ import java.io.Closeable;
 public abstract class FieldsProducer extends Fields implements Closeable {
   public abstract void close() throws IOException;
   public abstract void loadTermsIndex(int indexDivisor) throws IOException;
+
+  public static final FieldsProducer EMPTY = new FieldsProducer() {
+    
+    @Override
+    public Terms terms(String field) throws IOException {
+      return null;
+    }
+    
+    @Override
+    public FieldsEnum iterator() throws IOException {
+      return FieldsEnum.EMPTY;
+    }
+    
+    @Override
+    public void loadTermsIndex(int indexDivisor) throws IOException {
+      
+    }
+    
+    @Override
+    public void close() throws IOException {
+      
+    }
+  };
+  
 }

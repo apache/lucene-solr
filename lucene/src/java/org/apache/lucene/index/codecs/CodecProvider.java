@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 /** Holds a set of codecs, keyed by name.  You subclass
  *  this, instantiate it, and register your codecs, then

@@ -35,7 +35,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * @version $Id$
+ *
  */
 public class TestDocSet extends LuceneTestCase {
   Random rand = random;

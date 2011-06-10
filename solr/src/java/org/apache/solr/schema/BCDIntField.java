@@ -27,7 +27,7 @@ import org.apache.solr.response.TextResponseWriter;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  */
 public class BCDIntField extends FieldType {
   @Override

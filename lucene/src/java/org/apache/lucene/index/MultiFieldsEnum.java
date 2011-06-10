@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.values.MultiIndexDocValues;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -38,10 +39,14 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   // Holds sub-readers containing field we are currently
   // on, popped from queue.
   private final FieldsEnumWithSlice[] top;
+  private final FieldsEnumWithSlice[] enumWithSlices;
+
   private int numTop;
 
   // Re-used TermsEnum
   private final MultiTermsEnum terms;
+  private final MultiIndexDocValues docValues;
+
 
   private String currentField;
 
@@ -50,7 +55,9 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public MultiFieldsEnum(FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
     terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
+    docValues = new MultiIndexDocValues();
     top = new FieldsEnumWithSlice[subs.length];
+    List<FieldsEnumWithSlice> enumWithSlices = new ArrayList<FieldsEnumWithSlice>();
 
     // Init q
     for(int i=0;i<subs.length;i++) {
@@ -59,10 +66,13 @@ public final  class MultiFieldsEnum extends FieldsEnum {
       if (field != null) {
         // this FieldsEnum has at least one field
         final FieldsEnumWithSlice sub = new FieldsEnumWithSlice(subs[i], subSlices[i], i);
+        enumWithSlices.add(sub);
         sub.current = field;
         queue.add(sub);
       }
     }
+    this.enumWithSlices = enumWithSlices.toArray(FieldsEnumWithSlice.EMPTY_ARRAY);
+
   }
 
   @Override
@@ -114,6 +124,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   }
 
   public final static class FieldsEnumWithSlice {
+    public static final FieldsEnumWithSlice[] EMPTY_ARRAY = new FieldsEnumWithSlice[0];
     final FieldsEnum fields;
     final ReaderUtil.Slice slice;
     final int index;

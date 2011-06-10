@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Test for SpellCheckComponent's response in Solrj
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestSpellCheckResponse extends SolrJettyTestBase {
@@ -143,7 +143,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     
     //Test Expanded Collation Results
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
-    query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 5);
+    query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 10);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2); 
     request = new QueryRequest(query);
     response = request.process(server).getSpellCheckResponse();

@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.mockintblock;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
@@ -33,8 +34,12 @@ import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
+import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
@@ -197,10 +202,11 @@ public class MockFixedIntBlockCodec extends Codec {
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) throws IOException {
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
   }
 
   @Override
@@ -208,5 +214,16 @@ public class MockFixedIntBlockCodec extends Codec {
     SepPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+  }
+  
+  @Override
+  public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+  }
+
+  @Override
+  public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
   }
 }

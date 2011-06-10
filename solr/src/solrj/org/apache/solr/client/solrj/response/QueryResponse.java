@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 @SuppressWarnings("unchecked")

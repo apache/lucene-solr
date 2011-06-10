@@ -30,7 +30,7 @@ import org.apache.solr.util.ExternalPaths;
  * Abstract base class for testing merge indexes command
  *
  * @since solr 1.4
- * @version $Id$
+ *
  */
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   // protected static final CoreContainer cores = new CoreContainer();

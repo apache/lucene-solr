@@ -47,14 +47,13 @@ public class TestThreadedOptimize extends LuceneTestCase {
     failed = true;
   }
 
-  public void runTest(Random random, Directory directory, MergeScheduler merger) throws Exception {
+  public void runTest(Random random, Directory directory) throws Exception {
 
     IndexWriter writer = new IndexWriter(
         directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, ANALYZER).
             setOpenMode(OpenMode.CREATE).
             setMaxBufferedDocs(2).
-            setMergeScheduler(merger).
             setMergePolicy(newLogMergePolicy())
     );
 
@@ -65,8 +64,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
-        d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-        d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
         writer.addDocument(d);
       }
 
@@ -86,8 +85,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
                 writerFinal.optimize(false);
                 for(int k=0;k<17*(1+iFinal);k++) {
                   Document d = new Document();
-                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED));
-                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED));
+                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
                   writerFinal.addDocument(d);
                 }
                 for(int k=0;k<9*(1+iFinal);k++)
@@ -135,8 +134,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
   */
   public void testThreadedOptimize() throws Exception {
     Directory directory = newDirectory();
-    runTest(random, directory, new SerialMergeScheduler());
-    runTest(random, directory, new ConcurrentMergeScheduler());
+    runTest(random, directory);
     directory.close();
   }
 }

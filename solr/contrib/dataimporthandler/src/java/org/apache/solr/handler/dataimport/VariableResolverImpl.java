@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- * @version $Id$
+ *
  * @see VariableResolver
  * @since solr 1.3
  */

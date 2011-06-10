@@ -37,7 +37,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
     for(int numDocs=10;numDocs<500;numDocs += _TestUtil.nextInt(random, incrMin, 5*incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
@@ -78,7 +78,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
 
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
@@ -183,7 +183,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(51))
       );
       Document doc = new Document();
-      doc.add(newField("field", "aaa", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("field", "aaa", Store.NO, Index.NOT_ANALYZED));
       for(int i=0;i<100;i++)
         writer.addDocument(doc);
       writer.optimize(false);

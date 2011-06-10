@@ -54,7 +54,6 @@ import org.apache.lucene.util.BytesRef;
  * Term position unit test.
  *
  *
- * @version $Revision$
  */
 public class TestPositionIncrement extends LuceneTestCase {
 

@@ -490,11 +490,21 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
 
     @Override
+    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+      return null;
+    }
+
+    @Override
+    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+      return null;
+    }
+
+    @Override
     public void getExtensions(Set<String> extensions) {
     }
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, String codecId, Set<String> files) {
+    public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) {
     }
   }
 
@@ -506,7 +516,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     provider.register(new RAMOnlyCodec());
     provider.setDefaultFieldCodec("RamOnly");
     
-    final int NUM_DOCS = 173;
+    final int NUM_DOCS = atLeast(173);
     MockDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
     IndexWriter w = new IndexWriter(

@@ -20,7 +20,7 @@ package org.apache.solr.common.params;
 /**
  * Defines the request parameters used by all analysis request handlers.
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public interface AnalysisParams {

@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrInputField implements Iterable<Object>, Serializable

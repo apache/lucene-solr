@@ -29,7 +29,7 @@ import java.util.*;
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class EntityProcessorBase extends EntityProcessor {

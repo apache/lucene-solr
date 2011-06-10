@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 /**
  * Admin JDK Logger level report and selection servlet.
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public final class LogLevelSelection extends HttpServlet {

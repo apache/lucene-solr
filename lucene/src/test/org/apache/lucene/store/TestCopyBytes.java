@@ -32,7 +32,8 @@ public class TestCopyBytes extends LuceneTestCase {
 
   @Test
   public void testCopyBytes() throws Exception {
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    int num = atLeast(10);
+    for(int iter=0;iter<num;iter++) {
       Directory dir = newDirectory();
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter + " dir=" + dir);

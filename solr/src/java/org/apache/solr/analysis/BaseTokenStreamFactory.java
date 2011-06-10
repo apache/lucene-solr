@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * a factory as it implements no interface, but removes code duplication
  * in its subclasses.
  * 
- * @version $Id$
+ *
  */
 abstract class BaseTokenStreamFactory {
   /** The init args */

@@ -51,7 +51,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     assertNotNull(block);
     final int size = block.length;
 
-    for (int i = 0; i < 97 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(97);
+    for (int i = 0; i < num; i++) {
       block = allocator.getByteBlock();
       assertNotNull(block);
       assertEquals(size, block.length);
@@ -71,7 +72,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     assertNotNull(block);
     final int size = block.length;
 
-    for (int i = 0; i < 97 * RANDOM_MULTIPLIER; i++) {
+    int numIters = atLeast(97);
+    for (int i = 0; i < numIters; i++) {
       int num = 1 + random.nextInt(39);
       for (int j = 0; j < num; j++) {
         block = allocator.getByteBlock();
@@ -107,7 +109,8 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     assertNotNull(block);
     final int size = block.length;
 
-    for (int i = 0; i < 97 * RANDOM_MULTIPLIER; i++) {
+    int numIters = atLeast(97);
+    for (int i = 0; i < numIters; i++) {
       int num = 1 + random.nextInt(39);
       for (int j = 0; j < num; j++) {
         block = allocator.getByteBlock();

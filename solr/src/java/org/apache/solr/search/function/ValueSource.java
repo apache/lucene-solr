@@ -39,7 +39,7 @@ import java.util.Map;
  * <br>
  * Often used when creating a {@link FunctionQuery}.
  *
- * @version $Id$
+ *
  */
 public abstract class ValueSource implements Serializable {
 

@@ -33,7 +33,7 @@ public class AppendingTermsDictReader extends BlockTermsReader {
   public AppendingTermsDictReader(TermsIndexReaderBase indexReader,
           Directory dir, FieldInfos fieldInfos, String segment,
           PostingsReaderBase postingsReader, int readBufferSize,
-          int termsCacheSize, String codecId) throws IOException {
+          int termsCacheSize, int codecId) throws IOException {
     super(indexReader, dir, fieldInfos, segment, postingsReader, readBufferSize,
           termsCacheSize, codecId);
   }

@@ -41,7 +41,7 @@ import java.util.List;
 /**
  * TODO!
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
