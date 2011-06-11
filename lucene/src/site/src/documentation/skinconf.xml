@@ -35,7 +35,7 @@ which will be used to configure the chosen Forrest skin.
   <!-- Disable the print link? If enabled, invalid HTML 4.0.1 -->
   <disable-print-link>true</disable-print-link>  
   <!-- Disable the PDF link? -->
-  <disable-pdf-link>false</disable-pdf-link>
+  <disable-pdf-link>true</disable-pdf-link>
   <!-- Disable the POD link? -->
   <disable-pod-link>true</disable-pod-link>
   <!-- Disable the Text link? FIXME: NOT YET IMPLEMENETED. -->
@@ -364,60 +364,6 @@ which will be used to configure the chosen Forrest skin.
 -->
   </colors>
  
-  <!-- Settings specific to PDF output. -->
-  <pdf>
-    <!-- 
-       Supported page sizes are a0, a1, a2, a3, a4, a5, executive,
-       folio, legal, ledger, letter, quarto, tabloid (default letter).
-       Supported page orientations are portrait, landscape (default
-       portrait).
-       Supported text alignments are left, right, justify (default left).
-    -->
-    <page size="letter" orientation="portrait" text-align="left"/>
-
-    <!-- 
-       Pattern of the page numbering in the footer - Default is "Page x".
-       first occurrence of '1' digit represents the current page number,
-       second occurrence of '1' digit represents the total page number,
-       anything else is considered as the static part of the numbering pattern.
-       Examples : x is the current page number, y the total page number.
-       <page-numbering-format>none</page-numbering-format> Do not displays the page numbering
-       <page-numbering-format>1</page-numbering-format> Displays "x"
-       <page-numbering-format>p1.</page-numbering-format> Displays "px."
-       <page-numbering-format>Page 1/1</page-numbering-format> Displays "Page x/y"
-       <page-numbering-format>(1-1)</page-numbering-format> Displays "(x-y)"
-    -->
-    <page-numbering-format>Page 1</page-numbering-format>
-
-    <!--
-       Margins can be specified for top, bottom, inner, and outer
-       edges. If double-sided="false", the inner edge is always left
-       and the outer is always right. If double-sided="true", the
-       inner edge will be left on odd pages, right on even pages,
-       the outer edge vice versa.
-       Specified below are the default settings.
-    -->
-    <margins double-sided="false">
-      <top>1in</top>
-      <bottom>1in</bottom>
-      <inner>1.25in</inner>
-      <outer>1in</outer>
-    </margins>
-
-    <!--
-      Print the URL text next to all links going outside the file
-    -->
-    <show-external-urls>false</show-external-urls>
-
-    <!--
-      Disable the copyright footer on each page of the PDF.
-      A footer is composed for each page. By default, a "credit" with role=pdf
-      will be used, as explained below. Otherwise a copyright statement
-      will be generated. This latter can be disabled.
-    -->
-    <disable-copyright-footer>false</disable-copyright-footer>
-  </pdf>
-
   <!-- 
     Credits are typically rendered as a set of small clickable
     images in the page footer.
