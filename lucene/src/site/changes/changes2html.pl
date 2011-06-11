@@ -23,7 +23,6 @@
 
 use strict;
 use warnings;
-use JSON;
 use LWP::Simple;
 
 my $project_info_url = 'https://issues.apache.org/jira/rest/api/2.0.alpha1/project/LUCENE';
@@ -676,7 +675,7 @@ sub setup_release_dates {
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
   my $project_info_json = get($project_info_url);
-  my $project_info = decode_json($project_info_json);
+  my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
       my $date = substr($version->{releaseDate}, 0, 10);
@@ -851,5 +850,16 @@ sub setup_bugzilla_jira_map {
            36628 => 432);
 }
 
+#
+# json2perl
+#
+# Converts a JSON string to the equivalent Perl data structure
+#
+sub json2perl {
+  my $json_string = shift;
+  $json_string =~ s/(:\s*)(true|false)/$1"$2"/g;
+  $json_string =~ s/":/",/g;
+  return eval $json_string;
+}
 
 1;
