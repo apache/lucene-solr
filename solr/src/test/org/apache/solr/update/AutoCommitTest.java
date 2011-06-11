@@ -296,7 +296,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     // too low of a number can cause a slow host to commit before the test code checks that it
     // isn't there... causing a failure at "shouldn't find any"
-    softTracker.timeUpperBound = 1000;
+    softTracker.timeUpperBound = 2000;
     softTracker.docsUpperBound = -1;
     // updater.commitCallbacks.add(trigger);
     
@@ -332,7 +332,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForNewSearcher(30000));
+    assertTrue(trigger.waitForNewSearcher(15000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -340,17 +340,17 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertEquals( 2, softTracker.getCommitCount() );
     assertQ("deleted and time has passed", req("id:529") ,"//result[@numFound=0]" );
     
-    // now make the call 10 times really fast and make sure it 
+    // now make the call 5 times really fast and make sure it 
     // only commits once
     req.setContentStreams( toContentStreams(
         adoc("id", "500" ), null ) );
-    for( int i=0;i<10; i++ ) {
+    for( int i=0;i<5; i++ ) {
       handler.handleRequest( req, rsp );
     }
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForNewSearcher(45000));
+    assertTrue(trigger.waitForNewSearcher(15000));
     trigger.reset();
     
     req.setContentStreams( toContentStreams(
