@@ -25,66 +25,51 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.*;
-import org.apache.solr.search.*;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.RefCounted;
 
-class CommitListener implements SolrEventListener {
-  public volatile boolean triggered = false;
-  public volatile SolrIndexSearcher currentSearcher;
-  public SolrCore core;
+class NewSearcherListener implements SolrEventListener {
+  private volatile boolean triggered = false;
+  
+  public NewSearcherListener(SolrCore core) {
 
-  public CommitListener(SolrCore core) {
-    this.core = core;
   }
-
+  
   @Override
   public void init(NamedList args) {}
-
+  
   @Override
-  public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
-    this.currentSearcher = currentSearcher;
+  public void newSearcher(SolrIndexSearcher newSearcher,
+      SolrIndexSearcher currentSearcher) {
     triggered = true;
   }
   
   @Override
-  public void postCommit() {
-    triggered = true;
-  }
+  public void postCommit() {}
   
   @Override
-  public void postSoftCommit() {
-    triggered = true;
-  }
+  public void postSoftCommit() {}
   
   public void reset() {
-    triggered=false;
+    triggered = false;
   }
-
-  boolean waitForCommit(int timeout) {
-    //triggered = false;
-    
-    for (int towait=timeout; towait > 0; towait -= 250) {
+  
+  boolean waitForNewSearcher(int timeout) {
+    long timeoutTime = System.currentTimeMillis() + timeout;
+    while (System.currentTimeMillis() < timeoutTime) {
+      if (triggered) {
+        return true;
+      }
+      
       try {
-        if (triggered) {
-          RefCounted<SolrIndexSearcher> holder = core.getNewestSearcher(false);
-          SolrIndexSearcher s = holder.get();
-          holder.decref();
-          // since there could be two commits in a row, don't test for a specific new searcher
-          // just test that the old one has been replaced.
-          if (s != currentSearcher) {
-            // a sleep to make sure the search is fully registered ... ? It helps.
-            Thread.sleep( 250 );
-            return true;
-          }
-          // it may be that a commit just happened, but the new searcher hasn't been registered yet.
-        }
-        Thread.sleep( 250 );
+        Thread.sleep(250);
       } catch (InterruptedException e) {}
+      
     }
     return false;
   }
@@ -114,13 +99,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public void testMaxDocs() throws Exception {
 
     SolrCore core = h.getCore();
-    CommitListener trigger = new CommitListener(core);
+    NewSearcherListener trigger = new NewSearcherListener(core);
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
     CommitTracker tracker = updateHandler.commitTracker;
     tracker.timeUpperBound = -1;
     tracker.docsUpperBound = 14;
-    updateHandler.commitCallbacks.add(trigger);
+    core.registerNewSearcherListener(trigger);
+  
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
@@ -143,7 +129,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
 
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForNewSearcher(10000));
 
     req.setContentStreams( toContentStreams(
         adoc("id", "15", "subject", "info" ), null ) );
@@ -160,7 +146,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
   public void testMaxTime() throws Exception {
     SolrCore core = h.getCore();
-    CommitListener trigger = new CommitListener(core);    
+    NewSearcherListener trigger = new NewSearcherListener(core);    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     CommitTracker tracker = updater.commitTracker;
@@ -187,7 +173,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForNewSearcher(30000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -202,7 +188,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForNewSearcher(30000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -220,7 +206,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(45000));
+    assertTrue(trigger.waitForNewSearcher(45000));
     trigger.reset();
     
     req.setContentStreams( toContentStreams(
@@ -235,20 +221,20 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public void testSoftCommitMaxDocs() throws Exception {
 
     SolrCore core = h.getCore();
-    CommitListener trigger = new CommitListener(core);
+    NewSearcherListener trigger = new NewSearcherListener(core);
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
     CommitTracker tracker = updateHandler.commitTracker;
     tracker.timeUpperBound = -1;
     tracker.docsUpperBound = 8;
-    updateHandler.commitCallbacks.add(trigger);
+ 
     
-    CommitListener softTrigger = new CommitListener(core);
+    NewSearcherListener softTrigger = new NewSearcherListener(core);
 
     CommitTracker softTracker = updateHandler.softCommitTracker;
     softTracker.timeUpperBound = -1;
     softTracker.docsUpperBound = 4;
-    updateHandler.softCommitCallbacks.add(softTrigger);
+    core.registerNewSearcherListener(softTrigger);
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
@@ -271,8 +257,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "4", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
 
-    assertTrue(softTrigger.waitForCommit(10000));
-
+    assertTrue(softTrigger.waitForNewSearcher(10000));
+    
+    core.registerNewSearcherListener(trigger);
     
     assertQ("should find 5", req("*:*") ,"//result[@numFound=5]" );
     assertEquals( 1, softTracker.getCommitCount());
@@ -297,7 +284,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     req.close();
     
     
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForNewSearcher(10000));
     assertQ("should find 10", req("*:*") ,"//result[@numFound=10]" );
     assertEquals( 1, softTracker.getCommitCount());
     assertEquals( 1, tracker.getCommitCount());
@@ -305,7 +292,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   
   public void testSoftCommitMaxTime() throws Exception {
     SolrCore core = h.getCore();
-    CommitListener trigger = new CommitListener(core);    
+    NewSearcherListener trigger = new NewSearcherListener(core);    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     CommitTracker tracker = updater.commitTracker;
@@ -334,7 +321,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForNewSearcher(30000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -349,7 +336,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForNewSearcher(30000));
     trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -367,7 +354,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(45000));
+    assertTrue(trigger.waitForNewSearcher(45000));
     trigger.reset();
     
     req.setContentStreams( toContentStreams(
