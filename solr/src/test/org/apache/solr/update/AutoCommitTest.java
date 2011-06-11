@@ -36,10 +36,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 class NewSearcherListener implements SolrEventListener {
   private volatile boolean triggered = false;
   
-  public NewSearcherListener(SolrCore core) {
-
-  }
-  
   @Override
   public void init(NamedList args) {}
   
@@ -99,7 +95,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public void testMaxDocs() throws Exception {
 
     SolrCore core = h.getCore();
-    NewSearcherListener trigger = new NewSearcherListener(core);
+    NewSearcherListener trigger = new NewSearcherListener();
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
     CommitTracker tracker = updateHandler.commitTracker;
@@ -146,7 +142,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
   public void testMaxTime() throws Exception {
     SolrCore core = h.getCore();
-    NewSearcherListener trigger = new NewSearcherListener(core);    
+    NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     CommitTracker tracker = updater.commitTracker;
@@ -221,7 +217,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public void testSoftCommitMaxDocs() throws Exception {
 
     SolrCore core = h.getCore();
-    NewSearcherListener trigger = new NewSearcherListener(core);
+    NewSearcherListener trigger = new NewSearcherListener();
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
     CommitTracker tracker = updateHandler.commitTracker;
@@ -229,7 +225,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     tracker.docsUpperBound = 8;
  
     
-    NewSearcherListener softTrigger = new NewSearcherListener(core);
+    NewSearcherListener softTrigger = new NewSearcherListener();
 
     CommitTracker softTracker = updateHandler.softCommitTracker;
     softTracker.timeUpperBound = -1;
@@ -292,7 +288,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   
   public void testSoftCommitMaxTime() throws Exception {
     SolrCore core = h.getCore();
-    NewSearcherListener trigger = new NewSearcherListener(core);    
+    NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     CommitTracker tracker = updater.commitTracker;
