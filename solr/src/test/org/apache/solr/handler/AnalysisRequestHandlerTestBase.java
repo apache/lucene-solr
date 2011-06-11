@@ -37,6 +37,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     assertEquals(new Integer(info.getStart()), token.get("start"));
     assertEquals(new Integer(info.getEnd()), token.get("end"));
     assertEquals(new Integer(info.getPosition()), token.get("position"));
+    assertEquals(info.getPositionHistory(), token.get("positionHistory"));
     if (info.isMatch()) {
       assertEquals(Boolean.TRUE, token.get("match"));
     }
@@ -57,6 +58,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     private int end;
     private String payload;
     private int position;
+    private String positionHistory;
     private boolean match;
 
     public TokenInfo(
@@ -66,6 +68,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
             int start,
             int end,
             int position,
+            String positionHistory,
             String payload,
             boolean match) {
 
@@ -75,6 +78,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
       this.start = start;
       this.end = end;
       this.position = position;
+      this.positionHistory = positionHistory;
       this.payload = payload;
       this.match = match;
     }
@@ -105,6 +109,10 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
 
     public int getPosition() {
       return position;
+    }
+
+    public String getPositionHistory() {
+      return positionHistory;
     }
 
     public boolean isMatch() {
