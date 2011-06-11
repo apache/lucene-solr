@@ -147,6 +147,7 @@ public class IndexSplitter {
     destDir.mkdirs();
     FSDirectory destFSDir = FSDirectory.open(destDir);
     SegmentInfos destInfos = new SegmentInfos(codecs);
+    destInfos.counter = infos.counter;
     for (String n : segs) {
       SegmentInfo info = getInfo(n);
       destInfos.add(info);
