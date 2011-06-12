@@ -674,7 +674,7 @@ sub setup_release_dates {
            '2.4.0' => '2008-10-06',     '2.4.1' => '2009-03-09',
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
-  my $project_info_json = get($project_info_url);
+  my $project_info_json = get($project_info_url) || die "Unable to download $project_info_url";
   my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
