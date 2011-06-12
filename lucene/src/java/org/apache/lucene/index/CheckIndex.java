@@ -419,6 +419,7 @@ public class CheckIndex {
 
     result.newSegments = (SegmentInfos) sis.clone();
     result.newSegments.clear();
+    result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = sis.info(i);
