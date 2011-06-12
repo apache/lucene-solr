@@ -959,6 +959,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
   
+  /* test removed because of backwards compatibility change
   // LUCENE-1044: Simulate checksum error in segments_N
   public void testSegmentsChecksumError() throws IOException {
     Directory dir = newDirectory();
@@ -997,6 +998,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+  */
   
   // Simulate a corrupt index by removing last byte of
   // latest segments file and make sure we get an
