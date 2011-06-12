@@ -639,11 +639,12 @@
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html" failonerror="true">
+      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+            failonerror="true" logError="true">
         <arg value="@{changes.src.dir}/changes2html.pl"/>
       </exec>
       <exec executable="perl" input="contrib/CHANGES.txt" output="@{changes.target.dir}/Contrib-Changes.html"
-            failonerror="true">
+            failonerror="true" logError="true">
         <arg value="@{changes.src.dir}/changes2html.pl"/>
       </exec>
       <copy todir="@{changes.target.dir}">
