@@ -12,15 +12,15 @@ Changes in backwards compatibility policy
   - On upgrading to 3.1, if you do not fully reindex your documents,
     Lucene will emulate the new flex API on top of the old index,
     incurring some performance cost (up to ~10% slowdown, typically).
-    Likewise, if you use the deprecated pre-flex APIs on a newly
-    created flex index, this emulation will also incur some
-    performance loss.
+    To prevent this slowdown, use oal.index.IndexUpgrader
+    to upgrade your indexes to latest file format (LUCENE-3082).
 
     Mixed flex/pre-flex indexes are perfectly fine -- the two
     emulation layers (flex API on pre-flex index, and pre-flex API on
     flex index) will remap the access as required.  So on upgrading to
     3.1 you can start indexing new documents into an existing index.
-    But for best performance you should fully reindex.
+    To get optimal performance, use oal.index.IndexUpgrader
+    to upgrade your indexes to latest file format (LUCENE-3082).
 
   - The postings APIs (TermEnum, TermDocsEnum, TermPositionsEnum)
     have been removed in favor of the new flexible
