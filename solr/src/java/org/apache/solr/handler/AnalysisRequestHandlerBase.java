@@ -44,6 +44,7 @@ import org.apache.solr.schema.FieldType;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * A base class for all analysis request handlers.
@@ -361,26 +362,30 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
   public static final class TokenTrackingAttributeImpl extends AttributeImpl implements TokenTrackingAttribute {
     private int[] basePositions = new int[0];
     private int position = 0;
+    private transient int[] cachedPositions = null;
 
     public void freezeStage() {
       this.basePositions = getPositions();
       this.position = 0;
+      this.cachedPositions = null;
     }
     
     public void setActPosition(int pos) {
       this.position = pos;
+      this.cachedPositions = null;
     }
     
     public int[] getPositions() {
-      final int[] positions = new int[basePositions.length + 1];
-      System.arraycopy(basePositions, 0, positions, 0, basePositions.length);
-      positions[basePositions.length] = position;
-      return positions;
+      if (cachedPositions == null) {
+        cachedPositions = ArrayUtils.add(basePositions, position);
+      }
+      return cachedPositions;
     }
     
     public void reset(int[] basePositions, int position) {
       this.basePositions = basePositions;
       this.position = position;
+      this.cachedPositions = null;
     }
     
     @Override
@@ -390,14 +395,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     
     @Override
     public void reflectWith(AttributeReflector reflector) {
-      final int[] positions = getPositions();
-      final StringBuilder sb = new StringBuilder(positions.length * 2);
-      for (int p : positions) {
-        if (sb.length() > 0) sb.append('/');
-        sb.append(p);
-      }
-      reflector.reflect(TokenTrackingAttribute.class, "positionHistory", sb.toString());
       reflector.reflect(TokenTrackingAttribute.class, "position", position);
+      // convert to Integer[] array, as only such one can be serialized by ResponseWriters
+      reflector.reflect(TokenTrackingAttribute.class, "positionHistory", ArrayUtils.toObject(getPositions()));
     }
 
     @Override
