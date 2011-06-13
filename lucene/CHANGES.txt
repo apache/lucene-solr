@@ -503,6 +503,10 @@ New Features
 * LUCENE-3140: Added experimental FST implementation to Lucene.
   (Robert Muir, Dawid Weiss, Mike McCandless)
 
+* LUCENE-3193: A new TwoPhaseCommitTool allows running a 2-phase commit 
+  algorithm over objects that implement the new TwoPhaseCommit interface (such
+  as IndexWriter). (Shai Erera)
+
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.

@@ -55,6 +55,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
+import org.apache.lucene.util.TwoPhaseCommit;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -190,7 +191,7 @@ import org.apache.lucene.util.MapBackedSet;
  * referenced by the "front" of the index). For this, IndexFileDeleter
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter implements Closeable {
+public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Name of the write lock in the index.
    */
