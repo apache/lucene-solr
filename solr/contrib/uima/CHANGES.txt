@@ -31,6 +31,9 @@ Bug Fixes
 * SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
   (Elmer Garduno via koji)
 
+* SOLR-2581: UIMAToSolrMapper wrongly instantiates Type with reflection.
+  (Tommaso Teofili via koji)
+
 ==================  3.2.0 ==================
 
 Upgrading from Solr 3.1
