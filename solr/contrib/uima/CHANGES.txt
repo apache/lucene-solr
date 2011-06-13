@@ -20,6 +20,12 @@ WhitespaceTokenizer v2.3.1-SNAPSHOT rev. 1076132
 $Id$
 
 ==================  3.3.0-dev ==============
+
+New Features
+----------------------
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
   
 Bug Fixes
 ----------------------
