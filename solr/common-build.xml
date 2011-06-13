@@ -133,7 +133,7 @@
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
-            value="https://hudson.apache.org/hudson/job/Lucene-trunk/javadoc/all/"/>
+            value="https://builds.apache.org/job/Lucene-trunk/javadoc/all/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${common-solr.dir}/${build.docs}/api"/>
