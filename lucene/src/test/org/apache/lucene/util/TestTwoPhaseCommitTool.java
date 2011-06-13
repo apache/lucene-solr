@@ -40,12 +40,10 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       this.failOnRollback = failOnRollback;
     }
 
-    @Override
     public void prepareCommit() throws IOException {
       prepareCommit(null);
     }
 
-    @Override
     public void prepareCommit(Map<String, String> commitData) throws IOException {
       this.prepareCommitData = commitData;
       assertFalse("commit should not have been called before all prepareCommit were", commitCalled);
@@ -54,12 +52,10 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
-    @Override
     public void commit() throws IOException {
       commit(null);
     }
 
-    @Override
     public void commit(Map<String, String> commitData) throws IOException {
       this.commitData = commitData;
       commitCalled = true;
@@ -68,7 +64,6 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
-    @Override
     public void rollback() throws IOException {
       rollbackCalled = true;
       if (failOnRollback) {
