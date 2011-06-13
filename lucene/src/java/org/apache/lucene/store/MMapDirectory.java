@@ -304,7 +304,6 @@ public class MMapDirectory extends FSDirectory {
   private class MultiMMapIndexInput extends IndexInput {
   
     private ByteBuffer[] buffers;
-    private int[] bufSizes; // keep here, ByteBuffer.size() method is optional
   
     private final long length;
   
@@ -333,7 +332,6 @@ public class MMapDirectory extends FSDirectory {
       if (((long) nrBuffers * maxBufSize) <= length) nrBuffers++;
       
       this.buffers = new ByteBuffer[nrBuffers];
-      this.bufSizes = new int[nrBuffers];
       
       long bufferStart = 0;
       FileChannel rafc = raf.getChannel();
@@ -342,7 +340,6 @@ public class MMapDirectory extends FSDirectory {
           ? maxBufSize
           : (int) (length - bufferStart);
         this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY,bufferStart,bufSize);
-        this.bufSizes[bufNr] = bufSize;
         bufferStart += bufSize;
       }
       seek(0L);
@@ -426,7 +423,6 @@ public class MMapDirectory extends FSDirectory {
       MultiMMapIndexInput clone = (MultiMMapIndexInput)super.clone();
       clone.isClone = true;
       clone.buffers = new ByteBuffer[buffers.length];
-      // No need to clone bufSizes.
       // Since most clones will use only one buffer, duplicate() could also be
       // done lazy in clones, e.g. when adapting curBuf.
       for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
