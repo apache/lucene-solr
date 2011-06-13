@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * A base class for all analysis request handler tests.
@@ -37,7 +38,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     assertEquals(new Integer(info.getStart()), token.get("start"));
     assertEquals(new Integer(info.getEnd()), token.get("end"));
     assertEquals(new Integer(info.getPosition()), token.get("position"));
-    assertEquals(info.getPositionHistory(), token.get("positionHistory"));
+    assertArrayEquals(info.getPositionHistory(), ArrayUtils.toPrimitive((Integer[]) token.get("positionHistory")));
     if (info.isMatch()) {
       assertEquals(Boolean.TRUE, token.get("match"));
     }
@@ -58,7 +59,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     private int end;
     private String payload;
     private int position;
-    private String positionHistory;
+    private int[] positionHistory;
     private boolean match;
 
     public TokenInfo(
@@ -68,7 +69,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
             int start,
             int end,
             int position,
-            String positionHistory,
+            int[] positionHistory,
             String payload,
             boolean match) {
 
@@ -111,7 +112,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
       return position;
     }
 
-    public String getPositionHistory() {
+    public int[] getPositionHistory() {
       return positionHistory;
     }
 
