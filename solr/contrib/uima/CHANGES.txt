@@ -24,6 +24,12 @@ $Id$
 (No Changes)
 
 ==================  3.3.0-dev ==============
+
+New Features
+----------------------
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
   
 Bug Fixes
 ----------------------

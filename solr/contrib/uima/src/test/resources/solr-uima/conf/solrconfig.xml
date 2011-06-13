@@ -1064,8 +1064,6 @@
         </lst>
         <str name="analysisEngine">/TestExceptionAE.xml</str>
         <bool name="ignoreErrors">true</bool>
-        <!-- This is optional. It is used for logging when text processing fails. Usually, set uniqueKey field name -->
-        <str name="logField">id</str>
         <lst name="analyzeFields">
           <bool name="merge">false</bool>
           <arr name="fields">

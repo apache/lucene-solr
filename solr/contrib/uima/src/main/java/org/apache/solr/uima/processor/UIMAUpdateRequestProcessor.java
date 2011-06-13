@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.solr.uima.processor.ae.AEProvider;
 import org.apache.solr.uima.processor.ae.AEProviderFactory;
@@ -44,6 +45,8 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   SolrUIMAConfiguration solrUIMAConfiguration;
 
   private AEProvider aeProvider;
+  
+  private SolrCore solrCore;
 
   public UIMAUpdateRequestProcessor(UpdateRequestProcessor next, SolrCore solrCore,
       SolrUIMAConfiguration config) {
@@ -52,6 +55,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   }
 
   private void initialize(SolrCore solrCore, SolrUIMAConfiguration config) {
+    this.solrCore = solrCore;
     solrUIMAConfiguration = config;
     aeProvider = AEProviderFactory.getInstance().getAEProvider(solrCore.getName(),
             solrUIMAConfiguration.getAePath(), solrUIMAConfiguration.getRuntimeParameters());
@@ -84,6 +88,12 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
       }
     } catch (Exception e) {
       String logField = solrUIMAConfiguration.getLogField();
+      if(logField == null){
+        SchemaField uniqueKeyField = solrCore.getSchema().getUniqueKeyField();
+        if(uniqueKeyField != null){
+          logField = uniqueKeyField.getName();
+        }
+      }
       String optionalFieldInfo = logField == null ? "." :
         new StringBuilder(". ").append(logField).append("=")
         .append((String)cmd.getSolrInputDocument().getField(logField).getValue())
