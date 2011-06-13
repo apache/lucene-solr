@@ -44,27 +44,22 @@ public final class TwoPhaseCommitTool {
       this.commitData = commitData;
     }
 
-    @Override
     public void prepareCommit() throws IOException {
       prepareCommit(commitData);
     }
 
-    @Override
     public void prepareCommit(Map<String, String> commitData) throws IOException {
       tpc.prepareCommit(this.commitData);
     }
 
-    @Override
     public void commit() throws IOException {
       commit(commitData);
     }
 
-    @Override
     public void commit(Map<String, String> commitData) throws IOException {
       tpc.commit(this.commitData);
     }
 
-    @Override
     public void rollback() throws IOException {
       tpc.rollback();
     }
