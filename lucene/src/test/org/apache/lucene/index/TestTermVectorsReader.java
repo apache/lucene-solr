@@ -384,8 +384,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
       fail();
     } catch (IOException e) {
       // expected exception
-    } catch (IllegalArgumentException e) {
-      // mmapdir will give us this from java.nio.Buffer.position()
     } finally {
       reader.close();
     }
@@ -396,8 +394,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
       fail();
     } catch (IOException e) {
       // expected exception
-    } catch (IllegalArgumentException e) {
-      // mmapdir will give us this from java.nio.Buffer.position()
     } finally {
       reader.close();
     }

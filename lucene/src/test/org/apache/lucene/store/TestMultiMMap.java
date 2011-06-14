@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -40,9 +41,68 @@ public class TestMultiMMap extends LuceneTestCase {
   
   @Override
   public void setUp() throws Exception {
-      super.setUp();
-      workDir = _TestUtil.getTempDir("TestMultiMMap");
-      workDir.mkdirs();
+    super.setUp();
+    assumeTrue("test requires a jre that supports unmapping", MMapDirectory.UNMAP_SUPPORTED);
+    workDir = _TestUtil.getTempDir("TestMultiMMap");
+    workDir.mkdirs();
+  }
+
+  public void testSeekZero() throws Exception {
+    for (int i = 0; i < 31; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekZero"));
+      mmapDir.setMaxChunkSize(1<<i);
+      IndexOutput io = mmapDir.createOutput("zeroBytes");
+      io.close();
+      IndexInput ii = mmapDir.openInput("zeroBytes");
+      ii.seek(0L);
+      ii.close();
+      mmapDir.close();
+    }
+  }
+  
+  public void testSeekEnd() throws Exception {
+    for (int i = 0; i < 17; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekEnd"));
+      mmapDir.setMaxChunkSize(1<<i);
+      IndexOutput io = mmapDir.createOutput("bytes");
+      byte bytes[] = new byte[1<<i];
+      random.nextBytes(bytes);
+      io.writeBytes(bytes, bytes.length);
+      io.close();
+      IndexInput ii = mmapDir.openInput("bytes");
+      byte actual[] = new byte[1<<i];
+      ii.readBytes(actual, 0, actual.length);
+      assertEquals(new BytesRef(bytes), new BytesRef(actual));
+      ii.seek(1<<i);
+      ii.close();
+      mmapDir.close();
+    }
+  }
+  
+  public void testSeeking() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeeking"));
+      mmapDir.setMaxChunkSize(1<<i);
+      IndexOutput io = mmapDir.createOutput("bytes");
+      byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
+      random.nextBytes(bytes);
+      io.writeBytes(bytes, bytes.length);
+      io.close();
+      IndexInput ii = mmapDir.openInput("bytes");
+      byte actual[] = new byte[1<<(i+1)]; // first read all bytes
+      ii.readBytes(actual, 0, actual.length);
+      assertEquals(new BytesRef(bytes), new BytesRef(actual));
+      for (int sliceStart = 0; sliceStart < bytes.length; sliceStart++) {
+        for (int sliceLength = 0; sliceLength < bytes.length - sliceStart; sliceLength++) {
+          byte slice[] = new byte[sliceLength];
+          ii.seek(sliceStart);
+          ii.readBytes(slice, 0, slice.length);
+          assertEquals(new BytesRef(bytes, sliceStart, sliceLength), new BytesRef(slice));
+        }
+      }
+      ii.close();
+      mmapDir.close();
+    }
   }
   
   public void testRandomChunkSizes() throws Exception {
@@ -55,11 +115,12 @@ public class TestMultiMMap extends LuceneTestCase {
     File path = _TestUtil.createTempFile("mmap" + chunkSize, "tmp", workDir);
     path.delete();
     path.mkdirs();
-    MMapDirectory dir = new MMapDirectory(path);
-    dir.setMaxChunkSize(chunkSize);
+    MMapDirectory mmapDir = new MMapDirectory(path);
+    mmapDir.setMaxChunkSize(chunkSize);
     // we will map a lot, try to turn on the unmap hack
     if (MMapDirectory.UNMAP_SUPPORTED)
-      dir.setUseUnmap(true);
+      mmapDir.setUseUnmap(true);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random, mmapDir);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     Field docid = newField("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
