@@ -524,6 +524,16 @@ Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.
   (Nicolas Lalevée, Luca Stancapiano via ryan)
+  
+* LUCENE-3204: The maven-ant-tasks jar is now included in the source tree;
+  users of the generate-maven-artifacts target no longer have to manually
+  place this jar in the Ant classpath.  NOTE: when Ant looks for the 
+  maven-ant-tasks jar, it looks first in its pre-existing classpath, so
+  any copies it finds will be used instead of the copy included in the 
+  Lucene/Solr source tree.  For this reason, it is recommeded to remove
+  any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
+  ~/.ant/lib/ or under the Ant installation's lib/ directory. 
+  
 
 ======================= Lucene 3.2.0 =======================
 

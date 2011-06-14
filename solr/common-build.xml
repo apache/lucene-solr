@@ -168,7 +168,11 @@
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
-  <available property="maven.ant.tasks.present" classname="org.apache.maven.artifact.ant.Pom" />
+  <path id="maven-ant-tasks.classpath">
+    <fileset dir="${common-solr.dir}/../lucene/lib">
+      <include name="maven-ant-tasks-*.jar"/>
+    </fileset>
+  </path>
 
   <!-- End Maven Properties -->
   
@@ -587,19 +591,6 @@
      </manifest>
   </target>
 
-  <target name="maven.ant.tasks-check">
-    <fail unless="maven.ant.tasks.present">#
-    ##########################################################################
-      Maven ant tasks not found.
-
-      Please download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar)
-      from http://maven.apache.org/ant-tasks/download.html and add it to your
-      $$HOME/.ant/lib/ directory, or to your $$ANT_HOME/lib/ directory, or
-      to your $$CLASSPATH, or add "-lib /path/to/maven-ant-tasks-2.1.1.jar"
-      to the ant command.
-    ##########################################################################
-    </fail>
-  </target>
   <!-- Validation -->
   <target name="validate" depends="validate-solr"/>
   <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>
