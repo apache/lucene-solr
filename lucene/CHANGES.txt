@@ -482,6 +482,11 @@ Changes in runtime behavior
   
 * LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
   does not store norms. (Shai Erera, Mike McCandless)
+
+* LUCENE-3198: On Linux, if the JRE is 64 bit and supports unmapping,
+  FSDirectory.open now defaults to MMapDirectory instead of
+  NIOFSDirectory since MMapDirectory gives better performance.  (Mike
+  McCandless)
   
 * LUCENE-3200: MMapDirectory now uses chunk sizes that are powers of 2.
   When setting the chunk size, it is rounded down to the next possible

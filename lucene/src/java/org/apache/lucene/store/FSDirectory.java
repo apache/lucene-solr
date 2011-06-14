@@ -173,7 +173,7 @@ public abstract class FSDirectory extends Directory {
   /** Just like {@link #open(File)}, but allows you to
    *  also specify a custom {@link LockFactory}. */
   public static FSDirectory open(File path, LockFactory lockFactory) throws IOException {
-    if ((Constants.WINDOWS || Constants.SUN_OS)
+    if ((Constants.WINDOWS || Constants.SUN_OS || Constants.LINUX)
           && Constants.JRE_IS_64BIT && MMapDirectory.UNMAP_SUPPORTED) {
       return new MMapDirectory(path, lockFactory);
     } else if (Constants.WINDOWS) {
