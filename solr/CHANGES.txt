@@ -285,6 +285,12 @@ New Features
   compared to ternary trees and jaspell and very fast lookups at runtime.
   (Dawid Weiss)
 
+* SOLR-2400: Field- and DocumentAnalysisRequestHandler now provide a position
+  history for each token, so you can follow the token through all analysis stages.
+  The output contains a separate int[] attribute containing all positions from
+  previous Tokenizers/TokenFilters (called "positionHistory").
+  (Uwe Schindler)
+
 Optimizations
 ----------------------
 

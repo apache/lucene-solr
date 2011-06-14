@@ -50,7 +50,7 @@
               excludes="*-src.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="docs/,CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
+              includes="CHANGES.txt,LICENSE.txt,NOTICE.txt,README.txt,MIGRATE.txt,JRE_VERSION_MIGRATION.txt,contrib/**/README*,**/CHANGES.txt,contrib/**/*.sh contrib/**/docs/ contrib/xml-query-parser/*.dtd,lib/*.jar,lib/*LICENSE*.txt,lib/*NOTICE*.txt,contrib/*/lib/*.jar,contrib/*/lib/*LICENSE*.txt,contrib/*/lib/*NOTICE*.txt"
   />
 
 
@@ -147,8 +147,11 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="docs" description="Build the website">
-      <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
+  <target name="docs">
+  <!-- copies the docs over to the docs folder -->
+    <copy todir="build/docs">
+      <fileset dir="src/site/build/site"/> 
+    </copy>
   </target>
 
   <target name="javadoc" depends="javadocs"/>
@@ -260,7 +263,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, jar-test-framework, javadocs, build-contrib, init-dist, changes-to-html"/>
+  <target name="package" depends="jar-core, jar-test-framework, docs, javadocs, build-contrib, init-dist, changes-to-html"/>
 
   <target name="nightly" depends="test, package-tgz">
   </target>
@@ -636,11 +639,12 @@
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html" failonerror="true">
+      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+            failonerror="true" logError="true">
         <arg value="@{changes.src.dir}/changes2html.pl"/>
       </exec>
       <exec executable="perl" input="contrib/CHANGES.txt" output="@{changes.target.dir}/Contrib-Changes.html"
-            failonerror="true">
+            failonerror="true" logError="true">
         <arg value="@{changes.src.dir}/changes2html.pl"/>
       </exec>
       <copy todir="@{changes.target.dir}">

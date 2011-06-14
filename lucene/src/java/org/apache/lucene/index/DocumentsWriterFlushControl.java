@@ -99,7 +99,7 @@ public final class DocumentsWriterFlushControl {
       final long ram = flushBytes + activeBytes;
       // take peakDelta into account - worst case is that all flushing, pending and blocked DWPT had maxMem and the last doc had the peakDelta 
       final long expected = (long)(2 * (maxConfiguredRamBuffer * 1024 * 1024)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
-      assert ram <= expected  : "ram was " + ram + " expected: " + expected + " flush mem: " + flushBytes + " active: " + activeBytes ;   
+      assert ram <= expected  : "ram was " + ram + " expected: " + expected + " flush mem: " + flushBytes + " active: " + activeBytes + " pending: " + numPending + " flushing: " + numFlushingDWPT() + " blocked: " + numBlockedFlushes() + " peakDelta: " + peakDelta ;   
     }
     return true;
   }

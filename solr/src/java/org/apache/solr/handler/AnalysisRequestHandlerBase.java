@@ -25,10 +25,11 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.SorterTemplate;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -43,6 +44,7 @@ import org.apache.solr.schema.FieldType;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * A base class for all analysis request handlers.
@@ -120,10 +122,13 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokens);
 
     for (TokenFilterFactory tokenFilterFactory : filtfacs) {
+      for (final AttributeSource tok : tokens) {
+        tok.getAttribute(TokenTrackingAttribute.class).freezeStage();
+      }
       tokenStream = tokenFilterFactory.create(listBasedTokenStream);
-      List<AttributeSource> tokenList = analyzeTokenStream(tokenStream);
-      namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokenList, context));
-      listBasedTokenStream = new ListBasedTokenStream(tokenList);
+      tokens = analyzeTokenStream(tokenStream);
+      namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
+      listBasedTokenStream = new ListBasedTokenStream(tokens);
     }
 
     return namedList;
@@ -160,15 +165,19 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @return List of tokens produced from the TokenStream
    */
   private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream) {
-    List<AttributeSource> tokens = new ArrayList<AttributeSource>();
+    final List<AttributeSource> tokens = new ArrayList<AttributeSource>();
+    final PositionIncrementAttribute posIncrAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
+    final TokenTrackingAttribute trackerAtt = tokenStream.addAttribute(TokenTrackingAttribute.class);
     // for backwards compatibility, add all "common" attributes
-    tokenStream.addAttribute(PositionIncrementAttribute.class);
     tokenStream.addAttribute(OffsetAttribute.class);
     tokenStream.addAttribute(TypeAttribute.class);
     final BytesRef bytes = new BytesRef();
     try {
       tokenStream.reset();
+      int position = 0;
       while (tokenStream.incrementToken()) {
+        position += posIncrAtt.getPositionIncrement();
+        trackerAtt.setActPosition(position);
         tokens.add(tokenStream.cloneAttributes());
       }
     } catch (IOException ioe) {
@@ -183,6 +192,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     put(OffsetAttribute.class.getName() + "#startOffset", "start");
     put(OffsetAttribute.class.getName() + "#endOffset", "end");
     put(TypeAttribute.class.getName() + "#type", "type");
+    put(TokenTrackingAttribute.class.getName() + "#position", "position");
+    put(TokenTrackingAttribute.class.getName() + "#positionHistory", "positionHistory");
   }});
 
   /**
@@ -193,49 +204,35 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    *
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
-  private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokens, AnalysisContext context) {
+  private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<NamedList>();
-
-    final int[] positions = new int[tokens.size()];
-    int position = 0;    
-    for (int i = 0, c = tokens.size(); i < c; i++) {
-      AttributeSource token = tokens.get(i);
-      position += token.addAttribute(PositionIncrementAttribute.class).getPositionIncrement();
-      positions[i] = position;
-    }
+    final FieldType fieldType = context.getFieldType();
+    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
     
     // sort the tokens by absoulte position
-    new SorterTemplate() {
-      @Override
-      protected void swap(int i, int j) {
-        final int p = positions[i];
-        positions[i] = positions[j];
-        positions[j] = p;
-        Collections.swap(tokens, i, j);
+    ArrayUtil.mergeSort(tokens, new Comparator<AttributeSource>() {
+      public int compare(AttributeSource a, AttributeSource b) {
+        return arrayCompare(
+          a.getAttribute(TokenTrackingAttribute.class).getPositions(),
+          b.getAttribute(TokenTrackingAttribute.class).getPositions()
+        );
       }
       
-      @Override
-      protected int compare(int i, int j) {
-        return positions[i] - positions[j];
+      private int arrayCompare(int[] a, int[] b) {
+        int p = 0;
+        final int stop = Math.min(a.length, b.length);
+        while(p < stop) {
+          int diff = a[p] - b[p];
+          if (diff != 0) return diff;
+          p++;
+        }
+        // One is a prefix of the other, or, they are equal:
+        return a.length - b.length;
       }
+    });
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = positions[i];
-      }
-  
-      @Override
-      protected int comparePivot(int j) {
-        return pivot - positions[j];
-      }
-      
-      private int pivot;
-    }.mergeSort(0, tokens.size() - 1);
-
-    FieldType fieldType = context.getFieldType();
-
-    for (int i = 0, c = tokens.size(); i < c; i++) {
-      AttributeSource token = tokens.get(i);
+    for (int i = 0; i < tokens.length; i++) {
+      AttributeSource token = tokens[i];
       final NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
@@ -255,8 +252,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       if (context.getTermsToMatch().contains(rawBytes)) {
         tokenNamedList.add("match", true);
       }
-
-      tokenNamedList.add("position", positions[i]);
 
       token.reflectWith(new AttributeReflector() {
         public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
@@ -312,8 +307,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
   /**
    * TokenStream that iterates over a list of pre-existing Tokens
+   * @lucene.internal
    */
-  // TODO refactor to support custom attributes
   protected final static class ListBasedTokenStream extends TokenStream {
     private final List<AttributeSource> tokens;
     private Iterator<AttributeSource> tokenIterator;
@@ -347,6 +342,68 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     public void reset() throws IOException {
       super.reset();
       tokenIterator = tokens.iterator();
+    }
+  }
+
+  /** This is an {@link Attribute} used to track the positions of tokens
+   * in the analysis chain.
+   * @lucene.internal This class is only public for usage by the {@link AttributeSource} API.
+   */
+  public interface TokenTrackingAttribute extends Attribute {
+    void freezeStage();
+    void setActPosition(int pos);
+    int[] getPositions();
+    void reset(int[] basePositions, int position);
+  }
+
+  /** Implementation of {@link TokenTrackingAttribute}.
+   * @lucene.internal This class is only public for usage by the {@link AttributeSource} API.
+   */
+  public static final class TokenTrackingAttributeImpl extends AttributeImpl implements TokenTrackingAttribute {
+    private int[] basePositions = new int[0];
+    private int position = 0;
+    private transient int[] cachedPositions = null;
+
+    public void freezeStage() {
+      this.basePositions = getPositions();
+      this.position = 0;
+      this.cachedPositions = null;
+    }
+    
+    public void setActPosition(int pos) {
+      this.position = pos;
+      this.cachedPositions = null;
+    }
+    
+    public int[] getPositions() {
+      if (cachedPositions == null) {
+        cachedPositions = ArrayUtils.add(basePositions, position);
+      }
+      return cachedPositions;
+    }
+    
+    public void reset(int[] basePositions, int position) {
+      this.basePositions = basePositions;
+      this.position = position;
+      this.cachedPositions = null;
+    }
+    
+    @Override
+    public void clear() {
+      // we do nothing here, as all attribute values are controlled externally by consumer
+    }
+    
+    @Override
+    public void reflectWith(AttributeReflector reflector) {
+      reflector.reflect(TokenTrackingAttribute.class, "position", position);
+      // convert to Integer[] array, as only such one can be serialized by ResponseWriters
+      reflector.reflect(TokenTrackingAttribute.class, "positionHistory", ArrayUtils.toObject(getPositions()));
+    }
+
+    @Override
+    public void copyTo(AttributeImpl target) {
+      final TokenTrackingAttribute t = (TokenTrackingAttribute) target;
+      t.reset(basePositions, position);
     }
   }
 

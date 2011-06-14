@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
+import org.apache.solr.uima.processor.exception.FieldMappingException;
 import org.apache.uima.cas.FSIterator;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
@@ -49,27 +50,24 @@ public class UIMAToSolrMapper {
 
   /**
    * map features of a certain UIMA type to corresponding Solr fields based on the mapping
-   * 
-   * @param typeName
-   *          name of UIMA type to map
+   *
+   * @param typeName             name of UIMA type to map
    * @param featureFieldsmapping
    */
-  public void map(String typeName, Map<String, MapField> featureFieldsmapping) {
+  public void map(String typeName, Map<String, MapField> featureFieldsmapping) throws FieldMappingException {
     try {
-      FeatureStructure fsMock = (FeatureStructure) Class.forName(typeName).getConstructor(
-              JCas.class).newInstance(cas);
-      Type type = fsMock.getType();
+      Type type = cas.getTypeSystem().getType(typeName);
       for (FSIterator<FeatureStructure> iterator = cas.getFSIndexRepository().getAllIndexedFS(type); iterator
-              .hasNext();) {
+          .hasNext(); ) {
         FeatureStructure fs = iterator.next();
         for (String featureName : featureFieldsmapping.keySet()) {
           MapField mapField = featureFieldsmapping.get(featureName);
           String fieldNameFeature = mapField.getFieldNameFeature();
           String fieldNameFeatureValue = fieldNameFeature == null ? null :
-            fs.getFeatureValueAsString(type.getFeatureByBaseName(fieldNameFeature));
+              fs.getFeatureValueAsString(type.getFeatureByBaseName(fieldNameFeature));
           String fieldName = mapField.getFieldName(fieldNameFeatureValue);
           log.info(new StringBuffer("mapping ").append(typeName).append("@").append(featureName)
-                  .append(" to ").append(fieldName).toString());
+              .append(" to ").append(fieldName).toString());
           String featureValue = null;
           if (fs instanceof Annotation && "coveredText".equals(featureName)) {
             featureValue = ((Annotation) fs).getCoveredText();
@@ -77,12 +75,13 @@ public class UIMAToSolrMapper {
             featureValue = fs.getFeatureValueAsString(type.getFeatureByBaseName(featureName));
           }
           log.info(new StringBuffer("writing ").append(featureValue).append(" in ").append(
-                  fieldName).toString());
+              fieldName).toString());
           document.addField(fieldName, featureValue, 1.0f);
         }
       }
     } catch (Exception e) {
-      log.error(e.getLocalizedMessage());
+      throw new FieldMappingException(e);
     }
   }
+
 }

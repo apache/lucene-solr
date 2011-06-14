@@ -9,6 +9,7 @@
       <entry name="?*.brk" />
       <entry name="?*.bz2" />
       <entry name="?*.csv" />
+      <entry name="?*.docx"/>
       <entry name="?*.dtd" />
       <entry name="?*.ftl" />
       <entry name="?*.gif" />

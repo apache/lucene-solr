@@ -1,0 +1,3 @@
+#Forrest generates UTF-8 by default, but these httpd servers are
+#ignoring the meta http-equiv charset tags
+AddDefaultCharset off

@@ -1,0 +1,399 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta content="Apache Forrest" name="Generator">
+<meta name="Forrest-version" content="0.9">
+<meta name="Forrest-skin-name" content="lucene">
+<title>
+	Apache Lucene - Basic Demo Sources Walk-through
+		</title>
+<link type="text/css" href="skin/basic.css" rel="stylesheet">
+<link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
+<link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
+<link type="text/css" href="skin/profile.css" rel="stylesheet">
+<script src="skin/getBlank.js" language="javascript" type="text/javascript"></script><script src="skin/getMenu.js" language="javascript" type="text/javascript"></script><script src="skin/fontsize.js" language="javascript" type="text/javascript"></script>
+<link rel="shortcut icon" href="images/favicon.ico">
+</head>
+<body onload="init()">
+<script type="text/javascript">ndeSetTextSize();</script>
+<div id="top">
+<!--+
+    |breadtrail
+    +-->
+<div class="breadtrail">
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://lucene.apache.org/">Lucene</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
+</div>
+<!--+
+    |header
+    +-->
+<div class="header">
+<!--+
+    |start group logo
+    +-->
+<div class="grouplogo">
+<a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="http://www.apache.org/images/asf_logo_simple.png" title="Apache Lucene"></a>
+</div>
+<!--+
+    |end group logo
+    +-->
+<!--+
+    |start Project Logo
+    +-->
+<div class="projectlogo">
+<a href="http://lucene.apache.org/java/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/images/lucene_green_300.gif" title="Apache Lucene is a high-performance, full-featured text search engine library written entirely in
+      Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform."></a>
+</div>
+<!--+
+    |end Project Logo
+    +-->
+<!--+
+    |start Search
+    +-->
+<div class="searchbox">
+<form action="http://search.lucidimagination.com/p:lucene" method="get" class="roundtopsmall">
+<input onFocus="getBlank (this, 'Search the site with Lucene');" size="25" name="q" id="query" type="text" value="Search the site with Lucene">&nbsp; 
+                    <input name="Search" value="Search" type="submit">
+</form>
+<div style="position: relative; top: -5px; left: -10px">Powered by <a href="http://www.lucidimagination.com" style="color: #033268">Lucid Imagination</a>
+</div>
+</div>
+<!--+
+    |end search
+    +-->
+<!--+
+    |start Tabs
+    +-->
+<ul id="tabs">
+<li class="current">
+<a class="selected" href="http://lucene.apache.org/java/docs/">Main</a>
+</li>
+<li>
+<a class="unselected" href="http://wiki.apache.org/lucene-java">Wiki</a>
+</li>
+<li class="current">
+<a class="selected" href="index.html">Lucene 4.0 Documentation</a>
+</li>
+</ul>
+<!--+
+    |end Tabs
+    +-->
+</div>
+</div>
+<div id="main">
+<div id="publishedStrip">
+<!--+
+    |start Subtabs
+    +-->
+<div id="level2tabs"></div>
+<!--+
+    |end Endtabs
+    +-->
+<script type="text/javascript"><!--
+document.write("Last Published: " + document.lastModified);
+//  --></script>
+</div>
+<!--+
+    |breadtrail
+    +-->
+<div class="breadtrail">
+
+             &nbsp;
+           </div>
+<!--+
+    |start Menu, mainarea
+    +-->
+<!--+
+    |start Menu
+    +-->
+<div id="menu">
+<div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">Documentation</div>
+<div id="menu_1.1" class="menuitemgroup">
+<div class="menuitem">
+<a href="index.html">Overview</a>
+</div>
+<div onclick="SwitchMenu('menu_1.1.2', 'skin/')" id="menu_1.1.2Title" class="menutitle">Changes</div>
+<div id="menu_1.1.2" class="menuitemgroup">
+<div class="menuitem">
+<a href="changes/Changes.html">Core</a>
+</div>
+<div class="menuitem">
+<a href="changes/Contrib-Changes.html">Contrib</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.1.3', 'skin/')" id="menu_1.1.3Title" class="menutitle">Javadocs</div>
+<div id="menu_1.1.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="api/all/index.html">All</a>
+</div>
+<div class="menuitem">
+<a href="api/core/index.html">Core</a>
+</div>
+<div class="menuitem">
+<a href="api/test-framework/index.html">Test Framework</a>
+</div>
+<div onclick="SwitchMenu('menu_1.1.3.4', 'skin/')" id="menu_1.1.3.4Title" class="menutitle">Contrib</div>
+<div id="menu_1.1.3.4" class="menuitemgroup">
+<div class="menuitem">
+<a href="api/contrib-benchmark/index.html">Benchmark</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-demo/index.html">Demo</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-highlighter/index.html">Highlighter</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-instantiated/index.html">Instantiated</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-memory/index.html">Memory</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-misc/index.html">Miscellaneous</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-queries/index.html">Queries</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-queryparser/index.html">Query Parser Framework</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-remote/index.html">Remote</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-spatial/index.html">Spatial</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-spellchecker/index.html">Spellchecker</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-wordnet/index.html">Wordnet</a>
+</div>
+<div class="menuitem">
+<a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a>
+</div>
+</div>
+</div>
+<div class="menuitem">
+<a href="systemrequirements.html">System Requirements</a>
+</div>
+<div class="menuitem">
+<a href="contributions.html">Contributions</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/lucene-java/LuceneFAQ">FAQ</a>
+</div>
+<div class="menuitem">
+<a href="fileformats.html">File Formats</a>
+</div>
+<div class="menuitem">
+<a href="gettingstarted.html">Getting Started</a>
+</div>
+<div class="menuitem">
+<a href="lucene-contrib/index.html">Lucene Contrib</a>
+</div>
+<div class="menuitem">
+<a href="queryparsersyntax.html">Query Syntax</a>
+</div>
+<div class="menuitem">
+<a href="scoring.html">Scoring</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/lucene-java">Wiki</a>
+</div>
+</div>
+<div id="credit"></div>
+<div id="roundbottom">
+<img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<!--+
+  |alternative credits
+  +-->
+<div id="credit2"></div>
+</div>
+<!--+
+    |end Menu
+    +-->
+<!--+
+    |start content
+    +-->
+<div id="content">
+<h1>
+	Apache Lucene - Basic Demo Sources Walk-through
+		</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li>
+<a href="#About the Code">About the Code</a>
+</li>
+<li>
+<a href="#Location of the source">Location of the source</a>
+</li>
+<li>
+<a href="#IndexFiles">IndexFiles</a>
+</li>
+<li>
+<a href="#Searching Files">Searching Files</a>
+</li>
+</ul>
+</div>
+
+
+<a name="N10013"></a><a name="About the Code"></a>
+<h2 class="boxed">About the Code</h2>
+<div class="section">
+<p>
+In this section we walk through the sources behind the command-line Lucene demo: where to find them,
+their parts and their function.  This section is intended for Java developers wishing to understand
+how to use Lucene in their applications.
+</p>
+</div>
+
+
+
+<a name="N1001C"></a><a name="Location of the source"></a>
+<h2 class="boxed">Location of the source</h2>
+<div class="section">
+<p>
+NOTE: to examine the sources, you need to download and extract a source checkout of 
+Lucene: (lucene-{version}-src.zip).
+</p>
+<p>
+Relative to the directory created when you extracted Lucene, you
+should see a directory called <span class="codefrag">lucene/contrib/demo/</span>.  This is the root for the Lucene
+demo.  Under this directory is <span class="codefrag">src/java/org/apache/lucene/demo/</span>.  This is where all
+the Java sources for the demo live.
+</p>
+<p>
+Within this directory you should see the <span class="codefrag">IndexFiles.java</span> class we executed earlier.
+Bring it up in <span class="codefrag">vi</span> or your editor of choice and let's take a look at it.
+</p>
+</div>
+
+
+<a name="N10037"></a><a name="IndexFiles"></a>
+<h2 class="boxed">IndexFiles</h2>
+<div class="section">
+<p>
+As we discussed in the previous walk-through, the <a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class creates a Lucene
+Index. Let's take a look at how it does this.
+</p>
+<p>
+The <span class="codefrag">main()</span> method parses the command-line parameters, then in preparation for
+instantiating <a href="api/core/org/apache/lucene/index/IndexWriter.html">IndexWriter</a>, opens a 
+<a href="api/core/org/apache/lucene/store/Directory.html">Directory</a> and instantiates
+<a href="api/module-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> and
+<a href="api/core/org/apache/lucene/index/IndexWriterConfig.html">IndexWriterConfig</a>.
+</p>
+<p>
+The value of the <span class="codefrag">-index</span> command-line parameter is the name of the filesystem directory
+where all index information should be stored.  If <span class="codefrag">IndexFiles</span> is invoked with a 
+relative path given in the <span class="codefrag">-index</span> command-line parameter, or if the <span class="codefrag">-index</span>
+command-line parameter is not given, causing the default relative index path "<span class="codefrag">index</span>"
+to be used, the index path will be created as a subdirectory of the current working directory
+(if it does not already exist).  On some platforms, the index path may be created in a different
+directory (such as the user's home directory).
+</p>
+<p>
+The <span class="codefrag">-docs</span> command-line parameter value is the location of the directory containing
+files to be indexed.
+</p>
+<p>
+The <span class="codefrag">-update</span> command-line parameter tells <span class="codefrag">IndexFiles</span> not to delete the
+index if it already exists.  When <span class="codefrag">-update</span> is not given, <span class="codefrag">IndexFiles</span> will
+first wipe the slate clean before indexing any documents.
+</p>
+<p>
+Lucene <a href="api/core/org/apache/lucene/store/Directory.html">Directory</a>s are used by the
+<span class="codefrag">IndexWriter</span> to store information in the index.  In addition to the 
+<a href="api/core/org/apache/lucene/store/FSDirectory.html">FSDirectory</a> implementation we are using,
+there are several other <span class="codefrag">Directory</span> subclasses that can write to RAM, to databases, etc.
+</p>
+<p>
+Lucene <a href="api/core/org/apache/lucene/analysis/Analyzer.html">Analyzer</a>s are processing pipelines
+that break up text into indexed tokens, a.k.a. terms, and optionally perform other operations on these
+tokens, e.g. downcasing, synonym insertion, filtering out unwanted tokens, etc.  The <span class="codefrag">Analyzer</span>
+we are using is <span class="codefrag">StandardAnalyzer</span>, which creates tokens using the Word Break rules from the
+Unicode Text Segmentation algorithm specified in <a href="http://unicode.org/reports/tr29/">Unicode
+Standard Annex #29</a>; converts tokens to lowercase; and then filters out stopwords.  Stopwords are
+common language words such as articles (a, an, the, etc.) and other tokens that may have less value for
+searching.  It should be noted that there are different rules for every language, and you should use the
+proper analyzer for each.  Lucene currently provides Analyzers for a number of different languages (see
+the javadocs under 
+<a href="api/module-analysis-common/org/apache/lucene/analysis/package-summary.html">modules/analysis/common/src/java/org/apache/lucene/analysis</a>).
+</p>
+<p>
+The <span class="codefrag">IndexWriterConfig</span> instance holds all configuration for <span class="codefrag">IndexWriter</span>.  For
+example, we set the <span class="codefrag">OpenMode</span> to use here based on the value of the <span class="codefrag">-update</span>
+command-line parameter.
+</p>
+<p>
+Looking further down in the file, after <span class="codefrag">IndexWriter</span> is instantiated, you should see the
+<span class="codefrag">indexDocs()</span> code.  This recursive function crawls the directories and creates
+<a href="api/core/org/apache/lucene/document/Document.html">Document</a> objects.  The 
+<span class="codefrag">Document</span> is simply a data object to represent the text content from the file as well as
+its creation time and location.  These instances are added to the <span class="codefrag">IndexWriter</span>.  If
+the <span class="codefrag">-update</span> command-line parameter is given, the <span class="codefrag">IndexWriter</span> 
+<span class="codefrag">OpenMode</span> will be set to <span class="codefrag">OpenMode.CREATE_OR_APPEND</span>, and rather than
+adding documents to the index, the <span class="codefrag">IndexWriter</span> will <strong>update</strong> them
+in the index by attempting to find an already-indexed document with the same identifier (in our
+case, the file path serves as the identifier); deleting it from the index if it exists; and then
+adding the new document to the index.
+</p>
+</div>
+
+
+<a name="N100DB"></a><a name="Searching Files"></a>
+<h2 class="boxed">Searching Files</h2>
+<div class="section">
+<p>
+The <a href="api/contrib-demo/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a> class is
+quite simple.  It primarily collaborates with an 
+<a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, 
+<a href="api/modules-analysis-common/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> (which is used in the
+<a href="api/contrib-demo/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a> class as well)
+and a <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.  The
+query parser is constructed with an analyzer used to interpret your query text in the same way the
+documents are interpreted: finding word boundaries, downcasing, and removing useless words like
+'a', 'an' and 'the'.  The <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
+object contains the results from the
+<a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> which is passed
+to the searcher.  Note that it's also possible to programmatically construct a rich 
+<a href="api/core/org/apache/lucene/search/Query.html">Query</a> object without using the query
+parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
+syntax</a> into the corresponding <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
+object.
+</p>
+<p>
+
+<span class="codefrag">SearchFiles</span> uses the <span class="codefrag">IndexSearcher.search(query,n)</span> method that returns
+<a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a> with max <span class="codefrag">n</span> hits.
+The results are printed in pages, sorted by score (i.e. relevance).
+</p>
+</div>
+
+</div>
+<!--+
+    |end content
+    +-->
+<div class="clearboth">&nbsp;</div>
+</div>
+<div id="footer">
+<!--+
+    |start bottomstrip
+    +-->
+<div class="lastmodified">
+<script type="text/javascript"><!--
+document.write("Last Published: " + document.lastModified);
+//  --></script>
+</div>
+<div class="copyright">
+        Copyright &copy;
+         2006 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
+</div>
+<!--+
+    |end bottomstrip
+    +-->
+</div>
+</body>
+</html>

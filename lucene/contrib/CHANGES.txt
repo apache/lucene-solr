@@ -70,6 +70,11 @@ New Features
    document sharing the same group was indexed as a doc block
    (IndexWriter.add/updateDocuments).  (Mike McCandless)
 
+ * LUCENE-2955: Added NRTManager and NRTManagerReopenThread, to
+   simplify handling NRT reopen with multiple search threads, and to
+   allow an app to control which indexing changes must be visible to
+   which search requests.  (Mike McCandless)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
@@ -81,9 +86,13 @@ API Changes
 
 Bug Fixes
 
-  * LUCENE-3185: Fix bug in NRTCachingDirectory.deleteFile that would
-    always throw exception and sometimes fail to actually delete the
-    file.  (Mike McCandless)
+ * LUCENE-3185: Fix bug in NRTCachingDirectory.deleteFile that would
+   always throw exception and sometimes fail to actually delete the
+   file.  (Mike McCandless)
+
+ * LUCENE-3188: contrib/misc IndexSplitter creates indexes with incorrect
+   SegmentInfos.counter; added CheckIndex check & fix for this problem.
+   (Ivan Dimitrov Vasilev via Steve Rowe)
 
 Build
 
