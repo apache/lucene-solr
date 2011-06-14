@@ -90,7 +90,9 @@ public class MailEntityProcessor extends EntityProcessorBase {
     fetchSize = getIntFromContext("fetchSize", 32 * 1024);
     cTimeout = getIntFromContext("connectTimeout", 30 * 1000);
     rTimeout = getIntFromContext("readTimeout", 60 * 1000);
-    processAttachment = getBoolFromContext("processAttachement", true);
+    processAttachment = getBoolFromContext(
+              getStringFromContext("processAttachment",null) == null ? "processAttachement":"processAttachment"
+            , true);
 
     logConfig();
   }
