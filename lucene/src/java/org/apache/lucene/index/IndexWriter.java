@@ -3867,6 +3867,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
+    //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any();
   }
 

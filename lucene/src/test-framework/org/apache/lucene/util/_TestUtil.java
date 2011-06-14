@@ -378,6 +378,7 @@ public class _TestUtil {
     } else if (mp instanceof TieredMergePolicy) {
       TieredMergePolicy tmp = (TieredMergePolicy) mp;
       tmp.setMaxMergeAtOnce(Math.min(5, tmp.getMaxMergeAtOnce()));
+      tmp.setSegmentsPerTier(Math.min(5, tmp.getSegmentsPerTier()));
     }
     MergeScheduler ms = w.getConfig().getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
