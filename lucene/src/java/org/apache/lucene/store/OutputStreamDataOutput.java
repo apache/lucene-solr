@@ -39,6 +39,7 @@ public class OutputStreamDataOutput extends DataOutput implements Closeable {
     os.write(b, offset, length);
   }
 
+  // @Override -- not until Java 1.6
   public void close() throws IOException {
     os.close();
   }
