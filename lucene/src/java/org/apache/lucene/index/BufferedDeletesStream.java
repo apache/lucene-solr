@@ -359,8 +359,6 @@ class BufferedDeletesStream {
         // we could be deleting an already-deleted doc
         // which makes this an upper bound:
         delCount++;
-
-        reader.deleteDocument(docID);
       }
     }
 
