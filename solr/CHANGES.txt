@@ -66,6 +66,8 @@ Other Changes
 * SOLR-2576: Deprecate SpellingResult.add(Token token, int docFreq), please use
   SpellingResult.addFrequency(Token token, int docFreq) instead.
   (James Dyer via rmuir)
+
+* SOLR-2574: Upgrade slf4j to v1.6.1 (shalin)
   
 ==================  3.2.0  ==================
 Versions of Major Components
