@@ -79,8 +79,8 @@ import org.apache.lucene.util.Constants;
  */
 public class MMapDirectory extends FSDirectory {
   private boolean useUnmapHack = UNMAP_SUPPORTED;
-  public static final int DEFAULT_MAX_BUFF = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256 * 1024 * 1024);
-  private int maxBBuf = DEFAULT_MAX_BUFF;
+  public static final int DEFAULT_MAX_BUFF = Constants.JRE_IS_64BIT ? (1 << 30) : (1 << 28);
+  private int chunkSizePower;
 
   /** Create a new MMapDirectory for the named location.
    *
@@ -91,6 +91,7 @@ public class MMapDirectory extends FSDirectory {
    */
   public MMapDirectory(File path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
+    setMaxChunkSize(DEFAULT_MAX_BUFF);
   }
 
   /** Create a new MMapDirectory for the named location and {@link NativeFSLockFactory}.
@@ -100,6 +101,7 @@ public class MMapDirectory extends FSDirectory {
    */
   public MMapDirectory(File path) throws IOException {
     super(path, null);
+    setMaxChunkSize(DEFAULT_MAX_BUFF);
   }
 
   /**
@@ -180,23 +182,28 @@ public class MMapDirectory extends FSDirectory {
    * Especially on 32 bit platform, the address space can be very fragmented,
    * so large index files cannot be mapped.
    * Using a lower chunk size makes the directory implementation a little
-   * bit slower (as the correct chunk must be resolved on each seek)
+   * bit slower (as the correct chunk may be resolved on lots of seeks)
    * but the chance is higher that mmap does not fail. On 64 bit
-   * Java platforms, this parameter should always be {@link Integer#MAX_VALUE},
+   * Java platforms, this parameter should always be {@code 1 << 30},
    * as the address space is big enough.
+   * <b>Please note:</b> This method always rounds down the chunk size
+   * to a power of 2.
    */
-  public void setMaxChunkSize(final int maxBBuf) {
-    if (maxBBuf<=0)
+  public final void setMaxChunkSize(final int maxChunkSize) {
+    if (maxChunkSize <= 0)
       throw new IllegalArgumentException("Maximum chunk size for mmap must be >0");
-    this.maxBBuf=maxBBuf;
+    //System.out.println("Requested chunk size: "+maxChunkSize);
+    this.chunkSizePower = 31 - Integer.numberOfLeadingZeros(maxChunkSize);
+    assert this.chunkSizePower >= 0 && this.chunkSizePower <= 30;
+    //System.out.println("Got chunk size: "+getMaxChunkSize());
   }
   
   /**
    * Returns the current mmap chunk size.
    * @see #setMaxChunkSize
    */
-  public int getMaxChunkSize() {
-    return maxBBuf;
+  public final int getMaxChunkSize() {
+    return 1 << chunkSizePower;
   }
 
   /** Creates an IndexInput for the file with the given name. */
@@ -206,149 +213,55 @@ public class MMapDirectory extends FSDirectory {
     File f = new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
-      return (raf.length() <= maxBBuf)
-             ? (IndexInput) new MMapIndexInput(raf)
-             : (IndexInput) new MultiMMapIndexInput(raf, maxBBuf);
+      return new MMapIndexInput(raf, chunkSizePower);
     } finally {
       raf.close();
-    }
-  }
-
-  private class MMapIndexInput extends IndexInput {
-
-    private ByteBuffer buffer;
-    private final long length;
-    private boolean isClone = false;
-
-    private MMapIndexInput(RandomAccessFile raf) throws IOException {
-        this.length = raf.length();
-        this.buffer = raf.getChannel().map(MapMode.READ_ONLY, 0, length);
-    }
-
-    @Override
-    public byte readByte() throws IOException {
-      try {
-        return buffer.get();
-      } catch (BufferUnderflowException e) {
-        throw new IOException("read past EOF");
-      }
-    }
-
-    @Override
-    public void readBytes(byte[] b, int offset, int len) throws IOException {
-      try {
-        buffer.get(b, offset, len);
-      } catch (BufferUnderflowException e) {
-        throw new IOException("read past EOF");
-      }
-    }
-    
-    @Override
-    public short readShort() throws IOException {
-      try {
-        return buffer.getShort();
-      } catch (BufferUnderflowException e) {
-        throw new IOException("read past EOF");
-      }
-    }
-
-    @Override
-    public int readInt() throws IOException {
-      try {
-        return buffer.getInt();
-      } catch (BufferUnderflowException e) {
-        throw new IOException("read past EOF");
-      }
-    }
-
-    @Override
-    public long readLong() throws IOException {
-      try {
-        return buffer.getLong();
-      } catch (BufferUnderflowException e) {
-        throw new IOException("read past EOF");
-      }
-    }
-    
-    @Override
-    public long getFilePointer() {
-      return buffer.position();
-    }
-
-    @Override
-    public void seek(long pos) throws IOException {
-      buffer.position((int)pos);
-    }
-
-    @Override
-    public long length() {
-      return length;
-    }
-
-    @Override
-    public Object clone() {
-      if (buffer == null)
-        throw new AlreadyClosedException("MMapIndexInput already closed");
-      MMapIndexInput clone = (MMapIndexInput)super.clone();
-      clone.isClone = true;
-      clone.buffer = buffer.duplicate();
-      return clone;
-    }
-
-    @Override
-    public void close() throws IOException {
-      // unmap the buffer (if enabled) and at least unset it for GC
-      try {
-        if (isClone || buffer == null) return;
-        cleanMapping(buffer);
-      } finally {
-        buffer = null;
-      }
     }
   }
 
   // Because Java's ByteBuffer uses an int to address the
   // values, it's necessary to access a file >
   // Integer.MAX_VALUE in size using multiple byte buffers.
-  private class MultiMMapIndexInput extends IndexInput {
+  private final class MMapIndexInput extends IndexInput {
   
     private ByteBuffer[] buffers;
   
-    private final long length;
+    private final long length, chunkSizeMask, chunkSize;
+    private final int chunkSizePower;
   
     private int curBufIndex;
-    private final int maxBufSize;
   
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   
     private boolean isClone = false;
     
-    public MultiMMapIndexInput(RandomAccessFile raf, int maxBufSize)
-      throws IOException {
+    MMapIndexInput(RandomAccessFile raf, int chunkSizePower) throws IOException {
       this.length = raf.length();
-      this.maxBufSize = maxBufSize;
+      this.chunkSizePower = chunkSizePower;
+      this.chunkSize = 1L << chunkSizePower;
+      this.chunkSizeMask = chunkSize - 1L;
       
-      if (maxBufSize <= 0)
-        throw new IllegalArgumentException("Non positive maxBufSize: "
-                                           + maxBufSize);
+      if (chunkSizePower < 0 || chunkSizePower > 30)
+        throw new IllegalArgumentException("Invalid chunkSizePower used for ByteBuffer size: " + chunkSizePower);
       
-      if ((length / maxBufSize) > Integer.MAX_VALUE)
-        throw new IllegalArgumentException
-          ("RandomAccessFile too big for maximum buffer size: "
-           + raf.toString());
+      if ((length >>> chunkSizePower) >= Integer.MAX_VALUE)
+        throw new IllegalArgumentException("RandomAccessFile too big for chunk size: " + raf.toString());
       
-      int nrBuffers = (int) (length / maxBufSize);
-      if (((long) nrBuffers * maxBufSize) <= length) nrBuffers++;
+      // we always allocate one more buffer, the last one may be a 0 byte one
+      final int nrBuffers = (int) (length >>> chunkSizePower) + 1;
+      
+      //System.out.println("length="+length+", chunkSizePower=" + chunkSizePower + ", chunkSizeMask=" + chunkSizeMask + ", nrBuffers=" + nrBuffers);
       
       this.buffers = new ByteBuffer[nrBuffers];
       
-      long bufferStart = 0;
+      long bufferStart = 0L;
       FileChannel rafc = raf.getChannel();
       for (int bufNr = 0; bufNr < nrBuffers; bufNr++) { 
-        int bufSize = (length > (bufferStart + maxBufSize))
-          ? maxBufSize
-          : (int) (length - bufferStart);
-        this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY,bufferStart,bufSize);
+        int bufSize = (int) ( (length > (bufferStart + chunkSize))
+          ? chunkSize
+          : (length - bufferStart)
+        );
+        this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY, bufferStart, bufSize);
         bufferStart += bufSize;
       }
       seek(0L);
@@ -359,11 +272,13 @@ public class MMapDirectory extends FSDirectory {
       try {
         return curBuf.get();
       } catch (BufferUnderflowException e) {
-        curBufIndex++;
-        if (curBufIndex >= buffers.length)
-          throw new IOException("read past EOF");
-        curBuf = buffers[curBufIndex];
-        curBuf.position(0);
+        do {
+          curBufIndex++;
+          if (curBufIndex >= buffers.length)
+            throw new IOException("read past EOF");
+          curBuf = buffers[curBufIndex];
+          curBuf.position(0);
+        } while (!curBuf.hasRemaining());
         return curBuf.get();
       }
     }
@@ -418,15 +333,28 @@ public class MMapDirectory extends FSDirectory {
     
     @Override
     public long getFilePointer() {
-      return ((long) curBufIndex * maxBufSize) + curBuf.position();
+      return (((long) curBufIndex) << chunkSizePower) + curBuf.position();
     }
   
     @Override
     public void seek(long pos) throws IOException {
-      curBufIndex = (int) (pos / maxBufSize);
-      curBuf = buffers[curBufIndex];
-      int bufOffset = (int) (pos - ((long) curBufIndex * maxBufSize));
-      curBuf.position(bufOffset);
+      // we use >> here to preserve negative, so we will catch AIOOBE:
+      final int bi = (int) (pos >> chunkSizePower);
+      try {
+        final ByteBuffer b = buffers[bi];
+        b.position((int) (pos & chunkSizeMask));
+        // write values, on exception all is unchanged
+        this.curBufIndex = bi;
+        this.curBuf = b;
+      } catch (ArrayIndexOutOfBoundsException aioobe) {
+        if (pos < 0L)
+          throw new IllegalArgumentException("Seeking to negative position");
+        throw new IOException("seek past EOF");
+      } catch (IllegalArgumentException iae) {
+        if (pos < 0L)
+          throw new IllegalArgumentException("Seeking to negative position");
+        throw new IOException("seek past EOF");
+      }
     }
   
     @Override
@@ -437,8 +365,8 @@ public class MMapDirectory extends FSDirectory {
     @Override
     public Object clone() {
       if (buffers == null)
-        throw new AlreadyClosedException("MultiMMapIndexInput already closed");
-      MultiMMapIndexInput clone = (MultiMMapIndexInput)super.clone();
+        throw new AlreadyClosedException("MMapIndexInput already closed");
+      final MMapIndexInput clone = (MMapIndexInput)super.clone();
       clone.isClone = true;
       clone.buffers = new ByteBuffer[buffers.length];
       // Since most clones will use only one buffer, duplicate() could also be
@@ -449,9 +377,7 @@ public class MMapDirectory extends FSDirectory {
       try {
         clone.seek(getFilePointer());
       } catch(IOException ioe) {
-        RuntimeException newException = new RuntimeException(ioe);
-        newException.initCause(ioe);
-        throw newException;
+        throw new RuntimeException("Should never happen", ioe);
       }
       return clone;
     }

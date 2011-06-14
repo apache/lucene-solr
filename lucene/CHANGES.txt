@@ -483,6 +483,14 @@ Changes in runtime behavior
 * LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
   does not store norms. (Shai Erera, Mike McCandless)
   
+* LUCENE-3200: MMapDirectory now uses chunk sizes that are powers of 2.
+  When setting the chunk size, it is rounded down to the next possible
+  value. The new default value for 64 bit platforms is 2^30 (1 GiB),
+  for 32 bit platforms it stays unchanged at 2^28 (256 MiB).
+  Internally, MMapDirectory now only uses one dedicated final IndexInput
+  implementation supporting multiple chunks, which makes Hotspot's life
+  easier.  (Uwe Schindler, Robert Muir, Mike McCandless)
+  
 Bug fixes
 
 * LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
