@@ -76,6 +76,9 @@
   </available>
 			
   <target name="dist-maven" if="pom.xml.present" depends="compile-core, jar-src">
+    <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
+             uri="antlib:org.apache.maven.artifact.ant" 
+             classpathref="maven-ant-tasks.classpath"/>
     <sequential>
       <m2-deploy>
         <artifact-attachments>
