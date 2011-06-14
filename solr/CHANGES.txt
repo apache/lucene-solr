@@ -276,7 +276,7 @@ Other Changes
   any copies it finds will be used instead of the copy included in the 
   Lucene/Solr source tree.  For this reason, it is recommeded to remove
   any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
-  ~/.ant/lib/ or under the Ant installation's lib/ directory. 
+  ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe)
   
 Documentation
 ----------------------
