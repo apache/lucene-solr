@@ -42,9 +42,13 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -52,7 +56,10 @@ import org.junit.Test;
 //   - mix in optimize, addIndexes
 //   - randomoly mix in non-congruent docs
 
-public class TestNRTThreads extends LuceneTestCase {
+// NOTE: This is a copy of TestNRTThreads, but swapping in
+// NRTManager for adding/updating/searching
+
+public class TestNRTManager extends LuceneTestCase {
 
   private static class SubDocs {
     public final String packID;
@@ -88,15 +95,31 @@ public class TestNRTThreads extends LuceneTestCase {
   }
 
   @Test
-  public void testNRTThreads() throws Exception {
+  public void testNRTManager() throws Exception {
 
     final long t0 = System.currentTimeMillis();
 
     final LineFileDocs docs = new LineFileDocs(random);
     final File tempDir = _TestUtil.getTempDir("nrtopenfiles");
-    final MockDirectoryWrapper dir = newFSDirectory(tempDir);
-    dir.setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    final MockDirectoryWrapper _dir = newFSDirectory(tempDir);
+    _dir.setCheckIndexOnClose(false);  // don't double-checkIndex, we do it ourselves
+    Directory dir = _dir;
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      // newIWConfig makes smallish max seg size, which
+      // results in tons and tons of segments for this test
+      // when run nightly:
+      MergePolicy mp = conf.getMergePolicy();
+      if (mp instanceof TieredMergePolicy) {
+        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
+      } else if (mp instanceof LogByteSizeMergePolicy) {
+        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
+      } else if (mp instanceof LogMergePolicy) {
+        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
+      }
+    }
+
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
       @Override
       public void warm(IndexReader reader) throws IOException {
@@ -107,7 +130,7 @@ public class TestNRTThreads extends LuceneTestCase {
         int sum = 0;
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
-          if (reader.isDeleted(docID)) {
+          if (!reader.isDeleted(docID)) {
             final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }
@@ -122,15 +145,48 @@ public class TestNRTThreads extends LuceneTestCase {
         }
       }
       });
+
+    if (random.nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("TEST: wrap NRTCachingDir");
+      }
+
+      NRTCachingDirectory nrtDir = new NRTCachingDirectory(dir, 5.0, 60.0);
+      conf.setMergeScheduler(nrtDir.getMergeScheduler());
+      dir = nrtDir;
+    }
     
     final IndexWriter writer = new IndexWriter(dir, conf);
+    
     if (VERBOSE) {
       writer.setInfoStream(System.out);
     }
     _TestUtil.reduceOpenFiles(writer);
+    //System.out.println("TEST: conf=" + writer.getConfig());
 
-    final int NUM_INDEX_THREADS = 2;
-    final int NUM_SEARCH_THREADS = 3;
+    final ExecutorService es = random.nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
+
+    final double minReopenSec = 0.01 + 0.05 * random.nextDouble();
+    final double maxReopenSec = minReopenSec * (1.0 + 10 * random.nextDouble());
+
+    if (VERBOSE) {
+      System.out.println("TEST: make NRTManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
+    }
+
+    final NRTManager nrt = new NRTManager(writer, es);
+    final NRTManagerReopenThread nrtThread = new NRTManagerReopenThread(nrt, maxReopenSec, minReopenSec);
+    nrtThread.setName("NRT Reopen Thread");
+    nrtThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
+    nrtThread.setDaemon(true);
+    nrtThread.start();
+
+    final int NUM_INDEX_THREADS = _TestUtil.nextInt(random, 1, 3);
+    final int NUM_SEARCH_THREADS = _TestUtil.nextInt(random, 1, 3);
+    //final int NUM_INDEX_THREADS = 1;
+    //final int NUM_SEARCH_THREADS = 1;
+    if (VERBOSE) {
+      System.out.println("TEST: " + NUM_INDEX_THREADS + " index threads; " + NUM_SEARCH_THREADS + " search threads");
+    }
 
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
@@ -138,6 +194,7 @@ public class TestNRTThreads extends LuceneTestCase {
     final AtomicInteger addCount = new AtomicInteger();
     final AtomicInteger delCount = new AtomicInteger();
     final AtomicInteger packCount = new AtomicInteger();
+    final List<Long> lastGens = new ArrayList<Long>();
 
     final Set<String> delIDs = Collections.synchronizedSet(new HashSet<String>());
     final List<SubDocs> allSubDocs = Collections.synchronizedList(new ArrayList<SubDocs>());
@@ -151,8 +208,27 @@ public class TestNRTThreads extends LuceneTestCase {
             // TODO: would be better if this were cross thread, so that we make sure one thread deleting anothers added docs works:
             final List<String> toDeleteIDs = new ArrayList<String>();
             final List<SubDocs> toDeleteSubDocs = new ArrayList<SubDocs>();
+
+            long gen = 0;
             while(System.currentTimeMillis() < stopTime && !failed.get()) {
+
+              //System.out.println(Thread.currentThread().getName() + ": cycle");
               try {
+                // Occassional longish pause if running
+                // nightly
+                if (LuceneTestCase.TEST_NIGHTLY && random.nextInt(6) == 3) {
+                  if (VERBOSE) {
+                    System.out.println(Thread.currentThread().getName() + ": now long sleep");
+                  }
+                  Thread.sleep(_TestUtil.nextInt(random, 50, 500));
+                }
+
+                // Rate limit ingest rate:
+                Thread.sleep(_TestUtil.nextInt(random, 1, 10));
+                if (VERBOSE) {
+                  System.out.println(Thread.currentThread() + ": done sleep");
+                }
+
                 Document doc = docs.nextDoc();
                 if (doc == null) {
                   break;
@@ -165,9 +241,6 @@ public class TestNRTThreads extends LuceneTestCase {
                   addedField = null;
                 }
                 if (random.nextBoolean()) {
-                  if (VERBOSE) {
-                    System.out.println(Thread.currentThread().getName() + ": add doc id:" + doc.get("docid"));
-                  }
 
                   if (random.nextBoolean()) {
                     // Add a pack of adjacent sub-docs
@@ -213,24 +286,24 @@ public class TestNRTThreads extends LuceneTestCase {
                       if (VERBOSE) {
                         System.out.println("TEST: update pack packID=" + delSubDocs.packID + " count=" + docsList.size() + " docs=" + docIDs);
                       }
-                      writer.updateDocuments(new Term("packID", delSubDocs.packID), docsList);
+                      gen = nrt.updateDocuments(new Term("packID", delSubDocs.packID), docsList);
                       /*
                       // non-atomic:
-                      writer.deleteDocuments(new Term("packID", delSubDocs.packID));
+                      nrt.deleteDocuments(new Term("packID", delSubDocs.packID));
                       for(Document subDoc : docsList) {
-                        writer.addDocument(subDoc);
+                        nrt.addDocument(subDoc);
                       }
                       */
                     } else {
                       if (VERBOSE) {
                         System.out.println("TEST: add pack packID=" + packID + " count=" + docsList.size() + " docs=" + docIDs);
                       }
-                      writer.addDocuments(docsList);
+                      gen = nrt.addDocuments(docsList);
                       
                       /*
                       // non-atomic:
                       for(Document subDoc : docsList) {
-                        writer.addDocument(subDoc);
+                        nrt.addDocument(subDoc);
                       }
                       */
                     }
@@ -238,18 +311,46 @@ public class TestNRTThreads extends LuceneTestCase {
 
                     if (random.nextInt(5) == 2) {
                       if (VERBOSE) {
-                        //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + packID);
+                        System.out.println(Thread.currentThread().getName() + ": buffer del id:" + packID);
                       }
                       toDeleteSubDocs.add(subDocs);
                     }
 
+                    // randomly verify the add/update "took":
+                    if (random.nextInt(20) == 2) {
+                      final boolean applyDeletes = delSubDocs != null;
+                      final IndexSearcher s = nrt.get(gen, applyDeletes);
+                      try {
+                        assertEquals(docsList.size(), s.search(new TermQuery(new Term("packID", packID)), 10).totalHits);
+                      } finally {
+                        nrt.release(s);
+                      }
+                    }
+
                   } else {
-                    writer.addDocument(doc);
+                    if (VERBOSE) {
+                      System.out.println(Thread.currentThread().getName() + ": add doc docid:" + doc.get("docid"));
+                    }
+
+                    gen = nrt.addDocument(doc);
                     addCount.getAndIncrement();
+
+                    // randomly verify the add "took":
+                    if (random.nextInt(20) == 2) {
+                      //System.out.println(Thread.currentThread().getName() + ": verify");
+                      final IndexSearcher s = nrt.get(gen, false);
+                      //System.out.println(Thread.currentThread().getName() + ": got s=" + s);
+                      try {
+                        assertEquals(1, s.search(new TermQuery(new Term("docid", doc.get("docid"))), 10).totalHits);
+                      } finally {
+                        nrt.release(s);
+                      }
+                      //System.out.println(Thread.currentThread().getName() + ": done verify");
+                    }
 
                     if (random.nextInt(5) == 3) {
                       if (VERBOSE) {
-                        //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
+                        System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
                       }
                       toDeleteIDs.add(doc.get("docid"));
                     }
@@ -260,12 +361,22 @@ public class TestNRTThreads extends LuceneTestCase {
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": update doc id:" + doc.get("docid"));
                   }
-                  writer.updateDocument(new Term("docid", doc.get("docid")), doc);
+                  gen = nrt.updateDocument(new Term("docid", doc.get("docid")), doc);
                   addCount.getAndIncrement();
+
+                  // randomly verify the add "took":
+                  if (random.nextInt(20) == 2) {
+                    final IndexSearcher s = nrt.get(gen, true);
+                    try {
+                      assertEquals(1, s.search(new TermQuery(new Term("docid", doc.get("docid"))), 10).totalHits);
+                    } finally {
+                      nrt.release(s);
+                    }
+                  }
 
                   if (random.nextInt(5) == 3) {
                     if (VERBOSE) {
-                      //System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
+                      System.out.println(Thread.currentThread().getName() + ": buffer del id:" + doc.get("docid"));
                     }
                     toDeleteIDs.add(doc.get("docid"));
                   }
@@ -279,8 +390,19 @@ public class TestNRTThreads extends LuceneTestCase {
                     if (VERBOSE) {
                       System.out.println(Thread.currentThread().getName() + ": del term=id:" + id);
                     }
-                    writer.deleteDocuments(new Term("docid", id));
+                    gen = nrt.deleteDocuments(new Term("docid", id));
+
+                    // randomly verify the delete "took":
+                    if (random.nextInt(20) == 7) {
+                      final IndexSearcher s = nrt.get(gen, true);
+                      try {
+                        assertEquals(0, s.search(new TermQuery(new Term("docid", id)), 10).totalHits);
+                      } finally {
+                        nrt.release(s);
+                      }
+                    }
                   }
+
                   final int count = delCount.addAndGet(toDeleteIDs.size());
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": tot " + count + " deletes");
@@ -289,14 +411,24 @@ public class TestNRTThreads extends LuceneTestCase {
                   toDeleteIDs.clear();
 
                   for(SubDocs subDocs : toDeleteSubDocs) {
-                    assert !subDocs.deleted;
-                    writer.deleteDocuments(new Term("packID", subDocs.packID));
+                    assertTrue(!subDocs.deleted);
+                    gen = nrt.deleteDocuments(new Term("packID", subDocs.packID));
                     subDocs.deleted = true;
                     if (VERBOSE) {
                       System.out.println("  del subs: " + subDocs.subIDs + " packID=" + subDocs.packID);
                     }
                     delIDs.addAll(subDocs.subIDs);
                     delCount.addAndGet(subDocs.subIDs.size());
+
+                    // randomly verify the delete "took":
+                    if (random.nextInt(20) == 7) {
+                      final IndexSearcher s = nrt.get(gen, true);
+                      try {
+                        assertEquals(0, s.search(new TermQuery(new Term("packID", subDocs.packID)), 1).totalHits);
+                      } finally {
+                        nrt.release(s);
+                      }
+                    }
                   }
                   toDeleteSubDocs.clear();
                 }
@@ -304,12 +436,14 @@ public class TestNRTThreads extends LuceneTestCase {
                   doc.removeField(addedField);
                 }
               } catch (Throwable t) {
-                System.out.println(Thread.currentThread().getName() + ": hit exc");
+                System.out.println(Thread.currentThread().getName() + ": FAILED: hit exc");
                 t.printStackTrace();
                 failed.set(true);
                 throw new RuntimeException(t);
               }
             }
+
+            lastGens.add(gen);
             if (VERBOSE) {
               System.out.println(Thread.currentThread().getName() + ": indexing done");
             }
@@ -326,155 +460,114 @@ public class TestNRTThreads extends LuceneTestCase {
     // let index build up a bit
     Thread.sleep(100);
 
-    IndexReader r = IndexReader.open(writer, true);
-    boolean any = false;
-
     // silly starting guess:
     final AtomicInteger totTermCount = new AtomicInteger(100);
 
-    final ExecutorService es = Executors.newCachedThreadPool();
-
-    while(System.currentTimeMillis() < stopTime && !failed.get()) {
-      if (random.nextBoolean()) {
-        if (VERBOSE) {
-          System.out.println("TEST: now reopen r=" + r);
-        }
-        final IndexReader r2 = r.reopen();
-        if (r != r2) {
-          r.close();
-          r = r2;
-        }
-      } else {
-        if (VERBOSE) {
-          System.out.println("TEST: now close reader=" + r);
-        }
-        r.close();
-        writer.commit();
-        final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
-        if (openDeletedFiles.size() > 0) {
-          System.out.println("OBD files: " + openDeletedFiles);
-        }
-        any |= openDeletedFiles.size() > 0;
-        //assertEquals("open but deleted: " + openDeletedFiles, 0, openDeletedFiles.size());
-        if (VERBOSE) {
-          System.out.println("TEST: now open");
-        }
-        r = IndexReader.open(writer, true);
-      }
-      if (VERBOSE) {
-        System.out.println("TEST: got new reader=" + r);
-      }
-      //System.out.println("numDocs=" + r.numDocs() + "
-      //openDelFileCount=" + dir.openDeleteFileCount());
-
-      smokeTestReader(r);
-
-      if (r.numDocs() > 0) {
-
-        final IndexSearcher s = new IndexSearcher(r, es);
-
-        // run search threads
-        final long searchStopTime = System.currentTimeMillis() + 500;
-        final Thread[] searchThreads = new Thread[NUM_SEARCH_THREADS];
-        final AtomicInteger totHits = new AtomicInteger();
-        for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
-          searchThreads[thread] = new Thread() {
-              @Override
-                public void run() {
-                try {
-                  TermEnum termEnum = s.getIndexReader().terms(new Term("body", ""));
-                  int seenTermCount = 0;
-                  int shift;
-                  int trigger;
-                  if (totTermCount.get() == 0) {
-                    shift = 0;
-                    trigger = 1;
-                  } else {
-                    shift = random.nextInt(totTermCount.get()/10);
-                    trigger = totTermCount.get()/10;
-                  }
-                  while(System.currentTimeMillis() < searchStopTime) {
-                    Term term = termEnum.term();
-                    if (term == null) {
-                      if (seenTermCount == 0) {
-                        break;
-                      }
-                      totTermCount.set(seenTermCount);
-                      seenTermCount = 0;
-                      trigger = totTermCount.get()/10;
-                      //System.out.println("trigger " + trigger);
-                      shift = random.nextInt(totTermCount.get()/10);
-                      termEnum = s.getIndexReader().terms(new Term("body", ""));
-                      continue;
-                    }
-                    seenTermCount++;
-                    // search 10 terms
-                    if (trigger == 0) {
-                      trigger = 1;
-                    }
-                    if ((seenTermCount + shift) % trigger == 0) {
-                      //if (VERBOSE) {
-                      //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
-                      //}
-                      totHits.addAndGet(runQuery(s, new TermQuery(term)));
-                    }
-                    termEnum.next();
-                  }
-                  if (VERBOSE) {
-                    System.out.println(Thread.currentThread().getName() + ": search done");
-                  }
-                } catch (Throwable t) {
-                  System.out.println(Thread.currentThread().getName() + ": hit exc");
-                  failed.set(true);
-                  t.printStackTrace(System.out);
-                  throw new RuntimeException(t);
-                }
-              }
-            };
-          searchThreads[thread].setDaemon(true);
-          searchThreads[thread].start();
-        }
-
-        for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
-          searchThreads[thread].join();
-        }
-
-        if (VERBOSE) {
-          System.out.println("TEST: DONE search: totHits=" + totHits);
-        }
-      } else {
-        Thread.sleep(100);
-      }
-    }
-
-    es.shutdown();
-    es.awaitTermination(1, TimeUnit.SECONDS);
+    // run search threads
+    final Thread[] searchThreads = new Thread[NUM_SEARCH_THREADS];
+    final AtomicInteger totHits = new AtomicInteger();
 
     if (VERBOSE) {
-      System.out.println("TEST: all searching done [" + (System.currentTimeMillis()-t0) + " ms]");
+      System.out.println("TEST: start search threads");
     }
 
-    //System.out.println("numDocs=" + r.numDocs() + " openDelFileCount=" + dir.openDeleteFileCount());
-    r.close();
-    final Set<String> openDeletedFiles = dir.getOpenDeletedFiles();
-    if (openDeletedFiles.size() > 0) {
-      System.out.println("OBD files: " + openDeletedFiles);
-    }
-    any |= openDeletedFiles.size() > 0;
+    for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
+      searchThreads[thread] = new Thread() {
+          @Override
+          public void run() {
+            while(System.currentTimeMillis() < stopTime && !failed.get()) {
+              final IndexSearcher s = nrt.get(random.nextBoolean());
+              try {
+                try {
+                  smokeTestSearcher(s);
+                  if (s.getIndexReader().numDocs() > 0) {
 
-    assertFalse("saw non-zero open-but-deleted count", any);
+                    TermEnum termEnum = s.getIndexReader().terms(new Term("body", ""));
+                    int seenTermCount = 0;
+                    int shift;
+                    int trigger;
+                    if (totTermCount.get() == 0) {
+                      shift = 0;
+                      trigger = 1;
+                    } else {
+                      shift = random.nextInt(totTermCount.get()/10);
+                      trigger = totTermCount.get()/10;
+                    }
+
+                    while(System.currentTimeMillis() < stopTime) {
+                      Term term = termEnum.term();
+                      if (term == null) {
+                        if (seenTermCount == 0) {
+                          break;
+                        }
+                        totTermCount.set(seenTermCount);
+                        seenTermCount = 0;
+                        if (totTermCount.get() == 0) {
+                          shift = 0;
+                          trigger = 1;
+                        } else {
+                          trigger = totTermCount.get()/10;
+                          //System.out.println("trigger " + trigger);
+                          shift = random.nextInt(totTermCount.get()/10);
+                        }
+                        termEnum = s.getIndexReader().terms(new Term("body", ""));
+                        continue;
+                      }
+                      seenTermCount++;
+                      // search 10 terms
+                      if (trigger == 0) {
+                        trigger = 1;
+                      }
+                      if ((seenTermCount + shift) % trigger == 0) {
+                        //if (VERBOSE) {
+                        //System.out.println(Thread.currentThread().getName() + " now search body:" + term.utf8ToString());
+                        //}
+                        totHits.addAndGet(runQuery(s, new TermQuery(term)));
+                      }
+                      termEnum.next();
+                    }
+                    if (VERBOSE) {
+                      System.out.println(Thread.currentThread().getName() + ": search done");
+                    }
+                  }
+                } finally {
+                  nrt.release(s);
+                }
+              } catch (Throwable t) {
+                System.out.println(Thread.currentThread().getName() + ": FAILED: hit exc");
+                failed.set(true);
+                t.printStackTrace(System.out);
+                throw new RuntimeException(t);
+              }
+            }
+          }
+        };
+      searchThreads[thread].setDaemon(true);
+      searchThreads[thread].start();
+    }
+
     if (VERBOSE) {
       System.out.println("TEST: now join");
     }
     for(int thread=0;thread<NUM_INDEX_THREADS;thread++) {
       threads[thread].join();
     }
-    if (VERBOSE) {
-      System.out.println("TEST: done join [" + (System.currentTimeMillis()-t0) + " ms]; addCount=" + addCount + " delCount=" + delCount);
+    for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
+      searchThreads[thread].join();
     }
 
-    final IndexReader r2 = writer.getReader();
-    final IndexSearcher s = newSearcher(r2);
+    if (VERBOSE) {
+      System.out.println("TEST: done join [" + (System.currentTimeMillis()-t0) + " ms]; addCount=" + addCount + " delCount=" + delCount);
+      System.out.println("TEST: search totHits=" + totHits);
+    }
+
+    long maxGen = 0;
+    for(long gen : lastGens) {
+      maxGen = Math.max(maxGen, gen);
+    }
+
+    final IndexSearcher s = nrt.get(maxGen, true);
+
     boolean doFail = false;
     for(String id : delIDs) {
       final TopDocs hits = s.search(new TermQuery(new Term("docid", id)), 1);
@@ -533,20 +626,30 @@ public class TestNRTThreads extends LuceneTestCase {
       }
     }
     assertFalse(doFail);
-    
-    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), r2.numDocs());
-    r2.close();
+
+    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), s.getIndexReader().numDocs());
+    nrt.release(s);
+
+    if (es != null) {
+      es.shutdown();
+      es.awaitTermination(1, TimeUnit.SECONDS);
+    }
 
     writer.commit();
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
 
+    if (VERBOSE) {
+      System.out.println("TEST: now close NRTManager");
+    }
+    nrtThread.close();
+    nrt.close();
     assertFalse(writer.anyNonBulkMerges);
     writer.close(false);
     _TestUtil.checkIndex(dir);
-    s.close();
     dir.close();
     _TestUtil.rmDir(tempDir);
     docs.close();
+
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");
     }
@@ -557,14 +660,12 @@ public class TestNRTThreads extends LuceneTestCase {
     return s.search(q, null, 10, new Sort(new SortField("title", SortField.STRING))).totalHits;
   }
 
-  private void smokeTestReader(IndexReader r) throws Exception {
-    IndexSearcher s = newSearcher(r);
+  private void smokeTestSearcher(IndexSearcher s) throws Exception {
     runQuery(s, new TermQuery(new Term("body", "united")));
     runQuery(s, new TermQuery(new Term("titleTokenized", "states")));
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("body", "united"));
     pq.add(new Term("body", "states"));
     runQuery(s, pq);
-    s.close();
   }
 }
