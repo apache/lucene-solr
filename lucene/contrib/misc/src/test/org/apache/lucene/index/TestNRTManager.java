@@ -113,16 +113,18 @@ public class TestNRTManager extends LuceneTestCase {
     Directory dir = _dir;
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
-    // newIWConfig makes smallish max seg size, which
-    // results in tons and tons of segments for this test
-    // when run nightly:
-    MergePolicy mp = conf.getMergePolicy();
-    if (mp instanceof TieredMergePolicy) {
-      ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
-    } else if (mp instanceof LogByteSizeMergePolicy) {
-      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
-    } else if (mp instanceof LogMergePolicy) {
-      ((LogMergePolicy) mp).setMaxMergeDocs(100000);
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      // newIWConfig makes smallish max seg size, which
+      // results in tons and tons of segments for this test
+      // when run nightly:
+      MergePolicy mp = conf.getMergePolicy();
+      if (mp instanceof TieredMergePolicy) {
+        ((TieredMergePolicy) mp).setMaxMergedSegmentMB(5000.);
+      } else if (mp instanceof LogByteSizeMergePolicy) {
+        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1000.);
+      } else if (mp instanceof LogMergePolicy) {
+        ((LogMergePolicy) mp).setMaxMergeDocs(100000);
+      }
     }
 
     conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
@@ -194,7 +196,7 @@ public class TestNRTManager extends LuceneTestCase {
       System.out.println("TEST: " + NUM_INDEX_THREADS + " index threads; " + NUM_SEARCH_THREADS + " search threads");
     }
 
-    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : 5;
+    final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
     final AtomicBoolean failed = new AtomicBoolean();
     final AtomicInteger addCount = new AtomicInteger();
