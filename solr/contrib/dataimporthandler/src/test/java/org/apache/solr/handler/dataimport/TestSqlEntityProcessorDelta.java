@@ -20,6 +20,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -92,7 +94,37 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
   public void testCompositePk_FullImport() throws Exception {
     add1document();
   }
-  
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testNonWritablePersistFile() throws Exception {
+    // See SOLR-2551
+    String configDir = h.getCore().getResourceLoader().getConfigDir();
+    String filePath = configDir;
+    if (configDir != null && !configDir.endsWith(File.separator))
+      filePath += File.separator;
+    filePath += "dataimport.properties";
+    File f = new File(filePath);
+    // execute the test only if we are able to set file to read only mode
+    if ((f.exists() || f.createNewFile()) && f.setReadOnly()) {
+      try {
+        List parentRow = new ArrayList();
+        parentRow.add(createMap("id", "1"));
+        MockDataSource.setIterator(FULLIMPORT_QUERY, parentRow.iterator());
+
+        List childRow = new ArrayList();
+        childRow.add(createMap("desc", "hello"));
+        MockDataSource.setIterator("select * from y where y.A='1'", childRow
+            .iterator());
+
+        runFullImport(dataConfig_delta);
+        assertQ(req("id:1"), "//*[@numFound='0']");
+      } finally {
+        f.setWritable(true);
+      }
+    }
+  }
+
   // WORKS
 
   @Test
