@@ -520,6 +520,9 @@ New Features
   algorithm over objects that implement the new TwoPhaseCommit interface (such
   as IndexWriter). (Shai Erera)
 
+* LUCENE-3191: Added TopDocs.merge, to facilitate merging results from
+  different shards (Uwe Schindler, Mike McCandless)
+
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.

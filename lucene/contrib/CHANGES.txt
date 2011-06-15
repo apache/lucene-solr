@@ -75,6 +75,10 @@ New Features
    allow an app to control which indexing changes must be visible to
    which search requests.  (Mike McCandless)
 
+ * LUCENE-3191: Added SearchGroup.merge and TopGroups.merge, to
+   facilitate doing grouping in a distributed environment (Uwe
+   Schindler, Mike McCandless)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.

@@ -40,12 +40,13 @@ public class FieldDoc extends ScoreDoc {
 
   /** Expert: The values which are used to sort the referenced document.
    * The order of these will match the original sort criteria given by a
-   * Sort object.  Each Object will be either an Integer, Float or String,
-   * depending on the type of values in the terms of the original field.
+   * Sort object.  Each Object will have been returned from
+   * the <code>value</code> method corresponding
+   * FieldComparator used to sort this field.
    * @see Sort
    * @see IndexSearcher#search(Query,Filter,int,Sort)
    */
-  public Comparable[] fields;
+  public Object[] fields;
 
   /** Expert: Creates one of these objects with empty sort information. */
   public FieldDoc (int doc, float score) {
@@ -53,7 +54,7 @@ public class FieldDoc extends ScoreDoc {
   }
 
   /** Expert: Creates one of these objects with the given sort information. */
-  public FieldDoc (int doc, float score, Comparable[] fields) {
+  public FieldDoc (int doc, float score, Object[] fields) {
     super (doc, score);
     this.fields = fields;
   }

@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRef;
  * This class will be removed in Lucene 5.0
  */
 @Deprecated
-public final class SlowCollatedStringComparator extends FieldComparator {
+public final class SlowCollatedStringComparator extends FieldComparator<BytesRef> {
 
   private final String[] values;
   private DocTerms currentDocTerms;
@@ -99,8 +99,22 @@ public final class SlowCollatedStringComparator extends FieldComparator {
   }
 
   @Override
-  public Comparable<?> value(int slot) {
+  public BytesRef value(int slot) {
     final String s = values[slot];
     return s == null ? null : new BytesRef(values[slot]);
+  }
+
+  @Override
+  public int compareValues(BytesRef first, BytesRef second) {
+    if (first == null) {
+      if (second == null) {
+        return 0;
+      }
+      return -1;
+    } else if (second == null) {
+      return 1;
+    } else {
+      return collator.compare(first, second);
+    }
   }
 }

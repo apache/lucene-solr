@@ -443,7 +443,7 @@ public class IndexSearcher {
    * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, Filter filter, int nDocs,
-                             Sort sort, boolean fillFields)
+                                Sort sort, boolean fillFields)
       throws IOException {
 
     if (sort == null) throw new NullPointerException();

@@ -61,6 +61,11 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   }
 
   @Override
+  public String toString() {
+    return "SlowMultiReaderWrapper(" + in + ")";
+  }
+
+  @Override
   public Fields fields() throws IOException {
     return MultiFields.getFields(in);
   }

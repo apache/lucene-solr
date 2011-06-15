@@ -91,10 +91,10 @@ public class SortField {
   public static final int BYTES = 12;
   
   /** Represents sorting by document score (relevance). */
-  public static final SortField FIELD_SCORE = new SortField (null, SCORE);
+  public static final SortField FIELD_SCORE = new SortField(null, SCORE);
 
   /** Represents sorting by document number (index order). */
-  public static final SortField FIELD_DOC = new SortField (null, DOC);
+  public static final SortField FIELD_DOC = new SortField(null, DOC);
 
   private String field;
   private int type;  // defaults to determining type dynamically
@@ -111,7 +111,7 @@ public class SortField {
    *               <code>type</code> is SCORE or DOC.
    * @param type   Type of values in the terms.
    */
-  public SortField (String field, int type) {
+  public SortField(String field, int type) {
     initFieldType(field, type);
   }
 
@@ -122,7 +122,7 @@ public class SortField {
    * @param type   Type of values in the terms.
    * @param reverse True if natural order should be reversed.
    */
-  public SortField (String field, int type, boolean reverse) {
+  public SortField(String field, int type, boolean reverse) {
     initFieldType(field, type);
     this.reverse = reverse;
   }
@@ -140,7 +140,7 @@ public class SortField {
    *  @deprecated (4.0) use EntryCreator version
    */
   @Deprecated
-  public SortField (String field, FieldCache.Parser parser) {
+  public SortField(String field, FieldCache.Parser parser) {
     this(field, parser, false);
   }
 
@@ -158,7 +158,7 @@ public class SortField {
    *  @deprecated (4.0) use EntryCreator version
    */
   @Deprecated
-  public SortField (String field, FieldCache.Parser parser, boolean reverse) {
+  public SortField(String field, FieldCache.Parser parser, boolean reverse) {
     if (field == null) {
       throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
     } 
@@ -225,7 +225,7 @@ public class SortField {
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
    */
-  public SortField (String field, FieldComparatorSource comparator) {
+  public SortField(String field, FieldComparatorSource comparator) {
     initFieldType(field, CUSTOM);
     this.comparatorSource = comparator;
   }
@@ -235,7 +235,7 @@ public class SortField {
    * @param comparator Returns a comparator for sorting hits.
    * @param reverse True if natural order should be reversed.
    */
-  public SortField (String field, FieldComparatorSource comparator, boolean reverse) {
+  public SortField(String field, FieldComparatorSource comparator, boolean reverse) {
     initFieldType(field, CUSTOM);
     this.reverse = reverse;
     this.comparatorSource = comparator;
