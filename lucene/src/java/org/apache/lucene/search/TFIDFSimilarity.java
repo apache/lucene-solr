@@ -696,23 +696,16 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
 
   @Override
   public final ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    final byte norms[] = context.reader.norms(fieldName);
-    return norms == null
-    ? new RawExactTFIDFDocScorer(weight.getValue())
-    : new ExactTFIDFDocScorer(weight.getValue(), norms);
+    return new ExactTFIDFDocScorer(weight.getValue(), context.reader.norms(fieldName));
   }
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    final byte norms[] = context.reader.norms(fieldName);
-    return norms == null
-    ? new RawSloppyTFIDFDocScorer(weight.getValue())
-    : new SloppyTFIDFDocScorer(weight.getValue(), norms);
+    return new SloppyTFIDFDocScorer(weight.getValue(), context.reader.norms(fieldName));
   }
   
-  // nocommit: below are specialized classes, we should test if it really helps to avoid the 'if' for omitNorms, etc
-  // nocommit: make SCORE_CACHE_SIZE dynamic when available? (e.g. totalTermFreq / docFreq)
-  // nocommit: make configurable?
+  // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
+
   private final class ExactTFIDFDocScorer extends ExactDocScorer {
     private final float weightValue;
     private final byte[] norms;
@@ -728,31 +721,12 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
     
     @Override
     public float score(int doc, int freq) {
-      float raw =                                   // compute tf(f)*weight
+      final float raw =                                // compute tf(f)*weight
         freq < SCORE_CACHE_SIZE                        // check cache
         ? scoreCache[freq]                             // cache hit
         : tf(freq)*weightValue;        // cache miss
 
-      return raw * decodeNormValue(norms[doc]); // normalize for field
-    }
-  }
-  
-  private final class RawExactTFIDFDocScorer extends ExactDocScorer {
-    private final float weightValue;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-    
-    RawExactTFIDFDocScorer(float weightValue) {
-      this.weightValue = weightValue;
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-        scoreCache[i] = tf(i) * weightValue;
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      return freq < SCORE_CACHE_SIZE                        // check cache
-        ? scoreCache[freq]                             // cache hit
-        : tf(freq)*weightValue;        // cache miss
+      return norms == null ? raw : raw * decodeNormValue(norms[doc]); // normalize for field
     }
   }
   
@@ -767,20 +741,9 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
     
     @Override
     public float score(int doc, float freq) {
-      return tf(freq) * weightValue * decodeNormValue(norms[doc]); // compute tf(f)*weight * normalize for field
-    }
-  }
-  
-  private final class RawSloppyTFIDFDocScorer extends SloppyDocScorer {
-    private final float weightValue;
-    
-    RawSloppyTFIDFDocScorer(float weightValue) {
-      this.weightValue = weightValue;
-    }
-    
-    @Override
-    public float score(int doc, float freq) {
-      return tf(freq)*weightValue;        // compute tf(f)*weight
+      final float raw = tf(freq) * weightValue; // compute tf(f)*weight
+      
+      return norms == null ? raw : raw * decodeNormValue(norms[doc]);  // normalize for field
     }
   }
 }

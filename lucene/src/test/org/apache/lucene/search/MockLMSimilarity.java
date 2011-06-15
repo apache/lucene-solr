@@ -119,11 +119,7 @@ public class MockLMSimilarity extends Similarity {
 
   @Override
   public ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    float unsquaredWeight = (float) Math.sqrt(weight.getValue());
-    final byte norms[] = context.reader.norms(fieldName);
-    return norms == null
-    ? new RawExactMockLMDocScorer(unsquaredWeight)
-    : new ExactMockLMDocScorer(unsquaredWeight, norms);
+    return new ExactMockLMDocScorer((float) Math.sqrt(weight.getValue()), context.reader.norms(fieldName));
   }
 
   @Override
@@ -149,32 +145,14 @@ public class MockLMSimilarity extends Similarity {
     
     @Override
     public float score(int doc, int freq) {
-      return freq < SCORE_CACHE_SIZE                        // check cache
-      ? scoreCache[freq] + decodeNormValue(norms[doc])      // cache hit
-      : (float)Math.log(1 + (freq*weightValue)) + decodeNormValue(norms[doc]);  // cache miss
+      final float raw = freq < SCORE_CACHE_SIZE // check cache
+      ? scoreCache[freq]  // cache hit
+      : (float)Math.log(1 + (freq*weightValue)); // cache miss
+      
+      return norms == null ? raw : raw + decodeNormValue(norms[doc]);
     }
   }
   
-  private class RawExactMockLMDocScorer extends ExactDocScorer {
-    private final float weightValue;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-    
-    RawExactMockLMDocScorer(float weightValue) {
-      this.weightValue = weightValue;
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-        scoreCache[i] = (float)Math.log(1 + (i*weightValue));
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      return freq < SCORE_CACHE_SIZE    // check cache
-      ? scoreCache[freq]                // cache hit
-      : (float)Math.log(1 + (freq*weightValue));  // cache miss
-    }
-  }
-  
-  // TODO: worth specializing?
   private class SloppyMockLMDocScorer extends SloppyDocScorer {
     private final float weightValue;
     private final byte[] norms;
@@ -186,8 +164,8 @@ public class MockLMSimilarity extends Similarity {
     
     @Override
     public float score(int doc, float freq) {
-      final float norm = (norms == null) ? 0 : decodeNormValue(norms[doc]);
-      return (float)Math.log(1 + (freq*weightValue)) + norm;
+      final float raw = (float)Math.log(1 + (freq*weightValue));
+      return norms == null ? raw : raw + decodeNormValue(norms[doc]);
     }
   }
 }
