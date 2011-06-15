@@ -97,9 +97,25 @@ public final class DocumentsWriterFlushControl {
       // for this assert we must be tolerant to ram buffer changes!
       maxConfiguredRamBuffer = Math.max(maxRamMB, maxConfiguredRamBuffer);
       final long ram = flushBytes + activeBytes;
+      final long ramBufferBytes = (long) (maxConfiguredRamBuffer * 1024 * 1024);
       // take peakDelta into account - worst case is that all flushing, pending and blocked DWPT had maxMem and the last doc had the peakDelta 
-      final long expected = (long)(2 * (maxConfiguredRamBuffer * 1024 * 1024)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
-      assert ram <= expected  : "ram was " + ram + " expected: " + expected + " flush mem: " + flushBytes + " active: " + activeBytes + " pending: " + numPending + " flushing: " + numFlushingDWPT() + " blocked: " + numBlockedFlushes() + " peakDelta: " + peakDelta ;   
+      final long expected = (long)(2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
+      if (peakDelta < (ramBufferBytes >> 1)) {
+        /*
+         * if we are indexing with very low maxRamBuffer like 0.1MB memory can
+         * easily overflow if we check out some DWPT based on docCount and have
+         * several DWPT in flight indexing large documents (compared to the ram
+         * buffer). This means that those DWPT and their threads will not hit
+         * the stall control before asserting the memory which would in turn
+         * fail. To prevent this we only assert if the the largest document seen
+         * is smaller than the 1/2 of the maxRamBufferMB
+         */
+        assert ram <= expected : "ram was " + ram + " expected: " + expected
+            + " flush mem: " + flushBytes + " activeMem: " + activeBytes
+            + " pendingMem: " + numPending + " flushingMem: "
+            + numFlushingDWPT() + " blockedMem: " + numBlockedFlushes()
+            + " peakDeltaMem: " + peakDelta;
+      }
     }
     return true;
   }
