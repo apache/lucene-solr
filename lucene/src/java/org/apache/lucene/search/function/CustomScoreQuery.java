@@ -224,14 +224,14 @@ public class CustomScoreQuery extends Query {
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
     @Override
-    public void normalize(float norm) {
-      norm *= getBoost(); // incorporate boost
-      subQueryWeight.normalize(norm);
+    public void normalize(float norm, float topLevelBoost) {
+      topLevelBoost *= getBoost(); // incorporate boost
+      subQueryWeight.normalize(norm, topLevelBoost);
       for(int i = 0; i < valSrcWeights.length; i++) {
         if (qStrict) {
-          valSrcWeights[i].normalize(1); // do not normalize the ValueSource part
+          valSrcWeights[i].normalize(1, 1); // do not normalize the ValueSource part
         } else {
-          valSrcWeights[i].normalize(norm);
+          valSrcWeights[i].normalize(norm, topLevelBoost);
         }
       }
     }

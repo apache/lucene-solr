@@ -91,8 +91,8 @@ public class ValueSourceQuery extends Query {
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#normalize(float) */
     @Override
-    public void normalize(float norm) {
-      this.queryNorm = norm;
+    public void normalize(float norm, float topLevelBoost) {
+      this.queryNorm = norm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 

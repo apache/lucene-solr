@@ -123,8 +123,8 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm) {
-      this.queryNorm = queryNorm;
+    public void normalize(float queryNorm, float topLevelBoost) {
+      this.queryNorm = queryNorm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 

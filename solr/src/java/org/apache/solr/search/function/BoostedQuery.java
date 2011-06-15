@@ -90,9 +90,9 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public void normalize(float norm) {
-      norm *= getBoost();
-      qWeight.normalize(norm);
+    public void normalize(float norm, float topLevelBoost) {
+      topLevelBoost *= getBoost();
+      qWeight.normalize(norm, topLevelBoost);
     }
 
     @Override

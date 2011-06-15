@@ -130,10 +130,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Apply the computed normalization factor to our subqueries */
     @Override
-    public void normalize(float norm) {
-      norm *= getBoost();  // Incorporate our boost
+    public void normalize(float norm, float topLevelBoost) {
+      topLevelBoost *= getBoost();  // Incorporate our boost
       for (Weight wt : weights) {
-        wt.normalize(norm);
+        wt.normalize(norm, topLevelBoost);
       }
     }
 

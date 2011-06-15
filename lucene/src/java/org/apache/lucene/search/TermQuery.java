@@ -75,9 +75,9 @@ public class TermQuery extends Query {
     }
 
     @Override
-    public void normalize(float queryNorm) {
-      this.queryNorm = queryNorm;
-      queryWeight *= queryNorm;                   // normalize query weight
+    public void normalize(float queryNorm, float topLevelBoost) {
+      this.queryNorm = queryNorm * topLevelBoost;
+      queryWeight *= this.queryNorm;              // normalize query weight
       value = queryWeight * idf;                  // idf for document
     }
 

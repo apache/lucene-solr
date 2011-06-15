@@ -123,11 +123,11 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public void normalize(float norm) {
-      this.queryNorm = norm;
+    public void normalize(float norm, float topLevelBoost) {
+      this.queryNorm = norm * topLevelBoost;
       queryWeight *= this.queryNorm;
       // we normalize the inner weight, but ignore it (just to initialize everything)
-      if (innerWeight != null) innerWeight.normalize(norm);
+      if (innerWeight != null) innerWeight.normalize(norm, topLevelBoost);
     }
 
     @Override

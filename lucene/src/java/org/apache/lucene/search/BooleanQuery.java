@@ -206,11 +206,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public void normalize(float norm) {
-      norm *= getBoost();                         // incorporate boost
+    public void normalize(float norm, float topLevelBoost) {
+      topLevelBoost *= getBoost();                         // incorporate boost
       for (Weight w : weights) {
         // normalize all clauses, (even if prohibited in case of side affects)
-        w.normalize(norm);
+        w.normalize(norm, topLevelBoost);
       }
     }
 

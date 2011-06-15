@@ -85,8 +85,8 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     }
 
     @Override
-    public void normalize(float norm) {
-      this.queryNorm = norm;
+    public void normalize(float norm, float topLevelBoost) {
+      this.queryNorm = norm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 

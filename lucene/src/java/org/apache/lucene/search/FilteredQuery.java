@@ -75,8 +75,8 @@ extends Query {
       }
 
       @Override
-      public void normalize (float v) { 
-        weight.normalize(v);
+      public void normalize (float norm, float topLevelBoost) { 
+        weight.normalize(norm, topLevelBoost);
         value = weight.getValue() * getBoost();
       }
 

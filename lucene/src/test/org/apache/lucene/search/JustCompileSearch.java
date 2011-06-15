@@ -354,7 +354,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public void normalize(float norm) {
+    public void normalize(float norm, float topLevelBoost) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

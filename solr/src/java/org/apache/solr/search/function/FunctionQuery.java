@@ -88,8 +88,8 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public void normalize(float norm) {
-      this.queryNorm = norm;
+    public void normalize(float norm, float topLevelBoost) {
+      this.queryNorm = norm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 

@@ -72,7 +72,7 @@ public abstract class Weight {
   public abstract float getValue();
 
   /** Assigns the query normalization factor to this. */
-  public abstract void normalize(float norm);
+  public abstract void normalize(float norm, float topLevelBoost);
 
   /**
    * Returns a {@link Scorer} which scores documents in/out-of order according

@@ -101,7 +101,7 @@ public abstract class Query implements Cloneable {
     float norm = searcher.getSimilarityProvider().queryNorm(sum);
     if (Float.isInfinite(norm) || Float.isNaN(norm))
       norm = 1.0f;
-    weight.normalize(norm);
+    weight.normalize(norm, 1.0f);
     return weight;
   }
   
