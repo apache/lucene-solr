@@ -380,30 +380,30 @@ public class TestNRTThreads extends LuceneTestCase {
         for(int thread=0;thread<NUM_SEARCH_THREADS;thread++) {
           searchThreads[thread] = new Thread() {
               @Override
-                public void run() {
+              public void run() {
                 try {
                   TermEnum termEnum = s.getIndexReader().terms(new Term("body", ""));
                   int seenTermCount = 0;
                   int shift;
                   int trigger;
-                  if (totTermCount.get() == 0) {
+                  if (totTermCount.get() < 10) {
                     shift = 0;
                     trigger = 1;
                   } else {
-                    shift = random.nextInt(totTermCount.get()/10);
                     trigger = totTermCount.get()/10;
+                    shift = random.nextInt(trigger);
                   }
                   while(System.currentTimeMillis() < searchStopTime) {
                     Term term = termEnum.term();
                     if (term == null) {
-                      if (seenTermCount == 0) {
+                      if (seenTermCount < 10) {
                         break;
                       }
                       totTermCount.set(seenTermCount);
                       seenTermCount = 0;
                       trigger = totTermCount.get()/10;
                       //System.out.println("trigger " + trigger);
-                      shift = random.nextInt(totTermCount.get()/10);
+                      shift = random.nextInt(trigger);
                       termEnum = s.getIndexReader().terms(new Term("body", ""));
                       continue;
                     }
