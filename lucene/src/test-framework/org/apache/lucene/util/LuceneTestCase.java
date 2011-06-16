@@ -49,6 +49,7 @@ import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -1097,13 +1098,11 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
-
     if (random.nextBoolean()) {
       if (maybeWrap && rarely()) {
-        return new IndexSearcher(new SlowMultiReaderWrapper(r));
-      } else {
-        return new IndexSearcher(r);
+        r = new SlowMultiReaderWrapper(r);
       }
+      return new AssertingIndexSearcher(r);
     } else {
       int threads = 0;
       final ExecutorService ex = (random.nextBoolean()) ? null 
@@ -1112,20 +1111,24 @@ public abstract class LuceneTestCase extends Assert {
       if (ex != null && VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
       }
-      return new IndexSearcher(r, ex) {
+      return new AssertingIndexSearcher(r, ex) {
         @Override
         public void close() throws IOException {
           super.close();
-          if (ex != null) {
-            ex.shutdown();
-            try {
-              ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
-          }
+          shutdownExecutorService(ex);
         }
       };
+    }
+  }
+  
+  static void shutdownExecutorService(ExecutorService ex) {
+    if (ex != null) {
+      ex.shutdown();
+      try {
+        ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 

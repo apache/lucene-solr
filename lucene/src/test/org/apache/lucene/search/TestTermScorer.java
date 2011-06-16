@@ -71,7 +71,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ?
                 indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];
     Scorer ts = weight.scorer(sub, true, true);
@@ -133,7 +133,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     
     IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ?
         indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];
@@ -153,7 +153,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     
     IndexReader sub = indexSearcher.getIndexReader().getSequentialSubReaders() == null ? 
         indexSearcher.getIndexReader() : indexSearcher.getIndexReader().getSequentialSubReaders()[0];

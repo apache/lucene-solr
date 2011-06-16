@@ -44,7 +44,7 @@ public class QueryWrapperFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final Weight weight = query.weight(new IndexSearcher(reader));
+    final Weight weight = new IndexSearcher(reader).createNormalizedWeight(query);
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {

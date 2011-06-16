@@ -63,7 +63,7 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public void createWeight(Map context, Searcher searcher) throws IOException {
-    Weight w = q.weight(searcher);
+    Weight w = searcher.createNormalizedWeight(q);
     context.put(this, w);
   }
 }
@@ -87,7 +87,7 @@ class QueryDocValues extends DocValues {
     this.reader = reader;
     this.q = q;
     this.defVal = defVal;
-    weight = w!=null ? w : q.weight(new IndexSearcher(reader));
+    weight = w!=null ? w : new IndexSearcher(reader).createNormalizedWeight(q);
   }
 
   @Override

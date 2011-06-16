@@ -41,7 +41,7 @@ final class JustCompileSearch {
   static final class JustCompileSearcher extends Searcher {
 
     @Override
-    protected Weight createWeight(Query query) throws IOException {
+    public Weight createNormalizedWeight(Query query) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

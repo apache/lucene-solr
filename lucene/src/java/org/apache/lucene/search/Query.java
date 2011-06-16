@@ -94,17 +94,13 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   }
 
   /**
-   * Expert: Constructs and initializes a Weight for a top-level query.
+   * Expert: Constructs and initializes a Weight for a <b>top-level</b> query.
+   * @deprecated never ever use this method in {@link Weight} implementations.
+   * Subclasses of {@code Query} should use {@link #createWeight}, instead.
    */
-  public Weight weight(Searcher searcher) throws IOException {
-    Query query = searcher.rewrite(this);
-    Weight weight = query.createWeight(searcher);
-    float sum = weight.sumOfSquaredWeights();
-    float norm = getSimilarity(searcher).queryNorm(sum);
-    if (Float.isInfinite(norm) || Float.isNaN(norm))
-      norm = 1.0f;
-    weight.normalize(norm);
-    return weight;
+  @Deprecated
+  public final Weight weight(Searcher searcher) throws IOException {
+    return searcher.createNormalizedWeight(this);
   }
   
 

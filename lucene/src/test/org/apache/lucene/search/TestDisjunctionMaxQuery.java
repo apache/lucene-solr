@@ -167,7 +167,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     QueryUtils.check(random, dq, s);
     
-    final Weight dw = dq.weight(s);
+    final Weight dw = s.createNormalizedWeight(dq);
     IndexReader sub = s.getIndexReader().getSequentialSubReaders() == null ?
         s.getIndexReader() : s.getIndexReader().getSequentialSubReaders()[0];
     final Scorer ds = dw.scorer(sub, true, false);
@@ -184,8 +184,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     
     QueryUtils.check(random, dq, s);
-    
-    final Weight dw = dq.weight(s);
+
+    final Weight dw = s.createNormalizedWeight(dq);
     IndexReader sub = s.getIndexReader().getSequentialSubReaders() == null ?
         s.getIndexReader() : s.getIndexReader().getSequentialSubReaders()[0];
     final Scorer ds = dw.scorer(sub, true, false);

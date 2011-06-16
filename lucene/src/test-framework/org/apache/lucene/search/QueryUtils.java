@@ -241,7 +241,7 @@ public class QueryUtils {
    * @throws IOException if serialization check fail. 
    */
   private static void checkSerialization(Query q, Searcher s) throws IOException {
-    Weight w = q.weight(s);
+    Weight w = s.createNormalizedWeight(q);
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -268,7 +268,7 @@ public class QueryUtils {
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
     
-    if (q.weight(s).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
+    if (s.createNormalizedWeight(q).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
     final int next_op = 1;
@@ -311,7 +311,7 @@ public class QueryUtils {
             lastDoc[0] = doc;
             try {
               if (scorer == null) {
-                Weight w = q.weight(s);
+                Weight w = s.createNormalizedWeight(q);
                 scorer = w.scorer(reader, true, false);
               }
               
@@ -355,7 +355,7 @@ public class QueryUtils {
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
               final IndexReader previousReader = lastReader[0];
-              Weight w = q.weight(new IndexSearcher(previousReader));
+              Weight w = new IndexSearcher(previousReader).createNormalizedWeight(q);
               Scorer scorer = w.scorer(previousReader, true, false);
               if (scorer != null) {
                 boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
@@ -377,7 +377,7 @@ public class QueryUtils {
           // confirm that skipping beyond the last doc, on the
           // previous reader, hits NO_MORE_DOCS
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
+          Weight w = new IndexSearcher(previousReader).createNormalizedWeight(q);
           Scorer scorer = w.scorer(previousReader, true, false);
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
@@ -408,7 +408,7 @@ public class QueryUtils {
         try {
           
           for (int i=lastDoc[0]+1; i<=doc; i++) {
-            Weight w = q.weight(s);
+            Weight w = s.createNormalizedWeight(q);
             Scorer scorer = w.scorer(reader, true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
@@ -428,8 +428,9 @@ public class QueryUtils {
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
           final IndexReader previousReader = lastReader[0];
-          Weight w = q.weight(new IndexSearcher(previousReader));
+          Weight w = new IndexSearcher(previousReader).createNormalizedWeight(q);
           Scorer scorer = w.scorer(previousReader, true, false);
+
           if (scorer != null) {
             boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
             Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
@@ -449,7 +450,7 @@ public class QueryUtils {
       // confirm that skipping beyond the last doc, on the
       // previous reader, hits NO_MORE_DOCS
       final IndexReader previousReader = lastReader[0];
-      Weight w = q.weight(new IndexSearcher(previousReader));
+      Weight w = new IndexSearcher(previousReader).createNormalizedWeight(q);
       Scorer scorer = w.scorer(previousReader, true, false);
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;

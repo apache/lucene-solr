@@ -79,9 +79,6 @@ public class IndexSearcher extends Searcher {
   private final ExecutorService executor;
   protected final IndexSearcher[] subSearchers;
 
-  /** The Similarity implementation used by this searcher. */
-  private Similarity similarity = Similarity.getDefault();
-
   /** Creates a searcher searching the index in the named
    *  directory, with readOnly=true
    * @param path directory where IndexReader will be opened
@@ -257,12 +254,12 @@ public class IndexSearcher extends Searcher {
    */
   @Override
   public void setSimilarity(Similarity similarity) {
-    this.similarity = similarity;
+    super.setSimilarity(similarity);
   }
 
   @Override
   public Similarity getSimilarity() {
-    return similarity;
+    return super.getSimilarity();
   }
 
   /**
@@ -298,7 +295,7 @@ public class IndexSearcher extends Searcher {
   @Override
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
-    return search(createWeight(query), filter, n);
+    return search(createNormalizedWeight(query), filter, n);
   }
 
   /** Lower-level search API.
@@ -320,7 +317,7 @@ public class IndexSearcher extends Searcher {
   @Override
   public void search(Query query, Filter filter, Collector results)
     throws IOException {
-    search(createWeight(query), filter, results);
+    search(createNormalizedWeight(query), filter, results);
   }
 
   /** Lower-level search API.
@@ -339,7 +336,7 @@ public class IndexSearcher extends Searcher {
   @Override
   public void search(Query query, Collector results)
     throws IOException {
-    search(createWeight(query), null, results);
+    search(createNormalizedWeight(query), null, results);
   }
   
   /** Search implementation with arbitrary sorting.  Finds
@@ -356,7 +353,7 @@ public class IndexSearcher extends Searcher {
   @Override
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), filter, n, sort);
+    return search(createNormalizedWeight(query), filter, n, sort);
   }
 
   /**
@@ -370,7 +367,7 @@ public class IndexSearcher extends Searcher {
   @Override
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), null, n, sort);
+    return search(createNormalizedWeight(query), null, n, sort);
   }
 
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
@@ -606,7 +603,7 @@ public class IndexSearcher extends Searcher {
    */
   @Override
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createWeight(query), doc);
+    return explain(createNormalizedWeight(query), doc);
   }
 
   /** Expert: low-level implementation method
@@ -654,14 +651,15 @@ public class IndexSearcher extends Searcher {
   }
 
   /**
-   * creates a weight for <code>query</code>
-   * @return new weight
+   * Creates a normalized weight for a top-level {@link Query}.
+   * The query is rewritten by this method and {@link Query#createWeight} called,
+   * afterwards the {@link Weight} is normalized. The returned {@code Weight}
+   * can then directly be used to get a {@link Scorer}.
+   * @lucene.internal
    */
-  @Override
-  protected Weight createWeight(Query query) throws IOException {
-    return query.weight(this);
+  public Weight createNormalizedWeight(Query query) throws IOException {
+    return super.createNormalizedWeight(query);
   }
-
 
   /**
    * A thread subclass for searching a single searchable 

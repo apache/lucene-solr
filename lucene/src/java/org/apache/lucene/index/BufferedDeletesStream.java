@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.QueryWrapperFilter;
 
 /* Tracks the stream of {@link BuffereDeletes}.
  * When DocumensWriter flushes, its buffered
@@ -377,16 +377,16 @@ class BufferedDeletesStream {
   // Delete by query
   private synchronized long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, SegmentReader reader) throws IOException {
     long delCount = 0;
-    IndexSearcher searcher = new IndexSearcher(reader);
-    try {
-      for (QueryAndLimit ent : queriesIter) {
-        Query query = ent.query;
-        int limit = ent.limit;
-        Weight weight = query.weight(searcher);
-        Scorer scorer = weight.scorer(reader, true, false);
-        if (scorer != null) {
+
+    for (QueryAndLimit ent : queriesIter) {
+      Query query = ent.query;
+      int limit = ent.limit;
+      final DocIdSet docs = new QueryWrapperFilter(query).getDocIdSet(reader);
+      if (docs != null) {
+        final DocIdSetIterator it = docs.iterator();
+        if (it != null) {
           while(true)  {
-            int doc = scorer.nextDoc();
+            int doc = it.nextDoc();
             if (doc >= limit)
               break;
 
@@ -400,8 +400,6 @@ class BufferedDeletesStream {
           }
         }
       }
-    } finally {
-      searcher.close();
     }
 
     return delCount;

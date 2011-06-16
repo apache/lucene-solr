@@ -50,7 +50,7 @@ public abstract class Searcher implements Searchable {
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), filter, n, sort);
+    return search(createNormalizedWeight(query), filter, n, sort);
   }
 
   /**
@@ -63,7 +63,7 @@ public abstract class Searcher implements Searchable {
    */
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), null, n, sort);
+    return search(createNormalizedWeight(query), null, n, sort);
   }
 
   /** Lower-level search API.
@@ -81,7 +81,7 @@ public abstract class Searcher implements Searchable {
   */
  public void search(Query query, Collector results)
    throws IOException {
-   search(createWeight(query), null, results);
+   search(createNormalizedWeight(query), null, results);
  }
 
   /** Lower-level search API.
@@ -102,7 +102,7 @@ public abstract class Searcher implements Searchable {
    */
   public void search(Query query, Filter filter, Collector results)
   throws IOException {
-    search(createWeight(query), filter, results);
+    search(createNormalizedWeight(query), filter, results);
   }
 
   /** Finds the top <code>n</code>
@@ -112,7 +112,7 @@ public abstract class Searcher implements Searchable {
    */
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
-    return search(createWeight(query), filter, n);
+    return search(createNormalizedWeight(query), filter, n);
   }
 
   /** Finds the top <code>n</code>
@@ -134,7 +134,7 @@ public abstract class Searcher implements Searchable {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createWeight(query), doc);
+    return explain(createNormalizedWeight(query), doc);
   }
 
   /** The Similarity implementation used by this searcher. */
@@ -157,11 +157,35 @@ public abstract class Searcher implements Searchable {
   }
 
   /**
-   * creates a weight for <code>query</code>
-   * @return new weight
+   * Creates a normalized weight for a top-level {@link Query}.
+   * The query is rewritten by this method and {@link Query#createWeight} called,
+   * afterwards the {@link Weight} is normalized. The returned {@code Weight}
+   * can then directly be used to get a {@link Scorer}.
+   * @lucene.internal
    */
-  protected Weight createWeight(Query query) throws IOException {
-    return query.weight(this);
+  public Weight createNormalizedWeight(Query query) throws IOException {
+    query = rewrite(query);
+    Weight weight = query.createWeight(this);
+    float sum = weight.sumOfSquaredWeights();
+    // this is a hack for backwards compatibility:
+    float norm = query.getSimilarity(this).queryNorm(sum);
+    if (Float.isInfinite(norm) || Float.isNaN(norm))
+      norm = 1.0f;
+    weight.normalize(norm);
+    return weight;
+  }
+  
+  /**
+   * Expert: Creates a normalized weight for a top-level {@link Query}.
+   * The query is rewritten by this method and {@link Query#createWeight} called,
+   * afterwards the {@link Weight} is normalized. The returned {@code Weight}
+   * can then directly be used to get a {@link Scorer}.
+   * @deprecated never ever use this method in {@link Weight} implementations.
+   * Subclasses of Searcher should use {@link #createNormalizedWeight}, instead.
+   */
+  @Deprecated
+  protected final Weight createWeight(Query query) throws IOException {
+    return createNormalizedWeight(query);
   }
 
   // inherit javadoc

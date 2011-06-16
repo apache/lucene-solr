@@ -112,7 +112,7 @@ public abstract class ReadTask extends PerfTask {
       if (numHits > 0) {
         if (withCollector() == false) {
           if (sort != null) {
-            Weight w = q.weight(searcher);
+            Weight w = searcher.createNormalizedWeight(q);
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
                                                                    true, withScore(),
                                                                    withMaxScore(),

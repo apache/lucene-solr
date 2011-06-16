@@ -15,6 +15,11 @@ Changes in backwards compatibility policy
   Comparable; FieldDoc.fields also changed from Comparable[] to
   Object[] (Uwe Schindler, Mike McCandless)
 
+* LUCENE-3208: Made deprecated methods Query.weight(Searcher) and
+  Searcher.createWeight() final to prevent override. If you have
+  overridden one of these methods, cut over to the non-deprecated
+  implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
@@ -52,6 +57,15 @@ Bug fixes
   (field="", term="") with terms index interval 1 could hit
   ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
   McCandless)
+
+API Changes
+
+* LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
+  public method IndexSearcher.createNormalizedWeight() as this better describes
+  what this method does. The old method is still there for backwards
+  compatibility. Query.weight() was deprecated and simply delegates to
+  IndexSearcher. Both deprecated methods will be removed in Lucene 4.0.
+  (Uwe Schindler, Robert Muir, Yonik Seeley)
 
 Optimizations
 

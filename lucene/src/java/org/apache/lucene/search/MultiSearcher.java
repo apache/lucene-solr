@@ -310,7 +310,7 @@ public class MultiSearcher extends Searcher {
    * @return rewritten queries
    */
   @Override
-  protected Weight createWeight(Query original) throws IOException {
+  public Weight createNormalizedWeight(Query original) throws IOException {
     // step 1
     final Query rewrittenQuery = rewrite(original);
 
@@ -325,7 +325,7 @@ public class MultiSearcher extends Searcher {
     final int numDocs = maxDoc();
     final CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
 
-    return rewrittenQuery.weight(cacheSim);
+    return cacheSim.createNormalizedWeight(rewrittenQuery);
   }
   /**
    * Collects the document frequency for the given terms form all searchables
