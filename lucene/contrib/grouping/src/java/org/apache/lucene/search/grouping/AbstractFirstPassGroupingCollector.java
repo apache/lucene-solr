@@ -122,7 +122,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
       SearchGroup<GROUP_VALUE_TYPE> searchGroup = new SearchGroup<GROUP_VALUE_TYPE>();
       searchGroup.groupValue = group.groupValue;
       if (fillFields) {
-        searchGroup.sortValues = new Comparable[sortFieldCount];
+        searchGroup.sortValues = new Object[sortFieldCount];
         for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
           searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
         }

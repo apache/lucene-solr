@@ -138,7 +138,7 @@ public abstract class ValueSource implements Serializable {
    * off of the {@link org.apache.solr.search.function.DocValues} for a ValueSource
    * instead of the normal Lucene FieldComparator that works off of a FieldCache.
    */
-  class ValueSourceComparator extends FieldComparator {
+  class ValueSourceComparator extends FieldComparator<Double> {
     private final double[] values;
     private DocValues docVals;
     private double bottom;
@@ -191,7 +191,7 @@ public abstract class ValueSource implements Serializable {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Double value(int slot) {
       return values[slot];
     }
   }

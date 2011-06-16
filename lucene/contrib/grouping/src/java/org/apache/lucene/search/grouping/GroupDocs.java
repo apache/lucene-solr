@@ -40,13 +40,13 @@ public class GroupDocs<GROUP_VALUE_TYPE> {
 
   /** Matches the groupSort passed to {@link
    *  AbstractFirstPassGroupingCollector}. */
-  public final Comparable[] groupSortValues;
+  public final Object[] groupSortValues;
 
   public GroupDocs(float maxScore,
                    int totalHits,
                    ScoreDoc[] scoreDocs,
                    GROUP_VALUE_TYPE groupValue,
-                   Comparable[] groupSortValues) {
+                   Object[] groupSortValues) {
     this.maxScore = maxScore;
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;

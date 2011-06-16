@@ -473,6 +473,10 @@ Changes in backwards compatibility policy
   of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
   Mike McCandless)
 
+* LUCENE-3191: FieldComparator.value now returns an Object not
+  Comparable; FieldDoc.fields also changed from Comparable[] to
+  Object[] (Uwe Schindler, Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
@@ -519,6 +523,9 @@ New Features
 * LUCENE-3193: A new TwoPhaseCommitTool allows running a 2-phase commit 
   algorithm over objects that implement the new TwoPhaseCommit interface (such
   as IndexWriter). (Shai Erera)
+
+* LUCENE-3191: Added TopDocs.merge, to facilitate merging results from
+  different shards (Uwe Schindler, Mike McCandless)
 
 Build
 

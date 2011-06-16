@@ -351,7 +351,7 @@ public class BlockGroupingCollector extends Collector {
       }
       totalGroupedHitCount += og.count;
 
-      final Comparable[] groupSortValues;
+      final Object[] groupSortValues;
 
       if (fillSortFields) {
         groupSortValues = new Comparable[comparators.length];

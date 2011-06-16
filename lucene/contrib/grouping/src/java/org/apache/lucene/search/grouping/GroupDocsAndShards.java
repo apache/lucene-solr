@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search.grouping;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
+import org.apache.lucene.search.ScoreDoc;
 
-import org.apache.lucene.util.ReaderUtil;
+public class GroupDocsAndShards<GROUP_VALUE_TYPE> extends GroupDocs<GROUP_VALUE_TYPE> {
 
-/**
- * Acts like Lucene 4.x's SlowMultiReaderWrapper for testing 
- * of top-level MultiTermEnum, MultiTermDocs, ...
- */
-public class SlowMultiReaderWrapper extends MultiReader {
+  public final int[] shardIndex;
 
-  public SlowMultiReaderWrapper(IndexReader reader) {
-    super(subReaders(reader));
-  }
-  
-  private static IndexReader[] subReaders(IndexReader reader) {
-    ArrayList<IndexReader> list = new ArrayList<IndexReader>();
-    ReaderUtil.gatherSubReaders(list, reader);
-    return list.toArray(new IndexReader[list.size()]);
-  }
-
-  @Override
-  public IndexReader[] getSequentialSubReaders() {
-    return null;
-  }
-
-  @Override
-  public String toString() {
-    return "SlowMultiReaderWrapper(" + super.toString() + ")";
+  public GroupDocsAndShards(float maxScore,
+                            int totalHits,
+                            ScoreDoc[] scoreDocs,
+                            GROUP_VALUE_TYPE groupValue,
+                            Object[] groupSortValues,
+                            int[] shardIndex) {
+    super(maxScore, totalHits, scoreDocs, groupValue, groupSortValues);
+    this.shardIndex = shardIndex;
   }
 }
+

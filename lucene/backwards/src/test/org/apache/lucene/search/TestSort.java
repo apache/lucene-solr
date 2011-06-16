@@ -422,65 +422,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
     assertMatches (empty, queryX, sort, "");
   }
 
-  static class MyFieldComparator extends FieldComparator {
-    int[] docValues;
-    int[] slotValues;
-    int bottomValue;
-
-    MyFieldComparator(int numHits) {
-      slotValues = new int[numHits];
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      slotValues[slot] = docValues[doc];
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      return slotValues[slot1] - slotValues[slot2];
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      return bottomValue - docValues[doc];
-    }
-
-    @Override
-    public void setBottom(int bottom) {
-      bottomValue = slotValues[bottom];
-    }
-
-    private static final FieldCache.IntParser testIntParser = new FieldCache.IntParser() {
-      public final int parseInt(final String val) {
-        return (val.charAt(0)-'A') * 123456;
-      }
-    };
-
-    @Override
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      docValues = FieldCache.DEFAULT.getInts(reader, "parser", testIntParser);
-    }
-
-    @Override
-    public Comparable<?> value(int slot) {
-      return Integer.valueOf(slotValues[slot]);
-    }
-  }
-
-  static class MyFieldComparatorSource extends FieldComparatorSource {
-    @Override
-    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
-      return new MyFieldComparator(numHits);
-    }
-  }
-
-  // Test sorting w/ custom FieldComparator
-  public void testNewCustomFieldParserSort() throws Exception {
-    sort.setSort (new SortField ("parser", new MyFieldComparatorSource()));
-    assertMatches (full, queryA, sort, "JIHGFEDCBA");
-  }
-
   // test sorts in reverse
   public void testReverseSort() throws Exception {
     sort.setSort (new SortField (null, SortField.SCORE, true), SortField.FIELD_DOC );

@@ -88,10 +88,10 @@ implements Serializable {
   // as FieldCache.STRING_INDEX.
 
   /** Represents sorting by document score (relevance). */
-  public static final SortField FIELD_SCORE = new SortField (null, SCORE);
+  public static final SortField FIELD_SCORE = new SortField(null, SCORE);
 
   /** Represents sorting by document number (index order). */
-  public static final SortField FIELD_DOC = new SortField (null, DOC);
+  public static final SortField FIELD_DOC = new SortField(null, DOC);
 
   private String field;
   private int type;  // defaults to determining type dynamically
@@ -108,7 +108,7 @@ implements Serializable {
    *               <code>type</code> is SCORE or DOC.
    * @param type   Type of values in the terms.
    */
-  public SortField (String field, int type) {
+  public SortField(String field, int type) {
     initFieldType(field, type);
   }
 
@@ -119,7 +119,7 @@ implements Serializable {
    * @param type   Type of values in the terms.
    * @param reverse True if natural order should be reversed.
    */
-  public SortField (String field, int type, boolean reverse) {
+  public SortField(String field, int type, boolean reverse) {
     initFieldType(field, type);
     this.reverse = reverse;
   }
@@ -134,7 +134,7 @@ implements Serializable {
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
    */
-  public SortField (String field, FieldCache.Parser parser) {
+  public SortField(String field, FieldCache.Parser parser) {
     this(field, parser, false);
   }
 
@@ -149,7 +149,7 @@ implements Serializable {
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
    */
-  public SortField (String field, FieldCache.Parser parser, boolean reverse) {
+  public SortField(String field, FieldCache.Parser parser, boolean reverse) {
     if (parser instanceof FieldCache.IntParser) initFieldType(field, INT);
     else if (parser instanceof FieldCache.FloatParser) initFieldType(field, FLOAT);
     else if (parser instanceof FieldCache.ShortParser) initFieldType(field, SHORT);
@@ -188,7 +188,7 @@ implements Serializable {
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
    */
-  public SortField (String field, FieldComparatorSource comparator) {
+  public SortField(String field, FieldComparatorSource comparator) {
     initFieldType(field, CUSTOM);
     this.comparatorSource = comparator;
   }
@@ -198,7 +198,7 @@ implements Serializable {
    * @param comparator Returns a comparator for sorting hits.
    * @param reverse True if natural order should be reversed.
    */
-  public SortField (String field, FieldComparatorSource comparator, boolean reverse) {
+  public SortField(String field, FieldComparatorSource comparator, boolean reverse) {
     initFieldType(field, CUSTOM);
     this.reverse = reverse;
     this.comparatorSource = comparator;

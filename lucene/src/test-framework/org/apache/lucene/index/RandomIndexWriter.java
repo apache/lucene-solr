@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -172,16 +171,24 @@ public class RandomIndexWriter implements Closeable {
     w.deleteAll();
   }
 
+  private boolean doRandomOptimize = true;
+
+  public void setDoRandomOptimize(boolean v) {
+    doRandomOptimize = v;
+  }
+
   private void doRandomOptimize() throws IOException {
-    final int segCount = w.getSegmentCount();
-    if (r.nextBoolean() || segCount == 0) {
-      // full optimize
-      w.optimize();
-    } else {
-      // partial optimize
-      final int limit = _TestUtil.nextInt(r, 1, segCount);
-      w.optimize(limit);
-      assert w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+    if (doRandomOptimize) {
+      final int segCount = w.getSegmentCount();
+      if (r.nextBoolean() || segCount == 0) {
+        // full optimize
+        w.optimize();
+      } else {
+        // partial optimize
+        final int limit = _TestUtil.nextInt(r, 1, segCount);
+        w.optimize(limit);
+        assert w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+      }
     }
   }
 

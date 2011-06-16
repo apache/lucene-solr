@@ -49,10 +49,9 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
 
 }
 
-
 // Copied from Lucene and modified since the Lucene version couldn't
 // be extended or have it's values accessed.
- class MissingLastOrdComparator extends FieldComparator {
+ class MissingLastOrdComparator extends FieldComparator<String> {
     private static final int NULL_ORD = Integer.MAX_VALUE;
     private final String nullVal; 
 
@@ -187,8 +186,8 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
     }
 
     @Override
-    public Comparable value(int slot) {
-      Comparable v = values[slot];
+    public String value(int slot) {
+      String v = values[slot];
       return v==null ? nullVal : v;
     }
 

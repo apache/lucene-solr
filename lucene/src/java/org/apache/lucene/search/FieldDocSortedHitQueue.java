@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.PriorityQueue;
-
+import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
@@ -37,6 +37,8 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
   // used in the case where the fields are sorted by locale
   // based strings
   volatile Collator[] collators = null;
+
+  volatile FieldComparator[] comparators = null;
 
 
   /**
@@ -57,9 +59,13 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * This method should be synchronized external like all other PQ methods.
    * @param fields
    */
-  void setFields (SortField[] fields) {
+  void setFields (SortField[] fields) throws IOException {
     this.fields = fields;
     this.collators = hasCollators (fields);
+    comparators = new FieldComparator[fields.length];
+    for(int fieldIDX=0;fieldIDX<fields.length;fieldIDX++) {
+      comparators[fieldIDX] = fields[fieldIDX].getComparator(1, fieldIDX);
+    }
   }
 
 
@@ -114,10 +120,7 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
           c = collators[i].compare(s1, s2);
         }
       } else {
-        c = docA.fields[i].compareTo(docB.fields[i]);
-        if (type == SortField.SCORE) {
-          c = -c;
-        }
+        c = comparators[i].compareValues(docA.fields[i], docB.fields[i]);
       }
       // reverse sort
       if (fields[i].getReverse()) {
