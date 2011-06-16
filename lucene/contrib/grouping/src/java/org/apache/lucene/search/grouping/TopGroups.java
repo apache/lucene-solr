@@ -132,17 +132,14 @@ public class TopGroups<GROUP_VALUE_TYPE> {
         totalHits += shardGroupDocs.totalHits;
       }
 
-      final TopDocs.TopDocsAndShards mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, shardTopDocs);
+      final TopDocs mergedTopDocs = TopDocs.merge(docSort, docOffset + docTopN, shardTopDocs);
 
       // Slice;
       final ScoreDoc[] mergedScoreDocs;
-      final int[] mergedShardIndex;
       if (docOffset == 0) {
         mergedScoreDocs = mergedTopDocs.scoreDocs;
-        mergedShardIndex = mergedTopDocs.shardIndex;
       } else if (docOffset >= mergedTopDocs.scoreDocs.length) {
         mergedScoreDocs = new ScoreDoc[0];
-        mergedShardIndex = new int[0];
       } else {
         mergedScoreDocs = new ScoreDoc[mergedTopDocs.scoreDocs.length - docOffset];
         System.arraycopy(mergedTopDocs.scoreDocs,
@@ -150,20 +147,13 @@ public class TopGroups<GROUP_VALUE_TYPE> {
                          mergedScoreDocs,
                          0,
                          mergedTopDocs.scoreDocs.length - docOffset);
-        mergedShardIndex = new int[mergedTopDocs.scoreDocs.length - docOffset];
-        System.arraycopy(mergedTopDocs.shardIndex,
-                         docOffset,
-                         mergedShardIndex,
-                         0,
-                         mergedTopDocs.scoreDocs.length - docOffset);
       }
       //System.out.println("SHARDS=" + Arrays.toString(mergedTopDocs.shardIndex));
-      mergedGroupDocs[groupIDX] = new GroupDocsAndShards<T>(maxScore,
-                                                            totalHits,
-                                                            mergedScoreDocs,
-                                                            groupValue,
-                                                            shardGroups[0].groups[groupIDX].groupSortValues,
-                                                            mergedShardIndex);
+      mergedGroupDocs[groupIDX] = new GroupDocs<T>(maxScore,
+                                                   totalHits,
+                                                   mergedScoreDocs,
+                                                   groupValue,
+                                                   shardGroups[0].groups[groupIDX].groupSortValues);
     }
 
     return new TopGroups<T>(groupSort.getSort(),

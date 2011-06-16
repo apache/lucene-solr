@@ -871,13 +871,11 @@ public class TestGrouping extends LuceneTestCase {
 
   private void verifyShards(int[] docStarts, TopGroups<String> topGroups) {
     for(GroupDocs group : topGroups.groups) {
-      assertTrue(group instanceof GroupDocsAndShards);
-      GroupDocsAndShards withShards = (GroupDocsAndShards) group;
-      for(int hitIDX=0;hitIDX<withShards.scoreDocs.length;hitIDX++) {
-        final ScoreDoc sd = withShards.scoreDocs[hitIDX];
+      for(int hitIDX=0;hitIDX<group.scoreDocs.length;hitIDX++) {
+        final ScoreDoc sd = group.scoreDocs[hitIDX];
         assertEquals("doc=" + sd.doc + " wrong shard",
                      ReaderUtil.subIndex(sd.doc, docStarts),
-                     withShards.shardIndex[hitIDX]);
+                     sd.shardIndex);
       }
     }
   }

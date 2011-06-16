@@ -49,13 +49,19 @@ public class FieldDoc extends ScoreDoc {
   public Object[] fields;
 
   /** Expert: Creates one of these objects with empty sort information. */
-  public FieldDoc (int doc, float score) {
+  public FieldDoc(int doc, float score) {
     super (doc, score);
   }
 
   /** Expert: Creates one of these objects with the given sort information. */
-  public FieldDoc (int doc, float score, Object[] fields) {
+  public FieldDoc(int doc, float score, Object[] fields) {
     super (doc, score);
+    this.fields = fields;
+  }
+  
+  /** Expert: Creates one of these objects with the given sort information. */
+  public FieldDoc(int doc, float score, Object[] fields, int shardIndex) {
+    super (doc, score, shardIndex);
     this.fields = fields;
   }
   

@@ -218,7 +218,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // Merge:
-      final TopDocs.TopDocsAndShards mergedHits = TopDocs.merge(sort, numHits, shardHits);
+      final TopDocs mergedHits = TopDocs.merge(sort, numHits, shardHits);
 
       if (VERBOSE) {
         System.out.println("  mergedHits: " + mergedHits.totalHits + " totalHits; hits=" + (mergedHits.scoreDocs == null ? "null" : mergedHits.scoreDocs.length));
@@ -235,7 +235,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
           final ScoreDoc sd = mergedHits.scoreDocs[hitIDX];
           assertEquals("doc=" + sd.doc + " wrong shard",
                        ReaderUtil.subIndex(sd.doc, docStarts),
-                       mergedHits.shardIndex[hitIDX]);
+                       sd.shardIndex);
         }
       }
 
