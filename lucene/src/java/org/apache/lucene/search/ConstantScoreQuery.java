@@ -110,14 +110,9 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       // we calculate sumOfSquaredWeights of the inner weight, but ignore it (just to initialize everything)
-      if (innerWeight != null) innerWeight.sumOfSquaredWeights();
+      if (innerWeight != null) innerWeight.getValueForNormalization();
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -146,7 +141,7 @@ public class ConstantScoreQuery extends Query {
       }
       if (disi == null)
         return null;
-      return new ConstantScorer(disi, this);
+      return new ConstantScorer(disi, this, queryWeight);
     }
     
     @Override
@@ -179,9 +174,9 @@ public class ConstantScoreQuery extends Query {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
 
-    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w) throws IOException {
+    public ConstantScorer(DocIdSetIterator docIdSetIterator, Weight w, float theScore) throws IOException {
       super(w);
-      theScore = w.getValue();
+      this.theScore = theScore;
       this.docIdSetIterator = docIdSetIterator;
     }
 
@@ -210,7 +205,7 @@ public class ConstantScoreQuery extends Query {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          collector.setScorer(new ConstantScorer(scorer, ConstantScorer.this.weight));
+          collector.setScorer(new ConstantScorer(scorer, ConstantScorer.this.weight, ConstantScorer.this.theScore));
         }
         
         @Override

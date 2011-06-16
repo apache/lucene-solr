@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 
 final class ExactPhraseScorer extends Scorer {
   private final int endMinus1;
@@ -58,9 +57,9 @@ final class ExactPhraseScorer extends Scorer {
   private final Similarity.ExactDocScorer docScorer;
   
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-                    Similarity similarity, String field, AtomicReaderContext context) throws IOException {
+                    Similarity.ExactDocScorer docScorer) throws IOException {
     super(weight);
-    this.docScorer = similarity.exactDocScorer(weight, field, context);
+    this.docScorer = docScorer;
 
     chunkStates = new ChunkState[postings.length];
 

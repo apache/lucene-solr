@@ -187,7 +187,7 @@ public class CustomScoreQuery extends Query {
     boolean qStrict;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.subQueryWeight = subQuery.weight(searcher);
+      this.subQueryWeight = subQuery.createWeight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
         this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);
@@ -201,21 +201,14 @@ public class CustomScoreQuery extends Query {
       return CustomScoreQuery.this;
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#getValue() */
     @Override
-    public float getValue() {
-      return getBoost();
-    }
-
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#sumOfSquaredWeights() */
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
-      float sum = subQueryWeight.sumOfSquaredWeights();
+    public float getValueForNormalization() throws IOException {
+      float sum = subQueryWeight.getValueForNormalization();
       for(int i = 0; i < valSrcWeights.length; i++) {
         if (qStrict) {
-          valSrcWeights[i].sumOfSquaredWeights(); // do not include ValueSource part in the query normalization
+          valSrcWeights[i].getValueForNormalization(); // do not include ValueSource part in the query normalization
         } else {
-          sum += valSrcWeights[i].sumOfSquaredWeights();
+          sum += valSrcWeights[i].getValueForNormalization();
         }
       }
       sum *= getBoost() * getBoost(); // boost each sub-weight
@@ -251,7 +244,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(context, scorerContext.scoreDocsInOrder(true));
       }
-      return new CustomScorer(context.reader, this, subQueryScorer, valSrcScorers);
+      return new CustomScorer(context.reader, this, getBoost(), subQueryScorer, valSrcScorers);
     }
 
     @Override
@@ -271,11 +264,11 @@ public class CustomScoreQuery extends Query {
         valSrcExpls[i] = valSrcWeights[i].explain(info, doc);
       }
       Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info.reader).customExplain(doc,subQueryExpl,valSrcExpls);
-      float sc = getValue() * customExp.getValue();
+      float sc = getBoost() * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");
       res.addDetail(customExp);
-      res.addDetail(new Explanation(getValue(), "queryBoost")); // actually using the q boost as q weight (== weight value)
+      res.addDetail(new Explanation(getBoost(), "queryBoost")); // actually using the q boost as q weight (== weight value)
       return res;
     }
 
@@ -300,10 +293,10 @@ public class CustomScoreQuery extends Query {
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
-    private CustomScorer(IndexReader reader, CustomWeight w,
+    private CustomScorer(IndexReader reader, CustomWeight w, float qWeight,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
       super(w);
-      this.qWeight = w.getValue();
+      this.qWeight = qWeight;
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;
       this.vScores = new float[valSrcScorers.length];

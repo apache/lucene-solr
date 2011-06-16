@@ -44,15 +44,13 @@ final class TermScorer extends Scorer {
    *          The weight of the <code>Term</code> in the query.
    * @param td
    *          An iterator over the documents matching the <code>Term</code>.
-   * @param similarity
-   *          The </code>Similarity</code> implementation to be used for score
-   *          computations.
-   * @param norms
-   *          The field norms of the document fields for the <code>Term</code>.
+   * @param docScorer
+   *          The </code>Similarity.ExactDocScorer</code> implementation 
+   *          to be used for score computations.
    */
-  TermScorer(Weight weight, DocsEnum td, Similarity similarity, String fieldName, AtomicReaderContext context) throws IOException {
+  TermScorer(Weight weight, DocsEnum td, Similarity.ExactDocScorer docScorer) throws IOException {
     super(weight);
-    this.docScorer = similarity.exactDocScorer(weight, fieldName, context);
+    this.docScorer = docScorer;
     this.docsEnum = td;
     bulkResult = td.getBulkResult();
   }

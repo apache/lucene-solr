@@ -131,12 +131,8 @@ public class MultiPhraseQuery extends Query {
 
 
   private class MultiPhraseWeight extends Weight {
-    private Similarity similarity;
-    private float value;
-    private final IDFExplanation idfExp;
-    private float idf;
-    private float queryNorm;
-    private float queryWeight;
+    private final Similarity similarity;
+    private final Similarity.Stats stats;
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
@@ -150,27 +146,20 @@ public class MultiPhraseQuery extends Query {
           allTerms.add(TermContext.build(context, term, true));
         }
       }
-      idfExp = similarity.computeWeight(searcher, field, allTerms.toArray(new TermContext[allTerms.size()]));
-      idf = idfExp.getIdf();
+      stats = similarity.computeStats(searcher, field, getBoost(), allTerms.toArray(new TermContext[allTerms.size()]));
     }
 
     @Override
     public Query getQuery() { return MultiPhraseQuery.this; }
 
     @Override
-    public float getValue() { return value; }
-
-    @Override
-    public float sumOfSquaredWeights() {
-      queryWeight = idf * getBoost();             // compute query weight
-      return queryWeight * queryWeight;           // square it
+    public float getValueForNormalization() {
+      return stats.getValueForNormalization();
     }
 
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
-      this.queryNorm = queryNorm * topLevelBoost;
-      queryWeight *= this.queryNorm;              // normalize query weight
-      value = queryWeight * idf;                  // idf for document 
+      stats.normalize(queryNorm, topLevelBoost);
     }
 
     @Override
@@ -225,7 +214,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       if (slop == 0) {
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity, field, context);
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactDocScorer(stats, field, context));
         if (s.noDocs) {
           return null;
         } else {
@@ -233,7 +222,7 @@ public class MultiPhraseQuery extends Query {
         }
       } else {
         return new SloppyPhraseScorer(this, postingsFreqs, similarity,
-                                      slop, field, context);
+                                      slop, similarity.sloppyDocScorer(stats, field, context));
       }
     }
 
@@ -244,11 +233,12 @@ public class MultiPhraseQuery extends Query {
       if (!(similarity instanceof TFIDFSimilarity))
         return new ComplexExplanation();
       final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
-      
+      final TFIDFSimilarity.IDFStats stats = (TFIDFSimilarity.IDFStats) this.stats;
+
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation idfExpl = new Explanation(idf, "idf(" + field + ":" + idfExp.explain() +")");
+      Explanation idfExpl = new Explanation(stats.idf.getIdf(), "idf(" + field + ":" + stats.idf.explain() +")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();
@@ -260,7 +250,7 @@ public class MultiPhraseQuery extends Query {
 
       queryExpl.addDetail(idfExpl);
 
-      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
+      Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
 
       queryExpl.setValue(boostExpl.getValue() *

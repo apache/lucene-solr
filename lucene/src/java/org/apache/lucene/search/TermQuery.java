@@ -27,7 +27,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
@@ -43,11 +42,7 @@ public class TermQuery extends Query {
 
   private class TermWeight extends Weight {
     private final Similarity similarity;
-    private float value;
-    private final float idf;
-    private float queryNorm;
-    private float queryWeight;
-    private final IDFExplanation idfExp;
+    private final Similarity.Stats stats;
     private transient TermContext termStates;
 
     public TermWeight(IndexSearcher searcher, TermContext termStates)
@@ -55,8 +50,7 @@ public class TermQuery extends Query {
       assert termStates != null : "TermContext must not be null";
       this.termStates = termStates;
       this.similarity = searcher.getSimilarityProvider().get(term.field());
-      idfExp = similarity.computeWeight(searcher, term.field(), termStates);
-      idf = idfExp.getIdf();
+      this.stats = similarity.computeStats(searcher, term.field(), getBoost(), termStates);
     }
 
     @Override
@@ -66,19 +60,13 @@ public class TermQuery extends Query {
     public Query getQuery() { return TermQuery.this; }
 
     @Override
-    public float getValue() { return value; }
-
-    @Override
-    public float sumOfSquaredWeights() {
-      queryWeight = idf * getBoost();             // compute query weight
-      return queryWeight * queryWeight;           // square it
+    public float getValueForNormalization() {
+      return stats.getValueForNormalization();
     }
 
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
-      this.queryNorm = queryNorm * topLevelBoost;
-      queryWeight *= this.queryNorm;              // normalize query weight
-      value = queryWeight * idf;                  // idf for document
+      stats.normalize(queryNorm, topLevelBoost);
     }
 
     @Override
@@ -94,7 +82,7 @@ public class TermQuery extends Query {
       }
       final DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), field, term.bytes(), state);
       assert docs != null;
-      return new TermScorer(this, docs, similarity, field, context);
+      return new TermScorer(this, docs, similarity.exactDocScorer(stats, field, context));
     }
     
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
@@ -110,13 +98,14 @@ public class TermQuery extends Query {
       if (!(similarity instanceof TFIDFSimilarity))
         return new ComplexExplanation();
       final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+      final TFIDFSimilarity.IDFStats stats = (TFIDFSimilarity.IDFStats) this.stats;
       
       final IndexReader reader = context.reader;
 
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation expl = new Explanation(idf, idfExp.explain());
+      Explanation expl = new Explanation(stats.idf.getIdf(), stats.idf.explain());
 
       // explain query weight
       Explanation queryExpl = new Explanation();
@@ -127,7 +116,7 @@ public class TermQuery extends Query {
         queryExpl.addDetail(boostExpl);
       queryExpl.addDetail(expl);
 
-      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
+      Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
 
       queryExpl.setValue(boostExpl.getValue() *

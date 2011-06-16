@@ -77,12 +77,7 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -95,7 +90,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new AllScorer(context, this);
+      return new AllScorer(context, this, queryWeight);
     }
 
     @Override
@@ -114,10 +109,10 @@ public class FunctionQuery extends Query {
     final boolean hasDeletions;
     final Bits delDocs;
 
-    public AllScorer(AtomicReaderContext context, FunctionWeight w) throws IOException {
+    public AllScorer(AtomicReaderContext context, FunctionWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
-      this.qWeight = w.getValue();
+      this.qWeight = qWeight;
       this.reader = context.reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();

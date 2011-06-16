@@ -74,12 +74,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -92,13 +87,13 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new ConstantScorer(context, this);
+      return new ConstantScorer(context, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
 
-      ConstantScorer cs = new ConstantScorer(context, this);
+      ConstantScorer cs = new ConstantScorer(context, this, queryWeight);
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();
@@ -125,9 +120,9 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
     final float theScore;
     int doc = -1;
 
-    public ConstantScorer(AtomicReaderContext context, ConstantWeight w) throws IOException {
+    public ConstantScorer(AtomicReaderContext context, ConstantWeight w, float theScore) throws IOException {
       super(w);
-      theScore = w.getValue();
+      this.theScore = theScore;
       DocIdSet docIdSet = filter instanceof SolrFilter ? ((SolrFilter)filter).getDocIdSet(w.context, context) : filter.getDocIdSet(context);
       if (docIdSet == null) {
         docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();

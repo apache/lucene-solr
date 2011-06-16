@@ -409,7 +409,7 @@ import org.apache.lucene.util.SmallFloat;
  *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
- *            {@link org.apache.lucene.search.Weight#sumOfSquaredWeights() sumOfSquaredWeights} &nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.Weight#getValueForNormalization() sumOfSquaredWeights} &nbsp; = &nbsp;
  *            {@link org.apache.lucene.search.Query#getBoost() q.getBoost()} <sup><big>2</big></sup>
  *            &nbsp;&middot;&nbsp;
  *          </td>
@@ -687,21 +687,22 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
   }
  
   @Override
-  public final IDFExplanation computeWeight(IndexSearcher searcher, String fieldName,
-      TermContext... termStats) throws IOException {
-    return termStats.length == 1
-    ? idfExplain(termStats[0], searcher)
-    : idfExplain(termStats, searcher);
+  public final Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost,
+      TermContext... termContexts) throws IOException {
+    final IDFExplanation idf = termContexts.length == 1
+    ? idfExplain(termContexts[0], searcher)
+    : idfExplain(termContexts, searcher);
+    return new IDFStats(idf, queryBoost);
   }
 
   @Override
-  public final ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactTFIDFDocScorer(weight.getValue(), context.reader.norms(fieldName));
+  public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new ExactTFIDFDocScorer(((IDFStats)stats).getValue(), context.reader.norms(fieldName));
   }
 
   @Override
-  public final SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyTFIDFDocScorer(weight.getValue(), context.reader.norms(fieldName));
+  public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new SloppyTFIDFDocScorer(((IDFStats)stats).getValue(), context.reader.norms(fieldName));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
@@ -744,6 +745,40 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
       final float raw = tf(freq) * weightValue; // compute tf(f)*weight
       
       return norms == null ? raw : raw * decodeNormValue(norms[doc]);  // normalize for field
+    }
+  }
+  
+  /** Collection statistics for the TF-IDF model. The only statistic of interest
+   * to this model is idf. */
+  public static class IDFStats extends Stats {
+    /** The idf and its explanation: public for now until we fix explains. */
+    public final IDFExplanation idf;
+    // again public for now until we fix explains
+    public float queryNorm;
+    private float queryWeight;
+    private float value;
+    
+    public IDFStats(IDFExplanation idf, float queryBoost) {
+      // TODO: Validate?
+      this.idf = idf;
+      this.queryWeight = idf.getIdf() * queryBoost; // compute query weight
+    }
+
+    @Override
+    public float getValueForNormalization() {
+      // TODO: (sorta LUCENE-1907) make non-static class and expose this squaring via a nice method to subclasses?
+      return queryWeight * queryWeight;  // sum of squared weights
+    }
+
+    @Override
+    public void normalize(float queryNorm, float topLevelBoost) {
+      this.queryNorm = queryNorm * topLevelBoost;
+      queryWeight *= this.queryNorm;              // normalize query weight
+      value = queryWeight * idf.getIdf();         // idf for document
+    }
+    
+    public float getValue() {
+      return value;
     }
   }
 }

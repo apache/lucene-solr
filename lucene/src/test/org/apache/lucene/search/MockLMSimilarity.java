@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
@@ -89,10 +88,8 @@ public class MockLMSimilarity extends Similarity {
   }
 
   // weight for a term as 1 / (mu * (totalTermFrequency / sumOfTotalTermFrequency))
-  // nocommit: nuke IDFExplanation!
-  // nocommit: evil how we shove this crap in weight and unsquare it.. need to generalize weight
   @Override
-  public IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException {
+  public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
     float value = 0.0f;
     final StringBuilder exp = new StringBuilder();
     final long sumOfTotalTermFreq = MultiFields.getTerms(searcher.getIndexReader(), fieldName).getSumTotalTermFreq();
@@ -104,27 +101,17 @@ public class MockLMSimilarity extends Similarity {
       exp.append(totalTermFrequency);
     }
     
-    final float idfValue = value;
-    return new IDFExplanation() {
-      @Override
-      public float getIdf() {
-        return idfValue;
-      }
-      @Override
-      public String explain() {
-        return exp.toString();
-      }
-    };
+    return new LMStats(value, queryBoost);
   }
 
   @Override
-  public ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactMockLMDocScorer((float) Math.sqrt(weight.getValue()), context.reader.norms(fieldName));
+  public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new ExactMockLMDocScorer(((LMStats) stats).getValue(), context.reader.norms(fieldName));
   }
 
   @Override
-  public SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyMockLMDocScorer((float) Math.sqrt(weight.getValue()), context.reader.norms(fieldName));
+  public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new SloppyMockLMDocScorer(((LMStats) stats).getValue(), context.reader.norms(fieldName));
   }
   
   /**
@@ -166,6 +153,35 @@ public class MockLMSimilarity extends Similarity {
     public float score(int doc, float freq) {
       final float raw = (float)Math.log(1 + (freq*weightValue));
       return norms == null ? raw : raw + decodeNormValue(norms[doc]);
+    }
+  }
+  
+  public static class LMStats extends Stats {
+    // dunno if this idf-like thing has a real name, its part1 of the formula to me.
+    private final float part1;
+    private final float queryBoost;
+    private float value;
+
+    public LMStats(float part1, float queryBoost) {
+      this.part1 = part1;
+      this.queryBoost = queryBoost;
+    }
+
+    @Override
+    public float getValueForNormalization() {
+      // we return a TF-IDF like normalization to be nice, but we don't actually normalize ourselves.
+      final float queryWeight = part1 * queryBoost;
+      return queryWeight * queryWeight;
+    }
+
+    @Override
+    public void normalize(float queryNorm, float topLevelBoost) {
+      // set our value here
+      this.value = part1 * queryBoost * topLevelBoost;
+    }
+    
+    public float getValue() {
+      return value;
     }
   }
 }

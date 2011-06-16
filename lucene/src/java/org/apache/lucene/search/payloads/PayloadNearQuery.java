@@ -145,7 +145,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       return new PayloadNearSpanScorer(query.getSpans(context), this,
-          similarity, query.getField(), context);
+          similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
   }
 
@@ -155,8 +155,8 @@ public class PayloadNearQuery extends SpanNearQuery {
     private int payloadsSeen;
 
     protected PayloadNearSpanScorer(Spans spans, Weight weight,
-        Similarity similarity, String field, AtomicReaderContext context) throws IOException {
-      super(spans, weight, similarity, field, context);
+        Similarity similarity, Similarity.SloppyDocScorer docScorer) throws IOException {
+      super(spans, weight, similarity, docScorer);
       this.spans = spans;
     }
 

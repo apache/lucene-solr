@@ -20,10 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.Explanation.IDFExplanation;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
@@ -75,10 +72,9 @@ public class MockBM25Similarity extends Similarity {
   }
 
   // weight for a term as log(1 + ((n - dfj + 0.5F)/(dfj + 0.5F)))
-  // nocommit: nuke IDFExplanation!
-  // nocommit: are we summing this in the right place for phrase estimation????
+  // TODO: are we summing this in the right place for phrase estimation????
   @Override
-  public IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException {
+  public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
     float value = 0.0f;
     final StringBuilder exp = new StringBuilder();
 
@@ -91,40 +87,29 @@ public class MockBM25Similarity extends Similarity {
       exp.append(dfj);
     }
     
-    final float idfValue = value;
-    return new IDFExplanation() {
-      @Override
-      public float getIdf() {
-        return idfValue;
-      }
-      @Override
-      public String explain() {
-        return exp.toString();
-      }
-    };
+    return new BM25Stats(value, queryBoost, avgDocumentLength(searcher, fieldName));
   }
 
   @Override
-  public ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    byte[] norms = context.reader.norms(fieldName);
-    float avgdl = norms == null ? 0f : avgDocumentLength(fieldName, context);
-    return new ExactBM25DocScorer((float) Math.sqrt(weight.getValue()), norms, avgdl);
+  public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new ExactBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
   }
 
   @Override
-  public SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException {
-    byte[] norms = context.reader.norms(fieldName);
-    float avgdl = norms == null ? 0f : avgDocumentLength(fieldName, context);
-    return new SloppyBM25DocScorer((float) Math.sqrt(weight.getValue()), norms, avgdl);
+  public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+    return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
   }
   
-  private float avgDocumentLength(String field, ReaderContext context) throws IOException {
-    // nocommit: crap that we calc this over and over redundantly for each segment (we should just do it once in the weight, once its generalized)
-    context = ReaderUtil.getTopLevelContext(context);
-    long normsum = context.reader.getSumOfNorms(field);
-    long maxdoc = context.reader.maxDoc();
-    int avgnorm = (int) (normsum / (double) maxdoc);
-    return decodeNormValue((byte)avgnorm);
+  /** return avg doc length across the field (zero if the field has no norms */
+  private float avgDocumentLength(IndexSearcher searcher, String field) throws IOException {
+    if (!searcher.reader.hasNorms(field)) {
+      return 0f;
+    } else {
+      long normsum = searcher.reader.getSumOfNorms(field);
+      long maxdoc = searcher.reader.maxDoc();
+      int avgnorm = (int) (normsum / (double) maxdoc);
+      return decodeNormValue((byte)avgnorm);
+    }
   }
 
   private class ExactBM25DocScorer extends ExactDocScorer {
@@ -132,10 +117,11 @@ public class MockBM25Similarity extends Similarity {
     private final byte[] norms;
     private final float avgdl;
     
-    ExactBM25DocScorer(float weightValue, byte norms[], float avgdl) {
-      this.weightValue = weightValue;
+    ExactBM25DocScorer(BM25Stats stats, byte norms[]) {
+      // we incorporate boost here up front... maybe we should multiply by tf instead?
+      this.weightValue = stats.idf * stats.queryBoost * stats.topLevelBoost;
+      this.avgdl = stats.avgdl;
       this.norms = norms;
-      this.avgdl = avgdl;
     }
     
     // todo: optimize
@@ -151,10 +137,11 @@ public class MockBM25Similarity extends Similarity {
     private final byte[] norms;
     private final float avgdl;
     
-    SloppyBM25DocScorer(float weightValue, byte norms[], float avgdl) {
-      this.weightValue = weightValue;
+    SloppyBM25DocScorer(BM25Stats stats, byte norms[]) {
+      // we incorporate boost here up front... maybe we should multiply by tf instead?
+      this.weightValue = stats.idf * stats.queryBoost * stats.topLevelBoost;
+      this.avgdl = stats.avgdl;
       this.norms = norms;
-      this.avgdl = avgdl;
     }
     
     // todo: optimize
@@ -163,5 +150,36 @@ public class MockBM25Similarity extends Similarity {
       float norm = norms == null ? 0 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
       return weightValue * (freq * (k1 + 1)) / (freq + norm);
     }
+  }
+  
+  /** Collection statistics for the BM25 model. */
+  public static class BM25Stats extends Stats {
+    /** BM25's idf */
+    private final float idf;
+    /** The average document length. */
+    private final float avgdl;
+    /** query's inner boost */
+    private final float queryBoost;
+    /** any outer query's boost */
+    private float topLevelBoost;
+
+    public BM25Stats(float idf, float queryBoost, float avgdl) {
+      this.idf = idf;
+      this.queryBoost = queryBoost;
+      this.avgdl = avgdl;
+    }
+
+    @Override
+    public float getValueForNormalization() {
+      // we return a TF-IDF like normalization to be nice, but we don't actually normalize ourselves.
+      final float queryWeight = idf * queryBoost;
+      return queryWeight * queryWeight;
+    }
+
+    @Override
+    public void normalize(float queryNorm, float topLevelBoost) {
+      // we don't normalize with queryNorm at all, we just capture the top-level boost
+      this.topLevelBoost = topLevelBoost;
+    } 
   }
 }

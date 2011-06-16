@@ -187,8 +187,8 @@ final class JustCompileSearch {
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity similarity, String field, AtomicReaderContext context) throws IOException {
-      super(weight, postings, similarity, field, context);
+        Similarity.SloppyDocScorer docScorer) throws IOException {
+      super(weight, postings, docScorer);
     }
 
     @Override
@@ -349,17 +349,12 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float getValue() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
     public void normalize(float norm, float topLevelBoost) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

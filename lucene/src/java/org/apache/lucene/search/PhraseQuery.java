@@ -28,7 +28,6 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.ArrayUtil;
@@ -174,11 +173,7 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private float value;
-    private float idf;
-    private float queryNorm;
-    private float queryWeight;
-    private IDFExplanation idfExp;
+    private final Similarity.Stats stats;
     private transient TermContext states[];
 
     public PhraseWeight(IndexSearcher searcher)
@@ -188,8 +183,7 @@ public class PhraseQuery extends Query {
       states = new TermContext[terms.size()];
       for (int i = 0; i < terms.size(); i++)
         states[i] = TermContext.build(context, terms.get(i), true);
-      idfExp = similarity.computeWeight(searcher, field, states);
-      idf = idfExp.getIdf();
+      stats = similarity.computeStats(searcher, field, getBoost(), states);
     }
 
     @Override
@@ -199,19 +193,13 @@ public class PhraseQuery extends Query {
     public Query getQuery() { return PhraseQuery.this; }
 
     @Override
-    public float getValue() { return value; }
-
-    @Override
-    public float sumOfSquaredWeights() {
-      queryWeight = idf * getBoost();             // compute query weight
-      return queryWeight * queryWeight;           // square it
+    public float getValueForNormalization() {
+      return stats.getValueForNormalization();
     }
 
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
-      this.queryNorm = queryNorm * topLevelBoost;
-      queryWeight *= this.queryNorm;              // normalize query weight
-      value = queryWeight * idf;                  // idf for document 
+      stats.normalize(queryNorm, topLevelBoost);
     }
 
     @Override
@@ -254,7 +242,7 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity, field, context);
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactDocScorer(stats, field, context));
         if (s.noDocs) {
           return null;
         } else {
@@ -262,7 +250,7 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop, field, context);
+          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop, similarity.sloppyDocScorer(stats, field, context));
       }
     }
 
@@ -273,6 +261,7 @@ public class PhraseQuery extends Query {
       if (!(similarity instanceof TFIDFSimilarity))
         return new ComplexExplanation();
       final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+      final TFIDFSimilarity.IDFStats stats = (TFIDFSimilarity.IDFStats) this.stats;
       
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
@@ -280,7 +269,7 @@ public class PhraseQuery extends Query {
       StringBuilder docFreqs = new StringBuilder();
       StringBuilder query = new StringBuilder();
       query.append('\"');
-      docFreqs.append(idfExp.explain());
+      docFreqs.append(stats.idf.explain());
       for (int i = 0; i < terms.size(); i++) {
         if (i != 0) {
           query.append(" ");
@@ -293,7 +282,7 @@ public class PhraseQuery extends Query {
       query.append('\"');
 
       Explanation idfExpl =
-        new Explanation(idf, "idf(" + field + ":" + docFreqs + ")");
+        new Explanation(stats.idf.getIdf(), "idf(" + field + ":" + docFreqs + ")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();
@@ -304,7 +293,7 @@ public class PhraseQuery extends Query {
         queryExpl.addDetail(boostExpl);
       queryExpl.addDetail(idfExpl);
 
-      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
+      Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
 
       queryExpl.setValue(boostExpl.getValue() *

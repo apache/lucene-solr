@@ -19,7 +19,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.search.Weight;
@@ -39,11 +38,11 @@ public class SpanScorer extends Scorer {
   protected final Similarity similarity;
   protected final Similarity.SloppyDocScorer docScorer;
   
-  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, String field, AtomicReaderContext context)
+  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, Similarity.SloppyDocScorer docScorer)
   throws IOException {
     super(weight);
     this.similarity = similarity;
-    this.docScorer = similarity.sloppyDocScorer(weight, field, context);
+    this.docScorer = docScorer;
     this.spans = spans;
 
     if (this.spans.next()) {

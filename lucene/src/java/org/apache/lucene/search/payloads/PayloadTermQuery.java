@@ -76,7 +76,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(context),
-          this, similarity, query.getField(), context);
+          this, similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
@@ -86,8 +86,8 @@ public class PayloadTermQuery extends SpanTermQuery {
       private final TermSpans termSpans;
 
       public PayloadTermSpanScorer(TermSpans spans, Weight weight,
-          Similarity similarity, String field, AtomicReaderContext context) throws IOException {
-        super(spans, weight, similarity, field, context);
+          Similarity similarity, Similarity.SloppyDocScorer docScorer) throws IOException {
+        super(spans, weight, similarity, docScorer);
         termSpans = spans;
       }
 

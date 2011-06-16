@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
  * at "valid" positions. What "valid positions" are
@@ -32,9 +30,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  protected byte[] norms;
-  protected float value;
-
   private boolean firstTime = true;
   private boolean more = true;
   protected PhraseQueue pq;
@@ -45,9 +40,9 @@ abstract class PhraseScorer extends Scorer {
   protected final Similarity.SloppyDocScorer docScorer;
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity similarity, String field, AtomicReaderContext context) throws IOException {
+      Similarity.SloppyDocScorer docScorer) throws IOException {
     super(weight);
-    docScorer = similarity.sloppyDocScorer(weight, field, context);
+    this.docScorer = docScorer;
 
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position

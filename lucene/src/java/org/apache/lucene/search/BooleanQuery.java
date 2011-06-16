@@ -183,14 +183,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     public Query getQuery() { return BooleanQuery.this; }
 
     @Override
-    public float getValue() { return getBoost(); }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
         // call sumOfSquaredWeights for all clauses in case of side effects
-        float s = weights.get(i).sumOfSquaredWeights();         // sum sub weights
+        float s = weights.get(i).getValueForNormalization();         // sum sub weights
         if (!clauses.get(i).isProhibited())
           // only add to sum for non-prohibited clauses
           sum += s;

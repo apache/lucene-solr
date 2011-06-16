@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.TermContext;
 
@@ -115,17 +114,20 @@ public abstract class Similarity {
     return 1;
   }
   
-  public abstract IDFExplanation computeWeight(IndexSearcher searcher, String fieldName, TermContext... termStats) throws IOException;
+  /**
+   * Compute any collection-level stats (e.g. IDF, average document length, etc) needed for scoring a query.
+   */
+  public abstract Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException;
   
   /**
    * returns a new {@link Similarity.ExactDocScorer}.
    */
-  public abstract ExactDocScorer exactDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;
+  public abstract ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException;
   
   /**
    * returns a new {@link Similarity.SloppyDocScorer}.
    */
-  public abstract SloppyDocScorer sloppyDocScorer(Weight weight, String fieldName, AtomicReaderContext context) throws IOException;
+  public abstract SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException;
   
   /**
    * API for scoring exact queries such as {@link TermQuery} and 
@@ -157,5 +159,35 @@ public abstract class Similarity {
      * @return document's score
      */
     public abstract float score(int doc, float freq);
+  }
+  
+  /** Stores the statistics for the indexed collection. This abstract
+   * implementation is empty; descendants of {@code Similarity} should
+   * subclass {@code Stats} and define the statistics they require in the
+   * subclass. Examples include idf, average field length, etc.
+   */
+  public static abstract class Stats {
+    
+    /** The value for normalization of contained query clauses (e.g. sum of squared weights).
+     * <p>
+     * NOTE: a Similarity implementation might not use any query normalization at all,
+     * its not required. However, if it wants to participate in query normalization,
+     * it can return a value here.
+     */
+    public abstract float getValueForNormalization();
+    
+    /** Assigns the query normalization factor and boost from parent queries to this.
+     * <p>
+     * NOTE: a Similarity implementation might not use this normalized value at all,
+     * its not required. However, its usually a good idea to at least incorporate 
+     * the topLevelBoost (e.g. from an outer BooleanQuery) into its score.
+     */
+    public abstract void normalize(float queryNorm, float topLevelBoost);
+    
+    // NOTE: I think we should just leave explaining to the docScorer,
+    // if an impl's docScorer decides that stats are part of that
+    // and wants to delegate part of the explanation to its stats class,
+    // thats cool, but not required
+    //public abstract Explanation explain();
   }
 }

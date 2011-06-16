@@ -354,12 +354,7 @@ class SpatialDistanceQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -372,7 +367,7 @@ class SpatialDistanceQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new SpatialScorer(context, this);
+      return new SpatialScorer(context, this, queryWeight);
     }
 
     @Override
@@ -405,10 +400,10 @@ class SpatialDistanceQuery extends Query {
     int lastDistDoc;
     double lastDist;
 
-    public SpatialScorer(AtomicReaderContext readerContext, SpatialWeight w) throws IOException {
+    public SpatialScorer(AtomicReaderContext readerContext, SpatialWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;
-      this.qWeight = w.getValue();
+      this.qWeight = qWeight;
       this.reader = readerContext.reader;
       this.maxDoc = reader.maxDoc();
       this.delDocs = reader.getDeletedDocs();

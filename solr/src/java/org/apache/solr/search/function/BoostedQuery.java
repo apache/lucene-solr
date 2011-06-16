@@ -78,13 +78,8 @@ public class BoostedQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return getBoost();
-    }
-
-    @Override
-    public float sumOfSquaredWeights() throws IOException {
-      float sum = qWeight.sumOfSquaredWeights();
+    public float getValueForNormalization() throws IOException {
+      float sum = qWeight.getValueForNormalization();
       sum *= getBoost() * getBoost();
       return sum ;
     }
@@ -101,7 +96,7 @@ public class BoostedQuery extends Query {
       if(subQueryScorer == null) {
         return null;
       }
-      return new BoostedQuery.CustomScorer(context, this, subQueryScorer, boostVal);
+      return new BoostedQuery.CustomScorer(context, this, getBoost(), subQueryScorer, boostVal);
     }
 
     @Override
@@ -128,11 +123,11 @@ public class BoostedQuery extends Query {
     private final DocValues vals;
     private final AtomicReaderContext readerContext;
 
-    private CustomScorer(AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w,
+    private CustomScorer(AtomicReaderContext readerContext, BoostedQuery.BoostedWeight w, float qWeight,
         Scorer scorer, ValueSource vs) throws IOException {
       super(w);
       this.weight = w;
-      this.qWeight = w.getValue();
+      this.qWeight = qWeight;
       this.scorer = scorer;
       this.readerContext = readerContext;
       this.vals = vs.getValues(weight.fcontext, readerContext);

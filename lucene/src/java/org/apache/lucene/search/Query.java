@@ -97,8 +97,8 @@ public abstract class Query implements Cloneable {
   public Weight weight(IndexSearcher searcher) throws IOException {
     Query query = searcher.rewrite(this);
     Weight weight = query.createWeight(searcher);
-    float sum = weight.sumOfSquaredWeights();
-    float norm = searcher.getSimilarityProvider().queryNorm(sum);
+    float v = weight.getValueForNormalization();
+    float norm = searcher.getSimilarityProvider().queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm))
       norm = 1.0f;
     weight.normalize(norm, 1.0f);

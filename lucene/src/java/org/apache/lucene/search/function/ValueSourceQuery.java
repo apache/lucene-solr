@@ -76,15 +76,9 @@ public class ValueSourceQuery extends Query {
       return ValueSourceQuery.this;
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#getValue() */
-    @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#sumOfSquaredWeights() */
     @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -98,7 +92,7 @@ public class ValueSourceQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new ValueSourceScorer(context, this);
+      return new ValueSourceScorer(context, this, queryWeight);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
@@ -131,10 +125,10 @@ public class ValueSourceQuery extends Query {
     private int doc = -1;
 
     // constructor
-    private ValueSourceScorer(AtomicReaderContext context, ValueSourceWeight w) throws IOException {
+    private ValueSourceScorer(AtomicReaderContext context, ValueSourceWeight w, float qWeight) throws IOException {
       super(w);
       final IndexReader reader = context.reader;
-      qWeight = w.getValue();
+      this.qWeight = qWeight;
       // this is when/where the values are first created.
       vals = valSrc.getValues(context);
       delDocs = reader.getDeletedDocs();

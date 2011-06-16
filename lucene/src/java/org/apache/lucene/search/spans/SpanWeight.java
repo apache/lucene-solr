@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;
@@ -33,14 +32,9 @@ import java.util.TreeSet;
  */
 public class SpanWeight extends Weight {
   protected Similarity similarity;
-  protected float value;
-  protected float idf;
-  protected float queryNorm;
-  protected float queryWeight;
-
   protected Set<Term> terms;
   protected SpanQuery query;
-  private IDFExplanation idfExp;
+  protected Similarity.Stats stats;
 
   public SpanWeight(SpanQuery query, IndexSearcher searcher)
     throws IOException {
@@ -54,44 +48,42 @@ public class SpanWeight extends Weight {
     int i = 0;
     for (Term term : terms)
       states[i++] = TermContext.build(context, term, true);
-    idfExp = similarity.computeWeight(searcher, query.getField(), states);
-    idf = idfExp.getIdf();
+    stats = similarity.computeStats(searcher, query.getField(), query.getBoost(), states);
   }
 
   @Override
   public Query getQuery() { return query; }
 
   @Override
-  public float getValue() { return value; }
-
-  @Override
-  public float sumOfSquaredWeights() throws IOException {
-    queryWeight = idf * query.getBoost();         // compute query weight
-    return queryWeight * queryWeight;             // square it
+  public float getValueForNormalization() throws IOException {
+    return stats.getValueForNormalization();
   }
 
   @Override
   public void normalize(float queryNorm, float topLevelBoost) {
-    this.queryNorm = queryNorm * topLevelBoost;
-    queryWeight *= this.queryNorm;                // normalize query weight
-    value = queryWeight * idf;                    // idf for document
+    stats.normalize(queryNorm, topLevelBoost);
   }
 
   @Override
   public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-    return new SpanScorer(query.getSpans(context), this, similarity, query.getField(), context);
+    return new SpanScorer(query.getSpans(context), this, similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
   }
 
   @Override
   public Explanation explain(AtomicReaderContext context, int doc)
     throws IOException {
+    //nocommit: fix explains
+    if (!(similarity instanceof TFIDFSimilarity))
+      return new ComplexExplanation();
+    final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
+    final TFIDFSimilarity.IDFStats stats = (TFIDFSimilarity.IDFStats) this.stats;
 
     ComplexExplanation result = new ComplexExplanation();
     result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
     String field = ((SpanQuery)getQuery()).getField();
 
     Explanation idfExpl =
-      new Explanation(idf, "idf(" + field + ": " + idfExp.explain() + ")");
+      new Explanation(stats.idf.getIdf(), "idf(" + field + ": " + stats.idf.explain() + ")");
 
     // explain query weight
     Explanation queryExpl = new Explanation();
@@ -102,7 +94,7 @@ public class SpanWeight extends Weight {
       queryExpl.addDetail(boostExpl);
     queryExpl.addDetail(idfExpl);
 
-    Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
+    Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
     queryExpl.addDetail(queryNormExpl);
 
     queryExpl.setValue(boostExpl.getValue() *

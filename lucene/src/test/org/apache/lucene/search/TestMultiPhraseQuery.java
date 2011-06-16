@@ -338,7 +338,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
     query.add(new Term("body", "is"));
     Weight weight = query.createWeight(searcher);
-    assertEquals(10f * 10f, weight.sumOfSquaredWeights(), 0.001f);
+    assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
     writer.close();
     searcher.close();

@@ -53,12 +53,12 @@ public class MatchAllDocsQuery extends Query {
     private final Bits delDocs;
     private final Similarity similarity;
     
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w, float score,
         byte[] norms) throws IOException {
       super(w);
       this.similarity = similarity;
       delDocs = reader.getDeletedDocs();
-      score = w.getValue();
+      this.score = score;
       maxDoc = reader.maxDoc();
       this.norms = norms;
     }
@@ -80,6 +80,8 @@ public class MatchAllDocsQuery extends Query {
       return doc;
     }
     
+    // TODO: this is baked-in TF/IDF: should calling sim's docScorer.score() with a freq of 1 on the "norms field"
+    // but, by default it uses a "null field", which could pose a problem for someone's SimilarityProvider !!!!
     @Override
     public float score() {
       return norms == null ? score : score * similarity.decodeNormValue(norms[docID()]);
@@ -112,12 +114,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() {
+    public float getValueForNormalization() {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
@@ -130,7 +127,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new MatchAllScorer(context.reader, similarity, this,
+      return new MatchAllScorer(context.reader, similarity, this, queryWeight,
           normsField != null ? context.reader.norms(normsField) : null);
     }
 
@@ -138,7 +135,7 @@ public class MatchAllDocsQuery extends Query {
     public Explanation explain(AtomicReaderContext context, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
-        (true, getValue(), "MatchAllDocsQuery, product of:");
+        (true, queryWeight, "MatchAllDocsQuery, product of:");
       if (getBoost() != 1.0f) {
         queryExpl.addDetail(new Explanation(getBoost(),"boost"));
       }

@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.HashSet;
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
     private PhrasePositions repeats[];
@@ -30,8 +28,8 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private final Similarity similarity;
     
     SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings, Similarity similarity,
-                       int slop, String field, AtomicReaderContext context) throws IOException {
-        super(weight, postings, similarity, field, context);
+                       int slop, Similarity.SloppyDocScorer docScorer) throws IOException {
+        super(weight, postings, docScorer);
         this.slop = slop;
         this.similarity = similarity;
     }
