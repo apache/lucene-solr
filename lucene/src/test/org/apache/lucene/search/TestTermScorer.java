@@ -73,7 +73,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     assertTrue(indexSearcher.getTopReaderContext().isAtomic);
     Scorer ts = weight.scorer((AtomicReaderContext)indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));
     // we have 2 documents with the term all in them, one document for all the
@@ -134,7 +134,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     assertTrue(indexSearcher.getTopReaderContext().isAtomic);
     Scorer ts = weight.scorer((AtomicReaderContext) indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));
     assertTrue("next did not return a doc",
@@ -152,7 +152,7 @@ public class TestTermScorer extends LuceneTestCase {
     Term allTerm = new Term(FIELD, "all");
     TermQuery termQuery = new TermQuery(allTerm);
     
-    Weight weight = termQuery.weight(indexSearcher);
+    Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     assertTrue(indexSearcher.getTopReaderContext().isAtomic);
 
     Scorer ts = weight.scorer((AtomicReaderContext) indexSearcher.getTopReaderContext(), ScorerContext.def().scoreDocsInOrder(true).topScorer(true));

@@ -342,7 +342,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     for (ValueType byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
 
-      int bytesSize = 7 + random.nextInt(128);
+      int bytesSize = 1 + random.nextInt(128);
       OpenBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
       final IndexReader r = IndexReader.open(w, withDeletions);
@@ -493,7 +493,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       Index.NO };
 
   private OpenBitSet indexValues(IndexWriter w, int numValues, ValueType value,
-      List<ValueType> valueVarList, boolean withDeletions, int multOfSeven)
+      List<ValueType> valueVarList, boolean withDeletions, int bytesSize)
       throws CorruptIndexException, IOException {
     final boolean isNumeric = NUMERICS.contains(value);
     OpenBitSet deleted = new OpenBitSet(numValues);
@@ -507,7 +507,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final BytesRef bytesRef = new BytesRef();
 
     final String idBase = value.name() + "_";
-    final byte[] b = new byte[multOfSeven];
+    final byte[] b = new byte[bytesSize];
     if (bytesRef != null) {
       bytesRef.bytes = b;
       bytesRef.length = b.length;

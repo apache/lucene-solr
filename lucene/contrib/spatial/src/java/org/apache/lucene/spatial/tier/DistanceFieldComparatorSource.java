@@ -31,94 +31,91 @@ import org.apache.lucene.search.FieldComparatorSource;
  */
 public class DistanceFieldComparatorSource extends FieldComparatorSource {
 
-	private DistanceFilter distanceFilter;
-	private DistanceScoreDocLookupComparator dsdlc;
+  private DistanceFilter distanceFilter;
+  private DistanceScoreDocLookupComparator dsdlc;
 
-	public DistanceFieldComparatorSource(Filter distanceFilter) {
+  public DistanceFieldComparatorSource(Filter distanceFilter) {
+    this.distanceFilter = (DistanceFilter) distanceFilter;
+  }
 
-		this.distanceFilter = (DistanceFilter) distanceFilter;
+  public void cleanUp() {
+    distanceFilter = null;
 
-	}
+    if (dsdlc != null) {
+      dsdlc.cleanUp();
+    }
 
-	public void cleanUp() {
-		distanceFilter = null;
+    dsdlc = null;
+  }
 
-		if (dsdlc != null)
-			dsdlc.cleanUp();
+  @Override
+  public FieldComparator newComparator(String fieldname, int numHits,
+                                         int sortPos, boolean reversed) throws IOException {
+    dsdlc = new DistanceScoreDocLookupComparator(numHits);
+    return dsdlc;
+  }
 
-		dsdlc = null;
-	}
+  private class DistanceScoreDocLookupComparator extends FieldComparator<Double> {
 
-	@Override
-	public FieldComparator newComparator(String fieldname, int numHits,
-			int sortPos, boolean reversed) throws IOException {
-		dsdlc = new DistanceScoreDocLookupComparator(numHits);
-		return dsdlc;
-	}
-
-	private class DistanceScoreDocLookupComparator extends FieldComparator {
-
-		private double[] values;
-		private double bottom;
-		private int offset =0;
+    private double[] values;
+    private double bottom;
+    private int offset =0;
 		
-		public DistanceScoreDocLookupComparator(int numHits) {
-			values = new double[numHits];
-			return;
-		}
+    public DistanceScoreDocLookupComparator(int numHits) {
+      values = new double[numHits];
+      return;
+    }
 
-		@Override
-		public int compare(int slot1, int slot2) {
-			double a = values[slot1];
-			double b = values[slot2];
-			if (a > b)
-				return 1;
-			if (a < b)
-				return -1;
+    @Override
+    public int compare(int slot1, int slot2) {
+      double a = values[slot1];
+      double b = values[slot2];
+      if (a > b)
+        return 1;
+      if (a < b)
+        return -1;
 
-			return 0;
-		}
+      return 0;
+    }
 
-		public void cleanUp() {
-			distanceFilter = null;
-		}
+    public void cleanUp() {
+      distanceFilter = null;
+    }
 
-		@Override
-		public int compareBottom(int doc) {
-			double v2 = distanceFilter.getDistance(doc+ offset);
+    @Override
+    public int compareBottom(int doc) {
+      double v2 = distanceFilter.getDistance(doc+ offset);
 			
-			if (bottom > v2) {
-				return 1;
-			} else if (bottom < v2) {
-				return -1;
-			}
-			return 0;
-		}
+      if (bottom > v2) {
+        return 1;
+      } else if (bottom < v2) {
+        return -1;
+      }
+      return 0;
+    }
 
-		@Override
-		public void copy(int slot, int doc) {
-			values[slot] = distanceFilter.getDistance(doc + offset);
-		}
+    @Override
+    public void copy(int slot, int doc) {
+      values[slot] = distanceFilter.getDistance(doc + offset);
+    }
 
-		@Override
-		public void setBottom(int slot) {
-			this.bottom = values[slot];
-
-		}
+    @Override
+    public void setBottom(int slot) {
+      this.bottom = values[slot];
+    }
 
     @Override
     public FieldComparator setNextReader(AtomicReaderContext context)
-        throws IOException {
+      throws IOException {
       // each reader in a segmented base
       // has an offset based on the maxDocs of previous readers
       offset = context.docBase;
       return this;
     }
 
-		@Override
-		public Comparable<Double> value(int slot) {
-			return values[slot];
-		}
-	}
-
+    @Override
+    public Double value(int slot) {
+      return values[slot];
+    }
+  }
 }

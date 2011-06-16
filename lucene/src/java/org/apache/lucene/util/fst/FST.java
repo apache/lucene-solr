@@ -490,7 +490,7 @@ public class FST<T> {
     if (!targetHasArcs(follow)) {
       //System.out.println("  end node");
       assert follow.isFinal();
-      arc.label = -1;
+      arc.label = END_LABEL;
       arc.output = follow.nextFinalOutput;
       arc.flags = BIT_LAST_ARC;
       return arc;
@@ -544,7 +544,7 @@ public class FST<T> {
     //System.out.println("    readFirstTarget follow.target=" + follow.target + " isFinal=" + follow.isFinal());
     if (follow.isFinal()) {
       // Insert "fake" final first arc:
-      arc.label = -1;
+      arc.label = END_LABEL;
       arc.output = follow.nextFinalOutput;
       if (follow.target <= 0) {
         arc.flags = BIT_LAST_ARC;
@@ -599,7 +599,7 @@ public class FST<T> {
 
   /** In-place read; returns the arc. */
   public Arc<T> readNextArc(Arc<T> arc) throws IOException {
-    if (arc.label == -1) {
+    if (arc.label == END_LABEL) {
       // This was a fake inserted "final" arc
       if (arc.nextArc <= 0) {
         // This arc went to virtual final node, ie has no outgoing arcs

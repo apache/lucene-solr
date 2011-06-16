@@ -51,7 +51,7 @@ import java.util.Set;
  * ConcurrentMergeScheduler} they will be run concurrently.</p>
  * 
  * <p>The default MergePolicy is {@link
- * LogByteSizeMergePolicy}.</p>
+ * TieredMergePolicy}.</p>
  *
  * @lucene.experimental
  */

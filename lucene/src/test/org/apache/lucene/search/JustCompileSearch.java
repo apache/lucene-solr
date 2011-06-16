@@ -103,7 +103,7 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompileFieldComparator extends FieldComparator {
+  static final class JustCompileFieldComparator extends FieldComparator<Object> {
 
     @Override
     public int compare(int slot1, int slot2) {
@@ -132,10 +132,10 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Object value(int slot) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
 
   static final class JustCompileFieldComparatorSource extends FieldComparatorSource {

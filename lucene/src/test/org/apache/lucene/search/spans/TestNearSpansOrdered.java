@@ -170,22 +170,20 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
-    Weight w = q.weight(searcher);
+    Weight w = searcher.createNormalizedWeight(q);
     ReaderContext topReaderContext = searcher.getTopReaderContext();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     Scorer s = w.scorer(leaves[0], ScorerContext.def());
     assertEquals(1, s.advance(1));
   }
+  
   /**
    * not a direct test of NearSpans, but a demonstration of how/when
    * this causes problems
    */
   public void testSpanNearScorerExplain() throws Exception {
     SpanNearQuery q = makeQuery();
-    ReaderContext topReaderContext = searcher.getTopReaderContext();
-    AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
-
-    Explanation e = q.weight(searcher).explain(leaves[0], 1);
+    Explanation e = searcher.explain(q, 1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),
                0.0f < e.getValue());

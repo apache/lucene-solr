@@ -511,7 +511,7 @@ public class TestSort extends LuceneTestCase {
     assertMatches (empty, queryX, sort, "");
   }
 
-  static class MyFieldComparator extends FieldComparator {
+  static class MyFieldComparator extends FieldComparator<Integer> {
     int[] docValues;
     int[] slotValues;
     int bottomValue;
@@ -527,6 +527,7 @@ public class TestSort extends LuceneTestCase {
 
     @Override
     public int compare(int slot1, int slot2) {
+      // values are small enough that overflow won't happen
       return slotValues[slot1] - slotValues[slot2];
     }
 
@@ -553,7 +554,7 @@ public class TestSort extends LuceneTestCase {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Integer value(int slot) {
       return Integer.valueOf(slotValues[slot]);
     }
   }

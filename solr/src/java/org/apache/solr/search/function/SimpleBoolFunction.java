@@ -63,7 +63,7 @@ public abstract class SimpleBoolFunction extends BoolFunction {
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    SingleFunction other = (SingleFunction)o;
+    SimpleBoolFunction other = (SimpleBoolFunction)o;
     return this.source.equals(other.source);
   }
 

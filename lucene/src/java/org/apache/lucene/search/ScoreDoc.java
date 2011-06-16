@@ -17,21 +17,30 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/** Expert: Returned by low-level search implementations.
- * @see TopDocs */
+/** Holds one hit in {@link TopDocs}. */
+
 public class ScoreDoc {
-  /** Expert: The score of this document for the query. */
+
+  /** The score of this document for the query. */
   public float score;
 
-  /** Expert: A hit document's number.
-   * @see IndexSearcher#doc(int)
-   */
+  /** A hit document's number.
+   * @see IndexSearcher#doc(int) */
   public int doc;
 
-  /** Expert: Constructs a ScoreDoc. */
+  /** Only set by {@link TopDocs#merge} */
+  public int shardIndex;
+
+  /** Constructs a ScoreDoc. */
   public ScoreDoc(int doc, float score) {
+    this(doc, score, -1);
+  }
+
+  /** Constructs a ScoreDoc. */
+  public ScoreDoc(int doc, float score, int shardIndex) {
     this.doc = doc;
     this.score = score;
+    this.shardIndex = shardIndex;
   }
   
   // A convenience method for debugging.
@@ -39,5 +48,4 @@ public class ScoreDoc {
   public String toString() {
     return "doc=" + doc + " score=" + score;
   }
-  
 }

@@ -996,7 +996,10 @@
 
   <target name="stage" depends="prepare-release, copy-to-stage"/>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check,dist,dist-src,dist-javadoc">
+  <target name="generate-maven-artifacts" depends="dist,dist-src,dist-javadoc">
+    <taskdef uri="antlib:org.apache.maven.artifact.ant"
+             resource="org/apache/maven/artifact/ant/antlib.xml"
+             classpathref="maven-ant-tasks.classpath" />
     <sequential>
 	  <ant target="get-maven-poms" dir=".."/>
 

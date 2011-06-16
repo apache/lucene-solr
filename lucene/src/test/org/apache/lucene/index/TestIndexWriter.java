@@ -1375,6 +1375,11 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexReader r2 = r.reopen();
       assertTrue(r != r2);
       files = Arrays.asList(dir.listAll());
+
+      // NOTE: here we rely on "Windows" behavior, ie, even
+      // though IW wanted to delete _0.cfs since it was
+      // optimized away, because we have a reader open
+      // against this file, it should still be here:
       assertTrue(files.contains("_0.cfs"));
       // optimize created this
       //assertTrue(files.contains("_2.cfs"));

@@ -24,12 +24,21 @@ $Id$
 (No Changes)
 
 ==================  3.3.0-dev ==============
+
+New Features
+----------------------
+
+* SOLR-2582: Use uniqueKey for error log in UIMAUpdateRequestProcessor.
+  (Tommaso Teofili via koji)
   
 Bug Fixes
 ----------------------
 
 * SOLR-2579: UIMAUpdateRequestProcessor ignore error fails if text.length() < 100.
   (Elmer Garduno via koji)
+
+* SOLR-2581: UIMAToSolrMapper wrongly instantiates Type with reflection.
+  (Tommaso Teofili via koji)
 
 ==================  3.2.0 ==================
 

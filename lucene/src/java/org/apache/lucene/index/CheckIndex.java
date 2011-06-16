@@ -119,6 +119,12 @@ public class CheckIndex {
      * argument). */
     public boolean partial;
 
+    /** The greatest segment name. */
+    public int maxSegmentName;
+
+    /** Whether the SegmentInfos.counter is greater than any of the segments' names. */
+    public boolean validCounter; 
+
     /** Holds the userData of the last commit in the index */
     public Map<String, String> userData;
 
@@ -413,9 +419,14 @@ public class CheckIndex {
 
     result.newSegments = (SegmentInfos) sis.clone();
     result.newSegments.clear();
+    result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = sis.info(i);
+      int segmentName = Integer.parseInt(info.name.substring(1), Character.MAX_RADIX);
+      if (segmentName > result.maxSegmentName) {
+        result.maxSegmentName = segmentName;
+      }
       if (onlySegments != null && !onlySegments.contains(info.name))
         continue;
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
@@ -555,9 +566,18 @@ public class CheckIndex {
 
     if (0 == result.numBadSegments) {
       result.clean = true;
-      msg("No problems were detected with this index.\n");
     } else
       msg("WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
+
+    if ( ! (result.validCounter = (result.maxSegmentName < sis.counter))) {
+      result.clean = false;
+      result.newSegments.counter = result.maxSegmentName + 1; 
+      msg("ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
+    }
+    
+    if (result.clean) {
+      msg("No problems were detected with this index.\n");
+    }
 
     return result;
   }

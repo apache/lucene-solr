@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 
 // Simplest storage: stores fixed length byte[] per
@@ -45,11 +46,10 @@ class FixedStraightBytesImpl {
     private int lastDocID = -1;
     private byte[] oneRecord;
 
-    protected Writer(Directory dir, String id) throws IOException {
+    public Writer(Directory dir, String id) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, false, null, null);
     }
 
-    // TODO - impl bulk copy here!
 
     @Override
     public void add(int docID, BytesRef bytes) throws IOException {
@@ -66,13 +66,6 @@ class FixedStraightBytesImpl {
       datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.lucene.index.values.Writer#merge(org.apache.lucene.index.values
-     * .Writer.MergeState)
-     */
     @Override
     protected void merge(MergeState state) throws IOException {
       if (state.bits == null && state.reader instanceof Reader) {
@@ -96,8 +89,9 @@ class FixedStraightBytesImpl {
         }
         
         lastDocID += maxDocs - 1;
-      } else
+      } else {
         super.merge(state);
+      }
     }
 
     // Fills up to but not including this docID
@@ -126,7 +120,7 @@ class FixedStraightBytesImpl {
       return oneRecord == null ? 0 : oneRecord.length;
     }
   }
-
+  
   public static class Reader extends BytesReaderBase {
     private final int size;
     private final int maxDoc;
@@ -139,19 +133,67 @@ class FixedStraightBytesImpl {
 
     @Override
     public Source load() throws IOException {
-      return new Source(cloneData(), size, maxDoc);
+      return size == 1 ? new SingleByteSource(cloneData(), maxDoc) : 
+        new StraightBytesSource(cloneData(), size, maxDoc);
     }
 
     @Override
     public void close() throws IOException {
       datIn.close();
     }
+    
+    // specialized version for single bytes
+    private static class SingleByteSource extends Source {
+      private final int maxDoc;
+      private final byte[] data;
 
-    private static class Source extends BytesBaseSource {
+      public SingleByteSource(IndexInput datIn, int maxDoc) throws IOException {
+        this.maxDoc = maxDoc;
+        try {
+          data = new byte[maxDoc];
+          datIn.readBytes(data, 0, data.length, false);
+        } finally {
+          IOUtils.closeSafely(false, datIn);
+        }
+
+      }
+
+      @Override
+      public BytesRef getBytes(int docID, BytesRef bytesRef) {
+        bytesRef.length = 1;
+        bytesRef.bytes = data;
+        bytesRef.offset = docID;
+        return bytesRef;
+      }
+      
+      @Override
+      public ValueType type() {
+        return ValueType.BYTES_FIXED_STRAIGHT;
+      }
+
+      @Override
+      public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+        return new SourceEnum(attrSource, type(), this, maxDoc) {
+          @Override
+          public int advance(int target) throws IOException {
+            if (target >= numDocs) {
+              return pos = NO_MORE_DOCS;
+            }
+            bytesRef.length = 1;
+            bytesRef.bytes = data;
+            bytesRef.offset = target;
+            return pos = target;
+          }
+        };
+      }
+
+    }
+
+    private static class StraightBytesSource extends BytesBaseSource {
       private final int size;
       private final int maxDoc;
 
-      public Source(IndexInput datIn, int size, int maxDoc)
+      public StraightBytesSource(IndexInput datIn, int size, int maxDoc)
           throws IOException {
         super(datIn, null, new PagedBytes(PAGED_BYTES_BITS), size * maxDoc);
         this.size = size;
@@ -162,10 +204,10 @@ class FixedStraightBytesImpl {
       public BytesRef getBytes(int docID, BytesRef bytesRef) {
         return data.fillSlice(bytesRef, docID * size, size);
       }
-
+      
       @Override
       public int getValueCount() {
-        throw new UnsupportedOperationException();
+        return maxDoc;
       }
 
       @Override
