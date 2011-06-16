@@ -954,6 +954,19 @@ public abstract class FieldComparator<T> {
       public BytesRef value(int slot) {
         return TermOrdValComparator.this.value(slot);
       }
+
+      @Override
+      public int compareValues(BytesRef val1, BytesRef val2) {
+        if (val1 == null) {
+          if (val2 == null) {
+            return 0;
+          }
+          return -1;
+        } else if (val2 == null) {
+          return 1;
+        }
+        return val1.compareTo(val2);
+      }
     }
 
     // Used per-segment when bit width of doc->ord is 8:
@@ -1331,6 +1344,19 @@ public abstract class FieldComparator<T> {
     @Override
     public BytesRef value(int slot) {
       return values[slot];
+    }
+
+    @Override
+    public int compareValues(BytesRef val1, BytesRef val2) {
+      if (val1 == null) {
+        if (val2 == null) {
+          return 0;
+        }
+        return -1;
+      } else if (val2 == null) {
+        return 1;
+      }
+      return val1.compareTo(val2);
     }
   }
 

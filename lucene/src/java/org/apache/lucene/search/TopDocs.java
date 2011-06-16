@@ -25,11 +25,13 @@ import org.apache.lucene.util.PriorityQueue;
  * IndexSearcher#search(Query,Filter,int)} and {@link
  * IndexSearcher#search(Query,int)}. */
 public class TopDocs {
-  /** The total number of hits for the query.
-  */
+
+  /** The total number of hits for the query. */
   public int totalHits;
+
   /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
+
   /** Stores the maximum score value encountered, needed for normalizing. */
   private float maxScore;
   
@@ -38,12 +40,12 @@ public class TopDocs {
    * scores are not tracked, this returns {@link Float#NaN}.
    */
   public float getMaxScore() {
-      return maxScore;
+    return maxScore;
   }
   
   /** Sets the maximum score value encountered. */
   public void setMaxScore(float maxScore) {
-      this.maxScore=maxScore;
+    this.maxScore=maxScore;
   }
 
   /** Constructs a TopDocs with a default maxScore=Float.NaN. */
@@ -189,22 +191,6 @@ public class TopDocs {
     }
   }
 
-  /** Returned from {@link #merge}, to include the merged
-   *  TopDocs as well as the reference to which original
-   *  TopDocs shard each hit came from.
-   *
-   * @lucene.experimental */
-  public static class TopDocsAndShards extends TopDocs {
-
-    /** Parallel array matching <code>hits.scoreDocs</code> */
-    public final int[] shardIndex;
-
-    public TopDocsAndShards(int totalHits, ScoreDoc[] scoreDocs, float maxScore, int[] shardIndex) {
-      super(totalHits, scoreDocs, maxScore);
-      this.shardIndex = shardIndex;
-    }
-  }
-
   /** Returns a new TopDocs, containing topN results across
    *  the provided TopDocs, sorting by the specified {@link
    *  Sort}.  Each of the TopDocs must have been sorted by
@@ -216,7 +202,7 @@ public class TopDocs {
    * <p>Pass sort=null to merge sort by score descending.
    *
    * @lucene.experimental */
-  public static TopDocsAndShards merge(Sort sort, int topN, TopDocs[] shardHits) throws IOException {
+  public static TopDocs merge(Sort sort, int topN, TopDocs[] shardHits) throws IOException {
 
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
@@ -238,14 +224,17 @@ public class TopDocs {
     }
 
     final ScoreDoc[] hits = new ScoreDoc[Math.min(topN, totalHitCount)];
-    final int[] shardIndex = new int[hits.length];
 
     int hitUpto = 0;
     while(hitUpto < hits.length) {
       assert queue.size() > 0;
       ShardRef ref = queue.pop();
-      hits[hitUpto] = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
-      shardIndex[hitUpto] = ref.shardIndex;
+      final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
+      if (sort == null) {
+        hits[hitUpto] = new ScoreDoc(hit.doc, hit.score, ref.shardIndex);
+      } else {
+        hits[hitUpto] = new FieldDoc(hit.doc, hit.score, ((FieldDoc) hit).fields, ref.shardIndex);
+      }
 
       //System.out.println("  hitUpto=" + hitUpto);
       //System.out.println("    doc=" + hits[hitUpto].doc + " score=" + hits[hitUpto].score);
@@ -258,6 +247,10 @@ public class TopDocs {
       }
     }
 
-    return new TopDocsAndShards(totalHitCount, hits, maxScore, shardIndex);
+    if (sort == null) {
+      return new TopDocs(totalHitCount, hits, maxScore);
+    } else {
+      return new TopFieldDocs(totalHitCount, hits, sort.getSort(), maxScore);
+    }
   }
 }
