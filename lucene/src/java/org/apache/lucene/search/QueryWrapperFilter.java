@@ -52,7 +52,7 @@ public class QueryWrapperFilter extends Filter {
     // get a private context that is used to rewrite, createWeight and score eventually
     assert context.reader.getTopReaderContext().isAtomic;
     final AtomicReaderContext privateContext = (AtomicReaderContext) context.reader.getTopReaderContext();
-    final Weight weight = query.weight(new IndexSearcher(privateContext));
+    final Weight weight = new IndexSearcher(privateContext).createNormalizedWeight(query);
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {

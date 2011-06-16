@@ -91,21 +91,6 @@ public abstract class Query implements Cloneable {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * Expert: Constructs and initializes a Weight for a top-level query.
-   */
-  public Weight weight(IndexSearcher searcher) throws IOException {
-    Query query = searcher.rewrite(this);
-    Weight weight = query.createWeight(searcher);
-    float sum = weight.sumOfSquaredWeights();
-    float norm = searcher.getSimilarityProvider().queryNorm(sum);
-    if (Float.isInfinite(norm) || Float.isNaN(norm))
-      norm = 1.0f;
-    weight.normalize(norm);
-    return weight;
-  }
-  
-
   /** Expert: called to re-write queries into primitive queries. For example,
    * a PrefixQuery will be rewritten into a BooleanQuery that consists
    * of TermQuerys.

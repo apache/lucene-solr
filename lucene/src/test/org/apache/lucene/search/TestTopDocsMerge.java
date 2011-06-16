@@ -197,7 +197,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // ... then all shards:
-      final Weight w = query.weight(searcher);
+      final Weight w = searcher.createNormalizedWeight(query);
 
       final TopDocs[] shardHits = new TopDocs[subSearchers.length];
       for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {

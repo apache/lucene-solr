@@ -289,7 +289,7 @@ public class IndexSearcher {
    */
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
-    return search(createWeight(query), filter, n);
+    return search(createNormalizedWeight(query), filter, n);
   }
 
   /** Lower-level search API.
@@ -310,7 +310,7 @@ public class IndexSearcher {
    */
   public void search(Query query, Filter filter, Collector results)
     throws IOException {
-    search(leafContexts, createWeight(query), filter, results);
+    search(leafContexts, createNormalizedWeight(query), filter, results);
   }
 
   /** Lower-level search API.
@@ -328,7 +328,7 @@ public class IndexSearcher {
   */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createWeight(query), null, results);
+    search(leafContexts, createNormalizedWeight(query), null, results);
   }
   
   /** Search implementation with arbitrary sorting.  Finds
@@ -344,7 +344,7 @@ public class IndexSearcher {
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), filter, n, sort);
+    return search(createNormalizedWeight(query), filter, n, sort);
   }
 
   /**
@@ -357,7 +357,7 @@ public class IndexSearcher {
    */
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
-    return search(createWeight(query), null, n, sort);
+    return search(createNormalizedWeight(query), null, n, sort);
   }
 
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
@@ -623,7 +623,7 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createWeight(query), doc);
+    return explain(createNormalizedWeight(query), doc);
   }
 
   /** Expert: low-level implementation method
@@ -665,13 +665,23 @@ public class IndexSearcher {
   }
 
   /**
-   * creates a weight for <code>query</code>
-   * @return new weight
+   * Creates a normalized weight for a top-level {@link Query}.
+   * The query is rewritten by this method and {@link Query#createWeight} called,
+   * afterwards the {@link Weight} is normalized. The returned {@code Weight}
+   * can then directly be used to get a {@link Scorer}.
+   * @lucene.internal
    */
-  protected Weight createWeight(Query query) throws IOException {
-    return query.weight(this);
+  public Weight createNormalizedWeight(Query query) throws IOException {
+    query = rewrite(query);
+    Weight weight = query.createWeight(this);
+    float sum = weight.sumOfSquaredWeights();
+    float norm = getSimilarityProvider().queryNorm(sum);
+    if (Float.isInfinite(norm) || Float.isNaN(norm))
+      norm = 1.0f;
+    weight.normalize(norm);
+    return weight;
   }
-
+  
   /**
    * Returns this searchers the top-level {@link ReaderContext}.
    * @see IndexReader#getTopReaderContext()

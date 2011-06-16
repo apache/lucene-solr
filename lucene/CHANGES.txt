@@ -511,6 +511,15 @@ Bug fixes
   ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
   McCandless)
 
+API Changes
+
+* LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
+  public method IndexSearcher.createNormalizedWeight() as this better describes
+  what this method does. The old method is still there for backwards
+  compatibility. Query.weight() was deprecated and simply delegates to
+  IndexSearcher. Both deprecated methods will be removed in Lucene 4.0.
+  (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
