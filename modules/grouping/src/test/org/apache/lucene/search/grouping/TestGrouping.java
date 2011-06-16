@@ -913,7 +913,7 @@ public class TestGrouping extends LuceneTestCase {
       System.out.println("TEST: " + subSearchers.length + " shards: " + Arrays.toString(subSearchers));
     }
     // Run 1st pass collector to get top groups per shard
-    final Weight w = query.weight(topSearcher);
+    final Weight w = topSearcher.createNormalizedWeight(query);
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<Collection<SearchGroup<BytesRef>>>();
     for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
       final TermFirstPassGroupingCollector c = new TermFirstPassGroupingCollector("group", groupSort, groupOffset+topNGroups);
