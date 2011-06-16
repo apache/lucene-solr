@@ -516,6 +516,12 @@ Bug fixes
   ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
   McCandless)
 
+* LUCENE-3208: IndexSearcher had its own private similarity field
+  and corresponding get/setter overriding Searcher's implementation. If you
+  setted a different Similarity instance on IndexSearcher, methods implemented
+  in the superclass Searcher were not using it, leading to strange bugs.
+  (Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
