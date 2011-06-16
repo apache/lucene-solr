@@ -502,12 +502,12 @@ public class TestNRTManager extends LuceneTestCase {
                     int seenTermCount = 0;
                     int shift;
                     int trigger;
-                    if (totTermCount.get() == 0) {
+                    if (totTermCount.get() < 10) {
                       shift = 0;
                       trigger = 1;
                     } else {
-                      shift = random.nextInt(totTermCount.get()/10);
                       trigger = totTermCount.get()/10;
+                      shift = random.nextInt(trigger);
                     }
 
                     while(System.currentTimeMillis() < stopTime) {
@@ -518,13 +518,13 @@ public class TestNRTManager extends LuceneTestCase {
                         }
                         totTermCount.set(seenTermCount);
                         seenTermCount = 0;
-                        if (totTermCount.get() == 0) {
+                        if (totTermCount.get() < 10) {
                           shift = 0;
                           trigger = 1;
                         } else {
                           trigger = totTermCount.get()/10;
                           //System.out.println("trigger " + trigger);
-                          shift = random.nextInt(totTermCount.get()/10);
+                          shift = random.nextInt(trigger);
                         }
                         termsEnum.seek(new BytesRef(""));
                         continue;
