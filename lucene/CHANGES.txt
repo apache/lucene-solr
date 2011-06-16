@@ -473,6 +473,11 @@ Changes in backwards compatibility policy
   of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
   Mike McCandless)
 
+* LUCENE-3208: Made deprecated methods Query.weight(Searcher) and
+  Searcher.createWeight() final to prevent override. If you have
+  overridden one of these methods, cut over to the non-deprecated
+  implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
