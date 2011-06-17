@@ -530,6 +530,10 @@
     <contrib-crawl target="test" failonerror="true"/>
   </target>
 
+  <target name="compile-test-contrib" depends="build-contrib">
+    <contrib-crawl target="compileTests" failonerror="true"/>
+  </target>
+
   <target name="dist-contrib" description="Make the contribs ready for distribution">
   	<contrib-crawl target="dist" failonerror="true" />
   </target>
