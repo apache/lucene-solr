@@ -118,7 +118,9 @@
               manifest="../../${dest}/META-INF/MANIFEST.MF" />
   </target>
 	
-  <target name="compileTests" depends="compile">
+  <target name="compileTests" depends="compileCoreTests,compileExtrasTests"/>
+  
+  <target name="compileCoreTests" depends="compile">
   	<solr-javac destdir="target/test-classes"
   	                classpathref="test.classpath">
   	  <src path="src/test/java" />
@@ -143,7 +145,7 @@
   <property name="tempDir" value="${junit.output.dir}/temp" />
   <target  name="test" depends="testCore,testExtras"/>
 	
-  <target name="testCore" depends="compileTests">
+  <target name="testCore" depends="compileCoreTests">
   	<mkdir dir="${junit.output.dir}"/>
     <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
        This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
