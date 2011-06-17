@@ -30,7 +30,6 @@ package org.apache.solr.handler.dataimport;
  * </p>
  * <b>This API is experimental and may change in the future.</b>
  *
- *
  * @since solr 1.3
  */
 public abstract class Evaluator {

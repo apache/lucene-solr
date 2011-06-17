@@ -473,6 +473,11 @@ Changes in backwards compatibility policy
   of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
   Mike McCandless)
 
+* LUCENE-3208: Made deprecated methods Query.weight(Searcher) and
+  Searcher.createWeight() final to prevent override. If you have
+  overridden one of these methods, cut over to the non-deprecated
+  implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
@@ -511,6 +516,21 @@ Bug fixes
   ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
   McCandless)
 
+* LUCENE-3208: IndexSearcher had its own private similarity field
+  and corresponding get/setter overriding Searcher's implementation. If you
+  setted a different Similarity instance on IndexSearcher, methods implemented
+  in the superclass Searcher were not using it, leading to strange bugs.
+  (Uwe Schindler, Robert Muir)
+
+API Changes
+
+* LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
+  public method IndexSearcher.createNormalizedWeight() as this better describes
+  what this method does. The old method is still there for backwards
+  compatibility. Query.weight() was deprecated and simply delegates to
+  IndexSearcher. Both deprecated methods will be removed in Lucene 4.0.
+  (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
@@ -520,10 +540,23 @@ New Features
   algorithm over objects that implement the new TwoPhaseCommit interface (such
   as IndexWriter). (Shai Erera)
 
+* LUCENE-3191: Added TopDocs.merge, to facilitate merging results from
+  different shards (Uwe Schindler, Mike McCandless)
+
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.
   (Nicolas Lalevée, Luca Stancapiano via ryan)
+  
+* LUCENE-3204: The maven-ant-tasks jar is now included in the source tree;
+  users of the generate-maven-artifacts target no longer have to manually
+  place this jar in the Ant classpath.  NOTE: when Ant looks for the 
+  maven-ant-tasks jar, it looks first in its pre-existing classpath, so
+  any copies it finds will be used instead of the copy included in the 
+  Lucene/Solr source tree.  For this reason, it is recommeded to remove
+  any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
+  ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe) 
+  
 
 ======================= Lucene 3.2.0 =======================
 

@@ -96,7 +96,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @lucene.experimental
  */
-public abstract class FieldComparator {
+public abstract class FieldComparator<T> {
 
   /**
    * Compare hit at slot1 with hit at slot2.
@@ -176,13 +176,21 @@ public abstract class FieldComparator {
    * Return the actual value in the slot.
    *
    * @param slot the value
-   * @return value in this slot upgraded to Comparable
+   * @return value in this slot
    */
-  public abstract Comparable<?> value(int slot);
+  public abstract T value(int slot);
 
-    
+  /** Returns -1 if first is less than second.  Default
+   *  impl to assume the type implements Comparable and
+   *  invoke .compareTo; be sure to override this method if
+   *  your FieldComparator's type isn't a Comparable or
+   *  if your values may sometimes be null */
+  @SuppressWarnings("unchecked")
+  public int compareValues(T first, T second) {
+    return ((Comparable<T>) first).compareTo(second);
+  }
 
-  public static abstract class NumericComparator<T extends CachedArray> extends FieldComparator {
+  public static abstract class NumericComparator<T extends CachedArray, U extends Number> extends FieldComparator<U> {
     protected final CachedArrayCreator<T> creator;
     protected T cached;
     protected final boolean checkMissing;
@@ -203,7 +211,7 @@ public abstract class FieldComparator {
 
   /** Parses field's values as byte (using {@link
    *  FieldCache#getBytes} and sorts by ascending value */
-  public static final class ByteComparator extends NumericComparator<ByteValues> {
+  public static final class ByteComparator extends NumericComparator<ByteValues,Byte> {
     private byte[] docValues;
     private final byte[] values;
     private final byte missingValue;
@@ -252,7 +260,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Byte value(int slot) {
       return Byte.valueOf(values[slot]);
     }
   }
@@ -260,12 +268,11 @@ public abstract class FieldComparator {
   
   /** Parses field's values as double (using {@link
    *  FieldCache#getDoubles} and sorts by ascending value */
-  public static final class DoubleComparator extends NumericComparator<DoubleValues> {
+  public static final class DoubleComparator extends NumericComparator<DoubleValues,Double> {
     private double[] docValues;
     private final double[] values;
     private final double missingValue;
     private double bottom;
-
 
     DoubleComparator(int numHits, DoubleValuesCreator creator, Double missingValue ) {
       super( creator, missingValue != null );
@@ -324,13 +331,13 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Double value(int slot) {
       return Double.valueOf(values[slot]);
     }
   }
 
   /** Uses float index values to sort by ascending value */
-  public static final class FloatDocValuesComparator extends FieldComparator {
+  public static final class FloatDocValuesComparator extends FieldComparator<Double> {
     private final double[] values;
     private Source currentReaderValues;
     private final String field;
@@ -386,14 +393,14 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<Double> value(int slot) {
+    public Double value(int slot) {
       return Double.valueOf(values[slot]);
     }
   }
 
   /** Parses field's values as float (using {@link
    *  FieldCache#getFloats} and sorts by ascending value */
-  public static final class FloatComparator extends NumericComparator<FloatValues> {
+  public static final class FloatComparator extends NumericComparator<FloatValues,Float> {
     private float[] docValues;
     private final float[] values;
     private final float missingValue;
@@ -460,14 +467,14 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Float value(int slot) {
       return Float.valueOf(values[slot]);
     }
   }
 
   /** Parses field's values as short (using {@link
    *  FieldCache#getShorts} and sorts by ascending value */
-  public static final class ShortComparator extends NumericComparator<ShortValues> {
+  public static final class ShortComparator extends NumericComparator<ShortValues,Short> {
     private short[] docValues;
     private final short[] values;
     private short bottom;
@@ -516,14 +523,14 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Short value(int slot) {
       return Short.valueOf(values[slot]);
     }
   }
 
   /** Parses field's values as int (using {@link
    *  FieldCache#getInts} and sorts by ascending value */
-  public static final class IntComparator extends NumericComparator<IntValues> {
+  public static final class IntComparator extends NumericComparator<IntValues,Integer> {
     private int[] docValues;
     private final int[] values;
     private int bottom;                           // Value of bottom of queue
@@ -594,13 +601,13 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Integer value(int slot) {
       return Integer.valueOf(values[slot]);
     }
   }
 
   /** Loads int index values and sorts by ascending value. */
-  public static final class IntDocValuesComparator extends FieldComparator {
+  public static final class IntDocValuesComparator extends FieldComparator<Long> {
     private final long[] values;
     private Source currentReaderValues;
     private final String field;
@@ -660,14 +667,14 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<Long> value(int slot) {
+    public Long value(int slot) {
       return Long.valueOf(values[slot]);
     }
   }
 
   /** Parses field's values as long (using {@link
    *  FieldCache#getLongs} and sorts by ascending value */
-  public static final class LongComparator extends NumericComparator<LongValues> {
+  public static final class LongComparator extends NumericComparator<LongValues,Long> {
     private long[] docValues;
     private final long[] values;
     private long bottom;
@@ -735,7 +742,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Long value(int slot) {
       return Long.valueOf(values[slot]);
     }
   }
@@ -746,7 +753,7 @@ public abstract class FieldComparator {
    *  using {@link TopScoreDocCollector} directly (which {@link
    *  IndexSearcher#search} uses when no {@link Sort} is
    *  specified). */
-  public static final class RelevanceComparator extends FieldComparator {
+  public static final class RelevanceComparator extends FieldComparator<Float> {
     private final float[] scores;
     private float bottom;
     private Scorer scorer;
@@ -791,15 +798,21 @@ public abstract class FieldComparator {
     }
     
     @Override
-    public Comparable<?> value(int slot) {
+    public Float value(int slot) {
       return Float.valueOf(scores[slot]);
+    }
+
+    // Override because we sort reverse of natural Float order:
+    @Override
+    public int compareValues(Float first, Float second) {
+      // Reversed intentionally because relevance by default
+      // sorts descending:
+      return second.compareTo(first);
     }
   }
 
-
-
   /** Sorts by ascending docID */
-  public static final class DocComparator extends FieldComparator {
+  public static final class DocComparator extends FieldComparator<Integer> {
     private final int[] docIDs;
     private int docBase;
     private int bottom;
@@ -840,7 +853,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Integer value(int slot) {
       return Integer.valueOf(docIDs[slot]);
     }
   }
@@ -854,7 +867,7 @@ public abstract class FieldComparator {
    *  to large results, this comparator will be much faster
    *  than {@link TermValComparator}.  For very small
    *  result sets it may be slower. */
-  public static final class TermOrdValComparator extends FieldComparator {
+  public static final class TermOrdValComparator extends FieldComparator<BytesRef> {
     /** @lucene.internal */
     final int[] ords;
     /** @lucene.internal */
@@ -920,7 +933,7 @@ public abstract class FieldComparator {
      * the underlying array access when looking up doc->ord
      * @lucene.internal
      */
-    abstract class PerSegmentComparator extends FieldComparator {
+    abstract class PerSegmentComparator extends FieldComparator<BytesRef> {
       
       @Override
       public FieldComparator setNextReader(AtomicReaderContext context) throws IOException {
@@ -938,8 +951,21 @@ public abstract class FieldComparator {
       }
 
       @Override
-      public Comparable<?> value(int slot) {
+      public BytesRef value(int slot) {
         return TermOrdValComparator.this.value(slot);
+      }
+
+      @Override
+      public int compareValues(BytesRef val1, BytesRef val2) {
+        if (val1 == null) {
+          if (val2 == null) {
+            return 0;
+          }
+          return -1;
+        } else if (val2 == null) {
+          return 1;
+        }
+        return val1.compareTo(val2);
       }
     }
 
@@ -1244,7 +1270,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public BytesRef value(int slot) {
       return values[slot];
     }
   }
@@ -1253,7 +1279,7 @@ public abstract class FieldComparator {
    *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
    *  very fast for very small results sets. */
-  public static final class TermValComparator extends FieldComparator {
+  public static final class TermValComparator extends FieldComparator<BytesRef> {
 
     private BytesRef[] values;
     private DocTerms docTerms;
@@ -1316,8 +1342,21 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public BytesRef value(int slot) {
       return values[slot];
+    }
+
+    @Override
+    public int compareValues(BytesRef val1, BytesRef val2) {
+      if (val1 == null) {
+        if (val2 == null) {
+          return 0;
+        }
+        return -1;
+      } else if (val2 == null) {
+        return 1;
+      }
+      return val1.compareTo(val2);
     }
   }
 

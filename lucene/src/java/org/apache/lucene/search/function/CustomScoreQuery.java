@@ -187,7 +187,7 @@ public class CustomScoreQuery extends Query {
     boolean qStrict;
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
-      this.subQueryWeight = subQuery.weight(searcher);
+      this.subQueryWeight = subQuery.createWeight(searcher);
       this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
         this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);

@@ -24,9 +24,7 @@
     https://issues.apache.org/jira/browse/SOLR-1167
   -->
 <config xmlns:xi="http://www.w3.org/2001/XInclude">
-
-  <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
-
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
   <!--
     lib directives can be used to instruct Solr to load an Jars
     identified and use them to resolve any "plugins" specified in your
@@ -1064,6 +1062,8 @@
         </lst>
         <str name="analysisEngine">/TestExceptionAE.xml</str>
         <bool name="ignoreErrors">true</bool>
+        <!-- This is optional. It is used for logging when text processing fails. Usually, set uniqueKey field name -->
+        <str name="logField">id</str>
         <lst name="analyzeFields">
           <bool name="merge">false</bool>
           <arr name="fields">

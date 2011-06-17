@@ -14,7 +14,8 @@ $Id$
 
 ==================  3.3.0-dev ==============
 
-(No Changes)
+* SOLR-2551: Check dataimport.properties for write access (if delta-import is supported
+  in DIH configuration) before starting an import (C S, shalin)
 
 ==================  3.2.0 ==================
 

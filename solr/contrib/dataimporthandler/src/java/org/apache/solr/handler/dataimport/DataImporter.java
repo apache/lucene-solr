@@ -39,6 +39,7 @@ import org.apache.commons.io.IOUtils;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
 import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -50,7 +51,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p> Stores all configuration information for pulling and indexing data. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
- *
  *
  * @since solr 1.3
  */
@@ -85,6 +85,8 @@ public class DataImporter {
 
   private final Map<String , Object> coreScopeSession;
 
+  private boolean isDeltaImportSupported = false;
+
   /**
    * Only for testing purposes
    */
@@ -113,7 +115,9 @@ public class DataImporter {
       initEntity(e, fields, false);
       verifyWithSchema(fields);
       identifyPk(e);
-    }    
+      if (e.allAttributes.containsKey(SqlEntityProcessor.DELTA_QUERY))
+        isDeltaImportSupported = true;
+    }
   }
 
   private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
@@ -350,6 +354,7 @@ public class DataImporter {
 
     try {
       docBuilder = new DocBuilder(this, writer, requestParams);
+      checkWritablePersistFile(writer);
       docBuilder.execute();
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
@@ -364,6 +369,15 @@ public class DataImporter {
 
   }
 
+  private void checkWritablePersistFile(SolrWriter writer) {
+    File persistFile = writer.getPersistFile();
+    boolean isWritable = persistFile.exists() ? persistFile.canWrite() : persistFile.getParentFile().canWrite();
+    if (isDeltaImportSupported && !isWritable) {
+      throw new DataImportHandlerException(SEVERE, persistFile.getAbsolutePath() +
+          " is not writable. Delta imports are supported by data config but will not work.");
+    }
+  }
+
   public void doDeltaImport(SolrWriter writer, RequestParams requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
@@ -371,6 +385,7 @@ public class DataImporter {
     try {
       setIndexStartTime(new Date());
       docBuilder = new DocBuilder(this, writer, requestParams);
+      checkWritablePersistFile(writer);
       docBuilder.execute();
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);

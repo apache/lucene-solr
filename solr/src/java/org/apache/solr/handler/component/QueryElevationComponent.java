@@ -476,8 +476,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
   }
 
   @Override
-  public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
-    return new FieldComparator() {
+  public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+    return new FieldComparator<Integer>() {
       
       FieldCache.DocTermsIndex idIndex;
       private final int[] values = new int[numHits];
@@ -517,7 +517,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       @Override
-      public Comparable value(int slot) {
+      public Integer value(int slot) {
         return values[slot];
       }
     };

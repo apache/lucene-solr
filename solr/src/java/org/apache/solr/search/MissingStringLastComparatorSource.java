@@ -56,7 +56,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
 
 // Copied from Lucene's TermOrdValComparator and modified since the Lucene version couldn't
 // be extended.
-class TermOrdValComparator_SML extends FieldComparator {
+class TermOrdValComparator_SML extends FieldComparator<BytesRef> {
   private static final int NULL_ORD = Integer.MAX_VALUE;
 
   private final int[] ords;
@@ -98,7 +98,7 @@ class TermOrdValComparator_SML extends FieldComparator {
   }
 
   @Override
-  public Comparable<?> value(int slot) {
+  public BytesRef value(int slot) {
     throw new UnsupportedOperationException();
   }
 
@@ -111,7 +111,7 @@ class TermOrdValComparator_SML extends FieldComparator {
   // ords) per-segment comparator.  NOTE: this is messy;
   // we do this only because hotspot can't reliably inline
   // the underlying array access when looking up doc->ord
-  private static abstract class PerSegmentComparator extends FieldComparator {
+  private static abstract class PerSegmentComparator extends FieldComparator<BytesRef> {
     protected TermOrdValComparator_SML parent;
     protected final int[] ords;
     protected final BytesRef[] values;
@@ -199,7 +199,7 @@ class TermOrdValComparator_SML extends FieldComparator {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public BytesRef value(int slot) {
       return values==null ? parent.NULL_VAL : values[slot];
     }
   }

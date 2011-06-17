@@ -64,6 +64,11 @@
     <pathelement location="${common.dir}/build/classes/tools"/>
   </path>
 
+  <path id="maven-ant-tasks.classpath">
+    <fileset dir="${common.dir}/lib">
+      <include name="maven-ant-tasks-*.jar"/>
+    </fileset>
+  </path>
 
   <!-- default arguments to pass to JVM executing tests -->
   <property name="testmethod" value=""/>
@@ -196,11 +201,6 @@
        </and>
    </condition>
 
-  <available
-    property="maven.ant.tasks.present"
-    classname="org.apache.maven.artifact.ant.Pom"
-  />
-	
   <target name="clean"
     description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>
@@ -320,20 +320,6 @@
   <target name="jar-core" depends="compile-core"
     description="Packages the JAR file">
     <jarify/>
-  </target>
-
-  <target name="maven.ant.tasks-check">
-    <fail unless="maven.ant.tasks.present">#
-    ##########################################################################
-      Maven ant tasks not found.
-
-      Please download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar)
-      from http://maven.apache.org/ant-tasks/download.html and add it to your
-      $$HOME/.ant/lib/ directory, or to your $$ANT_HOME/lib/ directory, or
-      to your $$CLASSPATH, or add "-lib /path/to/maven-ant-tasks-2.1.1.jar"
-      to the ant command.
-    ##########################################################################
-    </fail>
   </target>
 
   <macrodef name="m2-deploy" description="Builds a Maven artifact">

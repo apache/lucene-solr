@@ -34,7 +34,6 @@ import java.util.Properties;
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
- *
  * @since solr 1.3
  */
 public class SolrWriter {
@@ -100,13 +99,10 @@ public class SolrWriter {
 
     try {
       props.putAll(p);
-      String filePath = configDir;
-      if (configDir != null && !configDir.endsWith(File.separator))
-        filePath += File.separator;
-      filePath += persistFilename;
-      propOutput = new FileOutputStream(filePath);
+      File persistFile = getPersistFile();
+      propOutput = new FileOutputStream(persistFile);
       props.store(propOutput, null);
-      log.info("Wrote last indexed time to " + persistFilename);
+      log.info("Wrote last indexed time to " + persistFile.getAbsolutePath());
     } catch (FileNotFoundException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Unable to persist Index Start Time", e);
@@ -121,6 +117,14 @@ public class SolrWriter {
         propOutput = null;
       }
     }
+  }
+
+  File getPersistFile() {
+    String filePath = configDir;
+    if (configDir != null && !configDir.endsWith(File.separator))
+      filePath += File.separator;
+    filePath += persistFilename;
+    return new File(filePath);
   }
 
   void finish() {

@@ -68,7 +68,7 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    Weight w = q.weight(searcher);
+    Weight w = searcher.createNormalizedWeight(q);
     context.put(this, w);
   }
 }
@@ -98,7 +98,7 @@ class QueryDocValues extends FloatDocValues {
     this.q = vs.q;
     this.fcontext = fcontext;
 
-    Weight w = fcontext==null ? null : (Weight)fcontext.get(q);
+    Weight w = fcontext==null ? null : (Weight)fcontext.get(vs);
     if (w == null) {
       IndexSearcher weightSearcher;
       if(fcontext == null) {
@@ -109,7 +109,8 @@ class QueryDocValues extends FloatDocValues {
           weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
         }
       }
-      w = q.weight(weightSearcher);
+      vs.createWeight(fcontext, weightSearcher);
+      w = (Weight)fcontext.get(vs);
     }
     weight = w;
   }

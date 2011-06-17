@@ -27,10 +27,10 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
-import java.util.List;
-import java.util.Random;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -46,6 +46,9 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.junit.Assert;
 
@@ -467,5 +470,25 @@ public class _TestUtil {
     newName.append(identify);
     newName.append(suffix);
     return new File(directory, newName.toString());
+  }
+
+  public static void assertEquals(TopDocs expected, TopDocs actual) {
+    Assert.assertEquals("wrong total hits", expected.totalHits, actual.totalHits);
+    Assert.assertEquals("wrong maxScore", expected.getMaxScore(), actual.getMaxScore(), 0.0);
+    Assert.assertEquals("wrong hit count", expected.scoreDocs.length, actual.scoreDocs.length);
+    for(int hitIDX=0;hitIDX<expected.scoreDocs.length;hitIDX++) {
+      final ScoreDoc expectedSD = expected.scoreDocs[hitIDX];
+      final ScoreDoc actualSD = actual.scoreDocs[hitIDX];
+      Assert.assertEquals("wrong hit docID", expectedSD.doc, actualSD.doc);
+      Assert.assertEquals("wrong hit score", expectedSD.score, actualSD.score, 0.0);
+      if (expectedSD instanceof FieldDoc) {
+        Assert.assertTrue(actualSD instanceof FieldDoc);
+        Assert.assertEquals("wrong sort field values",
+                            ((FieldDoc) expectedSD).fields,
+                            ((FieldDoc) actualSD).fields);
+      } else {
+        Assert.assertFalse(actualSD instanceof FieldDoc);
+      }
+    }
   }
 }

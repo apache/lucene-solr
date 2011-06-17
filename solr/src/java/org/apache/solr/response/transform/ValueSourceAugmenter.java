@@ -59,12 +59,17 @@ public class ValueSourceAugmenter extends DocTransformer
 
   @Override
   public void setContext( TransformContext context ) {
-    IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
-    readerContexts = reader.getTopReaderContext().leaves();
-    docValuesArr = new DocValues[readerContexts.length];
+    try {
+      IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
+      readerContexts = reader.getTopReaderContext().leaves();
+      docValuesArr = new DocValues[readerContexts.length];
 
-    searcher = qparser.getReq().getSearcher();
-    this.fcontext = ValueSource.newContext(searcher);
+      searcher = qparser.getReq().getSearcher();
+      fcontext = ValueSource.newContext(searcher);
+      this.valueSource.createWeight(fcontext, searcher);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
 

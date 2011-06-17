@@ -92,7 +92,7 @@ public class PreFlexFields extends FieldsProducer {
 
       // make sure that all index files have been read or are kept open
       // so that if an index update removes them we'll still have them
-      freqStream = dir.openInput(info.name + ".frq", readBufferSize);
+      freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION), readBufferSize);
       boolean anyProx = false;
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed) {
@@ -105,7 +105,7 @@ public class PreFlexFields extends FieldsProducer {
       }
 
       if (anyProx) {
-        proxStream = dir.openInput(info.name + ".prx", readBufferSize);
+        proxStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION), readBufferSize);
       } else {
         proxStream = null;
       }

@@ -55,6 +55,7 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1231,13 +1232,11 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
-
     if (random.nextBoolean()) {
       if (maybeWrap && rarely()) {
-        return new IndexSearcher(new SlowMultiReaderWrapper(r));
-      } else {
-        return new IndexSearcher(r);
+        r = new SlowMultiReaderWrapper(r);
       }
+      return random.nextBoolean() ? new AssertingIndexSearcher(r) : new AssertingIndexSearcher(r.getTopReaderContext());
     } else {
       int threads = 0;
       final ExecutorService ex = (random.nextBoolean()) ? null
@@ -1246,20 +1245,31 @@ public abstract class LuceneTestCase extends Assert {
       if (ex != null && VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
       }
-      return new IndexSearcher(r.getTopReaderContext(), ex) {
-        @Override
-        public void close() throws IOException {
-          super.close();
-          if (ex != null) {
-            ex.shutdown();
-            try {
-              ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
+      return random.nextBoolean() ? 
+        new AssertingIndexSearcher(r, ex) {
+          @Override
+          public void close() throws IOException {
+            super.close();
+            shutdownExecutorService(ex);
           }
-        }
-      };
+        } : new AssertingIndexSearcher(r.getTopReaderContext(), ex) {
+          @Override
+          public void close() throws IOException {
+            super.close();
+            shutdownExecutorService(ex);
+          }
+        };
+    }
+  }
+  
+  static void shutdownExecutorService(ExecutorService ex) {
+    if (ex != null) {
+      ex.shutdown();
+      try {
+        ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 

@@ -173,7 +173,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     QueryUtils.check(random, dq, s);
     assertTrue(s.getTopReaderContext().isAtomic);
-    final Weight dw = dq.weight(s);
+    final Weight dw = s.createNormalizedWeight(dq);
     final Scorer ds = dw.scorer((AtomicReaderContext)s.getTopReaderContext(), ScorerContext.def());
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
@@ -188,7 +188,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     dq.add(tq("dek", "DOES_NOT_EXIST"));
     assertTrue(s.getTopReaderContext().isAtomic);
     QueryUtils.check(random, dq, s);
-    final Weight dw = dq.weight(s);
+    final Weight dw = s.createNormalizedWeight(dq);
     final Scorer ds = dw.scorer((AtomicReaderContext)s.getTopReaderContext(), ScorerContext.def());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);

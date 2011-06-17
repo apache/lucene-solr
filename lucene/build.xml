@@ -444,7 +444,10 @@
 
 
   <target name="generate-maven-artifacts"
-          depends="maven.ant.tasks-check, package, jar-src, jar-test-framework-src, javadocs">
+          depends="package, jar-src, jar-test-framework-src, javadocs">
+    <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
+             uri="antlib:org.apache.maven.artifact.ant" 
+             classpathref="maven-ant-tasks.classpath"/>
     <sequential>
 	  <ant target="get-maven-poms" dir=".."/>
  
