@@ -95,7 +95,6 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
     add1document();
   }
 
-  /* this test does not compile with java 5!
   @Test
   @SuppressWarnings("unchecked")
   public void testNonWritablePersistFile() throws Exception {
@@ -121,11 +120,10 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
         runFullImport(dataConfig_delta);
         assertQ(req("id:1"), "//*[@numFound='0']");
       } finally {
-        f.setWritable(true);
+        f.delete();
       }
     }
   }
-  */
 
   // WORKS
 
