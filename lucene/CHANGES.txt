@@ -543,6 +543,8 @@ New Features
 * LUCENE-3191: Added TopDocs.merge, to facilitate merging results from
   different shards (Uwe Schindler, Mike McCandless)
 
+* LUCENE-3179: Added OpenBitSet.prevSetBit (Paul Elschot via Mike McCandless)
+
 Build
 
 * LUCENE-1344: Create OSGi bundle using dev-tools/maven.
