@@ -746,7 +746,7 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
   
   /** Collection statistics for the TF-IDF model. The only statistic of interest
    * to this model is idf. */
-  public static class IDFStats extends Stats {
+  private static class IDFStats extends Stats {
     /** The idf and its explanation */
     private final Explanation idf;
     private float queryNorm;
