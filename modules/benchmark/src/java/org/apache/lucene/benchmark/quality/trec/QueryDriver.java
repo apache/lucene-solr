@@ -54,9 +54,6 @@ public class QueryDriver {
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexSearcher searcher = new IndexSearcher(dir, true);
-    // nocommit
-    //searcher.setSimilarityProvider(new MockLMSimilarityProvider());
-    //searcher.setSimilarityProvider(new MockBM25SimilarityProvider());
     int maxResults = 1000;
     String docNameField = "docname";
 

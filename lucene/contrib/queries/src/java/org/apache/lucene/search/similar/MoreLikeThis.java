@@ -286,7 +286,6 @@ public final class MoreLikeThis {
     /**
      * For idf() calculations.
      */
-    // nocommit? this is pretty much wired to tf-idf things...
     private TFIDFSimilarity similarity;// = new DefaultSimilarity();
 
     /**

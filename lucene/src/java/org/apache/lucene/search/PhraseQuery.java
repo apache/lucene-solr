@@ -27,8 +27,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.ArrayUtil;
@@ -213,8 +215,10 @@ public class PhraseQuery extends Query {
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
         final TermState state = states[i].get(context.ord);
-        if (state == null) /* term doesnt exist in this segment */
+        if (state == null) { /* term doesnt exist in this segment */
+          assert termNotInReader(reader, field, t.bytes()) : "no termstate found but term exists in reader";
           return null;
+        }
         DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
                                                                      t.field(),
                                                                      t.bytes(),
@@ -222,14 +226,9 @@ public class PhraseQuery extends Query {
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (reader.termDocsEnum(delDocs, t.field(), t.bytes(), state) != null) {
-            // term does exist, but has no positions
-            throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
-          } else {
-            // term does not exist
-            // nocommit: should be impossible, state should be null?
-            return null;
-          }
+          assert (reader.termDocsEnum(delDocs, t.field(), t.bytes(), state) != null) : "termstate found but no term exists in reader";
+          // term does exist, but has no positions
+          throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
         }
         // get the docFreq without seeking
         TermsEnum te = reader.fields().terms(field).getThreadTermsEnum();
@@ -253,6 +252,12 @@ public class PhraseQuery extends Query {
         return
           new SloppyPhraseScorer(this, postingsFreqs, similarity, slop, similarity.sloppyDocScorer(stats, field, context));
       }
+    }
+    
+    private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
+      // only called from assert
+      final Terms terms = reader.terms(field);
+      return terms == null || terms.docFreq(bytes) == 0;
     }
 
     @Override

@@ -20,7 +20,11 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.Similarity.ExactDocScorer;
+import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.Similarity.Stats;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -240,11 +244,30 @@ final class JustCompileSearch {
     }
   }
   
-  // nocommit: extend the Base Similarity here?
-  static final class JustCompileSimilarity extends TFIDFSimilarity {
+  static final class JustCompileSimilarity extends Similarity {
 
     @Override
-    public float idf(int docFreq, int numDocs) {
+    public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public float decodeNormValue(byte b) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public byte encodeNormValue(float f) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -257,11 +280,6 @@ final class JustCompileSearch {
     public float sloppyFreq(int distance) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-    @Override
-    public float tf(float freq) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }  
   }
   
   static final class JustCompileSimilarityProvider implements SimilarityProvider {

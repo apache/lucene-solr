@@ -24,9 +24,4 @@ public class MockBM25SimilarityProvider extends DefaultSimilarityProvider {
   public Similarity get(String field) {
     return impl;
   }
-
-  //nocommit: maybe ok given how bm25 works?
-  public float queryNorm(float sumOfSquaredWeights) {
-    return 1f;
-  }
 }

@@ -43,11 +43,9 @@ public class TFValueSource extends TermFreqValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Fields fields = readerContext.reader.fields();
     final Terms terms = fields.terms(field);
-    // nocommit:
-    // what to do? its a TF valuesource... 
     final Similarity sim = ((IndexSearcher)context.get("searcher")).getSimilarityProvider().get(field);
     if (!(sim instanceof TFIDFSimilarity)) {
-      throw new UnsupportedOperationException("only works with TF/IDF Similarity");
+      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
     final TFIDFSimilarity similarity = (TFIDFSimilarity) sim;
     

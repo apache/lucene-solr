@@ -42,14 +42,10 @@ public class IDFValueSource extends DocFreqValueSource {
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
     Similarity sim = searcher.getSimilarityProvider().get(field);
-    // nocommit:
-    // what to do? its an idf valuesource... we could generalize to sim.computeWeight though 
-    // (which is idf for TF/IDF and something like it elsewhere)
     if (!(sim instanceof TFIDFSimilarity)) {
-      throw new UnsupportedOperationException("only works with TF/IDF Similarity");
+      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
-    // todo: we need docFreq that takes a BytesRef
-    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes.utf8ToString()));
+    int docfreq = searcher.docFreq(new Term(indexedField, indexedBytes));
     float idf = ((TFIDFSimilarity)sim).idf(docfreq, searcher.maxDoc());
     return new ConstDoubleDocValues(idf, this);
   }
