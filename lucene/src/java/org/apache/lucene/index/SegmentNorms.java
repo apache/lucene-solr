@@ -33,9 +33,13 @@ import org.apache.lucene.store.IndexOutput;
  */
 
 final class SegmentNorms implements Cloneable {
+  
+  static final byte NORM_VERSION_NORM_SUM = -2;
 
+  static final byte NORM_VERSION_LATEST = NORM_VERSION_NORM_SUM;
+  
   /** norms header placeholder */
-  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1};
+  static final byte[] NORMS_HEADER = new byte[]{'N','R','M', NORM_VERSION_LATEST};
 
   int refCount = 1;
 
@@ -56,12 +60,14 @@ final class SegmentNorms implements Cloneable {
   boolean rollbackDirty;
   
   private final SegmentReader owner;
+  private final boolean hasSum;
   
-  public SegmentNorms(IndexInput in, int number, long normSeek, SegmentReader owner) {
+  public SegmentNorms(IndexInput in, int number, long normSeek, SegmentReader owner, boolean hasSum) {
     this.in = in;
     this.number = number;
     this.normSeek = normSeek;
     this.owner = owner;
+    this.hasSum = hasSum;
   }
 
   public synchronized void incRef() {
@@ -140,13 +146,11 @@ final class SegmentNorms implements Cloneable {
 
         // Read from disk.
         synchronized(in) {
+          
           in.seek(normSeek);
           in.readBytes(bytes, 0, count, false);
-          // nocommit: version the file, and add this sum.
-          sum = 0;
-          for (int i = 0; i < count; i++) {
-            sum += (bytes[i] & 0xff);
-          }
+          sum = hasSum ? in.readLong() : computeSum(bytes, count);
+          assert sum == computeSum(bytes, count);
         }
 
         bytesRef = new AtomicInteger(1);
@@ -161,10 +165,15 @@ final class SegmentNorms implements Cloneable {
   AtomicInteger bytesRef() {
     return bytesRef;
   }
+  
+  static byte readVersion(IndexInput input) throws IOException {
+    input.seek(input.getFilePointer()+3);
+    return input.readByte();
+  }
 
   // Called if we intend to change a norm value.  We make a
   // private copy of bytes if it's shared with others:
-  public synchronized byte[] copyOnWrite() throws IOException {
+  private final synchronized byte[] copyOnWrite() throws IOException {
     assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
     bytes();
     assert bytes != null;
@@ -181,6 +190,14 @@ final class SegmentNorms implements Cloneable {
     }
     dirty = true;
     return bytes;
+  }
+  
+  public final void setNormValue(int docId, byte norm) throws IOException {
+    final byte[] bytes = copyOnWrite();
+    final byte old = bytes[docId];
+    bytes[docId] = norm;
+    // update the sum here so we don't need to sum up on write
+    sum -= ((0xff) & old) - ((0xff) & norm); 
   }
   
   // Returns a copy of this Norm instance that shares
@@ -218,6 +235,14 @@ final class SegmentNorms implements Cloneable {
 
     return clone;
   }
+  
+  static long computeSum(byte[] bytes, int limit) {
+    int sum = 0;
+    for (int i = 0; i < limit; i++) {
+      sum += (bytes[i] & 0xff);
+    }
+    return sum;
+  }
 
   // Flush all pending changes to the next generation
   // separate norms file.
@@ -231,8 +256,11 @@ final class SegmentNorms implements Cloneable {
     boolean success = false;
     try {
       try {
-        out.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
-        out.writeBytes(bytes, owner.maxDoc());
+        final int limit = owner.maxDoc();
+        out.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
+        out.writeBytes(bytes, limit);
+        out.writeLong(sum);
+        assert sum == computeSum(bytes, limit) : "expected: " + computeSum(bytes, limit) + " but was: " + sum;
       } finally {
         out.close();
       }
