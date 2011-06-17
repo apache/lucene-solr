@@ -78,6 +78,8 @@ New Features
    Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
    Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
    Harish Agarwal, yonik)
+  SOLR-2564: Integrate grouping module into Solr. Also adds the ability to return number of
+  groups that have match a query.
 
 * SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
 

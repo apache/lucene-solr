@@ -20,6 +20,7 @@ package org.apache.solr;
 import org.apache.lucene.search.FieldCache;
 import org.apache.noggit.JSONUtil;
 import org.apache.noggit.ObjectBuilder;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.Before;
@@ -76,6 +77,49 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertQ(req("q","title:title", "group", "true", "group.field","group_si")
             ,"//lst[@name='grouped']/lst[@name='group_si']"
+            ,"*[count(//arr[@name='groups']/lst) = 2]"
+
+            ,"//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
+            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+
+            ,"//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
+            ,"//arr[@name='groups']/lst[2]/result[@numFound='3']"
+            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
+            );
+  }
+
+  @Test
+  public void testGroupingGroupSortingScore_withTotalGroupCount() {
+    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_si", "1")));
+    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_si", "2")));
+    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_si", "1")));
+    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_si", "2")));
+    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_si", "1")));
+    assertU(commit());
+
+    assertQ(req("q","title:title", "group", "true", "group.field","name", "group.ngroups", "true")
+            ,"//lst[@name='grouped']/lst[@name='name']"
+            ,"//lst[@name='grouped']/lst[@name='name']/int[@name='matches'][.='5']"
+            ,"//lst[@name='grouped']/lst[@name='name']/int[@name='ngroups'][.='3']"
+            ,"*[count(//arr[@name='groups']/lst) = 3]"
+
+            ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author2']"
+            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+
+            ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author1']"
+            ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='2']"
+
+            ,"//arr[@name='groups']/lst[3]/str[@name='groupValue'][.='author3']"
+            ,"//arr[@name='groups']/lst[3]/result[@numFound='1']"
+            ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+            );
+
+    assertQ(req("q","title:title", "group", "true", "group.field","group_si", "group.ngroups", "true")
+            ,"//lst[@name='grouped']/lst[@name='group_si']/int[@name='matches'][.='5']"
+            ,"//lst[@name='grouped']/lst[@name='group_si']/int[@name='ngroups'][.='2']"
             ,"*[count(//arr[@name='groups']/lst) = 2]"
 
             ,"//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
@@ -353,7 +397,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     , "/grouped/foo_i=={'matches':10,'doclist':"
         +"{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
     );
-  };
+  }
 
 
 
@@ -476,14 +520,16 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         List<Grp> sortedGroups = new ArrayList(groups.values());
         Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
-        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit);
+        boolean includeNGroups = random.nextBoolean();
+        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
 
+        int randomPercentage = random.nextInt(101);
         // TODO: create a random filter too
-
         SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
             ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
-            ,(groupSortStr==null || groupSortStr==sortStr) ? "nosort":"group.sort", groupSortStr==null ? "": groupSortStr
-            ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit
+            ,(groupSortStr==null || groupSortStr==sortStr) ? "noGroupsort":"group.sort", groupSortStr==null ? "": groupSortStr
+            ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit,
+            GroupParams.GROUP_CACHE_PERCENTAGE, Integer.toString(randomPercentage), GroupParams.GROUP_TOTAL_COUNT, includeNGroups ? "true" : "false"
         );
 
         String strResponse = h.query(req);
@@ -508,7 +554,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   }
 
-  public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit) {
+  public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit, boolean includeNGroups) {
     Map<String,Object> result = new LinkedHashMap<String,Object>();
 
     long matches = 0;
@@ -516,6 +562,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       matches += grp.docs.size();
     }
     result.put("matches", matches);
+    if (includeNGroups) {
+      result.put("ngroups", sortedGroups.size());
+    }
     List groupList = new ArrayList();
     result.put("groups", groupList);
 

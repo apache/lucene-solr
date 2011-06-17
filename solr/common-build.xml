@@ -198,6 +198,7 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/grouping/build/classes/java" />
   </path>   
 
   <target name="prep-lucene-jars">
@@ -214,6 +215,7 @@
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
         <fileset dir="../lucene/contrib/queries" includes="build.xml" />
         <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
+        <fileset dir="../modules/grouping" includes="build.xml" />
       </subant>
     </sequential>
   </target>
@@ -248,6 +250,9 @@
       <fileset dir="../lucene/build/contrib/spatial">
         <include name="lucene-spatial-${version}.jar" />
       </fileset>
+      <fileset dir="../modules/grouping/build">
+        <include name="lucene-grouping-${version}.jar" />
+      </fileset>
       </copy>
   </target>  
   
@@ -262,6 +267,7 @@
       <fileset dir="../lucene/contrib/misc" includes="build.xml"/>
       <fileset dir="../lucene/contrib/queries" includes="build.xml"/>
       <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
+      <fileset dir="../modules/grouping" includes="build.xml"/>
     </subant>
   </target>
    

@@ -38,5 +38,20 @@ public interface GroupParams {
 
   /** treat the first group result as the main result.  true/false */
   public static final String GROUP_FORMAT = GROUP + ".format";
+
+  /**
+   * Whether to cache the first pass search (doc ids and score) for the second pass search.
+   * Also defines the maximum size of the group cache relative to maxdoc in a percentage.
+   * Values can be a positive integer, from 0 till 100. A value of 0 will disable the group cache.
+   * The default is 0.*/
+  public static final String GROUP_CACHE_PERCENTAGE = GROUP + ".cache.percent";
+
+  // Note: Since you can supply multiple fields to group on, but only have a facets for the whole result. It only makes
+  // sense to me to support these parameters for the first group.
+  /** Whether the docSet (for example for faceting) should be based on plain documents (a.k.a UNGROUPED) or on the groups (a.k.a GROUPED). */
+  public static final String GROUP_COLLAPSE = GROUP + ".collapse";
+
+  /** Whether the group count should be included in the response. */
+  public static final String GROUP_TOTAL_COUNT = GROUP + ".ngroups";
 }
 

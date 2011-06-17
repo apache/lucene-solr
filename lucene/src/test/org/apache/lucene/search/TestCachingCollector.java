@@ -17,14 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.CachingCollector;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 public class TestCachingCollector extends LuceneTestCase {
 
@@ -76,7 +72,7 @@ public class TestCachingCollector extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     for (boolean cacheScores : new boolean[] { false, true }) {
-      CachingCollector cc = CachingCollector.create(new NoOpCollector(false), cacheScores, 1);
+      CachingCollector cc = CachingCollector.create(new NoOpCollector(false), cacheScores, 1.0);
       cc.setScorer(new MockScorer());
 
       // collect 1000 docs
