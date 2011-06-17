@@ -816,6 +816,7 @@ public abstract class LuceneTestCase extends Assert {
     tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
