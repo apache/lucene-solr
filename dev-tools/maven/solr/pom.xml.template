@@ -38,9 +38,6 @@
     <module>src/test-framework</module>
     <module>contrib</module>
   </modules>
-  <properties>
-    <java.compat.version>1.6</java.compat.version>
-  </properties>
   <issueManagement>
     <system>JIRA</system>
     <url>http://issues.apache.org/jira/browse/SOLR</url>
