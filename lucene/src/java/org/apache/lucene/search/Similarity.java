@@ -209,11 +209,5 @@ public abstract class Similarity {
      * the topLevelBoost (e.g. from an outer BooleanQuery) into its score.
      */
     public abstract void normalize(float queryNorm, float topLevelBoost);
-    
-    // NOTE: I think we should just leave explaining to the docScorer,
-    // if an impl's docScorer decides that stats are part of that
-    // and wants to delegate part of the explanation to its stats class,
-    // thats cool, but not required
-    //public abstract Explanation explain();
   }
 }
