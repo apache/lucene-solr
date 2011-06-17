@@ -27,10 +27,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -179,6 +176,85 @@ public class QueryComponent extends SearchComponent
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
+      
+    //
+    // grouping / field collapsing
+    //
+    boolean doGroup = params.getBool(GroupParams.GROUP, false);
+    if (doGroup) {
+      try {
+        int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
+        boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
+        String[] fields = params.getParams(GroupParams.GROUP_FIELD);
+        String[] queries = params.getParams(GroupParams.GROUP_QUERY);
+        String groupSortStr = params.get(GroupParams.GROUP_SORT);
+        boolean main = params.getBool(GroupParams.GROUP_MAIN, false);
+
+        String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());
+        Grouping.Format defaultFormat;
+        try {
+          defaultFormat = Grouping.Format.valueOf(formatStr);
+        } catch (IllegalArgumentException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("Illegal %s parameter", GroupParams.GROUP_FORMAT));
+        }
+
+        boolean includeTotalGroupCount = params.getBool(GroupParams.GROUP_TOTAL_COUNT, false);
+        Grouping.TotalCount defaultTotalCount = includeTotalGroupCount ? Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
+        Sort sort = cmd.getSort();
+        // groupSort defaults to sort
+        Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
+
+        int limitDefault = cmd.getLen(); // this is normally from "rows"
+        int groupOffsetDefault = params.getInt(GroupParams.GROUP_OFFSET, 0);
+        int docsPerGroupDefault = params.getInt(GroupParams.GROUP_LIMIT, 1);
+
+        Grouping grouping = new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, main);
+        grouping.setSort(sort)
+            .setGroupSort(groupSort)
+            .setDefaultFormat(defaultFormat)
+            .setLimitDefault(limitDefault)
+            .setDefaultTotalCount(defaultTotalCount)
+            .setDocsPerGroupDefault(docsPerGroupDefault)
+            .setGroupOffsetDefault(groupOffsetDefault);
+
+        if (fields != null) {
+          for (String field : fields) {
+            grouping.addFieldCommand(field, rb.req);
+          }
+        }
+
+        if (queries != null) {
+          for (String groupByStr : queries) {
+            grouping.addQueryCommand(groupByStr, rb.req);
+          }
+        }
+
+        if (rb.doHighlights || rb.isDebug()) {
+          // we need a single list of the returned docs
+          cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
+        }
+
+        grouping.execute();
+        rb.setResult( result );
+        if (grouping.isSignalCacheWarning()) {
+          rsp.add(
+              "cacheWarning",
+              String.format("Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
+          );
+        }
+        rsp.add("grouped", result.groupedResults);
+        if (grouping.mainResult != null) {
+          rsp.add("response", grouping.mainResult);
+          rsp.getToLog().add("hits", grouping.mainResult.matches());
+        } else {
+          rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
+        }
+        return;
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+    }
+
     searcher.search(result,cmd);
     rb.setResult( result );
 
@@ -309,6 +385,7 @@ public class QueryComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       mergeIds(rb, sreq);
+      mergeGroupCounts(rb, sreq);
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
@@ -525,6 +602,9 @@ public class QueryComponent extends SearchComponent
 
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
+        
+      // disable grouping
+	    sreq.params.remove("group");
 
       // make sure that the id is returned for correlation.
       String fl = sreq.params.get(CommonParams.FL);
@@ -575,6 +655,42 @@ public class QueryComponent extends SearchComponent
           rb._responseDocs.set(sdoc.positionInResponse, doc);
         }
       }      
+    }
+  }
+
+  /**
+   * Merges the collapse responses from the shards into one distributed collapse response.
+   *
+   * @param rb   The response builder
+   * @param sreq The shard request
+   */
+  private void mergeGroupCounts(ResponseBuilder rb, ShardRequest sreq) {
+    NamedList combinedGroupCounts = new NamedList<Object>();
+
+    for (ShardResponse srsp : sreq.responses) {
+      //check if the namelist is null or not (if a shard crashed)
+      if (srsp.getSolrResponse().getResponse() == null) {
+        continue;
+      }
+
+      NamedList groupCounts = (NamedList<Object>) srsp.getSolrResponse().getResponse().get("groupCount");
+      /*for (Object o : rb.resultIds.keySet()) {
+        String id = (String) o;
+      }*/
+
+      if (groupCounts != null) {
+        for (int i = 0; i < groupCounts.size(); i++) {
+          String groupGroupId = groupCounts.getName(i);
+          ShardDoc sdoc = rb.resultIds.get(groupGroupId);
+          if (sdoc != null) {
+            combinedGroupCounts.add(groupGroupId, groupCounts.getVal(i));
+          }
+        }
+      }
+    }
+
+    if (combinedGroupCounts.size() > 0) {
+      rb.rsp.add("groupCount", combinedGroupCounts);
     }
   }
 

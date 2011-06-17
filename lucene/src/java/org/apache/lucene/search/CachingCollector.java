@@ -110,7 +110,16 @@ public abstract class CachingCollector extends Collector {
       curScores = new float[128];
       cachedScores.add(curScores);
     }
-    
+
+    ScoreCachingCollector(Collector other, int maxDocsToCache) {
+      super(other, maxDocsToCache);
+
+      cachedScorer = new CachedScorer();
+      cachedScores = new ArrayList<float[]>();
+      curScores = new float[INITIAL_ARRAY_SIZE];
+      cachedScores.add(curScores);
+    }
+
     @Override
     public void collect(int doc) throws IOException {
 
@@ -211,6 +220,10 @@ public abstract class CachingCollector extends Collector {
     
     NoScoreCachingCollector(Collector other, double maxRAMMB) {
      super(other, maxRAMMB, false);
+    }
+
+    NoScoreCachingCollector(Collector other, int maxDocsToCache) {
+     super(other, maxDocsToCache);
     }
     
     @Override
@@ -356,6 +369,24 @@ public abstract class CachingCollector extends Collector {
   public static CachingCollector create(Collector other, boolean cacheScores, double maxRAMMB) {
     return cacheScores ? new ScoreCachingCollector(other, maxRAMMB) : new NoScoreCachingCollector(other, maxRAMMB);
   }
+
+  /**
+   * Create a new {@link CachingCollector} that wraps the given collector and
+   * caches documents and scores up to the specified max docs threshold.
+   *
+   * @param other
+   *          the Collector to wrap and delegate calls to.
+   * @param cacheScores
+   *          whether to cache scores in addition to document IDs. Note that
+   *          this increases the RAM consumed per doc
+   * @param maxDocsToCache
+   *          the maximum number of documents for caching the documents and
+   *          possible the scores. If the collector exceeds the threshold,
+   *          no documents and scores are cached.
+   */
+  public static CachingCollector create(Collector other, boolean cacheScores, int maxDocsToCache) {
+    return cacheScores ? new ScoreCachingCollector(other, maxDocsToCache) : new NoScoreCachingCollector(other, maxDocsToCache);
+  }
   
   // Prevent extension from non-internal classes
   private CachingCollector(Collector other, double maxRAMMB, boolean cacheScores) {
@@ -370,6 +401,15 @@ public abstract class CachingCollector extends Collector {
       bytesPerDoc += RamUsageEstimator.NUM_BYTES_FLOAT;
     }
     maxDocsToCache = (int) ((maxRAMMB * 1024 * 1024) / bytesPerDoc);
+  }
+
+  private CachingCollector(Collector other, int maxDocsToCache) {
+    this.other = other;
+
+    cachedDocs = new ArrayList<int[]>();
+    curDocs = new int[INITIAL_ARRAY_SIZE];
+    cachedDocs.add(curDocs);
+    this.maxDocsToCache = maxDocsToCache;
   }
 
   @Override

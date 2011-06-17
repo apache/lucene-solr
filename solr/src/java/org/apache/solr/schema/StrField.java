@@ -17,19 +17,15 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.FieldCacheSource;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.ValueSource;
 
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
 /**
  * @version $Id$
  */
@@ -59,71 +55,4 @@ public class StrField extends FieldType {
     field.checkFieldCacheSource(parser);
     return new StrFieldSource(field.getName());
   }
-}
-
-
-class StrFieldSource extends FieldCacheSource {
-
-  public StrFieldSource(String field) {
-    super(field);
-  }
-
-  @Override
-  public String description() {
-    return "str(" + field + ')';
-  }
-
-  @Override
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new StringIndexDocValues(this, reader, field) {
-      @Override
-      protected String toTerm(String readableValue) {
-        return readableValue;
-      }
-
-      @Override
-      public float floatVal(int doc) {
-        return (float)intVal(doc);
-      }
-
-      @Override
-      public int intVal(int doc) {
-        int ord=order[doc];
-        return ord;
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)intVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)intVal(doc);
-      }
-
-      @Override
-      public String strVal(int doc) {
-        int ord=order[doc];
-        return lookup[ord];
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + strVal(doc);
-      }
-    };
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return o instanceof StrFieldSource
-            && super.equals(o);
-  }
-
-  private static int hcode = SortableFloatFieldSource.class.hashCode();
-  @Override
-  public int hashCode() {
-    return hcode + super.hashCode();
-  };
 }

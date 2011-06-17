@@ -947,9 +947,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   private static final int NO_CHECK_QCACHE       = 0x80000000;
-  private static final int GET_DOCSET            = 0x40000000;
+  public static final int GET_DOCSET            = 0x40000000;
   private static final int NO_CHECK_FILTERCACHE  = 0x20000000;
 
+  public static final int GET_DOCLIST           =        0x02;
   public static final int GET_SCORES             =       0x01;
 
   /**
@@ -1872,6 +1873,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public static class QueryResult {
     private boolean partialResults;
     private DocListAndSet docListAndSet;
+    public Object groupedResults; // Todo: Refactor. At least getter setter and different type.
     
     public DocList getDocList() { return docListAndSet.docList; }
     public void setDocList(DocList list) {

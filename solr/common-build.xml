@@ -201,7 +201,8 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spellchecker/classes/java" />
-  </path>   
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/grouping/classes/java" />
+  </path>
 
   <target name="prep-lucene-jars">
     <sequential>
@@ -216,6 +217,7 @@
         <fileset dir="../lucene/contrib/queries" includes="build.xml" />
         <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
         <fileset dir="../lucene/contrib/spellchecker" includes="build.xml" />
+        <fileset dir="../lucene/contrib/grouping" includes="build.xml" />
       </subant>
     </sequential>
   </target>
@@ -247,6 +249,9 @@
       <fileset dir="../lucene/build/contrib/spellchecker">
         <include name="lucene-spellchecker-${version}.jar" />
       </fileset>
+      <fileset dir="../lucene/build/contrib/grouping">
+        <include name="lucene-grouping-${version}.jar" />
+      </fileset>
       </copy>
   </target>  
   
@@ -260,6 +265,7 @@
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spatial"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spellchecker"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/xml-query-parser"/>
+    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/grouping"/>
   </target>
    
    
