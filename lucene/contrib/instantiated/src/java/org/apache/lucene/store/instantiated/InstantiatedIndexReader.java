@@ -337,8 +337,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
   @Override
   public long getSumOfNorms(String field) throws IOException {
-    // nocommit: add support?
-    return 1; // lie for now
+    throw new UnsupportedOperationException("not supported by InstantiatedIndexReader");
   }
 
   @Override
