@@ -101,22 +101,4 @@ public class SpanScorer extends Scorer {
   public float freq() throws IOException {
     return freq;
   }
-
-  /** This method is no longer an official member of {@link Scorer},
-   * but it is needed by SpanWeight to build an explanation. */
-  // nocommit: die
-  protected Explanation explain(final int doc) throws IOException {
-    Explanation tfExplanation = new Explanation();
-
-    int expDoc = advance(doc);
-
-    float phraseFreq = (expDoc == doc) ? freq : 0.0f;
-    if (similarity instanceof TFIDFSimilarity) {
-      TFIDFSimilarity tfidf = (TFIDFSimilarity) similarity;
-      tfExplanation.setValue(tfidf.tf(phraseFreq));
-      tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
-    }
-    return tfExplanation;
-  }
-
 }

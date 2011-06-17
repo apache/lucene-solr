@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
@@ -314,21 +313,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         return new DefaultSimilarity() {
           
           @Override
-          public IDFExplanation idfExplain(TermContext stats[],
+          public Explanation idfExplain(TermContext stats[],
               IndexSearcher searcher) throws IOException {
-            return new IDFExplanation() {
-
-              @Override
-              public float getIdf() {
-                return 10f;
-              }
-
-              @Override
-              public String explain() {
-                return "just a test";
-              }
-              
-            };
+            return new Explanation(10f, "just a test");
           } 
         };
       }

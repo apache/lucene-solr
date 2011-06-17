@@ -45,7 +45,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -341,18 +340,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     
         // idf used for phrase queries
         @Override 
-        public IDFExplanation idfExplain(TermContext states[], IndexSearcher searcher) throws IOException {
-          return new IDFExplanation() {
-            @Override
-            public float getIdf() {
-              return 1.0f;
-            }
-        
-            @Override
-            public String explain() {
-              return "Inexplicable";
-            }
-          };
+        public Explanation idfExplain(TermContext states[], IndexSearcher searcher) throws IOException {
+          return new Explanation(1.0f, "Inexplicable");
         }
       };
     }

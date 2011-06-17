@@ -18,11 +18,13 @@ package org.apache.lucene.search.payloads;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.Similarity.SloppyDocScorer;
 import org.apache.lucene.search.spans.NearSpansOrdered;
 import org.apache.lucene.search.spans.NearSpansUnordered;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -147,6 +149,34 @@ public class PayloadNearQuery extends SpanNearQuery {
       return new PayloadNearSpanScorer(query.getSpans(context), this,
           similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
+    
+    @Override
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      PayloadNearSpanScorer scorer = (PayloadNearSpanScorer) scorer(context, ScorerContext.def());
+      if (scorer != null) {
+        int newDoc = scorer.advance(doc);
+        if (newDoc == doc) {
+          float freq = scorer.freq();
+          SloppyDocScorer docScorer = similarity.sloppyDocScorer(stats, query.getField(), context);
+          Explanation expl = new Explanation();
+          expl.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
+          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
+          expl.addDetail(scoreExplanation);
+          expl.setValue(scoreExplanation.getValue());
+          // now the payloads part
+          Explanation payloadExpl = function.explain(doc, scorer.payloadsSeen, scorer.payloadScore);
+          // combined
+          ComplexExplanation result = new ComplexExplanation();
+          result.addDetail(expl);
+          result.addDetail(payloadExpl);
+          result.setValue(expl.getValue() * payloadExpl.getValue());
+          result.setDescription("PayloadNearQuery, product of:");
+          return result;
+        }
+      }
+      
+      return new ComplexExplanation(false, 0.0f, "no matching term");
+    }
   }
 
   public class PayloadNearSpanScorer extends SpanScorer {
@@ -224,20 +254,6 @@ public class PayloadNearQuery extends SpanNearQuery {
 
       return super.score()
           * function.docScore(doc, fieldName, payloadsSeen, payloadScore);
-    }
-
-    @Override
-    protected Explanation explain(int doc) throws IOException {
-      Explanation result = new Explanation();
-      // Add detail about tf/idf...
-      Explanation nonPayloadExpl = super.explain(doc);
-      result.addDetail(nonPayloadExpl);
-      // Add detail about payload
-      Explanation payloadExpl = function.explain(doc, payloadsSeen, payloadScore);
-      result.addDetail(payloadExpl);
-      result.setValue(nonPayloadExpl.getValue() * payloadExpl.getValue());
-      result.setDescription("PayloadNearQuery, product of:");
-      return result;
     }
   }
 

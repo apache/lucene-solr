@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
 public class TestOmitTf extends LuceneTestCase {
@@ -45,17 +44,8 @@ public class TestOmitTf extends LuceneTestCase {
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public IDFExplanation idfExplain(TermContext[] terms, IndexSearcher searcher) throws IOException {
-          return new IDFExplanation() {
-            @Override
-            public float getIdf() {
-              return 1.0f;
-            }
-            @Override
-            public String explain() {
-              return "Inexplicable";
-            }
-          };
+        @Override public Explanation idfExplain(TermContext[] terms, IndexSearcher searcher) throws IOException {
+          return new Explanation(1.0f, "Inexplicable");
         }
       };
     }

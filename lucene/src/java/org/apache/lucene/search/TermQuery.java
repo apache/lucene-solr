@@ -27,6 +27,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Similarity.ExactDocScorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
@@ -92,85 +93,25 @@ public class TermQuery extends Query {
     }
     
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc)
-      throws IOException {
-      //nocommit: fix explains
-      if (!(similarity instanceof TFIDFSimilarity))
-        return new ComplexExplanation();
-      final TFIDFSimilarity similarity = (TFIDFSimilarity) this.similarity;
-      final TFIDFSimilarity.IDFStats stats = (TFIDFSimilarity.IDFStats) this.stats;
-      
-      final IndexReader reader = context.reader;
-
-      ComplexExplanation result = new ComplexExplanation();
-      result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
-
-      Explanation expl = new Explanation(stats.idf.getIdf(), stats.idf.explain());
-
-      // explain query weight
-      Explanation queryExpl = new Explanation();
-      queryExpl.setDescription("queryWeight(" + getQuery() + "), product of:");
-
-      Explanation boostExpl = new Explanation(getBoost(), "boost");
-      if (getBoost() != 1.0f)
-        queryExpl.addDetail(boostExpl);
-      queryExpl.addDetail(expl);
-
-      Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
-      queryExpl.addDetail(queryNormExpl);
-
-      queryExpl.setValue(boostExpl.getValue() *
-                         expl.getValue() *
-                         queryNormExpl.getValue());
-
-      result.addDetail(queryExpl);
-
-      // explain field weight
-      String field = term.field();
-      ComplexExplanation fieldExpl = new ComplexExplanation();
-      fieldExpl.setDescription("fieldWeight("+term+" in "+doc+
-                               "), product of:");
-
-      Explanation tfExplanation = new Explanation();
-      int tf = 0;
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      IndexReader reader = context.reader;
       DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), term.field(), term.bytes());
       if (docs != null) {
-          int newDoc = docs.advance(doc);
-          if (newDoc == doc) {
-            tf = docs.freq();
-          }
-        tfExplanation.setValue(similarity.tf(tf));
-        tfExplanation.setDescription("tf(termFreq("+term+")="+tf+")");
-      } else {
-        tfExplanation.setValue(0.0f);
-        tfExplanation.setDescription("no matching term");
+        int newDoc = docs.advance(doc);
+        if (newDoc == doc) {
+          int freq = docs.freq();
+          ExactDocScorer docScorer = similarity.exactDocScorer(stats, term.field(), context);
+          ComplexExplanation result = new ComplexExplanation();
+          result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
+          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "termFreq=" + freq));
+          result.addDetail(scoreExplanation);
+          result.setValue(scoreExplanation.getValue());
+          result.setMatch(true);
+          return result;
+        }
       }
-      fieldExpl.addDetail(tfExplanation);
-      fieldExpl.addDetail(expl);
-
-      Explanation fieldNormExpl = new Explanation();
-      final byte[] fieldNorms = reader.norms(field);
-      float fieldNorm =
-        fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
-      fieldNormExpl.setValue(fieldNorm);
-      fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
-      fieldExpl.addDetail(fieldNormExpl);
       
-      fieldExpl.setMatch(Boolean.valueOf(tfExplanation.isMatch()));
-      fieldExpl.setValue(tfExplanation.getValue() *
-                         expl.getValue() *
-                         fieldNormExpl.getValue());
-
-      result.addDetail(fieldExpl);
-      result.setMatch(fieldExpl.getMatch());
-      
-      // combine them
-      result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-
-      if (queryExpl.getValue() == 1.0f)
-        return fieldExpl;
-
-      return result;
+      return new ComplexExplanation(false, 0.0f, "no matching term");
     }
   }
 

@@ -143,6 +143,19 @@ public abstract class Similarity {
      * @return document's score
      */
     public abstract float score(int doc, int freq);
+    
+    /**
+     * Explain the score for a single document
+     * @param doc document id
+     * @param freq Explanation of how the term frequency was computed
+     * @return document's score
+     */
+    public Explanation explain(int doc, Explanation freq) {
+      Explanation result = new Explanation(score(doc, (int)freq.getValue()), 
+          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:");
+      result.addDetail(freq);
+      return result;
+    }
   }
   
   /**
@@ -159,6 +172,19 @@ public abstract class Similarity {
      * @return document's score
      */
     public abstract float score(int doc, float freq);
+    
+    /**
+     * Explain the score for a single document
+     * @param doc document id
+     * @param freq Explanation of how the sloppy term frequency was computed
+     * @return document's score
+     */
+    public Explanation explain(int doc, Explanation freq) {
+      Explanation result = new Explanation(score(doc, freq.getValue()), 
+          "score(doc=" + doc + ",freq=" + freq.getValue() +"), with freq of:");
+      result.addDetail(freq);
+      return result;
+    }
   }
   
   /** Stores the statistics for the indexed collection. This abstract

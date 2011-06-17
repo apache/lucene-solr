@@ -23,7 +23,6 @@ import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
@@ -580,24 +579,15 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
    *   
    * @param stats statistics of the term in question
    * @param searcher the document collection being searched
-   * @return an IDFExplain object that includes both an idf score factor 
+   * @return an Explain object that includes both an idf score factor 
              and an explanation for the term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(TermContext stats, final IndexSearcher searcher) throws IOException {
+  public Explanation idfExplain(TermContext stats, final IndexSearcher searcher) throws IOException {
     final int df = stats.docFreq();
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
-    return new IDFExplanation() {
-        @Override
-        public String explain() {
-          return "idf(docFreq=" + df +
-          ", maxDocs=" + max + ")";
-        }
-        @Override
-        public float getIdf() {
-          return idf;
-        }};
+    return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
   /**
@@ -609,32 +599,24 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
    * 
    * @param stats statistics of the terms in the phrase
    * @param searcher the document collection being searched
-   * @return an IDFExplain object that includes both an idf 
+   * @return an Explain object that includes both an idf 
    *         score factor for the phrase and an explanation 
    *         for each term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(final TermContext stats[], IndexSearcher searcher) throws IOException {
+  public Explanation idfExplain(final TermContext stats[], IndexSearcher searcher) throws IOException {
     final int max = searcher.maxDoc();
     float idf = 0.0f;
-    final StringBuilder exp = new StringBuilder();
+    final Explanation exp = new Explanation();
+    exp.setDescription("idf(), sum of:");
     for (final TermContext stat : stats ) {
       final int df = stat.docFreq();
-      idf += idf(df, max);
-      exp.append(" ");
-      exp.append(df);
+      final float termIdf = idf(df, max);
+      exp.addDetail(new Explanation(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      idf += termIdf;
     }
-    final float fIdf = idf;
-    return new IDFExplanation() {
-      @Override
-      public float getIdf() {
-        return fIdf;
-      }
-      @Override
-      public String explain() {
-        return exp.toString();
-      }
-    };
+    exp.setValue(idf);
+    return exp;
   }
 
   /** Computes a score factor based on a term's document frequency (the number
@@ -689,7 +671,7 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
   @Override
   public final Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost,
       TermContext... termContexts) throws IOException {
-    final IDFExplanation idf = termContexts.length == 1
+    final Explanation idf = termContexts.length == 1
     ? idfExplain(termContexts[0], searcher)
     : idfExplain(termContexts, searcher);
     return new IDFStats(idf, queryBoost);
@@ -697,24 +679,26 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactTFIDFDocScorer(((IDFStats)stats).getValue(), context.reader.norms(fieldName));
+    return new ExactTFIDFDocScorer((IDFStats)stats, context.reader.norms(fieldName));
   }
 
   @Override
   public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new SloppyTFIDFDocScorer(((IDFStats)stats).getValue(), context.reader.norms(fieldName));
+    return new SloppyTFIDFDocScorer((IDFStats)stats, context.reader.norms(fieldName));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
 
   private final class ExactTFIDFDocScorer extends ExactDocScorer {
+    private final IDFStats stats;
     private final float weightValue;
     private final byte[] norms;
     private static final int SCORE_CACHE_SIZE = 32;
     private float[] scoreCache = new float[SCORE_CACHE_SIZE];
     
-    ExactTFIDFDocScorer(float weightValue, byte norms[]) {
-      this.weightValue = weightValue;
+    ExactTFIDFDocScorer(IDFStats stats, byte norms[]) {
+      this.stats = stats;
+      this.weightValue = stats.value;
       this.norms = norms;
       for (int i = 0; i < SCORE_CACHE_SIZE; i++)
         scoreCache[i] = tf(i) * weightValue;
@@ -729,14 +713,21 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
 
       return norms == null ? raw : raw * decodeNormValue(norms[doc]); // normalize for field
     }
+
+    @Override
+    public Explanation explain(int doc, Explanation freq) {
+      return explainScore(doc, freq, stats, norms);
+    }
   }
   
   private final class SloppyTFIDFDocScorer extends SloppyDocScorer {
+    private final IDFStats stats;
     private final float weightValue;
     private final byte[] norms;
     
-    SloppyTFIDFDocScorer(float weightValue, byte norms[]) {
-      this.weightValue = weightValue;
+    SloppyTFIDFDocScorer(IDFStats stats, byte norms[]) {
+      this.stats = stats;
+      this.weightValue = stats.value;
       this.norms = norms;
     }
     
@@ -746,22 +737,28 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
       
       return norms == null ? raw : raw * decodeNormValue(norms[doc]);  // normalize for field
     }
+    
+    @Override
+    public Explanation explain(int doc, Explanation freq) {
+      return explainScore(doc, freq, stats, norms);
+    }
   }
   
   /** Collection statistics for the TF-IDF model. The only statistic of interest
    * to this model is idf. */
   public static class IDFStats extends Stats {
-    /** The idf and its explanation: public for now until we fix explains. */
-    public final IDFExplanation idf;
-    // again public for now until we fix explains
-    public float queryNorm;
+    /** The idf and its explanation */
+    private final Explanation idf;
+    private float queryNorm;
     private float queryWeight;
+    private final float queryBoost;
     private float value;
     
-    public IDFStats(IDFExplanation idf, float queryBoost) {
+    public IDFStats(Explanation idf, float queryBoost) {
       // TODO: Validate?
       this.idf = idf;
-      this.queryWeight = idf.getIdf() * queryBoost; // compute query weight
+      this.queryBoost = queryBoost;
+      this.queryWeight = idf.getValue() * queryBoost; // compute query weight
     }
 
     @Override
@@ -774,11 +771,63 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
     public void normalize(float queryNorm, float topLevelBoost) {
       this.queryNorm = queryNorm * topLevelBoost;
       queryWeight *= this.queryNorm;              // normalize query weight
-      value = queryWeight * idf.getIdf();         // idf for document
+      value = queryWeight * idf.getValue();         // idf for document
     }
+  }
+  
+  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, byte[] norms) {
+    Explanation result = new Explanation();
+    result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
+
+    // explain query weight
+    Explanation queryExpl = new Explanation();
+    queryExpl.setDescription("queryWeight, product of:");
+
+    Explanation boostExpl = new Explanation(stats.queryBoost, "boost");
+    if (stats.queryBoost != 1.0f)
+      queryExpl.addDetail(boostExpl);
+    queryExpl.addDetail(stats.idf);
+
+    Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
+    queryExpl.addDetail(queryNormExpl);
+
+    queryExpl.setValue(boostExpl.getValue() *
+                       stats.idf.getValue() *
+                       queryNormExpl.getValue());
+
+    result.addDetail(queryExpl);
+
+    // explain field weight
+    Explanation fieldExpl = new Explanation();
+    fieldExpl.setDescription("fieldWeight in "+doc+
+                             ", product of:");
+
+    Explanation tfExplanation = new Explanation();
+    tfExplanation.setValue(tf(freq.getValue()));
+    tfExplanation.setDescription("tf(freq="+freq.getValue()+"), with freq of:");
+    tfExplanation.addDetail(freq);
+    fieldExpl.addDetail(tfExplanation);
+    fieldExpl.addDetail(stats.idf);
+
+    Explanation fieldNormExpl = new Explanation();
+    float fieldNorm =
+      norms!=null ? decodeNormValue(norms[doc]) : 1.0f;
+    fieldNormExpl.setValue(fieldNorm);
+    fieldNormExpl.setDescription("fieldNorm(doc="+doc+")");
+    fieldExpl.addDetail(fieldNormExpl);
     
-    public float getValue() {
-      return value;
-    }
+    fieldExpl.setValue(tfExplanation.getValue() *
+                       stats.idf.getValue() *
+                       fieldNormExpl.getValue());
+
+    result.addDetail(fieldExpl);
+    
+    // combine them
+    result.setValue(queryExpl.getValue() * fieldExpl.getValue());
+
+    if (queryExpl.getValue() == 1.0f)
+      return fieldExpl;
+
+    return result;
   }
 }
