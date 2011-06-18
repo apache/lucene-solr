@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * A {@link MergePolicy} which never returns merges to execute (hence it's
@@ -59,7 +59,7 @@ public final class NoMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
-      int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
+             int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
       throws CorruptIndexException, IOException { return null; }
 
   @Override

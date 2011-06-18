@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -472,7 +472,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     if (verbose()) {
       message("findMergesForOptimize maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToOptimize=" + segmentsToOptimize);
     }
@@ -480,8 +480,11 @@ public class TieredMergePolicy extends MergePolicy {
     List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
     boolean optimizeMergeRunning = false;
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
+    boolean segmentIsOriginal = false;
     for(SegmentInfo info : infos) {
-      if (segmentsToOptimize.contains(info)) {
+      final Boolean isOriginal = segmentsToOptimize.get(info);
+      if (isOriginal != null) {
+        segmentIsOriginal = isOriginal;
         if (!merging.contains(info)) {
           eligible.add(info);
         } else {
@@ -495,7 +498,7 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && isOptimized(eligible.get(0)))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isOptimized(eligible.get(0))))) {
       if (verbose()) {
         message("already optimized");
       }

@@ -21,9 +21,9 @@ import org.apache.lucene.util.Constants;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 /** This {@link MergePolicy} is used for upgrading all existing segments of
   * an index when calling {@link IndexWriter#optimize()}.
@@ -79,12 +79,13 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize) throws CorruptIndexException, IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize) throws CorruptIndexException, IOException {
     // first find all old segments
-    final HashSet<SegmentInfo> oldSegments = new HashSet<SegmentInfo>();
+    final Map<SegmentInfo,Boolean> oldSegments = new HashMap<SegmentInfo,Boolean>();
     for (final SegmentInfo si : segmentInfos) {
-      if (segmentsToOptimize.contains(si) && shouldUpgradeSegment(si)) {
-        oldSegments.add(si);
+      final Boolean v =segmentsToOptimize.get(si);
+      if (v != null && shouldUpgradeSegment(si)) {
+        oldSegments.put(si, v);
       }
     }
     
@@ -93,14 +94,16 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     if (oldSegments.isEmpty())
       return null;
 
-    MergeSpecification spec = base.findMergesForOptimize(segmentInfos, maxSegmentCount, oldSegments);    
+    MergeSpecification spec = base.findMergesForOptimize(segmentInfos, maxSegmentCount, oldSegments);
     
     if (spec != null) {
       // remove all segments that are in merge specification from oldSegments,
       // the resulting set contains all segments that are left over
       // and will be merged to one additional segment:
       for (final OneMerge om : spec.merges) {
-        oldSegments.removeAll(om.segments);
+        for(SegmentInfo info : om.segments) {
+          oldSegments.remove(info);
+        }
       }
     }
 
@@ -110,7 +113,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
       final List<SegmentInfo> newInfos = new ArrayList<SegmentInfo>();
       for (final SegmentInfo si : segmentInfos) {
-        if (oldSegments.contains(si)) {
+        if (oldSegments.containsKey(si)) {
           newInfos.add(si);
         }
       }

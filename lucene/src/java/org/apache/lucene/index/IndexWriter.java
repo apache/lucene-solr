@@ -236,7 +236,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private DocumentsWriter docWriter;
   final IndexFileDeleter deleter;
 
-  private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
+  private Map<SegmentInfo,Boolean> segmentsToOptimize = new HashMap<SegmentInfo,Boolean>();           // used by optimize to note those needing optimization
   private int optimizeMaxNumSegments;
 
   private Lock writeLock;
@@ -1664,7 +1664,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     synchronized(this) {
       resetMergeExceptions();
       segmentsToOptimize.clear();
-      segmentsToOptimize.addAll(segmentInfos.asSet());
+      for(SegmentInfo info : segmentInfos) {
+        segmentsToOptimize.put(info, Boolean.TRUE);
+      }
       optimizeMaxNumSegments = maxNumSegments;
 
       // Now mark all pending & running merges as optimize
@@ -1888,7 +1890,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableSet(segmentsToOptimize));
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableMap(segmentsToOptimize));
 
       if (spec != null) {
         final int numMerges = spec.merges.size();
@@ -3042,7 +3044,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     if (merge.optimize) {
       // cascade the optimize:
-      segmentsToOptimize.add(merge.info);
+      segmentsToOptimize.put(merge.info, Boolean.FALSE);
     }
 
     return true;
@@ -3086,7 +3088,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * 
    * @lucene.experimental
    */
-  public final void merge(MergePolicy.OneMerge merge)
+  public void merge(MergePolicy.OneMerge merge)
     throws CorruptIndexException, IOException {
 
     boolean success = false;
@@ -3167,7 +3169,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (info.dir != directory) {
         isExternal = true;
       }
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.containsKey(info)) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = optimizeMaxNumSegments;
       }
