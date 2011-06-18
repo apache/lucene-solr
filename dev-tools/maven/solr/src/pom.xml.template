@@ -34,7 +34,6 @@
   <properties>
     <module-directory>solr</module-directory>
     <build-directory>../build</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>
@@ -90,6 +89,11 @@
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-suggest</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-grouping</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

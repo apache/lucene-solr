@@ -60,6 +60,8 @@
         property="analyzers-phonetic.uptodate" classpath.property="analyzers-phonetic.jar"/>
   <module-uptodate name="suggest" jarfile="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"
         property="suggest.uptodate" classpath.property="suggest.jar"/>
+  <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
+        property="grouping.uptodate" classpath.property="grouping.jar"/>
   <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
   <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
   <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
@@ -75,6 +77,7 @@
   	<pathelement path="${queries.jar}"/>
   	<pathelement path="${spatial.jar}"/>
   	<pathelement path="${suggest.jar}"/>
+    <pathelement path="${grouping.jar}"/>
   	<pathelement location="${common-solr.dir}/build/classes/solrj"/>
   	<pathelement location="${common-solr.dir}/build/classes/webapp"/>
   	<pathelement location="${common-solr.dir}/build/classes/java"/>

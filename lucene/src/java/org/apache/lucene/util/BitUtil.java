@@ -778,6 +778,28 @@ public final class BitUtil {
    return n - (y & 1);
   }
 
+  /** table of number of leading zeros in a byte */
+  public static final byte[] nlzTable = {8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+  /** Returns the number of leading zero bits.
+   */
+  public static int nlz(long x) {
+   int n = 0;
+   // do the first step as a long
+   int y = (int)(x>>>32);
+   if (y==0) {n+=32; y = (int)(x); }
+   if ((y & 0xFFFF0000) == 0) { n+=16; y<<=16; }
+   if ((y & 0xFF000000) == 0) { n+=8; y<<=8; }
+   return n + nlzTable[y >>> 24];
+ /* implementation without table:
+   if ((y & 0xF0000000) == 0) { n+=4; y<<=4; }
+   if ((y & 0xC0000000) == 0) { n+=2; y<<=2; }
+   if ((y & 0x80000000) == 0) { n+=1; y<<=1; }
+   if ((y & 0x80000000) == 0) { n+=1;}
+   return n;
+  */
+  }
+
 
   /** returns true if v is a power of two or zero*/
   public static boolean isPowerOfTwo(int v) {

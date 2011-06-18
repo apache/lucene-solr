@@ -79,6 +79,10 @@ New Features
    facilitate doing grouping in a distributed environment (Uwe
    Schindler, Mike McCandless)
 
+ * LUCENE-2919: Added PKIndexSplitter, that splits an index according
+   to a middle term in a specified field.  (Jason Rutherglen via Mike
+   McCandless)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.

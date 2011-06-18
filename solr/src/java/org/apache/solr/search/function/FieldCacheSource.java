@@ -37,6 +37,10 @@ public abstract class FieldCacheSource extends ValueSource {
     return cache;
   }
 
+  public String getField() {
+    return field;
+  }
+
   @Override
   public String description() {
     return field;

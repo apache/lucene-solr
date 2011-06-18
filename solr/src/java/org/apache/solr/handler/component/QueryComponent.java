@@ -45,8 +45,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
-import org.apache.solr.search.function.FunctionQuery;
-import org.apache.solr.search.function.QueryValueSource;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
@@ -315,16 +313,25 @@ public class QueryComponent extends SearchComponent
     boolean doGroup = params.getBool(GroupParams.GROUP, false);
     if (doGroup) {
       try {
-        Grouping grouping = new Grouping(searcher, result, cmd);
-
+        int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
+        boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
         String[] fields = params.getParams(GroupParams.GROUP_FIELD);
         String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
         boolean main = params.getBool(GroupParams.GROUP_MAIN, false);
-        String format = params.get(GroupParams.GROUP_FORMAT);
-        Grouping.Format defaultFormat = "simple".equals(format) ? Grouping.Format.Simple : Grouping.Format.Grouped; 
 
+        String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());
+        Grouping.Format defaultFormat;
+        try {
+          defaultFormat = Grouping.Format.valueOf(formatStr);
+        } catch (IllegalArgumentException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format("Illegal %s parameter", GroupParams.GROUP_FORMAT));
+        }
+
+        boolean includeTotalGroupCount = params.getBool(GroupParams.GROUP_TOTAL_COUNT, false);
+        Grouping.TotalCount defaultTotalCount = includeTotalGroupCount ? Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
+        Sort sort = cmd.getSort();
         // groupSort defaults to sort
         Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
 
@@ -332,95 +339,47 @@ public class QueryComponent extends SearchComponent
         int groupOffsetDefault = params.getInt(GroupParams.GROUP_OFFSET, 0);
         int docsPerGroupDefault = params.getInt(GroupParams.GROUP_LIMIT, 1);
 
-        // temporary: implement all group-by-field as group-by-func
-        if (funcs == null) {
-          funcs = fields;
-        } else if (fields != null) {
-          // catenate functions and fields
-          String[] both = new String[fields.length + funcs.length];
-          System.arraycopy(fields, 0, both, 0, fields.length);
-          System.arraycopy(funcs, 0, both, fields.length, funcs.length);
-          funcs = both;
-        }
+        Grouping grouping = new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, main);
+        grouping.setSort(sort)
+            .setGroupSort(groupSort)
+            .setDefaultFormat(defaultFormat)
+            .setLimitDefault(limitDefault)
+            .setDefaultTotalCount(defaultTotalCount)
+            .setDocsPerGroupDefault(docsPerGroupDefault)
+            .setGroupOffsetDefault(groupOffsetDefault);
 
+        if (fields != null) {
+          for (String field : fields) {
+            grouping.addFieldCommand(field, rb.req);
+          }
+        }
 
         if (funcs != null) {
           for (String groupByStr : funcs) {
-            QParser parser = QParser.getParser(groupByStr, "func", rb.req);
-            Query q = parser.getQuery();
-            Grouping.CommandFunc gc = grouping.new CommandFunc();
-            gc.groupSort = groupSort;
-
-            if (q instanceof FunctionQuery) {
-              gc.groupBy = ((FunctionQuery)q).getValueSource();
-            } else {
-              gc.groupBy = new QueryValueSource(q, 0.0f);
-            }
-            gc.key = groupByStr;
-            gc.numGroups = limitDefault;
-            gc.docsPerGroup = docsPerGroupDefault;
-            gc.groupOffset = groupOffsetDefault;
-            gc.offset = cmd.getOffset();
-            gc.sort = cmd.getSort();
-            gc.format = defaultFormat;
-
-            if (main) {
-              gc.main = true;
-              gc.format = Grouping.Format.Simple;
-              main = false;
-            }
-
-            if (gc.format == Grouping.Format.Simple) {
-              gc.groupOffset = 0;  // doesn't make sense
-            }
-
-            grouping.add(gc);
+            grouping.addFunctionCommand(groupByStr, rb.req);
           }
         }
 
         if (queries != null) {
           for (String groupByStr : queries) {
-            QParser parser = QParser.getParser(groupByStr, null, rb.req);
-            Query gq = parser.getQuery();
-            Grouping.CommandQuery gc = grouping.new CommandQuery();
-            gc.query = gq;
-            gc.groupSort = groupSort;
-            gc.key = groupByStr;
-            gc.numGroups = limitDefault;
-            gc.docsPerGroup = docsPerGroupDefault;
-            gc.groupOffset = groupOffsetDefault;
-
-            // these two params will only be used if this is for the main result set
-            gc.offset = cmd.getOffset();
-            gc.numGroups = limitDefault;
-
-            gc.format = defaultFormat;            
-
-            if (main) {
-              gc.main = true;
-              gc.format = Grouping.Format.Simple;
-              main = false;
-            }
-            if (gc.format == Grouping.Format.Simple) {
-              gc.docsPerGroup = gc.numGroups;  // doesn't make sense to limit to one
-              gc.groupOffset = gc.offset;
-            }
-
-            grouping.add(gc);
+            grouping.addQueryCommand(groupByStr, rb.req);
           }
         }
-
 
         if (rb.doHighlights || rb.isDebug()) {
           // we need a single list of the returned docs
           cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
         }
 
-        // searcher.search(result,cmd);
         grouping.execute();
-        rb.setResult( result );
+        if (grouping.isSignalCacheWarning()) {
+          rsp.add(
+              "cacheWarning",
+              String.format("Cache limit of %d percent relative to maxdoc has exceeded. Please increase cache size or disable caching.", maxDocsPercentageToCache)
+          );
+        }
+        rb.setResult(result);
         rsp.add("grouped", result.groupedResults);
-        // TODO: get "hits" a different way to log
 
         if (grouping.mainResult != null) {
           ResultContext ctx = new ResultContext();
@@ -428,10 +387,10 @@ public class QueryComponent extends SearchComponent
           ctx.query = null; // TODO? add the query?
           rsp.add("response", ctx);
           rsp.getToLog().add("hits", grouping.mainResult.matches());
+        } else if (!grouping.getCommands().isEmpty()) { // Can never be empty since grouping.execute() checks for this.
+          rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
         }
-
         return;
-
       } catch (ParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

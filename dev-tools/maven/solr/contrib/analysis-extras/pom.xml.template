@@ -34,7 +34,6 @@
   <properties>
     <module-directory>solr/contrib/analysis-extras</module-directory>
     <build-directory>../../build/contrib/analysis-extras</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>

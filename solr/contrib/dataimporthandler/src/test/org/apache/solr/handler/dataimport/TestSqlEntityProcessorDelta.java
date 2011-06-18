@@ -120,7 +120,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCa
         runFullImport(dataConfig_delta);
         assertQ(req("id:1"), "//*[@numFound='0']");
       } finally {
-        f.setWritable(true);
+        f.delete();
       }
     }
   }

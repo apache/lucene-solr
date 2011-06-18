@@ -34,7 +34,6 @@
   <properties>
     <module-directory>solr/contrib/clustering</module-directory>
     <build-directory>../../build/contrib/clustering</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>

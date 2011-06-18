@@ -49,7 +49,7 @@
   <target name="compile-core" depends="init, clover, compile-analyzers-common, 
         compile-analyzers-phonetic, compile-suggest, compile-highlighter,
         compile-memory, compile-misc, compile-queries, compile-spatial,
-        compile-solrj, common.compile-core, compile-webapp"
+        compile-grouping, compile-solrj, common.compile-core, compile-webapp"
   	  unless="solr-core.compiled">
   </target>
  
@@ -149,6 +149,9 @@
   </target>
   <target name="compile-suggest" unless="suggest.uptodate">
   	<ant dir="${common.dir}/../modules/suggest" target="default" inheritAll="false"/>
+  </target>
+  <target name="compile-grouping" unless="grouping.uptodate">
+  	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false"/>
   </target>
   <target name="compile-highlighter" unless="highlighter.uptodate">
   	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false"/>

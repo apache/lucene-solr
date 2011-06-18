@@ -34,7 +34,6 @@
   <properties>
     <module-directory>solr/contrib/dataimporthandler-extras</module-directory>
     <build-directory>../../build/contrib/dataimporthandler-extras</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>
