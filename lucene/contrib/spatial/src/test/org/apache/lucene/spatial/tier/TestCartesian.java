@@ -26,7 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -222,8 +222,8 @@ public class TestCartesian extends LuceneTestCase {
     CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
 
       @Override
-      protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-        return new CustomScoreProvider(reader) {
+      protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+        return new CustomScoreProvider(context) {
           @Override // TODO: broken, as reader is not used!
           public float customScore(int doc, float subQueryScore, float valSrcScore){
             if (VERBOSE) System.out.println(doc);
@@ -318,8 +318,8 @@ public class TestCartesian extends LuceneTestCase {
     CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
 
       @Override
-      protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-        return new CustomScoreProvider(reader) {
+      protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+        return new CustomScoreProvider(context) {
           @Override // TODO: broken, as reader is not used!
           public float customScore(int doc, float subQueryScore, float valSrcScore){
             if (VERBOSE) System.out.println(doc);
@@ -415,8 +415,8 @@ public class TestCartesian extends LuceneTestCase {
     
       CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
         @Override
-        protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-          return new CustomScoreProvider(reader) {
+        protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+          return new CustomScoreProvider(context) {
             @Override // TODO: broken, as reader is not used!
             public float customScore(int doc, float subQueryScore, float valSrcScore){
               if (VERBOSE) System.out.println(doc);
@@ -510,8 +510,8 @@ public class TestCartesian extends LuceneTestCase {
       FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
       CustomScoreQuery customScore = new CustomScoreQuery(tq,fsQuery){
         @Override
-        protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-          return new CustomScoreProvider(reader) {
+        protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+          return new CustomScoreProvider(context) {
               @Override // TODO: broken, as reader is not used!
               public float customScore(int doc, float subQueryScore, float valSrcScore){
               if (VERBOSE) System.out.println(doc);

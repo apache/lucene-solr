@@ -175,8 +175,8 @@ public class CustomScoreQuery extends Query {
    * implementation as specified in the docs of {@link CustomScoreProvider}.
    * @since 2.9.2
    */
-  protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) throws IOException {
-    return new CustomScoreProvider(reader);
+  protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
+    return new CustomScoreProvider(context);
   }
 
   //=========================== W E I G H T ============================
@@ -251,7 +251,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(context, scorerContext.scoreDocsInOrder(true));
       }
-      return new CustomScorer(context.reader, this, subQueryScorer, valSrcScorers);
+      return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, subQueryScorer, valSrcScorers);
     }
 
     @Override
@@ -270,7 +270,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcWeights.length; i++) {
         valSrcExpls[i] = valSrcWeights[i].explain(info, doc);
       }
-      Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info.reader).customExplain(doc,subQueryExpl,valSrcExpls);
+      Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(info).customExplain(doc,subQueryExpl,valSrcExpls);
       float sc = getValue() * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");
@@ -300,14 +300,14 @@ public class CustomScoreQuery extends Query {
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
-    private CustomScorer(IndexReader reader, CustomWeight w,
+    private CustomScorer(CustomScoreProvider provider, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
       super(w);
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;
       this.vScores = new float[valSrcScorers.length];
-      this.provider = CustomScoreQuery.this.getCustomScoreProvider(reader);
+      this.provider = provider;
     }
 
     @Override
