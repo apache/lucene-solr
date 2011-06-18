@@ -104,6 +104,8 @@ public class FST<T> {
   // If arc has this label then that arc is final/accepted
   public static final int END_LABEL = -1;
 
+  private boolean allowArrayArcs = true;
+
   public final static class Arc<T> {
     public int label;
     public T output;
@@ -795,6 +797,10 @@ public class FST<T> {
   public int getArcWithOutputCount() {
     return arcWithOutputCount;
   }
+
+  public void setAllowArrayArcs(boolean v) {
+    allowArrayArcs = v;
+  }
   
   /**
    * Nodes will be expanded if their depth (distance from the root node) is
@@ -812,8 +818,9 @@ public class FST<T> {
    * @see Builder.UnCompiledNode#depth
    */
   private boolean shouldExpand(UnCompiledNode<T> node) {
-    return (node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
-            node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP;
+    return allowArrayArcs &&
+      ((node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
+       node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP);
   }
 
   // Non-static: writes to FST's byte[]

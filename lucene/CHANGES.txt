@@ -429,6 +429,11 @@ New features
   
   (Mike McCandless, Simon Willnauer)  
 
+* LUCENE-3209: Added MemoryCodec, which stores all terms & postings in
+  RAM as an FST; this is good for primary-key fields if you frequently
+  need to lookup by that field or perform deletions against it, for
+  example in a near-real-time setting. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

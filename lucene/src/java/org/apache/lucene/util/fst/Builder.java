@@ -21,7 +21,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.fst.FST.INPUT_TYPE;
+import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 
 import java.io.IOException;
 
@@ -134,6 +134,13 @@ public class Builder<T> {
 
   public int getMappedStateCount() {
     return dedupHash == null ? 0 : fst.nodeCount;
+  }
+
+  /** Pass false to disable the array arc optimization
+   *  while building the FST.  This is necessary if
+   *  encoding a single arc may take more than 255 bytes. */
+  public void setAllowArrayArcs(boolean b) {
+    fst.setAllowArrayArcs(b);
   }
 
   private CompiledNode compileNode(UnCompiledNode<T> n) throws IOException {
