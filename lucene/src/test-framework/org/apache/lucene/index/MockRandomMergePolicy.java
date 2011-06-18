@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
+import java.util.Map;
 
 import org.apache.lucene.util._TestUtil;
 
@@ -56,12 +56,12 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findMergesForOptimize(
-      SegmentInfos segmentInfos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
     throws CorruptIndexException, IOException {
 
     final List<SegmentInfo> eligibleSegments = new ArrayList<SegmentInfo>();
     for(SegmentInfo info : segmentInfos) {
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.containsKey(info)) {
         eligibleSegments.add(info);
       }
     }
@@ -85,7 +85,7 @@ public class MockRandomMergePolicy extends MergePolicy {
     if (mergeSpec != null) {
       for(OneMerge merge : mergeSpec.merges) {
         for(SegmentInfo info : merge.segments) {
-          assert segmentsToOptimize.contains(info);
+          assert segmentsToOptimize.containsKey(info);
         }
       }
     }

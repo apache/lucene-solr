@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -52,6 +53,12 @@ public class MockRandomMergePolicy extends MergePolicy {
     }
 
     return mergeSpec;
+  }
+
+  public MergeSpecification findMergesForOptimize(
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
+    throws CorruptIndexException, IOException {
+    return findMergesForOptimize(segmentInfos, maxSegmentCount, segmentsToOptimize.keySet());
   }
 
   @Override

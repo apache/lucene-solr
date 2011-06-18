@@ -24,7 +24,7 @@ import org.apache.lucene.util.SetOnce.AlreadySetException;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -297,10 +297,15 @@ public abstract class MergePolicy implements java.io.Closeable {
    *          is always 1)
    * @param segmentsToOptimize
    *          contains the specific SegmentInfo instances that must be merged
-   *          away. This may be a subset of all SegmentInfos.
+   *          away. This may be a subset of all
+   *          SegmentInfos.  If the value is True for a
+   *          given SegmentInfo, that means this segment was
+   *          an original segment present in the
+   *          to-be-optimized index; else, it was a segment
+   *          produced by a cascaded merge.
    */
   public abstract MergeSpecification findMergesForOptimize(
-      SegmentInfos segmentInfos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
+          SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
       throws CorruptIndexException, IOException;
 
   /**

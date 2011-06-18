@@ -713,12 +713,6 @@ public abstract class LuceneTestCase extends Assert {
       c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
     }
     
-    if (r.nextBoolean()) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
-    }
-    
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
