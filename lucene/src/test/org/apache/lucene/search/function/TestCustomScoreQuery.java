@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 
 /**
@@ -95,8 +95,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
     
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScore) {
           return subQueryScore + valSrcScore;
@@ -130,8 +130,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
           if (valSrcScores.length == 0) {
@@ -169,12 +169,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private final class CustomExternalQuery extends CustomScoreQuery {
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(reader, INT_FIELD);
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
+      final int[] values = FieldCache.DEFAULT.getInts(context.reader, INT_FIELD);
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
-          assertTrue(doc <= reader.maxDoc());
+          assertTrue(doc <= context.reader.maxDoc());
           return values[doc];
         }
       };

@@ -96,7 +96,8 @@ public class TestNRTThreads extends LuceneTestCase {
 
     final long t0 = System.currentTimeMillis();
 
-    if (CodecProvider.getDefault().getDefaultFieldCodec().equals("SimpleText")) {
+    final String defaultCodec = CodecProvider.getDefault().getDefaultFieldCodec();
+    if (defaultCodec.equals("SimpleText") || defaultCodec.equals("Memory")) {
       // no
       CodecProvider.getDefault().setDefaultFieldCodec("Standard");
     }

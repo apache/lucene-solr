@@ -52,6 +52,7 @@ import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -1452,6 +1453,7 @@ public abstract class LuceneTestCase extends Assert {
       register(new PreFlexCodec());
       register(new PulsingCodec(1));
       register(new SimpleTextCodec());
+      register(new MemoryCodec());
       Collections.shuffle(knownCodecs, random);
     }
 

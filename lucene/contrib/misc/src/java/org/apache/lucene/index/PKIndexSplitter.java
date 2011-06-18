@@ -19,113 +19,114 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 /**
- * Split an index based on a given primary key term 
- * and a 'middle' term.  If the middle term is present, it's
- * sent to dir2.
+ * Split an index based on a {@link Filter}.
  */
 public class PKIndexSplitter {
-  private Term midTerm;
-  Directory input;
-  Directory dir1;
-  Directory dir2; 
+  private final Filter docsInFirstIndex;
+  private final Directory input;
+  private final Directory dir1;
+  private final Directory dir2; 
   
-  public PKIndexSplitter(Term midTerm, Directory input, 
-      Directory dir1, Directory dir2) {
-    this.midTerm = midTerm;
+  /**
+   * Split an index based on a {@link Filter}. All documents that match the filter
+   * are sent to dir1, remaining ones to dir2.
+   */
+  public PKIndexSplitter(Directory input, Directory dir1, Directory dir2, Filter docsInFirstIndex) {
     this.input = input;
     this.dir1 = dir1;
     this.dir2 = dir2;
+    this.docsInFirstIndex = docsInFirstIndex;
+  }
+  
+  /**
+   * Split an index based on a  given primary key term 
+   * and a 'middle' term.  If the middle term is present, it's
+   * sent to dir2.
+   */
+  public PKIndexSplitter(Directory input, Directory dir1, Directory dir2, Term midTerm) {
+    this(input, dir1, dir2,
+      new TermRangeFilter(midTerm.field(), null, midTerm.bytes(), true, false));
   }
   
   public void split() throws IOException {
+    boolean success = false;
     IndexReader reader = IndexReader.open(input);
-    OpenBitSet lowDels = setDeletes(reader, null, midTerm.bytes());
-    OpenBitSet hiDels = setDeletes(reader, midTerm.bytes(), null);
-    
-    createIndex(dir1, reader, lowDels);
-    createIndex(dir2, reader, hiDels);
-    reader.close();
+    try {
+      createIndex(dir1, reader, docsInFirstIndex, false);
+      createIndex(dir2, reader, docsInFirstIndex, true);
+      success = true;
+    } finally {
+      IOUtils.closeSafely(!success, reader);
+    }
   }
   
-  private void createIndex(Directory target, IndexReader reader, OpenBitSet bv) throws IOException {
+  private void createIndex(Directory target, IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
+    boolean success = false;
     IndexWriter w = new IndexWriter(target, new IndexWriterConfig(
-        Version.LUCENE_CURRENT,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-        .setOpenMode(OpenMode.CREATE));
-    w.addIndexes(new DeletesIndexReader(reader, bv));
-    w.close();
+        Version.LUCENE_CURRENT, null).setOpenMode(OpenMode.CREATE));
+    try {
+      w.addIndexes(new DocumentFilteredIndexReader(reader, preserveFilter, negateFilter));
+      success = true;
+    } finally {
+      IOUtils.closeSafely(!success, w);
+    }
   }
-  
-  private OpenBitSet setDeletes(IndexReader reader, BytesRef startTerm, 
-      BytesRef endTermExcl) throws IOException {
-    OpenBitSet incl = new OpenBitSet(reader.maxDoc());
-    Terms terms = MultiFields.getTerms(reader, midTerm.field());
-    TermsEnum te = terms.iterator();
-    if (startTerm != null) {
-      te.seek(startTerm);
-    }
-    while (true) {
-      final BytesRef term = te.next();
-      if (term == null) {
-        break;
-      }
-      if (endTermExcl != null && term.compareTo(endTermExcl) >= 0) {
-        break;
-      }
-      DocsEnum docs = MultiFields.getTermDocsEnum(reader, 
-          MultiFields.getDeletedDocs(reader), midTerm.field(), term);
-      while (true) {
-        final int doc = docs.nextDoc();
-        if (doc != DocsEnum.NO_MORE_DOCS) {
-          incl.set(doc);
-        } else break;
-      }
-    }
-    OpenBitSet dels = new OpenBitSet(reader.maxDoc());
-    for (int x=0; x < reader.maxDoc(); x++) {
-      if (!incl.get(x)) {
-        dels.set(x);
-      }
-    }
-    return dels;
-  }
-  
-  public static class DeletesIndexReader extends FilterIndexReader {
-    OpenBitSet readerDels;
     
-    public DeletesIndexReader(IndexReader reader, OpenBitSet deletes) {
+  public static class DocumentFilteredIndexReader extends FilterIndexReader {
+    final Bits readerDels;
+    final int numDocs;
+    
+    public DocumentFilteredIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
       super(new SlowMultiReaderWrapper(reader));
-      readerDels = new OpenBitSet(reader.maxDoc());
+      
+      final OpenBitSetDISI bits = new OpenBitSetDISI(in.maxDoc());
+      final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext());
+      if (docs != null) {
+        final DocIdSetIterator it = docs.iterator();
+        if (it != null) {
+          bits.inPlaceOr(it);
+        }
+      }
+      // this is somehow inverse, if we negate the filter, we delete all documents it matches!
+      if (!negateFilter) {
+        bits.flip(0, in.maxDoc());
+      }
+
       if (in.hasDeletions()) {
-        final Bits oldDelBits = MultiFields.getDeletedDocs(in);
+        final Bits oldDelBits = in.getDeletedDocs();
         assert oldDelBits != null;
         for (int i = 0; i < in.maxDoc(); i++) {
-          if (oldDelBits.get(i) || deletes.get(i)) {
-            readerDels.set(i);
+          if (oldDelBits.get(i)) {
+            bits.set(i);
           }
         }
-      } else {
-        readerDels = deletes;
       }
+      
+      this.readerDels = bits;
+      this.numDocs = in.maxDoc() - (int) bits.cardinality();
     }
     
     @Override
     public int numDocs() {
-      return in.maxDoc() - (int)readerDels.cardinality();
+      return numDocs;
     }
     
     @Override
     public boolean hasDeletions() {
-      return (int)readerDels.cardinality() > 0;
+      return (in.maxDoc() != numDocs);
     }
     
     @Override

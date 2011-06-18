@@ -19,7 +19,8 @@ package org.apache.lucene.search.function;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader; // for javadocs
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldCache; // for javadocs
 
@@ -28,7 +29,7 @@ import org.apache.lucene.search.FieldCache; // for javadocs
  * {@link CustomScoreQuery#getCustomScoreProvider}, if you want
  * to modify the custom score calculation of a {@link CustomScoreQuery}.
  * <p>Since Lucene 2.9, queries operate on each segment of an index separately,
- * so the protected {@link #reader} field can be used to resolve doc IDs,
+ * so the protected {@link #context} field can be used to resolve doc IDs,
  * as the supplied <code>doc</code> ID is per-segment and without knowledge
  * of the IndexReader you cannot access the document or {@link FieldCache}.
  * 
@@ -37,13 +38,13 @@ import org.apache.lucene.search.FieldCache; // for javadocs
  */
 public class CustomScoreProvider {
 
-  protected final IndexReader reader;
+  protected final AtomicReaderContext context;
 
   /**
    * Creates a new instance of the provider class for the given {@link IndexReader}.
    */
-  public CustomScoreProvider(IndexReader reader) {
-    this.reader = reader;
+  public CustomScoreProvider(AtomicReaderContext context) {
+    this.context = context;
   }
 
   /**

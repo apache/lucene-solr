@@ -1013,6 +1013,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     HashSet<String> illegalCodecs = new HashSet<String>();
     illegalCodecs.add("PreFlex");
     illegalCodecs.add("SimpleText");
+    illegalCodecs.add("Memory");
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setReaderTermsIndexDivisor(-1);

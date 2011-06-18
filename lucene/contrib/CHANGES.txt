@@ -81,7 +81,7 @@ New Features
 
  * LUCENE-2919: Added PKIndexSplitter, that splits an index according
    to a middle term in a specified field.  (Jason Rutherglen via Mike
-   McCandless)
+   McCandless, Uwe Schindler)
 
 API Changes
 

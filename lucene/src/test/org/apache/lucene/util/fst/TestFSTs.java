@@ -980,7 +980,8 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    if (CodecProvider.getDefault().getDefaultFieldCodec().equals("SimpleText")) {
+    final String defaultCodec = CodecProvider.getDefault().getDefaultFieldCodec();
+    if (defaultCodec.equals("SimpleText") || defaultCodec.equals("Memory")) {
       // no
       CodecProvider.getDefault().setDefaultFieldCodec("Standard");
     }

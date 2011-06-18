@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /** <p>This class implements a {@link MergePolicy} that tries
  *  to merge segments into levels of exponentially
@@ -201,20 +201,23 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
   }
   
-  protected boolean isOptimized(SegmentInfos infos, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
+  protected boolean isOptimized(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
+    boolean segmentIsOriginal = false;
     for(int i=0;i<numSegments && numToOptimize <= maxNumSegments;i++) {
       final SegmentInfo info = infos.info(i);
-      if (segmentsToOptimize.contains(info)) {
+      final Boolean isOriginal = segmentsToOptimize.get(info);
+      if (isOriginal != null) {
+        segmentIsOriginal = isOriginal;
         numToOptimize++;
         optimizeInfo = info;
       }
     }
 
     return numToOptimize <= maxNumSegments &&
-      (numToOptimize != 1 || isOptimized(optimizeInfo));
+      (numToOptimize != 1 || !segmentIsOriginal || isOptimized(optimizeInfo));
   }
 
   /** Returns true if this single info is optimized (has no
@@ -346,7 +349,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  in use may make use of concurrency. */
   @Override
   public MergeSpecification findMergesForOptimize(SegmentInfos infos,
-      int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
+            int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
     if (verbose()) {
@@ -368,7 +371,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     int last = infos.size();
     while (last > 0) {
       final SegmentInfo info = infos.info(--last);
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.get(info) != null) {
         last++;
         break;
       }
