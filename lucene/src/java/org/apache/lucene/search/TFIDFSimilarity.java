@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
@@ -524,7 +523,7 @@ import org.apache.lucene.util.SmallFloat;
  * @see org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)
  * @see IndexSearcher#setSimilarityProvider(SimilarityProvider)
  */
-public abstract class TFIDFSimilarity extends Similarity implements Serializable {
+public abstract class TFIDFSimilarity extends Similarity {
   
   /** Computes a score factor based on a term or phrase's frequency in a
    * document.  This value is multiplied by the {@link #idf(int, int)}
