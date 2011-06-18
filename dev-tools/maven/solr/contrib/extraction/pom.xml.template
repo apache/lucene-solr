@@ -37,7 +37,6 @@
   <properties>
     <module-directory>solr/contrib/extraction</module-directory>
     <build-directory>build</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>

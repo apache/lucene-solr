@@ -38,6 +38,9 @@
     <module>src/test-framework</module>
     <module>contrib</module>
   </modules>
+  <properties>
+    <tests.luceneMatchVersion>LUCENE_CURRENT</tests.luceneMatchVersion>
+  </properties>
   <issueManagement>
     <system>JIRA</system>
     <url>http://issues.apache.org/jira/browse/SOLR</url>
