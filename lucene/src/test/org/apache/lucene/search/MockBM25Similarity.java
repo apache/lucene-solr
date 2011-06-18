@@ -42,9 +42,9 @@ public class MockBM25Similarity extends Similarity {
    * in your sim anyway (sorta dumb to bake into the index)
    */
   @Override
-  public float computeNorm(FieldInvertState state) {
+  public byte computeNorm(FieldInvertState state) {
     final int numTerms = state.getLength() - state.getNumOverlap();
-    return numTerms / state.getBoost();
+    return encodeNormValue(numTerms / state.getBoost());
   }
   
   /** Cache of decoded bytes. */
@@ -56,12 +56,10 @@ public class MockBM25Similarity extends Similarity {
     }
   }
   
-  @Override
   public float decodeNormValue(byte b) {
     return NORM_TABLE[b & 0xFF];
   }
 
-  @Override
   public byte encodeNormValue(float f) {
     return SmallFloat.floatToByte315(f);
   }

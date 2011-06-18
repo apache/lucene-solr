@@ -57,9 +57,9 @@ public class MockLMSimilarity extends Similarity {
    * our decoder precomputes the full formula into the norm table
    */
   @Override
-  public float computeNorm(FieldInvertState state) {
+  public byte computeNorm(FieldInvertState state) {
     final int numTerms = state.getLength() - state.getNumOverlap();
-    return numTerms / state.getBoost();
+    return encodeNormValue(numTerms / state.getBoost());
   }
   
   /** Cache of decoded bytes. */
@@ -72,12 +72,10 @@ public class MockLMSimilarity extends Similarity {
     }
   }
   
-  @Override
   public float decodeNormValue(byte b) {
     return NORM_TABLE[b & 0xFF];
   }
 
-  @Override
   public byte encodeNormValue(float f) {
     return SmallFloat.floatToByte315(f);
   }

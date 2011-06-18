@@ -149,7 +149,7 @@ public class FieldNormModifier {
         for (int d = 0; d < termCounts.length; d++) {
           if (delDocs == null || !delDocs.get(d)) {
             invertState.setLength(termCounts[d]);
-            subReader.setNorm(d, fieldName, fieldSim.encodeNormValue(fieldSim.computeNorm(invertState)));
+            subReader.setNorm(d, fieldName, fieldSim.computeNorm(invertState));
           }
         }
       }

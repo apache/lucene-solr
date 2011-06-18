@@ -645,7 +645,6 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
   /** Decodes a normalization factor stored in an index.
    * @see #encodeNormValue(float)
    */
-  @Override
   public float decodeNormValue(byte b) {
     return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
@@ -663,7 +662,6 @@ public abstract class TFIDFSimilarity extends Similarity implements Serializable
   * @see org.apache.lucene.document.Field#setBoost(float)
   * @see org.apache.lucene.util.SmallFloat
   */
-  @Override
   public byte encodeNormValue(float f) {
     return SmallFloat.floatToByte315(f);
   }

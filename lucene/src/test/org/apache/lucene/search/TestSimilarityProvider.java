@@ -107,8 +107,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim1 extends TFIDFSimilarity {
     @Override
-    public float computeNorm(FieldInvertState state) {
-      return 1f;
+    public byte computeNorm(FieldInvertState state) {
+      return encodeNormValue(1f);
     }
 
     @Override
@@ -129,8 +129,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim2 extends TFIDFSimilarity {
     @Override
-    public float computeNorm(FieldInvertState state) {
-      return 10f;
+    public byte computeNorm(FieldInvertState state) {
+      return encodeNormValue(10f);
     }
 
     @Override

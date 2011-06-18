@@ -38,8 +38,6 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -375,7 +373,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
-    reader.setNorm(searcher.search(new TermQuery(new Term("id", "22")), 10).scoreDocs[0].doc, "content", searcher.getSimilarityProvider().get("content").encodeNormValue(2.0f));
+    DefaultSimilarity sim = new DefaultSimilarity();
+    reader.setNorm(searcher.search(new TermQuery(new Term("id", "22")), 10).scoreDocs[0].doc, "content", sim.encodeNormValue(2.0f));
     reader.close();
     searcher.close();
 
@@ -421,7 +420,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
-    reader.setNorm(22, "content", searcher.getSimilarityProvider().get("content").encodeNormValue(2.0f));
+    DefaultSimilarity sim = new DefaultSimilarity();
+    reader.setNorm(22, "content", sim.encodeNormValue(2.0f));
     reader.close();
 
     // make sure they "took":
@@ -483,7 +483,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("didn't delete the right number of documents", 1, delCount);
 
       // Set one norm so we get a .s0 file:
-      reader.setNorm(21, "content", conf.getSimilarityProvider().get("content").encodeNormValue(1.5f));
+      DefaultSimilarity sim = new DefaultSimilarity();
+      reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
       reader.close();
     }
     
@@ -526,7 +527,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals("didn't delete the right number of documents", 1, delCount);
 
       // Set one norm so we get a .s0 file:
-      Similarity sim = new DefaultSimilarity();
+      DefaultSimilarity sim = new DefaultSimilarity();
       reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
       reader.close();
 

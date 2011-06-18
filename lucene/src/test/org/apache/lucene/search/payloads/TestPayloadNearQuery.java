@@ -324,8 +324,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
         //Make everything else 1 so we see the effect of the payload
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         @Override 
-        public float computeNorm(FieldInvertState state) {
-          return state.getBoost();
+        public byte computeNorm(FieldInvertState state) {
+          return encodeNormValue(state.getBoost());
         }
 
         @Override 

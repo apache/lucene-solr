@@ -40,42 +40,23 @@ public abstract class Similarity {
   
   public static final int NO_DOC_ID_PROVIDED = -1;
 
-  /** Decodes a normalization factor stored in an index.
-   * @see #encodeNormValue(float)
-   */
-  public abstract float decodeNormValue(byte b);
-
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
    * 
-   * <p>Implementations should calculate a float value based on the field
+   * <p>Implementations should calculate a byte value based on the field
    * state and then return that value.
    *
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually return smaller values when <code>state.getLength()</code> is large,
    * and larger values when <code>state.getLength()</code> is small.
    * 
-   * <p>Note that the return values are computed under 
-   * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
-   * and then stored using
-   * {@link #encodeNormValue(float)}.  
-   * Thus they have limited precision, and documents
-   * must be re-indexed if this method is altered.
-   *
    * @lucene.experimental
    * 
    * @param state current processing state for this field
-   * @return the calculated float norm
+   * @return the calculated byte norm
    */
-  public abstract float computeNorm(FieldInvertState state);
-  
-  /** Encodes a normalization factor for storage in an index.
-   * 
-   * @see org.apache.lucene.document.Field#setBoost(float)
-   * @see org.apache.lucene.util.SmallFloat
-   */
-  public abstract byte encodeNormValue(float f);
+  public abstract byte computeNorm(FieldInvertState state);
 
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
    * This value is summed for each sloppy phrase match in a document to form

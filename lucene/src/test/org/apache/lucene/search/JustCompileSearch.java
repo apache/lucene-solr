@@ -262,17 +262,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public float decodeNormValue(byte b) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public byte encodeNormValue(float f) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public float computeNorm(FieldInvertState state) {
+    public byte computeNorm(FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

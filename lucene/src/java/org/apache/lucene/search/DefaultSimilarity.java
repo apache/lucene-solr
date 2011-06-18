@@ -31,13 +31,13 @@ public class DefaultSimilarity extends TFIDFSimilarity {
    *
    *  @lucene.experimental */
   @Override
-  public float computeNorm(FieldInvertState state) {
+  public byte computeNorm(FieldInvertState state) {
     final int numTerms;
     if (discountOverlaps)
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    return state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms)));
+    return encodeNormValue(state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms))));
   }
 
   /** Implemented as <code>sqrt(freq)</code>. */

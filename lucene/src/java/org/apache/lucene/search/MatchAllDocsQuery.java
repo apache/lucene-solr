@@ -32,35 +32,17 @@ import java.io.IOException;
  */
 public class MatchAllDocsQuery extends Query {
 
-  public MatchAllDocsQuery() {
-    this(null);
-  }
-
-  private final String normsField;
-
-  /**
-   * @param normsField Field used for normalization factor (document boost). Null if nothing.
-   */
-  public MatchAllDocsQuery(String normsField) {
-    this.normsField = normsField;
-  }
-
   private class MatchAllScorer extends Scorer {
     final float score;
-    final byte[] norms;
     private int doc = -1;
     private final int maxDoc;
     private final Bits delDocs;
-    private final Similarity similarity;
-    
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w, float score,
-        byte[] norms) throws IOException {
+
+    MatchAllScorer(IndexReader reader, Weight w, float score) throws IOException {
       super(w);
-      this.similarity = similarity;
       delDocs = reader.getDeletedDocs();
       this.score = score;
       maxDoc = reader.maxDoc();
-      this.norms = norms;
     }
 
     @Override
@@ -80,11 +62,9 @@ public class MatchAllDocsQuery extends Query {
       return doc;
     }
     
-    // TODO: this is baked-in TF/IDF: should calling sim's docScorer.score() with a freq of 1 on the "norms field"
-    // but, by default it uses a "null field", which could pose a problem for someone's SimilarityProvider !!!!
     @Override
     public float score() {
-      return norms == null ? score : score * similarity.decodeNormValue(norms[docID()]);
+      return score;
     }
 
     @Override
@@ -95,12 +75,10 @@ public class MatchAllDocsQuery extends Query {
   }
 
   private class MatchAllDocsWeight extends Weight {
-    private Similarity similarity;
     private float queryWeight;
     private float queryNorm;
 
     public MatchAllDocsWeight(IndexSearcher searcher) {
-      this.similarity = normsField == null ? null : searcher.getSimilarityProvider().get(normsField);
     }
 
     @Override
@@ -127,8 +105,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new MatchAllScorer(context.reader, similarity, this, queryWeight,
-          normsField != null ? context.reader.norms(normsField) : null);
+      return new MatchAllScorer(context.reader, this, queryWeight);
     }
 
     @Override

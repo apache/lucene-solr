@@ -149,7 +149,7 @@ public class TestParallelReader extends LuceneTestCase {
     
     assertTrue(pr.isCurrent());
     IndexReader modifier = IndexReader.open(dir1, false);
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     modifier.setNorm(0, "f1", sim.encodeNormValue(100f));
     modifier.close();
     

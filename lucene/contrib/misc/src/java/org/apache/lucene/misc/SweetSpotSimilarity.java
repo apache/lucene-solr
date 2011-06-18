@@ -106,7 +106,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * discountOverlaps is true by default or true for this
    * specific field. */
   @Override
-  public float computeNorm(FieldInvertState state) {
+  public byte computeNorm(FieldInvertState state) {
     final int numTokens;
 
     if (discountOverlaps)
@@ -114,7 +114,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     else
       numTokens = state.getLength();
 
-    return state.getBoost() * computeLengthNorm(numTokens);
+    return encodeNormValue(state.getBoost() * computeLengthNorm(numTokens));
   }
 
   /**

@@ -46,9 +46,9 @@ public class TestNorms extends LuceneTestCase {
     public Similarity get(String field) {
       return new DefaultSimilarity() {
         @Override
-        public float computeNorm(FieldInvertState state) {
+        public byte computeNorm(FieldInvertState state) {
           // diable length norm
-          return state.getBoost();
+          return encodeNormValue(state.getBoost());
         }
       };
     } 
@@ -177,7 +177,7 @@ public class TestNorms extends LuceneTestCase {
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));
       modifiedNorms.set(k, Float.valueOf(origNorm));
-      Similarity sim = new DefaultSimilarity();
+      DefaultSimilarity sim = new DefaultSimilarity();
       ir.setNorm(i, "f"+1, sim.encodeNormValue(newNorm)); 
       ir.setNorm(k, "f"+1, sim.encodeNormValue(origNorm)); 
     }
@@ -192,8 +192,9 @@ public class TestNorms extends LuceneTestCase {
       byte b[] = MultiNorms.norms(ir, field);
       assertEquals("number of norms mismatches",numDocNorms,b.length);
       ArrayList<Float> storedNorms = (i==1 ? modifiedNorms : norms);
+      DefaultSimilarity sim = (DefaultSimilarity) similarityProviderOne.get(field);
       for (int j = 0; j < b.length; j++) {
-        float norm = similarityProviderOne.get(field).decodeNormValue(b[j]);
+        float norm = sim.decodeNormValue(b[j]);
         float norm1 = storedNorms.get(j).floatValue();
         assertEquals("stored norm value of "+field+" for doc "+j+" is "+norm+" - a mismatch!", norm, norm1, 0.000001);
       }
@@ -229,7 +230,7 @@ public class TestNorms extends LuceneTestCase {
   // return unique norm values that are unchanged by encoding/decoding
   private float nextNorm(String fname) {
     float norm = lastNorm + normDelta;
-    Similarity similarity = similarityProviderOne.get(fname);
+    DefaultSimilarity similarity = (DefaultSimilarity) similarityProviderOne.get(fname);
     do {
 			float norm1 = similarity.decodeNormValue(similarity.encodeNormValue(norm));
       if (norm1 > lastNorm) {
@@ -259,8 +260,8 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public float computeNorm(FieldInvertState state) {
-      return (float) state.getLength();
+    public byte computeNorm(FieldInvertState state) {
+      return encodeNormValue((float) state.getLength());
     }
   }
   
