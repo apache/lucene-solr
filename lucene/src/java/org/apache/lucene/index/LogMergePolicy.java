@@ -285,7 +285,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   private MergeSpecification findMergesForOptimizeMaxNumSegments(SegmentInfos infos, int maxNumSegments, int last) throws IOException {
     MergeSpecification spec = new MergeSpecification();
     final List<SegmentInfo> segments = infos.asList();
-    
+
     // First, enroll all "full" merges (size
     // mergeFactor) to potentially be run concurrently:
     while (last - maxNumSegments + 1 >= mergeFactor) {
@@ -352,6 +352,9 @@ public abstract class LogMergePolicy extends MergePolicy {
             int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
+    if (verbose()) {
+      message("findMergesForOptimize: maxNumSegs=" + maxNumSegments + " segsToOptimize="+ segmentsToOptimize);
+    }
 
     // If the segments are already optimized (e.g. there's only 1 segment), or
     // there are <maxNumSegements, all optimized, nothing to do.
@@ -383,7 +386,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         break;
       }
     }
-    
+
     if (anyTooLarge) {
       return findMergesForOptimizeSizeLimit(infos, maxNumSegments, last);
     } else {

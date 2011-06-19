@@ -2511,11 +2511,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
 
       for ( final MergePolicy.OneMerge merge: runningMerges ) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
     }
 
@@ -2728,7 +2730,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
       spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableMap(segmentsToOptimize));
-
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
@@ -3793,7 +3794,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     
     if (merge.optimize) {
       // cascade the optimize:
-      segmentsToOptimize.put(merge.info, Boolean.FALSE);
+      if (!segmentsToOptimize.containsKey(merge.info)) {
+        segmentsToOptimize.put(merge.info, Boolean.FALSE);
+      }
     }
     
     return true;
