@@ -1025,7 +1025,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract byte[] norms(String field) throws IOException;
 
   /** Expert: Resets the normalization factor for the named field of the named
-   * document.  The norm represents the product of the field's {@link
+   * document.  By default, The norm represents the product of the field's {@link
    * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its
    * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
@@ -1034,7 +1034,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * this method throws {@link IllegalStateException}.
    *
    * @see #norms(String)
-   * @see Similarity#decodeNormValue(byte)
+   * @see Similarity#computeNorm(FieldInvertState)
+   * @see org.apache.lucene.search.DefaultSimilarity#decodeNormValue(byte)
    * @throws StaleReaderException if the index has changed
    *  since this reader was opened
    * @throws CorruptIndexException if the index is corrupt
