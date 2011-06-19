@@ -590,9 +590,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
-    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
+    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header is read inside this method)
+    long oldSignleNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header is read inside this method)
     int maxDoc = maxDoc();
-    int maxDocSoFar = 0;
     for (FieldInfo fi : core.fieldInfos) {
       if (norms.containsKey(fi.name)) {
         // in case this SegmentReader is being re-opened, we might be able to
@@ -629,7 +629,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           hasSum = singleNormHasSum;
           // if the single norms file has no sum we need to use the max doc to sum up the seek offset
           // otherwise simply use the nextNormSeek
-          normSeek = hasSum ? nextNormSeek : maxDoc;
+          normSeek = hasSum ? nextNormSeek : oldSignleNormSeek;
         } else {
           normInput = d.openInput(fileName);
           // if the segment was created in 3.2 or after, we wrote the header for sure,
@@ -654,7 +654,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         // sum this up for bwcompat the single norm file in a later field could be pre 4.0 
         // but earlier fields could have the norms sum already so we need to use the max
         // doc to find the right offset.
-        maxDocSoFar += maxDoc;
+        oldSignleNormSeek += maxDoc;
       }
     }
   }
