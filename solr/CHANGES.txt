@@ -36,6 +36,14 @@ New Features
   The output contains a separate int[] attribute containing all positions from
   previous Tokenizers/TokenFilters (called "positionHistory").
   (Uwe Schindler)
+  
+* SOLR-2524: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Grouping / Field collapsing
+  using the Lucene grouping contrib. The search result can be grouped by field and query. 
+  (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar, Koji Sekiguchi, 
+   Iván de Prado, Ryan McKinley, Marc Sturlese, Peter Karich, Bojan Smid, 
+   Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
+   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
+   Harish Agarwal, yonik, Michael McCandless, Bill Bell)
 
 Optimizations
 ----------------------
@@ -111,15 +119,6 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman)
-
-* SOLR-2524: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Grouping / Field collapsing
-using the Lucene grouping contrib. The search result can be grouped by field and query. 
-(Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar, Koji Sekiguchi, 
-   Iv�n de Prado, Ryan McKinley, Marc Sturlese, Peter Karich, Bojan Smid, 
-   Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
-   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
-   Harish Agarwal, yonik, Michael McCandless, Bill Bell)
-
 
 Optimizations
 ----------------------
