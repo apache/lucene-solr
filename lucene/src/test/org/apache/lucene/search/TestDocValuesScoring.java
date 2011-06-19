@@ -89,6 +89,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     assertEquals(1, noboost.totalHits);
     assertEquals(1, boost.totalHits);
     
+    //System.out.println(searcher2.explain(tq, boost.scoreDocs[0].doc));
     assertEquals(boost.scoreDocs[0].score, noboost.scoreDocs[0].score*2f, SCORE_EPSILON);
     
     // this query matches only the second document, which should have 4x the score.
@@ -168,7 +169,10 @@ public class TestDocValuesScoring extends LuceneTestCase {
         public Explanation explain(int doc, Explanation freq) {
           Explanation boostExplanation = new Explanation((float) values.getFloat(doc), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
-          return new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
+          Explanation expl = new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
+          expl.addDetail(boostExplanation);
+          expl.addDetail(simExplanation);
+          return expl;
         }
       };
     }
@@ -188,7 +192,10 @@ public class TestDocValuesScoring extends LuceneTestCase {
         public Explanation explain(int doc, Explanation freq) {
           Explanation boostExplanation = new Explanation((float) values.getFloat(doc), "indexDocValue(" + boostField + ")");
           Explanation simExplanation = sub.explain(doc, freq);
-          return new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
+          Explanation expl = new Explanation(boostExplanation.getValue() * simExplanation.getValue(), "product of:");
+          expl.addDetail(boostExplanation);
+          expl.addDetail(simExplanation);
+          return expl;
         }
       };
     }
