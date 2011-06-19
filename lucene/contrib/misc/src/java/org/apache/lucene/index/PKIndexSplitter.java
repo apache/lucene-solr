@@ -34,6 +34,7 @@ import org.apache.lucene.util.Version;
 /**
  * Split an index based on a {@link Filter}.
  */
+
 public class PKIndexSplitter {
   private final Filter docsInFirstIndex;
   private final Directory input;
