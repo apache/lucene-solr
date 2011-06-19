@@ -101,9 +101,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
       // the resulting set contains all segments that are left over
       // and will be merged to one additional segment:
       for (final OneMerge om : spec.merges) {
-        for(SegmentInfo info : om.segments) {
-          oldSegments.remove(info);
-        }
+        oldSegments.keySet().removeAll(om.segments);
       }
     }
 
