@@ -64,28 +64,11 @@ New Features
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
   (Tomas Fernandez Lobbe and hossman)
-  
-* SOLR-1915: DebugComponent now supports using a NamedList to model
-  Explanation objects in it's responses instead of
-  Explanation.toString  (hossman) 
 
 * SOLR-1932: New relevancy function queries: termfreq, tf, docfreq, idf
   norm, maxdoc, numdocs. (yonik)
 
-* SOLR-1682: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Search grouping / Field collapsing.
-  (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar,
-   Koji Sekiguchi, Iván de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
-   Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
-   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
-   Harish Agarwal, yonik)
-  SOLR-2564: Integrate grouping module into Solr. Also adds the ability to return number of
-  groups that have match a query.
-
 * SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)
-
-* SOLR-2113: Add TermQParserPlugin, registered as "term".  This is useful
-  when generating filter queries from terms returned from field faceting or
-  the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
 
 * SOLR-2001: The query component will substitute an empty query that matches
   no documents if the query parser returns null.  This also prevents an
@@ -210,15 +193,6 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
 
-* SOLR-309: Fix FieldType so setting an analyzer on a FieldType that
-  doesn't expect it will generate an error.  Practically speaking this
-  means that Solr will now correctly generate an error on
-  initialization if the schema.xml contains an analyzer configuration
-  for a fieldType that does not use TextField.  (hossman) 
-
-* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
-  are logged properly.  (hossman)
-
 Other Changes
 ----------------------
 
@@ -251,18 +225,9 @@ Other Changes
 * SOLR-2423: FieldType argument changed from String to Object
   Conversion from SolrInputDocument > Object > Fieldable is now managed
   by FieldType rather then DocumentBuilder.  (ryan)
-  
-* SOLR-2061: Pull base tests out into a new Solr Test Framework module,
-  and publish binary, javadoc, and source test-framework jars. 
-  (Drew Farris, Robert Muir, Steve Rowe)
 
 * SOLR-2461: QuerySenderListener and AbstractSolrEventListener are 
   now public (hossman)
-
-* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
-  tolerance delta used in numeric equalities.  This allows for slight 
-  variance in asserting score comparisons in unit tests.
-  (David Smiley, Chris Hostetter)
 
 * LUCENE-2995: Moved some spellchecker and suggest APIs to modules/suggest:
   HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the
@@ -270,15 +235,6 @@ Other Changes
 
 * SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
   (James Dyer via rmuir)
-  
-* LUCENE-3204: The maven-ant-tasks jar is now included in the source tree;
-  users of the generate-maven-artifacts target no longer have to manually
-  place this jar in the Ant classpath.  NOTE: when Ant looks for the 
-  maven-ant-tasks jar, it looks first in its pre-existing classpath, so
-  any copies it finds will be used instead of the copy included in the 
-  Lucene/Solr source tree.  For this reason, it is recommeded to remove
-  any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
-  ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe)
   
 Documentation
 ----------------------
@@ -301,6 +257,14 @@ New Features
   The output contains a separate int[] attribute containing all positions from
   previous Tokenizers/TokenFilters (called "positionHistory").
   (Uwe Schindler)
+
+* SOLR-2524: (SOLR-236, SOLR-237, SOLR-1773, SOLR-1311) Grouping / Field collapsing
+  using the Lucene grouping contrib. The search result can be grouped by field and query. 
+  (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar, Koji Sekiguchi, 
+   Iván de Prado, Ryan McKinley, Marc Sturlese, Peter Karich, Bojan Smid, 
+   Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
+   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
+   Harish Agarwal, yonik, Michael McCandless, Bill Bell)
 
 Optimizations
 ----------------------
@@ -331,6 +295,17 @@ Other Changes
 * SOLR-2576: Deprecate SpellingResult.add(Token token, int docFreq), please use
   SpellingResult.addFrequency(Token token, int docFreq) instead.
   (James Dyer via rmuir)
+
+* SOLR-2574: Upgrade slf4j to v1.6.1 (shalin)
+
+* LUCENE-3204: The maven-ant-tasks jar is now included in the source tree;
+  users of the generate-maven-artifacts target no longer have to manually
+  place this jar in the Ant classpath.  NOTE: when Ant looks for the 
+  maven-ant-tasks jar, it looks first in its pre-existing classpath, so
+  any copies it finds will be used instead of the copy included in the 
+  Lucene/Solr source tree.  For this reason, it is recommeded to remove
+  any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
+  ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe)
   
 ==================  3.2.0  ==================
 Versions of Major Components
@@ -358,6 +333,14 @@ New Features
   and added a simplified format for specifying multiple documents.
   Example: [{"id":"doc1"},{"id":"doc2"}] 
   (yonik)
+
+* SOLR-2113: Add TermQParserPlugin, registered as "term".  This is useful
+  when generating filter queries from terms returned from field faceting or
+  the terms component. Example: fq={!term f=weight}1.5   (hossman, yonik) 
+
+* SOLR-1915: DebugComponent now supports using a NamedList to model
+  Explanation objects in it's responses instead of
+  Explanation.toString  (hossman)
 
 Optimizations
 ----------------------
@@ -401,6 +384,9 @@ Bug Fixes
   did not clear all attributes so they displayed incorrect attribute values for tokens
   in later filter stages. (uschindler, rmuir, yonik)
 
+* SOLR-2467: Fix <analyzer class="..." /> initialization so any errors 
+  are logged properly.  (hossman)
+
 * SOLR-2493: SolrQueryParser was fixed to not parse the SolrConfig DOM tree on each
   instantiation which is a huge slowdown.  (Stephane Bailliez via uschindler)
 
@@ -418,11 +404,26 @@ Bug Fixes
 * SOLR-2539: VectorValueSource.floatVal incorrectly used byteVal on sub-sources.
   (Tom Liu via yonik)
 
+* SOLR-2554: RandomSortField didn't work when used in a function query. (yonik)
+
+
 Other Changes
 ----------------------
 
+* SOLR-2061: Pull base tests out into a new Solr Test Framework module,
+  and publish binary, javadoc, and source test-framework jars. 
+  (Drew Farris, Robert Muir, Steve Rowe)
+
 * SOLR-2105: Rename RequestHandler param 'update.processor' to 'update.chain'.
 	(Jan Høydahl via Mark Miller)
+
+* SOLR-2485: Deprecate BaseResponseWriter, GenericBinaryResponseWriter, and 
+  GenericTextResponseWriter.  These classes will be removed in 4.0.  (ryan)
+
+* SOLR-2451: Enhance assertJQ to allow individual tests to specify the 
+  tolerance delta used in numeric equalities.  This allows for slight 
+  variance in asserting score comparisons in unit tests.
+  (David Smiley, Chris Hostetter)
 
 * SOLR-2528: Remove default="true" from HtmlEncoder in example solrconfig.xml,
   because html encoding confuses non-ascii users. (koji)

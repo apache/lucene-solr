@@ -450,12 +450,6 @@ Optimizations
   MultiTermQuery now stores TermState per leaf reader during rewrite to re-
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
-  
-* LUCENE-2897: Apply deleted terms while flushing a segment.  We still
-  buffer deleted terms to later apply to past segments.  (Mike McCandless)
-  
-* LUCENE-1736: DateTools.java general improvements. 
-  (David Smiley via Steve Rowe)
 
 Bug fixes
 
@@ -477,6 +471,10 @@ Changes in backwards compatibility policy
 * LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
   of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
   Mike McCandless)
+
+* LUCENE-3191: FieldComparator.value now returns an Object not
+  Comparable; FieldDoc.fields also changed from Comparable[] to
+  Object[] (Uwe Schindler, Mike McCandless)
 
 * LUCENE-3208: Made deprecated methods Query.weight(Searcher) and
   Searcher.createWeight() final to prevent override. If you have
@@ -544,6 +542,11 @@ API Changes
   Map<SegmentInfo,Boolean> instead of Set<SegmentInfo> as the second
   argument, so the merge policy knows which segments were originally
   present vs produced by an optimizing merge (Mike McCandless)
+
+Optimizations
+
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
 
 New Features
 
