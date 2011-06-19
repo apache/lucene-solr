@@ -26,10 +26,11 @@ import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
 
-/** 
+/**
+ * Implementation of {@link Similarity} with the Vector Space Model.
+ * <p>
  * Expert: Scoring API.
- *
- * <p>Similarity defines the components of Lucene scoring.
+ * <p>TFIDFSimilarity defines the components of Lucene scoring.
  * Overriding computation of these components is a convenient
  * way to alter Lucene scoring.
  *
