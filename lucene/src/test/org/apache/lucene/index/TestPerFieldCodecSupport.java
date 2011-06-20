@@ -285,7 +285,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       for (Codec codec : codecs) {
         provider.register(codec);
       }
-      int num = atLeast(30);
+      int num = _TestUtil.nextInt(random, 30, 60);
       for (int j = 0; j < num; j++) {
         provider.setFieldCodec("" + j, codecs[random.nextInt(codecs.length)].name);
       }
@@ -296,7 +296,6 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
         final Document doc = new Document();
-        num = atLeast(30);
         for (int k = 0; k < num; k++) {
           Field field = newField("" + k, _TestUtil
               .randomRealisticUnicodeString(random, 128), indexValue[random
