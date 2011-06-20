@@ -963,7 +963,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(atLeast(50000), atLeast(1));
+    testRandomWords(_TestUtil.nextInt(random, 50000, 60000), atLeast(1));
   }
 
   private static String inputToString(int inputMode, IntsRef term) {
