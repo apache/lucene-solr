@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -25,6 +26,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
+
+import java.io.IOException;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -79,9 +82,9 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   protected abstract String getIndexDirCore1();
 
-  public void testMergeIndexes() throws Exception {
+  private UpdateRequest setupCores() throws SolrServerException, IOException {
     UpdateRequest up = new UpdateRequest();
-    up.setAction(ACTION.COMMIT, true, true);
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     up.deleteByQuery("*:*");
     up.process(getSolrCore0());
     up.process(getSolrCore1());
@@ -119,11 +122,28 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     assertEquals(1,
         getSolrCore1().query(new SolrQuery("id:BBB")).getResults().size());
 
+    return up;
+  }
+
+  public void testMergeIndexesByDirName() throws Exception {
+    UpdateRequest up = setupCores();
+
     // Now get the index directory of core1 and merge with core0
-    String indexDir = getIndexDirCore1();
-    String name = "core0";
-    SolrServer coreadmin = getSolrAdmin();
-    CoreAdminRequest.mergeIndexes(name, new String[] { indexDir }, coreadmin);
+    CoreAdminRequest.mergeIndexes("core0", new String[] {getIndexDirCore1()}, new String[0], getSolrAdmin());
+
+    // Now commit the merged index
+    up.clear(); // just do commit
+    up.process(getSolrCore0());
+
+    assertEquals(1,
+        getSolrCore0().query(new SolrQuery("id:AAA")).getResults().size());
+    assertEquals(1,
+        getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
+  }
+
+  public void testMergeIndexesByCoreName() throws Exception {
+    UpdateRequest up = setupCores();
+    CoreAdminRequest.mergeIndexes("core0", new String[0], new String[] {"core1"}, getSolrAdmin());
 
     // Now commit the merged index
     up.clear(); // just do commit

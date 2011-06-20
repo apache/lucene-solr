@@ -266,6 +266,9 @@ New Features
    Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
    Harish Agarwal, yonik, Michael McCandless, Bill Bell)
 
+* SOLR-1331 -- Added a srcCore parameter to CoreAdminHandler's mergeindexes action
+  to merge one or more cores' indexes to a target core (shalin)
+
 Optimizations
 ----------------------
 
