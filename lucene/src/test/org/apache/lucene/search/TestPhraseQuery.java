@@ -617,7 +617,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
       // must be > 4096 so it spans multiple chunks
-      int termCount = atLeast(5000);
+      int termCount = _TestUtil.nextInt(random, 4097, 8200);
 
       List<String> doc = new ArrayList<String>();
 
