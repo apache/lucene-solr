@@ -434,6 +434,10 @@ New features
   need to lookup by that field or perform deletions against it, for
   example in a near-real-time setting. (Mike McCandless)
 
+* SOLR-2533: Added support for rewriting Sort and SortFields using an
+  IndexSearcher.  SortFields can have SortField.REWRITEABLE type which
+  requires they are rewritten before they are used. (Chris Male)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

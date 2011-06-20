@@ -475,26 +475,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   /** Returns a weighted sort according to this searcher */
   public Sort weightSort(Sort sort) throws IOException {
-    if (sort == null) return null;
-    SortField[] sorts = sort.getSort();
-
-    boolean needsWeighting = false;
-    for (SortField sf : sorts) {
-      if (sf instanceof SolrSortField) {
-        needsWeighting = true;
-        break;
-      }
-    }
-    if (!needsWeighting) return sort;
-
-    SortField[] newSorts = Arrays.copyOf(sorts, sorts.length);
-    for (int i=0; i<newSorts.length; i++) {
-      if (newSorts[i] instanceof SolrSortField) {
-        newSorts[i] = ((SolrSortField)newSorts[i]).weight(this);
-      }
-    }
-
-    return new Sort(newSorts);
+    return (sort != null) ? sort.rewrite(this) : null;
   }
 
 
