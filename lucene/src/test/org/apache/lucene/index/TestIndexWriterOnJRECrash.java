@@ -64,7 +64,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       }
     } else {
       // we are the fork, setup a crashing thread
-      final int crashTime = TEST_NIGHTLY ? _TestUtil.nextInt(random, 500, 4000) : _TestUtil.nextInt(random, 300, 1000);
+      final int crashTime = _TestUtil.nextInt(random, 3000, 4000);
       Thread t = new Thread() {
         @Override
         public void run() {
@@ -93,6 +93,8 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         + "java");
     cmd.add("-Xmx512m");
     cmd.add("-Dtests.crashmode=true");
+    // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
+    cmd.add("-Dtests.nightly=true");
     cmd.add("-DtempDir=" + tempDir.getPath());
     cmd.add("-Dtests.seed=" + random.nextLong() + ":" + random.nextLong());
     cmd.add("-ea");
