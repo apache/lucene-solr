@@ -32,7 +32,9 @@ import junit.textui.TestRunner;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -193,8 +195,9 @@ public class TestDoc extends LuceneTestCase {
 
    private SegmentInfo merge(SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
-      SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-      SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+      IOContext context = IOContext.READ;
+      SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
+      SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, context);
 
       SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, merged, null, null, new FieldInfos());
 
@@ -208,7 +211,7 @@ public class TestDoc extends LuceneTestCase {
                                                false, merger.getSegmentCodecs(), fieldInfos);
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info);
+        Collection<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info, IOContext.DEFAULT);
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);
@@ -220,7 +223,7 @@ public class TestDoc extends LuceneTestCase {
 
    private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
-      SegmentReader reader = SegmentReader.get(true, si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+      SegmentReader reader = SegmentReader.get(true, si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

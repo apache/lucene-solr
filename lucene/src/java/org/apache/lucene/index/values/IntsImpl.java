@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -58,11 +59,11 @@ class IntsImpl {
     private int lastDocId = -1;
     private IndexOutput datOut;
 
-    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed)
+    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
       super(bytesUsed);
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          DATA_EXTENSION));
+          DATA_EXTENSION), context);
       boolean success = false;
       try {
         CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
@@ -185,9 +186,9 @@ class IntsImpl {
     private final IndexInput datIn;
     private final boolean packed;
 
-    protected IntsReader(Directory dir, String id) throws IOException {
+    protected IntsReader(Directory dir, String id, IOContext context) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
         CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);

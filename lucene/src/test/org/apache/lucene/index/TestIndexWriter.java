@@ -1029,7 +1029,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     try {
       // Create my own random file:
-      IndexOutput out = dir.createOutput("myrandomfile");
+      IndexOutput out = dir.createOutput("myrandomfile", IOContext.DEFAULT);
       out.writeByte((byte) 42);
       out.close();
 

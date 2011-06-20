@@ -28,6 +28,7 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -70,7 +71,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   public void testRAMDirectory () throws IOException {
     
     Directory dir = newFSDirectory(indexDir);
-    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir));
+    MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir, IOContext.DEFAULT));
     
     // close the underlaying directory
     dir.close();
@@ -102,7 +103,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   public void testRAMDirectorySize() throws IOException, InterruptedException {
       
     Directory dir = newFSDirectory(indexDir);
-    final MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir));
+    final MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random, new RAMDirectory(dir, IOContext.DEFAULT));
     dir.close();
     
     final IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
@@ -152,11 +153,11 @@ public class TestRAMDirectory extends LuceneTestCase {
   // LUCENE-1196
   public void testIllegalEOF() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexOutput o = dir.createOutput("out");
+    IndexOutput o = dir.createOutput("out", IOContext.DEFAULT);
     byte[] b = new byte[1024];
     o.writeBytes(b, 0, 1024);
     o.close();
-    IndexInput i = dir.openInput("out");
+    IndexInput i = dir.openInput("out", IOContext.DEFAULT);
     i.seek(1024);
     i.close();
     dir.close();
@@ -174,12 +175,12 @@ public class TestRAMDirectory extends LuceneTestCase {
   public void testSeekToEOFThenBack() throws Exception {
     RAMDirectory dir = new RAMDirectory();
 
-    IndexOutput o = dir.createOutput("out");
+    IndexOutput o = dir.createOutput("out", IOContext.DEFAULT);
     byte[] bytes = new byte[3*RAMInputStream.BUFFER_SIZE];
     o.writeBytes(bytes, 0, bytes.length);
     o.close();
 
-    IndexInput i = dir.openInput("out");
+    IndexInput i = dir.openInput("out", IOContext.DEFAULT);
     i.seek(2*RAMInputStream.BUFFER_SIZE-1);
     i.seek(3*RAMInputStream.BUFFER_SIZE);
     i.seek(RAMInputStream.BUFFER_SIZE);

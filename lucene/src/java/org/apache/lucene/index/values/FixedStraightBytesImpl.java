@@ -19,6 +19,7 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
@@ -47,7 +48,8 @@ class FixedStraightBytesImpl {
     private byte[] oneRecord;
 
     public Writer(Directory dir, String id) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, null, null);
+      //nocommit this needs an IOContext too
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, null, null, IOContext.DEFAULT);
     }
 
 
@@ -126,7 +128,7 @@ class FixedStraightBytesImpl {
     private final int maxDoc;
 
     Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, false);
+      super(dir, id, CODEC_NAME, VERSION_START, false, IOContext.DEFAULT);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
     }

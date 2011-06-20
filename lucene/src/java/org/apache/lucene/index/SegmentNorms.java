@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
@@ -219,7 +221,7 @@ final class SegmentNorms implements Cloneable {
     // NOTE: norms are re-written in regular directory, not cfs
     si.advanceNormGen(this.number);
     final String normFileName = si.getNormFileName(this.number);
-    IndexOutput out = owner.directory().createOutput(normFileName);
+    IndexOutput out = owner.directory().createOutput(normFileName, IOContext.DEFAULT);
     boolean success = false;
     try {
       try {

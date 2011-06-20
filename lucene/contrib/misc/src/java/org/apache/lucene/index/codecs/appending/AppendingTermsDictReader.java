@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
@@ -32,9 +33,9 @@ public class AppendingTermsDictReader extends BlockTermsReader {
 
   public AppendingTermsDictReader(TermsIndexReaderBase indexReader,
           Directory dir, FieldInfos fieldInfos, String segment,
-          PostingsReaderBase postingsReader, int readBufferSize,
+          PostingsReaderBase postingsReader, IOContext context,
           int termsCacheSize, int codecId) throws IOException {
-    super(indexReader, dir, fieldInfos, segment, postingsReader, readBufferSize,
+    super(indexReader, dir, fieldInfos, segment, postingsReader, context,
           termsCacheSize, codecId);
   }
   

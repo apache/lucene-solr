@@ -22,6 +22,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.IndexDocValues;
@@ -57,6 +58,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
    */
   public DefaultDocValuesProducer(SegmentInfo si, Directory dir,
       FieldInfos fieldInfo, int codecId) throws IOException {
+    //nocommit this needs an IOContext
     docValues = load(fieldInfo, si.name, si.docCount, dir, codecId);
   }
 
@@ -120,6 +122,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
    */
   protected IndexDocValues loadDocValues(int docCount, Directory dir, String id,
       ValueType type) throws IOException {
+    // nocommit this needs an IOContext too
     switch (type) {
     case INTS:
       return Ints.getValues(dir, id, false);

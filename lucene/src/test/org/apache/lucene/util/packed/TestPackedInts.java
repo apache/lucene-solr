@@ -17,6 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -54,7 +55,7 @@ public class TestPackedInts extends LuceneTestCase {
         final int valueCount = 100+random.nextInt(500);
         final Directory d = newDirectory();
 
-        IndexOutput out = d.createOutput("out.bin");
+        IndexOutput out = d.createOutput("out.bin", IOContext.DEFAULT);
         PackedInts.Writer w = PackedInts.getWriter(
                 out, valueCount, nbits);
 
@@ -71,7 +72,7 @@ public class TestPackedInts extends LuceneTestCase {
         final long fp = out.getFilePointer();
         out.close();
         {// test reader
-          IndexInput in = d.openInput("out.bin");
+          IndexInput in = d.openInput("out.bin", IOContext.DEFAULT);
           PackedInts.Reader r = PackedInts.getReader(in);
           assertEquals(fp, in.getFilePointer());
           for(int i=0;i<valueCount;i++) {
@@ -82,7 +83,7 @@ public class TestPackedInts extends LuceneTestCase {
           in.close();
         }
         { // test reader iterator next
-          IndexInput in = d.openInput("out.bin");
+          IndexInput in = d.openInput("out.bin", IOContext.DEFAULT);
           PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
           for(int i=0;i<valueCount;i++) {
             assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
@@ -93,7 +94,7 @@ public class TestPackedInts extends LuceneTestCase {
           in.close();
         }
         { // test reader iterator next vs. advance
-          IndexInput in = d.openInput("out.bin");
+          IndexInput in = d.openInput("out.bin", IOContext.DEFAULT);
           PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
           for (int i = 0; i < valueCount; i += 
             1 + ((valueCount - i) <= 20 ? random.nextInt(valueCount - i)
@@ -229,14 +230,14 @@ public class TestPackedInts extends LuceneTestCase {
 
   public void testSingleValue() throws Exception {
     Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput("out");
+    IndexOutput out = dir.createOutput("out", IOContext.DEFAULT);
     PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
     w.add(17);
     w.finish();
     final long end = out.getFilePointer();
     out.close();
 
-    IndexInput in = dir.openInput("out");
+    IndexInput in = dir.openInput("out", IOContext.DEFAULT);
     PackedInts.getReader(in);
     assertEquals(end, in.getFilePointer());
     in.close();

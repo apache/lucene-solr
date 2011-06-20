@@ -25,6 +25,8 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -81,7 +83,7 @@ public final class FieldsReader implements Cloneable {
   /** Verifies that the code version which wrote the segment is supported. */
   public static void checkCodeVersion(Directory dir, String segment) throws IOException {
     final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
-    IndexInput idxStream = dir.openInput(indexStreamFN, 1024);
+    IndexInput idxStream = dir.openInput(indexStreamFN, IOContext.DEFAULT);
     
     try {
       int format = idxStream.readInt();
@@ -110,18 +112,18 @@ public final class FieldsReader implements Cloneable {
   }
   
   public FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
-    this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE, -1, 0);
+    this(d, segment, fn, IOContext.DEFAULT, -1, 0);
   }
 
-  public FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
+  public FieldsReader(Directory d, String segment, FieldInfos fn, IOContext context, int docStoreOffset, int size) throws IOException {
     boolean success = false;
     isOriginal = true;
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), readBufferSize);
+      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), context);
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
-      cloneableIndexStream = d.openInput(indexStreamFN, readBufferSize);
+      cloneableIndexStream = d.openInput(indexStreamFN, context);
       
       format = cloneableIndexStream.readInt();
 

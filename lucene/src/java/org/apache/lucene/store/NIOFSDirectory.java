@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
+import org.apache.lucene.index.IOContext;
 
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
@@ -73,9 +74,9 @@ public class NIOFSDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getDirectory(), name), bufferSize, getReadChunkSize());
+    return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
   }
 
   protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
@@ -87,8 +88,8 @@ public class NIOFSDirectory extends FSDirectory {
 
     final FileChannel channel;
 
-    public NIOFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(path, bufferSize, chunkSize);
+    public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
+      super(path, context, chunkSize);
       channel = file.getChannel();
     }
 
@@ -178,4 +179,5 @@ public class NIOFSDirectory extends FSDirectory {
       }
     }
   }
+
 }

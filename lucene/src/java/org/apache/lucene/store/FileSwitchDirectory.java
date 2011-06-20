@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
+import org.apache.lucene.index.IOContext;
+
 /**
  * Expert: A Directory instance that switches files between
  * two other Directory instances.
@@ -125,8 +127,8 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
-    return getDirectory(name).createOutput(name);
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
+    return getDirectory(name).createOutput(name, context);
   }
 
   @Override
@@ -145,7 +147,7 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public IndexInput openInput(String name) throws IOException {
-    return getDirectory(name).openInput(name);
+  public IndexInput openInput(String name, IOContext context) throws IOException {
+    return getDirectory(name).openInput(name, context);
   }
 }

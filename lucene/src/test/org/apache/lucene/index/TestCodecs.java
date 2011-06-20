@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -242,7 +243,7 @@ public class TestCodecs extends LuceneTestCase {
     this.write(fieldInfos, dir, fields, true);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, clonedFieldInfos.buildSegmentCodecs(false), clonedFieldInfos);
 
-    final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final FieldsProducer reader = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, IOContext.READ, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
@@ -297,7 +298,7 @@ public class TestCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
     }
-    final FieldsProducer terms = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
+    final FieldsProducer terms = si.getSegmentCodecs().codec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, IOContext.READ, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
     final Verify[] threads = new Verify[NUM_TEST_THREADS-1];
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
@@ -591,7 +592,7 @@ public class TestCodecs extends LuceneTestCase {
 
     final int termIndexInterval = _TestUtil.nextInt(random, 13, 27);
     final SegmentCodecs codecInfo =  fieldInfos.buildSegmentCodecs(false);
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null);
+    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval, codecInfo, null, new IOContext(Context.FLUSH));
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
     Arrays.sort(fields);

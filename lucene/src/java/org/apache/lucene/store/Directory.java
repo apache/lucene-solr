@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection; // for javadocs
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
@@ -87,7 +88,7 @@ public abstract class Directory implements Closeable {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract IndexOutput createOutput(String name)
+  public abstract IndexOutput createOutput(String name, IOContext context)
        throws IOException;
 
   /**
@@ -103,10 +104,6 @@ public abstract class Directory implements Closeable {
    */
   public abstract void sync(Collection<String> names) throws IOException;
 
-  /** Returns a stream reading an existing file. */
-  public abstract IndexInput openInput(String name)
-    throws IOException;
-
   /** Returns a stream reading an existing file, with the
    * specified read buffer size.  The particular Directory
    * implementation may ignore the buffer size.  Currently
@@ -114,9 +111,7 @@ public abstract class Directory implements Closeable {
    * parameter are {@link FSDirectory} and {@link
    * org.apache.lucene.index.CompoundFileReader}.
   */
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    return openInput(name);
-  }
+  public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
@@ -199,9 +194,9 @@ public abstract class Directory implements Closeable {
    * <b>NOTE:</b> this method does not check whether <i>dest<i> exist and will
    * overwrite it if it does.
    */
-  public void copy(Directory to, String src, String dest) throws IOException {
-    IndexOutput os = to.createOutput(dest);
-    IndexInput is = openInput(src);
+  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
+    IndexOutput os = to.createOutput(dest, context);
+    IndexInput is = openInput(src, context);
     IOException priorException = null;
     try {
       is.copyBytes(os, is.length());

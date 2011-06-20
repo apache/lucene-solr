@@ -20,6 +20,7 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
@@ -117,6 +118,7 @@ class VarDerefBytesImpl {
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
+      //nocommit this needs an IOContext too
       this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
           bytesUsed);
     }
@@ -124,7 +126,7 @@ class VarDerefBytesImpl {
     public Writer(Directory dir, String id, Allocator allocator,
         AtomicLong bytesUsed) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed);
+          new ByteBlockPool(allocator), bytesUsed, IOContext.DEFAULT);
       docToAddress = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
@@ -202,7 +204,7 @@ class VarDerefBytesImpl {
   public static class Reader extends BytesReaderBase {
 
     Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+      super(dir, id, CODEC_NAME, VERSION_START, true, IOContext.DEFAULT);
     }
 
     @Override

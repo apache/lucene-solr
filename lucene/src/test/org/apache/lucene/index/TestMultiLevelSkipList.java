@@ -54,8 +54,8 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     }
 
     @Override
-    public IndexInput openInput(String fileName) throws IOException {
-      IndexInput in = super.openInput(fileName);
+    public IndexInput openInput(String fileName, IOContext context) throws IOException {
+      IndexInput in = super.openInput(fileName, context);
       if (fileName.endsWith(".frq"))
         in = new CountingStream(in);
       return in;

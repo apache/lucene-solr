@@ -76,22 +76,23 @@ public final class CompoundFileWriter {
     // switch to a new format!
     static final int FORMAT_CURRENT = FORMAT_NO_SEGMENT_PREFIX;
 
-    private Directory directory;
-    private String fileName;
-    private HashSet<String> ids;
-    private LinkedList<FileEntry> entries;
+    private final Directory directory;
+    private final String fileName;
+    private final IOContext context;
+    private final HashSet<String> ids;
+    private final LinkedList<FileEntry> entries;
     private boolean merged = false;
-    private MergeState.CheckAbort checkAbort;
+    private final MergeState.CheckAbort checkAbort;
 
     /** Create the compound stream in the specified file. The file name is the
      *  entire name (no extensions are added).
      *  @throws NullPointerException if <code>dir</code> or <code>name</code> is null
      */
-    public CompoundFileWriter(Directory dir, String name) {
-      this(dir, name, null);
+    public CompoundFileWriter(Directory dir, String name, IOContext context) {
+      this(dir, name, context, null);
     }
 
-    CompoundFileWriter(Directory dir, String name, MergeState.CheckAbort checkAbort) {
+    CompoundFileWriter(Directory dir, String name, IOContext context, MergeState.CheckAbort checkAbort) {
         if (dir == null)
             throw new NullPointerException("directory cannot be null");
         if (name == null)
@@ -101,6 +102,7 @@ public final class CompoundFileWriter {
         fileName = name;
         ids = new HashSet<String>();
         entries = new LinkedList<FileEntry>();
+        this.context = context;
     }
 
     /** Returns the directory of the compound file. */
@@ -164,7 +166,7 @@ public final class CompoundFileWriter {
         merged = true;
 
         // open the compound stream
-        IndexOutput os = directory.createOutput(fileName);
+        IndexOutput os = directory.createOutput(fileName, context);
         IOException priorException = null;
         try {
             // Write the Version info - must be a VInt because CFR reads a VInt
@@ -228,7 +230,7 @@ public final class CompoundFileWriter {
    * output stream.
    */
   private void copyFile(FileEntry source, IndexOutput os) throws IOException {
-    IndexInput is = source.dir.openInput(source.file);
+    IndexInput is = source.dir.openInput(source.file, context);
     try {
       long startPtr = os.getFilePointer();
       long length = is.length();

@@ -242,7 +242,7 @@ public class MemoryCodec extends Codec {
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, EXTENSION);
-    final IndexOutput out = state.directory.createOutput(fileName);
+    final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
     return new FieldsConsumer() {
       @Override
@@ -697,8 +697,9 @@ public class MemoryCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+    //nocommit its seems due to the nature of this codec that we should use IOContext.READONCE here where applicable. 
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, EXTENSION);
-    final IndexInput in = state.dir.openInput(fileName);
+    final IndexInput in = state.dir.openInput(fileName, state.context);
 
     final SortedMap<String,TermsReader> fields = new TreeMap<String,TermsReader>();
 

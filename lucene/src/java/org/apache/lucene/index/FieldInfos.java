@@ -271,7 +271,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   public FieldInfos(Directory d, String name) throws IOException {
     this((FieldNumberBiMap)null, null); // use null here to make this FIs Read-Only
-    final IndexInput input = d.openInput(name);
+    final IndexInput input = d.openInput(name, IOContext.READONCE);
     try {
       read(input, name);
     } finally {
@@ -564,7 +564,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   }
 
   public void write(Directory d, String name) throws IOException {
-    IndexOutput output = d.createOutput(name);
+    IndexOutput output = d.createOutput(name, IOContext.READONCE);
     try {
       write(output);
     } finally {

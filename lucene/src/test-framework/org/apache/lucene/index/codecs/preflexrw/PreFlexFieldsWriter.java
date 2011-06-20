@@ -50,12 +50,12 @@ class PreFlexFieldsWriter extends FieldsConsumer {
                                    state.termIndexInterval);
 
     final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.FREQ_EXTENSION);
-    freqOut = state.directory.createOutput(freqFile);
+    freqOut = state.directory.createOutput(freqFile, state.context);
     totalNumDocs = state.numDocs;
 
     if (state.fieldInfos.hasProx()) {
       final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.PROX_EXTENSION);
-      proxOut = state.directory.createOutput(proxFile);
+      proxOut = state.directory.createOutput(proxFile, state.context);
     } else {
       proxOut = null;
     }

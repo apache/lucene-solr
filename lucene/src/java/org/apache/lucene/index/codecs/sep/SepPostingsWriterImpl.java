@@ -132,11 +132,11 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
         
         // TODO: -- only if at least one field stores payloads?
         final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, PAYLOAD_EXTENSION);
-        payloadOut = state.directory.createOutput(payloadFileName);
+        payloadOut = state.directory.createOutput(payloadFileName, state.context);
       }
       
       final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SKIP_EXTENSION);
-      skipOut = state.directory.createOutput(skipFileName);
+      skipOut = state.directory.createOutput(skipFileName, state.context);
       
       totalNumDocs = state.numDocs;
       

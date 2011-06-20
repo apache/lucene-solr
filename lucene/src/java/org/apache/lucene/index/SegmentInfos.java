@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
@@ -254,7 +255,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     try {
       SegmentInfosReader infosReader = codecs.getSegmentInfosReader();
-      infosReader.read(directory, segmentFileName, codecs, this);
+      infosReader.read(directory, segmentFileName, codecs, this, IOContext.READ);
       success = true;
     }
     finally {
@@ -322,7 +323,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     try {
       SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
-      segnOutput = infosWriter.writeInfos(directory, segmentFileName, this);
+      segnOutput = infosWriter.writeInfos(directory, segmentFileName, this, IOContext.DEFAULT);
       infosWriter.prepareCommit(segnOutput);
       pendingSegnOutput = segnOutput;
       success = true;
@@ -597,7 +598,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           for(int i=0;i<defaultGenFileRetryCount;i++) {
             IndexInput genInput = null;
             try {
-              genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
+              genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
             } catch (FileNotFoundException e) {
               if (infoStream != null) {
                 message("segments.gen open: FileNotFoundException " + e);
@@ -814,7 +815,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   }
   
   private final long writeGlobalFieldMap(FieldNumberBiMap map, Directory dir, String name) throws IOException {
-    final IndexOutput output = dir.createOutput(name);
+    final IndexOutput output = dir.createOutput(name, IOContext.READONCE);
     boolean success = false;
     long version;
     try {
@@ -843,7 +844,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   
   private void readGlobalFieldMap(FieldNumberBiMap map, Directory dir) throws IOException {
     final String name = getGlobalFieldNumberName(lastGlobalFieldMapVersion);
-    final IndexInput input = dir.openInput(name);
+    final IndexInput input = dir.openInput(name, IOContext.READONCE);
     try {
       map.read(input);
     } finally {
@@ -934,7 +935,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
     }
 
     try {
-      IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN);
+      IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
       try {
         genOutput.writeInt(FORMAT_SEGMENTS_GEN_CURRENT);
         genOutput.writeLong(generation);

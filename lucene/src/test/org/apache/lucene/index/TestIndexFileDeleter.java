@@ -91,7 +91,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // figure out which field number corresponds to
     // "content", and then set our expected file names below
     // accordingly:
-    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs", IOContext.DEFAULT);
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
     for (FieldInfo fi : fieldInfos) {
@@ -212,8 +212,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
 
   public void copyFile(Directory dir, String src, String dest) throws IOException {
-    IndexInput in = dir.openInput(src);
-    IndexOutput out = dir.createOutput(dest);
+    IndexInput in = dir.openInput(src, IOContext.DEFAULT);
+    IndexOutput out = dir.createOutput(dest, IOContext.DEFAULT);
     byte[] b = new byte[1024];
     long remainder = in.length();
     while(remainder > 0) {

@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.NativeFSLockFactory; // javadoc
 
@@ -69,15 +70,17 @@ public class DirectIOLinuxDirectory extends FSDirectory {
   }
 
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new DirectIOLinuxIndexInput(new File(getDirectory(), name), forcedBufferSize == 0 ? bufferSize : forcedBufferSize);
+    //nocommit - use buffer based on IOContext
+    return new DirectIOLinuxIndexInput(new File(getDirectory(), name), forcedBufferSize == 0 ? BufferedIndexInput.BUFFER_SIZE : forcedBufferSize);
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name,IOContext context) throws IOException {
     ensureOpen();
     ensureCanWrite(name);
+    //nocommit - use buffer based on IOContext
     return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), forcedBufferSize == 0 ? BufferedIndexOutput.BUFFER_SIZE : forcedBufferSize);
   }
 

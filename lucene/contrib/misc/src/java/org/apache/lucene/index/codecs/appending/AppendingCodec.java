@@ -94,11 +94,12 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
+      //nocommit we should pass the IOContext down to the TermIndexReader
       indexReader = new AppendingTermsIndexReader(state.dir,
               state.fieldInfos,
               state.segmentInfo.name,
@@ -116,7 +117,7 @@ public class AppendingCodec extends Codec {
       FieldsProducer ret = new AppendingTermsDictReader(indexReader,
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
-              state.readBufferSize,
+              state.context,
               StandardCodec.TERMS_CACHE_SIZE,
               state.codecId);
       success = true;

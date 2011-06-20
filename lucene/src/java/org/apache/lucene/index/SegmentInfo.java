@@ -245,7 +245,7 @@ public final class SegmentInfo implements Cloneable {
       }
       final Directory dirToTest;
       if (isCompoundFile) {
-        dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, "", ext));
+        dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE);
       } else {
         dirToTest = dir;
       }
@@ -264,7 +264,7 @@ public final class SegmentInfo implements Cloneable {
       Directory dir0 = dir;
       if (isCompoundFile && checkCompoundFile) {
         dir0 = new CompoundFileReader(dir, IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+            "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE);
       }
       try {
         fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,

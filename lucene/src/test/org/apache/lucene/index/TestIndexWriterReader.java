@@ -469,7 +469,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             try {
               final Directory[] dirs = new Directory[numDirs];
               for (int k = 0; k < numDirs; k++)
-                dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(addDir));
+                dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(addDir, IOContext.DEFAULT));
               //int j = 0;
               //while (true) {
                 // System.out.println(Thread.currentThread().getName() + ": iter
@@ -754,7 +754,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     final Directory[] dirs = new Directory[10];
     for (int i=0;i<10;i++) {
-      dirs[i] = new MockDirectoryWrapper(random, new RAMDirectory(dir1));
+      dirs[i] = new MockDirectoryWrapper(random, new RAMDirectory(dir1, IOContext.DEFAULT));
     }
 
     IndexReader r = writer.getReader();

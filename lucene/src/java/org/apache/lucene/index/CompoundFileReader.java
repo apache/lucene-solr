@@ -36,8 +36,6 @@ import java.io.IOException;
  */
 public class CompoundFileReader extends Directory {
   
-  private int readBufferSize;
-  
   private static final class FileEntry {
     long offset;
     long length;
@@ -49,21 +47,16 @@ public class CompoundFileReader extends Directory {
   
   private IndexInput stream;
   private HashMap<String,FileEntry> entries = new HashMap<String,FileEntry>();
-  
-  public CompoundFileReader(Directory dir, String name) throws IOException {
-    this(dir, name, BufferedIndexInput.BUFFER_SIZE);
-  }
-  
-  public CompoundFileReader(Directory dir, String name, int readBufferSize) throws IOException {
+
+  public CompoundFileReader(Directory dir, String name, IOContext context) throws IOException {
     assert !(dir instanceof CompoundFileReader) : "compound file inside of compound file: " + name;
     directory = dir;
     fileName = name;
-    this.readBufferSize = readBufferSize;
     
     boolean success = false;
     
     try {
-      stream = dir.openInput(name, readBufferSize);
+      stream = dir.openInput(name, context);
       
       // read the first VInt. If it is negative, it's the version number
       // otherwise it's the count (pre-3.1 indexes)
@@ -141,13 +134,7 @@ public class CompoundFileReader extends Directory {
   }
   
   @Override
-  public synchronized IndexInput openInput(String id) throws IOException {
-    // Default to readBufferSize passed in when we were opened
-    return openInput(id, readBufferSize);
-  }
-  
-  @Override
-  public synchronized IndexInput openInput(String id, int readBufferSize) throws IOException {
+  public synchronized IndexInput openInput(String id, IOContext context) throws IOException {
     if (stream == null)
       throw new IOException("Stream closed");
     
@@ -155,8 +142,8 @@ public class CompoundFileReader extends Directory {
     final FileEntry entry = entries.get(id);
     if (entry == null)
       throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
-    
-    return new CSIndexInput(stream, entry.offset, entry.length, readBufferSize);
+    // nocommit set read buffer size based on IOContext
+    return new CSIndexInput(stream, entry.offset, entry.length, BufferedIndexInput.BUFFER_SIZE);
   }
   
   /** Returns an array of strings, one for each file in the directory. */
@@ -209,7 +196,7 @@ public class CompoundFileReader extends Directory {
   /** Not implemented
    * @throws UnsupportedOperationException */
   @Override
-  public IndexOutput createOutput(String name) {
+  public IndexOutput createOutput(String name, IOContext context) {
     throw new UnsupportedOperationException();
   }
   

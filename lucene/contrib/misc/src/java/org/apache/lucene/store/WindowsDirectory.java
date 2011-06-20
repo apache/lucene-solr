@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.NativeFSLockFactory; // javadoc
 
@@ -67,9 +69,10 @@ public class WindowsDirectory extends FSDirectory {
   }
 
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new WindowsIndexInput(new File(getDirectory(), name), Math.max(bufferSize, DEFAULT_BUFFERSIZE));
+    //nocommit - use buffer based on IOContext
+    return new WindowsIndexInput(new File(getDirectory(), name), DEFAULT_BUFFERSIZE);
   }
   
   protected static class WindowsIndexInput extends BufferedIndexInput {

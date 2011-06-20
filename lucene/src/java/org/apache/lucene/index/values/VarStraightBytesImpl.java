@@ -20,6 +20,7 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
@@ -51,7 +52,8 @@ class VarStraightBytesImpl {
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed);
+      //nocommit this needs an IOContext too
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed, IOContext.DEFAULT);
       docToAddress = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
@@ -122,7 +124,7 @@ class VarStraightBytesImpl {
     private final int maxDoc;
 
     Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+      super(dir, id, CODEC_NAME, VERSION_START, true, IOContext.DEFAULT);
       this.maxDoc = maxDoc;
     }
 

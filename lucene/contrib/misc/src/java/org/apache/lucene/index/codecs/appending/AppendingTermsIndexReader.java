@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -32,7 +33,7 @@ public class AppendingTermsIndexReader extends FixedGapTermsIndexReader {
   public AppendingTermsIndexReader(Directory dir, FieldInfos fieldInfos,
           String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId)
           throws IOException {
-    super(dir, fieldInfos, segment, indexDivisor, termComp, codecId);
+    super(dir, fieldInfos, segment, indexDivisor, termComp, codecId, IOContext.DEFAULT);
   }
   
   @Override

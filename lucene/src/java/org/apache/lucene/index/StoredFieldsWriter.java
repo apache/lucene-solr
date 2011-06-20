@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -77,7 +78,8 @@ final class StoredFieldsWriter {
 
   private synchronized void initFieldsWriter() throws IOException {
     if (fieldsWriter == null) {
-      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment());
+      // nocommit - is this always a flush here or should we have a IOContext argument?
+      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment(), new IOContext(Context.FLUSH));
       lastDocID = 0;
     }
   }

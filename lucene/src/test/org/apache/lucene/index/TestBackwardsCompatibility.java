@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -536,7 +537,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
+      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs", IOContext.READ);
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {

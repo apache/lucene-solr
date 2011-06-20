@@ -202,7 +202,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   byte[] buffer = new byte[4096];
 
   private void readFile(Directory dir, String name) throws Exception {
-    IndexInput input = dir.openInput(name);
+    IndexInput input = dir.openInput(name, IOContext.DEFAULT);
     try {
       long size = dir.fileLength(name);
       long bytesLeft = size;

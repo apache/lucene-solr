@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -114,7 +115,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
 
   public void testDeleteFile() throws Exception {
     Directory dir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
-    dir.createOutput("foo.txt").close();
+    dir.createOutput("foo.txt", IOContext.DEFAULT).close();
     dir.deleteFile("foo.txt");
     assertEquals(0, dir.listAll().length);
     dir.close();

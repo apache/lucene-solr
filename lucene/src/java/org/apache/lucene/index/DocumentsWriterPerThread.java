@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
@@ -428,7 +429,7 @@ public class DocumentsWriterPerThread {
     assert deleteSlice == null : "all deletes must be applied in prepareFlush";
     flushState = new SegmentWriteState(infoStream, directory, segment, fieldInfos,
         numDocsInRAM, writer.getConfig().getTermIndexInterval(),
-        fieldInfos.buildSegmentCodecs(true), pendingDeletes);
+        fieldInfos.buildSegmentCodecs(true), pendingDeletes, new IOContext(Context.FLUSH));
     final double startMBUsed = parent.flushControl.netBytes() / 1024. / 1024.;
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that

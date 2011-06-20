@@ -148,7 +148,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+      PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       TermsIndexReaderBase indexReader;
 
       boolean success = false;
@@ -158,7 +158,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                                    state.segmentInfo.name,
                                                    state.termsIndexDivisor,
                                                    BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                   state.codecId);
+                                                   state.codecId, state.context);
         success = true;
       } finally {
         if (!success) {
@@ -173,7 +173,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                                   state.fieldInfos,
                                                   state.segmentInfo.name,
                                                   postings,
-                                                  state.readBufferSize,
+                                                  state.context,
                                                   TERMS_CACHE_SIZE,
                                                   state.codecId);
         success = true;

@@ -92,14 +92,14 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     this.skipMinimum = skipInterval; /* set to the same for now */
     //this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
-    freqOut = state.directory.createOutput(fileName);
+    freqOut = state.directory.createOutput(fileName, state.context);
     boolean success = false;
     try {
       if (state.fieldInfos.hasProx()) {
         // At least one field does not omit TF, so create the
         // prox file
         fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.PROX_EXTENSION);
-        proxOut = state.directory.createOutput(fileName);
+        proxOut = state.directory.createOutput(fileName, state.context);
       } else {
         // Every field omits TF so we will write no prox file
         proxOut = null;

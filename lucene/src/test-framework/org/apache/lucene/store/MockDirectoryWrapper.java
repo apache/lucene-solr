@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
@@ -196,7 +197,8 @@ public class MockDirectoryWrapper extends Directory {
         long length = fileLength(name);
         byte[] zeroes = new byte[256];
         long upto = 0;
-        IndexOutput out = delegate.createOutput(name);
+        //nocommit - randomize the IOContext here?
+        IndexOutput out = delegate.createOutput(name, IOContext.DEFAULT);
         while(upto < length) {
           final int limit = (int) Math.min(length-upto, zeroes.length);
           out.writeBytes(zeroes, 0, limit);
@@ -205,7 +207,8 @@ public class MockDirectoryWrapper extends Directory {
         out.close();
       } else if (count % 3 == 2) {
         // Truncate the file:
-        IndexOutput out = delegate.createOutput(name);
+        //nocommit - randomize the IOContext here?
+        IndexOutput out = delegate.createOutput(name, IOContext.DEFAULT);
         out.setLength(fileLength(name)/2);
         out.close();
       }
@@ -337,7 +340,7 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized IndexOutput createOutput(String name) throws IOException {
+  public synchronized IndexOutput createOutput(String name, IOContext context) throws IOException {
     maybeYield();
     if (crashed)
       throw new IOException("cannot createOutput after crash");
@@ -372,7 +375,8 @@ public class MockDirectoryWrapper extends Directory {
     }
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
+    // nocommit - randomize the IOContext here?
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, context), name);
     addFileHandle(io, name, false);
     openFilesForWrite.add(name);
     
@@ -401,7 +405,7 @@ public class MockDirectoryWrapper extends Directory {
   }
   
   @Override
-  public synchronized IndexInput openInput(String name) throws IOException {
+  public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     maybeYield();
     if (!delegate.fileExists(name))
       throw new FileNotFoundException(name);
@@ -412,7 +416,8 @@ public class MockDirectoryWrapper extends Directory {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name));
+    // nocommit - randomize IOContext here?
+    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, context));
     addFileHandle(ii, name, true);
     return ii;
   }
@@ -637,9 +642,10 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized void copy(Directory to, String src, String dest) throws IOException {
+  public synchronized void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     maybeYield();
-    delegate.copy(to, src, dest);
+    // randomize the IOContext here?
+    delegate.copy(to, src, dest, context);
   }
   
 }

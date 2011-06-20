@@ -1,6 +1,5 @@
-package org.apache.lucene.index.codecs.appending;
-
-/*
+package org.apache.lucene.index;
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,30 +15,21 @@ package org.apache.lucene.index.codecs.appending;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//nocommit javadoc
+public class MergeInfo {
+  
+  public int totalDocCount;
+  
+  public long estimatedMergeBytes;  // used by IndexWriter
+  
+  boolean isExternal;               // used by IndexWriter
+  
+  boolean optimize;                 // used by IndexWriter
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IOContext;
-import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
-
-public class AppendingSegmentInfosWriter extends DefaultSegmentInfosWriter {
-
-  @Override
-  protected IndexOutput createOutput(Directory dir, String segmentsFileName, IOContext context)
-          throws IOException {
-    return dir.createOutput(segmentsFileName, context);
+  public MergeInfo(int totalDocCount, long estimatedMergeBytes, boolean isExternal, boolean optimize) {
+    this.totalDocCount = totalDocCount;
+    this.estimatedMergeBytes = estimatedMergeBytes;
+    this.isExternal = isExternal;
+    this.optimize = optimize;
   }
-
-  @Override
-  public void finishCommit(IndexOutput out) throws IOException {
-    out.close();
-  }
-
-  @Override
-  public void prepareCommit(IndexOutput segmentOutput) throws IOException {
-    // noop
-  }
-
 }

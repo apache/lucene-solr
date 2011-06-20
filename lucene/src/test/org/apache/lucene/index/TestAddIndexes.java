@@ -395,7 +395,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux, IOContext.DEFAULT)));
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -430,7 +430,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux, IOContext.DEFAULT)));
     assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -665,7 +665,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
                 final Directory[] dirs = new Directory[NUM_COPY];
                 for(int k=0;k<NUM_COPY;k++)
-                  dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(dir));
+                  dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(dir, IOContext.DEFAULT));
 
                 int j=0;
 

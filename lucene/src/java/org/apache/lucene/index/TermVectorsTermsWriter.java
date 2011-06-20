@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -89,13 +90,14 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     if (tvx == null) {
       boolean success = false;
       try {
+        IOContext context = new IOContext(Context.FLUSH);
         // If we hit an exception while init'ing the term
         // vector output files, we must abort this segment
         // because those files will be in an unknown
         // state:
-        tvx = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_INDEX_EXTENSION));
-        tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
-        tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
+        tvx = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_INDEX_EXTENSION), context);
+        tvd = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
+        tvf = docWriter.directory.createOutput(IndexFileNames.segmentFileName(docWriter.getSegment(), "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
 
         tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
         tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);

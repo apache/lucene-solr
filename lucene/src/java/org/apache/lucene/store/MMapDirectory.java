@@ -31,6 +31,7 @@ import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.Constants;
 
 /** File-based {@link Directory} implementation that uses
@@ -208,7 +209,7 @@ public class MMapDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     File f = new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
@@ -399,4 +400,5 @@ public class MMapDirectory extends FSDirectory {
       }
     }
   }
+
 }

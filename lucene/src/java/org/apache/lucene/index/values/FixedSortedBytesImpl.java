@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSortedSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
@@ -63,6 +64,7 @@ class FixedSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         AtomicLong bytesUsed) throws IOException {
+      //nocommit this needs an IOContext too
       this(dir, id, comp, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
           bytesUsed);
     }
@@ -70,7 +72,7 @@ class FixedSortedBytesImpl {
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Allocator allocator, AtomicLong bytesUsed) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed);
+          new ByteBlockPool(allocator), bytesUsed, IOContext.DEFAULT);
       docToEntry = new int[1];
       // docToEntry[0] = -1;
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
@@ -161,7 +163,7 @@ class FixedSortedBytesImpl {
     private final int size;
 
     public Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+      super(dir, id, CODEC_NAME, VERSION_START, true, IOContext.DEFAULT);
       size = datIn.readInt();
     }
 

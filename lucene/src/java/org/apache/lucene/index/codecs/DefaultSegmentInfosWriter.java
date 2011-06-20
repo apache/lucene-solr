@@ -19,8 +19,10 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
@@ -54,9 +56,10 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
   public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
 
   @Override
-  public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos)
+  public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos, IOContext context)
           throws IOException {
-    IndexOutput out = createOutput(dir, segmentFileName);
+    //nocommit should this context always be flush?
+    IndexOutput out = createOutput(dir, segmentFileName, context);
     boolean success = false;
     try {
       out.writeInt(FORMAT_CURRENT); // write FORMAT
@@ -77,9 +80,9 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
     }
   }
   
-  protected IndexOutput createOutput(Directory dir, String segmentFileName)
+  protected IndexOutput createOutput(Directory dir, String segmentFileName, IOContext context)
       throws IOException {
-    IndexOutput plainOut = dir.createOutput(segmentFileName);
+    IndexOutput plainOut = dir.createOutput(segmentFileName, context);
     ChecksumIndexOutput out = new ChecksumIndexOutput(plainOut);
     return out;
   }

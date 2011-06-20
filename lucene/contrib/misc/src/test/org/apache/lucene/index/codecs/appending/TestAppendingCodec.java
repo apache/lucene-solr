@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -124,8 +125,8 @@ public class TestAppendingCodec extends LuceneTestCase {
     }
 
     @Override
-    public IndexOutput createOutput(String name) throws IOException {
-      return new AppendingIndexOutputWrapper(super.createOutput(name));
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      return new AppendingIndexOutputWrapper(super.createOutput(name, context));
     }
     
   }

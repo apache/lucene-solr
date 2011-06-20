@@ -51,7 +51,7 @@ public class PreFlexRWCodec extends PreFlexCodec {
     // Whenever IW opens readers, eg for merging, we have to
     // keep terms order in UTF16:
 
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor) {
+    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.termsIndexDivisor) {
       @Override
       protected boolean sortTermsByUnicode() {
         // We carefully peek into stack track above us: if

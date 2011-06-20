@@ -29,6 +29,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -93,11 +94,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                inputBufferSize, 10), inputBufferSize, random);
+                                                IOContext.DEFAULT, 10), inputBufferSize, random);
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             inputBufferSize, 10), inputBufferSize, random);
+                                             IOContext.DEFAULT, 10), inputBufferSize, random);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -303,11 +304,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir = new SimpleFSDirectory(path, null);
       }
 
-      @Override
-      public IndexInput openInput(String name) throws IOException {
-        return openInput(name, BufferedIndexInput.BUFFER_SIZE);
-      }
-
       public void tweakBufferSizes() {
         //int count = 0;
         for (final IndexInput ip : allIndexInputs) {
@@ -320,17 +316,17 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
       
       @Override
-      public IndexInput openInput(String name, int bufferSize) throws IOException {
+      public IndexInput openInput(String name, IOContext context) throws IOException {
         // Make random changes to buffer size
-        bufferSize = 1+Math.abs(rand.nextInt() % 10);
-        IndexInput f = dir.openInput(name, bufferSize);
+        //bufferSize = 1+Math.abs(rand.nextInt() % 10);
+        IndexInput f = dir.openInput(name, context);
         allIndexInputs.add(f);
         return f;
       }
 
       @Override
-      public IndexOutput createOutput(String name) throws IOException {
-        return dir.createOutput(name);
+      public IndexOutput createOutput(String name, IOContext context) throws IOException {
+        return dir.createOutput(name, context);
       }
 
       @Override

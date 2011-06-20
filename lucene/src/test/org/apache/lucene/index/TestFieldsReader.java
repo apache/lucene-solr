@@ -398,8 +398,8 @@ public class TestFieldsReader extends LuceneTestCase {
       lockFactory = fsDir.getLockFactory();
     }
     @Override
-    public IndexInput openInput(String name) throws IOException {
-      return new FaultyIndexInput(fsDir.openInput(name));
+    public IndexInput openInput(String name, IOContext context) throws IOException {
+      return new FaultyIndexInput(fsDir.openInput(name, context));
     }
     @Override
     public String[] listAll() throws IOException {
@@ -422,8 +422,8 @@ public class TestFieldsReader extends LuceneTestCase {
       return fsDir.fileLength(name);
     }
     @Override
-    public IndexOutput createOutput(String name) throws IOException {
-      return fsDir.createOutput(name);
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      return fsDir.createOutput(name, context);
     }
     @Override
     public void sync(Collection<String> names) throws IOException {

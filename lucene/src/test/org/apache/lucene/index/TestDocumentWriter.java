@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -68,7 +69,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -129,7 +130,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getDeletedDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
@@ -193,7 +194,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
 
     DocsAndPositionsEnum termPositions = reader.fields().terms("f1").docsAndPositions(reader.getDeletedDocs(), new BytesRef("a"), null);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -237,7 +238,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
 
     DocsAndPositionsEnum termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getDeletedDocs(), new BytesRef("term1"), null);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);

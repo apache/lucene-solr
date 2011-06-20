@@ -55,7 +55,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testTermDocs(int indexDivisor) throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+    SegmentReader reader = SegmentReader.get(true, info, indexDivisor, IOContext.DEFAULT);
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
@@ -78,7 +78,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testBadSeek(int indexDivisor) throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor, IOContext.DEFAULT);
       assertTrue(reader != null);
       DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
                                               "textField2",
@@ -89,7 +89,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor, IOContext.DEFAULT);
       assertTrue(reader != null);
       DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
                                               "junk",

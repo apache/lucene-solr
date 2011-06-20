@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -33,9 +34,9 @@ public class AppendingSegmentInfosReader extends DefaultSegmentInfosReader {
   }
 
   @Override
-  public IndexInput openInput(Directory dir, String segmentsFileName)
+  public IndexInput openInput(Directory dir, String segmentsFileName, IOContext context)
           throws IOException {
-    return dir.openInput(segmentsFileName);
+    return dir.openInput(segmentsFileName, context);
   }
 
 }

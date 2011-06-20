@@ -25,6 +25,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -342,7 +344,7 @@ public class CheckIndex {
     final String segmentsFileName = sis.getCurrentSegmentFileName();
     IndexInput input = null;
     try {
-      input = dir.openInput(segmentsFileName);
+      input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
     } catch (Throwable t) {
       msg("ERROR: could not open segments file in directory");
       if (infoStream != null)
@@ -479,7 +481,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
 

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -40,7 +41,7 @@ public class TestCopyBytes extends LuceneTestCase {
       }
 
       // make random file
-      IndexOutput out = dir.createOutput("test");
+      IndexOutput out = dir.createOutput("test", IOContext.DEFAULT);
       byte[] bytes = new byte[_TestUtil.nextInt(random, 1, 77777)];
       final int size = _TestUtil.nextInt(random, 1, 1777777);
       int upto = 0;
@@ -60,9 +61,9 @@ public class TestCopyBytes extends LuceneTestCase {
       assertEquals(size, dir.fileLength("test"));
 
       // copy from test -> test2
-      final IndexInput in = dir.openInput("test");
+      final IndexInput in = dir.openInput("test", IOContext.DEFAULT);
 
-      out = dir.createOutput("test2");
+      out = dir.createOutput("test2", IOContext.DEFAULT);
 
       upto = 0;
       while(upto < size) {
@@ -80,7 +81,7 @@ public class TestCopyBytes extends LuceneTestCase {
       in.close();
 
       // verify
-      IndexInput in2 = dir.openInput("test2");
+      IndexInput in2 = dir.openInput("test2", IOContext.DEFAULT);
       upto = 0;
       while(upto < size) {
         if (random.nextBoolean()) {

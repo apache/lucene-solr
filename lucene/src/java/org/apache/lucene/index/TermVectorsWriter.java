@@ -31,15 +31,15 @@ final class TermVectorsWriter {
   private FieldInfos fieldInfos;
 
   public TermVectorsWriter(Directory directory, String segment,
-                           FieldInfos fieldInfos) throws IOException {
+                           FieldInfos fieldInfos, IOContext context) throws IOException {
     boolean success = false;
     try {
       // Open files for TermVector storage
-      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
+      tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION), context);
       tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
-      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+      tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), context);
       tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
-      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
+      tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION), context);
       tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
       success = true;
     } finally {

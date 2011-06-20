@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 
@@ -36,5 +37,5 @@ public abstract class SegmentInfosReader {
    * @param infos empty instance to be populated with data
    * @throws IOException
    */
-  public abstract void read(Directory directory, String segmentsFileName, CodecProvider codecs, SegmentInfos infos) throws IOException;
+  public abstract void read(Directory directory, String segmentsFileName, CodecProvider codecs, SegmentInfos infos, IOContext context) throws IOException;
 }

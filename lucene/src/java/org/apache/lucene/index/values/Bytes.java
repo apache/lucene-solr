@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
@@ -108,6 +109,8 @@ public final class Bytes {
   public static Writer getWriter(Directory dir, String id, Mode mode,
       Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed)
       throws IOException {
+    //nocommit this and all the blow need an IOContext too
+
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
     if (comp == null) {
@@ -158,6 +161,8 @@ public final class Bytes {
    */
   public static IndexDocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc) throws IOException {
+    //nocommit this and all the readers below need an IOContext too
+
     // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
@@ -344,18 +349,18 @@ public final class Bytes {
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
         int version, boolean initIndex, ByteBlockPool pool,
-        AtomicLong bytesUsed) throws IOException {
+        AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.pool = pool;
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-            DATA_EXTENSION));
+            DATA_EXTENSION), context);
       boolean success = false;
       try {
         CodecUtil.writeHeader(datOut, codecName, version);
         if (initIndex) {
           idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-              INDEX_EXTENSION));
+              INDEX_EXTENSION), context);
           CodecUtil.writeHeader(idxOut, codecName, version);
         } else {
           idxOut = null;
@@ -428,16 +433,16 @@ public final class Bytes {
     protected final String id;
 
     protected BytesReaderBase(Directory dir, String id, String codecName,
-        int maxVersion, boolean doIndex) throws IOException {
+        int maxVersion, boolean doIndex, IOContext context) throws IOException {
       this.id = id;
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
       version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
       if (doIndex) {
         idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.INDEX_EXTENSION));
+            Writer.INDEX_EXTENSION), context);
         final int version2 = CodecUtil.checkHeader(idxIn, codecName,
             maxVersion, maxVersion);
         assert version == version2;

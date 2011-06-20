@@ -189,6 +189,10 @@ public abstract class MergePolicy implements java.io.Closeable {
       }
       return total;
     }
+    
+    public MergeInfo getMergeInfo() {
+      return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, optimize);
+    }    
   }
 
   /**

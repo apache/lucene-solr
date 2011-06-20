@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
@@ -65,7 +67,8 @@ public class Floats {
 
   public static IndexDocValues getValues(Directory dir, String id, int maxDoc)
       throws IOException {
-    return new FloatsReader(dir, id, maxDoc);
+    //nocommit this needs an IOContext too
+    return new FloatsReader(dir, id, maxDoc, IOContext.READ);
   }
 
   abstract static class FloatsWriter extends Writer {
@@ -76,12 +79,12 @@ public class Floats {
     private final byte precision;
 
     protected FloatsWriter(Directory dir, String id, int precision,
-        AtomicLong bytesUsed) throws IOException {
+        AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.precision = (byte) precision;
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
         CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
@@ -146,7 +149,7 @@ public class Floats {
 
     protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      super(dir, id, 4, bytesUsed);
+      super(dir, id, 4, bytesUsed, new IOContext(Context.FLUSH));
     }
 
     @Override
@@ -189,7 +192,7 @@ public class Floats {
 
     protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
-      super(dir, id, 8, bytesUsed);
+      super(dir, id, 8, bytesUsed, new IOContext(Context.FLUSH));
     }
 
     @Override
@@ -237,10 +240,10 @@ public class Floats {
     // TODO(simonw) is ByteBuffer the way to go here?
     private final int maxDoc;
 
-    protected FloatsReader(Directory dir, String id, int maxDoc)
+    protected FloatsReader(Directory dir, String id, int maxDoc, IOContext context)
         throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
       precisionBytes = datIn.readByte();
       assert precisionBytes == 4 || precisionBytes == 8;

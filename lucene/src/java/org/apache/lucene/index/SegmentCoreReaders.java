@@ -45,7 +45,7 @@ final class SegmentCoreReaders {
 
   final Directory dir;
   final Directory cfsDir;
-  final int readBufferSize;
+  final IOContext context;
   final int termsIndexDivisor;
   
   private final SegmentReader owner;
@@ -57,7 +57,7 @@ final class SegmentCoreReaders {
 
   
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, IOContext context, int termsIndexDivisor) throws IOException {
     
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
@@ -65,7 +65,7 @@ final class SegmentCoreReaders {
     
     segment = si.name;
     final SegmentCodecs segmentCodecs = si.getSegmentCodecs();
-    this.readBufferSize = readBufferSize;
+    this.context = context;
     this.dir = dir;
     
     boolean success = false;
@@ -73,7 +73,7 @@ final class SegmentCoreReaders {
     try {
       Directory dir0 = dir;
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+        cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         dir0 = cfsReader;
       }
       cfsDir = dir0;
@@ -82,7 +82,7 @@ final class SegmentCoreReaders {
       
       this.termsIndexDivisor = termsIndexDivisor;
       final Codec codec = segmentCodecs.codec();
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
       fields = codec.fieldsProducer(segmentReadState);
       assert fields != null;
@@ -163,7 +163,7 @@ final class SegmentCoreReaders {
           assert storeCFSReader == null;
           storeCFSReader = new CompoundFileReader(dir,
               IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
-              readBufferSize);
+              context);
           storeDir = storeCFSReader;
           assert storeDir != null;
         } else {
@@ -175,7 +175,7 @@ final class SegmentCoreReaders {
         // was not used, but then we are asked to open doc
         // stores after the segment has switched to CFS
         if (cfsReader == null) {
-          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         }
         storeDir = cfsReader;
         assert storeDir != null;
@@ -185,7 +185,7 @@ final class SegmentCoreReaders {
       }
       
       final String storesSegment = si.getDocStoreSegment();
-      fieldsReaderOrig = new FieldsReader(storeDir, storesSegment, fieldInfos, readBufferSize,
+      fieldsReaderOrig = new FieldsReader(storeDir, storesSegment, fieldInfos, context,
           si.getDocStoreOffset(), si.docCount);
       
       // Verify two sources of "maxDoc" agree:
@@ -194,7 +194,7 @@ final class SegmentCoreReaders {
       }
       
       if (si.getHasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
+        termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
       }
     }
   }

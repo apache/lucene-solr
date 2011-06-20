@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.IOContext;
+
 /**
  * A memory-resident {@link Directory} implementation.  Locking
  * implementation is by default the {@link SingleInstanceLockFactory}
@@ -38,7 +40,7 @@ public class RAMDirectory extends Directory {
   
   // *****
   // Lock acquisition sequence:  RAMDirectory, then RAMFile
-  // *****
+  // ***** 
 
   /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
@@ -65,14 +67,14 @@ public class RAMDirectory extends Directory {
    * @param dir a <code>Directory</code> value
    * @exception IOException if an error occurs
    */
-  public RAMDirectory(Directory dir) throws IOException {
-    this(dir, false);
+  public RAMDirectory(Directory dir, IOContext context) throws IOException {
+    this(dir, false, context);
   }
   
-  private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
+  private RAMDirectory(Directory dir, boolean closeDir, IOContext context) throws IOException {
     this();
     for (String file : dir.listAll()) {
-      dir.copy(this, file, file);
+      dir.copy(this, file, file, context);
     }
     if (closeDir) {
       dir.close();
@@ -149,7 +151,7 @@ public class RAMDirectory extends Directory {
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     RAMFile file = newRAMFile();
     RAMFile existing = fileMap.remove(name);
@@ -176,7 +178,7 @@ public class RAMDirectory extends Directory {
 
   /** Returns a stream reading an existing file. */
   @Override
-  public IndexInput openInput(String name) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.get(name);
     if (file == null) {

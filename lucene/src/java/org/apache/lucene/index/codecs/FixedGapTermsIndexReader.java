@@ -21,6 +21,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IOContext;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -68,12 +70,12 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
-  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId)
+  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId, IOContext context)
     throws IOException {
 
     this.termComp = termComp;
 
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
     
     boolean success = false;
 

@@ -29,6 +29,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
@@ -107,7 +108,7 @@ public class BlockTermsReader extends FieldsProducer {
   
   //private String segment;
   
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
+  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
     throws IOException {
     
@@ -116,7 +117,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     //this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
-                       readBufferSize);
+                       context);
 
     boolean success = false;
     try {

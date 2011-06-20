@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import org.apache.lucene.index.IOContext;
+
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
  *  poor concurrent performance (multiple threads will
@@ -51,9 +53,9 @@ public class SimpleFSDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new SimpleFSIndexInput(new File(directory, name), bufferSize, getReadChunkSize());
+    return new SimpleFSIndexInput(new File(directory, name), context, getReadChunkSize());
   }
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
@@ -85,8 +87,9 @@ public class SimpleFSDirectory extends FSDirectory {
     //  LUCENE-1566 - maximum read length on a 32bit JVM to prevent incorrect OOM 
     protected final int chunkSize;
     
-    public SimpleFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(bufferSize);
+    public SimpleFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
+      //nocommit Use IOContext to decide bufferSize instead of BufferedIndexInput.BUFFER_SIZE
+      super(BufferedIndexInput.BUFFER_SIZE);
       file = new Descriptor(path, "r");
       this.chunkSize = chunkSize;
     }

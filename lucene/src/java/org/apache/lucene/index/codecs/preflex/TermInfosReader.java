@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
@@ -94,7 +95,7 @@ public final class TermInfosReader {
     SegmentTermEnum termEnum;
   }
   
-  TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
+  TermInfosReader(Directory dir, String seg, FieldInfos fis, IOContext context, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
 
@@ -108,7 +109,7 @@ public final class TermInfosReader {
       fieldInfos = fis;
 
       origEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_EXTENSION),
-                                                         readBufferSize), fieldInfos, false);
+                                                         context), fieldInfos, false);
       size = origEnum.size;
 
 
@@ -116,7 +117,7 @@ public final class TermInfosReader {
         // Load terms index
         totalIndexInterval = origEnum.indexInterval * indexDivisor;
         final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(IndexFileNames.segmentFileName(segment, "", PreFlexCodec.TERMS_INDEX_EXTENSION),
-                                                                                  readBufferSize), fieldInfos, true);
+                                                                                  context), fieldInfos, true);
 
         try {
           int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index

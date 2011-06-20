@@ -22,11 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldsReader;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -39,10 +41,10 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
 
   @Override
   public void read(Directory directory, String segmentsFileName, CodecProvider codecs,
-          SegmentInfos infos) throws IOException {
+          SegmentInfos infos, IOContext context) throws IOException {
     IndexInput input = null;
     try {
-      input = openInput(directory, segmentsFileName);
+      input = openInput(directory, segmentsFileName, context);
       final int format = input.readInt();
       infos.setFormat(format);
   
@@ -70,11 +72,11 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
             if (si.getDocStoreIsCompoundFile()) {
               dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
                   si.getDocStoreSegment(), "",
-                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), 1024);
+                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context);
             }
           } else if (si.getUseCompoundFile()) {
             dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
-                si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), 1024);
+                si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
           }
 
           try {
@@ -108,8 +110,8 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
 
   }
   
-  public IndexInput openInput(Directory dir, String segmentsFileName) throws IOException {
-    IndexInput in = dir.openInput(segmentsFileName);
+  public IndexInput openInput(Directory dir, String segmentsFileName, IOContext context) throws IOException {
+    IndexInput in = dir.openInput(segmentsFileName, context);
     return new ChecksumIndexInput(in);
     
   }

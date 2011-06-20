@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -64,13 +65,13 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher = new IndexSearcher(directory, true);
 
     // Make big index
-    dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory));
+    dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory, IOContext.DEFAULT));
 
     // First multiply small test index:
     mulFactor = 1;
     int docCount = 0;
     do {
-      final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2));
+      final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2, IOContext.DEFAULT));
       RandomIndexWriter w = new RandomIndexWriter(random, dir2);
       w.addIndexes(copy);
       docCount = w.maxDoc();

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
@@ -127,12 +128,12 @@ final class SegmentMerger {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
+  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info, IOContext context)
           throws IOException {
 
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, context, checkAbort);
     for (String file : files) {
       assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
                 : ".del file is not allowed in .cfs: " + file;
@@ -232,8 +233,8 @@ final class SegmentMerger {
     int docCount = 0;
 
     setMatchingSegmentReaders();
-
-    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment);
+    // nocommit - should we rather use IOContext.MERGE here?
+    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, IOContext.DEFAULT);
 
     try {
       int idx = 0;
@@ -268,8 +269,8 @@ final class SegmentMerger {
       // entering the index.  See LUCENE-1282 for
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
-
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null);
+    //nocommit if Merge then what to initialize OneMerge with ?
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, IOContext.DEFAULT);
 
     return docCount;
   }
@@ -354,8 +355,9 @@ final class SegmentMerger {
    * @throws IOException
    */
   private final void mergeVectors() throws IOException {
+    //nocommit Putting MERGE context here would lead to assert error. What should MergeInfo be initialized with here?
     TermVectorsWriter termVectorsWriter =
-      new TermVectorsWriter(directory, segment, fieldInfos);
+      new TermVectorsWriter(directory, segment, fieldInfos, new IOContext(Context.DEFAULT));
 
     try {
       int idx = 0;
@@ -614,7 +616,8 @@ final class SegmentMerger {
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) {
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
+            //nocommit Putting MERGE context here would lead to assert error. What should MergeInfo be initialized with here?
+            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), new IOContext(Context.DEFAULT));
             output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
           for (IndexReader reader : readers) {

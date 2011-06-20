@@ -99,7 +99,7 @@ final class PerFieldCodecWrapper extends Codec {
     private final Map<String, FieldsProducer> codecs = new HashMap<String, FieldsProducer>();
 
     public FieldsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
-        int readBufferSize, int indexDivisor) throws IOException {
+        IOContext context, int indexDivisor) throws IOException {
 
       final Map<Codec, FieldsProducer> producers = new HashMap<Codec, FieldsProducer>();
       boolean success = false;
@@ -111,7 +111,7 @@ final class PerFieldCodecWrapper extends Codec {
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.fieldsProducer(new SegmentReadState(dir,
-                                                                             si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
+                                                                             si, fieldInfos, context, indexDivisor, fi.getCodecId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }
@@ -187,7 +187,7 @@ final class PerFieldCodecWrapper extends Codec {
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state.dir, state.fieldInfos, state.segmentInfo,
-        state.readBufferSize, state.termsIndexDivisor);
+        state.context, state.termsIndexDivisor);
   }
 
   @Override
@@ -212,14 +212,14 @@ final class PerFieldCodecWrapper extends Codec {
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
     return new PerDocProducers(state.dir, state.fieldInfos, state.segmentInfo,
-    state.readBufferSize, state.termsIndexDivisor);
+    state.context, state.termsIndexDivisor);
   }
   
   private final class PerDocProducers extends PerDocValues {
     private final TreeMap<String, PerDocValues> codecs = new TreeMap<String, PerDocValues>();
 
     public PerDocProducers(Directory dir, FieldInfos fieldInfos, SegmentInfo si,
-        int readBufferSize, int indexDivisor) throws IOException {
+        IOContext context, int indexDivisor) throws IOException {
       final Map<Codec, PerDocValues> producers = new HashMap<Codec, PerDocValues>();
       boolean success = false;
       try {
@@ -229,7 +229,7 @@ final class PerFieldCodecWrapper extends Codec {
             Codec codec = segmentCodecs.codecs[fi.getCodecId()];
             if (!producers.containsKey(codec)) {
               producers.put(codec, codec.docsProducer(new SegmentReadState(dir,
-                si, fieldInfos, readBufferSize, indexDivisor, fi.getCodecId())));
+                si, fieldInfos, context, indexDivisor, fi.getCodecId())));
             }
             codecs.put(fi.name, producers.get(codec));
           }

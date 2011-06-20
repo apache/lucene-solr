@@ -43,8 +43,9 @@ public abstract class BufferedIndexInput extends IndexInput {
   public BufferedIndexInput() {}
 
   /** Inits BufferedIndexInput with a specific bufferSize */
+  //nocommit To cleanup class variable bufferSize as the the default size is always used 
   public BufferedIndexInput(int bufferSize) {
-    checkBufferSize(bufferSize);
+    checkBufferSize(BufferedIndexInput.BUFFER_SIZE);
     this.bufferSize = bufferSize;
   }
 

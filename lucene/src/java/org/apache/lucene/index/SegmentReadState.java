@@ -26,7 +26,7 @@ public class SegmentReadState {
   public final Directory dir;
   public final SegmentInfo segmentInfo;
   public final FieldInfos fieldInfos;
-  public final int readBufferSize;
+  public final IOContext context;
 
   // NOTE: if this is < 0, that means "defer terms index
   // load until needed".  But if the codec must load the
@@ -37,20 +37,20 @@ public class SegmentReadState {
   public final int codecId;
 
   public SegmentReadState(Directory dir, SegmentInfo info,
-      FieldInfos fieldInfos, int readBufferSize, int termsIndexDivisor) {
-    this(dir, info, fieldInfos, readBufferSize, termsIndexDivisor, -1);
+      FieldInfos fieldInfos, IOContext context, int termsIndexDivisor) {
+    this(dir, info, fieldInfos,  context, termsIndexDivisor, -1);
   }
   
   public SegmentReadState(Directory dir,
                           SegmentInfo info,
                           FieldInfos fieldInfos,
-                          int readBufferSize,
+                          IOContext context,
                           int termsIndexDivisor,
                           int codecId) {
     this.dir = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
-    this.readBufferSize = readBufferSize;
+    this.context = context;
     this.termsIndexDivisor = termsIndexDivisor;
     this.codecId = codecId;
   }

@@ -24,8 +24,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;       // javadocs
+import org.apache.lucene.index.MergeInfo;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.store.RAMDirectory;      // javadocs
@@ -193,17 +195,17 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.createOutput name=" + name);
     }
-    if (doCacheWrite(name)) {
+    if (doCacheWrite(name, context)) {
       if (VERBOSE) {
         System.out.println("  to cache");
       }
-      return cache.createOutput(name);
+      return cache.createOutput(name, context);
     } else {
-      return delegate.createOutput(name);
+      return delegate.createOutput(name, context);
     }
   }
 
@@ -219,7 +221,7 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized IndexInput openInput(String name) throws IOException {
+  public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
@@ -227,18 +229,9 @@ public class NRTCachingDirectory extends Directory {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
-      return cache.openInput(name);
+      return cache.openInput(name, context);
     } else {
-      return delegate.openInput(name);
-    }
-  }
-
-  @Override
-  public synchronized IndexInput openInput(String name, int bufferSize) throws IOException {
-    if (cache.fileExists(name)) {
-      return cache.openInput(name, bufferSize);
-    } else {
-      return delegate.openInput(name, bufferSize);
+      return delegate.openInput(name, context);
     }
   }
 
@@ -271,18 +264,19 @@ public class NRTCachingDirectory extends Directory {
 
   /** Subclass can override this to customize logic; return
    *  true if this file should be written to the RAMDirectory. */
-  protected boolean doCacheWrite(String name) {
-    final MergePolicy.OneMerge merge = merges.get(Thread.currentThread());
+  protected boolean doCacheWrite(String name, IOContext context) {
+    final MergeInfo merge = context.mergeInfo;
     //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
     return !name.equals(IndexFileNames.SEGMENTS_GEN) && (merge == null || merge.estimatedMergeBytes <= maxMergeSizeBytes) && cache.sizeInBytes() <= maxCachedBytes;
   }
 
   private void unCache(String fileName) throws IOException {
     final IndexOutput out;
+    IOContext context = IOContext.DEFAULT;
     synchronized(this) {
       if (!delegate.fileExists(fileName)) {
         assert cache.fileExists(fileName);
-        out = delegate.createOutput(fileName);
+        out = delegate.createOutput(fileName, context);
       } else {
         out = null;
       }
@@ -291,7 +285,7 @@ public class NRTCachingDirectory extends Directory {
     if (out != null) {
       IndexInput in = null;
       try {
-        in = cache.openInput(fileName);
+        in = cache.openInput(fileName, context);
         in.copyBytes(out, in.length());
       } finally {
         IOUtils.closeSafely(false, in, out);

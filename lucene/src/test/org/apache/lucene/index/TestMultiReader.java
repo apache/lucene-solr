@@ -26,8 +26,8 @@ public class TestMultiReader extends TestDirectoryReader {
     IndexReader reader;
 
     sis.read(dir);
-    SegmentReader reader1 = SegmentReader.get(false, sis.info(0), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-    SegmentReader reader2 = SegmentReader.get(false, sis.info(1), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader1 = SegmentReader.get(false, sis.info(0), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
+    SegmentReader reader2 = SegmentReader.get(false, sis.info(1), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
     readers[0] = reader1;
     readers[1] = reader2;
     assertTrue(reader1 != null);

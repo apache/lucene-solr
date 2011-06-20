@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
@@ -123,9 +124,10 @@ final class TermInfosWriter implements Closeable {
     indexInterval = interval;
     fieldInfos = fis;
     isIndex = isi;
+    // nocommit pass IOContext in via ctor
     output = directory.createOutput(IndexFileNames.segmentFileName(segment, "",
         (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
-            : PreFlexCodec.TERMS_EXTENSION)));
+            : PreFlexCodec.TERMS_EXTENSION)), IOContext.DEFAULT);
     boolean success = false;
     try {
     output.writeInt(FORMAT_CURRENT);              // write format

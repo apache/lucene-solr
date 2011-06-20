@@ -1056,7 +1056,8 @@ public abstract class LuceneTestCase extends Assert {
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-     d.copy(impl, file, file);
+      //nocommit randomiz the IOContext here?
+     d.copy(impl, file, file, IOContext.DEFAULT);
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
     stores.put(dir, Thread.currentThread().getStackTrace());

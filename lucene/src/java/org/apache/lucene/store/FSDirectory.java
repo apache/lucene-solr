@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
@@ -286,7 +287,7 @@ public abstract class FSDirectory extends Directory {
 
   /** Creates an IndexOutput for the file with the given name. */
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
 
     ensureCanWrite(name);
@@ -317,13 +318,6 @@ public abstract class FSDirectory extends Directory {
       fsync(name);
 
     staleFiles.removeAll(toSync);
-  }
-
-  // Inherit javadoc
-  @Override
-  public IndexInput openInput(String name) throws IOException {
-    ensureOpen();
-    return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
   @Override
