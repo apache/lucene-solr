@@ -313,6 +313,8 @@ Other Changes
   any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
   ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe)
   
+* SOLR-2611: Fix typos in the example configuration (Eric Pugh via rmuir)
+
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------
