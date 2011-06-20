@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -37,7 +39,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
@@ -170,21 +171,52 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   protected boolean handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    boolean doPersist = false;
     SolrParams params = req.getParams();
-    SolrParams required = params.required();
-    String cname = required.get(CoreAdminParams.CORE);
+    String cname = params.required().get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.getCore(cname);
+
+    SolrCore[] sourceCores = null;
+    RefCounted<SolrIndexSearcher>[] searchers = null;
+    // stores readers created from indexDir param values
+    IndexReader[] readersToBeClosed = null;
     if (core != null) {
       try {
-        doPersist = coreContainer.isPersistent();
+        String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
+        if (dirNames == null || dirNames.length == 0) {
+          String[] sources = params.getParams("srcCore");
+          if (sources == null || sources.length == 0)
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                "At least one indexDir or srcCore must be specified");
 
-        String[] dirNames = required.getParams(CoreAdminParams.INDEX_DIR);
+          sourceCores = new SolrCore[sources.length];
+          for (int i = 0; i < sources.length; i++) {
+            String source = sources[i];
+            SolrCore srcCore = coreContainer.getCore(source);
+            if (srcCore == null)
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "Core: " + source + " does not exist");
+            sourceCores[i] = srcCore;
+          }
+        } else  {
+          readersToBeClosed = new IndexReader[dirNames.length];
+          DirectoryFactory dirFactory = core.getDirectoryFactory();
+          for (int i = 0; i < dirNames.length; i++) {
+            readersToBeClosed[i] = IndexReader.open(dirFactory.open(dirNames[i]), true);
+          }
+        }
 
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-        Directory[] dirs = new Directory[dirNames.length];
-        for (int i = 0; i < dirNames.length; i++) {
-          dirs[i] = dirFactory.open(dirNames[i]);
+        IndexReader[] readers = null;
+        if (readersToBeClosed != null)  {
+          readers = readersToBeClosed;
+        } else {
+          readers = new IndexReader[sourceCores.length];
+          searchers = new RefCounted[sourceCores.length];
+          for (int i = 0; i < sourceCores.length; i++) {
+            SolrCore solrCore = sourceCores[i];
+            // record the searchers so that we can decref
+            searchers[i] = solrCore.getSearcher();
+            readers[i] = searchers[i].get().getIndexReader();
+          }
         }
 
         UpdateRequestProcessorChain processorChain =
@@ -192,12 +224,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
         SolrQueryRequest wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
-        processor.processMergeIndexes(new MergeIndexesCommand(dirs));
+
+        processor.processMergeIndexes(new MergeIndexesCommand(readers));
       } finally {
+        if (searchers != null) {
+          for (RefCounted<SolrIndexSearcher> searcher : searchers) {
+            if (searcher != null) searcher.decref();
+          }
+        }
+        if (sourceCores != null) {
+          for (SolrCore solrCore : sourceCores) {
+            if (solrCore != null) solrCore.close();
+          }
+        }
+        if (readersToBeClosed != null) IOUtils.closeSafely(true, readersToBeClosed);
         core.close();
       }
     }
-    return doPersist;
+    return coreContainer.isPersistent();
   }
 
   /**
