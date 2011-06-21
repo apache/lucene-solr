@@ -86,10 +86,14 @@ public class SortField {
    * This is typically slower than {@link #STRING}, which
    * uses ordinals to do the sorting. */
   public static final int STRING_VAL = 11;
-  
+
   /** Sort use byte[] index values. */
   public static final int BYTES = 12;
-  
+
+  /** Force rewriting of SortField using {@link SortField#rewrite(IndexSearcher)}
+   * before it can be used for sorting */
+  public static final int REWRITEABLE = 13;
+
   /** Represents sorting by document score (relevance). */
   public static final SortField FIELD_SCORE = new SortField(null, SCORE);
 
@@ -475,9 +479,26 @@ public class SortField {
 
     case SortField.STRING_VAL:
       return new FieldComparator.TermValComparator(numHits, field);
+
+    case SortField.REWRITEABLE:
+      throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
         
     default:
       throw new IllegalStateException("Illegal sort type: " + type);
     }
+  }
+
+  /**
+   * Rewrites this SortField, returning a new SortField if a change is made.
+   * Subclasses should override this define their rewriting behavior when this
+   * SortField is of type {@link SortField#REWRITEABLE}
+   *
+   * @param searcher IndexSearcher to use during rewriting
+   * @return New rewritten SortField, or {@code this} if nothing has changed.
+   * @throws IOException Can be thrown by the rewriting
+   * @lucene.experimental
+   */
+  public SortField rewrite(IndexSearcher searcher) throws IOException {
+    return this;
   }
 }

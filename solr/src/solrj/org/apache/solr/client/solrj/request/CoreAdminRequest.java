@@ -119,6 +119,7 @@ public class CoreAdminRequest extends SolrRequest
   
   public static class MergeIndexes extends CoreAdminRequest {
     protected List<String> indexDirs;
+    protected List<String> srcCores;
 
     public MergeIndexes() {
       action = CoreAdminAction.MERGEINDEXES;
@@ -132,6 +133,14 @@ public class CoreAdminRequest extends SolrRequest
       return indexDirs;
     }
 
+    public List<String> getSrcCores() {
+      return srcCores;
+    }
+
+    public void setSrcCores(List<String> srcCores) {
+      this.srcCores = srcCores;
+    }
+
     @Override
     public SolrParams getParams() {
       if (action == null) {
@@ -143,6 +152,11 @@ public class CoreAdminRequest extends SolrRequest
       if (indexDirs != null)  {
         for (String indexDir : indexDirs) {
           params.set(CoreAdminParams.INDEX_DIR, indexDir);
+        }
+      }
+      if (srcCores != null) {
+        for (String srcCore : srcCores) {
+          params.set(CoreAdminParams.SRC_CORE, srcCore);
         }
       }
       return params;
@@ -289,11 +303,12 @@ public class CoreAdminRequest extends SolrRequest
   }
 
   public static CoreAdminResponse mergeIndexes(String name,
-      String[] indexDirs, SolrServer server) throws SolrServerException,
+      String[] indexDirs, String[] srcCores, SolrServer server) throws SolrServerException,
       IOException {
     CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
     req.setCoreName(name);
     req.setIndexDirs(Arrays.asList(indexDirs));
+    req.setSrcCores(Arrays.asList(srcCores));
     return req.process(server);
   }
 }

@@ -114,7 +114,7 @@ public class RandomIndexWriter implements Closeable {
 
   private void switchDoDocValues() {
     // randomly enable / disable docValues 
-    doDocValues = r.nextInt(10) != 0;
+    doDocValues = LuceneTestCase.rarely(r);
   }
   
   /**

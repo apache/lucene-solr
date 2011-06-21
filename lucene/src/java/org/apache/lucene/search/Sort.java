@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 
 
@@ -147,6 +148,30 @@ public class Sort {
    */
   public SortField[] getSort() {
     return fields;
+  }
+
+  /**
+   * Rewrites the SortFields in this Sort, returning a new Sort if any of the fields
+   * changes during their rewriting.
+   *
+   * @param searcher IndexSearcher to use in the rewriting
+   * @return {@code this} if the Sort/Fields have not changed, or a new Sort if there
+   *        is a change
+   * @throws IOException Can be thrown by the rewriting
+   * @lucene.experimental
+   */
+  public Sort rewrite(IndexSearcher searcher) throws IOException {
+    boolean changed = false;
+    
+    SortField[] rewrittenSortFields = new SortField[fields.length];
+    for (int i = 0; i < fields.length; i++) {
+      rewrittenSortFields[i] = fields[i].rewrite(searcher);
+      if (fields[i] != rewrittenSortFields[i]) {
+        changed = true;
+      }
+    }
+
+    return (changed) ? new Sort(rewrittenSortFields) : this;
   }
 
   @Override

@@ -187,8 +187,12 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Sets the allowed number of segments per tier.  Smaller
    *  values mean more merging but fewer segments.
-   *  setMaxMergeAtOnce} otherwise you'll hit
-   *  Default is 10.0. */
+   *
+   *  <p><b>NOTE</b>: this value should be >= the {@link
+   *  #setMaxMergeAtOnce} otherwise you'll force too much
+   *  merging to occur.</p>
+   *
+   *  <p>Default is 10.0.</p> */
   public TieredMergePolicy setSegmentsPerTier(double v) {
     if (v < 2.0) {
       throw new IllegalArgumentException("segmentsPerTier must be >= 2.0 (got " + v + ")");

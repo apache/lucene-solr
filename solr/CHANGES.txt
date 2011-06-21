@@ -145,6 +145,9 @@ New Features
 * SOLR-2417: Add explain info directly to return documents using 
   ?fl=id,[explain] (ryan)
 
+* SOLR-2533: Converted ValueSource.ValueSourceSortField over to new rewriteable Lucene
+  SortFields.  ValueSourceSortField instances must be rewritten before they can be used.
+  This is done by SolrIndexSearcher when necessary. (Chris Male).
   
 
 Optimizations
@@ -266,6 +269,9 @@ New Features
    Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
    Harish Agarwal, yonik, Michael McCandless, Bill Bell)
 
+* SOLR-1331 -- Added a srcCore parameter to CoreAdminHandler's mergeindexes action
+  to merge one or more cores' indexes to a target core (shalin)
+
 Optimizations
 ----------------------
 
@@ -307,6 +313,8 @@ Other Changes
   any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
   ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe)
   
+* SOLR-2611: Fix typos in the example configuration (Eric Pugh via rmuir)
+
 ==================  3.2.0  ==================
 Versions of Major Components
 ---------------------

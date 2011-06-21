@@ -20,6 +20,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
@@ -277,10 +278,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     try {
       log.info("start " + cmd);
 
-      Directory[] dirs = cmd.dirs;
-      if (dirs != null && dirs.length > 0) {
+      IndexReader[] readers = cmd.readers;
+      if (readers != null && readers.length > 0) {
         openWriter();
-        writer.addIndexes(dirs);
+        writer.addIndexes(readers);
         rc = 1;
       } else {
         rc = 0;
