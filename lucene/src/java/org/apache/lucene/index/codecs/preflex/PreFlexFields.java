@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -37,6 +36,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -177,8 +177,8 @@ public class PreFlexFields extends FieldsProducer {
         // terms reader with index, the segment has switched
         // to CFS
 
-        if (!(dir instanceof CompoundFileReader)) {
-          dir0 = cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+        if (!(dir instanceof CompoundFileDirectory)) {
+          dir0 = cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         } else {
           dir0 = dir;
         }

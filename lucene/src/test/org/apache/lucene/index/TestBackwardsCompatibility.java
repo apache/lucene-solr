@@ -39,8 +39,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
@@ -536,7 +536,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
+      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", 1024);
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {
@@ -549,7 +549,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
       // Now verify file names:
-      String[] expected = new String[] {"_0.cfs",
+      String[] expected = new String[] {"_0.cfs", "_0.cfe",
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",

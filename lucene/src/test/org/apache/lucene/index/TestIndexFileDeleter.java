@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -91,7 +92,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // figure out which field number corresponds to
     // "content", and then set our expected file names below
     // accordingly:
-    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+    CompoundFileDirectory cfsReader = dir.openCompoundInput("_2.cfs", 1024);
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
     for (FieldInfo fi : fieldInfos) {
