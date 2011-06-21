@@ -64,7 +64,12 @@ class FrozenBufferedDeletes {
       queryLimits[upto] = ent.getValue();
       upto++;
     }
-    bytesUsed = terms.length * BYTES_PER_DEL_TERM + queries.length * BYTES_PER_DEL_QUERY;
+    int termDataChars = 0;
+    for(Map.Entry<Term,Integer> ent : deletes.terms.entrySet()) {
+      final Term term = ent.getKey();
+      termDataChars += term.text().length();
+    }
+    bytesUsed = terms.length * BYTES_PER_DEL_TERM + queries.length * BYTES_PER_DEL_QUERY + termDataChars*RamUsageEstimator.NUM_BYTES_CHAR;
     numTermDeletes = deletes.numTermDeletes.get();
     this.gen = gen;
   }
