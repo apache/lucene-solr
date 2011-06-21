@@ -29,7 +29,6 @@ import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -66,7 +65,6 @@ public class DocTermsCreator extends EntryCreatorWithOptions<DocTerms>
   @Override
   public DocTerms create(IndexReader reader) throws IOException {
 
-    String field = StringHelper.intern(this.field); // TODO?? necessary?
     Terms terms = MultiFields.getTerms(reader, field);
 
     final boolean fasterButMoreRAM = hasOption( FASTER_BUT_MORE_RAM );

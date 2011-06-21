@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.search.cache.*;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 // TODO(simonw) -- for cleaner transition, maybe we should make
 // a new SortField that subclasses this one and always uses
@@ -166,7 +166,7 @@ public class SortField {
     if (field == null) {
       throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
     } 
-    this.field = StringHelper.intern(field);
+    this.field = field;
     this.reverse = reverse;
     
     if (parser instanceof FieldCache.IntParser) {
@@ -205,7 +205,7 @@ public class SortField {
    */
   public SortField( CachedArrayCreator<?> creator, boolean reverse ) 
   {
-    this.field = StringHelper.intern(creator.field);
+    this.field = creator.field;
     this.reverse = reverse;
     this.creator = creator;
     this.type = creator.getSortTypeID();
@@ -253,7 +253,7 @@ public class SortField {
       if (type != SCORE && type != DOC)
         throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
     } else {
-      this.field = StringHelper.intern(field);
+      this.field = field;
     }
     
     if( creator != null ) {
@@ -381,7 +381,7 @@ public class SortField {
     if (!(o instanceof SortField)) return false;
     final SortField other = (SortField)o;
     return (
-      other.field == this.field // field is always interned
+      StringHelper.equals(other.field, this.field)
       && other.type == this.type
       && other.reverse == this.reverse
       && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))

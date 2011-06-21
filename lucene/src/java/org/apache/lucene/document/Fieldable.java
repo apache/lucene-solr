@@ -71,7 +71,7 @@ public interface Fieldable {
    */
   float getBoost();
 
-  /** Returns the name of the field as an interned string.
+  /** Returns the name of the field.
    * For example "date", "title", "body", ...
    */
   String name();

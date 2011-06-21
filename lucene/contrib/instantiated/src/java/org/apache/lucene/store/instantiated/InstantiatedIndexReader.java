@@ -400,7 +400,7 @@ public class InstantiatedIndexReader extends IndexReader {
         if (i < 0) {
           i = -i - 1;
         }
-        if (i >= orderedTerms.length || orderedTerms[i].field() != field) {
+        if (i >= orderedTerms.length || !orderedTerms[i].field().equals(field)) {
           // field does not exist
           return null;
         }

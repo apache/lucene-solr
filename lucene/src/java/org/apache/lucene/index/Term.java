@@ -17,15 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Comparator;
-
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 
 /**
   A Term represents a word from text.  This is the unit of search.  It is
   composed of two elements, the text of the word, as a string, and the name of
-  the field that the text occurred in, an interned string.
+  the field that the text occurred in.
 
   Note that terms may represent more than words from text fields, but also
   things like dates, email addresses, urls, etc.  */
@@ -37,13 +34,14 @@ public final class Term implements Comparable<Term> {
   /** Constructs a Term with the given field and bytes.
    * <p>Note that a null field or null bytes value results in undefined
    * behavior for most Lucene APIs that accept a Term parameter. 
+   *
    * <p>WARNING: the provided BytesRef is not copied, but used directly.
    * Therefore the bytes should not be modified after construction, for
    * example, you should clone a copy rather than pass reused bytes from
    * a TermsEnum.
    */
   public Term(String fld, BytesRef bytes) {
-    field = fld == null ? null : StringHelper.intern(fld);
+    field = fld;
     this.bytes = bytes;
   }
   
@@ -61,28 +59,10 @@ public final class Term implements Comparable<Term> {
    * @param fld
    */
   public Term(String fld) {
-    this(fld, new BytesRef(), true);
+    this(fld, new BytesRef());
   }
 
-  /** 
-   * WARNING: the provided BytesRef is not copied, but used directly.
-   * Therefore the bytes should not be modified after construction, for
-   * example, you should clone a copy rather than pass reused bytes from
-   * a TermsEnum.
-   * 
-   * @lucene.experimental 
-   */
-  public Term(String fld, BytesRef bytes, boolean intern) {
-    field = intern ? StringHelper.intern(fld) : fld;	  // field names are interned
-    this.bytes = bytes;					          // unless already known to be
-  }
-
-  /** @lucene.experimental */
-  public Term(String fld, String text, boolean intern) {
-    this(fld, new BytesRef(text), intern);
-  }
-  
-  /** Returns the field of this term, an interned string.   The field indicates
+  /** Returns the field of this term.   The field indicates
     the part of a document which this term came from. */
   public final String field() { return field; }
 
@@ -93,32 +73,6 @@ public final class Term implements Comparable<Term> {
 
   /** Returns the bytes of this term. */
   public final BytesRef bytes() { return bytes; }
-
-  /**
-   * Optimized construction of new Terms by reusing same field as this Term
-   * - avoids field.intern() overhead 
-   * <p>WARNING: the provided BytesRef is not copied, but used directly.
-   * Therefore the bytes should not be modified after construction, for
-   * example, you should clone a copy rather than pass reused bytes from
-   * a TermsEnum.
-   * @param bytes The bytes of the new term (field is implicitly same as this Term instance)
-   * @return A new Term
-   */
-  public Term createTerm(BytesRef bytes)
-  {
-      return new Term(field,bytes,false);
-  }
-
-  /**
-   * Optimized construction of new Terms by reusing same field as this Term
-   * - avoids field.intern() overhead 
-   * @param text The text of the new term (field is implicitly same as this Term instance)
-   * @return A new Term
-   */
-  public Term createTerm(String text)
-  {
-      return new Term(field,text,false);
-  }
 
   @Override
   public boolean equals(Object obj) {
@@ -157,26 +111,11 @@ public final class Term implements Comparable<Term> {
 
     The ordering of terms is first by field, then by text.*/
   public final int compareTo(Term other) {
-    if (field == other.field)			  // fields are interned
+    if (field.equals(other.field)) {
       return bytes.compareTo(other.bytes);
-    else
+    } else {
       return field.compareTo(other.field);
-  }
-  
-  @Deprecated
-  private static final Comparator<BytesRef> legacyComparator = 
-    BytesRef.getUTF8SortedAsUTF16Comparator();
-
-  /** 
-   * @deprecated (4.0) For internal backwards compatibility use only
-   * @lucene.internal
-   */
-  @Deprecated
-  public final int compareToUTF16(Term other) {
-    if (field == other.field) // fields are interned
-      return legacyComparator.compare(this.bytes, other.bytes);
-    else
-      return field.compareTo(other.field);
+    }
   }
 
   /** 

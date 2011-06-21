@@ -46,7 +46,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.cloud.ZkController;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -161,7 +160,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
           "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using StrField" );
     }
-    idField = StringHelper.intern(sf.getName());
+    idField = sf.getName();
     
     forceElevation = initArgs.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
     try {

@@ -33,10 +33,11 @@ class FrozenBufferedDeletes {
 
   /* Rough logic: Term is object w/
      String field and String text (OBJ_HEADER + 2*POINTER).
-     We don't count Term's field since it's interned.
      Term's text is String (OBJ_HEADER + 4*INT + POINTER +
-     OBJ_HEADER + string.length*CHAR). */
-  final static int BYTES_PER_DEL_TERM = 3*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 4*RamUsageEstimator.NUM_BYTES_INT;
+       OBJ_HEADER + text.length*CHAR).
+     Term's field is String (OBJ_HEADER + 4*INT + POINTER +
+       OBJ_HEADER + field.length*CHAR). */
+  final static int BYTES_PER_DEL_TERM = 4*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8*RamUsageEstimator.NUM_BYTES_INT;
 
   /* Query we often undercount (say 24 bytes), plus int. */
   final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + 24;

@@ -47,11 +47,12 @@ class BufferedDeletes {
      key, Integer val, int hash, Entry next
      (OBJ_HEADER + 3*POINTER + INT).  Term is object w/
      String field and String text (OBJ_HEADER + 2*POINTER).
-     We don't count Term's field since it's interned.
+     Term's field is String (OBJ_HEADER + 4*INT + POINTER +
+     OBJ_HEADER + string.length*CHAR).
      Term's text is String (OBJ_HEADER + 4*INT + POINTER +
      OBJ_HEADER + string.length*CHAR).  Integer is
      OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_TERM = 8*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 5*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 6*RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_DEL_TERM = 9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 7*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 10*RamUsageEstimator.NUM_BYTES_INT;
 
   /* Rough logic: del docIDs are List<Integer>.  Say list
      allocates ~2X size (2*POINTER).  Integer is OBJ_HEADER
@@ -189,7 +190,7 @@ class BufferedDeletes {
     terms.put(term, Integer.valueOf(docIDUpto));
     numTermDeletes.incrementAndGet();
     if (current == null) {
-      bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length);
+      bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (RamUsageEstimator.NUM_BYTES_CHAR * term.field().length()));
     }
   }
 

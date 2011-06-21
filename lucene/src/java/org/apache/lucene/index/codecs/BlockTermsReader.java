@@ -91,7 +91,7 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public boolean equals(Object _other) {
       FieldAndTerm other = (FieldAndTerm) _other;
-      return other.field == field && term.bytesEquals(other.term);
+      return other.field.equals(field) && term.bytesEquals(other.term);
     }
 
     @Override

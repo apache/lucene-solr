@@ -715,7 +715,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term()), false));
+      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term())));
       DocSet result = filterCache.get(key);
       if (result != null) return result;
     }

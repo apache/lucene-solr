@@ -149,6 +149,9 @@ Changes in backwards compatibility policy
   files holding stored fields and term vectors) while flushing a
   segment.  (Mike McCandless)
 
+* LUCENE-2548: Field names (eg in Term, FieldInfo) are no longer
+  interned.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

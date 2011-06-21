@@ -23,7 +23,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
@@ -123,7 +122,7 @@ public class UnInvertedField extends DocTermOrds {
 
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
-        deState.fieldName = StringHelper.intern(field);
+        deState.fieldName = field;
         // deState.termsEnum = te.tenum;
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.docsEnum = docsEnum;

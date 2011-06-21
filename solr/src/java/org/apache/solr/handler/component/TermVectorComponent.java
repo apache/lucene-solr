@@ -296,7 +296,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     private boolean useOffsets, usePositions;
     //private Map<String, Integer> idfCache;
     private NamedList<Object> fieldNL;
-    private Term currentTerm;
+    private String field;
 
 
     public TVMapper(IndexReader reader) {
@@ -337,9 +337,8 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     private int getDocFreq(BytesRef term) {
       int result = 1;
-      currentTerm = currentTerm.createTerm(term);
       try {
-        Terms terms = MultiFields.getTerms(reader, currentTerm.field());
+        Terms terms = MultiFields.getTerms(reader, field);
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seek(term) == TermsEnum.SeekStatus.FOUND) {
@@ -354,10 +353,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-
-      if (fieldOptions.docFreq == true && reader != null) {
-        this.currentTerm = new Term(field);
-      }
+      this.field = field;
       useOffsets = storeOffsets && fieldOptions.offsets;
       usePositions = storePositions && fieldOptions.positions;
       fieldNL = new NamedList<Object>();

@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.StringHelper;
 
 /** Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -475,12 +474,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
-    name = StringHelper.intern(name);
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
     } 
     final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
-                                 storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
+                                       storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
     putInternal(fi);
     return fi;
   }
@@ -659,7 +657,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     final int size = input.readVInt(); //read in the size
 
     for (int i = 0; i < size; i++) {
-      String name = StringHelper.intern(input.readString());
+      String name = input.readString();
       // if this is a previous format codec 0 will be preflex!
       final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
       final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;

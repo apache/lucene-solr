@@ -713,8 +713,12 @@ public abstract class LuceneTestCase extends Assert {
         throw e;
       }
 
+      if (insanity.length != 0) {
+        reportAdditionalFailureInfo();
+      }
+
       assertEquals(msg + ": Insane FieldCache usage(s) found",
-              0, insanity.length);
+                   0, insanity.length);
       insanity = null;
     } finally {
 
@@ -1104,9 +1108,15 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
+    
     if (usually(random)) {
       // most of the time, don't modify the params
       return new Field(name, value, store, index, tv);
+    }
+
+    if (random.nextBoolean()) {
+      // tickle any code still relying on field names being interned:
+      name = new String(name);
     }
 
     if (!index.isIndexed())

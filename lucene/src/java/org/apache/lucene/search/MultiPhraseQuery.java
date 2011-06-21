@@ -88,7 +88,7 @@ public class MultiPhraseQuery extends Query {
       field = terms[0].field();
 
     for (int i = 0; i < terms.length; i++) {
-      if (terms[i].field() != field) {
+      if (!terms[i].field().equals(field)) {
         throw new IllegalArgumentException(
             "All phrase terms must be in the same field (" + field + "): "
                 + terms[i]);

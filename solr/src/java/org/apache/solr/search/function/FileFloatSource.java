@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -224,7 +223,7 @@ public class FileFloatSource extends ValueSource {
 
     BufferedReader r = new BufferedReader(new InputStreamReader(is));
 
-    String idName = StringHelper.intern(ffs.keyField.getName());
+    String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();
 
     // warning: lucene's termEnum.skipTo() is not optimized... it simply does a next()

@@ -69,11 +69,9 @@ public class InstantiatedTermsEnum extends TermsEnum {
       return SeekStatus.END;
     }
 
-    if (terms[upto].field() == field) {
+    if (terms[upto].field().equals(field)) {
       return SeekStatus.FOUND;
     } else {
-      // make sure field was interned
-      assert !terms[upto].field().equals(field);
       return SeekStatus.END;
     }
   }
@@ -84,12 +82,10 @@ public class InstantiatedTermsEnum extends TermsEnum {
     if (upto >= terms.length) {
       return null;
     }
-    if (terms[upto].field() == field) {
+    if (terms[upto].field().equals(field)) {
       br.copy(terms[upto].getTerm().text());
       return br;
     } else {
-      // make sure field was interned
-      assert !terms[upto].field().equals(field);
       return null;
     }
   }

@@ -113,7 +113,6 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     final ParallelArraysTermCollector col = new ParallelArraysTermCollector();
     collectTerms(reader, query, col);
     
-    final Term placeholderTerm = new Term(query.field);
     final int size = col.terms.size();
     if (size > 0) {
       final int sort[] = col.terms.sort(col.termsEnum.getComparator());
@@ -121,7 +120,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       final PerReaderTermState[] termStates = col.array.termState;
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
-        final Term term = placeholderTerm.createTerm(col.terms.get(pos, new BytesRef()));
+        final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
         assert reader.docFreq(term) == termStates[pos].docFreq();
         addClause(result, term, termStates[pos].docFreq(), query.getBoost() * boost[pos], termStates[pos]);
       }

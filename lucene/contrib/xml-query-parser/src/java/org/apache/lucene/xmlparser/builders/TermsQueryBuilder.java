@@ -64,14 +64,7 @@ public class TermsQueryBuilder implements QueryBuilder {
       ts.reset();
 			while (ts.incrementToken()) {
         termAtt.fillBytesRef();
-				if (term == null)
-				{
-					term = new Term(fieldName, new BytesRef(bytes));
-				} else
-				{
-//					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(new BytesRef(bytes)); 
-				}
+        term = new Term(fieldName, new BytesRef(bytes));
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}
 			ts.end();

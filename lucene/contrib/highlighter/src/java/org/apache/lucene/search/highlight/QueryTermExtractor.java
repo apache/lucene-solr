@@ -26,7 +26,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Utility class used to extract the terms used in a query, plus any weights.
@@ -94,10 +93,6 @@ public final class QueryTermExtractor
 	public static final WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) 
 	{
 		HashSet<WeightedTerm> terms=new HashSet<WeightedTerm>();
-		if(fieldName!=null)
-		{
-		    fieldName= StringHelper.intern(fieldName);
-		}
 		getTerms(query,terms,prohibited,fieldName);
 		return terms.toArray(new WeightedTerm[0]);
 	}
@@ -114,7 +109,6 @@ public final class QueryTermExtractor
 	    return getTerms(query,prohibited,null);
 	}	
 
-	//fieldname MUST be interned prior to this call
 	private static final void getTerms(Query query, HashSet<WeightedTerm> terms,boolean prohibited, String fieldName) 
 	{
        	try
@@ -131,7 +125,7 @@ public final class QueryTermExtractor
 	       		for (Iterator<Term> iter = nonWeightedTerms.iterator(); iter.hasNext();)
 				{
 					Term term = iter.next();
-				    if((fieldName==null)||(term.field()==fieldName))
+                                        if((fieldName==null)||(term.field().equals(fieldName)))
 					{
 						terms.add(new WeightedTerm(query.getBoost(),term.text()));
 					}

@@ -39,7 +39,6 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     for (int i = 0; i < ids.length; i++) {
       ids[i] = random.nextInt();
     }
-    Term template = new Term("id");
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
     BufferedDeletes bd1 = new BufferedDeletes(false);
@@ -50,7 +49,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     for (int j = 0; j < ids.length; j++) {
       Integer i = ids[j];
       // create an array here since we compare identity below against tailItem
-      Term[] term = new Term[] {template.createTerm(i.toString())};
+      Term[] term = new Term[] {new Term("id", i.toString())};
       uniqueValues.add(term[0]);
       queue.addDelete(term);
       if (random.nextInt(20) == 0 || j == ids.length - 1) {
@@ -79,16 +78,14 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   private void assertAllBetween(int start, int end, BufferedDeletes deletes,
       Integer[] ids) {
-    Term template = new Term("id");
     for (int i = start; i <= end; i++) {
-      assertEquals(Integer.valueOf(end), deletes.terms.get(template
-          .createTerm(ids[i].toString())));
+      assertEquals(Integer.valueOf(end), deletes.terms.get(new Term("id",
+                                                                    ids[i].toString())));
     }
   }
   
   public void testClear() {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    Term template = new Term("id");
     assertFalse(queue.anyChanges());
     queue.clear();
     assertFalse(queue.anyChanges());
@@ -96,7 +93,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     int termsSinceFreeze = 0;
     int queriesSinceFreeze = 0;
     for (int i = 0; i < size; i++) {
-      Term term = template.createTerm("" + i);
+      Term term = new Term("id", "" + i);
       if (random.nextInt(10) == 0) {
         queue.addDelete(new TermQuery(term));
         queriesSinceFreeze++;
@@ -116,12 +113,11 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   public void testAnyChanges() {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    Term template = new Term("id");
     final int size = 200 + random.nextInt(500) * RANDOM_MULTIPLIER;
     int termsSinceFreeze = 0;
     int queriesSinceFreeze = 0;
     for (int i = 0; i < size; i++) {
-      Term term = template.createTerm("" + i);
+      Term term = new Term("id", "" + i);
       if (random.nextInt(10) == 0) {
         queue.addDelete(new TermQuery(term));
         queriesSinceFreeze++;
@@ -147,10 +143,9 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     Set<Term> uniqueValues = new HashSet<Term>();
     final int size = 10000 + random.nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];
-    Term template = new Term("id");
     for (int i = 0; i < ids.length; i++) {
       ids[i] = random.nextInt();
-      uniqueValues.add(template.createTerm(ids[i].toString()));
+      uniqueValues.add(new Term("id", ids[i].toString()));
     }
     CountDownLatch latch = new CountDownLatch(1);
     AtomicInteger index = new AtomicInteger(0);
@@ -204,10 +199,9 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       } catch (InterruptedException e) {
         throw new ThreadInterruptedException(e);
       }
-      Term template = new Term("id");
       int i = 0;
       while ((i = index.getAndIncrement()) < ids.length) {
-        Term term = template.createTerm(ids[i].toString());
+        Term term = new Term("id", ids[i].toString());
         queue.add(term, slice);
         assertTrue(slice.isTailItem(term));
         slice.apply(deletes, BufferedDeletes.MAX_INT);

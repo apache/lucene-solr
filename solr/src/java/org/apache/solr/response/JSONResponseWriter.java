@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -75,7 +74,7 @@ class JSONWriter extends TextResponseWriter {
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
-    namedListStyle = StringHelper.intern(req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT));
+    namedListStyle = req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern();
     wrapperFunction = req.getParams().get(JSON_WRAPPER_FUNCTION);
   }
 

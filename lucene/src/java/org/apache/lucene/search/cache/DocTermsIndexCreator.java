@@ -34,7 +34,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -70,7 +69,6 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
   @Override
   public DocTermsIndex create(IndexReader reader) throws IOException
   {
-    String field = StringHelper.intern(this.field); // TODO?? necessary?
     Terms terms = MultiFields.getTerms(reader, field);
 
     final boolean fasterButMoreRAM = hasOption(FASTER_BUT_MORE_RAM);
