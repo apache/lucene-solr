@@ -544,6 +544,10 @@ Bug fixes
   background optimize when documents are still being deleted
   concurrently with the optimize (Mike McCandless)
 
+* LUCENE-3222: The RAM accounting for buffered delete terms was
+  failing to measure the space required to hold the term's field and
+  text character data.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
