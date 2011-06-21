@@ -57,7 +57,7 @@ public class SearchWithSortTask extends ReadTask {
       SortField sortField0;
       if (field.equals("doc")) {
         sortField0 = SortField.FIELD_DOC;
-      } if (field.equals("score")) {
+      } else if (field.equals("score")) {
         sortField0 = SortField.FIELD_SCORE;
       } else if (field.equals("noscore")) {
         doScore = false;
