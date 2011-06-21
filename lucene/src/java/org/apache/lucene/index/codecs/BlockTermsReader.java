@@ -312,13 +312,13 @@ public class BlockTermsReader extends FieldsProducer {
       private int blocksSinceSeek;
 
       private byte[] termSuffixes;
-      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput(null);
+      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput();
 
       /* Common prefix used for all terms in this block. */
       private int termBlockPrefix;
 
       private byte[] docFreqBytes;
-      private final ByteArrayDataInput freqReader = new ByteArrayDataInput(null);
+      private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
 
       public SegmentTermsEnum() throws IOException {

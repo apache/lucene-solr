@@ -110,7 +110,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     final PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.inlinedBytes == null) {
       termState.inlinedBytes = new byte[128];
-      termState.inlinedBytesReader = new ByteArrayDataInput(null);
+      termState.inlinedBytesReader = new ByteArrayDataInput();
     }
     int len = termsIn.readVInt();
     if (termState.inlinedBytes.length < len) {
@@ -222,7 +222,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class PulsingDocsEnum extends DocsEnum {
-    private final ByteArrayDataInput postings = new ByteArrayDataInput(null);
+    private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean omitTF;
     private final boolean storePayloads;
     private Bits skipDocs;
@@ -320,7 +320,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class PulsingDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final ByteArrayDataInput postings = new ByteArrayDataInput(null);
+    private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean storePayloads;
 
     private Bits skipDocs;

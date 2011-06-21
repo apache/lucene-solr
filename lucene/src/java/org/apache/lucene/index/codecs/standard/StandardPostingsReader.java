@@ -156,7 +156,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     //System.out.println("SPR.readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-      termState.bytesReader = new ByteArrayDataInput(null);
+      termState.bytesReader = new ByteArrayDataInput();
     } else if (termState.bytes.length < len) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
     }

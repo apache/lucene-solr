@@ -533,7 +533,7 @@ public class MemoryCodec extends Codec {
   private final static class FSTTermsEnum extends TermsEnum {
     private final FieldInfo field;
     private final BytesRefFSTEnum<BytesRef> fstEnum;
-    private final ByteArrayDataInput buffer = new ByteArrayDataInput(null);
+    private final ByteArrayDataInput buffer = new ByteArrayDataInput();
     private boolean didDecode;
 
     private int docFreq;
