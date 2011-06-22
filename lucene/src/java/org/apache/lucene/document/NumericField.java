@@ -69,7 +69,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * <code>NumericField</code>, use {@link NumericRangeQuery} or {@link
  * NumericRangeFilter}.  To sort according to a
  * <code>NumericField</code>, use the normal numeric sort types, eg
- * {@link SortField#INT}. <code>NumericField</code> values
+ * {@link SortField.Type#INT}. <code>NumericField</code> values
  * can also be loaded directly from {@link FieldCache}.</p>
  *
  * <p>By default, a <code>NumericField</code>'s value is not stored but
