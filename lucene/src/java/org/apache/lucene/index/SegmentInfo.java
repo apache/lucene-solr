@@ -22,6 +22,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -237,7 +238,7 @@ public final class SegmentInfo implements Cloneable {
         }
         final Directory dirToTest;
         if (isCompoundFile) {
-          dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, ext));
+          dirToTest = dir.openCompoundInput(IndexFileNames.segmentFileName(storesSegment, ext), 1024);
         } else {
           dirToTest = dir;
         }
@@ -657,6 +658,10 @@ public final class SegmentInfo implements Cloneable {
 
     if (useCompoundFile) {
       filesSet.add(IndexFileNames.segmentFileName(name, IndexFileNames.COMPOUND_FILE_EXTENSION));
+      if (version != null && StringHelper.getVersionComparator().compare("3.4", version) <= 0) {
+        filesSet.add(IndexFileNames.segmentFileName(name,
+            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+      }
     } else {
       for (String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS)
         addIfExists(filesSet, IndexFileNames.segmentFileName(name, ext));

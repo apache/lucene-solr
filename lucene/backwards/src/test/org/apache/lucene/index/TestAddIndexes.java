@@ -954,7 +954,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w3.addIndexes(readers);
     w3.close();
     
-    assertEquals("Only one compound segment should exist", 3, dir.listAll().length);
+    assertEquals("Only one compound segment should exist", 4, dir.listAll().length);
   }
  
   // LUCENE-2996: tests that addIndexes(IndexReader) applies existing deletes correctly.

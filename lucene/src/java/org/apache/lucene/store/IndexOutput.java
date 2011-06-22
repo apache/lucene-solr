@@ -58,4 +58,5 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
    * @param length file length
    */
   public void setLength(long length) throws IOException {}
+
 }

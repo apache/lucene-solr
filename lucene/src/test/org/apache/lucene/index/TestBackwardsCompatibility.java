@@ -24,7 +24,6 @@ import java.io.DataInputStream;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -558,7 +557,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
+      Directory cfsReader = dir.openCompoundInput("_0.cfs", 1024);
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for(int i=0;i<fieldInfos.size();i++) {
@@ -573,6 +572,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       // Now verify file names:
       String[] expected = new String[] {"_0.cfs",
+                               "_0.cfe",
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",
