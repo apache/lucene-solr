@@ -126,13 +126,13 @@ public class TestSort extends AbstractSolrTestCase {
         final boolean sortMissingFirst2 = !luceneSort2 && !sortMissingLast2;
         final boolean reverse2 = r.nextBoolean();
 
-        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.SCORE));
+        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
         // hit both use-cases of sort-missing-last
         sfields.add( Sorting.getStringSortField("f", reverse, sortMissingLast, sortMissingFirst) );
         if (secondary) {
           sfields.add( Sorting.getStringSortField("f2", reverse2, sortMissingLast2, sortMissingFirst2) );
         }
-        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.SCORE));
+        if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
 
         Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
 

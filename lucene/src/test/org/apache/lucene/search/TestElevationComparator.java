@@ -73,7 +73,7 @@ public class TestElevationComparator extends LuceneTestCase {
 
     Sort sort = new Sort(
         new SortField("id", new ElevationComparatorSource(priority), false),
-        new SortField(null, SortField.SCORE, reversed)
+        new SortField(null, SortField.Type.SCORE, reversed)
       );
 
     TopDocsCollector<Entry> topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);

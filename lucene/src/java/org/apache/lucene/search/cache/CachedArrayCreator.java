@@ -26,6 +26,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache.Parser;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
@@ -73,7 +74,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   /** Return the type that the array will hold */
   public abstract Class getArrayType();
   public abstract Parser getParser();
-  public abstract int getSortTypeID();
+  public abstract SortField.Type getSortType();
 
   protected void setParserAndResetCounts(T value, Parser parser)
   {

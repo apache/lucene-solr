@@ -48,7 +48,7 @@ public class SortSpec
   public static boolean includesScore(Sort sort) {
     if (sort==null) return true;
     for (SortField sf : sort.getSort()) {
-      if (sf.getType() == SortField.SCORE) return true;
+      if (sf.getType() == SortField.Type.SCORE) return true;
     }
     return false;
   }

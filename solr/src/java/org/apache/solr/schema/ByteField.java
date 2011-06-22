@@ -42,7 +42,7 @@ public class ByteField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name, SortField.BYTE, reverse);
+    return new SortField(field.name, SortField.Type.BYTE, reverse);
   }
 
   @Override

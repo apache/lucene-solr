@@ -1024,7 +1024,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       useFilterCache=true;
       SortField[] sfields = cmd.getSort().getSort();
       for (SortField sf : sfields) {
-        if (sf.getType() == SortField.SCORE) {
+        if (sf.getType() == SortField.Type.SCORE) {
           useFilterCache=false;
           break;
         }

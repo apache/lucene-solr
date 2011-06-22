@@ -39,69 +39,70 @@ import org.apache.lucene.util.StringHelper;
  */
 public class SortField {
 
-  /** Sort by document score (relevance).  Sort values are Float and higher
-   * values are at the front. */
-  public static final int SCORE = 0;
+  public static enum Type {
 
-  /** Sort by document number (index order).  Sort values are Integer and lower
-   * values are at the front. */
-  public static final int DOC = 1;
+    /** Sort by document score (relevance).  Sort values are Float and higher
+     * values are at the front. */
+    SCORE,
 
-  // reserved, in Lucene 2.9, there was a constant: AUTO = 2;
+    /** Sort by document number (index order).  Sort values are Integer and lower
+     * values are at the front. */
+    DOC,
 
-  /** Sort using term values as Strings.  Sort values are String and lower
-   * values are at the front. */
-  public static final int STRING = 3;
+    /** Sort using term values as Strings.  Sort values are String and lower
+     * values are at the front. */
+    STRING,
 
-  /** Sort using term values as encoded Integers.  Sort values are Integer and
-   * lower values are at the front. */
-  public static final int INT = 4;
+    /** Sort using term values as encoded Integers.  Sort values are Integer and
+     * lower values are at the front. */
+    INT,
 
-  /** Sort using term values as encoded Floats.  Sort values are Float and
-   * lower values are at the front. */
-  public static final int FLOAT = 5;
+    /** Sort using term values as encoded Floats.  Sort values are Float and
+     * lower values are at the front. */
+    FLOAT,
 
-  /** Sort using term values as encoded Longs.  Sort values are Long and
-   * lower values are at the front. */
-  public static final int LONG = 6;
+    /** Sort using term values as encoded Longs.  Sort values are Long and
+     * lower values are at the front. */
+    LONG,
 
-  /** Sort using term values as encoded Doubles.  Sort values are Double and
-   * lower values are at the front. */
-  public static final int DOUBLE = 7;
+    /** Sort using term values as encoded Doubles.  Sort values are Double and
+     * lower values are at the front. */
+    DOUBLE,
 
-  /** Sort using term values as encoded Shorts.  Sort values are Short and
-   * lower values are at the front. */
-  public static final int SHORT = 8;
+    /** Sort using term values as encoded Shorts.  Sort values are Short and
+     * lower values are at the front. */
+    SHORT,
 
-  /** Sort using a custom Comparator.  Sort values are any Comparable and
-   * sorting is done according to natural order. */
-  public static final int CUSTOM = 9;
+    /** Sort using a custom Comparator.  Sort values are any Comparable and
+     * sorting is done according to natural order. */
+    CUSTOM,
 
-  /** Sort using term values as encoded Bytes.  Sort values are Byte and
-   * lower values are at the front. */
-  public static final int BYTE = 10;
-  
-  /** Sort using term values as Strings, but comparing by
-   * value (using String.compareTo) for all comparisons.
-   * This is typically slower than {@link #STRING}, which
-   * uses ordinals to do the sorting. */
-  public static final int STRING_VAL = 11;
+    /** Sort using term values as encoded Bytes.  Sort values are Byte and
+     * lower values are at the front. */
+    BYTE,
 
-  /** Sort use byte[] index values. */
-  public static final int BYTES = 12;
+    /** Sort using term values as Strings, but comparing by
+     * value (using String.compareTo) for all comparisons.
+     * This is typically slower than {@link #STRING}, which
+     * uses ordinals to do the sorting. */
+    STRING_VAL,
 
-  /** Force rewriting of SortField using {@link SortField#rewrite(IndexSearcher)}
-   * before it can be used for sorting */
-  public static final int REWRITEABLE = 13;
+    /** Sort use byte[] index values. */
+    BYTES,
+
+    /** Force rewriting of SortField using {@link SortField#rewrite(IndexSearcher)}
+     * before it can be used for sorting */
+    REWRITEABLE
+  }
 
   /** Represents sorting by document score (relevance). */
-  public static final SortField FIELD_SCORE = new SortField(null, SCORE);
+  public static final SortField FIELD_SCORE = new SortField(null, Type.SCORE);
 
   /** Represents sorting by document number (index order). */
-  public static final SortField FIELD_DOC = new SortField(null, DOC);
+  public static final SortField FIELD_DOC = new SortField(null, Type.DOC);
 
   private String field;
-  private int type;  // defaults to determining type dynamically
+  private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
   private CachedArrayCreator<?> creator;
   public Object missingValue = null; // used for 'sortMissingFirst/Last'
@@ -115,7 +116,7 @@ public class SortField {
    *               <code>type</code> is SCORE or DOC.
    * @param type   Type of values in the terms.
    */
-  public SortField(String field, int type) {
+  public SortField(String field, Type type) {
     initFieldType(field, type);
   }
 
@@ -126,7 +127,7 @@ public class SortField {
    * @param type   Type of values in the terms.
    * @param reverse True if natural order should be reversed.
    */
-  public SortField(String field, int type, boolean reverse) {
+  public SortField(String field, Type type, boolean reverse) {
     initFieldType(field, type);
     this.reverse = reverse;
   }
@@ -170,32 +171,27 @@ public class SortField {
     this.reverse = reverse;
     
     if (parser instanceof FieldCache.IntParser) {
-      this.type = INT;
       this.creator = new IntValuesCreator( field, (FieldCache.IntParser)parser );
     }
     else if (parser instanceof FieldCache.FloatParser) {
-      this.type = FLOAT;
       this.creator = new FloatValuesCreator( field, (FieldCache.FloatParser)parser );
     }
     else if (parser instanceof FieldCache.ShortParser) {
-      this.type = SHORT;
       this.creator = new ShortValuesCreator( field, (FieldCache.ShortParser)parser );
     }
     else if (parser instanceof FieldCache.ByteParser) {
-      this.type = BYTE;
       this.creator = new ByteValuesCreator( field, (FieldCache.ByteParser)parser );
     }
     else if (parser instanceof FieldCache.LongParser) {
-      this.type = LONG;
       this.creator = new LongValuesCreator( field, (FieldCache.LongParser)parser );
     }
     else if (parser instanceof FieldCache.DoubleParser) {
-      this.type = DOUBLE;
       this.creator = new DoubleValuesCreator( field, (FieldCache.DoubleParser)parser );
     }
     else
       throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
 
+    this.type = this.creator.getSortType();
   }
   
   /**
@@ -208,7 +204,7 @@ public class SortField {
     this.field = creator.field;
     this.reverse = reverse;
     this.creator = creator;
-    this.type = creator.getSortTypeID();
+    this.type = creator.getSortType();
   }
   
   public SortField setMissingValue( Object v )
@@ -230,7 +226,7 @@ public class SortField {
    * @param comparator Returns a comparator for sorting hits.
    */
   public SortField(String field, FieldComparatorSource comparator) {
-    initFieldType(field, CUSTOM);
+    initFieldType(field, Type.CUSTOM);
     this.comparatorSource = comparator;
   }
 
@@ -240,17 +236,17 @@ public class SortField {
    * @param reverse True if natural order should be reversed.
    */
   public SortField(String field, FieldComparatorSource comparator, boolean reverse) {
-    initFieldType(field, CUSTOM);
+    initFieldType(field, Type.CUSTOM);
     this.reverse = reverse;
     this.comparatorSource = comparator;
   }
 
   // Sets field & type, and ensures field is not NULL unless
   // type is SCORE or DOC
-  private void initFieldType(String field, int type) {
+  private void initFieldType(String field, Type type) {
     this.type = type;
     if (field == null) {
-      if (type != SCORE && type != DOC)
+      if (type != Type.SCORE && type != Type.DOC)
         throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
     } else {
       this.field = field;
@@ -280,7 +276,7 @@ public class SortField {
   /** Returns the type of contents in the field.
    * @return One of the constants SCORE, DOC, STRING, INT or FLOAT.
    */
-  public int getType() {
+  public Type getType() {
     return type;
   }
 
@@ -396,7 +392,7 @@ public class SortField {
    *  used). */
   @Override
   public int hashCode() {
-    int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
+    int hash = type.hashCode() ^ 0x346565dd + Boolean.valueOf(reverse).hashCode() ^ 0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (comparatorSource != null) hash += comparatorSource.hashCode();
     if (creator != null) hash += creator.hashCode()^0x3aaf56ff;
@@ -438,49 +434,49 @@ public class SortField {
   public FieldComparator getComparator(final int numHits, final int sortPos) throws IOException {
 
     switch (type) {
-    case SortField.SCORE:
+    case SCORE:
       return new FieldComparator.RelevanceComparator(numHits);
 
-    case SortField.DOC:
+    case DOC:
       return new FieldComparator.DocComparator(numHits);
 
-    case SortField.INT:
+    case INT:
       if (useIndexValues) {
         return new FieldComparator.IntDocValuesComparator(numHits, field);
       } else {
         return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer) missingValue);
       }
 
-    case SortField.FLOAT:
+    case FLOAT:
       if (useIndexValues) {
         return new FieldComparator.FloatDocValuesComparator(numHits, field);
       } else {
         return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator) creator, (Float) missingValue);
       }
 
-    case SortField.LONG:
+    case LONG:
       return new FieldComparator.LongComparator(numHits, (LongValuesCreator)creator, (Long)missingValue );
 
-    case SortField.DOUBLE:
+    case DOUBLE:
       return new FieldComparator.DoubleComparator(numHits, (DoubleValuesCreator)creator, (Double)missingValue );
 
-    case SortField.BYTE:
+    case BYTE:
       return new FieldComparator.ByteComparator(numHits, (ByteValuesCreator)creator, (Byte)missingValue );
 
-    case SortField.SHORT:
+    case SHORT:
       return new FieldComparator.ShortComparator(numHits, (ShortValuesCreator)creator, (Short)missingValue );
 
-    case SortField.CUSTOM:
+    case CUSTOM:
       assert comparatorSource != null;
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
-    case SortField.STRING:
+    case STRING:
       return new FieldComparator.TermOrdValComparator(numHits, field, sortPos, reverse);
 
-    case SortField.STRING_VAL:
+    case STRING_VAL:
       return new FieldComparator.TermValComparator(numHits, field);
 
-    case SortField.REWRITEABLE:
+    case REWRITEABLE:
       throw new IllegalStateException("SortField needs to be rewritten through Sort.rewrite(..) and SortField.rewrite(..)");
         
     default:
@@ -491,7 +487,7 @@ public class SortField {
   /**
    * Rewrites this SortField, returning a new SortField if a change is made.
    * Subclasses should override this define their rewriting behavior when this
-   * SortField is of type {@link SortField#REWRITEABLE}
+   * SortField is of type {@link SortField.Type#REWRITEABLE}
    *
    * @param searcher IndexSearcher to use during rewriting
    * @return New rewritten SortField, or {@code this} if nothing has changed.

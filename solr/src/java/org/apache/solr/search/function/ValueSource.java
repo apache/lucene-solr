@@ -102,7 +102,7 @@ public abstract class ValueSource implements Serializable {
 
   class ValueSourceSortField extends SortField {
     public ValueSourceSortField(boolean reverse) {
-      super(description(), SortField.REWRITEABLE, reverse);
+      super(description(), SortField.Type.REWRITEABLE, reverse);
     }
 
     @Override

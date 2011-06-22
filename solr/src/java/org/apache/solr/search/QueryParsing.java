@@ -321,10 +321,10 @@ public class QueryParsing {
           if (top) {
             lst.add(SortField.FIELD_SCORE);
           } else {
-            lst.add(new SortField(null, SortField.SCORE, true));
+            lst.add(new SortField(null, SortField.Type.SCORE, true));
           }
         } else if (DOCID.equals(field)) {
-          lst.add(new SortField(null, SortField.DOC, top));
+          lst.add(new SortField(null, SortField.Type.DOC, top));
         } else {
           // try to find the field
           SchemaField sf = req.getSchema().getFieldOrNull(field);

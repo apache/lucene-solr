@@ -112,7 +112,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       final Sort sort = new Sort(new SortField[] {
           SortField.FIELD_SCORE,
-          new SortField(ID_FIELD, SortField.INT)});
+          new SortField(ID_FIELD, SortField.Type.INT)});
 
       ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);

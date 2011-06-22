@@ -40,7 +40,7 @@ public class IntField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.INT, reverse);
+    return new SortField(field.name,SortField.Type.INT, reverse);
   }
 
   @Override

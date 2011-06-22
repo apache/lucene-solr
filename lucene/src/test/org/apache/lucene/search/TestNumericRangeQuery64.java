@@ -530,7 +530,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       Query tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.LONG, true)));
+      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);

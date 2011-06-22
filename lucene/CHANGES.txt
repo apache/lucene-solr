@@ -284,6 +284,10 @@ API Changes
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-3219: SortField type properties have been moved to an enum
+  SortField.Type.  In be consistent, CachedArrayCreator.getSortTypeID() has
+  been changed CachedArrayCreator.getSortType(). (Chris Male)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

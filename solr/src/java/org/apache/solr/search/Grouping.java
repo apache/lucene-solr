@@ -278,7 +278,7 @@ public class Grouping {
         cacheScores = true;
       } else {
         for (SortField field : commands.get(0).groupSort.getSort()) {
-          if (field.getType() == SortField.SCORE) {
+          if (field.getType() == SortField.Type.SCORE) {
             cacheScores = true;
             break;
           }

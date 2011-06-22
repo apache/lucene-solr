@@ -435,8 +435,8 @@ public class QueryComponent extends SearchComponent
       }
 
       for (SortField sortField: sortFields) {
-        int type = sortField.getType();
-        if (type==SortField.SCORE || type==SortField.DOC) continue;
+        SortField.Type type = sortField.getType();
+        if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
         FieldComparator comparator = null;
         FieldComparator comparators[] = (leaves==null) ? null : new FieldComparator[leaves.length];

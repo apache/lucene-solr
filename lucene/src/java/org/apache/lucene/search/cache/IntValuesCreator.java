@@ -61,8 +61,8 @@ public class IntValuesCreator extends CachedArrayCreator<IntValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.INT;
+  public SortField.Type getSortType() {
+    return SortField.Type.INT;
   }
 
 
