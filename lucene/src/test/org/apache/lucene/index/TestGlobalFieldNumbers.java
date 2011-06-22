@@ -465,14 +465,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(policy));
       SegmentInfos segmentInfos = writer.segmentInfos;
-      assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
+      assertTrue(DefaultSegmentInfosWriter.FORMAT_FLEX < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getGlobalFieldMapVersion());
       for (String string : writer.getIndexFileNames()) {
         assertFalse(string.endsWith(".fnx"));
       }
       writer.commit();
       
-      assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
+      assertTrue(DefaultSegmentInfosWriter.FORMAT_FLEX < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getGlobalFieldMapVersion());
       Collection<String> files = writer.getIndexFileNames();
       for (String string : files) {
@@ -485,7 +485,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.addDocument(d);
       writer.prepareCommit();
       // the fnx file should still be under control of the SIS
-      assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
+      assertTrue(DefaultSegmentInfosWriter.FORMAT_FLEX < segmentInfos.getFormat());
       assertEquals(0, segmentInfos.getLastGlobalFieldMapVersion());
       assertEquals(1, segmentInfos.getGlobalFieldMapVersion());
       files = writer.getIndexFileNames();
@@ -496,7 +496,7 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       writer.commit();
       
       // now we should see the fnx file even if this is a 3.x segment
-      assertTrue(DefaultSegmentInfosWriter.FORMAT_4_0 < segmentInfos.getFormat());
+      assertTrue(DefaultSegmentInfosWriter.FORMAT_FLEX < segmentInfos.getFormat());
       assertEquals(1, segmentInfos.getGlobalFieldMapVersion());
       assertEquals(1, segmentInfos.getLastGlobalFieldMapVersion());
       files = writer.getIndexFileNames();

@@ -178,7 +178,7 @@ public final class SegmentInfo implements Cloneable {
    */
   public SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
     this.dir = dir;
-    if (format <= DefaultSegmentInfosWriter.FORMAT_3_1) {
+    if (format <= DefaultSegmentInfosWriter.FORMAT_SEGMENT_RECORDS_VERSION) {
       version = input.readString();
     }
     name = input.readString();
@@ -193,7 +193,7 @@ public final class SegmentInfo implements Cloneable {
       docStoreIsCompoundFile = false;
     }
 
-    if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
+    if (format > DefaultSegmentInfosWriter.FORMAT_FLEX) {
       // pre-4.0 indexes write a byte if there is a single norms file
       byte b = input.readByte();
       assert 1 == b;
@@ -206,7 +206,7 @@ public final class SegmentInfo implements Cloneable {
       normGen = new HashMap<Integer, Long>();
       for(int j=0;j<numNormGen;j++) {
         int fieldNumber = j;
-        if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+        if (format <= DefaultSegmentInfosWriter.FORMAT_FLEX) {
           fieldNumber = input.readInt();
         }
 
@@ -221,7 +221,7 @@ public final class SegmentInfo implements Cloneable {
     hasProx = input.readByte();
 
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
-    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0) {
+    if (format <= DefaultSegmentInfosWriter.FORMAT_FLEX) {
       segmentCodecs = new SegmentCodecs(codecs, input);
     } else {
       // codec ID on FieldInfo is 0 so it will simply use the first codec available
