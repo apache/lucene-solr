@@ -110,6 +110,7 @@ ul
 {
     border: 1px solid #c0c0c0;
     min-height: 600px;
+    min-width:750px;
     position: relative;
 }
 
