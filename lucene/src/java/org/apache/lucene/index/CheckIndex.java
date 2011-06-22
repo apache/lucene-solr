@@ -381,8 +381,8 @@ public class CheckIndex {
         sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
       else if (format == SegmentInfos.FORMAT_HAS_VECTORS)
         sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
-      else if (format == SegmentInfos.FORMAT_SEGMENT_RECORDS_VERSION)
-        sFormat = "FORMAT_SEGMENT_RECORDS_VERSION [Lucene 3.1+]";
+      else if (format == SegmentInfos.FORMAT_3_1)
+        sFormat = "FORMAT_3_1 [Lucene 3.1]";
       else if (format == SegmentInfos.CURRENT_FORMAT)
         throw new RuntimeException("BUG: You should update this tool!");
       else if (format < SegmentInfos.CURRENT_FORMAT) {

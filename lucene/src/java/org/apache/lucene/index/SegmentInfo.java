@@ -167,7 +167,7 @@ public final class SegmentInfo implements Cloneable {
    */
   SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     this.dir = dir;
-    if (format <= SegmentInfos.FORMAT_SEGMENT_RECORDS_VERSION) {
+    if (format <= SegmentInfos.FORMAT_3_1) {
       version = input.readString();
     }
     name = input.readString();

@@ -97,14 +97,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   public static final int FORMAT_HAS_VECTORS = -10;
 
   /** Each segment records the Lucene version that created it. */
-  public static final int FORMAT_SEGMENT_RECORDS_VERSION = -11;
-  
-  /** @deprecated use FORMAT_SEGMENT_RECORDS_VERSION instead. */
-  @Deprecated
-  public static final int FORMAT_3_1 = FORMAT_SEGMENT_RECORDS_VERSION;
+  public static final int FORMAT_3_1 = -11;
   
   /* This must always point to the most recent file format. */
-  public static final int CURRENT_FORMAT = FORMAT_SEGMENT_RECORDS_VERSION;
+  public static final int CURRENT_FORMAT = FORMAT_3_1;
   
   public int counter = 0;    // used to name new segments
   /**
