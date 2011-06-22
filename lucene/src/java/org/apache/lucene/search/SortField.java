@@ -355,6 +355,10 @@ public class SortField {
       case CUSTOM:
         buffer.append("<custom:\"").append(field).append("\": ").append(comparatorSource).append('>');
         break;
+      
+      case REWRITEABLE:
+        buffer.append("<rewriteable: \"").append(field).append("\">");
+        break;
 
       default:
         buffer.append("<???: \"").append(field).append("\">");
