@@ -289,7 +289,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       }
     }.run();
     // either we are on 4.0 or we don't have a lastGlobalFieldMapVersion i.e. its still set to 0
-    assert DefaultSegmentInfosWriter.FORMAT_FLEX <= format || (DefaultSegmentInfosWriter.FORMAT_FLEX > format && lastGlobalFieldMapVersion == 0); 
+    assert DefaultSegmentInfosWriter.FORMAT_4_0 <= format || (DefaultSegmentInfosWriter.FORMAT_4_0 > format && lastGlobalFieldMapVersion == 0); 
   }
 
   // Only non-null after prepareCommit has been called and
@@ -1030,7 +1030,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       readGlobalFieldMap(map, dir);
     }
     if (size() > 0) {
-      if (format > DefaultSegmentInfosWriter.FORMAT_FLEX) {
+      if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
         assert lastGlobalFieldMapVersion == 0;
         // build the map up if we open a pre 4.0 index
         for (SegmentInfo info : this) {

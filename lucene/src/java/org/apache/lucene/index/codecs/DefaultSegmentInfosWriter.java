@@ -40,15 +40,15 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
   public static final int FORMAT_HAS_VECTORS = -10;
 
   /** Each segment records the Lucene version that created it. */
-  public static final int FORMAT_SEGMENT_RECORDS_VERSION = -11;
+  public static final int FORMAT_3_1 = -11;
 
   /** Each segment records whether its postings are written
    *  in the new flex format */
-  public static final int FORMAT_FLEX = -12;
+  public static final int FORMAT_4_0 = -12;
 
   /** This must always point to the most recent file format.
    * whenever you add a new format, make it 1 smaller (negative version logic)! */
-  public static final int FORMAT_CURRENT = FORMAT_FLEX;
+  public static final int FORMAT_CURRENT = FORMAT_4_0;
   
   /** This must always point to the first supported file format. */
   public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;

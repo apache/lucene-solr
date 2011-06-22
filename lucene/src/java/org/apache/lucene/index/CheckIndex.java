@@ -371,10 +371,10 @@ public class CheckIndex {
       sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
       sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_SEGMENT_RECORDS_VERSION) {
-      sFormat = "FORMAT_SEGMENT_RECORDS_VERSION [Lucene 3.1+]";
-    } else if (format == DefaultSegmentInfosWriter.FORMAT_FLEX) {
-      sFormat = "FORMAT_FLEX [Lucene 4.0+]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_3_1) {
+      sFormat = "FORMAT_3_1 [Lucene 3.1]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
+      sFormat = "FORMAT_4_0 [Lucene 4.0]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_CURRENT) {
       throw new RuntimeException("BUG: You should update this tool!");
     } else if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT) {
