@@ -21,6 +21,8 @@
     app_config.solr_path = '<%= request.getContextPath() %>';
     app_config.core_admin_path = '<%= cores.getAdminPath() %>';
     app_config.zookeeper_path = 'zookeeper.jsp';
+    app_config.schema_path = '/admin/file?file=schema.xml&contentType=text/xml;charset=utf-8';
+    app_config.config_path = '/admin/file?file=solrconfig.xml&contentType=text/xml;charset=utf-8';
     
     </script>
     
