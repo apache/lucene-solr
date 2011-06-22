@@ -126,7 +126,6 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    checkDistributed(rb);
   }
 
 
@@ -181,7 +180,7 @@ public class QueryComponent extends SearchComponent
         slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
-        
+
         /***
          rb.slices = new String[slices.size()];
          for (int i=0; i<rb.slices.length; i++) {
