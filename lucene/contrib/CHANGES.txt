@@ -55,6 +55,10 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+(No changes)
+
+======================= Lucene 3.3.0 =======================
+
 New Features
 
  * LUCENE-152: Add KStem (light stemmer for English).

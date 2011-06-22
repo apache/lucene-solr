@@ -485,6 +485,10 @@ Bug fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+(No changes)
+
+======================= Lucene 3.3.0 =======================
+
 Changes in backwards compatibility policy
 
 * LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
