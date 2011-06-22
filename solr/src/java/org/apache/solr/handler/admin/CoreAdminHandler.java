@@ -26,10 +26,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.*;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -39,6 +36,8 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +48,7 @@ import java.util.Date;
  * @since solr 1.3
  */
 public class CoreAdminHandler extends RequestHandlerBase {
+  protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
 
   public CoreAdminHandler() {
@@ -370,6 +370,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if(core == null){
        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "No such core exists '"+cname+"'");
+    }
+    if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {}
+
+        @Override
+        public void postClose(SolrCore core) {
+          File dataDir = new File(core.getIndexDir());
+          for (File file : dataDir.listFiles()) {
+            if (!file.delete()) {
+              log.error(file.getAbsolutePath() + " could not be deleted on core unload");
+            }
+          }
+          if (!dataDir.delete()) log.error(dataDir.getAbsolutePath() + " could not be deleted on core unload");
+        }
+      });
     }
     core.close();
     return coreContainer.isPersistent();

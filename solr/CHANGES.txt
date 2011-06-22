@@ -23,6 +23,12 @@ on how to get started.
 
 ======================= 3.x (not yet released) ================
 
+Upgrading from Solr 3.2.0
+----------------------
+The SolrCore's CloseHook API has been changed in a backward-incompatible way.
+Any custom components which use the SolrCore.addCloseHook method will need to
+be modified accordingly.
+
 New Features
 ----------------------
 
@@ -47,6 +53,8 @@ New Features
 
 * SOLR-1331: Added a srcCore parameter to CoreAdminHandler's mergeindexes action
   to merge one or more cores' indexes to a target core (shalin)
+
+* SOLR-2610 -- Add an option to delete index through CoreAdmin UNLOAD action (shalin)
 
 Optimizations
 ----------------------
