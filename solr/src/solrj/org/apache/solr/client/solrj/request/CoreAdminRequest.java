@@ -163,6 +163,30 @@ public class CoreAdminRequest extends SolrRequest
     }
   }
 
+  public static class Unload extends CoreAdminRequest {
+    protected boolean deleteIndex;
+
+    public Unload(boolean deleteIndex) {
+      action = CoreAdminAction.UNLOAD;
+      this.deleteIndex = deleteIndex;
+    }
+
+    public boolean isDeleteIndex() {
+      return deleteIndex;
+    }
+
+    public void setDeleteIndex(boolean deleteIndex) {
+      this.deleteIndex = deleteIndex;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.DELETE_INDEX, deleteIndex);
+      return params;
+    }
+  }
+
   public CoreAdminRequest()
   {
     super( METHOD.GET, "/admin/cores" );
@@ -244,11 +268,15 @@ public class CoreAdminRequest extends SolrRequest
 
   public static CoreAdminResponse unloadCore( String name, SolrServer server ) throws SolrServerException, IOException
   {
-    CoreAdminRequest req = new CoreAdminRequest();
+    return unloadCore(name, false, server);
+  }
+
+  public static CoreAdminResponse unloadCore( String name, boolean deleteIndex, SolrServer server ) throws SolrServerException, IOException
+  {
+    Unload req = new Unload(deleteIndex);
     req.setCoreName( name );
-    req.setAction( CoreAdminAction.UNLOAD );
     return req.process( server );
-  }  
+  }
 
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
   {
