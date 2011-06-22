@@ -619,7 +619,7 @@ public final class SegmentInfo implements Cloneable {
 
     if (useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
+      if (version != null && StringHelper.getVersionComparator().compare("3.4", version) <= 0) {
         fileSet.add(IndexFileNames.segmentFileName(name, "",
             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }
