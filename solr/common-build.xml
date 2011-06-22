@@ -24,7 +24,7 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
 
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
-  <property name="tests.luceneMatchVersion" value="3.1"/>
+  <property name="tests.luceneMatchVersion" value="3.3"/>
 
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
@@ -108,7 +108,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="specversion" value="3.0.0.${dateversion}" />
+  <property name="specversion" value="3.3.0.${dateversion}" />
 
   
     <!-- Type of checksum to compute for distribution files -->
