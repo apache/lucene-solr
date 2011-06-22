@@ -654,7 +654,7 @@ public final class SolrCore implements SolrInfoMBean {
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          try {
-           hook.close( this );
+           hook.preClose( this );
          } catch (Throwable e) {
            SolrException.log(log, e);           
          }
@@ -693,7 +693,15 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
 
-
+    if( closeHooks != null ) {
+       for( CloseHook hook : closeHooks ) {
+         try {
+           hook.postClose( this );
+         } catch (Throwable e) {
+           SolrException.log(log, e);
+         }
+      }
+    }
   }
 
   /** Current core usage count. */

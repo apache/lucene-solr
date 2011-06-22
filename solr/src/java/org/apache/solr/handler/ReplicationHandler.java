@@ -889,11 +889,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private void registerCloseHook() {
     core.addCloseHook(new CloseHook() {
-      public void close(SolrCore core) {
+      @Override
+      public void preClose(SolrCore core) {
         if (snapPuller != null) {
           snapPuller.destroy();
         }
       }
+
+      @Override
+      public void postClose(SolrCore core) {}
     });
   }
 
