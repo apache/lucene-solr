@@ -398,7 +398,7 @@ public class MockDirectoryWrapper extends Directory {
     }
   }
 
-  void addFileHandle(Closeable c, String name, boolean input) {
+  synchronized void addFileHandle(Closeable c, String name, boolean input) {
     Integer v = openFiles.get(name);
     if (v != null) {
       v = Integer.valueOf(v.intValue()+1);
