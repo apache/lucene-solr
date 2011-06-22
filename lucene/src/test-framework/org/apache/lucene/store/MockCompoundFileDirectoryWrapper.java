@@ -26,13 +26,17 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   private final CompoundFileDirectory delegate;
   private final String name;
   
-  public MockCompoundFileDirectoryWrapper(String name, MockDirectoryWrapper parent, CompoundFileDirectory delegate) throws IOException {
+  public MockCompoundFileDirectoryWrapper(String name, MockDirectoryWrapper parent, CompoundFileDirectory delegate, boolean forWrite) throws IOException {
     super(parent, name, 1024);
     this.name = name;
     this.parent = parent;
     this.delegate = delegate;
-    super.initForRead(Collections.<String,FileEntry>emptyMap());
-    parent.addFileHandle(this, name, true);
+    if (forWrite) {
+      super.initForWrite();
+    } else {
+      super.initForRead(Collections.<String,FileEntry>emptyMap());
+    }
+    parent.addFileHandle(this, name, !forWrite);
   }
   
   @Override
@@ -140,4 +144,8 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
     return delegate.openInputSlice(id, offset, length, readBufferSize);
   }
 
+  @Override
+  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
+    return delegate.createCompoundOutput(name);
+  }
 }

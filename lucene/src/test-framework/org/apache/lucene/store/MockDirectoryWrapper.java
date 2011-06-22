@@ -420,9 +420,15 @@ public class MockDirectoryWrapper extends Directory {
   @Override
   public synchronized CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
     maybeYield();
-    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, bufferSize));
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, bufferSize), false);
   }
-  
+   
+  @Override
+  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
+    maybeYield();
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.createCompoundOutput(name), true);
+  }
+
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
   public synchronized final long getRecomputedSizeInBytes() throws IOException {
     if (!(delegate instanceof RAMDirectory))

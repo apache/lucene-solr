@@ -226,6 +226,9 @@ final class CompoundFileWriter {
         out = new DirectCFSIndexOutput(dataOut, entry, false);
       } else {
         entry.dir = this.directory;
+        if (directory.fileExists(name)) {
+          throw new IOException("File already exists");
+        }
         out = new DirectCFSIndexOutput(directory.createOutput(name), entry,
             true);
       }
