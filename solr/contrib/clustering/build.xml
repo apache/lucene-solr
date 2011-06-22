@@ -107,6 +107,16 @@
   <target name="test" depends="compileTests">
     <mkdir dir="${junit.output.dir}"/>
 
+    <condition property="runall">
+      <not>
+        <or>
+          <isset property="testcase"/>
+          <isset property="testpackage"/>
+          <isset property="testpackageroot"/>
+        </or>
+      </not>
+    </condition>
+
     <junit printsummary="no"
            haltonfailure="no"
            maxmemory="512M"
@@ -141,13 +151,19 @@
         <enable package="org.apache.solr"/>
       </assertions>
       <formatter type="${junit.formatter}"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+      <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
         <fileset dir="src/test/java" includes="${junit.includes}">
           <exclude name="**/AbstractClusteringTest*"/>
         </fileset>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test/java" includes="**/${testcase}.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
+        <fileset dir="src/test/java" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" />
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
+        <fileset dir="src/test/java" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" />
       </batchtest>
     </junit>
 
