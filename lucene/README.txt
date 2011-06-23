@@ -22,6 +22,7 @@ lucene-core-XX-javadoc.jar
   
 lucene-test-framework-XX.jar
   The compiled Lucene test-framework library.
+  Depends on junit 4.7.x (not 4.6.x, not 4.8.x), and Apache Ant 1.7.x (not 1.6.x, not 1.8.x)
 
 lucene-test-framework-XX-javadoc.jar
   The Javadoc jar for the compiled Lucene test-framework library.
