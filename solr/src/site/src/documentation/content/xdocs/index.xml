@@ -67,6 +67,32 @@ customization is required.
     <section id="news">
       <title>News</title>
 <section>
+   <title>July 2011 - Solr 3.3 Released</title>
+  <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.3</a>!
+  </p> 
+   <p>
+    Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.3 contains Lucene 3.3.
+   </p>
+  <p>
+   Solr 3.3 release highlights include
+ </p>
+  <ul>
+    <li>Grouping / Field Collapsing</li>
+    <li>A new, automaton-based suggest/autocomplete implementation offering an
+        order of magnitude smaller RAM consumption.</li>
+    <li>KStemFilterFactory, an optimized implementation of a less aggressive
+        stemmer for English.</li>
+    <li>Solr defaults to a new, more efficient merge policy (TieredMergePolicy).
+        See <a href="http://s.apache.org/merging">http://s.apache.org/merging</a> for more information.</li>
+    <li>Important bugfixes, including extremely high RAM usage in spellchecking.</li>
+    <li>Bugfixes and improvements from Apache Lucene 3.3</li>
+  </ul>
+     
+  <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+ </p>
+
+</section>
+<section>
    <title>May 2011 - Solr 3.2 Released</title>
   <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.2</a>!
   </p> 
