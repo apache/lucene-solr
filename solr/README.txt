@@ -69,7 +69,7 @@ Instructions for Building Apache Solr from Source
    folder included on your command path. To test this, issue a "java -version" command 
    from your shell (command prompt) and verify that the Java version is 1.6 or later.
 
-2. Download the Apache Ant binary distribution (1.7.0 or greater) from http://ant.apache.org/
+2. Download the Apache Ant binary distribution (1.7.x, not 1.6.x, not 1.8.x) from http://ant.apache.org/
    You will need Ant installed and the $ANT_HOME/bin (Windows: %ANT_HOME%\bin) folder 
    included on your command path. To test this, issue a "ant -version" command from your
    shell (command prompt) and verify that Ant is available.
