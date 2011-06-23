@@ -21,7 +21,7 @@ when more advanced customization is required.
 See README.txt and http://lucene.apache.org/solr for more information
 on how to get started.
 
-======================= 3.x (not yet released) ================
+==================  3.3.0  ==================
 
 Upgrading from Solr 3.2.0
 ----------------------
