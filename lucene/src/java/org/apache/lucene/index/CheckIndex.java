@@ -22,6 +22,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.File;
 import java.util.Collection;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -331,6 +333,30 @@ public class CheckIndex {
       return result;
     }
 
+    // find the oldest and newest segment versions
+    String oldest = Integer.toString(Integer.MAX_VALUE), newest = Integer.toString(Integer.MIN_VALUE);
+    String oldSegs = null;
+    boolean foundNonNullVersion = false;
+    Comparator<String> versionComparator = StringHelper.getVersionComparator();
+    for (SegmentInfo si : sis) {
+      String version = si.getVersion();
+      if (version == null) {
+        // pre-3.1 segment
+        oldSegs = "pre-3.1";
+      } else if (version.equals("2.x")) {
+        // an old segment that was 'touched' by 3.1+ code
+        oldSegs = "2.x";
+      } else {
+        foundNonNullVersion = true;
+        if (versionComparator.compare(version, oldest) < 0) {
+          oldest = version;
+        }
+        if (versionComparator.compare(version, newest) > 0) {
+          newest = version;
+        }
+      }
+    }
+    
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
     IndexInput input = null;
@@ -382,7 +408,7 @@ public class CheckIndex {
       else if (format == SegmentInfos.FORMAT_HAS_VECTORS)
         sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
       else if (format == SegmentInfos.FORMAT_3_1)
-        sFormat = "FORMAT_3_1 [Lucene 3.1]";
+        sFormat = "FORMAT_3_1 [Lucene 3.1+]";
       else if (format == SegmentInfos.CURRENT_FORMAT)
         throw new RuntimeException("BUG: You should update this tool!");
       else if (format < SegmentInfos.CURRENT_FORMAT) {
@@ -404,7 +430,19 @@ public class CheckIndex {
       userDataString = "";
     }
 
-    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat + userDataString);
+    String versionString = null;
+    if (oldSegs != null) {
+      if (foundNonNullVersion) {
+        versionString = "versions=[" + oldSegs + " .. " + newest + "]";
+      } else {
+        versionString = "version=" + oldSegs;
+      }
+    } else {
+      versionString = oldest.equals(newest) ? ( "version=" + oldest ) : ("versions=[" + oldest + " .. " + newest + "]");
+    }
+    
+    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments
+        + " " + versionString + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
