@@ -78,6 +78,8 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-2620: Removed unnecessary log4j jar from clustering contrib (Dawid Weiss).
+
 * SOLR-2571: Add a commented out example of the spellchecker's thresholdTokenFrequency
   parameter to the example solrconfig.xml, and also add a unit test for this feature.
   (James Dyer via rmuir)
