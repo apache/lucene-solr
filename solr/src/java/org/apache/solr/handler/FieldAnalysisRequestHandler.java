@@ -86,7 +86,7 @@ import java.io.IOException;
  * <p>Note that if neither analysis.fieldname and analysis.fieldtype is specified, then the default search field's
  * analyzer is used.</p>
  *
- * @version $Id$
+ *
  * @since solr 1.4 
  */
 public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {

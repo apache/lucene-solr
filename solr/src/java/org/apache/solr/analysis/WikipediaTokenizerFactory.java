@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
  *     &lt;tokenizer class="solr.WikipediaTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class WikipediaTokenizerFactory extends BaseTokenizerFactory {
   // TODO: add support for WikipediaTokenizer's advanced options.

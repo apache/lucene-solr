@@ -24,7 +24,7 @@ import org.w3c.dom.Node;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MapPluginLoader<T extends MapInitializedPlugin> extends AbstractPluginLoader<T> 

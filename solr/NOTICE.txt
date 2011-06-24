@@ -107,6 +107,11 @@ were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
   http://snowball.tartarus.org/
 
+The KStem stemmer in
+  common/src/org/apache/lucene/analysis/en
+was developed by Bob Krovetz and Sergio Guzman-Lara (CIIR-UMass Amherst)
+under the BSD-license.
+
 The Arabic,Persian,Romanian,Bulgarian, and Hindi analyzers (common) come with a default
 stopword list that is BSD-licensed created by Jacques Savoy.  These files reside in:
 common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt,

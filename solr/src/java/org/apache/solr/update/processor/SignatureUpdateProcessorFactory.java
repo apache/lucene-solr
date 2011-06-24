@@ -61,8 +61,6 @@ public class SignatureUpdateProcessorFactory
 
       signatureField = params.get("signatureField", "signatureField");
 
-      signatureTerm = new Term(signatureField, "");
-
       signatureClass = params.get("signatureClass",
           "org.apache.solr.update.processor.Lookup3Signature");
       this.params = params;
@@ -173,7 +171,7 @@ public class SignatureUpdateProcessorFactory
         doc.addField(signatureField, sigString);
 
         if (overwriteDupes) {
-          cmd.updateTerm = signatureTerm.createTerm(sigString);
+          cmd.updateTerm = new Term(signatureField, sigString);
         }
 
       }

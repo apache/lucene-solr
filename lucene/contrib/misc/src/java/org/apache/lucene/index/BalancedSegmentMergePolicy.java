@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Merge policy that tries to balance not doing large
@@ -105,7 +105,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
   }
   
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     
     assert maxNumSegments > 0;
 
@@ -120,8 +120,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
       while(last > 0) {
 
         final SegmentInfo info = infos.info(--last);
-        if (segmentsToOptimize.contains(info)) {
-
+        if (segmentsToOptimize.containsKey(info)) {
           last++;
           break;
         }

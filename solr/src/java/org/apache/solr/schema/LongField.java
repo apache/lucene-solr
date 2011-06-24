@@ -29,7 +29,7 @@ import org.apache.solr.search.function.LongFieldSource;
 import java.io.IOException;
 import java.util.Map;
 /**
- * @version $Id$
+ *
  */
 public class LongField extends FieldType {
   @Override
@@ -42,7 +42,7 @@ public class LongField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.LONG, reverse);
+    return new SortField(field.name,SortField.Type.LONG, reverse);
   }
 
   @Override

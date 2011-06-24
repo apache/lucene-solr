@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -43,7 +44,7 @@ import org.junit.Test;
 /**
  * TestCase for {@link UIMAUpdateRequestProcessor}
  * 
- * @version $Id$
+ *
  */
 public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
 
@@ -158,6 +159,30 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
                     + " Last Lucene European Conference has been held in Prague."));
     assertU(commit());
     assertQ(req("*:*"), "//*[@numFound='1']");
+
+    try{
+      addDoc("uima-not-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes."));
+      fail("exception shouldn't be ignored");
+    }
+    catch(StringIndexOutOfBoundsException e){  // SOLR-2579
+      fail("exception shouldn't be raised");
+    }
+    catch(SolrException expected){}
+
+    try{
+      addDoc("uima-ignoreErrors", adoc(
+            "id",
+            "2312312321312",
+            "text",
+            "SpellCheckComponent got improvement related to recent Lucene changes."));
+    }
+    catch(StringIndexOutOfBoundsException e){  // SOLR-2579
+      fail("exception shouldn't be raised");
+    }
   }
 
   private void addDoc(String chain, String doc) throws Exception {

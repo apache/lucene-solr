@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util._TestUtil;
 
@@ -63,7 +64,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       }
     } else {
       // we are the fork, setup a crashing thread
-      final int crashTime = _TestUtil.nextInt(random, 500, 4000);
+      final int crashTime = _TestUtil.nextInt(random, 3000, 4000);
       Thread t = new Thread() {
         @Override
         public void run() {
@@ -92,6 +93,8 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         + "java");
     cmd.add("-Xmx512m");
     cmd.add("-Dtests.crashmode=true");
+    // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
+    cmd.add("-Dtests.nightly=true");
     cmd.add("-DtempDir=" + tempDir.getPath());
     cmd.add("-Dtests.seed=" + random.nextLong() + ":" + random.nextLong());
     cmd.add("-ea");
@@ -123,7 +126,8 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
    */
   public boolean checkIndexes(File file) throws IOException {
     if (file.isDirectory()) {
-      Directory dir = newFSDirectory(file);
+      MockDirectoryWrapper dir = newFSDirectory(file);
+      dir.setCheckIndexOnClose(false); // don't double-checkindex
       if (IndexReader.indexExists(dir)) {
         if (VERBOSE) {
           System.err.println("Checking index: " + file);

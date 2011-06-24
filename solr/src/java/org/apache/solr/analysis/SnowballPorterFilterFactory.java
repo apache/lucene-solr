@@ -41,7 +41,7 @@ import org.tartarus.snowball.SnowballProgram;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * 
- * @version $Id$
+ *
  */
 public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";

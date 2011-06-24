@@ -102,7 +102,7 @@ final class SegmentCodecs implements Cloneable {
       throws IOException {
     final Codec[] codecArray = codecs;
     for (int i = 0; i < codecArray.length; i++) {
-      codecArray[i].files(dir, info, ""+i, files);
+      codecArray[i].files(dir, info, i, files);
     }      
       
   }
@@ -144,13 +144,6 @@ final class SegmentCodecs implements Cloneable {
           codecs.add(fieldCodec);
         }
         fi.setCodecId(ord.intValue());
-      }
-      return this;
-    }
-    
-    SegmentCodecsBuilder addAll(FieldInfos infos) {
-      for (FieldInfo fieldInfo : infos) {
-        tryAddAndSet(fieldInfo);
       }
       return this;
     }

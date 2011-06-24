@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -95,7 +96,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     double bufferSize = solrConfig.getDouble("indexDefaults/ramBufferSizeMB");
     assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
     String mergePolicy = solrConfig.get("indexDefaults/mergePolicy/@class");
-    assertTrue(mergePolicy + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME, mergePolicy.equals(SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME) == true);
+    assertEquals(TieredMergePolicy.class.getName(), mergePolicy);
     String mergeSched = solrConfig.get("indexDefaults/mergeScheduler/@class");
     assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
   }

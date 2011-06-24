@@ -23,7 +23,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 /**
  * Environment variables for the transformed documents
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class TransformContext

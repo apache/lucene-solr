@@ -42,7 +42,7 @@ import java.util.Map;
  * <br>WARNING: as of Solr 1.4, ord() and rord() can cause excess memory use since they must use a FieldCache entry
  * at the top level reader, while sorting and function queries now use entries at the segment level.  Hence sorting
  * or using a different function query, in addition to ord()/rord() will double memory use.
- * @version $Id$
+ *
  */
 
 public class OrdFieldSource extends ValueSource {

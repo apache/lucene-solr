@@ -20,7 +20,7 @@ package org.apache.solr.common.params;
 /**
  * A collection of standard params used by Update handlers
  *
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public interface UpdateParams 

@@ -51,7 +51,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   //private String segment;
 
-  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, String codecId) throws IOException {
+  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, int readBufferSize, int codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
     //this.segment = segmentInfo.name;
@@ -71,7 +71,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) throws IOException {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
       files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.PROX_EXTENSION));
@@ -156,7 +156,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     //System.out.println("SPR.readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-      termState.bytesReader = new ByteArrayDataInput(null);
+      termState.bytesReader = new ByteArrayDataInput();
     } else if (termState.bytes.length < len) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
     }

@@ -228,16 +228,16 @@ public abstract class CollationTestBase extends LuceneTestCase {
     Query queryX = new TermQuery(new Term ("contents", "x"));
     Query queryY = new TermQuery(new Term ("contents", "y"));
     
-    sort.setSort(new SortField("US", SortField.STRING));
+    sort.setSort(new SortField("US", SortField.Type.STRING));
     assertMatches(searcher, queryY, sort, usResult);
 
-    sort.setSort(new SortField("France", SortField.STRING));
+    sort.setSort(new SortField("France", SortField.Type.STRING));
     assertMatches(searcher, queryX, sort, frResult);
 
-    sort.setSort(new SortField("Sweden", SortField.STRING));
+    sort.setSort(new SortField("Sweden", SortField.Type.STRING));
     assertMatches(searcher, queryY, sort, svResult);
 
-    sort.setSort(new SortField("Denmark", SortField.STRING));
+    sort.setSort(new SortField("Denmark", SortField.Type.STRING));
     assertMatches(searcher, queryY, sort, dkResult);
   }
     

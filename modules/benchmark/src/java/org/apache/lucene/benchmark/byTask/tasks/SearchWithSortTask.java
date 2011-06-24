@@ -57,7 +57,7 @@ public class SearchWithSortTask extends ReadTask {
       SortField sortField0;
       if (field.equals("doc")) {
         sortField0 = SortField.FIELD_DOC;
-      } if (field.equals("score")) {
+      } else if (field.equals("score")) {
         sortField0 = SortField.FIELD_SCORE;
       } else if (field.equals("noscore")) {
         doScore = false;
@@ -75,8 +75,7 @@ public class SearchWithSortTask extends ReadTask {
         } else {
           throw new RuntimeException("You must specify the sort type ie page:int,subject:string");
         }
-        int type = getType(typeString);
-        sortField0 = new SortField(fieldName, type);
+        sortField0 = new SortField(fieldName, SortField.Type.valueOf(typeString.toUpperCase()));
       }
       sortFields[upto++] = sortField0;
     }
@@ -87,30 +86,6 @@ public class SearchWithSortTask extends ReadTask {
       sortFields = newSortFields;
     }
     this.sort = new Sort(sortFields);
-  }
-
-  private int getType(String typeString) {
-    int type;
-    if (typeString.equals("float")) {
-      type = SortField.FLOAT;
-    } else if (typeString.equals("double")) {
-      type = SortField.DOUBLE;
-    } else if (typeString.equals("byte")) {
-      type = SortField.BYTE;
-    } else if (typeString.equals("short")) {
-      type = SortField.SHORT;
-    } else if (typeString.equals("int")) {
-      type = SortField.INT;
-    } else if (typeString.equals("long")) {
-      type = SortField.LONG;
-    } else if (typeString.equals("string")) {
-      type = SortField.STRING;
-    } else if (typeString.equals("string_val")) {
-      type = SortField.STRING_VAL;
-    } else {
-      throw new RuntimeException("Unrecognized sort field type " + typeString);
-    }
-    return type;
   }
 
   @Override

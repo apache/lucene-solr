@@ -29,7 +29,7 @@ import java.util.Collection;
 /**
  * Test for SpellingQueryConverter
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SpellingQueryConverterTest extends LuceneTestCase {

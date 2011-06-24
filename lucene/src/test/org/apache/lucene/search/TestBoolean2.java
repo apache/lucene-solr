@@ -232,7 +232,7 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
 
       // increase number of iterations for more complete testing
-      int num = 50 * RANDOM_MULTIPLIER;
+      int num = atLeast(10);
       for (int i=0; i<num; i++) {
         int level = random.nextInt(3);
         q1 = randBoolQuery(new Random(random.nextLong()), random.nextBoolean(), level, field, vals, null);

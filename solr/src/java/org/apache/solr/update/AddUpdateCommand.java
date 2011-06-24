@@ -27,7 +27,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * @version $Id$
+ *
  */
 public class AddUpdateCommand extends UpdateCommand {
    // optional id in "internal" indexed form... if it is needed and not supplied,

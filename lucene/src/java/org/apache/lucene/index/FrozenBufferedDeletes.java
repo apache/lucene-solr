@@ -32,11 +32,12 @@ import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 class FrozenBufferedDeletes {
 
   /* Rough logic: Term is object w/
-     String field and String text (OBJ_HEADER + 2*POINTER).
-     We don't count Term's field since it's interned.
-     Term's text is String (OBJ_HEADER + 4*INT + POINTER +
-     OBJ_HEADER + string.length*CHAR). */
-  final static int BYTES_PER_DEL_TERM = 3*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 4*RamUsageEstimator.NUM_BYTES_INT;
+     String field and BytesRef text (OBJ_HEADER + 2*POINTER).
+     String field is (OBJ_HEADER + 4*INT +
+     POINTER + OBJ_HEADER + CHAR*field.length).
+     Term's text is BytesRef (OBJ_HEADER + 2*INT + POINTER +
+     OBJ_HEADER + bytes.length). */
+  final static int BYTES_PER_DEL_TERM = 4*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 5*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 6*RamUsageEstimator.NUM_BYTES_INT;
 
   /* Query we often undercount (say 24 bytes), plus int. */
   final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + 24;
@@ -70,7 +71,13 @@ class FrozenBufferedDeletes {
       queryLimits[upto] = ent.getValue();
       upto++;
     }
-    bytesUsed = terms.length * BYTES_PER_DEL_TERM + queries.length * BYTES_PER_DEL_QUERY;
+    int termDataBytes = 0;
+    for(Map.Entry<Term,Integer> ent : deletes.terms.entrySet()) {
+      final Term term = ent.getKey();
+      termDataBytes += term.bytes().length;
+      termDataBytes += term.field().length() * RamUsageEstimator.NUM_BYTES_CHAR;
+    }
+    bytesUsed = terms.length * BYTES_PER_DEL_TERM + queries.length * BYTES_PER_DEL_QUERY + termDataBytes;
     numTermDeletes = deletes.numTermDeletes.get();
   }
   

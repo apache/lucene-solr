@@ -29,7 +29,7 @@ import org.apache.solr.response.TextResponseWriter;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @version $Id$
+ *
  */
 public class IntField extends FieldType {
   @Override
@@ -40,7 +40,7 @@ public class IntField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.INT, reverse);
+    return new SortField(field.name,SortField.Type.INT, reverse);
   }
 
   @Override

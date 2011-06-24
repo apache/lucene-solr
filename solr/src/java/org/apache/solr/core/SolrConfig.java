@@ -61,7 +61,7 @@ import java.io.IOException;
  * configuration data for a a Solr instance -- typically found in
  * "solrconfig.xml".
  *
- * @version $Id$
+ *
  */
 public class SolrConfig extends Config {
 

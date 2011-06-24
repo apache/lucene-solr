@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 
 /**
  * 
- * @version $Id: SolrExampleJettyTest.java 724175 2008-12-07 19:07:11Z ryan $
+ *
  * @since solr 1.3
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {

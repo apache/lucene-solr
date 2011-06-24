@@ -43,7 +43,7 @@ public class CodecProvider {
   private final Set<String> knownExtensions = new HashSet<String>();
 
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText", "Memory"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -83,8 +83,9 @@ public class CodecProvider {
 
   public synchronized Codec lookup(String name) {
     final Codec codec = codecs.get(name);
-    if (codec == null)
+    if (codec == null) {
       throw new IllegalArgumentException("required codec '" + name + "' not found");
+    }
     return codec;
   }
 

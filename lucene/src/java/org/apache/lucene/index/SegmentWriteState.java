@@ -43,7 +43,7 @@ public class SegmentWriteState {
   public BitVector deletedDocs;
 
   final SegmentCodecs segmentCodecs;
-  public final String codecId;
+  public final int codecId;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
    * in RAM.  Smaller values use more memory, but make searching slightly
@@ -53,7 +53,7 @@ public class SegmentWriteState {
   public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-                           int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
+      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -62,13 +62,13 @@ public class SegmentWriteState {
     this.numDocs = numDocs;
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
-    codecId = "";
+    codecId = -1;
   }
   
   /**
    * Create a shallow {@link SegmentWriteState} copy final a codec ID
    */
-  SegmentWriteState(SegmentWriteState state, String codecId) {
+  SegmentWriteState(SegmentWriteState state, int codecId) {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentName = state.segmentName;

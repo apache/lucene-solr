@@ -33,10 +33,14 @@ import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
+import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
+import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
@@ -192,15 +196,17 @@ public class TestDocTermOrds extends LuceneTestCase {
     static final String PROX_EXTENSION = "prx";
 
     @Override
-    public void files(Directory dir, SegmentInfo segmentInfo, String id, Set<String> files) throws IOException {
+    public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
       StandardPostingsReader.files(dir, segmentInfo, id, files);
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
+      DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
     }
 
     @Override
     public void getExtensions(Set<String> extensions) {
       getStandardExtensions(extensions);
+      DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
     }
 
     public static void getStandardExtensions(Set<String> extensions) {
@@ -209,12 +215,22 @@ public class TestDocTermOrds extends LuceneTestCase {
       BlockTermsReader.getExtensions(extensions);
       FixedGapTermsIndexReader.getIndexExtensions(extensions);
     }
+    
+    @Override
+    public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
+      return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    }
+
+    @Override
+    public PerDocValues docsProducer(SegmentReadState state) throws IOException {
+      return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    }
   }
 
   public void testRandom() throws Exception {
     MockDirectoryWrapper dir = newDirectory();
 
-    final int NUM_TERMS = 100 * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = _TestUtil.randomRealisticUnicodeString(random);
@@ -226,7 +242,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = atLeast(100);
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
@@ -264,7 +280,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED);
+        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -317,7 +333,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
 
-    final int NUM_TERMS = 100 * RANDOM_MULTIPLIER;
+    final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomRealisticUnicodeString(random);
@@ -329,7 +345,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
+    final int NUM_DOCS = atLeast(100);
 
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
@@ -367,7 +383,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED);
+        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -458,9 +474,9 @@ public class TestDocTermOrds extends LuceneTestCase {
     final TermsEnum te = dto.getOrdTermsEnum(r);
     if (te == null) {
       if (prefixRef == null) {
-        assertNull(r.fields().terms("field"));
+        assertNull(MultiFields.getTerms(r, "field"));
       } else {
-        Terms terms = r.fields().terms("field");
+        Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
           TermsEnum.SeekStatus result = termsEnum.seek(prefixRef, false);

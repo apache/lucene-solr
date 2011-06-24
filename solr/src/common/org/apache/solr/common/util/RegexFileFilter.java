@@ -23,7 +23,7 @@ import java.util.regex.*;
 
 /**
  * Accepts any file whose name matches the pattern
- * @version $Id$
+ *
  */
 public final class RegexFileFilter implements FileFilter {
 

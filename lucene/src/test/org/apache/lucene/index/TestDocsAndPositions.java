@@ -51,13 +51,14 @@ public class TestDocsAndPositions extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
-          + "1 2 3 4 5 6 7 8 9 10", Field.Store.YES, Field.Index.ANALYZED));
+          + "1 2 3 4 5 6 7 8 9 10", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("1");
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -112,7 +113,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    int numDocs = 131;
+    int numDocs = atLeast(47);
     int max = 1051;
     int term = random.nextInt(max);
     Integer[][] positionsInDoc = new Integer[numDocs][];
@@ -120,7 +121,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
       Document doc = new Document();
       ArrayList<Integer> positions = new ArrayList<Integer>();
       StringBuilder builder = new StringBuilder();
-      for (int j = 0; j < 3049; j++) {
+      int num = atLeast(131);
+      for (int j = 0; j < num; j++) {
         int nextInt = random.nextInt(max);
         builder.append(nextInt).append(" ");
         if (nextInt == term) {
@@ -129,10 +131,10 @@ public class TestDocsAndPositions extends LuceneTestCase {
       }
       if (positions.size() == 0) {
         builder.append(term);
-        positions.add(3049);
+        positions.add(num);
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.YES,
-          Field.Index.ANALYZED));
+      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
+          Field.Index.ANALYZED_NO_NORMS));
       positionsInDoc[i] = positions.toArray(new Integer[0]);
       writer.addDocument(doc);
     }
@@ -140,7 +142,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -192,7 +195,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    int numDocs = 499;
+    int numDocs = atLeast(49);
     int max = 15678;
     int term = random.nextInt(max);
     int[] freqInDoc = new int[numDocs];
@@ -201,20 +204,21 @@ public class TestDocsAndPositions extends LuceneTestCase {
       StringBuilder builder = new StringBuilder();
       for (int j = 0; j < 199; j++) {
         int nextInt = random.nextInt(max);
-        builder.append(nextInt).append(" ");
+        builder.append(nextInt).append(' ');
         if (nextInt == term) {
           freqInDoc[i]++;
         }
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.YES,
-          Field.Index.ANALYZED));
+      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
+          Field.Index.ANALYZED_NO_NORMS));
       writer.addDocument(doc);
     }
 
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("" + term);
       ReaderContext topReaderContext = reader.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -281,8 +285,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
           builder.append("odd ");
         }
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.YES,
-          Field.Index.ANALYZED));
+      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
+          Field.Index.ANALYZED_NO_NORMS));
       writer.addDocument(doc);
     }
 
@@ -290,7 +294,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
+    int num = atLeast(13);
+    for (int i = 0; i < num; i++) {
       BytesRef bytes = new BytesRef("even");
 
       ReaderContext topReaderContext = reader.getTopReaderContext();

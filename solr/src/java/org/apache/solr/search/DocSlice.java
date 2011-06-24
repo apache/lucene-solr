@@ -22,7 +22,7 @@ import java.util.Arrays;
 /**
  * <code>DocSlice</code> implements DocList as an array of docids and optional scores.
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public class DocSlice extends DocSetBase implements DocList {

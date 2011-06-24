@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * it is only recommended to use the {@link StreamingUpdateSolrServer} with
  * /update requests.  The query interface is better suited for 
  * 
- * @version $Id: CommonsHttpSolrServer.java 724175 2008-12-07 19:07:11Z ryan $
+ *
  * @since solr 1.4
  */
 public class StreamingUpdateSolrServer extends CommonsHttpSolrServer

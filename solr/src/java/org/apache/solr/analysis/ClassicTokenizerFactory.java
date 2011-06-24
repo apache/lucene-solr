@@ -32,7 +32,7 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  */
 
 public class ClassicTokenizerFactory extends BaseTokenizerFactory {

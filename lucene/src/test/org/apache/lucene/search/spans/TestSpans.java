@@ -434,7 +434,7 @@ public class TestSpans extends LuceneTestCase {
                                 slop,
                                 ordered);
   
-        spanScorer = snq.weight(searcher).scorer(leaves[i], ScorerContext.def());
+        spanScorer = searcher.createNormalizedWeight(snq).scorer(leaves[i], ScorerContext.def());
       } finally {
         searcher.setSimilarityProvider(oldSim);
       }

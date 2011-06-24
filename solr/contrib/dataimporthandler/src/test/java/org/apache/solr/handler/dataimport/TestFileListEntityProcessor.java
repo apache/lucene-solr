@@ -28,7 +28,7 @@ import java.util.*;
  * Test for FileListEntityProcessor
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCase {

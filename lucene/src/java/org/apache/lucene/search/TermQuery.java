@@ -89,7 +89,7 @@ public class TermQuery extends Query {
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       final String field = term.field();
       final IndexReader reader = context.reader;
-      assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight is not the same as the current reader's top-reader";
+      assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
       final TermState state = termStates
           .get(context.ord);
       if (state == null) { // term is not present in that reader

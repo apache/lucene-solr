@@ -364,8 +364,14 @@ public class FunctionQParser extends QParser {
         sp.expect(")");
       }
       else {
-        SchemaField f = req.getSchema().getField(id);
-        valueSource = f.getType().getValueSource(f, this);
+        if ("true".equals(id)) {
+          valueSource = new BoolConstValueSource(true);
+        } else if ("false".equals(id)) {
+          valueSource = new BoolConstValueSource(false);
+        } else {
+          SchemaField f = req.getSchema().getField(id);
+          valueSource = f.getType().getValueSource(f, this);
+        }
       }
 
     }

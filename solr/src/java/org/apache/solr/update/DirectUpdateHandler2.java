@@ -157,13 +157,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         if (cmd.indexedId == null) {
           cmd.indexedId = getIndexedId(cmd.doc);
         }
-        Term idTerm = this.idTerm.createTerm(cmd.indexedId);
+        Term idTerm = new Term(idField.getName(), cmd.indexedId);
         boolean del = false;
         if (cmd.updateTerm == null) {
           updateTerm = idTerm;
         } else {
           del = true;
-        	updateTerm = cmd.updateTerm;
+          updateTerm = cmd.updateTerm;
         }
 
         writer.updateDocument(updateTerm, cmd.getLuceneDocument(schema));
@@ -198,7 +198,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    indexWriterProvider.getIndexWriter().deleteDocuments(idTerm.createTerm(idFieldType.toInternal(cmd.id)));
+    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
 
     if (commitTracker.timeUpperBound > 0) {
       commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
@@ -255,9 +255,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     log.info("start " + cmd);
     
-    Directory[] dirs = cmd.dirs;
-    if (dirs != null && dirs.length > 0) {
-      indexWriterProvider.getIndexWriter().addIndexes(dirs);
+    IndexReader[] readers = cmd.readers;
+    if (readers != null && readers.length > 0) {
+      indexWriterProvider.getIndexWriter().addIndexes(readers);
       rc = 1;
     } else {
       rc = 0;

@@ -93,7 +93,7 @@ import java.util.*;
  * acronym UTC was chosen as a compromise."
  * </blockquote>
  *
- * @version $Id$
+ *
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  *
  */

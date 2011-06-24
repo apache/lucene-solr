@@ -64,7 +64,6 @@ import org.apache.lucene.util.Version;
  * </pre>
  * 
  *
- * @version 1.0
  */
 public class SpellChecker implements java.io.Closeable {
 
@@ -77,8 +76,6 @@ public class SpellChecker implements java.io.Closeable {
    * Field name for each word in the ngram index.
    */
   public static final String F_WORD = "word";
-
-  private static final Term F_WORD_TERM = new Term(F_WORD);
 
   /**
    * the spell index
@@ -487,7 +484,7 @@ public class SpellChecker implements java.io.Closeable {
     // obtainSearcher calls ensureOpen
     final IndexSearcher indexSearcher = obtainSearcher();
     try{
-      return indexSearcher.docFreq(F_WORD_TERM.createTerm(word)) > 0;
+      return indexSearcher.docFreq(new Term(F_WORD, word)) > 0;
     } finally {
       releaseSearcher(indexSearcher);
     }

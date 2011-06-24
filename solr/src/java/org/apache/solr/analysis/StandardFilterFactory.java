@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
  *     &lt;filter class="solr.StandardFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class StandardFilterFactory extends BaseTokenFilterFactory {
   @Override

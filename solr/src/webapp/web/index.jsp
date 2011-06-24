@@ -21,6 +21,8 @@
     app_config.solr_path = '<%= request.getContextPath() %>';
     app_config.core_admin_path = '<%= cores.getAdminPath() %>';
     app_config.zookeeper_path = 'zookeeper.jsp';
+    app_config.schema_path = '/admin/file?file=schema.xml&contentType=text/xml;charset=utf-8';
+    app_config.config_path = '/admin/file?file=solrconfig.xml&contentType=text/xml;charset=utf-8';
     
     </script>
     
@@ -35,14 +37,14 @@
 
             <div id="wip-notice">
                 <p>This interface is work in progress. It works best in Chrome.</p>
-                <p><a href="admin/">Use the <span>old admin interface</span> if there are problems with this one.</a></p>
+                <p><a href="admin">Use the <span>old admin interface</span> if there are problems with this one.</a></p>
                 <p><a href="https://issues.apache.org/jira/browse/SOLR-2399">Bugs/Requests/Suggestions: <span>SOLR-2399</span></a></p>
             </div>
 
-	    <p id="environment">&nbsp;</p>
+            <p id="environment">&nbsp;</p>
 
         </div>
-        
+
         <div id="main" class="clearfix">
         
             <div id="content-wrapper">

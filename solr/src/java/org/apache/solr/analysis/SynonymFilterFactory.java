@@ -44,7 +44,7 @@ import java.util.Map;
  *             expand="true" tokenizerFactory="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class SynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
 

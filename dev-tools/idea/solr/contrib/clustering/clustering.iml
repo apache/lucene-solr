@@ -32,7 +32,7 @@
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="solr" />
     <orderEntry type="module" module-name="spatial" />
-    <orderEntry type="module" module-name="spellchecker" />
+    <orderEntry type="module" module-name="suggest" />
     <orderEntry type="module" module-name="lucene" />
     <orderEntry type="module" module-name="common" />
   </component>

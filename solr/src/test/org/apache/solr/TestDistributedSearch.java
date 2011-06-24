@@ -24,7 +24,7 @@ import org.apache.solr.common.params.CommonParams;
  *  http://docs.codehaus.org/display/JETTY/ServletTester
  * rather then open a real connection?
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {

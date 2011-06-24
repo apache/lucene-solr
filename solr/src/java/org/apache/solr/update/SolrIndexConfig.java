@@ -36,13 +36,13 @@ import java.util.HashMap;
 // This config object encapsulates IndexWriter config params.
 //
 /**
- * @version $Id$
+ *
  */
 public class SolrIndexConfig {
   public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);
   
   public static final String defaultsName ="indexDefaults";
-  public static final String DEFAULT_MERGE_POLICY_CLASSNAME = LogByteSizeMergePolicy.class.getName();
+  final String defaultMergePolicyClassName;
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
   static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
 
@@ -59,6 +59,7 @@ public class SolrIndexConfig {
     termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
+    defaultMergePolicyClassName = TieredMergePolicy.class.getName();
   }
 
   public final Version luceneVersion;
@@ -87,6 +88,7 @@ public class SolrIndexConfig {
 
     luceneVersion = solrConfig.luceneMatchVersion;
 
+    defaultMergePolicyClassName = luceneVersion.onOrAfter(Version.LUCENE_33) ? TieredMergePolicy.class.getName() : LogByteSizeMergePolicy.class.getName();
     useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
@@ -162,16 +164,13 @@ public class SolrIndexConfig {
 
   private MergePolicy buildMergePolicy(IndexSchema schema) {
     MergePolicy policy;
-    String mpClassName = mergePolicyInfo == null ? SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME : mergePolicyInfo.className;
+    String mpClassName = mergePolicyInfo == null ? defaultMergePolicyClassName : mergePolicyInfo.className;
 
     try {
       policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName, null, new Class[]{IndexWriter.class}, new Object[]{this});
     } catch (Exception e) {
       policy = (MergePolicy) schema.getResourceLoader().newInstance(mpClassName);
     }
-
-    if (mergePolicyInfo != null)
-      SolrPluginUtils.invokeSetters(policy, mergePolicyInfo.initArgs);
 
     if (policy instanceof LogMergePolicy) {
       LogMergePolicy logMergePolicy = (LogMergePolicy) policy;
@@ -183,9 +182,21 @@ public class SolrIndexConfig {
 
       if (mergeFactor != -1)
         logMergePolicy.setMergeFactor(mergeFactor);
+    } else if (policy instanceof TieredMergePolicy) {
+      TieredMergePolicy tieredMergePolicy = (TieredMergePolicy) policy;
+      
+      tieredMergePolicy.setUseCompoundFile(useCompoundFile);
+      
+      if (mergeFactor != -1) {
+        tieredMergePolicy.setMaxMergeAtOnce(mergeFactor);
+        tieredMergePolicy.setSegmentsPerTier(mergeFactor);
+      }
     } else {
-      log.warn("Use of compound file format or mergefactor cannot be configured if merge policy is not an instance of LogMergePolicy. The configured policy's defaults will be used.");
+      log.warn("Use of compound file format or mergefactor cannot be configured if merge policy is not an instance of LogMergePolicy or TieredMergePolicy. The configured policy's defaults will be used.");
     }
+
+    if (mergePolicyInfo != null)
+      SolrPluginUtils.invokeSetters(policy, mergePolicyInfo.initArgs);
 
     return policy;
   }

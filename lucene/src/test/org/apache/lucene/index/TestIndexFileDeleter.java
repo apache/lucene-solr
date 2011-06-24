@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -52,6 +53,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
             setMaxBufferedDocs(10).
             setMergePolicy(mergePolicy)
     );
+
+    writer.setInfoStream(VERBOSE ? System.out : null);
 
     int i;
     for(i=0;i<35;i++) {
@@ -89,7 +92,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // figure out which field number corresponds to
     // "content", and then set our expected file names below
     // accordingly:
-    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+    CompoundFileDirectory cfsReader = dir.openCompoundInput("_2.cfs", 1024);
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
     for (FieldInfo fi : fieldInfos) {
@@ -146,7 +149,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     copyFile(dir, "segments_2", "segments_1");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
-    copyFile(dir, "_1.cfs", "_2.cfs");
+    assertTrue(dir.fileExists("_3.fdt"));
+    assertTrue(!dir.fileExists("_3.cfs"));
+    copyFile(dir, "_1.cfs", "_3.cfs");
     
     String[] filesPre = dir.listAll();
 

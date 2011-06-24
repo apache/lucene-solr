@@ -104,6 +104,8 @@ public class FST<T> {
   // If arc has this label then that arc is final/accepted
   public static final int END_LABEL = -1;
 
+  private boolean allowArrayArcs = true;
+
   public final static class Arc<T> {
     public int label;
     public T output;
@@ -147,7 +149,7 @@ public class FST<T> {
       return flag(BIT_LAST_ARC);
     }
 
-    boolean isFinal() {
+    public boolean isFinal() {
       return flag(BIT_FINAL_ARC);
     }
   };
@@ -490,7 +492,7 @@ public class FST<T> {
     if (!targetHasArcs(follow)) {
       //System.out.println("  end node");
       assert follow.isFinal();
-      arc.label = -1;
+      arc.label = END_LABEL;
       arc.output = follow.nextFinalOutput;
       arc.flags = BIT_LAST_ARC;
       return arc;
@@ -544,7 +546,7 @@ public class FST<T> {
     //System.out.println("    readFirstTarget follow.target=" + follow.target + " isFinal=" + follow.isFinal());
     if (follow.isFinal()) {
       // Insert "fake" final first arc:
-      arc.label = -1;
+      arc.label = END_LABEL;
       arc.output = follow.nextFinalOutput;
       if (follow.target <= 0) {
         arc.flags = BIT_LAST_ARC;
@@ -599,7 +601,7 @@ public class FST<T> {
 
   /** In-place read; returns the arc. */
   public Arc<T> readNextArc(Arc<T> arc) throws IOException {
-    if (arc.label == -1) {
+    if (arc.label == END_LABEL) {
       // This was a fake inserted "final" arc
       if (arc.nextArc <= 0) {
         // This arc went to virtual final node, ie has no outgoing arcs
@@ -795,6 +797,10 @@ public class FST<T> {
   public int getArcWithOutputCount() {
     return arcWithOutputCount;
   }
+
+  public void setAllowArrayArcs(boolean v) {
+    allowArrayArcs = v;
+  }
   
   /**
    * Nodes will be expanded if their depth (distance from the root node) is
@@ -812,8 +818,9 @@ public class FST<T> {
    * @see Builder.UnCompiledNode#depth
    */
   private boolean shouldExpand(UnCompiledNode<T> node) {
-    return (node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
-            node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP;
+    return allowArrayArcs &&
+      ((node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
+       node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP);
   }
 
   // Non-static: writes to FST's byte[]

@@ -53,7 +53,7 @@ import java.util.StringTokenizer;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class CapitalizationFilterFactory extends BaseTokenFilterFactory {

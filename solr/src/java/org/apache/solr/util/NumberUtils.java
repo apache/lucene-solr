@@ -20,7 +20,7 @@ package org.apache.solr.util;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * @version $Id$
+ *
  */
 public class NumberUtils {
 

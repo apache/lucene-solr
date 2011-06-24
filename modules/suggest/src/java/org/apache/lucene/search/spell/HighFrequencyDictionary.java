@@ -26,7 +26,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -47,7 +46,7 @@ public class HighFrequencyDictionary implements Dictionary {
 
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
-    this.field = StringHelper.intern(field);
+    this.field = field;
     this.thresh = thresh;
   }
 

@@ -172,7 +172,7 @@ public class JettySolrRunner {
    */
   public static void main(String[] args) {
     try {
-      JettySolrRunner jetty = new JettySolrRunner("/solr", 3456);
+      JettySolrRunner jetty = new JettySolrRunner("/solr", 8983);
       jetty.start();
     } catch (Exception ex) {
       ex.printStackTrace();

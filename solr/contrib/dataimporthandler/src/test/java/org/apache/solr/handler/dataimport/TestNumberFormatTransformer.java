@@ -29,7 +29,7 @@ import java.util.Map;
  * Test for NumberFormatTransformer
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCase {

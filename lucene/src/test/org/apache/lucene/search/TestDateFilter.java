@@ -32,7 +32,6 @@ import java.io.IOException;
  * DateFilter JUnit tests.
  * 
  * 
- * @version $Revision$
  */
 public class TestDateFilter extends LuceneTestCase {
  

@@ -90,8 +90,8 @@ public class TestBasicOperations extends LuceneTestCase {
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
-    final int ITER1 = 100 * RANDOM_MULTIPLIER;
-    final int ITER2 = 100 * RANDOM_MULTIPLIER;
+    final int ITER1 = atLeast(100);
+    final int ITER2 = atLeast(100);
     for(int i=0;i<ITER1;i++) {
 
       final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE);

@@ -38,7 +38,7 @@ import java.util.HashMap;
  * </p>
  *
  *
- * @version $Id$
+ *
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected final SolrCore core;

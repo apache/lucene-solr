@@ -68,6 +68,9 @@ public final class IndexFileNames {
 
   /** Extension of compound file */
   public static final String COMPOUND_FILE_EXTENSION = "cfs";
+  
+  /** Extension of compound file entries */
+  public static final String COMPOUND_FILE_ENTRIES_EXTENSION = "cfe";
 
   /** Extension of compound file for doc store files*/
   public static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
@@ -80,10 +83,9 @@ public final class IndexFileNames {
 
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
-  
+
   /** Extension of global field numbers */
   public static final String GLOBAL_FIELD_NUM_MAP_EXTENSION = "fnx";
-  
 
   /**
    * This array contains all filename extensions used by
@@ -94,6 +96,7 @@ public final class IndexFileNames {
    */
   public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
+    COMPOUND_FILE_ENTRIES_EXTENSION,
     FIELD_INFOS_EXTENSION,
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
@@ -208,7 +211,12 @@ public final class IndexFileNames {
       return segmentName;
     }
   }
-  
+
+  /** Sugar for passing "" + name instead */
+  public static String segmentFileName(String segmentName, int name, String ext) {
+    return segmentFileName(segmentName, ""+name, ext);
+  }
+
   /**
    * Returns true if the given filename ends with the given extension. One
    * should provide a <i>pure</i> extension, without '.'.
@@ -240,7 +248,15 @@ public final class IndexFileNames {
     }
     return filename;
   }
-
+  
+  public static String stripExtension(String filename) {
+    int idx = filename.indexOf('.');
+    if (idx != -1) {
+      filename = filename.substring(0, idx);
+    }
+    return filename;
+  }
+  
   /**
    * Returns true if the given filename ends with the separate norms file
    * pattern: {@code SEPARATE_NORMS_EXTENSION + "[0-9]+"}.

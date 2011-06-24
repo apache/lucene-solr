@@ -59,11 +59,18 @@ public interface CoreAdminParams
    * The directories are specified by multiple indexDir parameters. */
   public final static String INDEX_DIR = "indexDir";
 
+  /** If you merge indexes, what is the source core's name
+   * More than one source core can be specified by multiple srcCore parameters */
+  public final static String SRC_CORE = "srcCore";
+
   /** The collection name in solr cloud */
   public final static String COLLECTION = "collection";
 
   /** The shard id in solr cloud */
   public final static String SHARD = "shard";
+
+  /** If you unload a core, delete the index too */
+  public final static String DELETE_INDEX = "deleteIndex";
 
   public enum CoreAdminAction {
     STATUS,  

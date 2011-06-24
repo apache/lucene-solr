@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.SolrServer;
 /**
  * This runs SolrServer test using 
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {

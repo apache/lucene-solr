@@ -33,7 +33,7 @@ import java.util.Properties;
 /**
  * <p> Test for Loading core properties from a properties file </p>
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestSolrCoreProperties extends LuceneTestCase {

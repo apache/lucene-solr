@@ -32,7 +32,7 @@ import java.text.ParseException;
  * test harness
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {

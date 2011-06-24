@@ -137,7 +137,7 @@ public class TestFieldInfos extends LuceneTestCase {
     try {
       readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean());
+          random.nextBoolean(), random.nextBoolean(), null);
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected

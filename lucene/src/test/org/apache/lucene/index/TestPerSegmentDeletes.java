@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -271,7 +271,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
-        int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize)
+        int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize)
         throws CorruptIndexException, IOException {
       return null;
     }

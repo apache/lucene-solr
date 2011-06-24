@@ -1,7 +1,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.CharArr;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueFloat;
 import org.apache.solr.search.MutableValueStr;
@@ -19,6 +18,11 @@ public abstract class StrDocValues extends DocValues {
   @Override
   public Object objectVal(int doc) {
     return exists(doc) ? strVal(doc) : null;
+  }
+
+  @Override
+  public boolean boolVal(int doc) {
+    return exists(doc);
   }
 
   @Override

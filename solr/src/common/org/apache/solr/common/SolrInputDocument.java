@@ -29,7 +29,7 @@ import java.util.Set;
  * a Lucene Document.  Like the SolrDocument, the field values should
  * match those specified in schema.xml 
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<SolrInputField>, Serializable

@@ -22,7 +22,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
@@ -371,10 +370,9 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(field);
     List<String> terms = StrUtils.splitSmart(termList, ",", true);
     NamedList<Integer> res = new NamedList<Integer>();
-    Term t = new Term(field);
     for (String term : terms) {
       String internal = ft.toInternal(term);
-      int count = searcher.numDocs(new TermQuery(t.createTerm(internal)), base);
+      int count = searcher.numDocs(new TermQuery(new Term(field, internal)), base);
       res.add(term, count);
     }
     return res;    
@@ -674,7 +672,7 @@ public class SimpleFacets {
 
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();
-              deState.fieldName = StringHelper.intern(field);
+              deState.fieldName = field;
               deState.deletedDocs = MultiFields.getDeletedDocs(r);
               deState.termsEnum = termsEnum;
               deState.docsEnum = docsEnum;

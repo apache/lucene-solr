@@ -182,7 +182,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
     final int bitPos =     (int)(majorBitPos & MOD_MASK); // % BLOCK_SIZE);
 
     final int base = bitPos * FAC_BITPOS;
-
+    assert elementPos < blocks.length : "elementPos: " + elementPos + "; blocks.len: " + blocks.length;
     return ((blocks[elementPos] << shifts[base]) >>> shifts[base+1]) |
             ((blocks[elementPos+1] >>> shifts[base+2]) & readMasks[bitPos]);
   }

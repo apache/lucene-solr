@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -82,6 +82,7 @@ public class TieredMergePolicy extends MergePolicy {
   private double expungeDeletesPctAllowed = 10.0;
   private boolean useCompoundFile = true;
   private double noCFSRatio = 0.1;
+  private double reclaimDeletesWeight = 2.0;
 
   /** Maximum number of segments to be merged at a time
    *  during "normal" merging.  For explicit merging (eg,
@@ -133,6 +134,23 @@ public class TieredMergePolicy extends MergePolicy {
     return maxMergedSegmentBytes/1024/1024.;
   }
 
+  /** Controls how aggressively merges that reclaim more
+   *  deletions are favored.  Higher values favor selecting
+   *  merges that reclaim deletions.  A value of 0.0 means
+   *  deletions don't impact merge selection. */
+  public TieredMergePolicy setReclaimDeletesWeight(double v) {
+    if (v < 0.0) {
+      throw new IllegalArgumentException("reclaimDeletesWeight must be >= 0.0 (got " + v + ")");
+    }
+    reclaimDeletesWeight = v;
+    return this;
+  }
+
+  /** See {@link #setReclaimDeletesWeight}. */
+  public double getReclaimDeletesWeight() {
+    return reclaimDeletesWeight;
+  }
+
   /** Segments smaller than this are "rounded up" to this
    *  size, ie treated as equal (floor) size for merge
    *  selection.  This is to prevent frequent flushing of
@@ -169,8 +187,12 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Sets the allowed number of segments per tier.  Smaller
    *  values mean more merging but fewer segments.
-   *  setMaxMergeAtOnce} otherwise you'll hit
-   *  Default is 10.0. */
+   *
+   *  <p><b>NOTE</b>: this value should be >= the {@link
+   *  #setMaxMergeAtOnce} otherwise you'll force too much
+   *  merging to occur.</p>
+   *
+   *  <p>Default is 10.0.</p> */
   public TieredMergePolicy setSegmentsPerTier(double v) {
     if (v < 2.0) {
       throw new IllegalArgumentException("segmentsPerTier must be >= 2.0 (got " + v + ")");
@@ -435,7 +457,7 @@ public class TieredMergePolicy extends MergePolicy {
 
     // Strongly favor merges that reclaim deletes:
     final double nonDelRatio = ((double) totAfterMergeBytes)/totBeforeMergeBytes;
-    mergeScore *= nonDelRatio;
+    mergeScore *= Math.pow(nonDelRatio, reclaimDeletesWeight);
 
     final double finalMergeScore = mergeScore;
 
@@ -454,7 +476,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxSegmentCount, Set<SegmentInfo> segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxSegmentCount, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     if (verbose()) {
       message("findMergesForOptimize maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToOptimize=" + segmentsToOptimize);
     }
@@ -462,8 +484,11 @@ public class TieredMergePolicy extends MergePolicy {
     List<SegmentInfo> eligible = new ArrayList<SegmentInfo>();
     boolean optimizeMergeRunning = false;
     final Collection<SegmentInfo> merging = writer.get().getMergingSegments();
+    boolean segmentIsOriginal = false;
     for(SegmentInfo info : infos) {
-      if (segmentsToOptimize.contains(info)) {
+      final Boolean isOriginal = segmentsToOptimize.get(info);
+      if (isOriginal != null) {
+        segmentIsOriginal = isOriginal;
         if (!merging.contains(info)) {
           eligible.add(info);
         } else {
@@ -477,7 +502,7 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && isOptimized(eligible.get(0)))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isOptimized(eligible.get(0))))) {
       if (verbose()) {
         message("already optimized");
       }

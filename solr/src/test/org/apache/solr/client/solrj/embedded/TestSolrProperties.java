@@ -49,7 +49,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestSolrProperties extends LuceneTestCase {

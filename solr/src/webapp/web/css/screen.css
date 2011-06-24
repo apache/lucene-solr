@@ -13,7 +13,7 @@ body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
 
 body
 {
-    padding: 20px;
+    padding: 30px;
     text-align: center;
 }
 
@@ -62,7 +62,6 @@ ul
     margin: 0 auto;
     margin-bottom: 30px;
     text-align: left;
-    width: 1002px;
 }
 
 #header
@@ -109,11 +108,9 @@ ul
 
 #main
 {
-    background-image: url( ../img/div.gif );
-    background-position: 200px 0;
-    background-repeat: repeat-y;
     border: 1px solid #c0c0c0;
     min-height: 600px;
+    min-width:750px;
     position: relative;
 }
 
@@ -186,7 +183,7 @@ ul
 #menu-wrapper
 {
     float: left;
-    width: 201px;
+    width: 20%;
 }
 
 #menu p.loader
@@ -285,7 +282,11 @@ ul
 #menu li
 {
     border-bottom: 1px solid #c0c0c0;
-    /*border-right: 1px solid #f0f0f0;*/
+}
+
+#menu li p
+{
+    border-right: 1px solid #c0c0c0;
 }
 
 #menu li.optional
@@ -293,13 +294,16 @@ ul
     display: none;
 }
 
-#menu li:last-child
+#menu li.active:last-child
 {
     border-bottom: 0;
 }
 
 #menu ul ul
 {
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
     display: none;
     padding-top: 5px;
     padding-bottom: 10px;
@@ -308,6 +312,11 @@ ul
 #menu ul .active ul
 {
     display: block;
+}
+
+#menu ul li.active:last-child ul
+{
+    border-bottom: 1px solid #f0f0f0;
 }
 
 #menu ul ul li
@@ -394,7 +403,6 @@ ul
 #menu .config a { background-image: url( ../img/ico/gear.png ); }
 #menu .analysis a { background-image: url( ../img/ico/funnel.png ); }
 #menu .schema-browser a { background-image: url( ../img/ico/book-open-text.png ); }
-#menu .stats a { background-image: url( ../img/ico/chart.png ); }
 #menu .replication a { background-image: url( ../img/ico/node.png ); }
 #menu .distribution a { background-image: url( ../img/ico/node-select.png ); }
 #menu .ping a { background-image: url( ../img/ico/system-monitor.png ); }
@@ -402,10 +410,22 @@ ul
 #menu .plugins a { background-image: url( ../img/ico/block.png ); }
 #menu .dataimport a { background-image: url( ../img/ico/document-import.png ); }
 
+#menu .ping.error
+{
+    background-color: #f7f7e9;
+}
+
+#menu .ping.error a
+{
+    background-color: transparent;
+    background-image: url( ../img/ico/system-monitor--exclamation.png );
+    cursor: help;
+}
+
 #content-wrapper
 {
     float: right;
-    width: 799px;
+    width: 80%;
 }
 
 #content
@@ -413,9 +433,10 @@ ul
     padding: 10px;
 }
 
-#content.single
+#content > .loader
 {
-    padding: 0;
+    background-position: 0 50%;
+    padding-left: 21px;
 }
 
 #content iframe
@@ -424,6 +445,12 @@ ul
     display: block;
     min-height: 400px;
     width: 100%;
+}
+
+#content > pre
+{
+    max-height: 600px;
+    overflow: auto;
 }
 
 #content .block
@@ -458,10 +485,160 @@ ul
     display: none;
 }
 
+/* syntax */
+
+pre.syntax
+{
+    overflow: auto;
+}
+
+pre.syntax code
+{
+    display: block;
+    color: #000;
+}
+
+pre.syntax .comment,
+pre.syntax .template_comment,
+pre.syntax .diff .header,
+pre.syntax .javadoc
+{
+    color: #998;
+    font-style: italic;
+}
+
+pre.syntax .keyword,
+pre.syntax .css .rule .keyword,
+pre.syntax .winutils,
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+    color: #000;
+    font-weight: bold;
+}
+
+pre.syntax .number,
+pre.syntax .hexcolor
+{
+    color: #40a070;
+}
+
+pre.syntax .string,
+pre.syntax .tag .value,
+pre.syntax .phpdoc,
+pre.syntax .tex .formula
+{
+    color: #d14;
+}
+
+pre.syntax .title,
+pre.syntax .id
+{
+    color: #900;
+    font-weight: bold;
+}
+
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+    font-weight: normal;
+}
+
+pre.syntax .class .title,
+pre.syntax .tex .command
+{
+    color: #458;
+    font-weight: bold;
+}
+
+pre.syntax .tag,
+pre.syntax .css .keyword,
+pre.syntax .html .keyword,
+pre.syntax .tag .title,
+pre.syntax .django .tag .keyword
+{
+    color: #000080;
+    font-weight: normal;
+}
+
+pre.syntax .attribute,
+pre.syntax .variable,
+pre.syntax .instancevar,
+pre.syntax .lisp .body
+{
+    color: #008080;
+}
+
+pre.syntax .regexp
+{
+    color: #009926;
+}
+
+pre.syntax .class
+{
+    color: #458;
+    font-weight: bold;
+}
+
+pre.syntax .symbol,
+pre.syntax .ruby .symbol .string,
+pre.syntax .ruby .symbol .keyword,
+pre.syntax .ruby .symbol .keymethods,
+pre.syntax .lisp .keyword,
+pre.syntax .tex .special
+{
+    color: #990073;
+}
+
+pre.syntax .builtin,
+pre.syntax .built_in,
+pre.syntax .lisp .title
+{
+    color: #0086b3;
+}
+
+pre.syntax .preprocessor,
+pre.syntax .pi,
+pre.syntax .doctype,
+pre.syntax .shebang,
+pre.syntax .cdata
+{
+    color: #999;
+    font-weight: bold;
+}
+
+pre.syntax .deletion
+{
+    background: #fdd;
+}
+
+pre.syntax .addition
+{
+    background: #dfd;
+}
+
+pre.syntax .diff .change
+{
+    background: #0086b3;
+}
+
+pre.syntax .chunk
+{
+    color: #aaa;
+}
+
+pre.syntax .tex .formula
+{
+    opacity: 0.5;
+}
+
 /* dashboard */
 
 #content #dashboard .block
 {
+    background-image: none;
     width: 49%;
 }
 
@@ -550,85 +727,13 @@ ul
     display: block;
 }
 
-#content #dashboard #replication.is-master .slave
+#content #dashboard #replication #details table thead td span
 {
     display: none;
-}
-
-#content #dashboard #replication table
-{
-    border-collapse: collapse;
-}
-
-#content #dashboard #replication table th,
-#content #dashboard #replication table td
-{
-    border: 1px solid #f0f0f0;
-    padding: 2px 5px;
-}
-
-#content #dashboard #replication table thead td
-{
-    border: 0;
-}
-
-#content #dashboard #replication table thead th,
-#content #dashboard #replication table tbody td
-{
-    border-right: 0;
-}
-
-#content #dashboard #replication table thead th
-{
-    border-top: 0;
-    font-weight: bold;
-}
-
-#content #dashboard #replication table tbody th,
-#content #dashboard #replication table tbody td
-{
-    border-bottom: 0;
-    text-align: right;
-}
-
-#content #dashboard #replication table tbody th
-{
-    border-left: 0;
-}
-
-#content #dashboard #replication table tbody th,
-#content #dashboard #replication dt
-{
-    width: 100px;
-}
-
-#content #dashboard #replication dl
-{
-    display: none;
-    margin-top: 10px;
-}
-
-#content #dashboard #replication dt,
-#content #dashboard #replication dd
-{
-    display: block;
-    padding-top: 1px;
-    padding-bottom: 1px;
-}
-
-#content #dashboard #replication dt
-{
-    border-right: 1px solid #f0f0f0;
-    float: left;
-    padding-left: 5px;
-    padding-right: 5px;
-    margin-right: 3px;
-    text-align: right;
 }
 
 #content #dashboard #dataimport
 {
-    background-color: #0ff;
     float: right;
 }
 
@@ -709,6 +814,19 @@ ul
     margin-left: 0.5%;
     min-width: 49%;
     max-width: 99%;
+}
+
+#content #analysis #analysis-error
+{
+    background-color: #f00;
+    background-image: url( ../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: #fff;
+    display: none;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
 }
 
 #content #analysis .analysis-result h2
@@ -811,6 +929,11 @@ ul
     padding: 1px 2px;
 }
 
+#content #analysis .analysis-result .row table td div.empty
+{
+    color: #f0f0f0;
+}
+
 #content #analysis .analysis-result .row table td div.match
 {
     background-color: #e9eff7;
@@ -826,25 +949,62 @@ ul
 
 /* plugins */
 
-#content #plugins .loader
+#content #plugins #navigation
+{
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
+    width: 20%;
+}
+
+#content #plugins #navigation a
 {
     background-position: 0 50%;
+    border-right: 1px solid #f0f0f0;
+    display: block;
+    margin-left: 1px;
+    padding: 3px 0;
     padding-left: 21px;
 }
 
-#content #plugins .block h2 { background-image: url( ../img/ico/block-small.png ); }
-#content #plugins #core h2 { background-image: url( ../img/ico/terminal.png ); }
-#content #plugins #queryhandler h2 { background-image: url( ../img/ico/magnifier.png ); }
-#content #plugins #updatehandler h2 { background-image: url( ../img/ico/arrow-circle.png ); }
-#content #plugins #cache h2 { background-image: url( ../img/ico/disk-black.png ); }
-#content #plugins #highlighting h2 { background-image: url( ../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .cache a { background-image: url( ../img/ico/disk-black.png ); }
+#content #plugins #navigation .core a { background-image: url( ../img/ico/toolbox.png ); }
+#content #plugins #navigation .other a { background-image: url( ../img/ico/zone.png ); }
+#content #plugins #navigation .highlighting a { background-image: url( ../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .updatehandler a{ background-image: url( ../img/ico/arrow-circle.png ); }
+#content #plugins #navigation .queryhandler a { background-image: url( ../img/ico/magnifier.png ); }
 
-#content #plugins .block .entry
+#content #plugins #navigation a:hover
 {
-    padding-top: 10px;
+    background-color: #fafafa;
 }
 
-#content #plugins .block .entry a
+#content #plugins #navigation .current a
+{
+    background-color: #fff;
+    border-right-color: #fff;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: bold;
+}
+
+#content #plugins #frame
+{
+    float: right;
+    width: 78%;
+}
+
+#content #plugins #frame .entry
+{
+    margin-bottom: 10px;
+}
+
+#content #plugins #frame .entry:last-child
+{
+    margin-bottom: 0;
+}
+
+#content #plugins #frame .entry a
 {
     background-image: url( ../img/ico/chevron-small-expand.png );
     background-position: 0 50%;
@@ -853,67 +1013,67 @@ ul
     padding-left: 21px;
 }
 
-#content #plugins .block .entry.expanded a
+#content #plugins #frame .entry.expanded a
 {
     background-image: url( ../img/ico/chevron-small.png );
 }
 
-#content #plugins .block .entry.expanded ul
+#content #plugins #frame .entry.expanded ul
 {
     display: block;
 }
 
-#content #plugins .block .entry ul
+#content #plugins #frame .entry ul
 {
     display: none;
     padding-top: 5px;
     margin-left: 21px;
 }
 
-#content #plugins .block .entry li
+#content #plugins #frame .entry li
 {
     padding-top: 2px;
     padding-bottom: 2px;
 }
 
-#content #plugins .block .entry li.stats
+#content #plugins #frame .entry li.stats
 {
     border-top: 1px solid #c0c0c0;
     margin-top: 5px;
     padding-top: 5px;
 }
 
-#content #plugins .block .entry li.odd
+#content #plugins #frame .entry li.odd
 {
     background-color: #f8f8f8;
 }
 
-#content #plugins .block .entry dt,
-#content #plugins .block .entry .stats span
+#content #plugins #frame .entry dt,
+#content #plugins #frame .entry .stats span
 {
     float: left;
     width: 11%;
 }
 
-#content #plugins .block .entry dd,
-#content #plugins .block .entry .stats ul
+#content #plugins #frame .entry dd,
+#content #plugins #frame .entry .stats ul
 {
     float: right;
     width: 88%;
 }
 
-#content #plugins .block .entry .stats ul
+#content #plugins #frame .entry .stats ul
 {
     margin: 0;
     padding: 0;
 }
 
-#content #plugins .block .entry .stats dt
+#content #plugins #frame .entry .stats dt
 {
     width: 27%;
 }
 
-#content #plugins .block .entry .stats dd
+#content #plugins #frame .entry .stats dd
 {
     width: 72%;
 }
@@ -923,14 +1083,14 @@ ul
 #content #query
 {
     background-image: url( ../img/div.gif );
-    background-position: 210px 0;
+    background-position: 22% 0;
     background-repeat: repeat-y;
 }
 
 #content #query #form
 {
     float: left;
-    width: 200px;
+    width: 21%;
 }
 
 #content #query #form label
@@ -1018,7 +1178,7 @@ ul
 {
     display: none;
     float: right;
-    width: 560px;
+    width: 77%;
 }
 
 #content #query #result #url
@@ -1334,6 +1494,12 @@ ul
     padding-left: 10px;
 }
 
+#content #schema-browser #related #f-df-t
+{
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
 #content #schema-browser #related dl
 {
     margin-top: 15px;
@@ -1367,7 +1533,9 @@ ul
 #content #schema-browser #related .dynamic-field .dynamic-field,
 #content #schema-browser #related .dynamic-field .dynamic-field a,
 #content #schema-browser #related .type .type,
-#content #schema-browser #related .type .type a
+#content #schema-browser #related .type .type a,
+#content #schema-browser #related .active,
+#content #schema-browser #related .active a
 {
     color: #333;
 }
@@ -1376,6 +1544,11 @@ ul
 #content #schema-browser #related .copyfield a
 {
     color: #666;
+}
+
+#content #schema-browser #data
+{
+    display: none;
 }
 
 #content #schema-browser #data #index dt
@@ -1491,6 +1664,7 @@ ul
 
 #content #schema-browser #data #field .topterms-holder
 {
+    display: none;
     float: left;
 }
 
@@ -1973,6 +2147,29 @@ ul
     display: none;
 }
 
+#content #threads .controls
+{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#content #threads .controls a
+{
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    padding-left: 21px;
+}
+
+#content #threads.expanded .controls a
+{
+    background-image: url( ../img/ico/chevron-small.png );
+}
+
+#content #threads.expanded .controls .expand,
+#content #threads.collapsed .controls .collapse
+{
+    display: none;
+}
+
 /* dataimport */
 
 #content #dataimport
@@ -2212,22 +2409,27 @@ ul
 
 #content #cores
 {
-    background-image: url( ../img/div.gif );
-    background-position: 150px 0;
-    background-repeat: repeat-y;
 }
 
 #content #cores #frame
 {
     float: right;
-    width: 610px;
+    width: 78%;
+}
+
+#content #cores #navigation
+{
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
+    width: 20%;
 }
 
 #content #cores #list
 {
     float: left;
     padding-top: 15px;
-    width: 151px;
+    width: 100%;
 }
 
 #content #cores #list a
@@ -2483,20 +2685,20 @@ ul
 #content #replication
 {
     background-image: url( ../img/div.gif );
-    background-position: 165px 0;
+    background-position: 21% 0;
     background-repeat: repeat-y;
 }
 
 #content #replication #frame
 {
     float: right;
-    width: 600px;
+    width: 78%;
 }
 
 #content #replication #navigation
 {
     float: left;
-    width: 161px;
+    width: 20%;
 }
 
 #content #replication #error
@@ -2830,6 +3032,7 @@ ul
 #content #replication #details table tbody .size
 {
     text-align: right;
+    white-space: nowrap;
 }
 
 #content #replication #details table tbody .generation div

@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.index.values.ValueType;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +26,8 @@ public final class FieldInfo {
   public final int number;
 
   public boolean isIndexed;
+  ValueType docValues;
+
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
@@ -38,10 +42,11 @@ public final class FieldInfo {
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
     name = na;
     isIndexed = tk;
     number = nu;
+    this.docValues = docValues;
     if (isIndexed) {
       this.storeTermVector = storeTermVector;
       this.storeOffsetWithTermVector = storeOffsetWithTermVector;
@@ -72,7 +77,7 @@ public final class FieldInfo {
   @Override
   public Object clone() {
     FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
     clone.codecId = this.codecId;
     return clone;
   }
@@ -107,8 +112,23 @@ public final class FieldInfo {
     }
     assert !this.omitTermFreqAndPositions || !this.storePayloads;
   }
-  private boolean vectorsCommitted;
+  void setDocValues(ValueType v) {
+    if (docValues == null) {
+      docValues = v;
+    }
+  }
+  
+  public boolean hasDocValues() {
+    return docValues != null;
+  }
 
+  public ValueType getDocValues() {
+    return docValues;
+  }
+  
+  private boolean vectorsCommitted;
+  private boolean docValuesCommitted;
+ 
   /**
    * Reverts all uncommitted changes on this {@link FieldInfo}
    * @see #commitVectors()
@@ -118,6 +138,10 @@ public final class FieldInfo {
       storeOffsetWithTermVector = false;
       storePositionWithTermVector = false;
       storeTermVector = false;  
+    }
+    
+    if (docValues != null && !docValuesCommitted) {
+      docValues = null;
     }
   }
 
@@ -130,5 +154,10 @@ public final class FieldInfo {
   void commitVectors() {
     assert storeTermVector;
     vectorsCommitted = true;
+  }
+  
+  void commitDocValues() {
+    assert hasDocValues();
+    docValuesCommitted = true;
   }
 }

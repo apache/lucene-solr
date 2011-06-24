@@ -34,7 +34,7 @@ import org.apache.solr.common.util.ContentStream;
 
 /**
  * This class is experimental and subject to change.
- * @version $Id: CoreAdminRequest.java 606335 2007-12-21 22:23:39Z ryan $
+ *
  * @since solr 1.3
  */
 public class CoreAdminRequest extends SolrRequest
@@ -119,6 +119,7 @@ public class CoreAdminRequest extends SolrRequest
   
   public static class MergeIndexes extends CoreAdminRequest {
     protected List<String> indexDirs;
+    protected List<String> srcCores;
 
     public MergeIndexes() {
       action = CoreAdminAction.MERGEINDEXES;
@@ -130,6 +131,14 @@ public class CoreAdminRequest extends SolrRequest
 
     public List<String> getIndexDirs() {
       return indexDirs;
+    }
+
+    public List<String> getSrcCores() {
+      return srcCores;
+    }
+
+    public void setSrcCores(List<String> srcCores) {
+      this.srcCores = srcCores;
     }
 
     @Override
@@ -145,6 +154,35 @@ public class CoreAdminRequest extends SolrRequest
           params.set(CoreAdminParams.INDEX_DIR, indexDir);
         }
       }
+      if (srcCores != null) {
+        for (String srcCore : srcCores) {
+          params.set(CoreAdminParams.SRC_CORE, srcCore);
+        }
+      }
+      return params;
+    }
+  }
+
+  public static class Unload extends CoreAdminRequest {
+    protected boolean deleteIndex;
+
+    public Unload(boolean deleteIndex) {
+      action = CoreAdminAction.UNLOAD;
+      this.deleteIndex = deleteIndex;
+    }
+
+    public boolean isDeleteIndex() {
+      return deleteIndex;
+    }
+
+    public void setDeleteIndex(boolean deleteIndex) {
+      this.deleteIndex = deleteIndex;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.DELETE_INDEX, deleteIndex);
       return params;
     }
   }
@@ -230,11 +268,15 @@ public class CoreAdminRequest extends SolrRequest
 
   public static CoreAdminResponse unloadCore( String name, SolrServer server ) throws SolrServerException, IOException
   {
-    CoreAdminRequest req = new CoreAdminRequest();
+    return unloadCore(name, false, server);
+  }
+
+  public static CoreAdminResponse unloadCore( String name, boolean deleteIndex, SolrServer server ) throws SolrServerException, IOException
+  {
+    Unload req = new Unload(deleteIndex);
     req.setCoreName( name );
-    req.setAction( CoreAdminAction.UNLOAD );
     return req.process( server );
-  }  
+  }
 
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
   {
@@ -289,11 +331,12 @@ public class CoreAdminRequest extends SolrRequest
   }
 
   public static CoreAdminResponse mergeIndexes(String name,
-      String[] indexDirs, SolrServer server) throws SolrServerException,
+      String[] indexDirs, String[] srcCores, SolrServer server) throws SolrServerException,
       IOException {
     CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
     req.setCoreName(name);
     req.setIndexDirs(Arrays.asList(indexDirs));
+    req.setSrcCores(Arrays.asList(srcCores));
     return req.process(server);
   }
 }

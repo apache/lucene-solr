@@ -46,7 +46,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.cloud.ZkController;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -72,7 +71,7 @@ import org.xml.sax.InputSource;
 /**
  * A component to elevate some documents to the top of the result set.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class QueryElevationComponent extends SearchComponent implements SolrCoreAware
@@ -161,7 +160,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
           "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using StrField" );
     }
-    idField = StringHelper.intern(sf.getName());
+    idField = sf.getName();
     
     forceElevation = initArgs.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
     try {
@@ -379,7 +378,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       if( sortSpec.getSort() == null ) {
         sortSpec.setSort( new Sort( new SortField[] {
             new SortField(idField, booster.comparatorSource, false ),
-            new SortField(null, SortField.SCORE, false)
+            new SortField(null, SortField.Type.SCORE, false)
         }));
       }
       else {
@@ -388,12 +387,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         SortField[] current = sortSpec.getSort().getSort();
         ArrayList<SortField> sorts = new ArrayList<SortField>( current.length + 1 );
         // Perhaps force it to always sort by score
-        if( force && current[0].getType() != SortField.SCORE ) {
+        if( force && current[0].getType() != SortField.Type.SCORE ) {
           sorts.add( new SortField(idField, booster.comparatorSource, false ) );
           modify = true;
         }
         for( SortField sf : current ) {
-          if( sf.getType() == SortField.SCORE ) {
+          if( sf.getType() == SortField.Type.SCORE ) {
             sorts.add( new SortField(idField, booster.comparatorSource, sf.getReverse() ) );
             modify = true;
           }
@@ -476,8 +475,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
   }
 
   @Override
-  public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
-    return new FieldComparator() {
+  public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+    return new FieldComparator<Integer>() {
       
       FieldCache.DocTermsIndex idIndex;
       private final int[] values = new int[numHits];
@@ -517,7 +516,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       @Override
-      public Comparable value(int slot) {
+      public Integer value(int slot) {
         return values[slot];
       }
     };

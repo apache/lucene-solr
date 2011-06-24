@@ -34,7 +34,7 @@ import org.apache.solr.util.SolrPluginUtils;
 /**
  * Adds debugging information to a request.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class DebugComponent extends SearchComponent

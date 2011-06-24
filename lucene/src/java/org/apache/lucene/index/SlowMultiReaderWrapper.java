@@ -26,6 +26,7 @@ import org.apache.lucene.util.ReaderUtil; // javadoc
 
 import org.apache.lucene.index.DirectoryReader; // javadoc
 import org.apache.lucene.index.MultiReader; // javadoc
+import org.apache.lucene.index.codecs.PerDocValues;
 
 /**
  * This class forces a composite reader (eg a {@link
@@ -60,8 +61,18 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   }
 
   @Override
+  public String toString() {
+    return "SlowMultiReaderWrapper(" + in + ")";
+  }
+
+  @Override
   public Fields fields() throws IOException {
     return MultiFields.getFields(in);
+  }
+
+  @Override
+  public PerDocValues perDocValues() throws IOException {
+    return MultiPerDocValues.getPerDocs(in);
   }
 
   @Override

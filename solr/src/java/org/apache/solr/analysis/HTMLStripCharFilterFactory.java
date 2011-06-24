@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre
- * @version $Id$  
+ *
  */
  public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {
 

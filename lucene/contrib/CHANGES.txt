@@ -55,10 +55,61 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+(No changes)
+
+======================= Lucene 3.3.0 =======================
+
+New Features
+
+ * LUCENE-152: Add KStem (light stemmer for English).
+   (Yonik Seeley via Robert Muir)
+
+ * LUCENE-3135: Add suggesters (autocomplete) to contrib/spellchecker,
+   with three implementations: Jaspell, Ternary Trie, and Finite State.
+   (Andrzej Bialecki, Dawid Weiss, Mike Mccandless, Robert Muir)
+ 
+ * LUCENE-3129: Added BlockGroupingCollector, a single pass
+   grouping collector which is faster than the two-pass approach, and
+   also computes the total group count, but requires that every
+   document sharing the same group was indexed as a doc block
+   (IndexWriter.add/updateDocuments).  (Mike McCandless)
+
+ * LUCENE-2955: Added NRTManager and NRTManagerReopenThread, to
+   simplify handling NRT reopen with multiple search threads, and to
+   allow an app to control which indexing changes must be visible to
+   which search requests.  (Mike McCandless)
+
+ * LUCENE-3191: Added SearchGroup.merge and TopGroups.merge, to
+   facilitate doing grouping in a distributed environment (Uwe
+   Schindler, Mike McCandless)
+
+ * LUCENE-2919: Added PKIndexSplitter, that splits an index according
+   to a middle term in a specified field.  (Jason Rutherglen via Mike
+   McCandless, Uwe Schindler)
+
 API Changes
 
  * LUCENE-3141: add getter method to access fragInfos in FieldFragList.
    (Sujit Pal via Koji Sekiguchi)
+
+ * LUCENE-3099: Allow subclasses to determine the group value for
+   First/SecondPassGroupingCollector.  (Martijn van Groningen, Mike
+   McCandless)
+
+Bug Fixes
+
+ * LUCENE-3185: Fix bug in NRTCachingDirectory.deleteFile that would
+   always throw exception and sometimes fail to actually delete the
+   file.  (Mike McCandless)
+
+ * LUCENE-3188: contrib/misc IndexSplitter creates indexes with incorrect
+   SegmentInfos.counter; added CheckIndex check & fix for this problem.
+   (Ivan Dimitrov Vasilev via Steve Rowe)
+
+Build
+
+ * LUCENE-3149: Upgrade contrib/icu's ICU jar file to ICU 4.8. 
+   (Robert Muir)
 
 ======================= Lucene 3.2.0 =======================
 

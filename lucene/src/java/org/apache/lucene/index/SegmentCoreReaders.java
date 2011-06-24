@@ -20,7 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 
 /** Holds core readers that are shared (unchanged) when
@@ -39,7 +42,8 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  
+  final PerDocValues perDocProducer;
+
   final Directory dir;
   final Directory cfsDir;
   final int readBufferSize;
@@ -49,8 +53,10 @@ final class SegmentCoreReaders {
   
   FieldsReader fieldsReaderOrig;
   TermVectorsReader termVectorsReaderOrig;
-  CompoundFileReader cfsReader;
-  CompoundFileReader storeCFSReader;
+  CompoundFileDirectory cfsReader;
+  CompoundFileDirectory storeCFSReader;
+
+  
   
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
     
@@ -68,7 +74,7 @@ final class SegmentCoreReaders {
     try {
       Directory dir0 = dir;
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+        cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         dir0 = cfsReader;
       }
       cfsDir = dir0;
@@ -76,11 +82,12 @@ final class SegmentCoreReaders {
       fieldInfos = si.getFieldInfos();
       
       this.termsIndexDivisor = termsIndexDivisor;
-      
+      final Codec codec = segmentCodecs.codec();
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor);
       // Ask codec for its Fields
-      fields = segmentCodecs.codec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
+      fields = codec.fieldsProducer(segmentReadState);
       assert fields != null;
-      
+      perDocProducer = codec.docsProducer(segmentReadState);
       success = true;
     } finally {
       if (!success) {
@@ -119,6 +126,10 @@ final class SegmentCoreReaders {
         fields.close();
       }
       
+      if (perDocProducer != null) {
+        perDocProducer.close();
+      }
+      
       if (termVectorsReaderOrig != null) {
         termVectorsReaderOrig.close();
       }
@@ -151,7 +162,7 @@ final class SegmentCoreReaders {
       if (si.getDocStoreOffset() != -1) {
         if (si.getDocStoreIsCompoundFile()) {
           assert storeCFSReader == null;
-          storeCFSReader = new CompoundFileReader(dir,
+          storeCFSReader = dir.openCompoundInput(
               IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
               readBufferSize);
           storeDir = storeCFSReader;
@@ -165,7 +176,7 @@ final class SegmentCoreReaders {
         // was not used, but then we are asked to open doc
         // stores after the segment has switched to CFS
         if (cfsReader == null) {
-          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         }
         storeDir = cfsReader;
         assert storeDir != null;

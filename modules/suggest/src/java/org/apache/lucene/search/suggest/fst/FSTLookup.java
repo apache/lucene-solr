@@ -24,6 +24,8 @@ import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.search.spell.TermFreqIterator;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 
 /**
  * Finite state automata based implementation of {@link Lookup} query 

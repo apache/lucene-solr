@@ -22,7 +22,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -290,14 +289,14 @@ class JoinQuery extends Query {
       Bits toDeletedDocs = fromSearcher == toSearcher ? fromDeletedDocs : MultiFields.getDeletedDocs(toSearcher.getIndexReader());
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
-      fromDeState.fieldName = StringHelper.intern(fromField);
+      fromDeState.fieldName = fromField;
       fromDeState.deletedDocs = fromDeletedDocs;
       fromDeState.termsEnum = termsEnum;
       fromDeState.docsEnum = null;
       fromDeState.minSetSizeCached = minDocFreqFrom;
 
       toDeState = new SolrIndexSearcher.DocsEnumState();
-      toDeState.fieldName = StringHelper.intern(toField);
+      toDeState.fieldName = toField;
       toDeState.deletedDocs = toDeletedDocs;
       toDeState.termsEnum = toTermsEnum;
       toDeState.docsEnum = null;

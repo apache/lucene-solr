@@ -155,6 +155,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+    dir.setCheckIndexOnClose(false); // don't double-checkindex
     //Directory dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
 
     if (true) {

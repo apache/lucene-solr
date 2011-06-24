@@ -73,7 +73,7 @@ public class TestElevationComparator extends LuceneTestCase {
 
     Sort sort = new Sort(
         new SortField("id", new ElevationComparatorSource(priority), false),
-        new SortField(null, SortField.SCORE, reversed)
+        new SortField(null, SortField.Type.SCORE, reversed)
       );
 
     TopDocsCollector<Entry> topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);
@@ -139,7 +139,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
   @Override
   public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
-   return new FieldComparator() {
+   return new FieldComparator<Integer>() {
 
      FieldCache.DocTermsIndex idIndex;
      private final int[] values = new int[numHits];
@@ -184,7 +184,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public Comparable<?> value(int slot) {
+     public Integer value(int slot) {
        return Integer.valueOf(values[slot]);
      }
    };

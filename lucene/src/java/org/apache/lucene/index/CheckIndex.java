@@ -27,8 +27,12 @@ import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.values.IndexDocValues;
+import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 import java.text.NumberFormat;
 import java.io.PrintStream;
@@ -116,6 +120,12 @@ public class CheckIndex {
      * argument). */
     public boolean partial;
 
+    /** The greatest segment name. */
+    public int maxSegmentName;
+
+    /** Whether the SegmentInfos.counter is greater than any of the segments' names. */
+    public boolean validCounter; 
+
     /** Holds the userData of the last commit in the index */
     public Map<String, String> userData;
 
@@ -195,6 +205,9 @@ public class CheckIndex {
 
       /** Status for testing of term vectors (null if term vectors could not be tested). */
       public TermVectorStatus termVectorStatus;
+      
+      /** Status for testing of DocValues (null if DocValues could not be tested). */
+      public DocValuesStatus docValuesStatus;
     }
 
     /**
@@ -252,6 +265,15 @@ public class CheckIndex {
       public long totVectors = 0;
       
       /** Exception thrown during term vector test (null on success) */
+      public Throwable error = null;
+    }
+    
+    public static final class DocValuesStatus {
+      /** Number of documents tested. */
+      public int docCount;
+      /** Total number of docValues tested. */
+      public long totalValueFields;
+      /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
   }
@@ -317,6 +339,27 @@ public class CheckIndex {
       return result;
     }
 
+    // find the oldest and newest segment versions
+    String oldest = Integer.toString(Integer.MAX_VALUE), newest = Integer.toString(Integer.MIN_VALUE);
+    String oldSegs = null;
+    boolean foundNonNullVersion = false;
+    Comparator<String> versionComparator = StringHelper.getVersionComparator();
+    for (SegmentInfo si : sis) {
+      String version = si.getVersion();
+      if (version == null) {
+        // pre-3.1 segment
+        oldSegs = "pre-3.1";
+      } else {
+        foundNonNullVersion = true;
+        if (versionComparator.compare(version, oldest) < 0) {
+          oldest = version;
+        }
+        if (versionComparator.compare(version, newest) > 0) {
+          newest = version;
+        }
+      }
+    }
+
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
     IndexInput input = null;
@@ -351,7 +394,7 @@ public class CheckIndex {
     } else if (format == DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
       sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_3_1) {
-      sFormat = "FORMAT_3_1 [Lucene 3.1]";
+      sFormat = "FORMAT_3_1 [Lucene 3.1+]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
       sFormat = "FORMAT_4_0 [Lucene 4.0]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_CURRENT) {
@@ -375,7 +418,19 @@ public class CheckIndex {
       userDataString = "";
     }
 
-    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat + userDataString);
+    String versionString = null;
+    if (oldSegs != null) {
+      if (foundNonNullVersion) {
+        versionString = "versions=[" + oldSegs + " .. " + newest + "]";
+      } else {
+        versionString = "version=" + oldSegs;
+      }
+    } else {
+      versionString = oldest.equals(newest) ? ( "version=" + oldest ) : ("versions=[" + oldest + " .. " + newest + "]");
+    }
+
+    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments
+        + " " + versionString + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -398,9 +453,14 @@ public class CheckIndex {
 
     result.newSegments = (SegmentInfos) sis.clone();
     result.newSegments.clear();
+    result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = sis.info(i);
+      int segmentName = Integer.parseInt(info.name.substring(1), Character.MAX_RADIX);
+      if (segmentName > result.maxSegmentName) {
+        result.maxSegmentName = segmentName;
+      }
       if (onlySegments != null && !onlySegments.contains(info.name))
         continue;
       Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
@@ -499,6 +559,8 @@ public class CheckIndex {
 
         // Test Term Vectors
         segInfoStat.termVectorStatus = testTermVectors(info, reader, nf);
+        
+        segInfoStat.docValuesStatus = testDocValues(info, reader);
 
         // Rethrow the first exception we encountered
         //  This will cause stats for failed segments to be incremented properly
@@ -510,6 +572,8 @@ public class CheckIndex {
           throw new RuntimeException("Stored Field test failed");
         } else if (segInfoStat.termVectorStatus.error != null) {
           throw new RuntimeException("Term Vector test failed");
+        }  else if (segInfoStat.docValuesStatus.error != null) {
+          throw new RuntimeException("DocValues test failed");
         }
 
         msg("");
@@ -536,9 +600,18 @@ public class CheckIndex {
 
     if (0 == result.numBadSegments) {
       result.clean = true;
-      msg("No problems were detected with this index.\n");
     } else
       msg("WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
+
+    if ( ! (result.validCounter = (result.maxSegmentName < sis.counter))) {
+      result.clean = false;
+      result.newSegments.counter = result.maxSegmentName + 1; 
+      msg("ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
+    }
+    
+    if (result.clean) {
+      msg("No problems were detected with this index.\n");
+    }
 
     return result;
   }
@@ -918,6 +991,60 @@ public class CheckIndex {
       }
     }
 
+    return status;
+  }
+  
+  private Status.DocValuesStatus testDocValues(SegmentInfo info,
+      SegmentReader reader) {
+    final Status.DocValuesStatus status = new Status.DocValuesStatus();
+    try {
+      if (infoStream != null) {
+        infoStream.print("    test: DocValues........");
+      }
+      final FieldInfos fieldInfos = info.getFieldInfos();
+      for (FieldInfo fieldInfo : fieldInfos) {
+        if (fieldInfo.hasDocValues()) {
+          status.totalValueFields++;
+          final PerDocValues perDocValues = reader.perDocValues();
+          final IndexDocValues docValues = perDocValues.docValues(fieldInfo.name);
+          if (docValues == null) {
+            continue;
+          }
+          final ValuesEnum values = docValues.getEnum();
+          while (values.nextDoc() != ValuesEnum.NO_MORE_DOCS) {
+            switch (fieldInfo.docValues) {
+            case BYTES_FIXED_DEREF:
+            case BYTES_FIXED_SORTED:
+            case BYTES_FIXED_STRAIGHT:
+            case BYTES_VAR_DEREF:
+            case BYTES_VAR_SORTED:
+            case BYTES_VAR_STRAIGHT:
+              values.bytes();
+              break;
+            case FLOAT_32:
+            case FLOAT_64:
+              values.getFloat();
+              break;
+            case INTS:
+              values.getInt();
+              break;
+            default:
+              throw new IllegalArgumentException("Field: " + fieldInfo.name
+                  + " - no such DocValues type: " + fieldInfo.docValues);
+            }
+          }
+        }
+      }
+
+      msg("OK [" + status.docCount + " total doc Count; Num DocValues Fields "
+          + status.totalValueFields);
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
     return status;
   }
 

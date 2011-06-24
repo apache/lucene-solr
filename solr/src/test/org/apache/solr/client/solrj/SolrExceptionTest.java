@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class SolrExceptionTest extends LuceneTestCase {

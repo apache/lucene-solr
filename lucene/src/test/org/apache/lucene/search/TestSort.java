@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
@@ -35,6 +36,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -61,8 +64,9 @@ import org.apache.lucene.util._TestUtil;
  */
 
 public class TestSort extends LuceneTestCase {
-
-  private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
+  // true if our codec supports docvalues: true unless codec is preflex (3.x)
+  boolean supportsDocValues = CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex") == false;
+  private static final int NUM_STRINGS = atLeast(6000);
   private IndexSearcher full;
   private IndexSearcher searchX;
   private IndexSearcher searchY;
@@ -118,13 +122,28 @@ public class TestSort extends LuceneTestCase {
         Document doc = new Document();
         doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
         doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
-        if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][2] != null) {
+          Field f = supportsDocValues ? 
+              IndexDocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.INTS)
+                               : new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED);
+          doc.add(f);
+        }
+        if (data[i][3] != null) {
+          Field f = supportsDocValues ?
+              IndexDocValuesField.set(new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_32)
+                              :  new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED);
+          doc.add(f);
+        }
         if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][8] != null) doc.add (new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][8] != null) {
+          Field f = supportsDocValues ?
+              IndexDocValuesField.set(new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_64)
+                              :  new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED);
+          doc.add(f);
+        }
         if (data[i][9] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][10] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -217,6 +236,7 @@ public class TestSort extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    
     full = getFullIndex();
     searchX = getXIndex();
     searchY = getYIndex();
@@ -228,6 +248,7 @@ public class TestSort extends LuceneTestCase {
     queryG = new TermQuery (new Term ("contents", "g"));
     queryM = new TermQuery (new Term ("contents", "m"));
     sort = new Sort();
+    
   }
   
   private ArrayList<Directory> dirs = new ArrayList<Directory>();
@@ -256,35 +277,53 @@ public class TestSort extends LuceneTestCase {
     assertMatches (full, queryY, sort, "BDFHJ");
   }
 
+  private static SortField useDocValues(SortField field) {
+    field.setUseIndexValues(true);
+    return field;
+  }
   // test sorts where the type of field is specified
   public void testTypedSort() throws Exception {
-    sort.setSort (new SortField ("int", SortField.INT), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "IGAEC");
     assertMatches (full, queryY, sort, "DHFJB");
-
-    sort.setSort (new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC );
+    
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "GCIEA");
     assertMatches (full, queryY, sort, "DHJFB");
 
-    sort.setSort (new SortField ("long", SortField.LONG), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("long", SortField.Type.LONG), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "EACGI");
     assertMatches (full, queryY, sort, "FBJHD");
 
-    sort.setSort (new SortField ("double", SortField.DOUBLE), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("double", SortField.Type.DOUBLE), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "AGICE");
     assertMatches (full, queryY, sort, "DJHBF");
-
-    sort.setSort (new SortField ("byte", SortField.BYTE), SortField.FIELD_DOC );
+    
+    sort.setSort (new SortField ("byte", SortField.Type.BYTE), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "CIGAE");
     assertMatches (full, queryY, sort, "DHFBJ");
 
-    sort.setSort (new SortField ("short", SortField.SHORT), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("short", SortField.Type.SHORT), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "IAGCE");
     assertMatches (full, queryY, sort, "DFHBJ");
 
-    sort.setSort (new SortField ("string", SortField.STRING), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("string", SortField.Type.STRING), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "AIGEC");
     assertMatches (full, queryY, sort, "DJHFB");
+    
+    if (supportsDocValues) {
+      sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC );
+      assertMatches (full, queryX, sort, "IGAEC");
+      assertMatches (full, queryY, sort, "DHFJB");
+      
+      sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), SortField.FIELD_DOC );
+      assertMatches (full, queryX, sort, "GCIEA");
+      assertMatches (full, queryY, sort, "DHJFB");
+      
+      sort.setSort (useDocValues(new SortField ("double", SortField.Type.DOUBLE)), SortField.FIELD_DOC );
+      assertMatches (full, queryX, sort, "AGICE");
+      assertMatches (full, queryY, sort, "DJHBF");
+    }
   }
   
   private static class SortMissingLastTestHelper {
@@ -330,8 +369,8 @@ public class TestSort extends LuceneTestCase {
     ScoreDoc[] result = null;
     IndexSearcher searcher = getFullStrings();
     sort.setSort(
-        new SortField("string", SortField.STRING),
-        new SortField("string2", SortField.STRING, true),
+        new SortField("string", SortField.Type.STRING),
+        new SortField("string2", SortField.Type.STRING, true),
         SortField.FIELD_DOC);
 
     result = searcher.search(new MatchAllDocsQuery(), null, 500, sort).scoreDocs;
@@ -456,17 +495,23 @@ public class TestSort extends LuceneTestCase {
     sort.setSort(SortField.FIELD_DOC);
     assertMatches (empty, queryX, sort, "");
 
-    sort.setSort (new SortField ("int", SortField.INT), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC );
+    assertMatches (empty, queryX, sort, "");
+    
+    sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC );
     assertMatches (empty, queryX, sort, "");
 
-    sort.setSort (new SortField ("string", SortField.STRING, true), SortField.FIELD_DOC );
+    sort.setSort (new SortField ("string", SortField.Type.STRING, true), SortField.FIELD_DOC );
     assertMatches (empty, queryX, sort, "");
 
-    sort.setSort (new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING) );
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT), new SortField ("string", SortField.Type.STRING) );
+    assertMatches (empty, queryX, sort, "");
+    
+    sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)), new SortField ("string", SortField.Type.STRING) );
     assertMatches (empty, queryX, sort, "");
   }
 
-  static class MyFieldComparator extends FieldComparator {
+  static class MyFieldComparator extends FieldComparator<Integer> {
     int[] docValues;
     int[] slotValues;
     int bottomValue;
@@ -482,6 +527,7 @@ public class TestSort extends LuceneTestCase {
 
     @Override
     public int compare(int slot1, int slot2) {
+      // values are small enough that overflow won't happen
       return slotValues[slot1] - slotValues[slot2];
     }
 
@@ -508,7 +554,7 @@ public class TestSort extends LuceneTestCase {
     }
 
     @Override
-    public Comparable<?> value(int slot) {
+    public Integer value(int slot) {
       return Integer.valueOf(slotValues[slot]);
     }
   }
@@ -528,77 +574,95 @@ public class TestSort extends LuceneTestCase {
 
   // test sorts in reverse
   public void testReverseSort() throws Exception {
-    sort.setSort (new SortField (null, SortField.SCORE, true), SortField.FIELD_DOC );
+    sort.setSort (new SortField (null, SortField.Type.SCORE, true), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "IEGCA");
     assertMatches (full, queryY, sort, "JFHDB");
 
-    sort.setSort (new SortField (null, SortField.DOC, true));
+    sort.setSort (new SortField (null, SortField.Type.DOC, true));
     assertMatches (full, queryX, sort, "IGECA");
     assertMatches (full, queryY, sort, "JHFDB");
 
-    sort.setSort (new SortField ("int", SortField.INT, true) );
+    sort.setSort (new SortField ("int", SortField.Type.INT, true) );
     assertMatches (full, queryX, sort, "CAEGI");
     assertMatches (full, queryY, sort, "BJFHD");
 
-    sort.setSort (new SortField ("float", SortField.FLOAT, true) );
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT, true) );
     assertMatches (full, queryX, sort, "AECIG");
     assertMatches (full, queryY, sort, "BFJHD");
-
-    sort.setSort (new SortField ("string", SortField.STRING, true) );
+    
+    sort.setSort (new SortField ("string", SortField.Type.STRING, true) );
     assertMatches (full, queryX, sort, "CEGIA");
     assertMatches (full, queryY, sort, "BFHJD");
+    
+    if (supportsDocValues) {
+      sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT, true)) );
+      assertMatches (full, queryX, sort, "CAEGI");
+      assertMatches (full, queryY, sort, "BJFHD");
+    
+      sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT, true)) );
+      assertMatches (full, queryX, sort, "AECIG");
+      assertMatches (full, queryY, sort, "BFJHD");
+    }
   }
 
   // test sorting when the sort field is empty (undefined) for some of the documents
   public void testEmptyFieldSort() throws Exception {
-    sort.setSort (new SortField ("string", SortField.STRING) );
+    sort.setSort (new SortField ("string", SortField.Type.STRING) );
     assertMatches (full, queryF, sort, "ZJI");
 
-    sort.setSort (new SortField ("string", SortField.STRING, true) );
+    sort.setSort (new SortField ("string", SortField.Type.STRING, true) );
     assertMatches (full, queryF, sort, "IJZ");
     
-    sort.setSort (new SortField ("int", SortField.INT) );
+    sort.setSort (new SortField ("int", SortField.Type.INT) );
     assertMatches (full, queryF, sort, "IZJ");
 
-    sort.setSort (new SortField ("int", SortField.INT, true) );
+    sort.setSort (new SortField ("int", SortField.Type.INT, true) );
     assertMatches (full, queryF, sort, "JZI");
 
-    sort.setSort (new SortField ("float", SortField.FLOAT) );
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT) );
     assertMatches (full, queryF, sort, "ZJI");
+
+    if (supportsDocValues) {
+      sort.setSort (useDocValues(new SortField ("int", SortField.Type.INT)) );
+      assertMatches (full, queryF, sort, "IZJ");
+    
+      sort.setSort (useDocValues(new SortField ("float", SortField.Type.FLOAT)) );
+      assertMatches (full, queryF, sort, "ZJI");
+    }
 
     // using a nonexisting field as first sort key shouldn't make a difference:
-    sort.setSort (new SortField ("nosuchfield", SortField.STRING),
-        new SortField ("float", SortField.FLOAT) );
+    sort.setSort (new SortField ("nosuchfield", SortField.Type.STRING),
+        new SortField ("float", SortField.Type.FLOAT) );
     assertMatches (full, queryF, sort, "ZJI");
 
-    sort.setSort (new SortField ("float", SortField.FLOAT, true) );
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT, true) );
     assertMatches (full, queryF, sort, "IJZ");
 
     // When a field is null for both documents, the next SortField should be used.
                 // Works for
-    sort.setSort (new SortField ("int", SortField.INT),
-                                new SortField ("string", SortField.STRING),
-        new SortField ("float", SortField.FLOAT) );
+    sort.setSort (new SortField ("int", SortField.Type.INT),
+                                new SortField ("string", SortField.Type.STRING),
+        new SortField ("float", SortField.Type.FLOAT) );
     assertMatches (full, queryG, sort, "ZWXY");
 
     // Reverse the last criterium to make sure the test didn't pass by chance
-    sort.setSort (new SortField ("int", SortField.INT),
-                                new SortField ("string", SortField.STRING),
-        new SortField ("float", SortField.FLOAT, true) );
+    sort.setSort (new SortField ("int", SortField.Type.INT),
+                                new SortField ("string", SortField.Type.STRING),
+        new SortField ("float", SortField.Type.FLOAT, true) );
     assertMatches (full, queryG, sort, "ZYXW");
 
     // Do the same for a ParallelMultiSearcher
     ExecutorService exec = Executors.newFixedThreadPool(_TestUtil.nextInt(random, 2, 8));
     IndexSearcher parallelSearcher=new IndexSearcher (full.getIndexReader(), exec);
 
-    sort.setSort (new SortField ("int", SortField.INT),
-                                new SortField ("string", SortField.STRING),
-        new SortField ("float", SortField.FLOAT) );
+    sort.setSort (new SortField ("int", SortField.Type.INT),
+                                new SortField ("string", SortField.Type.STRING),
+        new SortField ("float", SortField.Type.FLOAT) );
     assertMatches (parallelSearcher, queryG, sort, "ZWXY");
 
-    sort.setSort (new SortField ("int", SortField.INT),
-                                new SortField ("string", SortField.STRING),
-        new SortField ("float", SortField.FLOAT, true) );
+    sort.setSort (new SortField ("int", SortField.Type.INT),
+                                new SortField ("string", SortField.Type.STRING),
+        new SortField ("float", SortField.Type.FLOAT, true) );
     assertMatches (parallelSearcher, queryG, sort, "ZYXW");
     parallelSearcher.close();
     exec.shutdown();
@@ -607,13 +671,13 @@ public class TestSort extends LuceneTestCase {
 
   // test sorts using a series of fields
   public void testSortCombos() throws Exception {
-    sort.setSort (new SortField ("int", SortField.INT), new SortField ("float", SortField.FLOAT) );
+    sort.setSort (new SortField ("int", SortField.Type.INT), new SortField ("float", SortField.Type.FLOAT) );
     assertMatches (full, queryX, sort, "IGEAC");
 
-    sort.setSort (new SortField ("int", SortField.INT, true), new SortField (null, SortField.DOC, true) );
+    sort.setSort (new SortField ("int", SortField.Type.INT, true), new SortField (null, SortField.Type.DOC, true) );
     assertMatches (full, queryX, sort, "CEAGI");
 
-    sort.setSort (new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING) );
+    sort.setSort (new SortField ("float", SortField.Type.FLOAT), new SortField ("string", SortField.Type.STRING) );
     assertMatches (full, queryX, sort, "GICEA");
   }
 
@@ -876,58 +940,91 @@ public class TestSort extends LuceneTestCase {
     String expected = isFull ? "ABCDEFGHIJ" : "ACEGIBDFHJ";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort(new SortField ("int", SortField.INT));
+    sort.setSort(new SortField ("int", SortField.Type.INT));
     expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort(new SortField ("int", SortField.INT), SortField.FIELD_DOC);
+    sort.setSort(new SortField ("int", SortField.Type.INT), SortField.FIELD_DOC);
     expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort(new SortField("int", SortField.INT));
+    sort.setSort(new SortField("int", SortField.Type.INT));
     expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
     assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC);
+    
+    sort.setSort(new SortField ("float", SortField.Type.FLOAT), SortField.FIELD_DOC);
     assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort(new SortField("float", SortField.FLOAT));
+    sort.setSort(new SortField("float", SortField.Type.FLOAT));
     assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort(new SortField("string", SortField.STRING));
+    sort.setSort(new SortField("string", SortField.Type.STRING));
     assertMatches(multi, queryA, sort, "DJAIHGFEBC");
 
-    sort.setSort(new SortField("int", SortField.INT, true));
+    sort.setSort(new SortField("int", SortField.Type.INT, true));
     expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort(new SortField("float", SortField.FLOAT, true));
+    sort.setSort(new SortField("float", SortField.Type.FLOAT, true));
     assertMatches(multi, queryA, sort, "BAFECIJHDG");
 
-    sort.setSort(new SortField("string", SortField.STRING, true));
+    sort.setSort(new SortField("string", SortField.Type.STRING, true));
     assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort(new SortField("int", SortField.INT),new SortField("float", SortField.FLOAT));
+    sort.setSort(new SortField("int", SortField.Type.INT),new SortField("float", SortField.Type.FLOAT));
     assertMatches(multi, queryA, sort, "IDHFGJEABC");
 
-    sort.setSort(new SortField("float", SortField.FLOAT),new SortField("string", SortField.STRING));
+    sort.setSort(new SortField("float", SortField.Type.FLOAT),new SortField("string", SortField.Type.STRING));
     assertMatches(multi, queryA, sort, "GDHJICEFAB");
 
-    sort.setSort(new SortField ("int", SortField.INT));
+    sort.setSort(new SortField ("int", SortField.Type.INT));
     assertMatches(multi, queryF, sort, "IZJ");
 
-    sort.setSort(new SortField ("int", SortField.INT, true));
+    sort.setSort(new SortField ("int", SortField.Type.INT, true));
     assertMatches(multi, queryF, sort, "JZI");
 
-    sort.setSort(new SortField ("float", SortField.FLOAT));
+    sort.setSort(new SortField ("float", SortField.Type.FLOAT));
     assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort(new SortField ("string", SortField.STRING));
+    sort.setSort(new SortField ("string", SortField.Type.STRING));
     assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort(new SortField ("string", SortField.STRING, true));
+    sort.setSort(new SortField ("string", SortField.Type.STRING, true));
     assertMatches(multi, queryF, sort, "IJZ");
 
+    if (supportsDocValues) {
+      sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)));
+      expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+      assertMatches(multi, queryA, sort, expected);
+
+      sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)), SortField.FIELD_DOC);
+      expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+      assertMatches(multi, queryA, sort, expected);
+
+      sort.setSort(useDocValues(new SortField("int", SortField.Type.INT)));
+      expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+      assertMatches(multi, queryA, sort, expected);
+    
+      sort.setSort(useDocValues(new SortField ("float", SortField.Type.FLOAT)), SortField.FIELD_DOC);
+      assertMatches(multi, queryA, sort, "GDHJCIEFAB");
+
+      sort.setSort(useDocValues(new SortField("float", SortField.Type.FLOAT)));
+      assertMatches(multi, queryA, sort, "GDHJCIEFAB");
+    
+      sort.setSort(useDocValues(new SortField("int", SortField.Type.INT, true)));
+      expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
+      assertMatches(multi, queryA, sort, expected);
+    
+      sort.setSort(useDocValues(new SortField("int", SortField.Type.INT)), useDocValues(new SortField("float", SortField.Type.FLOAT)));
+      assertMatches(multi, queryA, sort, "IDHFGJEABC");
+    
+      sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT)));
+      assertMatches(multi, queryF, sort, "IZJ");
+
+      sort.setSort(useDocValues(new SortField ("int", SortField.Type.INT, true)));
+      assertMatches(multi, queryF, sort, "JZI");
+    }
+    
     // up to this point, all of the searches should have "sane" 
     // FieldCache behavior, and should have reused hte cache in several cases
     assertSaneFieldCaches(getName() + " various");
@@ -974,7 +1071,7 @@ public class TestSort extends LuceneTestCase {
     IndexReader r = IndexReader.open(w, true);
     w.close();
     IndexSearcher s = newSearcher(r);
-    TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));
+    TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.Type.STRING)));
     assertEquals(2, hits.totalHits);
     // null sorts first
     assertEquals(1, hits.scoreDocs[0].doc);
@@ -997,7 +1094,7 @@ public class TestSort extends LuceneTestCase {
     writer.optimize(); // enforce one segment to have a higher unique term count in all cases
     writer.close();
     sort.setSort(
-        new SortField("string", SortField.STRING),
+        new SortField("string", SortField.Type.STRING),
         SortField.FIELD_DOC );
     // this should not throw AIOOBE or RuntimeEx
     IndexSearcher searcher = new IndexSearcher(indexStore, true);

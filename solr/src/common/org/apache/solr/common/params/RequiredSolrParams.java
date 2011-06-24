@@ -31,7 +31,7 @@ import java.util.Iterator;
  * (If you pass in <code>null</code> as the default value, you can 
  * get a null return value)
  * 
- * @version $Id$
+ *
  * @since solr 1.2
  */
 public class RequiredSolrParams extends SolrParams {

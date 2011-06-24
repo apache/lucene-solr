@@ -20,6 +20,7 @@ import java.io.File;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -77,7 +78,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     _TestUtil.rmDir(destDir2);
     destDir2.mkdirs();
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
-    assertEquals(3, destDir2.listFiles().length);
+    assertEquals(4, destDir2.listFiles().length);
     Directory fsDirDest2 = newFSDirectory(destDir2);
     r = IndexReader.open(fsDirDest2, true);
     assertEquals(50, r.maxDoc());
@@ -90,5 +91,65 @@ public class TestIndexSplitter extends LuceneTestCase {
     assertEquals(2, r.getSequentialSubReaders().length);
     r.close();
     fsDir.close();
+  }
+
+  public void testDeleteThenOptimize() throws Exception {
+    // Create directories where the indexes will reside
+    File indexPath = new File(TEMP_DIR, "testfilesplitter");
+    _TestUtil.rmDir(indexPath);
+    indexPath.mkdirs();
+    File indexSplitPath = new File(TEMP_DIR, "testfilesplitterdest");
+    _TestUtil.rmDir(indexSplitPath);
+    indexSplitPath.mkdirs();
+    
+    // Create the original index
+    LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
+    mergePolicy.setNoCFSRatio(1);
+    IndexWriterConfig iwConfig
+        = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+              .setOpenMode(OpenMode.CREATE)
+              .setMergePolicy(mergePolicy);
+    Directory fsDir = newFSDirectory(indexPath);
+    IndexWriter indexWriter = new IndexWriter(fsDir, iwConfig);
+    Document doc = new Document();
+    doc.add(new Field("content", "doc 1", Field.Store.YES, Field.Index.ANALYZED_NO_NORMS));
+    indexWriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new Field("content", "doc 2", Field.Store.YES, Field.Index.ANALYZED_NO_NORMS));
+    indexWriter.addDocument(doc);
+    indexWriter.close();
+    fsDir.close();
+    
+    // Create the split index
+    IndexSplitter indexSplitter = new IndexSplitter(indexPath);
+    String splitSegName = indexSplitter.infos.info(0).name;
+    indexSplitter.split(indexSplitPath, new String[] {splitSegName});
+
+    // Delete the first document in the split index
+    Directory fsDirDest = newFSDirectory(indexSplitPath);
+    IndexReader indexReader = IndexReader.open(fsDirDest, false);
+    indexReader.deleteDocument(0);
+    assertEquals(1, indexReader.numDocs());
+    indexReader.close();
+    fsDirDest.close();
+
+    // Optimize the split index
+    mergePolicy = new LogByteSizeMergePolicy();
+    mergePolicy.setNoCFSRatio(1);
+    iwConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+                   .setOpenMode(OpenMode.APPEND)
+                   .setMergePolicy(mergePolicy);
+    fsDirDest = newFSDirectory(indexSplitPath);
+    indexWriter = new IndexWriter(fsDirDest, iwConfig);
+    indexWriter.optimize();
+    indexWriter.close();
+    fsDirDest.close();
+
+    // Read the number of docs in the index
+    fsDirDest = newFSDirectory(indexSplitPath);
+    indexReader = IndexReader.open(fsDirDest);
+	  assertEquals(1, indexReader.numDocs());
+    indexReader.close();
+    fsDirDest.close();
   }
 }

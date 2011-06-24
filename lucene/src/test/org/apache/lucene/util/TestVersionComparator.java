@@ -43,5 +43,10 @@ public class TestVersionComparator extends LuceneTestCase {
     
     assertTrue(comp.compare("1.10", "1.9") > 0);
     assertTrue(comp.compare("1.9", "1.10") < 0);
+    
+    assertTrue(comp.compare("0", "1.0") < 0);
+    assertTrue(comp.compare("00", "1.0") < 0);
+    assertTrue(comp.compare("-1.0", "1.0") < 0);
+    assertTrue(comp.compare("3.0", Integer.toString(Integer.MIN_VALUE)) > 0);
   }
 }

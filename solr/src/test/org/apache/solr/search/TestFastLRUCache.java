@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Test for FastLRUCache
  *
- * @version $Id$
+ *
  * @see org.apache.solr.search.FastLRUCache
  * @since solr 1.4
  */

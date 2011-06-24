@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.QueryComponent;
@@ -36,7 +37,7 @@ public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
 
   public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
-                                           int maxCollations, int maxTries) {
+                                           int maxCollations, int maxTries, int maxEvaluations) {
     List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
 
     QueryComponent queryComponent = null;
@@ -62,7 +63,7 @@ public class SpellCheckCollator {
 
     int tryNo = 0;
     int collNo = 0;
-    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions());
+    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), maxTries, maxEvaluations);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
       RankedSpellPossibility possibility = possibilityIter.next();
@@ -77,6 +78,7 @@ public class SpellCheckCollator {
         params.remove(CommonParams.START);
         params.set(CommonParams.FL, "id");
         params.set(CommonParams.ROWS, "0");
+        params.remove(GroupParams.GROUP);
 
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),new SolrQueryResponse(), Arrays.asList(new SearchComponent[] { queryComponent }));

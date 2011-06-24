@@ -34,6 +34,9 @@ public interface ShardParams {
   /** whether the request goes to a shard */
   public static final String IS_SHARD = "isShard";
   
+  /** The requested URL for this shard */
+  public static final String SHARD_URL = "shard.url";
+  
   /** query type for shard requests */
   public static final String SHARDS_QT = "shards.qt";
 }

@@ -99,7 +99,7 @@ public final class PagedBytes {
       }
       return b;
     }
-
+    
     /**
      * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i>.
      * <p>
@@ -183,6 +183,55 @@ public final class PagedBytes {
         assert b.length > 0;
       }
       return start;
+    }
+    
+  
+    /**
+     * Gets a slice out of {@link PagedBytes} starting at <i>start</i>, the
+     * length is read as 1 or 2 byte vInt prefix. Iff the slice spans across a
+     * block border this method will allocate sufficient resources and copy the
+     * paged data.
+     * <p>
+     * Slices spanning more than one block are not supported.
+     * </p>
+     * 
+     * @lucene.internal
+     **/
+    public BytesRef fillSliceWithPrefix(BytesRef b, long start) {
+      final int index = (int) (start >> blockBits);
+      int offset = (int) (start & blockMask);
+      final byte[] block = blocks[index];
+      final int length;
+      if ((block[offset] & 128) == 0) {
+        length = block[offset];
+        offset = offset+1;
+      } else {
+        length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
+        offset = offset+2;
+        assert length > 0;
+      }
+      assert length >= 0: "length=" + length;
+      b.length = length;
+      if (blockSize - offset >= length) {
+        // Within block
+        b.offset = offset;
+        b.bytes = blocks[index];
+      } else {
+        // Split
+        byte[] buffer = threadBuffers.get();
+        if (buffer == null) {
+          buffer = new byte[length];
+          threadBuffers.set(buffer);
+        } else if (buffer.length < length) {
+          buffer = ArrayUtil.grow(buffer, length);
+          threadBuffers.set(buffer);
+        }
+        b.bytes = buffer;
+        b.offset = 0;
+        System.arraycopy(blocks[index], offset, buffer, 0, blockSize-offset);
+        System.arraycopy(blocks[1+index], 0, buffer, blockSize-offset, length-(blockSize-offset));
+      }
+      return b;
     }
 
     /** @lucene.internal */

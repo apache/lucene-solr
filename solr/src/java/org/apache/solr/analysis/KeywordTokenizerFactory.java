@@ -29,7 +29,7 @@ import java.io.Reader;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class KeywordTokenizerFactory extends BaseTokenizerFactory {
   public KeywordTokenizer create(Reader input) {

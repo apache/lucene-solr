@@ -91,7 +91,7 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public boolean equals(Object _other) {
       FieldAndTerm other = (FieldAndTerm) _other;
-      return other.field == field && term.bytesEquals(other.term);
+      return other.field.equals(field) && term.bytesEquals(other.term);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class BlockTermsReader extends FieldsProducer {
   //private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
-                          int termsCacheSize, String codecId)
+                          int termsCacheSize, int codecId)
     throws IOException {
     
     this.postingsReader = postingsReader;
@@ -196,7 +196,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, BlockTermsWriter.TERMS_EXTENSION));
   }
 
@@ -312,13 +312,13 @@ public class BlockTermsReader extends FieldsProducer {
       private int blocksSinceSeek;
 
       private byte[] termSuffixes;
-      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput(null);
+      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput();
 
       /* Common prefix used for all terms in this block. */
       private int termBlockPrefix;
 
       private byte[] docFreqBytes;
-      private final ByteArrayDataInput freqReader = new ByteArrayDataInput(null);
+      private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
 
       public SegmentTermsEnum() throws IOException {

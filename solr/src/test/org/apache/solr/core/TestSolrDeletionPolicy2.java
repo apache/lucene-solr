@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * @version $Id$
+ *
  */
 public class TestSolrDeletionPolicy2 extends SolrTestCaseJ4 {
   @BeforeClass

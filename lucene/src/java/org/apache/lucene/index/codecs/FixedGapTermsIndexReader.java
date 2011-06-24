@@ -68,7 +68,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   protected long dirOffset;
 
-  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, String codecId)
+  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, int codecId)
     throws IOException {
 
     this.termComp = termComp;
@@ -406,7 +406,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo info, String id, Collection<String> files) {
+  public static void files(Directory dir, SegmentInfo info, int id, Collection<String> files) {
     files.add(IndexFileNames.segmentFileName(info.name, id, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 

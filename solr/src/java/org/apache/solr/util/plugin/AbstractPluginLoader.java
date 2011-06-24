@@ -33,7 +33,7 @@ import org.w3c.dom.NodeList;
 /**
  * An abstract super class that manages standard solr-style plugin configuration.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public abstract class AbstractPluginLoader<T>

@@ -18,15 +18,26 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.search.SolrIndexSearcher.QueryResult;
+import org.junit.Test;
 
 /**
  * TODO? perhaps use:
  *  http://docs.codehaus.org/display/JETTY/ServletTester
  * rather then open a real connection?
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
@@ -93,6 +104,53 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     }
     catch( Exception ex ) {
       throw new RuntimeException( ex );
+    }
+  }
+  
+  
+
+  @Test
+  public void testDistributed() throws Exception
+  {
+    UpdateRequest up = new UpdateRequest();
+    up.setAction( ACTION.COMMIT, true, true );
+    up.deleteByQuery( "*:*" );
+    up.process( getSolrCore0() );
+    up.process( getSolrCore1() );
+    up.clear();
+    
+    // Add something to each core
+    SolrInputDocument doc = new SolrInputDocument();
+    // Add to core0
+    doc.setField( "id", "core0" );
+    up.add( doc );
+    up.process( getSolrCore0() );
+    up.clear();
+
+    // Add to core1
+    doc.setField( "id", "core1" );
+    up.add( doc );
+    up.process( getSolrCore1() );
+    up.clear();
+    
+    SolrQuery q = new SolrQuery();
+    QueryRequest r = new QueryRequest( q );
+    q.setQuery( "*:*" );
+    assertEquals( 1, r.process( getSolrCore0() ).getResults().size() );
+    assertEquals( 1, r.process( getSolrCore1() ).getResults().size() );
+    
+    // Distributed
+    String baseURL = "localhost:"+port+context+"/";
+    q = new SolrQuery( "*:*" );
+    q.set( ShardParams.SHARDS, baseURL+"core0,"+baseURL+"core1" );
+    q.set( "fl", "id,s:[shard]" );
+    r = new QueryRequest( q );
+    SolrDocumentList docs = r.process( getSolrCore0() ).getResults();
+    assertEquals( 2, docs.size() );
+    for( SolrDocument d : docs ) {
+      String id = (String)d.get("id");
+      String shard = (String)d.get("s");
+      assertEquals(baseURL+id, shard); // The shard ends with the core name
     }
   }
 }

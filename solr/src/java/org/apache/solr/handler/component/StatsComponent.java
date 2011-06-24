@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.ShardParams;
@@ -42,7 +41,7 @@ import org.apache.solr.request.UnInvertedField;
 /**
  * Stats component calculates simple statistics on numeric field values
  * 
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class StatsComponent extends SearchComponent {

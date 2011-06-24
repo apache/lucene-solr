@@ -35,7 +35,7 @@ import java.io.IOException;
  * a cache and could be shared.
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public interface DocSet /* extends Collection<Integer> */ {

@@ -52,14 +52,17 @@ import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
 import org.junit.rules.TestWatchman;
@@ -160,6 +163,8 @@ public abstract class LuceneTestCase extends Assert {
   public static final String TEST_LINE_DOCS_FILE = System.getProperty("tests.linedocsfile", "europarl.lines.txt.gz");
   /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
   public static final String TEST_CLEAN_THREADS = System.getProperty("tests.cleanthreads", "perClass");
+  /** whether or not to clean threads between test invocations: "false", "perMethod", "perClass" */
+  public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
@@ -708,8 +713,12 @@ public abstract class LuceneTestCase extends Assert {
         throw e;
       }
 
+      if (insanity.length != 0) {
+        reportAdditionalFailureInfo();
+      }
+
       assertEquals(msg + ": Insane FieldCache usage(s) found",
-              0, insanity.length);
+                   0, insanity.length);
       insanity = null;
     } finally {
 
@@ -720,6 +729,47 @@ public abstract class LuceneTestCase extends Assert {
       }
 
     }
+  }
+  
+  /**
+   * Returns a number of at least <code>i</code>
+   * <p>
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}, but also with some random fudge.
+   */
+  public static int atLeast(Random random, int i) {
+    int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
+    int max = min+(min/2);
+    return _TestUtil.nextInt(random, min, max);
+  }
+  
+  public static int atLeast(int i) {
+    return atLeast(random, i);
+  }
+  
+  /**
+   * Returns true if something should happen rarely,
+   * <p>
+   * The actual number returned will be influenced by whether {@link #TEST_NIGHTLY}
+   * is active and {@link #RANDOM_MULTIPLIER}.
+   */
+  public static boolean rarely(Random random) {
+    int p = TEST_NIGHTLY ? 25 : 5;
+    p += (p * Math.log(RANDOM_MULTIPLIER));
+    int min = 100 - Math.min(p, 90); // never more than 90
+    return random.nextInt(100) >= min;
+  }
+  
+  public static boolean rarely() {
+    return rarely(random);
+  }
+  
+  public static boolean usually(Random random) {
+    return !rarely(random);
+  }
+  
+  public static boolean usually() {
+    return usually(random);
   }
 
   // @deprecated (4.0) These deprecated methods should be removed soon, when all tests using no Epsilon are fixed:
@@ -833,14 +883,22 @@ public abstract class LuceneTestCase extends Assert {
       c.setMergeScheduler(new SerialMergeScheduler());
     }
     if (r.nextBoolean()) {
-      if (r.nextInt(20) == 17) {
-        c.setMaxBufferedDocs(2);
+      if (rarely(r)) {
+        // crazy value
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
       } else {
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+        // reasonable value
+        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 8, 1000));
       }
     }
     if (r.nextBoolean()) {
-      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
+      if (rarely(r)) {
+        // crazy value
+        c.setTermIndexInterval(random.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
+      } else {
+        // reasonable value
+        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
+      }
     }
     if (r.nextBoolean()) {
       c.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(_TestUtil.nextInt(r, 1, 20)));
@@ -871,22 +929,22 @@ public abstract class LuceneTestCase extends Assert {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
     logmp.setUseCompoundFile(r.nextBoolean());
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-    if (r.nextInt(3) == 2) {
-      logmp.setMergeFactor(2);
+    if (rarely(r)) {
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 4));
     } else {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 5, 50));
     }
     return logmp;
   }
 
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
-    if (r.nextInt(3) == 2) {
-      tmp.setMaxMergeAtOnce(2);
-      tmp.setMaxMergeAtOnceExplicit(2);
+    if (rarely(r)) {
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 4));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 4));
     } else {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 20));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 30));
+      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 5, 50));
+      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 5, 50));
     }
     tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
@@ -894,6 +952,7 @@ public abstract class LuceneTestCase extends Assert {
     tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
@@ -938,8 +997,9 @@ public abstract class LuceneTestCase extends Assert {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
+    dir.setThrottling(TEST_THROTTLING);
     return dir;
-  }
+   }
 
   /**
    * Returns a new Directory instance, with contents copied from the
@@ -985,6 +1045,7 @@ public abstract class LuceneTestCase extends Assert {
         dir.setLockFactory(lf);
       }
       stores.put(dir, Thread.currentThread().getStackTrace());
+      dir.setThrottling(TEST_THROTTLING);
       return dir;
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -1003,6 +1064,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
+    dir.setThrottling(TEST_THROTTLING);
     return dir;
   }
   
@@ -1046,8 +1108,19 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
+    
+    if (usually(random)) {
+      // most of the time, don't modify the params
+      return new Field(name, value, store, index, tv);
+    }
+
+    if (random.nextBoolean()) {
+      // tickle any code still relying on field names being interned:
+      name = new String(name);
+    }
+
     if (!index.isIndexed())
-      return new Field(name, value, store, index);
+      return new Field(name, value, store, index, tv);
 
     if (!store.isStored() && random.nextBoolean())
       store = Store.YES; // randomly store it
@@ -1109,7 +1182,7 @@ public abstract class LuceneTestCase extends Assert {
   };
 
   public static String randomDirectory(Random random) {
-    if (random.nextInt(10) == 0) {
+    if (rarely(random)) {
       return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
     } else {
       return "RAMDirectory";
@@ -1171,13 +1244,11 @@ public abstract class LuceneTestCase extends Assert {
    * with one that returns null for getSequentialSubReaders.
    */
   public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) throws IOException {
-
     if (random.nextBoolean()) {
-      if (maybeWrap && random.nextBoolean()) {
-        return new IndexSearcher(new SlowMultiReaderWrapper(r));
-      } else {
-        return new IndexSearcher(r);
+      if (maybeWrap && rarely()) {
+        r = new SlowMultiReaderWrapper(r);
       }
+      return random.nextBoolean() ? new AssertingIndexSearcher(r) : new AssertingIndexSearcher(r.getTopReaderContext());
     } else {
       int threads = 0;
       final ExecutorService ex = (random.nextBoolean()) ? null
@@ -1186,20 +1257,31 @@ public abstract class LuceneTestCase extends Assert {
       if (ex != null && VERBOSE) {
         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
       }
-      return new IndexSearcher(r.getTopReaderContext(), ex) {
-        @Override
-        public void close() throws IOException {
-          super.close();
-          if (ex != null) {
-            ex.shutdown();
-            try {
-              ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
+      return random.nextBoolean() ? 
+        new AssertingIndexSearcher(r, ex) {
+          @Override
+          public void close() throws IOException {
+            super.close();
+            shutdownExecutorService(ex);
           }
-        }
-      };
+        } : new AssertingIndexSearcher(r.getTopReaderContext(), ex) {
+          @Override
+          public void close() throws IOException {
+            super.close();
+            shutdownExecutorService(ex);
+          }
+        };
+    }
+  }
+  
+  static void shutdownExecutorService(ExecutorService ex) {
+    if (ex != null) {
+      ex.shutdown();
+      try {
+        ex.awaitTermination(1000, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -1235,6 +1317,7 @@ public abstract class LuceneTestCase extends Assert {
     if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
     if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
     if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
+    if (TEST_NIGHTLY) sb.append(" -Dtests.nightly=true");
     return sb.toString();
   }
 
@@ -1380,6 +1463,7 @@ public abstract class LuceneTestCase extends Assert {
       register(new PreFlexCodec());
       register(new PulsingCodec(1));
       register(new SimpleTextCodec());
+      register(new MemoryCodec());
       Collections.shuffle(knownCodecs, random);
     }
 
@@ -1401,6 +1485,10 @@ public abstract class LuceneTestCase extends Assert {
       Codec codec = previousMappings.get(name);
       if (codec == null) {
         codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
+        if (codec instanceof SimpleTextCodec && perFieldSeed % 5 != 0) {
+          // make simpletext rarer, choose again
+          codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
+        }
         previousMappings.put(name, codec);
       }
       return codec.name;

@@ -26,8 +26,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.MultiFields;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.search.SolrSortField;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -39,7 +37,7 @@ import java.util.Map;
  * <br>
  * Often used when creating a {@link FunctionQuery}.
  *
- * @version $Id$
+ *
  */
 public abstract class ValueSource implements Serializable {
 
@@ -102,20 +100,13 @@ public abstract class ValueSource implements Serializable {
     return new ValueSourceSortField(reverse);
   }
 
-  private static FieldComparatorSource dummyComparator = new FieldComparatorSource() {
-    @Override
-    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unweighted use of sort " + fieldname);
-    }
-  };
-
-  class ValueSourceSortField extends SortField implements SolrSortField {
+  class ValueSourceSortField extends SortField {
     public ValueSourceSortField(boolean reverse) {
-      super(description(), dummyComparator, reverse);
+      super(description(), SortField.Type.REWRITEABLE, reverse);
     }
 
     @Override
-    public SortField weight(IndexSearcher searcher) throws IOException {
+    public SortField rewrite(IndexSearcher searcher) throws IOException {
       Map context = newContext(searcher);
       createWeight(context, searcher);
       return new SortField(getField(), new ValueSourceComparatorSource(context), getReverse());
@@ -141,7 +132,7 @@ public abstract class ValueSource implements Serializable {
    * off of the {@link org.apache.solr.search.function.DocValues} for a ValueSource
    * instead of the normal Lucene FieldComparator that works off of a FieldCache.
    */
-  class ValueSourceComparator extends FieldComparator {
+  class ValueSourceComparator extends FieldComparator<Double> {
     private final double[] values;
     private DocValues docVals;
     private double bottom;
@@ -195,7 +186,7 @@ public abstract class ValueSource implements Serializable {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Double value(int slot) {
       return values[slot];
     }
   }

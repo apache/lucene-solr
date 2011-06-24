@@ -133,7 +133,7 @@
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
-            value="https://hudson.apache.org/hudson/job/Lucene-trunk/javadoc/all/"/>
+            value="https://builds.apache.org/job/Lucene-trunk/javadoc/all/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${common-solr.dir}/${build.docs}/api"/>
@@ -168,7 +168,11 @@
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
-  <available property="maven.ant.tasks.present" classname="org.apache.maven.artifact.ant.Pom" />
+  <path id="maven-ant-tasks.classpath">
+    <fileset dir="${common-solr.dir}/../lucene/lib">
+      <include name="maven-ant-tasks-*.jar"/>
+    </fileset>
+  </path>
 
   <!-- End Maven Properties -->
   
@@ -194,6 +198,7 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/grouping/build/classes/java" />
   </path>   
 
   <target name="prep-lucene-jars">
@@ -210,6 +215,7 @@
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
         <fileset dir="../lucene/contrib/queries" includes="build.xml" />
         <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
+        <fileset dir="../modules/grouping" includes="build.xml" />
       </subant>
     </sequential>
   </target>
@@ -244,6 +250,9 @@
       <fileset dir="../lucene/build/contrib/spatial">
         <include name="lucene-spatial-${version}.jar" />
       </fileset>
+      <fileset dir="../modules/grouping/build">
+        <include name="lucene-grouping-${version}.jar" />
+      </fileset>
       </copy>
   </target>  
   
@@ -258,6 +267,7 @@
       <fileset dir="../lucene/contrib/misc" includes="build.xml"/>
       <fileset dir="../lucene/contrib/queries" includes="build.xml"/>
       <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
+      <fileset dir="../modules/grouping" includes="build.xml"/>
     </subant>
   </target>
    
@@ -526,6 +536,10 @@
     <contrib-crawl target="test" failonerror="true"/>
   </target>
 
+  <target name="compile-test-contrib" depends="build-contrib">
+    <contrib-crawl target="compileTests" failonerror="true"/>
+  </target>
+
   <target name="dist-contrib" description="Make the contribs ready for distribution">
   	<contrib-crawl target="dist" failonerror="true" />
   </target>
@@ -587,19 +601,6 @@
      </manifest>
   </target>
 
-  <target name="maven.ant.tasks-check">
-    <fail unless="maven.ant.tasks.present">#
-    ##########################################################################
-      Maven ant tasks not found.
-
-      Please download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar)
-      from http://maven.apache.org/ant-tasks/download.html and add it to your
-      $$HOME/.ant/lib/ directory, or to your $$ANT_HOME/lib/ directory, or
-      to your $$CLASSPATH, or add "-lib /path/to/maven-ant-tasks-2.1.1.jar"
-      to the ant command.
-    ##########################################################################
-    </fail>
-  </target>
   <!-- Validation -->
   <target name="validate" depends="validate-solr"/>
   <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>

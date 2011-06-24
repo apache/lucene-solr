@@ -12,15 +12,15 @@ Changes in backwards compatibility policy
   - On upgrading to 3.1, if you do not fully reindex your documents,
     Lucene will emulate the new flex API on top of the old index,
     incurring some performance cost (up to ~10% slowdown, typically).
-    Likewise, if you use the deprecated pre-flex APIs on a newly
-    created flex index, this emulation will also incur some
-    performance loss.
+    To prevent this slowdown, use oal.index.IndexUpgrader
+    to upgrade your indexes to latest file format (LUCENE-3082).
 
     Mixed flex/pre-flex indexes are perfectly fine -- the two
     emulation layers (flex API on pre-flex index, and pre-flex API on
     flex index) will remap the access as required.  So on upgrading to
     3.1 you can start indexing new documents into an existing index.
-    But for best performance you should fully reindex.
+    To get optimal performance, use oal.index.IndexUpgrader
+    to upgrade your indexes to latest file format (LUCENE-3082).
 
   - The postings APIs (TermEnum, TermDocsEnum, TermPositionsEnum)
     have been removed in favor of the new flexible
@@ -148,6 +148,9 @@ Changes in backwards compatibility policy
   flushDocStores" argument, as we now always flush doc stores (index
   files holding stored fields and term vectors) while flushing a
   segment.  (Mike McCandless)
+
+* LUCENE-2548: Field names (eg in Term, FieldInfo) are no longer
+  interned.  (Mike McCandless)
 
 Changes in Runtime Behavior
 
@@ -281,6 +284,10 @@ API Changes
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
 
+* LUCENE-3219: SortField type properties have been moved to an enum
+  SortField.Type.  In be consistent, CachedArrayCreator.getSortTypeID() has
+  been changed CachedArrayCreator.getSortType(). (Chris Male)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -403,6 +410,40 @@ New features
   that it inverts the index to compute the ords, but differs in that
   it's able to handle multi-valued fields and does not hold the term
   bytes in RAM. (Mike McCandless)
+  
+* LUCENE-3108, LUCENE-2935, LUCENE-2168, LUCENE-1231: Changes from 
+  IndexDocValues (ColumnStrideFields):
+  
+  - IndexWriter now supports typesafe dense per-document values stored in
+    a column like storage. IndexDocValues are stored on a per-document
+    basis where each documents field can hold exactly one value of a given
+    type. IndexDocValues are provided via Fieldable and can be used in
+    conjunction with stored and indexed values.
+     
+  - IndexDocValues provides an entirely RAM resident document id to value
+    mapping per field as well as a DocIdSetIterator based disk-resident
+    sequential access API relying on filesystem-caches.
+    
+  - Both APIs are exposed via IndexReader and the Codec / Flex API allowing
+    expert users to integrate customized IndexDocValues reader and writer
+    implementations by extending existing Codecs.
+    
+  - IndexDocValues provides implementations for primitive datatypes like int,
+    long, float, double and arrays of byte. Byte based implementations further
+    provide storage variants like straight or dereferenced stored bytes, fixed
+    and variable length bytes as well as index time sorted based on user-provided
+    comparators.
+  
+  (Mike McCandless, Simon Willnauer)  
+
+* LUCENE-3209: Added MemoryCodec, which stores all terms & postings in
+  RAM as an FST; this is good for primary-key fields if you frequently
+  need to lookup by that field or perform deletions against it, for
+  example in a near-real-time setting. (Mike McCandless)
+
+* SOLR-2533: Added support for rewriting Sort and SortFields using an
+  IndexSearcher.  SortFields can have SortField.REWRITEABLE type which
+  requires they are rewritten before they are used. (Chris Male)
 
 Optimizations
 
@@ -421,9 +462,6 @@ Optimizations
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
   
-* LUCENE-2897: Apply deleted terms while flushing a segment.  We still
-  buffer deleted terms to later apply to past segments.  (Mike McCandless)
-
 Bug fixes
 
 * LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
@@ -433,12 +471,22 @@ Bug fixes
   with more document deletions is requested before a reader with fewer
   deletions, provided they share some segments. (yonik)
 
-* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
-  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
-  including locks, and fails if the test fails to release all of them.
-  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+* LUCENE-2645: Fix false assertion error when same token was added one
+  after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
+  McCandless)
 
 ======================= Lucene 3.x (not yet released) ================
+
+Optimizations
+
+* LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
+  into a Directory implementation. Reading is optimized for MMapDirectory,
+  NIOFSDirectory and SimpleFSDirectory to only map requested parts of the
+  CFS into an IndexInput. Writing to a CFS now tries to append to the CF
+  directly if possible and merges separately written files on the fly instead
+  of during close. (Simon Willnauer, Robert Muir)
+
+======================= Lucene 3.3.0 =======================
 
 Changes in backwards compatibility policy
 
@@ -446,17 +494,118 @@ Changes in backwards compatibility policy
   of IndexInput) as its first argument.  (Robert Muir, Dawid Weiss,
   Mike McCandless)
 
+* LUCENE-3191: FieldComparator.value now returns an Object not
+  Comparable; FieldDoc.fields also changed from Comparable[] to
+  Object[] (Uwe Schindler, Mike McCandless)
+
+* LUCENE-3208: Made deprecated methods Query.weight(Searcher) and
+  Searcher.createWeight() final to prevent override. If you have
+  overridden one of these methods, cut over to the non-deprecated
+  implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
   lock file is not stored in the index has changed.  This means you
   will see a different lucene-XXX-write.lock in your lock directory.
   (Robert Muir, Uwe Schindler, Mike McCandless)
+  
+* LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
+  does not store norms. (Shai Erera, Mike McCandless)
+
+* LUCENE-3198: On Linux, if the JRE is 64 bit and supports unmapping,
+  FSDirectory.open now defaults to MMapDirectory instead of
+  NIOFSDirectory since MMapDirectory gives better performance.  (Mike
+  McCandless)
+  
+* LUCENE-3200: MMapDirectory now uses chunk sizes that are powers of 2.
+  When setting the chunk size, it is rounded down to the next possible
+  value. The new default value for 64 bit platforms is 2^30 (1 GiB),
+  for 32 bit platforms it stays unchanged at 2^28 (256 MiB).
+  Internally, MMapDirectory now only uses one dedicated final IndexInput
+  implementation supporting multiple chunks, which makes Hotspot's life
+  easier.  (Uwe Schindler, Robert Muir, Mike McCandless)
+  
+Bug fixes
+
+* LUCENE-3147,LUCENE-3152: Fixed open file handles leaks in many places in the 
+  code. Now MockDirectoryWrapper (in test-framework) tracks all open files, 
+  including locks, and fails if the test fails to release all of them.
+  (Mike McCandless, Robert Muir, Shai Erera, Simon Willnauer)
+
+* LUCENE-3102: CachingCollector.replay was failing to call setScorer
+  per-segment (Martijn van Groningen via Mike McCandless)
+
+* LUCENE-3183: Fix rare corner case where seeking to empty term
+  (field="", term="") with terms index interval 1 could hit
+  ArrayIndexOutOfBoundsException (selckin, Robert Muir, Mike
+  McCandless)
+
+* LUCENE-3208: IndexSearcher had its own private similarity field
+  and corresponding get/setter overriding Searcher's implementation. If you
+  setted a different Similarity instance on IndexSearcher, methods implemented
+  in the superclass Searcher were not using it, leading to strange bugs.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-3197: Fix core merge policies to not over-merge during
+  background optimize when documents are still being deleted
+  concurrently with the optimize (Mike McCandless)
+
+* LUCENE-3222: The RAM accounting for buffered delete terms was
+  failing to measure the space required to hold the term's field and
+  text character data.  (Mike McCandless)
+
+API Changes
+
+* LUCENE-3208: Renamed protected IndexSearcher.createWeight() to expert
+  public method IndexSearcher.createNormalizedWeight() as this better describes
+  what this method does. The old method is still there for backwards
+  compatibility. Query.weight() was deprecated and simply delegates to
+  IndexSearcher. Both deprecated methods will be removed in Lucene 4.0.
+  (Uwe Schindler, Robert Muir, Yonik Seeley)
+
+* LUCENE-3197: MergePolicy.findMergesForOptimize now takes
+  Map<SegmentInfo,Boolean> instead of Set<SegmentInfo> as the second
+  argument, so the merge policy knows which segments were originally
+  present vs produced by an optimizing merge (Mike McCandless)
+
+Optimizations
+
+* LUCENE-1736: DateTools.java general improvements. 
+  (David Smiley via Steve Rowe)
 
 New Features
 
 * LUCENE-3140: Added experimental FST implementation to Lucene.
   (Robert Muir, Dawid Weiss, Mike McCandless)
+
+* LUCENE-3193: A new TwoPhaseCommitTool allows running a 2-phase commit 
+  algorithm over objects that implement the new TwoPhaseCommit interface (such
+  as IndexWriter). (Shai Erera)
+
+* LUCENE-3191: Added TopDocs.merge, to facilitate merging results from
+  different shards (Uwe Schindler, Mike McCandless)
+
+* LUCENE-3179: Added OpenBitSet.prevSetBit (Paul Elschot via Mike McCandless)
+
+* LUCENE-3210: Made TieredMergePolicy more aggressive in reclaiming
+  segments with deletions; added new methods
+  set/getReclaimDeletesWeight to control this.  (Mike McCandless)
+
+Build
+
+* LUCENE-1344: Create OSGi bundle using dev-tools/maven.
+  (Nicolas Lalevée, Luca Stancapiano via ryan)
+  
+* LUCENE-3204: The maven-ant-tasks jar is now included in the source tree;
+  users of the generate-maven-artifacts target no longer have to manually
+  place this jar in the Ant classpath.  NOTE: when Ant looks for the 
+  maven-ant-tasks jar, it looks first in its pre-existing classpath, so
+  any copies it finds will be used instead of the copy included in the 
+  Lucene/Solr source tree.  For this reason, it is recommeded to remove
+  any copies of the maven-ant-tasks jar in the Ant classpath, e.g. under
+  ~/.ant/lib/ or under the Ant installation's lib/ directory. (Steve Rowe) 
+  
 
 ======================= Lucene 3.2.0 =======================
 

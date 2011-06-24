@@ -50,7 +50,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
-        docs = terms.docs(null, indexedBytes, null);
+        docs = terms == null ? null : terms.docs(null, indexedBytes, null);
         if (docs == null) {
           docs = new DocsEnum() {
             @Override

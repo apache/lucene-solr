@@ -25,7 +25,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * 
  * This lets us try various SolrServer implementations with the same tests.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 abstract public class SolrExampleTestBase extends AbstractSolrTestCase 

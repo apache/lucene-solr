@@ -42,7 +42,7 @@ import org.apache.solr.core.*;
  * <code>UpdateHandler</code> handles requests to change the index
  * (adds, deletes, commits, optimizes, etc).
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 
@@ -54,7 +54,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
   protected final SchemaField idField;
   protected final FieldType idFieldType;
-  protected final Term idTerm; // prototype term to avoid interning fieldname
 
   protected Vector<SolrEventListener> commitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
@@ -110,7 +109,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     schema = core.getSchema();
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
-    idTerm = idField!=null ? new Term(idField.getName(),"") : null;
     parseEventListeners();
   }
 

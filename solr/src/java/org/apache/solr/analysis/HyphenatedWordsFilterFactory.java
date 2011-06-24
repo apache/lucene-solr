@@ -30,7 +30,7 @@ import org.apache.solr.analysis.BaseTokenFilterFactory;
  *     &lt;filter class="solr.HyphenatedWordsFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
 	public HyphenatedWordsFilter create(TokenStream input) {

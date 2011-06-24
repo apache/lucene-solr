@@ -21,18 +21,7 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
 
 B. How to generate Lucene Maven artifacts
 
-   1. Prerequisites: JDK 1.5+, Ant 1.7.X, and maven-ant-tasks-2.1.1.jar
-
-      In order to generate Maven artifacts for Lucene/Solr, you must first
-      download the Maven ant tasks JAR (maven-ant-tasks-2.1.1.jar), e.g.
-      from <http://maven.apache.org/ant-tasks/download.html>, and add it
-      to any one of the following:
-
-         a. Your $HOME/.ant/lib/ directory (C:\Users\username\.ant\lib\ under
-            Windows Vista/7); or
-         b. Your $ANT_HOME/lib/ directory (%ANT_HOME%\lib\ under Windows); or
-         c. Your $CLASSPATH (%CLASSPATH% under Windows); or
-         d. Your ant commond line: "-lib /path/to/maven-ant-tasks-2.1.1.jar".
+   1. Prerequisites: JDK 1.5+ and Ant 1.7.X
 
    2. Run the following command from the lucene/ directory:
 
@@ -47,8 +36,7 @@ B. How to generate Lucene Maven artifacts
 
 C. How to generate Solr Maven artifacts
 
-   1. Prerequisites: JDK 1.6+; Ant 1.7.X; and maven-ant-tasks-2.1.1.jar 
-      (see item A.1. above for where to put the Maven ant tasks jar).
+   1. Prerequisites: JDK 1.6+ and Ant 1.7.X 
 
    2. Run the following from the solr/ directory:
 

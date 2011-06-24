@@ -43,10 +43,8 @@ public abstract class FieldsEnum {
     return atts;
   }
   
-  /** Increments the enumeration to the next field.  The
-   *  returned field is always interned, so simple ==
-   *  comparison is allowed.  Returns null when there are no
-   *  more fields.*/
+  /** Increments the enumeration to the next field. Returns
+   * null when there are no more fields.*/
   public abstract String next() throws IOException;
 
   /** Get {@link TermsEnum} for the current field.  You
@@ -55,7 +53,7 @@ public abstract class FieldsEnum {
    *  null this method should not be called. This method
    *  will not return null. */
   public abstract TermsEnum terms() throws IOException;
-
+  
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 
   /** Provides zero fields */

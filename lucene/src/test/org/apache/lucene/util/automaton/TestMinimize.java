@@ -25,7 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestMinimize extends LuceneTestCase {
   /** the minimal and non-minimal are compared to ensure they are the same. */
   public void test() {
-    int num = 2000 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random);
       Automaton b = a.clone();
@@ -38,7 +38,7 @@ public class TestMinimize extends LuceneTestCase {
    * we check not only that they are the same, but that #states/#transitions
    * are the same. */
   public void testAgainstBrzozowski() {
-    int num = 2000 * RANDOM_MULTIPLIER;
+    int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random);
       AutomatonTestUtil.minimizeSimple(a);

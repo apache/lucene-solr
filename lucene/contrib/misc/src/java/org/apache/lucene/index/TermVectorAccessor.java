@@ -15,7 +15,6 @@ package org.apache.lucene.index;
  *
  */
 
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -54,9 +53,6 @@ public class TermVectorAccessor {
    * @throws IOException
    */
   public void accept(IndexReader indexReader, int documentNumber, String fieldName, TermVectorMapper mapper) throws IOException {
-
-    fieldName = StringHelper.intern(fieldName);
-
     decoratedMapper.decorated = mapper;
     decoratedMapper.termVectorStored = false;
 

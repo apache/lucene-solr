@@ -18,8 +18,9 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.util.StringHelper; // for javadocs
+import org.apache.lucene.index.FieldInvertState;  // for javadocs
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 
 
 /**
@@ -47,6 +48,8 @@ public abstract class AbstractField implements Fieldable {
   // length/offset for all primitive types
   protected int binaryLength;
   protected int binaryOffset;
+  protected PerDocFieldValues docValues;
+
 
   protected AbstractField()
   {
@@ -55,7 +58,7 @@ public abstract class AbstractField implements Fieldable {
   protected AbstractField(String name, Field.Store store, Field.Index index, Field.TermVector termVector) {
     if (name == null)
       throw new NullPointerException("name cannot be null");
-    this.name = StringHelper.intern(name);        // field names are interned
+    this.name = name;
 
     this.isStored = store.isStored();
     this.isIndexed = index.isIndexed();
@@ -105,7 +108,7 @@ public abstract class AbstractField implements Fieldable {
     return boost;
   }
 
-  /** Returns the name of the field as an interned string.
+  /** Returns the name of the field.
    * For example "date", "title", "body", ...
    */
   public String name()    { return name; }
@@ -288,5 +291,21 @@ public abstract class AbstractField implements Fieldable {
 
     result.append('>');
     return result.toString();
+  }
+
+  public PerDocFieldValues getDocValues() {
+    return docValues;
+  }
+  
+  public void setDocValues(PerDocFieldValues docValues) {
+    this.docValues = docValues;
+  }
+  
+  public boolean hasDocValues() {
+    return docValues != null && docValues.type() != null;
+  }
+  
+  public ValueType docValuesType() {
+    return docValues == null? null : docValues.type();
   }
 }

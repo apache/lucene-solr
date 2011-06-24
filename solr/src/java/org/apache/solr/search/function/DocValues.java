@@ -27,7 +27,7 @@ import org.apache.solr.search.MutableValueFloat;
  * Represents field values as different types.
  * Normally created via a {@link ValueSource} for a particular field and reader.
  *
- * @version $Id$
+ *
  */
 
 // DocValues is distinct from ValueSource because
@@ -47,6 +47,10 @@ public abstract class DocValues {
   public double doubleVal(int doc) { throw new UnsupportedOperationException(); }
   // TODO: should we make a termVal, returns BytesRef?
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
+
+  public boolean boolVal(int doc) {
+    return intVal(doc) != 0;
+  }
 
   /** returns the bytes representation of the string val - TODO: should this return the indexed raw bytes not? */
   public boolean bytesVal(int doc, BytesRef target) {

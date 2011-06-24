@@ -34,7 +34,6 @@
   <properties>
     <module-directory>solr/contrib/clustering</module-directory>
     <build-directory>build</build-directory>
-    <tests.luceneMatchVersion>4.0</tests.luceneMatchVersion>
   </properties>
   <dependencies>
     <dependency>
@@ -63,6 +62,10 @@
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

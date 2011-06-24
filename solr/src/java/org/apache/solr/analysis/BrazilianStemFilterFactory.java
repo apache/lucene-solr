@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.br.BrazilianStemFilter;
  *     &lt;filter class="solr.BrazilianStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class BrazilianStemFilterFactory extends BaseTokenFilterFactory {
   public BrazilianStemFilter create(TokenStream in) {

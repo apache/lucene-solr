@@ -46,15 +46,18 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
+import org.apache.lucene.util.TwoPhaseCommit;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -190,7 +193,7 @@ import org.apache.lucene.util.MapBackedSet;
  * referenced by the "front" of the index). For this, IndexFileDeleter
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter implements Closeable {
+public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Name of the write lock in the index.
    */
@@ -235,7 +238,7 @@ public class IndexWriter implements Closeable {
   private DocumentsWriter docWriter;
   final IndexFileDeleter deleter;
 
-  private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
+  private Map<SegmentInfo,Boolean> segmentsToOptimize = new HashMap<SegmentInfo,Boolean>();           // used by optimize to note those needing optimization
   private int optimizeMaxNumSegments;
 
   private Lock writeLock;
@@ -1663,7 +1666,9 @@ public class IndexWriter implements Closeable {
     synchronized(this) {
       resetMergeExceptions();
       segmentsToOptimize.clear();
-      segmentsToOptimize.addAll(segmentInfos.asSet());
+      for(SegmentInfo info : segmentInfos) {
+        segmentsToOptimize.put(info, Boolean.TRUE);
+      }
       optimizeMaxNumSegments = maxNumSegments;
 
       // Now mark all pending & running merges as optimize
@@ -1671,11 +1676,13 @@ public class IndexWriter implements Closeable {
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
 
       for ( final MergePolicy.OneMerge merge: runningMerges ) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
     }
 
@@ -1887,8 +1894,7 @@ public class IndexWriter implements Closeable {
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableSet(segmentsToOptimize));
-
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableMap(segmentsToOptimize));
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
@@ -1999,6 +2005,9 @@ public class IndexWriter implements Closeable {
         // will always write to a new generation ("write
         // once").
         segmentInfos.rollbackSegmentInfos(rollbackSegments);
+        if (infoStream != null ) {
+          message("rollback: infos=" + segString(segmentInfos));
+        }
 
         docWriter.abort();
 
@@ -2183,13 +2192,19 @@ public class IndexWriter implements Closeable {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
         message("creating compound file " + compoundFileName);
         // Now build compound file
-        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-        for(String fileName : newSegment.files()) {
-          cfsWriter.addFile(fileName);
+        final Directory cfsDir = directory.createCompoundOutput(compoundFileName);
+        IOException prior = null;
+        try {
+          for(String fileName : newSegment.files()) {
+            directory.copy(cfsDir, fileName, fileName);
+          }
+        } catch(IOException ex) {
+          prior = ex;
+        } finally {
+          IOUtils.closeSafely(prior, cfsDir);
         }
-
         // Perform the merge
-        cfsWriter.close();
+        
         synchronized(this) {
           deleter.deleteNewFiles(newSegment.files());
         }
@@ -2439,6 +2454,8 @@ public class IndexWriter implements Closeable {
       flush(false, true);
 
       String mergedName = newSegmentName();
+      // TODO: somehow we should fix this merge so it's
+      // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
                                                globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
@@ -2456,6 +2473,11 @@ public class IndexWriter implements Closeable {
 
       boolean useCompoundFile;
       synchronized(this) { // Guard segmentInfos
+        if (stopMerges) {
+          deleter.deleteNewFiles(info.files());
+          return;
+        }
+        ensureOpen();
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, info);
       }
 
@@ -2471,6 +2493,11 @@ public class IndexWriter implements Closeable {
 
       // Register the new segment
       synchronized(this) {
+        if (stopMerges) {
+          deleter.deleteNewFiles(info.files());
+          return;
+        }
+        ensureOpen();
         segmentInfos.add(info);
         checkpoint();
       }
@@ -2483,20 +2510,21 @@ public class IndexWriter implements Closeable {
   private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
     String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
     Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
-    for (String file : files) {
-      String newFileName = segName + IndexFileNames.stripSegmentName(file);
-      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
-          && !IndexFileNames.isSeparateNormsFile(file)) {
-        cfsWriter.addFile(file, info.dir);
-      } else {
-        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-        info.dir.copy(directory, file, newFileName);
+    final CompoundFileDirectory cfsdir = directory.createCompoundOutput(segFileName);
+    try {
+      for (String file : files) {
+        String newFileName = segName + IndexFileNames.stripSegmentName(file);
+        if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+            && !IndexFileNames.isSeparateNormsFile(file)) {
+          info.dir.copy(cfsdir, file, file);
+        } else {
+          assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+          info.dir.copy(directory, file, newFileName);
+        }
       }
+    } finally {
+      IOUtils.closeSafely(true, cfsdir);
     }
-    
-    // Create the .cfs
-    cfsWriter.close();
     
     info.dir = directory;
     info.name = segName;
@@ -3026,7 +3054,9 @@ public class IndexWriter implements Closeable {
 
     if (merge.optimize) {
       // cascade the optimize:
-      segmentsToOptimize.add(merge.info);
+      if (!segmentsToOptimize.containsKey(merge.info)) {
+        segmentsToOptimize.put(merge.info, Boolean.FALSE);
+      }
     }
 
     return true;
@@ -3070,12 +3100,13 @@ public class IndexWriter implements Closeable {
    * 
    * @lucene.experimental
    */
-  public final void merge(MergePolicy.OneMerge merge)
+  public void merge(MergePolicy.OneMerge merge)
     throws CorruptIndexException, IOException {
 
     boolean success = false;
 
     final long t0 = System.currentTimeMillis();
+    //System.out.println(Thread.currentThread().getName() + ": merge start: size=" + (merge.estimatedMergeBytes/1024./1024.) + " MB\n  merge=" + merge.segString(directory) + "\n  idx=" + segString());
 
     try {
       try {
@@ -3116,6 +3147,7 @@ public class IndexWriter implements Closeable {
     if (infoStream != null && merge.info != null) {
       message("merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
     }
+    //System.out.println(Thread.currentThread().getName() + ": merge end");
   }
 
   /** Hook that's called when the specified merge is complete. */
@@ -3149,7 +3181,7 @@ public class IndexWriter implements Closeable {
       if (info.dir != directory) {
         isExternal = true;
       }
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.containsKey(info)) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = optimizeMaxNumSegments;
       }
@@ -3492,6 +3524,8 @@ public class IndexWriter implements Closeable {
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
+              
+              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
               deleter.deleteNewFiles(merge.info.files());
             }
           }
@@ -3734,6 +3768,8 @@ public class IndexWriter implements Closeable {
 
       assert testPoint("midStartCommit");
 
+      boolean pendingCommitSet = false;
+
       try {
         // This call can take a long time -- 10s of seconds
         // or more.  We do it without sync:
@@ -3753,6 +3789,7 @@ public class IndexWriter implements Closeable {
           toSync.prepareCommit(directory);
 
           pendingCommit = toSync;
+          pendingCommitSet = true;
           pendingCommitChangeCount = myChangeCount;
         }
 
@@ -3770,7 +3807,7 @@ public class IndexWriter implements Closeable {
           // double-write a segments_N file.
           segmentInfos.updateGeneration(toSync);
 
-          if (pendingCommit == null) {
+          if (!pendingCommitSet) {
             if (infoStream != null) {
               message("hit exception committing segments file");
             }
@@ -3846,6 +3883,7 @@ public class IndexWriter implements Closeable {
   }
 
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
+    //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     return infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any();
   }
 

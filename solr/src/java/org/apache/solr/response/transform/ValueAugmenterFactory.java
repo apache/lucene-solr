@@ -19,12 +19,13 @@ package org.apache.solr.response.transform;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ValueAugmenterFactory extends TransformerFactory
@@ -40,12 +41,9 @@ public class ValueAugmenterFactory extends TransformerFactory
     }
   }
 
-  public static Object getObjectFrom( String str )
+  public static Object getObjectFrom( String val, String type )
   {
-    int idx = str.indexOf( ':' );
-    if( idx > 0 ) {
-      String type = str.substring(0,idx);
-      String val = str.substring(idx+1);
+    if( type != null ) {
       try {
         if( "int".equals( type ) ) return Integer.valueOf( val );
         if( "double".equals( type ) ) return Double.valueOf( val );
@@ -57,14 +55,20 @@ public class ValueAugmenterFactory extends TransformerFactory
             "Unable to parse "+type+"="+val, ex );
       }
     }
-    return str;
+    return val;
   }
 
   @Override
-  public DocTransformer create(String field, String arg, SolrQueryRequest req) {
+  public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     Object val = value;
     if( val == null ) {
-      val = (arg==null)?defaultValue:getObjectFrom(arg);
+      String v = params.get("v");
+      if( v == null ) {
+        val = defaultValue;
+      }
+      else {
+        val = getObjectFrom(v, params.get("t"));
+      }
       if( val == null ) {
         throw new SolrException( ErrorCode.BAD_REQUEST,
             "ValueAugmenter is missing a value -- should be defined in solrconfig or inline" );

@@ -20,12 +20,13 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 
 /**
@@ -33,9 +34,9 @@ import org.apache.lucene.index.Term;
  */
 public class TestCustomScoreQuery extends FunctionTestSetup {
 
-  /* @override constructor */
-  public TestCustomScoreQuery() {
-    super(true);
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    createIndex(true);
   }
 
   /**
@@ -94,8 +95,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
     
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScore) {
           return subQueryScore + valSrcScore;
@@ -129,8 +130,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
           if (valSrcScores.length == 0) {
@@ -168,12 +169,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private final class CustomExternalQuery extends CustomScoreQuery {
 
     @Override
-    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) throws IOException {
-      final int[] values = FieldCache.DEFAULT.getInts(reader, INT_FIELD);
-      return new CustomScoreProvider(reader) {
+    protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
+      final int[] values = FieldCache.DEFAULT.getInts(context.reader, INT_FIELD);
+      return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
-          assertTrue(doc <= reader.maxDoc());
+          assertTrue(doc <= context.reader.maxDoc());
           return values[doc];
         }
       };
@@ -193,7 +194,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     final Query q = new CustomExternalQuery(q1);
     log(q);
 
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     TopDocs hits = s.search(q, 1000);
     assertEquals(N_DOCS, hits.totalHits);
     for(int i=0;i<N_DOCS;i++) {

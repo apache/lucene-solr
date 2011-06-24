@@ -29,7 +29,7 @@ import org.junit.BeforeClass;
 /**
  * Tests exception handling during imports in DataImportHandler
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class TestErrorHandling extends AbstractDataImportHandlerTestCase {

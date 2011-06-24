@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
  *
  * @see org.apache.solr.common.params.TermsParams
  *      See Lucene's TermEnum class
- * @version $Id$
+ *
  */
 public class TermsComponent extends SearchComponent {
   public static final int UNLIMITED_MAX_COUNT = -1;

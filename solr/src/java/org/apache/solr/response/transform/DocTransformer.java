@@ -24,7 +24,7 @@ import org.apache.solr.common.SolrDocument;
 /**
  * New instance for each request
  *
- * @version $Id$
+ *
  */
 public abstract class DocTransformer
 {

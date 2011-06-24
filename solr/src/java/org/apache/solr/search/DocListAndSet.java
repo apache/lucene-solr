@@ -28,7 +28,7 @@ package org.apache.solr.search;
  * Oh, if only java had "out" parameters or multiple return args...
  * <p>
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public final class DocListAndSet {

@@ -23,7 +23,7 @@ import org.apache.solr.search.DocList;
 /**
  * A class to hold the QueryResult and the Query
  * 
- * @version $Id$
+ *
  */
 public class ResultContext {
   public Query query;

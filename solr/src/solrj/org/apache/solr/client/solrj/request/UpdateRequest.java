@@ -34,7 +34,7 @@ import org.apache.solr.common.util.XML;
 
 /**
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {

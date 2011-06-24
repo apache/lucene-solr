@@ -59,7 +59,7 @@ import org.apache.solr.search.function.ValueSource;
  * </ul>
  * Note that multiple calls to the same URL will return the same sorting order.
  * 
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class RandomSortField extends FieldType {
@@ -102,8 +102,8 @@ public class RandomSortField extends FieldType {
 
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
     @Override
-    public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
-      return new FieldComparator() {
+    public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+      return new FieldComparator<Integer>() {
         int seed;
         private final int[] values = new int[numHits];
         int bottomVal;
@@ -135,7 +135,7 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public Comparable value(int slot) {
+        public Integer value(int slot) {
           return values[slot];
         }
       };

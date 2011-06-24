@@ -29,7 +29,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * @version $Revision$, $Date$
  */
 public class TestAnalyzingQueryParser extends LuceneTestCase {
 

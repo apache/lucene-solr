@@ -17,34 +17,36 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
 import org.apache.solr.uima.processor.ae.AEProvider;
 import org.apache.solr.uima.processor.ae.AEProviderFactory;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.uima.UIMAException;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
 
+import java.io.IOException;
+import java.util.Map;
+
 /**
  * Update document(s) to be indexed with UIMA extracted information
  *
- * @version $Id$
+ *
  */
 public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
   SolrUIMAConfiguration solrUIMAConfiguration;
 
   private AEProvider aeProvider;
+  
+  private SolrCore solrCore;
 
   public UIMAUpdateRequestProcessor(UpdateRequestProcessor next, SolrCore solrCore,
       SolrUIMAConfiguration config) {
@@ -53,6 +55,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   }
 
   private void initialize(SolrCore solrCore, SolrUIMAConfiguration config) {
+    this.solrCore = solrCore;
     solrUIMAConfiguration = config;
     aeProvider = AEProviderFactory.getInstance().getAEProvider(solrCore.getName(),
             solrUIMAConfiguration.getAePath(), solrUIMAConfiguration.getRuntimeParameters());
@@ -69,7 +72,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
       String[] texts = getTextsToAnalyze(solrInputDocument);
       for (int i = 0; i < texts.length; i++) {
         text = texts[i];
-        if (text != null && !"".equals(text)) {
+        if (text != null && text.length()>0) {
           /* process the text value */
           JCas jcas = processText(text);
 
@@ -83,21 +86,28 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
           }
         }
       }
-    } catch (UIMAException e) {
+    } catch (Exception e) {
       String logField = solrUIMAConfiguration.getLogField();
+      if(logField == null){
+        SchemaField uniqueKeyField = solrCore.getSchema().getUniqueKeyField();
+        if(uniqueKeyField != null){
+          logField = uniqueKeyField.getName();
+        }
+      }
       String optionalFieldInfo = logField == null ? "." :
         new StringBuilder(". ").append(logField).append("=")
         .append((String)cmd.getSolrInputDocument().getField(logField).getValue())
         .append(", ").toString();
-      if (solrUIMAConfiguration.isIgnoreErrors())
+      int len = Math.min(text.length(), 100);
+      if (solrUIMAConfiguration.isIgnoreErrors()) {
         log.warn(new StringBuilder("skip the text processing due to ")
           .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-          .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString());
-      else{
+          .append(" text=\"").append(text.substring(0, len)).append("...\"").toString());
+      } else {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             new StringBuilder("processing error: ")
               .append(e.getLocalizedMessage()).append(optionalFieldInfo)
-              .append(" text=\"").append(text.substring(0, 100)).append("...\"").toString(), e);
+              .append(" text=\"").append(text.substring(0, len)).append("...\"").toString(), e);
       }
     }
     super.processAdd(cmd);
@@ -109,7 +119,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   private String[] getTextsToAnalyze(SolrInputDocument solrInputDocument) {
     String[] fieldsToAnalyze = solrUIMAConfiguration.getFieldsToAnalyze();
     boolean merge = solrUIMAConfiguration.isFieldsMerging();
-    String[] textVals = null;
+    String[] textVals;
     if (merge) {
       StringBuilder unifiedText = new StringBuilder("");
       for (int i = 0; i < fieldsToAnalyze.length; i++) {

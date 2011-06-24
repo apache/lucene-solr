@@ -73,7 +73,7 @@ import java.util.*;
  * supports the "analysis.showmatch" parameter which when set to {@code true}, all field tokens that match the query
  * tokens will be marked as a "match".
  *
- * @version $Id$
+ *
  * @since solr 1.4
  */
 public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {

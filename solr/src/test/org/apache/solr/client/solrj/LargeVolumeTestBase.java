@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
 /**
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public abstract class LargeVolumeTestBase extends SolrJettyTestBase 

@@ -40,7 +40,6 @@ import org.apache.lucene.util.Bits;
  * prefix using IndexReader.terms(Term), and use MultiPhraseQuery.add(Term[]
  * terms) to add them to the query.
  *
- * @version 1.0
  */
 public class MultiPhraseQuery extends Query {
   private String field;
@@ -89,7 +88,7 @@ public class MultiPhraseQuery extends Query {
       field = terms[0].field();
 
     for (int i = 0; i < terms.length; i++) {
-      if (terms[i].field() != field) {
+      if (!terms[i].field().equals(field)) {
         throw new IllegalArgumentException(
             "All phrase terms must be in the same field (" + field + "): "
                 + terms[i]);

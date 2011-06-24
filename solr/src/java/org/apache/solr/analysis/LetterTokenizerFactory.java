@@ -30,7 +30,7 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.LetterTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class LetterTokenizerFactory extends BaseTokenizerFactory {
 

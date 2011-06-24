@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -65,12 +64,13 @@ public class TestLongPostings extends LuceneTestCase {
 
   public void testLongPostings() throws Exception {
     assumeFalse("Too slow with SimpleText codec", CodecProvider.getDefault().getFieldCodec("field").equals("SimpleText"));
+    assumeFalse("Too slow with Memory codec", CodecProvider.getDefault().getFieldCodec("field").equals("Memory"));
 
     // Don't use _TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(_TestUtil.getTempDir("longpostings" + "." + random.nextLong()));
 
-    final int NUM_DOCS = (int) ((TEST_NIGHTLY ? 4e6 : (RANDOM_MULTIPLIER*2e4)) * (1+random.nextDouble()));
+    final int NUM_DOCS = atLeast(2000);
 
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
@@ -145,7 +145,8 @@ public class TestLongPostings extends LuceneTestCase {
     assertTrue(r.docFreq(new Term("field", s1)) > 0);
     assertTrue(r.docFreq(new Term("field", s2)) > 0);
 
-    for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+    int num = atLeast(1000);
+    for(int iter=0;iter<num;iter++) {
 
       final String term;
       final boolean doS1;

@@ -28,7 +28,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.junit.Assert;
 
 /**
- * @version $Id$
+ *
  */
 public class TestUtils extends LuceneTestCase {
   public void testSplitEscaping() {

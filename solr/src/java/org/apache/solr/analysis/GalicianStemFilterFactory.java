@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.gl.GalicianStemFilter;
  *     &lt;filter class="solr.GalicianStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
- * @version $Id$
+ *
  */
 public class GalicianStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

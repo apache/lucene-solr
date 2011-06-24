@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * SolrIndexSearcher adds schema awareness and caching functionality
  * over the lucene IndexSearcher.
  *
- * @version $Id$
+ *
  * @since solr 0.9
  */
 public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
@@ -475,26 +475,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   /** Returns a weighted sort according to this searcher */
   public Sort weightSort(Sort sort) throws IOException {
-    if (sort == null) return null;
-    SortField[] sorts = sort.getSort();
-
-    boolean needsWeighting = false;
-    for (SortField sf : sorts) {
-      if (sf instanceof SolrSortField) {
-        needsWeighting = true;
-        break;
-      }
-    }
-    if (!needsWeighting) return sort;
-
-    SortField[] newSorts = Arrays.copyOf(sorts, sorts.length);
-    for (int i=0; i<newSorts.length; i++) {
-      if (newSorts[i] instanceof SolrSortField) {
-        newSorts[i] = ((SolrSortField)newSorts[i]).weight(this);
-      }
-    }
-
-    return new Sort(newSorts);
+    return (sort != null) ? sort.rewrite(this) : null;
   }
 
 
@@ -734,7 +715,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term()), false));
+      key = new TermQuery(new Term(deState.fieldName, new BytesRef(deState.termsEnum.term())));
       DocSet result = filterCache.get(key);
       if (result != null) return result;
     }
@@ -1043,7 +1024,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       useFilterCache=true;
       SortField[] sfields = cmd.getSort().getSort();
       for (SortField sf : sfields) {
-        if (sf.getType() == SortField.SCORE) {
+        if (sf.getType() == SortField.Type.SCORE) {
           useFilterCache=false;
           break;
         }

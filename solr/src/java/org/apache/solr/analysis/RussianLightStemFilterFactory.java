@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.ru.RussianLightStemFilter;
  *     &lt;filter class="solr.RussianLightStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @version $Id$
+ *
  */
 public class RussianLightStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {

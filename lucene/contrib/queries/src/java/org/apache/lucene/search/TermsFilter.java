@@ -71,7 +71,7 @@ public class TermsFilter extends Filter
       DocsEnum docs = null;
       for (Iterator<Term> iter = terms.iterator(); iter.hasNext();) {
         Term term = iter.next();
-        if (term.field() != lastField) {
+        if (!term.field().equals(lastField)) {
           termsC = fields.terms(term.field());
           termsEnum = termsC.iterator();
           lastField = term.field();

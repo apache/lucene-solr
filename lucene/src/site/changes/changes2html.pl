@@ -24,6 +24,7 @@
 use strict;
 use warnings;
 
+my $project_info_url = 'https://issues.apache.org/jira/rest/api/2.0.alpha1/project/LUCENE';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my %release_dates = &setup_release_dates;
@@ -648,8 +649,13 @@ sub get_release_date {
 # Returns a list of alternating release names and dates, for use in populating
 # the %release_dates hash.
 #
+# Pulls release dates via the JIRA REST API.  JIRA does not list
+# X.Y RCZ releases independently from releases X.Y, so the RC dates
+# as well as those named "final" are included below.
+#
 sub setup_release_dates {
-  return ( '0.01' => '2000-03-30',      '0.04' => '2000-04-19',
+  my %release_dates
+       = ( '0.01' => '2000-03-30',      '0.04' => '2000-04-19',
            '1.0' => '2000-10-04',       '1.01b' => '2001-06-02',
            '1.2 RC1' => '2001-10-02',   '1.2 RC2' => '2001-10-19',
            '1.2 RC3' => '2002-01-27',   '1.2 RC4' => '2002-02-14',
@@ -667,6 +673,21 @@ sub setup_release_dates {
            '2.4.0' => '2008-10-06',     '2.4.1' => '2009-03-09',
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
+
+  my $project_info_json = `wget --no-check-certificate -O - $project_info_url`; 
+  my $project_info = json2perl($project_info_json);
+  for my $version (@{$project_info->{versions}}) {
+    if ($version->{releaseDate}) {
+      my $date = substr($version->{releaseDate}, 0, 10);
+      my $version_name = $version->{name};
+      $release_dates{$version->{name}} = $date;
+      if ($version_name =~ /^\d+\.\d+$/) {
+        my $full_version_name = "$version->{name}.0";
+        $release_dates{$full_version_name} = $date;
+      }
+    }
+  }
+  return %release_dates;
 }
 
 
@@ -829,5 +850,16 @@ sub setup_bugzilla_jira_map {
            36628 => 432);
 }
 
+#
+# json2perl
+#
+# Converts a JSON string to the equivalent Perl data structure
+#
+sub json2perl {
+  my $json_string = shift;
+  $json_string =~ s/(:\s*)(true|false)/$1"$2"/g;
+  $json_string =~ s/":/",/g;
+  return eval $json_string;
+}
 
 1;

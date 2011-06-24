@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * {@link Scorer} implementation which scores text fragments by the number of
@@ -88,7 +87,7 @@ public class QueryScorer implements Scorer {
    * @param defaultField
    */
   public QueryScorer(Query query, IndexReader reader, String field, String defaultField) {
-    this.defaultField = StringHelper.intern(defaultField);
+    this.defaultField = defaultField;
     init(query, field, reader, true);
   }
 
@@ -96,7 +95,7 @@ public class QueryScorer implements Scorer {
    * @param defaultField - The default field for queries with the field name unspecified
    */
   public QueryScorer(Query query, String field, String defaultField) {
-    this.defaultField = StringHelper.intern(defaultField);
+    this.defaultField = defaultField;
     init(query, field, null, true);
   }
 

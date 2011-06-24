@@ -42,7 +42,6 @@ import java.util.*;
  * <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
  * details. <b>This API is experimental and subject to change</b>
  *
- * @version $Id$
  * @since solr 1.4
  */
 public class MailEntityProcessor extends EntityProcessorBase {
@@ -91,7 +90,9 @@ public class MailEntityProcessor extends EntityProcessorBase {
     fetchSize = getIntFromContext("fetchSize", 32 * 1024);
     cTimeout = getIntFromContext("connectTimeout", 30 * 1000);
     rTimeout = getIntFromContext("readTimeout", 60 * 1000);
-    processAttachment = getBoolFromContext("processAttachement", true);
+    processAttachment = getBoolFromContext(
+              getStringFromContext("processAttachment",null) == null ? "processAttachement":"processAttachment"
+            , true);
 
     logConfig();
   }

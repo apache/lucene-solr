@@ -119,7 +119,29 @@ public class TestQueryTypes extends AbstractSolrTestCase {
       assertQ(req( "q", "{!frange v="+f+" l='"+v+"' u='"+v+"'}" )
               ,"//result[@numFound='1']"
               );
-      
+
+      // exists()
+      assertQ(req( "fq","id:999", "q", "{!frange l=1 u=1}if(exists("+f+"),1,0)" )
+              ,"//result[@numFound='1']"
+              );
+
+      // boolean value of non-zero values (just leave off the exists from the prev test)
+      assertQ(req( "fq","id:999", "q", "{!frange l=1 u=1}if("+f+",1,0)" )
+              ,"//result[@numFound='1']"
+              );
+
+      if (!"id".equals(f)) {
+        assertQ(req( "fq","id:1", "q", "{!frange l=1 u=1}if(exists("+f+"),1,0)" )
+            ,"//result[@numFound='0']"
+        );
+
+       // boolean value of zero/missing values (just leave off the exists from the prev test)
+       assertQ(req( "fq","id:1", "q", "{!frange l=1 u=1}if("+f+",1,0)" )
+            ,"//result[@numFound='0']"
+        );
+
+      }
+
       // function query... just make sure it doesn't throw an exception
       if ("v_s".equals(f)) continue;  // in this context, functions must be able to be interpreted as a float
       assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")

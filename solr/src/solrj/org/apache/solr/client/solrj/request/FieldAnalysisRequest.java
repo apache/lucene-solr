@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
  *
- * @version $Id$
+ *
  * @since solr.14
  */
 public class FieldAnalysisRequest extends SolrRequest {

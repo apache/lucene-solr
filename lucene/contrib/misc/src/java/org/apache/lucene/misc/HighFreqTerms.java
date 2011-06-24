@@ -97,7 +97,7 @@ public class HighFreqTerms {
   private static void usage() {
     System.out
         .println("\n\n"
-            + "java org.apache.lucene.misc.HighFreqTerms <index dir> [-t][number_terms] [field]\n\t -t: include totalTermFreq\n\n");
+            + "java org.apache.lucene.misc.HighFreqTerms <index dir> [-t] [number_terms] [field]\n\t -t: include totalTermFreq\n\n");
   }
   /**
    * 

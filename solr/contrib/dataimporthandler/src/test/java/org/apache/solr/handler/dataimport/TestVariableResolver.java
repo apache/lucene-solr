@@ -27,7 +27,7 @@ import java.util.*;
  * Test for VariableResolver
  * </p>
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class TestVariableResolver extends AbstractDataImportHandlerTestCase {

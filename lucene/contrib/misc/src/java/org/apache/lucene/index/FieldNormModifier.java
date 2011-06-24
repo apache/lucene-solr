@@ -27,7 +27,6 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -111,7 +110,6 @@ public class FieldNormModifier {
    * @param field the field whose norms should be reset
    */
   public void reSetNorms(String field) throws IOException {
-    String fieldName = StringHelper.intern(field);
     Similarity fieldSim = sim.get(field); 
     IndexReader reader = null;
     try {
@@ -149,7 +147,7 @@ public class FieldNormModifier {
         for (int d = 0; d < termCounts.length; d++) {
           if (delDocs == null || !delDocs.get(d)) {
             invertState.setLength(termCounts[d]);
-            subReader.setNorm(d, fieldName, fieldSim.encodeNormValue(fieldSim.computeNorm(invertState)));
+            subReader.setNorm(d, field, fieldSim.encodeNormValue(fieldSim.computeNorm(invertState)));
           }
         }
       }

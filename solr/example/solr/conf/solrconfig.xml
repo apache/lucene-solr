@@ -123,7 +123,9 @@
     <!-- Expert: Merge Policy 
 
          The Merge Policy in Lucene controls how merging is handled by
-         Lucene.  The default in 2.3 is the LogByteSizeMergePolicy,
+         Lucene.  The default in Solr 3.3 is TieredMergePolicy.
+         
+         The default in 2.3 was the LogByteSizeMergePolicy,
          previous versions used LogDocMergePolicy.
          
          LogByteSizeMergePolicy chooses segments to merge based on
@@ -134,7 +136,7 @@
          constructor
       -->
     <!--
-       <mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>
+       <mergePolicy class="org.apache.lucene.index.TieredMergePolicy"/>
        -->
 
     <!-- Expert: Merge Scheduler
@@ -273,7 +275,7 @@
          http://wiki.apache.org/solr/UpdateXmlMessages
 
          maxDocs - Maximum number of documents to add since the last
-                   commit before automaticly triggering a new commit.
+                   commit before automatically triggering a new commit.
 
          maxTime - Maximum amount of time that is allowed to pass
                    since a document was added before automaticly
@@ -503,7 +505,7 @@
         that.
 
         For most situations, this will not be useful unless you
-        frequently get the same search repeatedly with differnet sort
+        frequently get the same search repeatedly with different sort
         options, and none of them ever use "score"
      -->
    <!--
@@ -593,7 +595,7 @@
 
        handleSelect="true" will cause the SolrDispatchFilter to process
        the request and will result in consistent error handling and
-       formating for all types of requests.
+       formatting for all types of requests.
 
        handleSelect="false" will cause the SolrDispatchFilter to
        ignore "/select" requests and fallback to using the legacy
@@ -607,10 +609,10 @@
          those requests
 
          enableRemoteStreaming - enables use of the stream.file
-         and stream.url paramaters for specifying remote streams.
+         and stream.url parameters for specifying remote streams.
 
          multipartUploadLimitInKB - specifies the max size of
-         Multipart File Uploads that Solr will alow in a Request.
+         Multipart File Uploads that Solr will allow in a Request.
          
          *** WARNING ***
          The settings below authorize Solr to fetch remote files, You
@@ -643,7 +645,7 @@
          <cacheControl>max-age=30, public</cacheControl> 
        </httpCaching>
       -->
-    <!-- To enable Solr to responde with automaticly generated HTTP
+    <!-- To enable Solr to respond with automatically generated HTTP
          Caching headers, and to response to Cache Validation requests
          correctly, set the value of never304="false"
          
@@ -657,12 +659,12 @@
          Last-Modified value (and validation against If-Modified-Since
          requests) will all be relative to when the current Searcher
          was opened.  You can change it to lastModFrom="dirLastMod" if
-         you want the value to exactly corrispond to when the physical
+         you want the value to exactly correspond to when the physical
          index was last modified.
 
          etagSeed="..." is an option you can change to force the ETag
          header (and validation against If-None-Match requests) to be
-         differnet even if the index has not changed (ie: when making
+         different even if the index has not changed (ie: when making
          significant changes to your config file)
 
          (lastModifiedFrom and etagSeed are both ignored if you use
@@ -771,7 +773,7 @@
        This example SearchHandler declaration shows off usage of the
        SearchHandler with many defaults declared
 
-       Note that multiple instances of hte same Request Handler
+       Note that multiple instances of the same Request Handler
        (SearchHandler) can be registered multiple times with different
        names (and different init parameters)
     -->
@@ -953,12 +955,12 @@
        </docs>
 
     Note: Each document must contain a field which serves as the
-    unique key. This key is used in the returned response to assoicate
-    ananalysis breakdown to the analyzed document.
+    unique key. This key is used in the returned response to associate
+    an analysis breakdown to the analyzed document.
 
     Like the FieldAnalysisRequestHandler, this handler also supports
     query analysis by sending either an "analysis.query" or "q"
-    request paraemter that holds the query text to be analyized. It
+    request parameter that holds the query text to be analyzed. It
     also supports the "analysis.showmatch" parameter which when set to
     true, all field tokens that match the query tokens will be marked
     as a "match". 
@@ -974,7 +976,7 @@
     -->
   <requestHandler name="/admin/" 
                   class="solr.admin.AdminHandlers" />
-  <!-- This single handler is equivilent to the following... -->
+  <!-- This single handler is equivalent to the following... -->
   <!--
      <requestHandler name="/admin/luke"       class="solr.admin.LukeRequestHandler" />
      <requestHandler name="/admin/system"     class="solr.admin.SystemInfoHandler" />
@@ -1043,7 +1045,7 @@
        Search components are registered to SolrCore and used by 
        instances of SearchHandler (which can access them by name)
        
-       By default, the following components are avaliable:
+       By default, the following components are available:
        
        <searchComponent name="query"     class="solr.QueryComponent" />
        <searchComponent name="facet"     class="solr.FacetComponent" />
@@ -1096,13 +1098,16 @@
          component
       -->
 
-    <!-- a spellchecker built from a field of hte main index, and
+    <!-- a spellchecker built from a field of the main index, and
          written to disk
       -->
     <lst name="spellchecker">
       <str name="name">default</str>
       <str name="field">name</str>
       <str name="spellcheckIndexDir">spellchecker</str>
+      <!-- uncomment this to require terms to occur in 1% of the documents in order to be included in the dictionary
+      	<float name="thresholdTokenFrequency">.01</float>
+      -->
     </lst>
 
     <!-- a spellchecker that uses no auxiliary on disk index -->
@@ -1111,7 +1116,7 @@
          <str name="name">direct</str>
          <str name="field">name</str>
          <str name="classname">solr.DirectSolrSpellChecker</str>
-         <str name="minPrefix">1</str>
+         <int name="minPrefix">1</int>
        </lst>
       -->
 

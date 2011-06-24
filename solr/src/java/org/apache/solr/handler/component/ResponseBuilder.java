@@ -36,7 +36,7 @@ import java.util.Map;
 /**
  * This class is experimental and will be changing in the future.
  *
- * @version $Id$
+ *
  * @since solr 1.3
  */
 public class ResponseBuilder

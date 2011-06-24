@@ -16,25 +16,24 @@
  */
 package org.apache.solr.response.transform;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Add values from a ValueSource (function query etc)
  *
  * NOT really sure how or if this could work...
  *
- * @version $Id$
+ *
  * @since solr 4.0
  */
 public class ValueSourceAugmenter extends DocTransformer
@@ -60,12 +59,17 @@ public class ValueSourceAugmenter extends DocTransformer
 
   @Override
   public void setContext( TransformContext context ) {
-    IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
-    readerContexts = reader.getTopReaderContext().leaves();
-    docValuesArr = new DocValues[readerContexts.length];
+    try {
+      IndexReader reader = qparser.getReq().getSearcher().getIndexReader();
+      readerContexts = reader.getTopReaderContext().leaves();
+      docValuesArr = new DocValues[readerContexts.length];
 
-    searcher = qparser.getReq().getSearcher();
-    this.fcontext = valueSource.newContext(searcher);
+      searcher = qparser.getReq().getSearcher();
+      fcontext = ValueSource.newContext(searcher);
+      this.valueSource.createWeight(fcontext, searcher);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
 
