@@ -63,6 +63,12 @@ public class TestFieldsReader extends LuceneTestCase {
     writer.addDocument(testDoc);
     writer.close();
   }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    FaultyIndexInput.doFail = false;
+  }
 
   @AfterClass
   public static void afterClass() throws Exception {
