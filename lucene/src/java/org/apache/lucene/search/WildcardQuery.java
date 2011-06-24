@@ -52,10 +52,14 @@ public class WildcardQuery extends MultiTermQuery {
 
   @Override
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    if (termContainsWildcard)
+    if (termIsPrefix) {
+      return new PrefixTermEnum(reader, term.createTerm(term.text()
+          .substring(0, term.text().indexOf('*')))); 
+    } else if (termContainsWildcard) {
       return new WildcardTermEnum(reader, getTerm());
-    else
+    } else {
       return new SingleTermEnum(reader, getTerm());
+    }
   }
   
   /**
@@ -63,19 +67,6 @@ public class WildcardQuery extends MultiTermQuery {
    */
   public Term getTerm() {
     return term;
-  }
-
-  @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    if (termIsPrefix) {
-      MultiTermQuery rewritten = new PrefixQuery(term.createTerm(term.text()
-          .substring(0, term.text().indexOf('*'))));
-      rewritten.setBoost(getBoost());
-      rewritten.setRewriteMethod(getRewriteMethod());
-      return rewritten;
-    } else {
-      return super.rewrite(reader);
-    }
   }
   
   /** Prints a user-readable version of this query. */

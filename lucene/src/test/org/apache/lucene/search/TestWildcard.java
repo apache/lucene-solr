@@ -128,31 +128,8 @@ public class TestWildcard
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
-    
-    MultiTermQuery expected = new PrefixQuery(new Term("field", "prefix"));
-    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    wq.setBoost(0.1F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    wq.setBoost(0.2F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-    wq.setBoost(0.3F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
-    wq.setBoost(0.4F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    assertTrue(wq.getEnum(searcher.getIndexReader()) instanceof PrefixTermEnum);
+   
     searcher.close();
     indexStore.close();
   }
