@@ -56,7 +56,6 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * List of typical Brazilian Portuguese stopwords.
 	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
-  // TODO make this private in 3.1
 	@Deprecated
 	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
