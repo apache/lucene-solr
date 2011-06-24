@@ -256,7 +256,8 @@ Upgrading from Solr 3.2.0
  * SolrCore's CloseHook API has been changed in a backward-incompatible way. It
    has been changed from an interface to an abstract class. Any custom 
    components which use the SolrCore.addCloseHook method will need to
-   be modified accordingly.
+   be modified accordingly. To migrate, put your old CloseHook#close impl into
+   CloseHook#preClose.
 
 New Features
 ----------------------
