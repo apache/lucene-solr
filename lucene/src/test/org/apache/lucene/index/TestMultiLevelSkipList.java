@@ -41,6 +41,11 @@ import org.apache.lucene.util.LuceneTestCase;
  * 
  */
 public class TestMultiLevelSkipList extends LuceneTestCase {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    PayloadFilter.count = 0;
+  }
 
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
