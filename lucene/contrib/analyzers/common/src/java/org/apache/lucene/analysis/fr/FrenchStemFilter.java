@@ -66,7 +66,7 @@ public final class FrenchStemFilter extends TokenFilter {
    * @param exclusiontable a set of terms not to be stemmed
    * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
-	@Deprecated // TODO remove in 3.2
+	@Deprecated
 	public FrenchStemFilter( TokenStream in, Set<?> exclusiontable ) {
 		this( in );
 		exclusions = exclusiontable;
@@ -104,7 +104,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	 * Set an alternative exclusion list for this filter.
    * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
 	 */
-	@Deprecated // TODO remove in 3.2
+	@Deprecated
 	public void setExclusionTable( Map<?,?> exclusiontable ) {
 		exclusions = exclusiontable.keySet();
 	}
