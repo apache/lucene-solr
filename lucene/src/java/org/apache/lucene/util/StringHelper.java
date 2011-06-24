@@ -65,7 +65,7 @@ public abstract class StringHelper {
         if (bTokens.hasMoreTokens()) {
           int bToken = Integer.parseInt(bTokens.nextToken());
           if (aToken != bToken) {
-            return aToken - bToken;
+            return aToken < bToken ? -1 : 1;
           }
         } else {
           // a has some extra trailing tokens. if these are all zeroes, thats ok.
