@@ -42,8 +42,8 @@ public class TestOpenBitSet extends LuceneTestCase {
   }
 
   void doPrevSetBit(BitSet a, OpenBitSet b) {
-    int aa=a.length();
-    int bb=aa;
+    int aa = a.size() + random.nextInt(100);
+    int bb = aa;
     do {
       // aa = a.prevSetBit(aa-1);
       aa--;
