@@ -28,7 +28,7 @@ To add documents to the index, use the post.sh script in the exampledocs
 subdirectory (while Solr is running), for example:
 
   cd exampledocs
-  ./post.sh *.xml
+  sh post.sh *.xml
 
 See also README.txt in the solr subdirectory, and check
 http://wiki.apache.org/solr/SolrResources for a list of tutorials and
