@@ -503,6 +503,13 @@ Changes in backwards compatibility policy
   overridden one of these methods, cut over to the non-deprecated
   implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
 
+* LUCENE-3238: Made MultiTermQuery.rewrite() final, to prevent
+  problems (such as not properly setting rewrite methods, or 
+  not working correctly with things like SpanMultiTermQueryWrapper).
+  To rewrite to a simpler form, instead return a simpler enum
+  from getEnum(IndexReader). For example, to rewrite to a single term, 
+  return a SingleTermEnum.  (ludovic Boutros, Uwe Schindler, Robert Muir)
+
 Changes in runtime behavior
 
 * LUCENE-2834: the hash used to compute the lock file name when the
@@ -554,6 +561,10 @@ Bug fixes
 * LUCENE-3222: The RAM accounting for buffered delete terms was
   failing to measure the space required to hold the term's field and
   text character data.  (Mike McCandless)
+
+* LUCENE-3238: Fixed bug where using WildcardQuery("prefix*") inside
+  of a SpanMultiTermQueryWrapper rewrote incorrectly and returned
+  an error instead.  (ludovic Boutros, Uwe Schindler, Robert Muir)
 
 API Changes
 
