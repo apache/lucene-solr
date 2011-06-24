@@ -14,7 +14,7 @@ $Id$
 
 ================== Release 3.3.0 ==================
 
-(No Changes)
+* SOLR-2620: Removed unnecessary log4j jar (Dawid Weiss).
 
 ================== Release 3.2.0 ==================
 
