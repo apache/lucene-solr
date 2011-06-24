@@ -286,8 +286,13 @@ public abstract class MultiTermQuery extends Query {
     numberOfTerms += inc;
   }
 
+  /**
+   * To rewrite to a simpler form, instead return a simpler
+   * enum from {@link #getEnum(IndexReader)}.  For example,
+   * to rewrite to a single term, return a {@link SingleTermEnum}
+   */
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
+  public final Query rewrite(IndexReader reader) throws IOException {
     return rewriteMethod.rewrite(reader, this);
   }
 

@@ -118,46 +118,6 @@ public class TestWildcard
   }
   
   /**
-   * Tests if a WildcardQuery that has only a trailing * in the term is
-   * rewritten to a single PrefixQuery. The boost and rewriteMethod should be
-   * preserved.
-   */
-  public void testPrefixTerm() throws IOException {
-    Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
-
-    MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
-    assertMatches(searcher, wq, 2);
-    
-    MultiTermQuery expected = new PrefixQuery(new Term("field", "prefix"));
-    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    wq.setBoost(0.1F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    wq.setBoost(0.2F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-    wq.setBoost(0.3F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    
-    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
-    wq.setBoost(0.4F);
-    expected.setRewriteMethod(wq.getRewriteMethod());
-    expected.setBoost(wq.getBoost());
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
-    searcher.close();
-    indexStore.close();
-  }
-
-  /**
    * Tests Wildcard queries with an asterisk.
    */
   public void testAsterisk()
