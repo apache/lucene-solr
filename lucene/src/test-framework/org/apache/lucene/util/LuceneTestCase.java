@@ -633,6 +633,11 @@ public abstract class LuceneTestCase extends Assert {
     for (Thread t : Thread.getAllStackTraces().keySet()) {
       rogueThreads.put(t, true);
     }
+    
+    if (TEST_ITER > 1) {
+      System.out.println("WARNING: you are using -Dtests.iter=n where n > 1, not all tests support this option.");
+      System.out.println("Some may crash or fail: this is not a bug.");
+    }
   }
 
   /**
