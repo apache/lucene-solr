@@ -256,7 +256,7 @@
         <include name="lucene-grouping-${version}.jar" />
       </fileset>
       <fileset dir="../modules/common/build">
-        <include name="lucene-common-${version}.jar" />
+        <include name="lucene-common-module-${version}.jar" />
       </fileset>
       </copy>
   </target>  
