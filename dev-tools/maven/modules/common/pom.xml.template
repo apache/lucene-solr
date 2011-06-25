@@ -27,7 +27,7 @@
     <relativePath>../../lucene/pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-common</artifactId>
+  <artifactId>lucene-common-module</artifactId>
   <packaging>jar</packaging>
   <name>Lucene Common</name>
   <description>Lucene Common Module</description>
