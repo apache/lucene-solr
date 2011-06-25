@@ -23,6 +23,7 @@
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -34,6 +35,7 @@
       <subant target="compile" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -45,6 +47,7 @@
       <subant target="compile-test" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -56,6 +59,7 @@
       <subant target="javadocs" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -68,6 +72,7 @@
       <subant target="dist-maven" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -78,6 +83,7 @@
       <subant target="validate" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
@@ -90,6 +96,7 @@
       <subant target="clean" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
+        <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>

@@ -17,14 +17,14 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueFloat;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueFloat;
 
 import java.io.IOException;
 import java.util.Map;

@@ -17,14 +17,13 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueBool;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueBool;
-import org.apache.solr.search.MutableValueInt;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;

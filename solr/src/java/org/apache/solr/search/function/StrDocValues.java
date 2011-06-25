@@ -1,9 +1,8 @@
 package org.apache.solr.search.function;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueStr;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueFloat;
-import org.apache.solr.search.MutableValueStr;
 
 public abstract class StrDocValues extends DocValues {
   protected final ValueSource vs;

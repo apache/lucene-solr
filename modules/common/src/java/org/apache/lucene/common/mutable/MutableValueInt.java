@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
+package org.apache.lucene.common.mutable;
 
-public class MutableValueLong extends MutableValue {
-  public long value;
-
+public class MutableValueInt extends MutableValue {
+  public int value;
+  
   @Override
   public Object toObject() {
     return exists ? value : null;
@@ -26,14 +26,14 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueLong s = (MutableValueLong) source;
-    exists = s.exists;
+    MutableValueInt s = (MutableValueInt) source;
     value = s.value;
+    exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueLong v = new MutableValueLong();
+    MutableValueInt v = new MutableValueInt();
     v.value = this.value;
     v.exists = this.exists;
     return v;
@@ -41,16 +41,18 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueLong b = (MutableValueLong)other;
+    MutableValueInt b = (MutableValueInt)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueLong b = (MutableValueLong)other;
-    long bv = b.value;
-    if (value<bv) return -1;
-    if (value>bv) return 1;
+    MutableValueInt b = (MutableValueInt)other;
+    int ai = value;
+    int bi = b.value;
+    if (ai<bi) return -1;
+    else if (ai>bi) return 1;
+
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
   }
@@ -58,6 +60,7 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public int hashCode() {
-    return (int)value + (int)(value>>32);
+    // TODO: if used in HashMap, it already mixes the value... maybe use a straight value?
+    return (value>>8) + (value>>16);
   }
 }

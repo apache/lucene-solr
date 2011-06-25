@@ -1,7 +1,7 @@
 package org.apache.solr.search.function;
 
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueDouble;
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueDouble;
 
 public abstract class DoubleDocValues extends DocValues {
   protected final ValueSource vs;

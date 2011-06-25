@@ -238,6 +238,8 @@ Other Changes
 
 * SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
   (James Dyer via rmuir)
+
+* LUCENE-3232: Moved MutableValue classes to new 'common' module. (Chris Male)
   
 Documentation
 ----------------------

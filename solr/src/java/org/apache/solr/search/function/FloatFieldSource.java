@@ -20,12 +20,12 @@ package org.apache.solr.search.function;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueFloat;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.FloatValues;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueFloat;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}

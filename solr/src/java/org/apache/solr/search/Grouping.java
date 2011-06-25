@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.lucene.common.mutable.MutableValue;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queryParser.ParseException;

@@ -1,7 +1,8 @@
 package org.apache.solr.search.function;
 
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueLong;
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueLong;
+
 
 public abstract class LongDocValues extends DocValues {
   protected final ValueSource vs;

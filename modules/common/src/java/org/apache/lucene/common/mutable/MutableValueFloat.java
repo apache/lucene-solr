@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
+package org.apache.lucene.common.mutable;
 
-public class MutableValueBool extends MutableValue {
-  public boolean value;
+public class MutableValueFloat extends MutableValue {
+  public float value;
 
   @Override
   public Object toObject() {
@@ -26,14 +26,14 @@ public class MutableValueBool extends MutableValue {
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueBool s = (MutableValueBool) source;
+    MutableValueFloat s = (MutableValueFloat) source;
     value = s.value;
     exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueBool v = new MutableValueBool();
+    MutableValueFloat v = new MutableValueFloat();
     v.value = this.value;
     v.exists = this.exists;
     return v;
@@ -41,20 +41,21 @@ public class MutableValueBool extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueBool b = (MutableValueBool)other;
+    MutableValueFloat b = (MutableValueFloat)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueBool b = (MutableValueBool)other;
-    if (value != b.value) return value ? 1 : 0;
+    MutableValueFloat b = (MutableValueFloat)other;
+    int c = Float.compare(value, b.value);
+    if (c != 0) return c;
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
   }
 
   @Override
   public int hashCode() {
-    return value ? 2 : (exists ? 1 : 0);
+    return Float.floatToIntBits(value);
   }
 }

@@ -14,50 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
+package org.apache.lucene.common.mutable;
 
-public class MutableValueDouble extends MutableValue {
-  public double value;
+import org.apache.lucene.util.BytesRef;
+
+public class MutableValueStr extends MutableValue {
+  public BytesRef value = new BytesRef();
 
   @Override
   public Object toObject() {
-    return exists ? value : null;
+    return exists ? value.utf8ToString() : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueDouble s = (MutableValueDouble) source;
-    value = s.value;
+    MutableValueStr s = (MutableValueStr) source;
     exists = s.exists;
+    value.copy(s.value);
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueDouble v = new MutableValueDouble();
-    v.value = this.value;
+    MutableValueStr v = new MutableValueStr();
+    v.value.copy(value);
     v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueDouble b = (MutableValueDouble)other;
-    return value == b.value && exists == b.exists;
+    MutableValueStr b = (MutableValueStr)other;
+    return value.equals(b.value) && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueDouble b = (MutableValueDouble)other;
-    int c = Double.compare(value, b.value);
+    MutableValueStr b = (MutableValueStr)other;
+    int c = value.compareTo(b.value);
     if (c != 0) return c;
-    if (!exists) return -1;
-    if (!b.exists) return 1;
-    return 0;
+    if (exists == b.exists) return 0;
+    return exists ? 1 : -1;
   }
+
 
   @Override
   public int hashCode() {
-    long x = Double.doubleToLongBits(value);
-    return (int)x + (int)(x>>>32);
+    return value.hashCode();
   }
 }
