@@ -860,7 +860,18 @@ public class MemoryIndex {
       }
 
       @Override
-      public SeekStatus seek(BytesRef text, boolean useCache) {
+      public boolean seekExact(BytesRef text, boolean useCache) {
+        termUpto = Arrays.binarySearch(info.sortedTerms, text, termComparator);
+        if (termUpto >= 0) {
+          br.copy(info.sortedTerms[termUpto].getKey());
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+      @Override
+      public SeekStatus seekCeil(BytesRef text, boolean useCache) {
         termUpto = Arrays.binarySearch(info.sortedTerms, text, termComparator);
         if (termUpto < 0) { // not found; choose successor
           termUpto = -termUpto -1;
@@ -877,13 +888,9 @@ public class MemoryIndex {
       }
 
       @Override
-      public SeekStatus seek(long ord) {
+      public void seekExact(long ord) {
+        assert ord < info.sortedTerms.length;
         termUpto = (int) ord;
-        if (ord < info.sortedTerms.length) {
-          return SeekStatus.FOUND;
-        } else {
-          return SeekStatus.END;
-        }
       }
       
       @Override
@@ -939,9 +946,9 @@ public class MemoryIndex {
       }
 
       @Override
-      public void seek(BytesRef term, TermState state) throws IOException {
+      public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null;
-        this.seek(((OrdTermState)state).ord);
+        this.seekExact(((OrdTermState)state).ord);
       }
 
       @Override

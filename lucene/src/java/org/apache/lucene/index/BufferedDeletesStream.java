@@ -398,7 +398,7 @@ class BufferedDeletesStream {
 
       // System.out.println("  term=" + term);
 
-      if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
+      if (termsEnum.seekExact(term.bytes(), false)) {
         DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
 
         if (docsEnum != null) {

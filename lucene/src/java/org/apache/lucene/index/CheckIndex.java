@@ -881,7 +881,7 @@ public class CheckIndex {
 
         // Test seek to last term:
         if (lastTerm != null) {
-          if (terms.seek(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) {
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
 
@@ -908,14 +908,14 @@ public class CheckIndex {
             // Seek by ord
             for(int i=seekCount-1;i>=0;i--) {
               long ord = i*(termCount/seekCount);
-              terms.seek(ord);
+              terms.seekExact(ord);
               seekTerms[i] = new BytesRef(terms.term());
             }
 
             // Seek by term
             long totDocCount = 0;
             for(int i=seekCount-1;i>=0;i--) {
-              if (terms.seek(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
+              if (terms.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               

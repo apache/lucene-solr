@@ -341,7 +341,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         Terms terms = MultiFields.getTerms(reader, field);
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
-          if (termsEnum.seek(term) == TermsEnum.SeekStatus.FOUND) {
+          if (termsEnum.seekExact(term, true)) {
             result = termsEnum.docFreq();
           }
         }

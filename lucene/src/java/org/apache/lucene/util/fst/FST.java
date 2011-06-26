@@ -704,6 +704,12 @@ public class FST<T> {
 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
+        if (follow.target <= 0) {
+          arc.flags = BIT_LAST_ARC;
+        } else {
+          arc.flags = 0;
+          arc.nextArc = follow.target;
+        }
         arc.output = follow.nextFinalOutput;
         arc.label = END_LABEL;
         return arc;

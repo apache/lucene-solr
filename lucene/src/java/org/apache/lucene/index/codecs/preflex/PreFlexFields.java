@@ -746,7 +746,7 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(long ord) throws IOException {
+    public void seekExact(long ord) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -756,7 +756,7 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
       if (DEBUG_SURROGATES) {
         System.out.println("TE.seek target=" + UnicodeUtil.toHexString(term.utf8ToString()));
       }

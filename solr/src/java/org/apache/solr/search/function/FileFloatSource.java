@@ -267,7 +267,7 @@ public class FileFloatSource extends ValueSource {
           continue;  // go to next line in file.. leave values as default.
         }
 
-        if (termsEnum.seek(internalKey, false) != TermsEnum.SeekStatus.FOUND) {
+        if (!termsEnum.seekExact(internalKey, false)) {
           if (notFoundCount<10) {  // collect first 10 not found for logging
             notFound.add(key);
           }

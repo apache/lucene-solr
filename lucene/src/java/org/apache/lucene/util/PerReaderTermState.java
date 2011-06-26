@@ -28,7 +28,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 
 /**
  * Maintains a {@link IndexReader} {@link TermState} view over
@@ -90,7 +89,7 @@ public final class PerReaderTermState {
         final Terms terms = fields.terms(field);
         if (terms != null) {
           final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
-          if (SeekStatus.FOUND == termsEnum.seek(bytes, cache)) { 
+          if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
             perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq());
           }

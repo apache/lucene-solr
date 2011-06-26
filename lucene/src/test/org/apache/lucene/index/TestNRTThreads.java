@@ -430,7 +430,7 @@ public class TestNRTThreads extends LuceneTestCase {
                       trigger = totTermCount.get()/10;
                       //System.out.println("trigger " + trigger);
                       shift = random.nextInt(trigger);
-                      termsEnum.seek(new BytesRef(""));
+                      termsEnum.seekCeil(new BytesRef(""));
                       continue;
                     }
                     seenTermCount++;

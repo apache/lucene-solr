@@ -239,13 +239,13 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
         int low = 1;
         int high = numOrd-1;
         
         while (low <= high) {
           int mid = (low + high) >>> 1;
-          seek(mid);
+          seekExact(mid);
           int cmp = term.compareTo(text);
 
           if (cmp < 0)
@@ -259,19 +259,17 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
         if (low == numOrd) {
           return SeekStatus.END;
         } else {
-          seek(low);
+          seekExact(low);
           return SeekStatus.NOT_FOUND;
         }
       }
 
-      @Override
-      public SeekStatus seek(long ord) throws IOException {
+      public void seekExact(long ord) throws IOException {
         assert(ord >= 0 && ord <= numOrd);
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
         currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
         end = blockEnds[currentBlockNumber];
         currentOrd = (int)ord;
-        return SeekStatus.FOUND;
       }
 
       @Override
@@ -339,9 +337,9 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public void seek(BytesRef term, TermState state) throws IOException {
+      public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null && state instanceof OrdTermState;
-        this.seek(((OrdTermState)state).ord);
+        this.seekExact(((OrdTermState)state).ord);
       }
 
       @Override

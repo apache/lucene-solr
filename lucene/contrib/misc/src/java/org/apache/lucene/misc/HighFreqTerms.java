@@ -186,7 +186,7 @@ public class HighFreqTerms {
     }
 
     TermsEnum termsEnum = terms.iterator();
-    if (termsEnum.seek(termText) != TermsEnum.SeekStatus.FOUND) {
+    if (termsEnum.seekCeil(termText) != TermsEnum.SeekStatus.FOUND) {
       return 0;
     }
 

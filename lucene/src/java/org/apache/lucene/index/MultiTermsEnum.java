@@ -139,7 +139,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
     queue.clear();
     numTop = 0;
 
@@ -147,6 +147,56 @@ public final class MultiTermsEnum extends TermsEnum {
     if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
       seekOpt = true;
     }
+
+    lastSeek = null;
+
+    for(int i=0;i<numSubs;i++) {
+      final boolean status;
+      // LUCENE-2130: if we had just seek'd already, prior
+      // to this seek, and the new seek term is after the
+      // previous one, don't try to re-seek this sub if its
+      // current term is already beyond this new seek term.
+      // Doing so is a waste because this sub will simply
+      // seek to the same spot.
+      if (seekOpt) {
+        final BytesRef curTerm = currentSubs[i].current;
+        if (curTerm != null) {
+          final int cmp = termComp.compare(term, curTerm);
+          if (cmp == 0) {
+            status = true;
+          } else if (cmp < 0) {
+            status = false;
+          } else {
+            status = currentSubs[i].terms.seekExact(term, useCache);
+          }
+        } else {
+          status = false;
+        }
+      } else {
+        status = currentSubs[i].terms.seekExact(term, useCache);
+      }
+
+      if (status) {
+        top[numTop++] = currentSubs[i];
+        current = currentSubs[i].current = currentSubs[i].terms.term();
+      }
+    }
+
+    // if at least one sub had exact match to the requested
+    // term then we found match
+    return numTop > 0;
+  }
+
+  @Override
+  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    queue.clear();
+    numTop = 0;
+
+    boolean seekOpt = false;
+    if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
+      seekOpt = true;
+    }
+
     lastSeekScratch.copy(term);
     lastSeek = lastSeekScratch;
 
@@ -167,25 +217,27 @@ public final class MultiTermsEnum extends TermsEnum {
           } else if (cmp < 0) {
             status = SeekStatus.NOT_FOUND;
           } else {
-            status = currentSubs[i].terms.seek(term, useCache);
+            status = currentSubs[i].terms.seekCeil(term, useCache);
           }
         } else {
           status = SeekStatus.END;
         }
       } else {
-        status = currentSubs[i].terms.seek(term, useCache);
+        status = currentSubs[i].terms.seekCeil(term, useCache);
       }
 
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
-      } else if (status == SeekStatus.NOT_FOUND) {
-        currentSubs[i].current = currentSubs[i].terms.term();
-        assert currentSubs[i].current != null;
-        queue.add(currentSubs[i]);
       } else {
-        // enum exhausted
-        currentSubs[i].current = null;
+        if (status == SeekStatus.NOT_FOUND) {
+          currentSubs[i].current = currentSubs[i].terms.term();
+          assert currentSubs[i].current != null;
+          queue.add(currentSubs[i]);
+        } else {
+          // enum exhausted
+          currentSubs[i].current = null;
+        }
       }
     }
 
@@ -204,7 +256,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(long ord) throws IOException {
+  public void seekExact(long ord) throws IOException {
     throw new UnsupportedOperationException();
   }
 

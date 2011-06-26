@@ -166,7 +166,7 @@ public class TestSurrogates extends LuceneTestCase {
 
       // seek should find the term
       assertEquals(TermsEnum.SeekStatus.FOUND,
-                   te.seek(term.bytes()));
+                   te.seekCeil(term.bytes()));
       
       // now .next() this many times:
       int ct = _TestUtil.nextInt(r, 5, 100);
@@ -232,9 +232,9 @@ public class TestSurrogates extends LuceneTestCase {
           spot = -spot - 1;
 
           if (spot == fieldTerms.size() || !fieldTerms.get(spot).field().equals(field)) {
-            assertEquals(TermsEnum.SeekStatus.END, te.seek(tx.bytes()));
+            assertEquals(TermsEnum.SeekStatus.END, te.seekCeil(tx.bytes()));
           } else {
-            assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(tx.bytes()));
+            assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(tx.bytes()));
 
             if (VERBOSE) {
               System.out.println("  got term=" + UnicodeUtil.toHexString(te.term().utf8ToString()));

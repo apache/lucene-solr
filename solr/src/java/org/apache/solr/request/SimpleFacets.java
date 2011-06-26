@@ -639,7 +639,7 @@ public class SimpleFacets {
       // facet.offset when sorting by index order.
 
       if (startTermBytes != null) {
-        if (termsEnum.seek(startTermBytes, true) == TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(startTermBytes, true) == TermsEnum.SeekStatus.END) {
           termsEnum = null;
         } else {
           term = termsEnum.term();

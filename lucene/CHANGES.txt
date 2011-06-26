@@ -288,6 +288,13 @@ API Changes
   SortField.Type.  In be consistent, CachedArrayCreator.getSortTypeID() has
   been changed CachedArrayCreator.getSortType(). (Chris Male)
 
+* LUCENE-3225: Add TermsEnum.seekExact for faster seeking when you
+  don't need the ceiling term; renamed existing seek methods to either
+  seekCeil or seekExact; changed seekExact(ord) to return no value.
+  Fixed MemoryCodec and SimpleTextCodec to optimize the seekExact
+  case, and fixed places in Lucene to use seekExact when possible.
+  (Mike McCandless)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

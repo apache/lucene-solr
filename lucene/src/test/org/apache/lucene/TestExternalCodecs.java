@@ -305,7 +305,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public SeekStatus seek(BytesRef term, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef term, boolean useCache) {
         current = term.utf8ToString();
         it = null;
         if (ramField.termToDocs.containsKey(current)) {
@@ -320,7 +320,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public SeekStatus seek(long ord) {
+      public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
 

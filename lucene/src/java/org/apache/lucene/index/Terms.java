@@ -50,7 +50,7 @@ public abstract class Terms {
    *  exist. */
   public int docFreq(BytesRef text) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+    if (termsEnum.seekExact(text, true)) {
       return termsEnum.docFreq();
     } else {
       return 0;
@@ -62,7 +62,7 @@ public abstract class Terms {
    *  exist. */
   public long totalTermFreq(BytesRef text) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+    if (termsEnum.seekExact(text, true)) {
       return termsEnum.totalTermFreq();
     } else {
       return 0;
@@ -73,7 +73,7 @@ public abstract class Terms {
    *  method may return null if the term does not exist. */
   public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+    if (termsEnum.seekExact(text, true)) {
       return termsEnum.docs(skipDocs, reuse);
     } else {
       return null;
@@ -85,7 +85,7 @@ public abstract class Terms {
    *  exists, or positions were not indexed. */ 
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+    if (termsEnum.seekExact(text, true)) {
       return termsEnum.docsAndPositions(skipDocs, reuse);
     } else {
       return null;
@@ -97,10 +97,10 @@ public abstract class Terms {
    * This method may return <code>null</code> if the term does not exist.
    * 
    * @see TermsEnum#termState()
-   * @see TermsEnum#seek(BytesRef, TermState) */
+   * @see TermsEnum#seekExact(BytesRef, TermState) */
   public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    termsEnum.seek(term, termState);
+    termsEnum.seekExact(term, termState);
     return termsEnum.docs(skipDocs, reuse);
   }
 
@@ -110,10 +110,10 @@ public abstract class Terms {
    * not indexed.
    * 
    * @see TermsEnum#termState()
-   * @see TermsEnum#seek(BytesRef, TermState) */
+   * @see TermsEnum#seekExact(BytesRef, TermState) */
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
-    termsEnum.seek(term, termState);
+    termsEnum.seekExact(term, termState);
     return termsEnum.docsAndPositions(skipDocs, reuse);
   }
 

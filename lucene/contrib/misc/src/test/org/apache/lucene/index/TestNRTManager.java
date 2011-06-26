@@ -526,7 +526,7 @@ public class TestNRTManager extends LuceneTestCase {
                           //System.out.println("trigger " + trigger);
                           shift = random.nextInt(trigger);
                         }
-                        termsEnum.seek(new BytesRef(""));
+                        termsEnum.seekCeil(new BytesRef(""));
                         continue;
                       }
                       seenTermCount++;

@@ -128,7 +128,23 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekExact(text);
+      if (result != null) {
+        PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>> pair1 = result.output;
+        PairOutputs.Pair<Long,Long> pair2 = pair1.output2;
+        docsStart = pair1.output1;
+        docFreq = pair2.output1.intValue();
+        totalTermFreq = pair2.output2;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekCeil(text);
@@ -180,7 +196,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(long ord) {
+    public void seekExact(long ord) {
       throw new UnsupportedOperationException();
     }
 
