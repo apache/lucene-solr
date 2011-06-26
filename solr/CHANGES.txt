@@ -249,7 +249,25 @@ Documentation
 
 ======================= 3.x (not yet released) ================
 
-(No changes)
+New Features
+----------------------
+
+* SOLR-2458: post.jar enhanced to handle JSON, CSV and <optimize> (janhoy)
+
+Optimizations
+----------------------
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
+
+Build
+----------------------
+
+Documentation
+----------------------
 
 ==================  3.3.0  ==================
 
