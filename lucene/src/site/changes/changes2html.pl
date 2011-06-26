@@ -674,7 +674,8 @@ sub setup_release_dates {
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
 
-  my $project_info_json = `wget --no-check-certificate -O - $project_info_url`; 
+  my $project_info_json = get_url_contents($project_info_url);
+  
   my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
@@ -690,6 +691,21 @@ sub setup_release_dates {
   return %release_dates;
 }
 
+#
+# returns contents of the passed in url
+#
+sub get_url_contents {
+  my $url = shift;
+  my $tryWget = `wget --no-check-certificate -O - $url`;
+  if ($? eq 0) {
+    return $tryWget;
+  }
+  my $tryCurl = `curl $url`;
+  if ($? eq 0) {
+    return $tryCurl;
+  }
+  die "could not retrieve $url with either wget or curl!";
+}
 
 #
 # setup_month_regex
