@@ -159,9 +159,7 @@ public class TestNRTManager extends LuceneTestCase {
         System.out.println("TEST: wrap NRTCachingDir");
       }
 
-      NRTCachingDirectory nrtDir = new NRTCachingDirectory(dir, 5.0, 60.0);
-      conf.setMergeScheduler(nrtDir.getMergeScheduler());
-      dir = nrtDir;
+      dir = new NRTCachingDirectory(dir, 5.0, 60.0);
     }
     
     final IndexWriter writer = new IndexWriter(dir, conf);

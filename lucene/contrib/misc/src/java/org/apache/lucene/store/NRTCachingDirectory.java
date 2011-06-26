@@ -40,11 +40,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Wraps a {@link RAMDirectory}
  * around any provided delegate directory, to
- * be used during NRT search.  Make sure you pull the merge
- * scheduler using {@link #getMergeScheduler} and pass that to your
- * {@link IndexWriter}; this class uses that to keep track of which
- * merges are being done by which threads, to decide when to
- * cache each written file.
+ * be used during NRT search.
  *
  * <p>This class is likely only useful in a near-real-time
  * context, where indexing rate is lowish but reopen
@@ -56,20 +52,12 @@ import org.apache.lucene.util.IOUtils;
  * <p>This is safe to use: when your app calls {IndexWriter#commit},
  * all cached files will be flushed from the cached and sync'd.</p>
  *
- * <p><b>NOTE</b>: this class is somewhat sneaky in its
- * approach for spying on merges to determine the size of a
- * merge: it records which threads are running which merges
- * by watching ConcurrentMergeScheduler's doMerge method.
- * While this works correctly, likely future versions of
- * this class will take a more general approach.
- *
  * <p>Here's a simple example usage:
  *
  * <pre>
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
  *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
- *   conf.setMergeScheduler(cachedFSDir.getMergeScheduler());
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
  * </pre>
  *
@@ -244,22 +232,6 @@ public class NRTCachingDirectory extends Directory {
     }
     cache.close();
     delegate.close();
-  }
-
-  private final ConcurrentHashMap<Thread,MergePolicy.OneMerge> merges = new ConcurrentHashMap<Thread,MergePolicy.OneMerge>();
-
-  public MergeScheduler getMergeScheduler() {
-    return new ConcurrentMergeScheduler() {
-      @Override
-      protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
-        try {
-          merges.put(Thread.currentThread(), merge);
-          super.doMerge(merge);
-        } finally {
-          merges.remove(Thread.currentThread());
-        }
-      }
-    };
   }
 
   /** Subclass can override this to customize logic; return
