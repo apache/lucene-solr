@@ -135,7 +135,7 @@
     <attribute name="module-src-name" default="@{name}"/>
     <attribute name="classpath.property" default="@{name}.jar"/>
     <!-- set jarfile only, if the target jar file has no generic name, applies to analyzers with its common and smartcn subdir -->
-    <attribute name="jarfile" default="${common.dir}/../modules/@{name}/build/lucene-@{name}-${version}.jar"/>
+    <attribute name="jarfile" default="${common.dir}/../modules/@{module-src-name}/build/lucene-@{name}-${version}.jar"/>
     <sequential>
       <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
