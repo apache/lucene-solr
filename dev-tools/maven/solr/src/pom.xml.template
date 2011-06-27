@@ -98,7 +98,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-common</artifactId>
+      <artifactId>lucene-common-module</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
