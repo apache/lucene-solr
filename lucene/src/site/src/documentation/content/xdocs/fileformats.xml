@@ -366,6 +366,11 @@
               <td>An optional "virtual" file consisting of all the other index files for systems
               that frequently run out of file handles.</td>
             </tr>
+              <tr>
+              <td><a href="#Compound File">Compound File Entry table</a></td>
+              <td>.cfe</td>
+              <td>The "virtual" compound file's entry table holding all entries in the corresponding .cfs file (Since 3.4)</td>
+            </tr>
             <tr>
               <td><a href="#Fields">Fields</a></td>
               <td>.fnm</td>
@@ -1129,17 +1134,20 @@
                 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
 					(except for the .del file).</p>
-
-                <p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;
-                    <sup>FileCount</sup>
-                    ,
-                    FileData
+								<p>Compound Entry Table (.cfe) --&gt; Version,  FileCount, &lt;FileName, DataOffset, DataLength&gt;
                     <sup>FileCount</sup>
                 </p>
 
+                <p>Compound (.cfs) --&gt; FileData <sup>FileCount</sup>
+                </p>
+                
+								<p>Version --&gt; Int</p>
+								
                 <p>FileCount --&gt; VInt</p>
 
                 <p>DataOffset --&gt; Long</p>
+                
+                <p>DataLength --&gt; Long</p>
 
                 <p>FileName --&gt; String</p>
 
