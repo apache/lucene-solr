@@ -728,6 +728,14 @@ document.write("Last Published: " + document.lastModified);
               that frequently run out of file handles.</td>
             
 </tr>
+              
+<tr>
+              
+<td><a href="#Compound File">Compound File Entry table</a></td>
+              <td>.cfe</td>
+              <td>The "virtual" compound file's entry table holding all entries in the corresponding .cfs file (Since 3.4)</td>
+            
+</tr>
             
 <tr>
               
@@ -832,10 +840,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10204"></a><a name="Primitive Types"></a>
+<a name="N10212"></a><a name="Primitive Types"></a>
 <h2 class="boxed">Primitive Types</h2>
 <div class="section">
-<a name="N10209"></a><a name="Byte"></a>
+<a name="N10217"></a><a name="Byte"></a>
 <h3 class="boxed">Byte</h3>
 <p>
                     The most primitive type
@@ -843,7 +851,7 @@ document.write("Last Published: " + document.lastModified);
                     other data types are defined as sequences
                     of bytes, so file formats are byte-order independent.
                 </p>
-<a name="N10212"></a><a name="UInt32"></a>
+<a name="N10220"></a><a name="UInt32"></a>
 <h3 class="boxed">UInt32</h3>
 <p>
                     32-bit unsigned integers are written as four
@@ -853,7 +861,7 @@ document.write("Last Published: " + document.lastModified);
                     UInt32    --&gt; &lt;Byte&gt;<sup>4</sup>
                 
 </p>
-<a name="N10221"></a><a name="Uint64"></a>
+<a name="N1022F"></a><a name="Uint64"></a>
 <h3 class="boxed">Uint64</h3>
 <p>
                     64-bit unsigned integers are written as eight
@@ -862,7 +870,7 @@ document.write("Last Published: " + document.lastModified);
 <p>UInt64    --&gt; &lt;Byte&gt;<sup>8</sup>
                 
 </p>
-<a name="N10230"></a><a name="VInt"></a>
+<a name="N1023E"></a><a name="VInt"></a>
 <h3 class="boxed">VInt</h3>
 <p>
                     A variable-length format for positive integers is
@@ -1412,13 +1420,13 @@ document.write("Last Published: " + document.lastModified);
                     This provides compression while still being
                     efficient to decode.
                 </p>
-<a name="N10515"></a><a name="Chars"></a>
+<a name="N10523"></a><a name="Chars"></a>
 <h3 class="boxed">Chars</h3>
 <p>
                     Lucene writes unicode
                     character sequences as UTF-8 encoded bytes.
                 </p>
-<a name="N1051E"></a><a name="String"></a>
+<a name="N1052C"></a><a name="String"></a>
 <h3 class="boxed">String</h3>
 <p>
 		    Lucene writes strings as UTF-8 encoded bytes.
@@ -1431,10 +1439,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1052B"></a><a name="Compound Types"></a>
+<a name="N10539"></a><a name="Compound Types"></a>
 <h2 class="boxed">Compound Types</h2>
 <div class="section">
-<a name="N10530"></a><a name="MapStringString"></a>
+<a name="N1053E"></a><a name="MapStringString"></a>
 <h3 class="boxed">Map&lt;String,String&gt;</h3>
 <p>
 		    In a couple places Lucene stores a Map
@@ -1447,13 +1455,13 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10540"></a><a name="Per-Index Files"></a>
+<a name="N1054E"></a><a name="Per-Index Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>
                 The files in this section exist one-per-index.
             </p>
-<a name="N10548"></a><a name="Segments File"></a>
+<a name="N10556"></a><a name="Segments File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>
                     The active segments in the index are stored in the
@@ -1626,7 +1634,7 @@ document.write("Last Published: " + document.lastModified);
 <p> HasVectors is 1 if this segment stores term vectors,
             else it's 0.
                 </p>
-<a name="N105D3"></a><a name="Lock File"></a>
+<a name="N105E1"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1640,27 +1648,29 @@ document.write("Last Published: " + document.lastModified);
                     documents).  This lock file ensures that only one
                     writer is modifying the index at a time.
                 </p>
-<a name="N105DC"></a><a name="Deletable File"></a>
+<a name="N105EA"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     A writer dynamically computes
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N105E5"></a><a name="Compound Files"></a>
+<a name="N105F3"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
 					(except for the .del file).</p>
-<p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;
-                    <sup>FileCount</sup>
-                    ,
-                    FileData
+<p>Compound Entry Table (.cfe) --&gt; Version,  FileCount, &lt;FileName, DataOffset, DataLength&gt;
                     <sup>FileCount</sup>
                 
 </p>
+<p>Compound (.cfs) --&gt; FileData <sup>FileCount</sup>
+                
+</p>
+<p>Version --&gt; Int</p>
 <p>FileCount --&gt; VInt</p>
 <p>DataOffset --&gt; Long</p>
+<p>DataLength --&gt; Long</p>
 <p>FileName --&gt; String</p>
 <p>FileData --&gt; raw file data</p>
 <p>The raw file data is the data from the individual files named above.</p>
@@ -1674,14 +1684,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1060D"></a><a name="Per-Segment Files"></a>
+<a name="N10624"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N10615"></a><a name="Fields"></a>
+<a name="N1062C"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1891,7 +1901,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106D0"></a><a name="Term Dictionary"></a>
+<a name="N106E7"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -2083,7 +2093,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10754"></a><a name="Frequencies"></a>
+<a name="N1076B"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2211,7 +2221,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N107DC"></a><a name="Positions"></a>
+<a name="N107F3"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2281,7 +2291,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N10818"></a><a name="Normalization Factors"></a>
+<a name="N1082F"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a single .nrm file containing all norms:
                 </p>
@@ -2361,7 +2371,7 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10869"></a><a name="Term Vectors"></a>
+<a name="N10880"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2497,7 +2507,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10905"></a><a name="Deleted Documents"></a>
+<a name="N1091C"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2561,7 +2571,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1093F"></a><a name="Limitations"></a>
+<a name="N10956"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>
