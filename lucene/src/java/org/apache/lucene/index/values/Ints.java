@@ -33,14 +33,11 @@ public class Ints {
   private Ints() {
   }
 
-  public static Writer getWriter(Directory dir, String id,
-      boolean useFixedArray, AtomicLong bytesUsed) throws IOException {
-    // TODO - implement fixed?!
-    return new IntsWriter(dir, id, bytesUsed);
+  public static Writer getWriter(Directory dir, String id, AtomicLong bytesUsed, ValueType type) throws IOException {
+    return new IntsWriter(dir, id, bytesUsed, type);
   }
 
-  public static IndexDocValues getValues(Directory dir, String id,
-      boolean useFixedArray) throws IOException {
+  public static IndexDocValues getValues(Directory dir, String id) throws IOException {
     return new IntsReader(dir, id);
   }
 }

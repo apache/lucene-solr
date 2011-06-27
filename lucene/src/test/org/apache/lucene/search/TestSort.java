@@ -124,7 +124,7 @@ public class TestSort extends LuceneTestCase {
         doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
         if (data[i][2] != null) {
           Field f = supportsDocValues ? 
-              IndexDocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.INTS)
+              IndexDocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.VAR_INTS)
                                : new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED);
           doc.add(f);
         }

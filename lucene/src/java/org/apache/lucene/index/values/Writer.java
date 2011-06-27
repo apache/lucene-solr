@@ -197,8 +197,12 @@ public abstract class Writer extends DocValuesConsumer {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
     switch (type) {
-    case INTS:
-      return Ints.getWriter(directory, id, true, bytesUsed);
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
+    case VAR_INTS:
+      return Ints.getWriter(directory, id, bytesUsed, type);
     case FLOAT_32:
       return Floats.getWriter(directory, id, 4, bytesUsed);
     case FLOAT_64:
@@ -221,6 +225,7 @@ public abstract class Writer extends DocValuesConsumer {
     case BYTES_VAR_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false,
           bytesUsed);
+
     default:
       throw new IllegalArgumentException("Unknown Values: " + type);
     }

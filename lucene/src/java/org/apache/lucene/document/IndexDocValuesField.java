@@ -98,12 +98,99 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
 
   /**
    * Sets the given <code>long</code> value and sets the field's {@link ValueType} to
-   * {@link ValueType#INTS} unless already set. If you want to change the
+   * {@link ValueType#VAR_INTS} unless already set. If you want to change the
    * default type use {@link #setType(ValueType)}.
    */
   public void setInt(long value) {
+    setInt(value, false);
+  }
+  
+  /**
+   * Sets the given <code>long</code> value as a 64 bit signed integer.
+   * 
+   * @param value
+   *          the value to set
+   * @param fixed
+   *          if <code>true</code> {@link ValueType#FIXED_INTS_64} is used
+   *          otherwise {@link ValueType#VAR_INTS}
+   */
+  public void setInt(long value, boolean fixed) {
     if (type == null) {
-      type = ValueType.INTS;
+      type = fixed ? ValueType.FIXED_INTS_64 : ValueType.VAR_INTS;
+    }
+    longValue = value;
+  }
+
+  /**
+   * Sets the given <code>int</code> value and sets the field's {@link ValueType} to
+   * {@link ValueType#VAR_INTS} unless already set. If you want to change the
+   * default type use {@link #setType(ValueType)}.
+   */
+  public void setInt(int value) {
+    setInt(value, false);
+  }
+
+  /**
+   * Sets the given <code>int</code> value as a 32 bit signed integer.
+   * 
+   * @param value
+   *          the value to set
+   * @param fixed
+   *          if <code>true</code> {@link ValueType#FIXED_INTS_32} is used
+   *          otherwise {@link ValueType#VAR_INTS}
+   */
+  public void setInt(int value, boolean fixed) {
+    if (type == null) {
+      type = fixed ? ValueType.FIXED_INTS_32 : ValueType.VAR_INTS;
+    }
+    longValue = value;
+  }
+
+  /**
+   * Sets the given <code>short</code> value and sets the field's {@link ValueType} to
+   * {@link ValueType#VAR_INTS} unless already set. If you want to change the
+   * default type use {@link #setType(ValueType)}.
+   */
+  public void setInt(short value) {
+    setInt(value, false);
+  }
+
+  /**
+   * Sets the given <code>short</code> value as a 16 bit signed integer.
+   * 
+   * @param value
+   *          the value to set
+   * @param fixed
+   *          if <code>true</code> {@link ValueType#FIXED_INTS_16} is used
+   *          otherwise {@link ValueType#VAR_INTS}
+   */
+  public void setInt(short value, boolean fixed) {
+    if (type == null) {
+      type = fixed ? ValueType.FIXED_INTS_16 : ValueType.VAR_INTS;
+    }
+    longValue = value;
+  }
+
+  /**
+   * Sets the given <code>byte</code> value and sets the field's {@link ValueType} to
+   * {@link ValueType#VAR_INTS} unless already set. If you want to change the
+   * default type use {@link #setType(ValueType)}.
+   */
+  public void setInt(byte value) {
+    setInt(value, false);
+  }
+  /**
+   * Sets the given <code>byte</code> value as a 8 bit signed integer.
+   * 
+   * @param value
+   *          the value to set
+   * @param fixed
+   *          if <code>true</code> {@link ValueType#FIXED_INTS_8} is used
+   *          otherwise {@link ValueType#VAR_INTS}
+   */
+  public void setInt(byte value, boolean fixed) {
+    if (type == null) {
+      type = fixed ? ValueType.FIXED_INTS_8 : ValueType.VAR_INTS;
     }
     longValue = value;
   }
@@ -268,7 +355,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
           field.stringValue());
       valField.setBytes(ref, type);
       break;
-    case INTS:
+    case VAR_INTS:
       valField.setInt(Long.parseLong(field.stringValue()));
       break;
     case FLOAT_32:

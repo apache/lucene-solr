@@ -609,7 +609,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         b = 0;
       } else {
         switch(fi.docValues) {
-        case INTS:
+        case VAR_INTS:
           b = 1;
           break;
         case FLOAT_32:
@@ -636,6 +636,19 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         case BYTES_VAR_SORTED:
           b = 9;
           break;
+        case FIXED_INTS_16:
+          b = 10;
+          break;
+        case FIXED_INTS_32:
+          b = 11;
+          break;
+        case FIXED_INTS_64:
+          b = 12;
+          break;
+        case FIXED_INTS_8:
+          b = 13;
+          break;
+       
         default:
           throw new IllegalStateException("unhandled indexValues type " + fi.docValues);
         }
@@ -686,7 +699,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           docValuesType = null;
           break;
         case 1:
-          docValuesType = ValueType.INTS;
+          docValuesType = ValueType.VAR_INTS;
           break;
         case 2:
           docValuesType = ValueType.FLOAT_32;
@@ -712,6 +725,19 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         case 9:
           docValuesType = ValueType.BYTES_VAR_SORTED;
           break;
+        case 10:
+          docValuesType = ValueType.FIXED_INTS_16;
+          break;
+        case 11:
+          docValuesType = ValueType.FIXED_INTS_32;
+          break;
+        case 12:
+          docValuesType = ValueType.FIXED_INTS_64;
+          break;
+        case 13:
+          docValuesType = ValueType.FIXED_INTS_8;
+          break;  
+        
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);
         }

@@ -113,44 +113,20 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir.close();
   }
 
-  /**
-   * Tests complete indexing of {@link ValueType} including deletions, merging and
-   * sparse value fields on Compound-File
-   */
-  public void testIndexBytesNoDeletesCFS() throws IOException {
-    runTestIndexBytes(writerConfig(true), false);
-  }
-
-  public void testIndexBytesDeletesCFS() throws IOException {
-    runTestIndexBytes(writerConfig(true), true);
-  }
-
-  public void testIndexNumericsNoDeletesCFS() throws IOException {
-    runTestNumerics(writerConfig(true), false);
-  }
-
-  public void testIndexNumericsDeletesCFS() throws IOException {
-    runTestNumerics(writerConfig(true), true);
-  }
-
-  /**
-   * Tests complete indexing of {@link ValueType} including deletions, merging and
-   * sparse value fields on None-Compound-File
-   */
   public void testIndexBytesNoDeletes() throws IOException {
-    runTestIndexBytes(writerConfig(false), false);
+    runTestIndexBytes(writerConfig(random.nextBoolean()), false);
   }
 
   public void testIndexBytesDeletes() throws IOException {
-    runTestIndexBytes(writerConfig(false), true);
+    runTestIndexBytes(writerConfig(random.nextBoolean()), true);
   }
 
   public void testIndexNumericsNoDeletes() throws IOException {
-    runTestNumerics(writerConfig(false), false);
+    runTestNumerics(writerConfig(random.nextBoolean()), false);
   }
 
   public void testIndexNumericsDeletes() throws IOException {
-    runTestNumerics(writerConfig(false), true);
+    runTestNumerics(writerConfig(random.nextBoolean()), true);
   }
 
   public void testAddIndexes() throws IOException {
@@ -204,7 +180,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     case BYTES_VAR_STRAIGHT:
     case FLOAT_32:
     case FLOAT_64:
-    case INTS:  
+    case VAR_INTS:
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
       assertEquals(msg, valuesPerIndex-1, vE_2_merged.advance(valuesPerIndex-1));
     }
     
@@ -246,7 +226,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       throws IOException {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
-    final int numValues = 179 + random.nextInt(151);
+    final int numValues = 50 + atLeast(10);
     final List<ValueType> numVariantList = new ArrayList<ValueType>(NUMERICS);
 
     // run in random order to test if fill works correctly during merges
@@ -258,8 +238,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       IndexReader r = IndexReader.open(w, true);
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
+      // for FIXED_INTS_8 we use value mod 128 - to enable testing in 
+      // one go we simply use numValues as the mod for all other INT types
+      int mod = numValues;
       switch (val) {
-      case INTS: {
+      case FIXED_INTS_8:
+        mod = 128;
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case VAR_INTS: {
         IndexDocValues intsReader = getDocValues(r, val.name());
         assertNotNull(intsReader);
 
@@ -283,8 +271,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs", i, intsEnum.advance(i));
-          assertEquals(expected, ints.getInt(i));
-          assertEquals(expected, enumRef.get());
+          assertEquals(val + "" + mod + " " +  i, expected%mod, ints.getInt(i));
+          assertEquals(expected%mod, enumRef.get());
 
         }
       }
@@ -338,11 +326,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final List<ValueType> byteVariantList = new ArrayList<ValueType>(BYTES);
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(byteVariantList, random);
-    final int numValues = 179 + random.nextInt(151);
+    final int numValues = 50 + atLeast(10);
     for (ValueType byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
 
-      int bytesSize = 1 + random.nextInt(128);
+      int bytesSize = 1 + atLeast(10);
       OpenBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
       final IndexReader r = IndexReader.open(w, withDeletions);
@@ -485,8 +473,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       ValueType.BYTES_FIXED_SORTED, ValueType.BYTES_FIXED_STRAIGHT, ValueType.BYTES_VAR_DEREF,
       ValueType.BYTES_VAR_SORTED, ValueType.BYTES_VAR_STRAIGHT);
 
-  private static EnumSet<ValueType> NUMERICS = EnumSet.of(ValueType.INTS,
-      ValueType.FLOAT_32, ValueType.FLOAT_64);
+  private static EnumSet<ValueType> NUMERICS = EnumSet.of(ValueType.VAR_INTS,
+      ValueType.FIXED_INTS_16, ValueType.FIXED_INTS_32,
+      ValueType.FIXED_INTS_64, 
+      ValueType.FIXED_INTS_8,
+      ValueType.FLOAT_32,
+      ValueType.FLOAT_64);
 
   private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
       Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
@@ -517,8 +509,20 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     for (int i = 0; i < numValues; i++) {
       if (isNumeric) {
         switch (value) {
-        case INTS:
-          valField.setInt(i);
+        case VAR_INTS:
+          valField.setInt((long)i);
+          break;
+        case FIXED_INTS_16:
+          valField.setInt((short)i, random.nextInt(10) != 0);
+          break;
+        case FIXED_INTS_32:
+          valField.setInt(i, random.nextInt(10) != 0);
+          break;
+        case FIXED_INTS_64:
+          valField.setInt((long)i, random.nextInt(10) != 0);
+          break;
+        case FIXED_INTS_8:
+          valField.setInt((byte)(0xFF & (i % 128)), random.nextInt(10) != 0);
           break;
         case FLOAT_32:
           valField.setFloat(2.0f * i);
@@ -526,6 +530,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         case FLOAT_64:
           valField.setFloat(2.0d * i);
           break;
+       
         default:
           fail("unexpected value " + value);
         }

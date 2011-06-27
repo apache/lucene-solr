@@ -200,8 +200,20 @@ public class RandomIndexWriter implements Closeable {
     case FLOAT_64:
       docValuesField.setFloat(random.nextDouble());
       break;
-    case INTS:
+    case VAR_INTS:
+      docValuesField.setInt(random.nextLong());
+      break;
+    case FIXED_INTS_16:
+      docValuesField.setInt(random.nextInt(Short.MAX_VALUE));
+      break;
+    case FIXED_INTS_32:
       docValuesField.setInt(random.nextInt());
+      break;
+    case FIXED_INTS_64:
+      docValuesField.setInt(random.nextLong());
+      break;
+    case FIXED_INTS_8:
+      docValuesField.setInt(random.nextInt(128));
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);

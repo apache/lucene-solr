@@ -156,7 +156,7 @@ public class Floats {
   }
 
   // Writes 4 bytes (float) per value
-  static class Float4Writer extends FloatsWriter {
+  static final class Float4Writer extends FloatsWriter {
     private int[] values;
     protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
@@ -219,7 +219,7 @@ public class Floats {
   }
 
   // Writes 8 bytes (double) per value
-  static class Float8Writer extends FloatsWriter {
+  static final class Float8Writer extends FloatsWriter {
     private long[] values;
     protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
@@ -341,7 +341,7 @@ public class Floats {
       }
     }
 
-    private class Source4 extends Source {
+    private final class Source4 extends Source {
       private final float[] values;
 
       Source4(final float[] values ) throws IOException {
@@ -368,12 +368,22 @@ public class Floats {
       }
 
       @Override
+      public Object getArray() {
+        return this.values;
+      }
+
+      @Override
+      public boolean hasArray() {
+        return true;
+      }
+
+      @Override
       public ValueType type() {
         return ValueType.FLOAT_32;
       }
     }
 
-    private class Source8 extends Source {
+    private final class Source8 extends Source {
       private final double[] values;
 
       Source8(final double[] values) throws IOException {
@@ -402,6 +412,16 @@ public class Floats {
       @Override
       public ValueType type() {
         return ValueType.FLOAT_64;
+      }
+      
+      @Override
+      public Object getArray() {
+        return this.values;
+      }
+
+      @Override
+      public boolean hasArray() {
+        return true;
       }
     }
 

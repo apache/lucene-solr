@@ -1025,7 +1025,11 @@ public class CheckIndex {
             case FLOAT_64:
               values.getFloat();
               break;
-            case INTS:
+            case VAR_INTS:
+            case FIXED_INTS_16:
+            case FIXED_INTS_32:
+            case FIXED_INTS_64:
+            case FIXED_INTS_8:
               values.getInt();
               break;
             default:

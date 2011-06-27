@@ -170,76 +170,241 @@ public class TestDocValues extends LuceneTestCase {
     dir.close();
   }
 
-  public void testInts() throws IOException {
-    long[] maxMin = new long[] { 
-        Long.MIN_VALUE, Long.MAX_VALUE,
-        1, Long.MAX_VALUE,
-        0, Long.MAX_VALUE,
-        -1, Long.MAX_VALUE,
-        Long.MIN_VALUE, -1,
-        random.nextInt(), random.nextInt() };
-    for (int j = 0; j < maxMin.length; j+=2) {
-      long maxV = 1;
-      final int NUM_VALUES = 777 + random.nextInt(777);
-      final long[] values = new long[NUM_VALUES];
-      for (int rx = 1; rx < 63; rx++, maxV *= 2) {
-        Directory dir = newDirectory();
-        final AtomicLong trackBytes = new AtomicLong(0);
-        Writer w = Ints.getWriter(dir, "test", false, trackBytes);
-        values[0] = maxMin[j];
-        w.add(0, values[0]);
-        values[1] = maxMin[j+1];
-        w.add(1, values[1]);
-        for (int i = 2; i < NUM_VALUES; i++) {
-          final long v = random.nextLong() % (1 + maxV);
-          values[i] = v;
-          w.add(i, v);
-        }
-        final int additionalDocs = 1 + random.nextInt(9);
-        w.finish(NUM_VALUES + additionalDocs);
-        assertEquals(0, trackBytes.get());
+  public void testVariableIntsLimits() throws IOException {
+    long[][] minMax = new long[][] { { Long.MIN_VALUE, Long.MAX_VALUE },
+        { Long.MIN_VALUE + 1, 1 }, { -1, Long.MAX_VALUE },
+        { Long.MIN_VALUE, -1 }, { 1, Long.MAX_VALUE },
+        { -1, Long.MAX_VALUE - 1 }, { Long.MIN_VALUE + 2, 1 }, };
+    ValueType[] expectedTypes = new ValueType[] { ValueType.FIXED_INTS_64,
+        ValueType.FIXED_INTS_64, ValueType.FIXED_INTS_64,
+        ValueType.FIXED_INTS_64, ValueType.VAR_INTS, ValueType.VAR_INTS,
+        ValueType.VAR_INTS, };
+    for (int i = 0; i < minMax.length; i++) {
+      Directory dir = newDirectory();
+      final AtomicLong trackBytes = new AtomicLong(0);
+      Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.VAR_INTS);
+      w.add(0, minMax[i][0]);
+      w.add(1, minMax[i][1]);
+      w.finish(2);
+      assertEquals(0, trackBytes.get());
+      IndexDocValues r = Ints.getValues(dir, "test");
+      Source source = getSource(r);
+      assertEquals(i + " with min: " + minMax[i][0] + " max: " + minMax[i][1],
+          expectedTypes[i], source.type());
+      assertEquals(minMax[i][0], source.getInt(0));
+      assertEquals(minMax[i][1], source.getInt(1));
+      ValuesEnum iEnum = getEnum(r);
+      assertEquals(i + " with min: " + minMax[i][0] + " max: " + minMax[i][1],
+          expectedTypes[i], iEnum.type());
+      assertEquals(0, iEnum.nextDoc());
+      assertEquals(minMax[i][0], iEnum.intsRef.get());
+      assertEquals(1, iEnum.nextDoc());
+      assertEquals(minMax[i][1], iEnum.intsRef.get());
+      assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
 
-        IndexDocValues r = Ints.getValues(dir, "test", false);
-        for (int iter = 0; iter < 2; iter++) {
-          Source s = getSource(r);
-          for (int i = 0; i < NUM_VALUES; i++) {
-            final long v = s.getInt(i);
-            assertEquals("index " + i, values[i], v);
-          }
-        }
+      r.close();
+      dir.close();
+    }
+  }
+  
+  public void testVInts() throws IOException {
+    testInts(ValueType.VAR_INTS, 63);
+  }
+  
+  public void testFixedInts() throws IOException {
+    testInts(ValueType.FIXED_INTS_64, 63);
+    testInts(ValueType.FIXED_INTS_32, 31);
+    testInts(ValueType.FIXED_INTS_16, 15);
+    testInts(ValueType.FIXED_INTS_8, 7);
 
-        for (int iter = 0; iter < 2; iter++) {
-          ValuesEnum iEnum = getEnum(r);
-          LongsRef ints = iEnum.getInt();
-          for (int i = 0; i < NUM_VALUES + additionalDocs; i++) {
-            assertEquals(i, iEnum.nextDoc());
-            if (i < NUM_VALUES) {
-              assertEquals(values[i], ints.get());
-            } else {
-              assertEquals(0, ints.get());
-            }
-          }
-          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
-          iEnum.close();
-        }
+  }
+  
+  public void testGetInt8Array() throws IOException {
+    byte[] sourceArray = new byte[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_8);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, (long) sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test");
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    byte[] loaded = ((byte[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i]);
+    }
+    r.close();
+    dir.close();
+  }
+  
+  public void testGetInt16Array() throws IOException {
+    short[] sourceArray = new short[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_16);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, (long) sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test");
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    short[] loaded = ((short[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i]);
+    }
+    r.close();
+    dir.close();
+  }
+  
+  public void testGetInt64Array() throws IOException {
+    long[] sourceArray = new long[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_64);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test");
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    long[] loaded = ((long[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i]);
+    }
+    r.close();
+    dir.close();
+  }
+  
+  public void testGetInt32Array() throws IOException {
+    int[] sourceArray = new int[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_32);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, (long) sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test");
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    int[] loaded = ((int[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i]);
+    }
+    r.close();
+    dir.close();
+  }
+  
+  public void testGetFloat32Array() throws IOException {
+    float[] sourceArray = new float[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Floats.getWriter(dir, "test", 4, trackBytes);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Floats.getValues(dir, "test", 3);
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    float[] loaded = ((float[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i], 0.0f);
+    }
+    r.close();
+    dir.close();
+  }
+  
+  public void testGetFloat64Array() throws IOException {
+    double[] sourceArray = new double[] {1,2,3};
+    Directory dir = newDirectory();
+    final AtomicLong trackBytes = new AtomicLong(0);
+    Writer w = Floats.getWriter(dir, "test", 8, trackBytes);
+    for (int i = 0; i < sourceArray.length; i++) {
+      w.add(i, sourceArray[i]);
+    }
+    w.finish(sourceArray.length);
+    IndexDocValues r = Floats.getValues(dir, "test", 3);
+    Source source = r.getSource();
+    assertTrue(source.hasArray());
+    double[] loaded = ((double[])source.getArray());
+    assertEquals(loaded.length, sourceArray.length);
+    for (int i = 0; i < loaded.length; i++) {
+      assertEquals("value didn't match at index " + i, sourceArray[i], loaded[i], 0.0d);
+    }
+    r.close();
+    dir.close();
+  }
 
-        for (int iter = 0; iter < 2; iter++) {
-          ValuesEnum iEnum = getEnum(r);
-          LongsRef ints = iEnum.getInt();
-          for (int i = 0; i < NUM_VALUES + additionalDocs; i += 1 + random.nextInt(25)) {
-            assertEquals(i, iEnum.advance(i));
-            if (i < NUM_VALUES) {
-              assertEquals(values[i], ints.get());
-            } else {
-              assertEquals(0, ints.get());
-            }
-          }
-          assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.advance(NUM_VALUES + additionalDocs));
-          iEnum.close();
-        }
-        r.close();
-        dir.close();
+  private void testInts(ValueType type, int maxBit) throws IOException {
+    long maxV = 1;
+    final int NUM_VALUES = 333 + random.nextInt(333);
+    final long[] values = new long[NUM_VALUES];
+    for (int rx = 1; rx < maxBit; rx++, maxV *= 2) {
+      Directory dir = newDirectory();
+      final AtomicLong trackBytes = new AtomicLong(0);
+      Writer w = Ints.getWriter(dir, "test", trackBytes, type);
+      for (int i = 0; i < NUM_VALUES; i++) {
+        final long v = random.nextLong() % (1 + maxV);
+        values[i] = v;
+        w.add(i, v);
       }
+      final int additionalDocs = 1 + random.nextInt(9);
+      w.finish(NUM_VALUES + additionalDocs);
+      assertEquals(0, trackBytes.get());
+
+      IndexDocValues r = Ints.getValues(dir, "test");
+      for (int iter = 0; iter < 2; iter++) {
+        Source s = getSource(r);
+        assertEquals(type, s.type());
+        for (int i = 0; i < NUM_VALUES; i++) {
+          final long v = s.getInt(i);
+          assertEquals("index " + i, values[i], v);
+        }
+      }
+
+      for (int iter = 0; iter < 2; iter++) {
+        ValuesEnum iEnum = getEnum(r);
+        assertEquals(type, iEnum.type());
+        LongsRef ints = iEnum.getInt();
+        for (int i = 0; i < NUM_VALUES + additionalDocs; i++) {
+          assertEquals(i, iEnum.nextDoc());
+          if (i < NUM_VALUES) {
+            assertEquals(values[i], ints.get());
+          } else {
+            assertEquals(0, ints.get());
+          }
+        }
+        assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.nextDoc());
+        iEnum.close();
+      }
+
+      for (int iter = 0; iter < 2; iter++) {
+        ValuesEnum iEnum = getEnum(r);
+        assertEquals(type, iEnum.type());
+        LongsRef ints = iEnum.getInt();
+        for (int i = 0; i < NUM_VALUES + additionalDocs; i += 1 + random.nextInt(25)) {
+          assertEquals(i, iEnum.advance(i));
+          if (i < NUM_VALUES) {
+            assertEquals(values[i], ints.get());
+          } else {
+            assertEquals(0, ints.get());
+          }
+        }
+        assertEquals(ValuesEnum.NO_MORE_DOCS, iEnum.advance(NUM_VALUES + additionalDocs));
+        iEnum.close();
+      }
+      r.close();
+      dir.close();
     }
   }
 
