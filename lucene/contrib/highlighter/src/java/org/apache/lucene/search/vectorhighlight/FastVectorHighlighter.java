@@ -199,7 +199,7 @@ public class FastVectorHighlighter {
   
   /**
    * set the maximum number of phrases to analyze when searching for the highest-scoring phrase.
-   * The default is 5000.  To ensure that all phrases are analyzed, use a negative number or Integer.MAX_VALUE.
+   * The default is unlimited (Integer.MAX_VALUE).
    */
   public void setPhraseLimit (int phraseLimit) { this.phraseLimit = phraseLimit; }
 }
