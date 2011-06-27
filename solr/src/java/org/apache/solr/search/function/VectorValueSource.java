@@ -17,10 +17,10 @@ package org.apache.solr.search.function;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.search.function.MultiValueSource;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,7 +29,7 @@ import java.util.Map;
 
 /**
  * Converts individual ValueSource instances to leverage the DocValues *Val functions that work with multiple values,
- * i.e. {@link org.apache.solr.search.function.DocValues#doubleVal(int, double[])}
+ * i.e. {@link org.apache.lucene.queries.function.DocValues#doubleVal(int, double[])}
  */
 //Not crazy about the name, but...
 public class VectorValueSource extends MultiValueSource {

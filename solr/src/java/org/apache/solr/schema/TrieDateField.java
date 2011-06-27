@@ -17,7 +17,7 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.search.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;

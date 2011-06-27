@@ -17,6 +17,10 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;

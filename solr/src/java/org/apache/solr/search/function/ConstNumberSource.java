@@ -17,6 +17,8 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.ValueSource;
+
 /**
  * <code>ConstNumberSource</code> is the base class for all constant numbers
  */

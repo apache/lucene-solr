@@ -17,6 +17,9 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+
 /**
  * <code>SumFloatFunction</code> returns the sum of it's components.
  */

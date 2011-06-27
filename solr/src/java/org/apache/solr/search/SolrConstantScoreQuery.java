@@ -1,9 +1,9 @@
 package org.apache.solr.search;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;

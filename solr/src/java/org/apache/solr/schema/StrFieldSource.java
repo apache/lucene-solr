@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.solr.search.function.DocValues;
+import org.apache.lucene.queries.function.DocValues;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.StringIndexDocValues;
 

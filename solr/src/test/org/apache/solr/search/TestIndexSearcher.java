@@ -18,12 +18,12 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.DocValues;
 import org.junit.BeforeClass;
 
 import java.util.Map;

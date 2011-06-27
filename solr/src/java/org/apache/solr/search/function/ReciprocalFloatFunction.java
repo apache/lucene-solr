@@ -18,6 +18,8 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
@@ -25,7 +27,7 @@ import java.util.Map;
 
 /**
  * <code>ReciprocalFloatFunction</code> implements a reciprocal function f(x) = a/(mx+b), based on
- * the float value of a field or function as exported by {@link org.apache.solr.search.function.ValueSource}.
+ * the float value of a field or function as exported by {@link org.apache.lucene.queries.function.ValueSource}.
  * <br>
  *
  * When a and b are equal, and x>=0, this function has a maximum value of 1 that drops as x increases.
@@ -37,7 +39,7 @@ import java.util.Map;
  * a date a year in the past will get a multiplier of about 1/(1+1) or 1/2,
  * and date two years old will yield 1/(2+1) or 1/3.
  *
- * @see FunctionQuery
+ * @see org.apache.lucene.queries.function.FunctionQuery
  *
  *
  */

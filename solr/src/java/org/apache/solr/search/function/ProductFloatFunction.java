@@ -17,6 +17,9 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+
 /**
  * <code>ProductFloatFunction</code> returns the product of it's components.
  */

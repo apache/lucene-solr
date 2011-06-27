@@ -17,6 +17,9 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+
 /** Function to raise the base "a" to the power "b"
  */
 public class PowFloatFunction extends DualFloatFunction {

@@ -25,6 +25,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -37,6 +38,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -49,6 +51,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -61,6 +64,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -74,6 +78,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -85,6 +90,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>
@@ -98,6 +104,7 @@
         <fileset dir="benchmark" includes="build.xml" />
         <fileset dir="common" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
+        <fileset dir="queries" includes="build.xml" />
         <fileset dir="suggest" includes="build.xml" />
       </subant>
     </sequential>

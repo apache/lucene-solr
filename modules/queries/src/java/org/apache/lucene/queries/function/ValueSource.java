@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.queries.function;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -33,7 +33,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
+ * Instantiates {@link DocValues} for a particular reader.
  * <br>
  * Often used when creating a {@link FunctionQuery}.
  *
@@ -129,7 +129,7 @@ public abstract class ValueSource implements Serializable {
 
   /**
    * Implement a {@link org.apache.lucene.search.FieldComparator} that works
-   * off of the {@link org.apache.solr.search.function.DocValues} for a ValueSource
+   * off of the {@link DocValues} for a ValueSource
    * instead of the normal Lucene FieldComparator that works off of a FieldCache.
    */
   class ValueSourceComparator extends FieldComparator<Double> {

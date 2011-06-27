@@ -16,6 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.search.cache.ShortValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.ShortValues;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;

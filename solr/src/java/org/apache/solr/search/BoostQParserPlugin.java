@@ -16,15 +16,15 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.function.BoostedQuery;
-import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.ValueSource;
 
 /**
  * Create a boosted query from the input value.  The main value is the query to be boosted.

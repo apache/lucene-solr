@@ -17,6 +17,8 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.ValueSource;
+
 
 public abstract class BoolFunction extends ValueSource {
   // TODO: placeholder to return type, among other common future functionality

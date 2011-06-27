@@ -196,10 +196,11 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
-    <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries-contrib/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/grouping/build/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/common/build/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/queries/build/classes/java" />
   </path>
 
   <target name="prep-lucene-jars">
@@ -246,8 +247,8 @@
       <fileset dir="../lucene/build/contrib/misc">
         <include name="lucene-misc-${version}.jar" />
       </fileset>
-      <fileset dir="../lucene/build/contrib/queries">
-        <include name="lucene-queries-${version}.jar" />
+      <fileset dir="../lucene/build/contrib/queries-contrib">
+        <include name="lucene-queries-contrib-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spatial">
         <include name="lucene-spatial-${version}.jar" />
@@ -257,6 +258,9 @@
       </fileset>
       <fileset dir="../modules/common/build">
         <include name="lucene-common-module-${version}.jar" />
+      </fileset>
+      <fileset dir="../modules/queries/build">
+        <include name="lucene-queries-${version}.jar" />
       </fileset>
       </copy>
   </target>  
@@ -274,6 +278,7 @@
       <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
       <fileset dir="../modules/grouping" includes="build.xml"/>
       <fileset dir="../modules/common" includes="build.xml"/>
+      <fileset dir="../modules/queries" includes="build.xml"/>
     </subant>
   </target>
    

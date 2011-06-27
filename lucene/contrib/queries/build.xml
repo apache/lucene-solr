@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="queries" default="default">
+<project name="queries-contrib" default="default">
 
   <description>
     Queries - various query object exotica not in core

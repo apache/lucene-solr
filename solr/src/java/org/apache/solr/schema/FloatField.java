@@ -17,11 +17,11 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
