@@ -113,11 +113,11 @@ public abstract class Writer extends DocValuesConsumer {
    * the {@link Writer} implementation. The given document ID must always be
    * greater than the previous ID or <tt>0</tt> if called the first time.
    */
-  protected abstract void add(int docID) throws IOException;
+  protected abstract void mergeDoc(int docID) throws IOException;
 
   /**
    * Sets the next {@link ValuesEnum} to consume values from on calls to
-   * {@link #add(int)}
+   * {@link #mergeDoc(int)}
    * 
    * @param valuesEnum
    *          the next {@link ValuesEnum}, this must not be null
@@ -159,7 +159,7 @@ public abstract class Writer extends DocValuesConsumer {
               }
             }
             if (currentDocId == i) { // we are on the doc to merge
-              add(docID);
+              mergeDoc(docID);
             }
             ++docID;
           }
