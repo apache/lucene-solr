@@ -56,7 +56,6 @@ class IntsImpl {
 
   static class IntsWriter extends Writer {
 
-    // TODO: optimize merging here!!
     private LongsRef intsRef;
     private final IndexDocValuesArray array;
     private long minValue;
@@ -66,6 +65,8 @@ class IntsImpl {
     private int lastDocId = -1;
     private final Directory dir;
     private final byte typeOrd;
+    private IndexOutput datOut;
+    private boolean merging;
     
 
     protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed,
@@ -115,39 +116,116 @@ class IntsImpl {
       lastDocId = docID;
       array.set(docID, v);
     }
+    
+    private final void initDataOut(byte typeOrd) throws IOException {
+      if (datOut == null) {
+        boolean success = false;
+        try {
+          datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+              DATA_EXTENSION));
+          CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
+          datOut.writeByte(typeOrd);
+          success = true;
+
+        } finally {
+          if (!success) {
+            IOUtils.closeSafely(true, datOut);
+          }
+        }
+      }
+    }
 
     @Override
     public void finish(int docCount) throws IOException {
-      IndexOutput datOut = null;
       boolean success = false;
       try {
-        datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-            DATA_EXTENSION));
-        CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
-        if (!started) {
-          minValue = maxValue = 0;
+        if (datOut == null) {
+          // if we only add or merge Packed ints datOut is not initialized
+          assert !merging || typeOrd == PACKED;
+          finishAdd(docCount);
+        } else {
+          assert datOut != null && merging && typeOrd != PACKED;
+          // on merge, simply fill up missing values 
+          fillDefault(datOut, docCount - (lastDocId + 1));
         }
-        byte headerType = typeOrd;
-        if (typeOrd == PACKED) {
-          final long delta = maxValue - minValue;
-          // if we exceed the range of positive longs we must switch to fixed ints
-          if (delta <= ( maxValue >= 0 && minValue <= 0 ? Long.MAX_VALUE : Long.MAX_VALUE -1) &&  delta >= 0) {
-            writePackedInts(datOut, docCount);
-            return;
-          } 
-          headerType = FIXED_64;
-        }
-        datOut.writeByte(headerType);
-        array.write(datOut, docCount);
         success = true;
       } finally {
         IOUtils.closeSafely(!success, datOut);
         array.clear();
       }
     }
+    
+    private final void finishAdd(int docCount) throws IOException {
+      if (!started) {
+        minValue = maxValue = 0;
+      }
+      byte headerType = typeOrd;
+      if (typeOrd == PACKED) {
+        final long delta = maxValue - minValue;
+        // if we exceed the range of positive longs we must switch to fixed
+        // ints
+        if (delta <= (maxValue >= 0 && minValue <= 0 ? Long.MAX_VALUE
+            : Long.MAX_VALUE - 1) && delta >= 0) {
+          writePackedInts(docCount);
+          return; // done
+        } else {
+          headerType = FIXED_64;
+        }
+      }
+      initDataOut(headerType);
+      array.write(datOut, docCount);
+      assert datOut != null; 
+    }
+    // TODO how can we improve VAR_INT mergeing here without violating compression?
+    @Override
+    protected void merge(MergeState state) throws IOException {
+      merging = true;
+      if (typeOrd != PACKED) {
+        initDataOut(typeOrd); // init datOut since we merge directly
+        if (state.bits == null && state.reader instanceof IntsReader) {
+          // no deleted docs - try bulk copy
+          final IntsReader reader = (IntsReader) state.reader;
+          if (reader.type == typeOrd) {
+            final int docBase = state.docBase;
+            if (docBase - lastDocId > 1) {
+              // fill with default values
+              lastDocId += fillDefault(datOut, docBase - lastDocId - 1);
+            }
+            lastDocId += reader.transferTo(datOut);
+            return;
+          }
+        }
+      }
+      super.merge(state);
+    }
+    
+    @Override
+    protected void mergeDoc(int docID) throws IOException {
+      assert docID > lastDocId : "docID: " + docID
+      + " must be greater than the last added doc id: " + lastDocId;
+      assert merging;
+      final long value = intsRef.get();
+      if (typeOrd != PACKED) {
+        // if now packed we do straight merging and write values directly
+        assert datOut != null;
+        if (docID - lastDocId > 1) {
+          // fill with default values
+          array.writeDefaults(datOut, docID - lastDocId - 1);
+        }
+        array.writeDirect(datOut, value);
+        lastDocId = docID;
+      } else {
+        add(docID, value);
+      }
+    }
+    
+    protected final int fillDefault(IndexOutput datOut, int numValues) throws IOException {
+      array.writeDefaults(datOut, numValues);
+      return numValues;
+    }
 
-    private void writePackedInts(IndexOutput datOut, int docCount) throws IOException {
-      datOut.writeByte(PACKED);
+    private void writePackedInts(int docCount) throws IOException {
+      initDataOut(PACKED);
       datOut.writeLong(minValue);
       assert array.type() == ValueType.FIXED_INTS_64;
       final long[] docToValue = (long[])array.getArray();
@@ -168,11 +246,6 @@ class IntsImpl {
       }
 
       w.finish();
-    }
-
-    @Override
-    protected void mergeDoc(int docID) throws IOException {
-      add(docID, intsRef.get());
     }
 
     @Override
@@ -198,10 +271,12 @@ class IntsImpl {
   static class IntsReader extends IndexDocValues {
     private final IndexInput datIn;
     private final byte type;
+    private final int numDocs;
 
-    protected IntsReader(Directory dir, String id) throws IOException {
+    protected IntsReader(Directory dir, String id, int numDocs) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION));
+      this.numDocs = numDocs;
       boolean success = false;
       try {
         CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
@@ -212,6 +287,21 @@ class IntsImpl {
           IOUtils.closeSafely(true, datIn);
         }
       }
+    }
+
+    public int transferTo(IndexOutput datOut) throws IOException {
+      IndexInput indexInput = (IndexInput) datIn.clone();
+      boolean success = false;
+      try {
+        indexInput.seek(CodecUtil.headerLength(CODEC_NAME));
+        // skip type
+        indexInput.readByte();
+        datOut.copyBytes(indexInput, bytesPerValue(type) * numDocs);
+        success = true;
+      } finally {
+        IOUtils.closeSafely(!success, indexInput);
+      }
+      return numDocs;
     }
 
     /**
@@ -226,7 +316,7 @@ class IntsImpl {
       try {
         input = (IndexInput) datIn.clone();
         input.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
-        source  = loadFixedSource(type, input);
+        source  = loadFixedSource(type, input, numDocs);
         success = true;
         return source;
       } finally {
@@ -248,7 +338,7 @@ class IntsImpl {
       boolean success = false;
       try {
         input.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
-        final ValuesEnum inst = directEnum(type, source, input);
+        final ValuesEnum inst = directEnum(type, source, input, numDocs);
         success = true;
         return inst;
       } finally {
@@ -264,16 +354,16 @@ class IntsImpl {
     }
   }
   
-  private static ValuesEnum directEnum(byte ord, AttributeSource attrSource, IndexInput input) throws IOException {
+  private static ValuesEnum directEnum(byte ord, AttributeSource attrSource, IndexInput input, int numDocs) throws IOException {
     switch (ord) {
     case FIXED_16:
-      return new ShortValues((AtomicLong)null).getDirectEnum(attrSource, input);
+      return new ShortValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_32:
-      return new IntValues((AtomicLong)null).getDirectEnum(attrSource, input);
+      return new IntValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_64:
-      return new LongValues((AtomicLong)null).getDirectEnum(attrSource, input);
+      return new LongValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_8:
-      return new ByteValues((AtomicLong)null).getDirectEnum(attrSource, input);
+      return new ByteValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
     case PACKED:
       return new PackedIntsEnumImpl(attrSource, input);
     default:
@@ -281,16 +371,16 @@ class IntsImpl {
     }
   }
   
-  private static IndexDocValues.Source loadFixedSource(byte ord, IndexInput input) throws IOException {
+  private static IndexDocValues.Source loadFixedSource(byte ord, IndexInput input, int numDoc) throws IOException {
     switch (ord) {
     case FIXED_16:
-      return new ShortValues(input);
+      return new ShortValues(input, numDoc);
     case FIXED_32:
-      return new IntValues(input);
+      return new IntValues(input, numDoc);
     case FIXED_64:
-      return new LongValues(input);
+      return new LongValues(input, numDoc);
     case FIXED_8:
-      return new ByteValues(input);
+      return new ByteValues(input, numDoc);
     case PACKED:
       return new PackedIntsSource(input);
     default:
@@ -298,6 +388,27 @@ class IntsImpl {
     }
   }
   
+  private static int bytesPerValue(byte typeOrd) {
+    final int numBytes;
+    switch (typeOrd) {
+    case FIXED_16:
+     numBytes = 2;
+     break;
+    case FIXED_32:
+     numBytes = 4;
+     break;
+    case FIXED_64:
+      numBytes = 8;
+      break;
+    case FIXED_8:
+      numBytes = 1;
+      break;
+    default:
+      throw new IllegalStateException("illegal type ord " + typeOrd);
+    }
+    return numBytes;
+  }
+
   static class PackedIntsSource extends Source {
     private final long minValue;
     private final long defaultValue;

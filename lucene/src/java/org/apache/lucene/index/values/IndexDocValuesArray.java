@@ -66,6 +66,10 @@ abstract class IndexDocValuesArray extends Source {
     maxDocID = -1;
     size = 0;
   }
+  
+  protected abstract void writeDirect(IndexOutput out, long value) throws IOException;
+  
+  protected abstract void writeDefaults(IndexOutput out, int num) throws IOException;
 
   protected abstract void setInternal(int docId, long value);
 
@@ -98,7 +102,7 @@ abstract class IndexDocValuesArray extends Source {
     };
   }
 
-  abstract ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input)
+  abstract ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input, int maxDoc)
       throws IOException;
 
   @Override
@@ -114,9 +118,8 @@ abstract class IndexDocValuesArray extends Source {
       values = new byte[0];
     }
 
-    ByteValues(IndexInput input) throws IOException {
+    ByteValues(IndexInput input, int numDocs) throws IOException {
       super(new AtomicLong(), 1, ValueType.FIXED_INTS_8);
-      final int numDocs = input.readInt();
       values = new byte[numDocs];
       adjustSize(numDocs);
       input.readBytes(values, 0, values.length, false);
@@ -148,18 +151,14 @@ abstract class IndexDocValuesArray extends Source {
     @Override
     void write(IndexOutput output, int numDocs) throws IOException {
       assert maxDocID + 1 <= numDocs;
-      output.writeInt(numDocs);
       output.writeBytes(values, 0, maxDocID + 1);
-      final byte zero = 0;
-      for (int i = maxDocID + 1; i < numDocs; i++) {
-        output.writeByte(zero);
-      }
+      writeDefaults(output,  numDocs - (maxDocID+1));
     }
 
     @Override
-    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input)
+    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input, int maxDoc)
         throws IOException {
-      return new FixedIntsEnumImpl(attrSource, input, type()) {
+      return new FixedIntsEnumImpl(attrSource, input, type(), maxDoc) {
         @Override
         protected void fillNext(LongsRef ref, IndexInput dataIn)
             throws IOException {
@@ -173,6 +172,19 @@ abstract class IndexDocValuesArray extends Source {
       super.clear();
       values = new byte[0];
     }
+
+    @Override
+    protected void writeDefaults(IndexOutput out, int num) throws IOException {
+      final byte zero = 0;
+      for (int i = 0; i < num; i++) {
+        out.writeByte(zero);
+      }
+    }
+
+    @Override
+    protected void writeDirect(IndexOutput out, long value) throws IOException {
+      out.writeByte((byte) (0xFFL & value));
+    }
   };
 
   final static class ShortValues extends IndexDocValuesArray {
@@ -184,10 +196,9 @@ abstract class IndexDocValuesArray extends Source {
       values = new short[0];
     }
 
-    ShortValues(IndexInput input) throws IOException {
+    ShortValues(IndexInput input, int numDocs) throws IOException {
       super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_SHORT,
           ValueType.FIXED_INTS_16);
-      final int numDocs = input.readInt();
       values = new short[numDocs];
       adjustSize(numDocs);
       for (int i = 0; i < values.length; i++) {
@@ -209,7 +220,7 @@ abstract class IndexDocValuesArray extends Source {
 
     @Override
     protected void setInternal(int docId, long value) {
-      values[docId] = (short) (0xFFFF & value);
+      values[docId] = (short) (0xFFFFL & value);
     }
 
     @Override
@@ -221,20 +232,16 @@ abstract class IndexDocValuesArray extends Source {
     @Override
     void write(IndexOutput output, int numDocs) throws IOException {
       assert maxDocID + 1 <= numDocs;
-      output.writeInt(numDocs);
       for (int i = 0; i < maxDocID + 1; i++) {
         output.writeShort(values[i]);
       }
-      final short zero = 0;
-      for (int i = maxDocID + 1; i < numDocs; i++) {
-        output.writeShort(zero);
-      }
+      writeDefaults(output,  numDocs - (maxDocID+1));
     }
 
     @Override
-    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input)
+    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input, int maxDoc)
         throws IOException {
-      return new FixedIntsEnumImpl(attrSource, input, type()) {
+      return new FixedIntsEnumImpl(attrSource, input, type(), maxDoc) {
         @Override
         protected void fillNext(LongsRef ref, IndexInput dataIn)
             throws IOException {
@@ -249,6 +256,19 @@ abstract class IndexDocValuesArray extends Source {
       values = new short[0];
     }
 
+    @Override
+    protected void writeDefaults(IndexOutput out, int num) throws IOException {
+      final short zero = 0;
+      for (int i = 0; i < num; i++) {
+        out.writeShort(zero);
+      }
+    }
+    
+    @Override
+    protected void writeDirect(IndexOutput out, long value) throws IOException {
+      out.writeShort((short) (0xFFFFL & value));
+    }
+
   };
 
   final static class IntValues extends IndexDocValuesArray {
@@ -259,10 +279,9 @@ abstract class IndexDocValuesArray extends Source {
       values = new int[0];
     }
 
-    IntValues(IndexInput input) throws IOException {
+    IntValues(IndexInput input, int numDocs) throws IOException {
       super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_INT,
           ValueType.FIXED_INTS_32);
-      final int numDocs = input.readInt();
       values = new int[numDocs];
       adjustSize(numDocs);
       for (int i = 0; i < values.length; i++) {
@@ -296,19 +315,16 @@ abstract class IndexDocValuesArray extends Source {
     @Override
     void write(IndexOutput output, int numDocs) throws IOException {
       assert maxDocID + 1 <= numDocs;
-      output.writeInt(numDocs);
       for (int i = 0; i < maxDocID + 1; i++) {
         output.writeInt(values[i]);
       }
-      for (int i = maxDocID + 1; i < numDocs; i++) {
-        output.writeInt(0);
-      }
+      writeDefaults(output,  numDocs - (maxDocID+1));
     }
 
     @Override
-    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input)
+    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input, int maxDoc)
         throws IOException {
-      return new FixedIntsEnumImpl(attrSource, input, type()) {
+      return new FixedIntsEnumImpl(attrSource, input, type(), maxDoc) {
         @Override
         protected void fillNext(LongsRef ref, IndexInput dataIn)
             throws IOException {
@@ -322,6 +338,19 @@ abstract class IndexDocValuesArray extends Source {
       super.clear();
       values = new int[0];
     }
+
+    @Override
+    protected void writeDefaults(IndexOutput out, int num) throws IOException {
+      for (int i = 0; i < num; i++) {
+        out.writeInt(0);
+      }
+    }
+    
+    @Override
+    protected void writeDirect(IndexOutput out, long value) throws IOException {
+      out.writeInt((int) (0xFFFFFFFFL & value));
+    }
+
   };
 
   final static class LongValues extends IndexDocValuesArray {
@@ -333,10 +362,9 @@ abstract class IndexDocValuesArray extends Source {
       values = new long[0];
     }
 
-    LongValues(IndexInput input) throws IOException {
+    LongValues(IndexInput input, int numDocs) throws IOException {
       super(new AtomicLong(), RamUsageEstimator.NUM_BYTES_LONG,
           ValueType.FIXED_INTS_64);
-      final int numDocs = input.readInt();
       values = new long[numDocs];
       adjustSize(numDocs);
       for (int i = 0; i < values.length; i++) {
@@ -370,20 +398,17 @@ abstract class IndexDocValuesArray extends Source {
     @Override
     void write(IndexOutput output, int numDocs) throws IOException {
       assert maxDocID + 1 <= numDocs;
-      output.writeInt(numDocs);
       for (int i = 0; i < maxDocID + 1; i++) {
         output.writeLong(values[i]);
       }
-
-      for (int i = maxDocID + 1; i < numDocs; i++) {
-        output.writeLong(0l);
-      }
+      writeDefaults(output, numDocs - (maxDocID+1));
+     
     }
 
     @Override
-    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input)
+    ValuesEnum getDirectEnum(AttributeSource attrSource, IndexInput input, int maxDoc)
         throws IOException {
-      return new FixedIntsEnumImpl(attrSource, input, type()) {
+      return new FixedIntsEnumImpl(attrSource, input, type(), maxDoc) {
         @Override
         protected void fillNext(LongsRef ref, IndexInput dataIn)
             throws IOException {
@@ -397,6 +422,17 @@ abstract class IndexDocValuesArray extends Source {
       super.clear();
       values = new long[0];
     }
+
+    @Override
+    protected void writeDefaults(IndexOutput out, int num) throws IOException {
+      for (int i = 0; i < num; i++) {
+        out.writeLong(0l);
+      }
+    }
+    @Override
+    protected void writeDirect(IndexOutput out, long value) throws IOException {
+      out.writeLong(value);
+    }
   };
 
   private abstract static class FixedIntsEnumImpl extends ValuesEnum {
@@ -406,7 +442,7 @@ abstract class IndexDocValuesArray extends Source {
     private int pos = -1;
 
     private FixedIntsEnumImpl(AttributeSource source, IndexInput dataIn,
-        ValueType type) throws IOException {
+        ValueType type, int maxDoc) throws IOException {
       super(source, type);
       switch (type) {
       case FIXED_INTS_16:
@@ -427,7 +463,7 @@ abstract class IndexDocValuesArray extends Source {
       }
       intsRef.offset = 0;
       this.dataIn = dataIn;
-      maxDoc = dataIn.readInt();
+      this.maxDoc = maxDoc;
 
     }
 

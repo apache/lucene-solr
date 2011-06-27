@@ -37,7 +37,7 @@ public class Ints {
     return new IntsWriter(dir, id, bytesUsed, type);
   }
 
-  public static IndexDocValues getValues(Directory dir, String id) throws IOException {
-    return new IntsReader(dir, id);
+  public static IndexDocValues getValues(Directory dir, String id, int numDocs) throws IOException {
+    return new IntsReader(dir, id, numDocs);
   }
 }

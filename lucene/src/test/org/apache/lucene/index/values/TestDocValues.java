@@ -187,7 +187,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(1, minMax[i][1]);
       w.finish(2);
       assertEquals(0, trackBytes.get());
-      IndexDocValues r = Ints.getValues(dir, "test");
+      IndexDocValues r = Ints.getValues(dir, "test", 2);
       Source source = getSource(r);
       assertEquals(i + " with min: " + minMax[i][0] + " max: " + minMax[i][1],
           expectedTypes[i], source.type());
@@ -228,7 +228,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test");
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
     Source source = r.getSource();
     assertTrue(source.hasArray());
     byte[] loaded = ((byte[])source.getArray());
@@ -249,7 +249,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test");
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
     Source source = r.getSource();
     assertTrue(source.hasArray());
     short[] loaded = ((short[])source.getArray());
@@ -270,7 +270,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(i, sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test");
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
     Source source = r.getSource();
     assertTrue(source.hasArray());
     long[] loaded = ((long[])source.getArray());
@@ -291,7 +291,7 @@ public class TestDocValues extends LuceneTestCase {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test");
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
     Source source = r.getSource();
     assertTrue(source.hasArray());
     int[] loaded = ((int[])source.getArray());
@@ -362,7 +362,7 @@ public class TestDocValues extends LuceneTestCase {
       w.finish(NUM_VALUES + additionalDocs);
       assertEquals(0, trackBytes.get());
 
-      IndexDocValues r = Ints.getValues(dir, "test");
+      IndexDocValues r = Ints.getValues(dir, "test", NUM_VALUES + additionalDocs);
       for (int iter = 0; iter < 2; iter++) {
         Source s = getSource(r);
         assertEquals(type, s.type());

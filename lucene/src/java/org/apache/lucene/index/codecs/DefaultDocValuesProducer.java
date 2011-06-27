@@ -126,7 +126,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
     case FIXED_INTS_64:
     case FIXED_INTS_8:
     case VAR_INTS:
-      return Ints.getValues(dir, id);
+      return Ints.getValues(dir, id, docCount);
     case FLOAT_32:
       return Floats.getValues(dir, id, docCount);
     case FLOAT_64:

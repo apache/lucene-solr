@@ -271,7 +271,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs", i, intsEnum.advance(i));
-          assertEquals(val + "" + mod + " " +  i, expected%mod, ints.getInt(i));
+          assertEquals(val + " mod: " + mod + " index: " +  i, expected%mod, ints.getInt(i));
           assertEquals(expected%mod, enumRef.get());
 
         }
