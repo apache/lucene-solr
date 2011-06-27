@@ -116,6 +116,7 @@
   <macrodef name="contrib-uptodate">
     <attribute name="name"/>
     <attribute name="property" default="@{name}.uptodate"/>
+    <attribute name="contrib-src-name" default="${name}"/>
     <attribute name="classpath.property" default="@{name}.jar"/>
     <!-- set jarfile only, if the target jar file has no generic name, applies to analyzers with its common and smartcn subdir -->
     <attribute name="jarfile" default="${common.dir}/build/contrib/@{name}/lucene-@{name}-${version}.jar"/>
@@ -123,7 +124,7 @@
       <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
       <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
-        <srcfiles dir="${common.dir}/contrib/@{name}/src/java" includes="**/*.java"/>
+        <srcfiles dir="${common.dir}/contrib/@{contrib-src-name}/src/java" includes="**/*.java"/>
       </uptodate>
     </sequential>
   </macrodef>
