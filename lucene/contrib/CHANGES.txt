@@ -55,7 +55,16 @@ Bug Fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
-(No changes)
+New Features
+
+ * LUCENE-3234: provide a limit on phrase analysis in FastVectorHighlighter for
+   highlighting speed up. Use FastVectorHighlighter.setPhraseLimit() to set limit
+   (e.g. 5000). (Mike Sokolov via Koji Sekiguchi)
+  
+API Changes
+   
+Bug Fixes
+
 
 ======================= Lucene 3.3.0 =======================
 

@@ -254,6 +254,9 @@ New Features
 
 * SOLR-2458: post.jar enhanced to handle JSON, CSV and <optimize> (janhoy)
 
+* LUCENE-3234: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.
+  (Mike Sokolov via koji)
+
 Optimizations
 ----------------------
 
