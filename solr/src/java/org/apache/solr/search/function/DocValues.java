@@ -136,7 +136,7 @@ public abstract class DocValues {
   // A RangeValueSource can't easily be a ValueSource that takes another ValueSource
   // because it needs different behavior depending on the type of fields.  There is also
   // a setup cost - parsing and normalizing params, and doing a binary search on the StringIndex.
-  
+  // TODO: change "reader" to AtomicReaderContext
   public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     float lower;
     float upper;

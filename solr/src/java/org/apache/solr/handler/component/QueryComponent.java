@@ -287,6 +287,7 @@ public class QueryComponent extends SearchComponent
       DocListAndSet res = new DocListAndSet();
       res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
       if (rb.isNeedDocSet()) {
+        // TODO: create a cache for this!
         List<Query> queries = new ArrayList<Query>();
         queries.add(rb.getQuery());
         List<Query> filters = rb.getFilters();

@@ -257,6 +257,15 @@ New Features
 * LUCENE-3234: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.
   (Mike Sokolov via koji)
 
+* SOLR-2429: Ability to add cache=false to queries and query filters to avoid
+  using the filterCache or queryCache.  A cost may also be specified and is used
+  to order the evaluation of non-cached filters from least to greatest cost .
+  For very expensive query filters (cost >= 100) if the query implements
+  the PostFilter interface, it will be used to obtain a Collector that is
+  checked only for documents that match the main query and all other filters.
+  The "frange" query now implements the PostFilter interface.  (yonik)
+
+
 Optimizations
 ----------------------
 

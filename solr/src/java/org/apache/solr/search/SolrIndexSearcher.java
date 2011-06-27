@@ -542,6 +542,17 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(Query query) throws IOException {
+    if (query instanceof ExtendedQuery) {
+      ExtendedQuery eq = (ExtendedQuery)query;
+      if (!eq.getCache()) {
+        if (query instanceof WrappedQuery) {
+          query = ((WrappedQuery)query).getWrappedQuery();
+        }
+        query = QueryUtils.makeQueryable(query);
+        return getDocSetNC(query, null);
+      }
+    }
+
     // Get the absolute value (positive version) of this query.  If we
     // get back the same reference, we know it's positive.
     Query absQ = QueryUtils.getAbs(query);
@@ -574,11 +585,28 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null);
-    if (filterCache != null) filterCache.put(q,answer);
+    if (filterCache != null) filterCache.put(
+        q,answer);
     return answer;
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
+
+
+  static class ProcessedFilter {
+    DocSet answer;  // the answer, if non-null
+    Filter filter;
+    DelegatingCollector postFilter;
+  }
+
+
+  private static Comparator<Query> sortByCost = new Comparator<Query>() {
+    @Override
+    public int compare(Query q1, Query q2) {
+      return ((ExtendedQuery)q1).getCost() - ((ExtendedQuery)q2).getCost();
+    }
+  };
+
 
   /**
    * Returns the set of document ids matching all queries.
@@ -589,123 +617,161 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(List<Query> queries) throws IOException {
-    if (queries==null) return null;
-    if (queries.size()==1) return getDocSet(queries.get(0));
-    DocSet answer=null;
+    ProcessedFilter pf = getProcessedFilter(null, queries);
+    if (pf.answer != null) return pf.answer;
 
-    boolean[] neg = new boolean[queries.size()];
-    DocSet[] sets = new DocSet[queries.size()];
 
-    int smallestIndex = -1;
-    int smallestCount = Integer.MAX_VALUE;
-    for (int i=0; i<sets.length; i++) {
-      Query q = queries.get(i);
-      Query posQuery = QueryUtils.getAbs(q);
-      sets[i] = getPositiveDocSet(posQuery);
-      // Negative query if absolute value different from original
-      if (q==posQuery) {
-        neg[i] = false;
-        // keep track of the smallest positive set.
-        // This optimization is only worth it if size() is cached, which it would
-        // be if we don't do any set operations.
-        int sz = sets[i].size();
-        if (sz<smallestCount) {
-          smallestCount=sz;
-          smallestIndex=i;
-          answer = sets[i];
+    DocSetCollector setCollector = new DocSetCollector(maxDoc()>>6, maxDoc());
+    Collector collector = setCollector;
+    if (pf.postFilter != null) {
+      pf.postFilter.setLastDelegate(collector);
+      collector = pf.postFilter;
+    }
+
+    final AtomicReaderContext[] leaves = leafContexts;
+
+
+    for (int i=0; i<leaves.length; i++) {
+      final AtomicReaderContext leaf = leaves[i];
+      final IndexReader reader = leaf.reader;
+      DocIdSet idSet = null;
+      if (pf.filter != null) {
+        idSet = pf.filter.getDocIdSet(leaf);
+        if (idSet == null) continue;
+      }
+      DocIdSetIterator idIter = null;
+      if (idSet != null) {
+        idIter = idSet.iterator();
+        if (idIter == null) continue;
+      }
+
+      collector.setNextReader(leaf);
+      Bits skipDocs = reader.getDeletedDocs();
+      int max = reader.maxDoc();
+
+      if (idIter == null) {
+        for (int docid = 0; docid<max; docid++) {
+          if (skipDocs != null && skipDocs.get(docid)) continue;
+          collector.collect(docid);
         }
       } else {
-        neg[i] = true;
+        for (int docid = -1; (docid = idIter.advance(docid+1)) < max; ) {
+          if (skipDocs != null && skipDocs.get(docid)) continue;
+          collector.collect(docid);
+        }
       }
     }
 
-    // if no positive queries, start off with all docs
-    if (answer==null) answer = getPositiveDocSet(matchAllDocsQuery);
+    return setCollector.getDocSet();
+  }
+
+
+  public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
+    ProcessedFilter pf = new ProcessedFilter();
+    if (queries==null || queries.size()==0) {
+      if (setFilter != null)
+        pf.filter = setFilter.getTopFilter();
+      return pf;
+    }
+
+    DocSet answer=null;
+
+    boolean[] neg = new boolean[queries.size()+1];
+    DocSet[] sets = new DocSet[queries.size()+1];
+    List<Query> notCached = null;
+    List<Query> postFilters = null;
+
+    int end = 0;
+    int smallestIndex = -1;
+
+    if (setFilter != null) {
+      answer = sets[end++] = setFilter;
+      smallestIndex = end;
+    }
+
+    int smallestCount = Integer.MAX_VALUE;
+    for (Query q : queries) {
+      if (q instanceof ExtendedQuery) {
+        ExtendedQuery eq = (ExtendedQuery)q;
+        if (!eq.getCache()) {
+          if (eq.getCost() >= 100 && eq instanceof PostFilter) {
+            if (postFilters == null) postFilters = new ArrayList<Query>(sets.length-end);
+            postFilters.add(q);
+          } else {
+            if (notCached == null) notCached = new ArrayList<Query>(sets.length-end);
+            notCached.add(q);
+          }
+          continue;
+        }
+      }
+
+      Query posQuery = QueryUtils.getAbs(q);
+      sets[end] = getPositiveDocSet(posQuery);
+      // Negative query if absolute value different from original
+      if (q==posQuery) {
+        neg[end] = false;
+        // keep track of the smallest positive set.
+        // This optimization is only worth it if size() is cached, which it would
+        // be if we don't do any set operations.
+        int sz = sets[end].size();
+        if (sz<smallestCount) {
+          smallestCount=sz;
+          smallestIndex=end;
+          answer = sets[end];
+        }
+      } else {
+        neg[end] = true;
+      }
+
+      end++;
+    }
+
+    // Are all of our normal cached filters negative?
+    if (end > 0 && answer==null) {
+      answer = getPositiveDocSet(matchAllDocsQuery);
+    }
 
     // do negative queries first to shrink set size
-    for (int i=0; i<sets.length; i++) {
+    for (int i=0; i<end; i++) {
       if (neg[i]) answer = answer.andNot(sets[i]);
     }
 
-    for (int i=0; i<sets.length; i++) {
+    for (int i=0; i<end; i++) {
       if (!neg[i] && i!=smallestIndex) answer = answer.intersection(sets[i]);
     }
 
-    return answer;
-  }
-
-  Filter getFilter(Query q) throws IOException {
-    if (q == null) return null;
-    // TODO: support pure negative queries?
-
-    // if (q instanceof) {
-    // }
-
-    return getDocSet(q).getTopFilter();
-  }
-
-
-  Filter getFilter(DocSet setFilter, List<Query> queries) throws IOException {
-    Filter answer = setFilter == null ? null : setFilter.getTopFilter();
-
-    if (queries == null || queries.size() == 0) {
-      return answer;
-    }
-
-    if (answer == null && queries.size() == 1) {
-      return getFilter(queries.get(0));  
-    }
-
-
-    DocSet finalSet=null;
-
-    int nDocSets =0;
-    boolean[] neg = new boolean[queries.size()];
-    DocSet[] sets = new DocSet[queries.size()];
-    Query[] nocache = new Query[queries.size()];
-
-    int smallestIndex = -1;
-    int smallestCount = Integer.MAX_VALUE;
-    for (Query q : queries) {
-      // if (q instanceof)
-
-
-      Query posQuery = QueryUtils.getAbs(q);
-      sets[nDocSets] = getPositiveDocSet(posQuery);
-      // Negative query if absolute value different from original
-      if (q==posQuery) {
-        neg[nDocSets] = false;
-        // keep track of the smallest positive set.
-        // This optimization is only worth it if size() is cached, which it would
-        // be if we don't do any set operations.
-        int sz = sets[nDocSets].size();
-        if (sz<smallestCount) {
-          smallestCount=sz;
-          smallestIndex=nDocSets;
-          finalSet = sets[nDocSets];
+    if (notCached != null) {
+      Collections.sort(notCached, sortByCost);
+      List<Weight> weights = new ArrayList<Weight>(notCached.size());
+      for (Query q : notCached) {
+        Query qq = QueryUtils.makeQueryable(q);
+        weights.add(createNormalizedWeight(qq));
+      }
+      pf.filter = new FilterImpl(answer, weights);
+    } else {
+      if (postFilters == null) {
+        if (answer == null) {
+          answer = getPositiveDocSet(matchAllDocsQuery);
         }
-      } else {
-        neg[nDocSets] = true;
+        // "answer" is the only part of the filter, so set it.
+        pf.answer = answer;
       }
 
-      nDocSets++;
+      if (answer != null) {
+        pf.filter = answer.getTopFilter();
+      }
     }
 
-    // if no positive queries, start off with all docs
-    if (finalSet==null) finalSet = getPositiveDocSet(matchAllDocsQuery);
-
-    // do negative queries first to shrink set size
-    for (int i=0; i<sets.length; i++) {
-      if (neg[i]) finalSet = finalSet.andNot(sets[i]);
+    if (postFilters != null) {
+      Collections.sort(postFilters, sortByCost);
+      for (int i=postFilters.size()-1; i>=0; i--) {
+        DelegatingCollector prev = pf.postFilter;
+        pf.postFilter = ((PostFilter)postFilters.get(i)).getFilterCollector(this);
+        if (prev != null) pf.postFilter.setDelegate(prev);
+      }
     }
 
-    for (int i=0; i<sets.length; i++) {
-      if (!neg[i] && i!=smallestIndex) finalSet = finalSet.intersection(sets[i]);
-    }
-
-    return finalSet.getTopFilter();
-
-
+    return pf;
   }
 
   /** lucene.internal */
@@ -861,6 +927,17 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public DocSet getDocSet(Query query, DocSet filter) throws IOException {
     if (filter==null) return getDocSet(query);
 
+    if (query instanceof ExtendedQuery) {
+      ExtendedQuery eq = (ExtendedQuery)query;
+      if (!eq.getCache()) {
+        if (query instanceof WrappedQuery) {
+          query = ((WrappedQuery)query).getWrappedQuery();
+        }
+        query = QueryUtils.makeQueryable(query);
+        return getDocSetNC(query, filter);
+      }
+    }
+
     // Negative query if absolute value different from original
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = absQ==query;
@@ -942,7 +1019,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   static final int NO_CHECK_QCACHE       = 0x80000000;
   static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
-  
+  static final int NO_SET_QCACHE         = 0x10000000;
+
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 
@@ -959,21 +1037,33 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     // check for overflow, and check for # docs in index
     if (maxDocRequested < 0 || maxDocRequested > maxDoc()) maxDocRequested = maxDoc();
     int supersetMaxDoc= maxDocRequested;
-    DocList superset;
+    DocList superset = null;
+
+    int flags = cmd.getFlags();
+    Query q = cmd.getQuery();
+    if (q instanceof ExtendedQuery) {
+      ExtendedQuery eq = (ExtendedQuery)q;
+      if (!eq.getCache()) {
+        flags |= (NO_CHECK_QCACHE | NO_SET_QCACHE | NO_CHECK_FILTERCACHE);
+      }
+    }
+
 
     // we can try and look up the complete query in the cache.
     // we can't do that if filter!=null though (we don't want to
     // do hashCode() and equals() for a big DocSet).
-    if (queryResultCache != null && cmd.getFilter()==null) {
+    if (queryResultCache != null && cmd.getFilter()==null
+        && (flags & (NO_CHECK_QCACHE|NO_SET_QCACHE)) != ((NO_CHECK_QCACHE|NO_SET_QCACHE)))
+    {
         // all of the current flags can be reused during warming,
         // so set all of them on the cache key.
-        key = new QueryResultKey(cmd.getQuery(), cmd.getFilterList(), cmd.getSort(), cmd.getFlags());
-        if ((cmd.getFlags() & NO_CHECK_QCACHE)==0) {
+        key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags);
+        if ((flags & NO_CHECK_QCACHE)==0) {
           superset = queryResultCache.get(key);
 
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them
-            if ((cmd.getFlags() & GET_SCORES)==0 || superset.hasScores()) {
+            if ((flags & GET_SCORES)==0 || superset.hasScores()) {
               // NOTE: subset() returns null if the DocList has fewer docs than
               // requested
               out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
@@ -983,12 +1073,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             // found the docList in the cache... now check if we need the docset too.
             // OPT: possible future optimization - if the doclist contains all the matches,
             // use it to make the docset instead of rerunning the query.
-            if (out.docSet==null && ((cmd.getFlags() & GET_DOCSET)!=0) ) {
+            if (out.docSet==null && ((flags & GET_DOCSET)!=0) ) {
               if (cmd.getFilterList()==null) {
                 out.docSet = getDocSet(cmd.getQuery());
               } else {
-                List<Query> newList = new ArrayList<Query>(cmd.getFilterList()
-.size()+1);
+                List<Query> newList = new ArrayList<Query>(cmd.getFilterList().size()+1);
                 newList.add(cmd.getQuery());
                 newList.addAll(cmd.getFilterList());
                 out.docSet = getDocSet(newList);
@@ -998,9 +1087,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           }
         }
 
-        // If we are going to generate the result, bump up to the
-        // next resultWindowSize for better caching.
+      // If we are going to generate the result, bump up to the
+      // next resultWindowSize for better caching.
 
+      if ((flags & NO_SET_QCACHE) == 0) {
         // handle 0 special case as well as avoid idiv in the common case.
         if (maxDocRequested < queryResultWindowSize) {
           supersetMaxDoc=queryResultWindowSize;
@@ -1008,6 +1098,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           supersetMaxDoc = ((maxDocRequested -1)/queryResultWindowSize + 1)*queryResultWindowSize;
           if (supersetMaxDoc < 0) supersetMaxDoc=maxDocRequested;
         }
+      } else {
+        key = null;  // we won't be caching the result
+      }
     }
 
 
@@ -1020,7 +1113,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     // check if we should try and use the filter cache
     boolean useFilterCache=false;
-    if ((cmd.getFlags() & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && cmd.getSort() != null && filterCache != null) {
+    if ((flags & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && cmd.getSort() != null && filterCache != null) {
       useFilterCache=true;
       SortField[] sfields = cmd.getSort().getSort();
       for (SortField sf : sfields) {
@@ -1049,7 +1142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     } else {
       // do it the normal way...
       cmd.setSupersetMaxDoc(supersetMaxDoc);
-      if ((cmd.getFlags() & GET_DOCSET)!=0) {
+      if ((flags & GET_DOCSET)!=0) {
         // this currently conflates returning the docset for the base query vs
         // the base query and all filters.
         DocSet qDocSet = getDocListAndSetNC(qr,cmd);
@@ -1059,8 +1152,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         getDocListNC(qr,cmd);
         //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
       }
-      superset = out.docList;
-      out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
+      if (key != null) {
+        superset = out.docList;
+        out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
+      }
     }
 
     // lastly, put the superset in the cache if the size is less than or equal
@@ -1073,9 +1168,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
 
   private void getDocListNC(QueryResult qr,QueryCommand cmd) throws IOException {
-    //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
-    //Query query, DocSet filter, Sort lsort, int offset, int len, int flags, long timeAllowed, NamedList<Object> responseHeader
-    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
     final long timeAllowed = cmd.getTimeAllowed();
     int len = cmd.getSupersetMaxDoc();
     int last = len;
@@ -1091,7 +1183,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
-    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
+    ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
+    final Filter luceneFilter = pf.filter;
 
     // handle zero case...
     if (lastDocRequested<=0) {
@@ -1143,6 +1236,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, timeAllowed);
       }
+      if (pf.postFilter != null) {
+        pf.postFilter.setLastDelegate(collector);
+        collector = pf.postFilter;
+      }
+
       try {
         super.search(query, luceneFilter, collector);
       }
@@ -1166,6 +1264,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       Collector collector = topCollector;
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, timeAllowed);
+      }
+      if (pf.postFilter != null) {
+        pf.postFilter.setLastDelegate(collector);
+        collector = pf.postFilter;
       }
       try {
         super.search(query, luceneFilter, collector);
@@ -1199,7 +1301,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   // be cached if desired.
   private DocSet getDocListAndSetNC(QueryResult qr,QueryCommand cmd) throws IOException {
     int len = cmd.getSupersetMaxDoc();
-    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
     int last = len;
     if (last < 0 || last > maxDoc()) last=maxDoc();
     final int lastDocRequested = last;
@@ -1214,10 +1315,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     int maxDoc = maxDoc();
     int smallSetSize = maxDoc>>6;
 
+    ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
+    final Filter luceneFilter = pf.filter;
+
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
     final long timeAllowed = cmd.getTimeAllowed();
-
-    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
 
     // handle zero case...
     if (lastDocRequested<=0) {
@@ -1253,6 +1355,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
        if( timeAllowed > 0 ) {
          collector = new TimeLimitingCollector(collector, timeAllowed);
        }
+      if (pf.postFilter != null) {
+        pf.postFilter.setLastDelegate(collector);
+        collector = pf.postFilter;
+      }
+
        try {
          super.search(query, luceneFilter, collector);
        }
@@ -1283,6 +1390,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
       if( timeAllowed > 0 ) {
         collector = new TimeLimitingCollector(collector, timeAllowed );
+      }
+      if (pf.postFilter != null) {
+        pf.postFilter.setLastDelegate(collector);
+        collector = pf.postFilter;
       }
       try {
         super.search(query, luceneFilter, collector);
@@ -1320,7 +1431,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     // TODO: currently we don't generate the DocSet for the base query,
     // but the QueryDocSet == CompleteDocSet if filter==null.
-    return filter==null ? qr.getDocSet() : null;
+    return pf.filter==null && pf.postFilter==null ? qr.getDocSet() : null;
   }
 
 
@@ -1933,3 +2044,133 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 }
 
 
+class FilterImpl extends Filter {
+  final DocSet filter;
+  final Filter topFilter;
+  final List<Weight> weights;
+
+  public FilterImpl(DocSet filter, List<Weight> weights) {
+    this.filter = filter;
+    this.weights = weights;
+    this.topFilter = filter == null ? null : filter.getTopFilter();
+  }
+
+  @Override
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+    DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context);
+    if (weights.size() == 0) return sub;
+    return new FilterSet(sub, context);
+  }
+
+  private class FilterSet extends DocIdSet {
+    DocIdSet docIdSet;
+    AtomicReaderContext context;
+
+    public FilterSet(DocIdSet docIdSet, AtomicReaderContext context) {
+      this.docIdSet = docIdSet;
+      this.context = context;
+    }
+
+    @Override
+    public DocIdSetIterator iterator() throws IOException {
+      List<DocIdSetIterator> iterators = new ArrayList<DocIdSetIterator>(weights.size()+1);
+      if (docIdSet != null) {
+        DocIdSetIterator iter = docIdSet.iterator();
+        if (iter == null) return null;
+        iterators.add(iter);
+      }
+      for (Weight w : weights) {
+        Scorer scorer = w.scorer(context, Weight.ScorerContext.def());
+        if (scorer == null) return null;
+        iterators.add(scorer);
+      }
+      if (iterators.size()==0) return null;
+      if (iterators.size()==1) return iterators.get(0);
+      if (iterators.size()==2) return new DualFilterIterator(iterators.get(0), iterators.get(1));
+      return new FilterIterator(iterators.toArray(new DocIdSetIterator[iterators.size()]));
+    }
+  }
+
+  private static class FilterIterator extends DocIdSetIterator {
+    final DocIdSetIterator[] iterators;
+    final DocIdSetIterator first;
+
+    public FilterIterator(DocIdSetIterator[] iterators) {
+      this.iterators = iterators;
+      this.first = iterators[0];
+    }
+
+    @Override
+    public int docID() {
+      return first.docID();
+    }
+
+    private int doNext(int doc) throws IOException {
+      int which=0;  // index of the iterator with the highest id
+      int i=1;
+      outer: for(;;) {
+        for (; i<iterators.length; i++) {
+          if (i == which) continue;
+          DocIdSetIterator iter = iterators[i];
+          int next = iter.advance(doc);
+          if (next != doc) {
+            doc = next;
+            which = i;
+            i = 0;
+            continue outer;
+          }
+        }
+        return doc;
+      }
+    }
+
+
+    @Override
+    public int nextDoc() throws IOException {
+      return doNext(first.nextDoc());
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return doNext(first.advance(target));
+    }
+  }
+
+  private static class DualFilterIterator extends DocIdSetIterator {
+    final DocIdSetIterator a;
+    final DocIdSetIterator b;
+
+    public DualFilterIterator(DocIdSetIterator a, DocIdSetIterator b) {
+      this.a = a;
+      this.b = b;
+    }
+
+    @Override
+    public int docID() {
+      return a.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      int doc = a.nextDoc();
+      for(;;) {
+        int other = b.advance(doc);
+        if (other == doc) return doc;
+        doc = a.advance(other);
+        if (other == doc) return doc;
+      }
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int doc = a.advance(target);
+      for(;;) {
+        int other = b.advance(doc);
+        if (other == doc) return doc;
+        doc = a.advance(other);
+        if (other == doc) return doc;
+      }
+    }
+  }
+
+}

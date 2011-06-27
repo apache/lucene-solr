@@ -106,7 +106,7 @@ public class DisMaxQParser extends QParser {
         if (null == boostFunc || "".equals(boostFunc)) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (String f : ff.keySet()) {
-          Query fq = subQuery(f, FunctionQParserPlugin.NAME).parse();
+          Query fq = subQuery(f, FunctionQParserPlugin.NAME).getQuery();
           Float b = ff.get(f);
           if (null != b) {
             fq.setBoost(b);
@@ -125,7 +125,7 @@ public class DisMaxQParser extends QParser {
       boostQueries = new ArrayList<Query>();
       for (String qs : boostParams) {
         if (qs.trim().length() == 0) continue;
-        Query q = subQuery(qs, null).parse();
+        Query q = subQuery(qs, null).getQuery();
         boostQueries.add(q);
       }
     }
@@ -190,7 +190,7 @@ public class DisMaxQParser extends QParser {
     String altQ = solrParams.get(DisMaxParams.ALTQ);
     if (altQ != null) {
       QParser altQParser = subQuery(altQ, null);
-      return altQParser.parse();
+      return altQParser.getQuery();
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing query string");
     }

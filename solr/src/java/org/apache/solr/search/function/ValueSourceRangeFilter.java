@@ -49,6 +49,27 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.includeUpper = upperVal != null && includeUpper;
   }
 
+  public ValueSource getValueSource() {
+    return valueSource;
+  }
+
+  public String getLowerVal() {
+    return lowerVal;
+  }
+
+  public String getUpperVal() {
+    return upperVal;
+  }
+
+  public boolean isIncludeLower() {
+    return includeLower;
+  }
+
+  public boolean isIncludeUpper() {
+    return includeUpper;
+  }
+
+
   @Override
   public DocIdSet getDocIdSet(final Map context, final AtomicReaderContext readerContext) throws IOException {
      return new DocIdSet() {
