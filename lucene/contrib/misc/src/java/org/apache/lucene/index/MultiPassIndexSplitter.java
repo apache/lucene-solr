@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -98,7 +97,7 @@ public class MultiPassIndexSplitter {
       }
       IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(
           Version.LUCENE_CURRENT,
-          new WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+          null)
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
       w.addIndexes(input);

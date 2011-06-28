@@ -4,6 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+ * LUCENE-3250: Wordnet's SynExpand requires a non-null Analyzer (it no longer
+   treats null as StandardAnalyzer).  (Robert Muir)
   
 Build
 

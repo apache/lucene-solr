@@ -41,6 +41,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.store.FSDirectory;
 
 
@@ -48,24 +49,6 @@ import org.apache.lucene.store.FSDirectory;
  * Test program to look up synonyms.
  */
 public class SynLookup {
-
-  final static class CountingCollector extends Collector {
-    public int numHits = 0;
-    
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {}
-    @Override
-    public void collect(int doc) throws IOException {
-      numHits++;
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) {}
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return true;
-    }    
-  }
   
 	public static void main(String[] args) throws IOException {
 		if (args.length != 2) {
@@ -78,16 +61,16 @@ public class SynLookup {
 
 		String word = args[1];
 		Query query = new TermQuery(new Term(Syns2Index.F_WORD, word));
-		CountingCollector countingCollector = new CountingCollector();
+		TotalHitCountCollector countingCollector = new TotalHitCountCollector();
 		searcher.search(query, countingCollector);
 
-		if (countingCollector.numHits == 0) {
+		if (countingCollector.getTotalHits() == 0) {
 			System.out.println("No synonyms found for " + word);
 		} else {
 			System.out.println("Synonyms found for \"" + word + "\":");
 		}
 
-		ScoreDoc[] hits = searcher.search(query, countingCollector.numHits).scoreDocs;
+		ScoreDoc[] hits = searcher.search(query, countingCollector.getTotalHits()).scoreDocs;
 		
 		for (int i = 0; i < hits.length; i++) {
 			Document doc = searcher.doc(hits[i].doc);
