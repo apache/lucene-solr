@@ -101,6 +101,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
   
   /* This must always point to the most recent file format. */
   public static final int CURRENT_FORMAT = FORMAT_3_1;
+
+  public static final int FORMAT_MINIMUM = FORMAT;
+  public static final int FORMAT_MAXIMUM = CURRENT_FORMAT;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -267,16 +270,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
 
     try {
       int format = input.readInt();
-      if(format < 0){     // file contains explicit format info
-        // check that it is a format we can understand
-        if (format < CURRENT_FORMAT)
-          throw new CorruptIndexException("Unknown format version: " + format);
-        version = input.readLong(); // read version
-        counter = input.readInt(); // read counter
+      // check that it is a format we can understand
+      if (format > FORMAT_MINIMUM) {
+        throw new IndexFormatTooOldException(segmentFileName, format,
+          FORMAT_MINIMUM, FORMAT_MAXIMUM);
       }
-      else{     // file is in old format without explicit format info
-        counter = format;
+      if (format < FORMAT_MAXIMUM) {
+        throw new IndexFormatTooNewException(segmentFileName, format,
+          FORMAT_MINIMUM, FORMAT_MAXIMUM);
       }
+      version = input.readLong(); // read version
+      counter = input.readInt(); // read counter
       
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
         SegmentInfo si = new SegmentInfo(directory, format, input);
