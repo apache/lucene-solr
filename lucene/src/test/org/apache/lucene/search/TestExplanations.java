@@ -33,6 +33,8 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Tests primitive queries (ie: that rewrite to themselves) to
@@ -47,9 +49,9 @@ import org.apache.lucene.util.LuceneTestCase;
  * @see "Subclasses for actual tests"
  */
 public class TestExplanations extends LuceneTestCase {
-  protected IndexSearcher searcher;
-  protected IndexReader reader;
-  protected Directory directory;
+  protected static IndexSearcher searcher;
+  protected static IndexReader reader;
+  protected static Directory directory;
   
   public static final String KEY = "KEY";
   // boost on this field is the same as the iterator for the doc
@@ -58,18 +60,19 @@ public class TestExplanations extends LuceneTestCase {
   public static final String ALTFIELD = "alt";
   public static final QueryParser qp =
     new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
-
-  @Override
-  public void tearDown() throws Exception {
+  
+  @AfterClass
+  public static void afterClassTestExplanations() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
@@ -86,7 +89,7 @@ public class TestExplanations extends LuceneTestCase {
     searcher = newSearcher(reader);
   }
 
-  protected String[] docFields = {
+  protected static final String[] docFields = {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3 zz",
     "w1 xx w2 yy w3",

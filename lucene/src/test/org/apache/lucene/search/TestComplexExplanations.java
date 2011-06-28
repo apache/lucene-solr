@@ -39,7 +39,7 @@ public class TestComplexExplanations extends TestExplanations {
   
   @Override
   public void tearDown() throws Exception {
-    searcher.close();
+    searcher.setSimilarityProvider(IndexSearcher.getDefaultSimilarityProvider());
     super.tearDown();
   }
 
