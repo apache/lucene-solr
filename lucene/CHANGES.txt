@@ -484,6 +484,11 @@ Bug fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+Bug fixes
+
+* LUCENE-3251: Directory#copy failed to close target output if opening the
+  source stream failed. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 

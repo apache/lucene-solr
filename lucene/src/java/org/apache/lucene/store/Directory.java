@@ -224,10 +224,12 @@ public abstract class Directory implements Closeable {
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest) throws IOException {
-    IndexOutput os = to.createOutput(dest);
-    IndexInput is = openInput(src);
+    IndexOutput os = null;
+    IndexInput is = null;
     IOException priorException = null;
     try {
+      os = to.createOutput(dest);
+      is = openInput(src);
       is.copyBytes(os, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
