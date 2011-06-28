@@ -25,11 +25,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.IntDocValues;
 
 /**
  * Utility Field used for random sorting.  It should not be passed a value.
