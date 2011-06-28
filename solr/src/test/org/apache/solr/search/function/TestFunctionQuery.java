@@ -65,11 +65,25 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // lrf.args.put("version","2.0");
     for (float val : values) {
       String s = Float.toString(val);
+
       if (field!=null) assertU(adoc("id", s, field, s));
       else assertU(adoc("id", s));
+
+      if (random.nextInt(100) < 20) {
+        if (field!=null) assertU(adoc("id", s, field, s));
+        else assertU(adoc("id", s));
+      }
+
+      if (random.nextInt(100) < 20) {
+        assertU(commit());
+
+      }
+
+
       // System.out.println("added doc for " + val);
     }
-    assertU(optimize()); // squeeze out any possible deleted docs
+    // assertU(optimize()); // squeeze out any possible deleted docs
+    assertU(commit());
   }
 
   // replace \0 with the field name and create a parseable string 
