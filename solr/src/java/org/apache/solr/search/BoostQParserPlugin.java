@@ -54,10 +54,10 @@ public class BoostQParserPlugin extends QParserPlugin {
       public Query parse() throws ParseException {
         b = localParams.get(BOOSTFUNC);
         baseParser = subQuery(localParams.get(QueryParsing.V), null);
-        Query q = baseParser.parse();
+        Query q = baseParser.getQuery();
 
         if (b == null) return q;
-        Query bq = subQuery(b, FunctionQParserPlugin.NAME).parse();
+        Query bq = subQuery(b, FunctionQParserPlugin.NAME).getQuery();
         if (bq instanceof FunctionQuery) {
           vs = ((FunctionQuery)bq).getValueSource();
         } else {

@@ -33,7 +33,9 @@ import java.util.Map;
  *
  * Experimental and subject to change.
  */
-public class SolrConstantScoreQuery extends ConstantScoreQuery {
+public class SolrConstantScoreQuery extends ConstantScoreQuery implements ExtendedQuery {
+  boolean cache = true;  // cache by default
+  int cost;
 
   public SolrConstantScoreQuery(Filter filter) {
     super(filter);
@@ -44,6 +46,30 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
   public Filter getFilter() {
     return filter;
   }
+
+  public void setCache(boolean cache) {
+    this.cache = cache;
+  }
+
+  public boolean getCache() {
+    return cache;
+  }
+
+  public void setCacheSep(boolean cacheSep) {
+  }
+
+  public boolean getCacheSep() {
+    return false;
+  }
+
+  public void setCost(int cost) {
+    this.cost = cost;
+  }
+
+  public int getCost() {
+    return cost;
+  }
+
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {

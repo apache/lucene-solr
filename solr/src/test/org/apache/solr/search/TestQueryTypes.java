@@ -117,6 +117,16 @@ public class TestQueryTypes extends AbstractSolrTestCase {
       assertQ(req( "q", "{!frange v="+f+" l='"+v+"' u='"+v+"'}" )
               ,"//result[@numFound='1']"
               );
+
+       // frange as filter not cached
+      assertQ(req( "q","*:*", "fq", "{!frange cache=false v="+f+" l='"+v+"' u='"+v+"'}" )
+              ,"//result[@numFound='1']"
+              );
+
+       // frange as filter run after the main query
+      assertQ(req( "q","*:*", "fq", "{!frange cache=false cost=100 v="+f+" l='"+v+"' u='"+v+"'}" )
+              ,"//result[@numFound='1']"
+              );
       
       // function query... just make sure it doesn't throw an exception
       assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")
