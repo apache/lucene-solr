@@ -1,8 +1,10 @@
 package org.apache.solr.search.function;
 
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueBool;
-import org.apache.solr.search.MutableValueInt;
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueBool;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+
 
 public abstract class BoolDocValues extends DocValues {
   protected final ValueSource vs;

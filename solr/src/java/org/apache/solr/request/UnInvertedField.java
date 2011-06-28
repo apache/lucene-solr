@@ -23,7 +23,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
@@ -123,7 +122,7 @@ public class UnInvertedField extends DocTermOrds {
 
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
-        deState.fieldName = StringHelper.intern(field);
+        deState.fieldName = field;
         // deState.termsEnum = te.tenum;
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.docsEnum = docsEnum;
@@ -228,13 +227,13 @@ public class UnInvertedField extends DocTermOrds {
       TermsEnum te = getOrdTermsEnum(searcher.getIndexReader());
       if (prefix != null && prefix.length() > 0) {
         final BytesRef prefixBr = new BytesRef(prefix);
-        if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
+        if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
           startTerm = numTermsInField;
         } else {
           startTerm = (int) te.ord();
         }
         prefixBr.append(UnicodeUtil.BIG_TERM);
-        if (te.seek(prefixBr, true) == TermsEnum.SeekStatus.END) {
+        if (te.seekCeil(prefixBr, true) == TermsEnum.SeekStatus.END) {
           endTerm = numTermsInField;
         } else {
           endTerm = (int) te.ord();

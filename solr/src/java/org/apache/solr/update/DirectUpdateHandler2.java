@@ -169,13 +169,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         if (cmd.indexedId == null) {
           cmd.indexedId = getIndexedId(cmd.doc);
         }
-        Term idTerm = this.idTerm.createTerm(cmd.indexedId);
+        Term idTerm = new Term(idField.getName(), cmd.indexedId);
         boolean del = false;
         if (cmd.updateTerm == null) {
           updateTerm = idTerm;
         } else {
           del = true;
-        	updateTerm = cmd.updateTerm;
+          updateTerm = cmd.updateTerm;
         }
 
         writer.updateDocument(updateTerm, cmd.getLuceneDocument(schema));
@@ -214,7 +214,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     iwCommit.lock();
     try {
       openWriter();
-      writer.deleteDocuments(idTerm.createTerm(idFieldType.toInternal(cmd.id)));
+      writer.deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
     } finally {
       iwCommit.unlock();
     }

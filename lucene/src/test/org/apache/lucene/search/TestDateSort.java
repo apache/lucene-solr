@@ -79,7 +79,7 @@ public class TestDateSort extends LuceneTestCase {
   public void testReverseDateSort() throws Exception {
     IndexSearcher searcher = newSearcher(reader);
 
-    Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
+    Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.Type.STRING, true));
 
     QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, new MockAnalyzer(random));
     Query query = queryParser.parse("Document");

@@ -54,7 +54,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
   protected final SchemaField idField;
   protected final FieldType idFieldType;
-  protected final Term idTerm; // prototype term to avoid interning fieldname
 
   protected Vector<SolrEventListener> commitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
@@ -93,7 +92,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     schema = core.getSchema();
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
-    idTerm = idField!=null ? new Term(idField.getName(),"") : null;
     parseEventListeners();
   }
 

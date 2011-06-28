@@ -18,15 +18,16 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MultiBits;
+import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -99,49 +100,11 @@ public final class MultiFields extends Fields {
     }
   }
 
-  private static class MultiReaderBits implements Bits {
-    private final int[] starts;
-    private final IndexReader[] readers;
-    private final Bits[] delDocs;
-
-    public MultiReaderBits(int[] starts, IndexReader[] readers) {
-      assert readers.length == starts.length-1;
-      this.starts = starts;
-      this.readers = readers;
-      delDocs = new Bits[readers.length];
-      for(int i=0;i<readers.length;i++) {
-        delDocs[i] = readers[i].getDeletedDocs();
-      }
-    }
-    
-    public boolean get(int doc) {
-      final int sub = ReaderUtil.subIndex(doc, starts);
-      Bits dels = delDocs[sub];
-      if (dels == null) {
-        // NOTE: this is not sync'd but multiple threads can
-        // come through here; I think this is OK -- worst
-        // case is more than 1 thread ends up filling in the
-        // sub Bits
-        dels = readers[sub].getDeletedDocs();
-        if (dels == null) {
-          return false;
-        } else {
-          delDocs[sub] = dels;
-        }
-      }
-      return dels.get(doc-starts[sub]);
-    }
-
-    public int length() {    
-      return starts[starts.length-1];
-    }
-  }
-
   public static Bits getDeletedDocs(IndexReader r) {
     Bits result;
     if (r.hasDeletions()) {
 
-      final List<IndexReader> readers = new ArrayList<IndexReader>();
+      final List<Bits> delDocs = new ArrayList<Bits>();
       final List<Integer> starts = new ArrayList<Integer>();
 
       try {
@@ -149,7 +112,7 @@ public final class MultiFields extends Fields {
             @Override
             protected void add(int base, IndexReader r) throws IOException {
               // record all delDocs, even if they are null
-              readers.add(r);
+              delDocs.add(r.getDeletedDocs());
               starts.add(base);
             }
           }.run();
@@ -159,16 +122,12 @@ public final class MultiFields extends Fields {
         throw new RuntimeException(ioe);
       }
 
-      assert readers.size() > 0;
-      if (readers.size() == 1) {
+      assert delDocs.size() > 0;
+      if (delDocs.size() == 1) {
         // Only one actual sub reader -- optimize this case
-        result = readers.get(0).getDeletedDocs();
+        result = delDocs.get(0);
       } else {
-        int[] startsArray = new int[starts.size()];
-        for(int i=0;i<startsArray.length;i++) {
-          startsArray[i] = starts.get(i);
-        }
-        result = new MultiReaderBits(startsArray, readers.toArray(new IndexReader[readers.size()]));
+        result = new MultiBits(delDocs, starts);
       }
 
     } else {

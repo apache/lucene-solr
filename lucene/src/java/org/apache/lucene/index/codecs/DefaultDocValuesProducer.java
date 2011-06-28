@@ -121,8 +121,12 @@ public class DefaultDocValuesProducer extends PerDocValues {
   protected IndexDocValues loadDocValues(int docCount, Directory dir, String id,
       ValueType type) throws IOException {
     switch (type) {
-    case INTS:
-      return Ints.getValues(dir, id, false);
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
+    case VAR_INTS:
+      return Ints.getValues(dir, id, docCount);
     case FLOAT_32:
       return Floats.getValues(dir, id, docCount);
     case FLOAT_64:

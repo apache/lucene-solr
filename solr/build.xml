@@ -28,43 +28,44 @@
   	<fileset dir="lib" includes="**/*.jar"/>
   	<fileset dir="example/lib" includes="**/*.jar"/>
   </path>
-  
+
   <import file="common-build.xml"/>
 
   <!-- add some descriptions to some inherited targets -->
-  <target name="compile" description="Compile the source code." 
+  <target name="compile" description="Compile the source code."
   	      depends="compile-core, build-contrib"/>
   <target name="test" description="Validate, then run core and contrib unit tests."
   	      depends="validate-solr, common-solr.test, test-contrib"/>
   <target name="test-core" description="Runs the core unit tests."
           depends="common.test"/>
-  <target name="compile-test" description="Compile unit tests." 
+  <target name="compile-test" description="Compile unit tests."
    	      depends="compile-test-framework, common.compile-test"/>
   <target name="javadocs" description="Generate javadocs for core, client, test-framework, and contrib"
           depends="contrib-build.javadocs, javadocs-solrj, javadocs-test-framework, javadocs-contrib"/>
-  <target name="javadocs-core" description="Generate javadocs for core." 
+  <target name="javadocs-core" description="Generate javadocs for core."
           depends="contrib-build.javadocs"/>
- 
+
   <!-- hackish we have to call init/clover here, but solr core depends upon solrj? -->
-  <target name="compile-core" depends="init, clover, compile-analyzers-common, 
-        compile-analyzers-phonetic, compile-suggest, compile-highlighter,
-        compile-memory, compile-misc, compile-queries, compile-spatial,
-        compile-grouping, compile-solrj, common.compile-core, compile-webapp"
+  <target name="compile-core" depends="init, clover, compile-common-module,
+        compile-analyzers-common, compile-analyzers-phonetic, compile-suggest,
+        compile-highlighter, compile-memory, compile-misc, compile-queries-contrib,
+        compile-spatial, compile-grouping, compile-queries, compile-solrj,
+        common.compile-core, compile-webapp"
   	  unless="solr-core.compiled">
   </target>
- 
+
   <target name="compile-webapp" depends="compile-solrj">
-    <compile srcdir="src/webapp/src" 
+    <compile srcdir="src/webapp/src"
              destdir="${build.dir}/classes/webapp">
       <classpath refid="classpath"/>
     </compile>
   </target>
- 
+
   <!-- TODO: factor solrj into a separate dir so its a normal module?
        we have to reinvent wheels the way it is now -->
- 
+
   <target name="compile-solrj" description="Compile the java client.">
-    <compile srcdir="src/common:src/solrj" 
+    <compile srcdir="src/common:src/solrj"
              destdir="${build.dir}/classes/solrj">
   	  <classpath refid="classpath"/>
   	</compile>
@@ -153,6 +154,12 @@
   <target name="compile-grouping" unless="grouping.uptodate">
   	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false"/>
   </target>
+  <target name="compile-common-module" unless="common-module.uptodate">
+  	<ant dir="${common.dir}/../modules/common" target="default" inheritAll="false"/>
+  </target>
+  <target name="compile-queries" unless="queries.uptodate">
+  	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false"/>
+  </target>
   <target name="compile-highlighter" unless="highlighter.uptodate">
   	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false"/>
   </target>
@@ -162,7 +169,7 @@
   <target name="compile-misc" unless="misc.uptodate">
   	<ant dir="${common.dir}/contrib/misc" target="default" inheritAll="false"/>
   </target>
-  <target name="compile-queries" unless="queries.uptodate">
+  <target name="compile-queries-contrib" unless="queries-contrib.uptodate">
   	<ant dir="${common.dir}/contrib/queries" target="default" inheritAll="false"/>
   </target>
   <target name="compile-spatial" unless="spatial.uptodate">

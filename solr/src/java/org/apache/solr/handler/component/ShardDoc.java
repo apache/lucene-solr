@@ -89,8 +89,8 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
     for (int i = 0; i < n; ++i) {
 
       // keep track of the named fields
-      int type = fields[i].getType();
-      if (type!=SortField.SCORE && type!=SortField.DOC) {
+      SortField.Type type = fields[i].getType();
+      if (type!=SortField.Type.SCORE && type!=SortField.Type.DOC) {
         fieldNames.add(fields[i].getField());
       }
 
@@ -98,8 +98,8 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
       comparators[i] = getCachedComparator(fieldname, fields[i]
           .getType(), fields[i].getComparatorSource());
 
-     if (fields[i].getType() == SortField.STRING) {
-        this.fields[i] = new SortField(fieldname, SortField.STRING, 
+     if (fields[i].getType() == SortField.Type.STRING) {
+        this.fields[i] = new SortField(fieldname, SortField.Type.STRING,
             fields[i].getReverse());
       } else {
         this.fields[i] = new SortField(fieldname, fields[i].getType(),
@@ -144,16 +144,16 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
     return c < 0;
   }
 
-  Comparator getCachedComparator(String fieldname, int type, FieldComparatorSource factory) {
+  Comparator getCachedComparator(String fieldname, SortField.Type type, FieldComparatorSource factory) {
     Comparator comparator = null;
     switch (type) {
-    case SortField.SCORE:
+    case SCORE:
       comparator = comparatorScore(fieldname);
       break;
-    case SortField.STRING:
+    case STRING:
       comparator = comparatorNatural(fieldname);
       break;
-    case SortField.CUSTOM:
+    case CUSTOM:
       if (factory instanceof MissingStringLastComparatorSource){
         comparator = comparatorMissingStringLast(fieldname);
       } else {
@@ -163,7 +163,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
         // throw new RuntimeException("Custom sort not supported factory is "+factory.getClass());
       }
       break;
-    case SortField.DOC:
+    case DOC:
       // TODO: we can support this!
       throw new RuntimeException("Doc sort not supported");
     default:

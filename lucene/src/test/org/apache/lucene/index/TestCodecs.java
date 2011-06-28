@@ -266,7 +266,7 @@ public class TestCodecs extends LuceneTestCase {
     assertNull(termsEnum.next());
 
     for(int i=0;i<NUM_TERMS;i++) {
-      assertEquals(termsEnum.seek(new BytesRef(terms[i].text2)), TermsEnum.SeekStatus.FOUND);
+      assertEquals(termsEnum.seekCeil(new BytesRef(terms[i].text2)), TermsEnum.SeekStatus.FOUND);
     }
 
     assertNull(fieldsEnum.next());
@@ -461,7 +461,7 @@ public class TestCodecs extends LuceneTestCase {
 
         // Test random seek:
         TermData term = field.terms[TestCodecs.random.nextInt(field.terms.length)];
-        TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(term.text2));
+        TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(term.text2));
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
@@ -473,13 +473,14 @@ public class TestCodecs extends LuceneTestCase {
         // Test random seek by ord:
         final int idx = TestCodecs.random.nextInt(field.terms.length);
         term = field.terms[idx];
+        boolean success = false;
         try {
-          status = termsEnum.seek(idx);
+          termsEnum.seekExact(idx);
+          success = true;
         } catch (UnsupportedOperationException uoe) {
           // ok -- skip it
-          status = null;
         }
-        if (status != null) {
+        if (success) {
           assertEquals(status, TermsEnum.SeekStatus.FOUND);
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
@@ -493,21 +494,21 @@ public class TestCodecs extends LuceneTestCase {
         // Test seek to non-existent terms:
         for(int i=0;i<100;i++) {
           final String text2 = _TestUtil.randomUnicodeString(random) + ".";
-          status = termsEnum.seek(new BytesRef(text2));
+          status = termsEnum.seekCeil(new BytesRef(text2));
           assertTrue(status == TermsEnum.SeekStatus.NOT_FOUND ||
                      status == TermsEnum.SeekStatus.END);
         }
 
         // Seek to each term, backwards:
         for(int i=field.terms.length-1;i>=0;i--) {
-          assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seek(new BytesRef(field.terms[i].text2)));
+          assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(field.terms[i].text2)));
           assertEquals(field.terms[i].docs.length, termsEnum.docFreq());
         }
 
         // Seek to each term by ord, backwards
         for(int i=field.terms.length-1;i>=0;i--) {
           try {
-            assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seek(i));
+            termsEnum.seekExact(i);
             assertEquals(field.terms[i].docs.length, termsEnum.docFreq());
             assertTrue(termsEnum.term().bytesEquals(new BytesRef(field.terms[i].text2)));
           } catch (UnsupportedOperationException uoe) {
@@ -515,7 +516,7 @@ public class TestCodecs extends LuceneTestCase {
         }
 
         // Seek to non-existent empty-string term
-        status = termsEnum.seek(new BytesRef(""));
+        status = termsEnum.seekCeil(new BytesRef(""));
         assertNotNull(status);
         //assertEquals(TermsEnum.SeekStatus.NOT_FOUND, status);
 
@@ -523,7 +524,7 @@ public class TestCodecs extends LuceneTestCase {
         assertTrue(termsEnum.term().bytesEquals(new BytesRef(field.terms[0].text2)));
 
         // Test docs enum
-        termsEnum.seek(new BytesRef(""));
+        termsEnum.seekCeil(new BytesRef(""));
         upto = 0;
         do {
           term = field.terms[upto];

@@ -99,7 +99,7 @@ public final class DocumentsWriterFlushControl {
       final long ram = flushBytes + activeBytes;
       final long ramBufferBytes = (long) (maxConfiguredRamBuffer * 1024 * 1024);
       // take peakDelta into account - worst case is that all flushing, pending and blocked DWPT had maxMem and the last doc had the peakDelta 
-      final long expected = (long)(2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
+      final long expected = (2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
       if (peakDelta < (ramBufferBytes >> 1)) {
         /*
          * if we are indexing with very low maxRamBuffer like 0.1MB memory can

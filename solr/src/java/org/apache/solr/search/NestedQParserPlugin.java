@@ -16,12 +16,12 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.function.ValueSource;
 
 /**
  * Create a nested query, with the ability of that query to redefine it's type via

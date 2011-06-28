@@ -1432,14 +1432,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
 
     Directory dir = null;
-    CompoundFileReader cfr = null;
+    CompoundFileDirectory cfr = null;
 
     try {
       File file = new File(filename);
       String dirname = file.getAbsoluteFile().getParent();
       filename = file.getName();
       dir = FSDirectory.open(new File(dirname));
-      cfr = new CompoundFileReader(dir, filename);
+      cfr = dir.openCompoundInput(filename, BufferedIndexInput.BUFFER_SIZE);
 
       String [] files = cfr.listAll();
       ArrayUtil.mergeSort(files);   // sort the array of filename so that the output is more readable

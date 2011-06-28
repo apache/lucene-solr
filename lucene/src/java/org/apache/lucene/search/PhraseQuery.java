@@ -85,14 +85,15 @@ public class PhraseQuery extends Query {
    * @param position
    */
   public void add(Term term, int position) {
-      if (terms.size() == 0)
-          field = term.field();
-      else if (term.field() != field)
-          throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
+    if (terms.size() == 0) {
+      field = term.field();
+    } else if (!term.field().equals(field)) {
+      throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
+    }
 
-      terms.add(term);
-      positions.add(Integer.valueOf(position));
-      if (position > maxPosition) maxPosition = position;
+    terms.add(term);
+    positions.add(Integer.valueOf(position));
+    if (position > maxPosition) maxPosition = position;
   }
 
   /** Returns the set of terms in this phrase. */

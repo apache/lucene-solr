@@ -16,7 +16,7 @@ package org.apache.solr.search.function;
  * limitations under the License.
  */
 
-import org.apache.solr.search.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSource;
 
 
 /**

@@ -149,6 +149,9 @@ Changes in backwards compatibility policy
   files holding stored fields and term vectors) while flushing a
   segment.  (Mike McCandless)
 
+* LUCENE-2548: Field names (eg in Term, FieldInfo) are no longer
+  interned.  (Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -280,6 +283,17 @@ API Changes
 
 * LUCENE-2953: In addition to changes in 3.x, PriorityQueue#initialize(int)
   function was moved into the ctor. (Uwe Schindler, Yonik Seeley)
+
+* LUCENE-3219: SortField type properties have been moved to an enum
+  SortField.Type.  In be consistent, CachedArrayCreator.getSortTypeID() has
+  been changed CachedArrayCreator.getSortType(). (Chris Male)
+
+* LUCENE-3225: Add TermsEnum.seekExact for faster seeking when you
+  don't need the ceiling term; renamed existing seek methods to either
+  seekCeil or seekExact; changed seekExact(ord) to return no value.
+  Fixed MemoryCodec and SimpleTextCodec to optimize the seekExact
+  case, and fixed places in Lucene to use seekExact when possible.
+  (Mike McCandless)
 
 New features
 
@@ -454,7 +468,7 @@ Optimizations
   MultiTermQuery now stores TermState per leaf reader during rewrite to re-
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
-
+  
 Bug fixes
 
 * LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
@@ -470,6 +484,26 @@ Bug fixes
 
 ======================= Lucene 3.x (not yet released) ================
 
+Bug fixes
+
+* LUCENE-3251: Directory#copy failed to close target output if opening the
+  source stream failed. (Simon Willnauer)
+
+* LUCENE-3254: Fixed minor bug in deletes were written to disk,
+  causing the file to sometimes be larger than it needed to be.  (Mike
+  McCandless)
+
+Optimizations
+
+* LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
+  into a Directory implementation. Reading is optimized for MMapDirectory,
+  NIOFSDirectory and SimpleFSDirectory to only map requested parts of the
+  CFS into an IndexInput. Writing to a CFS now tries to append to the CF
+  directly if possible and merges separately written files on the fly instead
+  of during close. (Simon Willnauer, Robert Muir)
+
+======================= Lucene 3.3.0 =======================
+
 Changes in backwards compatibility policy
 
 * LUCENE-3140: IndexOutput.copyBytes now takes a DataInput (superclass
@@ -484,6 +518,13 @@ Changes in backwards compatibility policy
   Searcher.createWeight() final to prevent override. If you have
   overridden one of these methods, cut over to the non-deprecated
   implementation. (Uwe Schindler, Robert Muir, Yonik Seeley)
+
+* LUCENE-3238: Made MultiTermQuery.rewrite() final, to prevent
+  problems (such as not properly setting rewrite methods, or 
+  not working correctly with things like SpanMultiTermQueryWrapper).
+  To rewrite to a simpler form, instead return a simpler enum
+  from getEnum(IndexReader). For example, to rewrite to a single term, 
+  return a SingleTermEnum.  (ludovic Boutros, Uwe Schindler, Robert Muir)
 
 Changes in runtime behavior
 
@@ -532,6 +573,14 @@ Bug fixes
 * LUCENE-3197: Fix core merge policies to not over-merge during
   background optimize when documents are still being deleted
   concurrently with the optimize (Mike McCandless)
+
+* LUCENE-3222: The RAM accounting for buffered delete terms was
+  failing to measure the space required to hold the term's field and
+  text character data.  (Mike McCandless)
+
+* LUCENE-3238: Fixed bug where using WildcardQuery("prefix*") inside
+  of a SpanMultiTermQueryWrapper rewrote incorrectly and returned
+  an error instead.  (ludovic Boutros, Uwe Schindler, Robert Muir)
 
 API Changes
 

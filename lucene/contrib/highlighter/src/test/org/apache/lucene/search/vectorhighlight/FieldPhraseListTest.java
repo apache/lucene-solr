@@ -188,4 +188,34 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( 1, fpl.phraseList.size() );
     assertEquals( "sppeeeed(1.0)((88,93))", fpl.phraseList.get( 0 ).toString() );
   }
+  
+  /* This test shows a big speedup from limiting the number of analyzed phrases in 
+   * this bad case for FieldPhraseList */
+  /* But it is not reliable as a unit test since it is timing-dependent
+  public void testManyRepeatedTerms() throws Exception {
+      long t = System.currentTimeMillis();
+      testManyTermsWithLimit (-1);
+      long t1 = System.currentTimeMillis();
+      testManyTermsWithLimit (1);
+      long t2 = System.currentTimeMillis();
+      assertTrue (t2-t1 * 1000 < t1-t);
+  }
+  private void testManyTermsWithLimit (int limit) throws Exception {
+      StringBuilder buf = new StringBuilder ();
+      for (int i = 0; i < 16000; i++) {
+          buf.append("a b c ");
+      }
+      make1d1fIndex( buf.toString());
+
+      Query query = tq("a");
+      FieldQuery fq = new FieldQuery( query, true, true );
+      FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+      FieldPhraseList fpl = new FieldPhraseList( stack, fq, limit);
+      if (limit < 0 || limit > 16000)
+          assertEquals( 16000, fpl.phraseList.size() );
+      else
+          assertEquals( limit, fpl.phraseList.size() );
+      assertEquals( "a(1.0)((0,1))", fpl.phraseList.get( 0 ).toString() );      
+  }
+  */
 }

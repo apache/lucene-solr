@@ -141,8 +141,37 @@ public abstract class QParser {
   public Query getQuery() throws ParseException {
     if (query==null) {
       query=parse();
+
+      if (localParams != null) {
+        String cacheStr = localParams.get(CommonParams.CACHE);
+        if (cacheStr != null) {
+          if (CommonParams.FALSE.equals(cacheStr)) {
+            extendedQuery().setCache(false);
+          } else if (CommonParams.TRUE.equals(cacheStr)) {
+            extendedQuery().setCache(true);
+          } else if ("sep".equals(cacheStr)) {
+            extendedQuery().setCacheSep(true);
+          }
+        }
+
+        int cost = localParams.getInt(CommonParams.COST, Integer.MIN_VALUE);
+        if (cost != Integer.MIN_VALUE) {
+          extendedQuery().setCost(cost);
+        }
+      }
     }
     return query;
+  }
+
+  // returns an extended query (and sets "query" to a new wrapped query if necessary)
+  private ExtendedQuery extendedQuery() {
+    if (query instanceof ExtendedQuery) {
+      return (ExtendedQuery)query;
+    } else {
+      WrappedQuery wq = new WrappedQuery(query);
+      query = wq;
+      return wq;
+    }
   }
 
   private void checkRecurse() throws ParseException {

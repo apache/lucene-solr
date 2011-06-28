@@ -29,6 +29,9 @@ import HTMLParser
 
 # http://s.apache.org/lusolr32rc2
 
+JAVA5_HOME = '/usr/local/src/jdk1.5.0_22'
+JAVA6_HOME = '/usr/local/src/jdk1.6.0_21'
+
 # TODO
 #   + verify KEYS contains key that signed the release
 #   + make sure changes HTML looks ok
@@ -218,7 +221,7 @@ def testChanges(project, version, changesURLString):
   
 def run(command, logFile):
   if os.system('%s > %s 2>&1' % (command, logFile)):
-    raise RuntimeError('command "%s" failed; see log file %s' % (command, logFile))
+    raise RuntimeError('command "%s" failed; see log file %s/%s' % (command, os.getcwd(), logFile))
     
 def verifyDigests(artifact, urlString, tmpDir):
   print '    verify md5/sha1 digests'
@@ -327,26 +330,31 @@ def verifyUnpacked(project, artifact, unpackPath, version):
   if isSrc:
     if project == 'lucene':
       print '    run tests w/ Java 5...'
-      run('export JAVA_HOME=/usr/local/src/jdk1.5.0_22; ant test', '%s/test.log' % unpackPath)
-      run('export JAVA_HOME=/usr/local/src/jdk1.5.0_22; ant jar', '%s/compile.log' % unpackPath)
-      testDemo(isSrc)
+      run('export JAVA_HOME=%s; ant test' % JAVA5_HOME, '%s/test.log' % unpackPath)
+      run('export JAVA_HOME=%s; ant jar' % JAVA5_HOME, '%s/compile.log' % unpackPath)
+      testDemo(isSrc, version)
     else:
       print '    run tests w/ Java 6...'
-      run('export JAVA_HOME=/usr/local/src/jdk1.6.0_21; ant test', '%s/test.log' % unpackPath)
+      run('export JAVA_HOME=%s; ant test' % JAVA6_HOME, '%s/test.log' % unpackPath)
   else:
     if project == 'lucene':
-      testDemo(isSrc)
+      testDemo(isSrc, version)
 
-def testDemo(isSrc):
+def testDemo(isSrc, version):
   print '    test demo...'
   if isSrc:
-    cp = 'build/lucene-core-3.2-SNAPSHOT.jar:build/contrib/demo/lucene-demo-3.2-SNAPSHOT.jar'
+    # allow lucene dev version to be either 3.3 or 3.3.0:
+    if version.endswith('.0'):
+      cp = 'build/lucene-core-%s-SNAPSHOT.jar:build/contrib/demo/lucene-demo-%s-SNAPSHOT.jar' % (version, version)
+      cp += ':build/lucene-core-%s-SNAPSHOT.jar:build/contrib/demo/lucene-demo-%s-SNAPSHOT.jar' % (version[:-2], version[:-2])
+    else:
+      cp = 'build/lucene-core-%s-SNAPSHOT.jar:build/contrib/demo/lucene-demo-%s-SNAPSHOT.jar' % (version, version)
     docsDir = 'src'
   else:
-    cp = 'lucene-core-3.2.0.jar:contrib/demo/lucene-demo-3.2.0.jar'
+    cp = 'lucene-core-%s.jar:contrib/demo/lucene-demo-%s.jar' % (version, version)
     docsDir = 'docs'
-  run('export JAVA_HOME=/usr/local/src/jdk1.5.0_22; java -cp %s org.apache.lucene.demo.IndexFiles -index index -docs %s' % (cp, docsDir), 'index.log')
-  run('export JAVA_HOME=/usr/local/src/jdk1.5.0_22; java -cp %s org.apache.lucene.demo.SearchFiles -index index -query lucene' % cp, 'search.log')
+  run('export JAVA_HOME=%s; %s/bin/java -cp %s org.apache.lucene.demo.IndexFiles -index index -docs %s' % (JAVA5_HOME, JAVA5_HOME, cp, docsDir), 'index.log')
+  run('export JAVA_HOME=%s; %s/bin/java -cp %s org.apache.lucene.demo.SearchFiles -index index -query lucene' % (JAVA5_HOME, JAVA5_HOME, cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
   m = reMatchingDocs.search(open('search.log', 'rb').read())
   if m is None:

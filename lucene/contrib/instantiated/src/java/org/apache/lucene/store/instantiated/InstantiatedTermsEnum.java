@@ -44,7 +44,20 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(BytesRef text, boolean useCache) {
+  public boolean seekExact(BytesRef text, boolean useCache) {
+    final Term t = new Term(field, text);
+    int loc = Arrays.binarySearch(terms, t, InstantiatedTerm.termComparator);
+    if (loc < 0) {
+      return false;
+    } else {
+      upto = loc;
+      br.copy(text);
+      return true;
+    }
+  }
+
+  @Override
+  public SeekStatus seekCeil(BytesRef text, boolean useCache) {
     final Term t = new Term(field, text);
     int loc = Arrays.binarySearch(terms, t, InstantiatedTerm.termComparator);
     if (loc < 0) {
@@ -63,19 +76,10 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(long ord) {
+  public void seekExact(long ord) {
+    assert (start + (int) ord) < terms.length;
     upto = start + (int) ord;
-    if (upto >= terms.length) {
-      return SeekStatus.END;
-    }
-
-    if (terms[upto].field() == field) {
-      return SeekStatus.FOUND;
-    } else {
-      // make sure field was interned
-      assert !terms[upto].field().equals(field);
-      return SeekStatus.END;
-    }
+    assert field.equals(terms[upto].field());
   }
 
   @Override
@@ -84,12 +88,10 @@ public class InstantiatedTermsEnum extends TermsEnum {
     if (upto >= terms.length) {
       return null;
     }
-    if (terms[upto].field() == field) {
+    if (terms[upto].field().equals(field)) {
       br.copy(terms[upto].getTerm().text());
       return br;
     } else {
-      // make sure field was interned
-      assert !terms[upto].field().equals(field);
       return null;
     }
   }
@@ -144,9 +146,9 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public void seek(BytesRef term, TermState state) throws IOException {
+  public void seekExact(BytesRef term, TermState state) throws IOException {
     assert state != null && state instanceof OrdTermState;
-    seek(((OrdTermState)state).ord); // just use the ord for simplicity
+    seekExact(((OrdTermState)state).ord); // just use the ord for simplicity
   }
 }
 

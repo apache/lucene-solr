@@ -17,13 +17,13 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.search.function.ValueSource;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

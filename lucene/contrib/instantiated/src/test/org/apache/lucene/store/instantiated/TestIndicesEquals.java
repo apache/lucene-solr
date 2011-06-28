@@ -133,9 +133,9 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     Term t = new Term("c", "danny");
     TermsEnum aprioriTermEnum = MultiFields.getTerms(aprioriReader, t.field()).iterator();
-    aprioriTermEnum.seek(new BytesRef(t.text()));
+    aprioriTermEnum.seekCeil(new BytesRef(t.text()));
     TermsEnum testTermEnum = MultiFields.getTerms(testReader, t.field()).iterator();
-    testTermEnum.seek(new BytesRef(t.text()));
+    testTermEnum.seekCeil(new BytesRef(t.text()));
     assertEquals(aprioriTermEnum.term(), testTermEnum.term());
 
     DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), null);

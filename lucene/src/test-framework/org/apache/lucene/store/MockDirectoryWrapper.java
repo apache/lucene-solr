@@ -388,7 +388,7 @@ public class MockDirectoryWrapper extends Directory {
     }
   }
 
-  private void addFileHandle(Closeable c, String name, boolean input) {
+  synchronized void addFileHandle(Closeable c, String name, boolean input) {
     Integer v = openFiles.get(name);
     if (v != null) {
       v = Integer.valueOf(v.intValue()+1);
@@ -415,6 +415,18 @@ public class MockDirectoryWrapper extends Directory {
     IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name));
     addFileHandle(ii, name, true);
     return ii;
+  }
+  
+  @Override
+  public synchronized CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+    maybeYield();
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, bufferSize), false);
+  }
+   
+  @Override
+  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
+    maybeYield();
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.createCompoundOutput(name), true);
   }
 
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
@@ -481,7 +493,7 @@ public class MockDirectoryWrapper extends Directory {
     delegate.close();
   }
 
-  private synchronized void removeOpenFile(Closeable c, String name) {
+  synchronized void removeOpenFile(Closeable c, String name) {
     Integer v = openFiles.get(name);
     // Could be null when crash() was called
     if (v != null) {

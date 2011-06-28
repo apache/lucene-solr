@@ -18,6 +18,8 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
@@ -27,7 +29,7 @@ import java.util.Map;
  * <code>LinearFloatFunction</code> implements a linear function over
  * another {@link ValueSource}.
  * <br>
- * Normally Used as an argument to a {@link FunctionQuery}
+ * Normally Used as an argument to a {@link org.apache.lucene.queries.function.FunctionQuery}
  *
  *
  */

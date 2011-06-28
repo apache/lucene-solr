@@ -33,7 +33,9 @@
   <modules>
     <module>analysis</module>
     <module>benchmark</module>
+    <module>common</module>
     <module>grouping</module>
+    <module>queries</module>
     <module>suggest</module>
   </modules>
   <build>

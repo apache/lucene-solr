@@ -61,8 +61,8 @@ public class ShortValuesCreator extends CachedArrayCreator<ShortValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.SHORT;
+  public SortField.Type getSortType() {
+    return SortField.Type.SHORT;
   }
 
 

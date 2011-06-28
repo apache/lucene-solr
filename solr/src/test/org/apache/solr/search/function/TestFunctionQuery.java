@@ -289,7 +289,17 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}docfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
+
     Similarity similarity = new DefaultSimilarity();
+
+    // make sure it doesn't get a NPE if no terms are present in a field.
+    assertQ(req("fl","*,score","q", "{!func}termfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
+    assertQ(req("fl","*,score","q", "{!func}docfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
+    assertQ(req("fl","*,score","q", "{!func}idf(nofield_t,cow)", "fq","id:6"),
+        "//float[@name='score']='" + similarity.idf(0,6)  + "'");
+     assertQ(req("fl","*,score","q", "{!func}tf(nofield_t,cow)", "fq","id:6"),
+        "//float[@name='score']='" + similarity.tf(0)  + "'");
+
     assertQ(req("fl","*,score","q", "{!func}idf(a_t,cow)", "fq","id:6"),
         "//float[@name='score']='" + similarity.idf(3,6)  + "'");
     assertQ(req("fl","*,score","q", "{!func}tf(a_t,cow)", "fq","id:6"),

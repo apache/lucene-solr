@@ -430,6 +430,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
 
       for (String test : tests) {
+        if (test == null || test.length()==0) continue;
         String testJSON = test.replace('\'', '"');
 
         try {

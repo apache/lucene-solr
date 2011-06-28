@@ -33,9 +33,10 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -224,7 +225,7 @@ public class FileFloatSource extends ValueSource {
 
     BufferedReader r = new BufferedReader(new InputStreamReader(is));
 
-    String idName = StringHelper.intern(ffs.keyField.getName());
+    String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();
 
     // warning: lucene's termEnum.skipTo() is not optimized... it simply does a next()
@@ -268,7 +269,7 @@ public class FileFloatSource extends ValueSource {
           continue;  // go to next line in file.. leave values as default.
         }
 
-        if (termsEnum.seek(internalKey, false) != TermsEnum.SeekStatus.FOUND) {
+        if (!termsEnum.seekExact(internalKey, false)) {
           if (notFoundCount<10) {  // collect first 10 not found for logging
             notFound.add(key);
           }

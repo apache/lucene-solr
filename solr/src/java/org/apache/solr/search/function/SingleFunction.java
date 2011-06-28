@@ -17,6 +17,7 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;

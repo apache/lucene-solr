@@ -50,28 +50,27 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public void testFlushByRam() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
-    int[] numThreads = new int[] { 3 + random.nextInt(12), 1 };
-    for (int i = 0; i < numThreads.length; i++) {
-      runFlushByRam(numThreads[i],
-          1 + random.nextInt(10) + random.nextDouble(), false);
-    }
-
-    for (int i = 0; i < numThreads.length; i++) {
-      // with a 256 mb ram buffer we should never stall
-      runFlushByRam(numThreads[i], 256.d, true);
-    }
+    final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
+        + random.nextDouble();
+    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
+  }
+  
+  public void testFlushByRamLargeBuffer() throws CorruptIndexException,
+      LockObtainFailedException, IOException, InterruptedException {
+    // with a 256 mb ram buffer we should never stall
+    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
   }
 
   protected void runFlushByRam(int numThreads, double maxRamMB,
       boolean ensureNotStalled) throws IOException, CorruptIndexException,
       LockObtainFailedException, InterruptedException {
-    final int numDocumentsToIndex = 50 + random.nextInt(150);
+    final int numDocumentsToIndex = 10 + atLeast(30);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
-    final int numDWPT = 1 + random.nextInt(8);
+    final int numDWPT = 1 + atLeast(2);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
         numDWPT);
     iwc.setIndexerThreadPool(threadPool);
@@ -118,21 +117,21 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public void testFlushDocCount() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
-    int[] numThreads = new int[] { 3 + random.nextInt(12), 1 };
+    int[] numThreads = new int[] { 2 + atLeast(1), 1 };
     for (int i = 0; i < numThreads.length; i++) {
 
-      final int numDocumentsToIndex = 50 + random.nextInt(150);
+      final int numDocumentsToIndex =  50 + atLeast(30);
       AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
       Directory dir = newDirectory();
       MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random)).setFlushPolicy(flushPolicy);
 
-      final int numDWPT = 1 + random.nextInt(8);
+      final int numDWPT = 1 + atLeast(2);
       DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
           numDWPT);
       iwc.setIndexerThreadPool(threadPool);
-      iwc.setMaxBufferedDocs(2 + random.nextInt(50));
+      iwc.setMaxBufferedDocs(2 + atLeast(10));
       iwc.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       iwc.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       IndexWriter writer = new IndexWriter(dir, iwc);
@@ -170,7 +169,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public void testRandom() throws IOException, InterruptedException {
     final int numThreads = 1 + random.nextInt(8);
-    final int numDocumentsToIndex = 100 + random.nextInt(300);
+    final int numDocumentsToIndex = 50 + atLeast(70);
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
@@ -317,11 +316,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
             ramSize = newRamSize;
           }
           if (doRandomCommit) {
-            int commit;
-            synchronized (random) {
-              commit = random.nextInt(20);
-            }
-            if (commit == 0) {
+            if (rarely()) {
               writer.commit();
             }
           }

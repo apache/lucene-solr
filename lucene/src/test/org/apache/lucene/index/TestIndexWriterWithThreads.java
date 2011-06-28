@@ -184,6 +184,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           if (threads[i].addCount > 0) {
             done = true;
             break;
+          } else if (!threads[i].isAlive()) {
+            fail("thread failed before indexing a single document");
           }
       }
 

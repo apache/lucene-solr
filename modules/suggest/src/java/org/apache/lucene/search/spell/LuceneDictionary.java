@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.StringHelper;
 
 import java.io.*;
 
@@ -46,7 +45,7 @@ public class LuceneDictionary implements Dictionary {
 
   public LuceneDictionary(IndexReader reader, String field) {
     this.reader = reader;
-    this.field = StringHelper.intern(field);
+    this.field = field;
   }
 
   public final Iterator<String> getWordsIterator() {

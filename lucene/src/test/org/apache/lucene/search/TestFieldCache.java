@@ -189,7 +189,7 @@ public class TestFieldCache extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       int k = _TestUtil.nextInt(random, 1, nTerms-1);
       BytesRef val1 = termsIndex.lookup(k, val);
-      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seek(val1));
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val1));
       assertEquals(val1, tenum.term());
     }
     

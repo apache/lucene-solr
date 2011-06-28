@@ -153,5 +153,16 @@ public interface CommonParams {
   public static final String THREADS = "threads";
   public static final String TRUE = Boolean.TRUE.toString();
   public static final String FALSE = Boolean.FALSE.toString();
+
+  /** Used as a local parameter on queries.  cache=false means don't check any query or filter caches.
+   * cache=true is the default.
+   */
+  public static final String CACHE = "cache";
+
+  /** Used as a local param on filter queries in conjunction with cache=false.  Filters are checked in order, from
+   * smallest cost to largest. If cost>=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
+   */
+  public static final String COST = "cost";
+
 }
 

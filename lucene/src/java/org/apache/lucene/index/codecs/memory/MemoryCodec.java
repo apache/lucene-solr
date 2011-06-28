@@ -533,7 +533,7 @@ public class MemoryCodec extends Codec {
   private final static class FSTTermsEnum extends TermsEnum {
     private final FieldInfo field;
     private final BytesRefFSTEnum<BytesRef> fstEnum;
-    private final ByteArrayDataInput buffer = new ByteArrayDataInput(null);
+    private final ByteArrayDataInput buffer = new ByteArrayDataInput();
     private boolean didDecode;
 
     private int docFreq;
@@ -561,7 +561,15 @@ public class MemoryCodec extends Codec {
     }
 
     @Override
-    public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+      if (VERBOSE) System.out.println("te.seekExact text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
+      current = fstEnum.seekExact(text);
+      didDecode = false;
+      return current != null;
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
       if (VERBOSE) System.out.println("te.seek text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekCeil(text);
       if (current == null) {
@@ -656,7 +664,7 @@ public class MemoryCodec extends Codec {
     }
 
     @Override
-    public SeekStatus seek(long ord) {
+    public void seekExact(long ord) {
       // NOTE: we could add this...
       throw new UnsupportedOperationException();
     }

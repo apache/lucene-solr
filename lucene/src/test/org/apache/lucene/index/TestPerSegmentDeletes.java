@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -225,8 +224,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator();
-    SeekStatus ss = ctermsEnum.seek(new BytesRef(term.text()), false);
-    if (ss.equals(SeekStatus.FOUND)) {
+    if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {
       DocsEnum docsEnum = ctermsEnum.docs(bits, null);
       return toArray(docsEnum);
     }

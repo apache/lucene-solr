@@ -23,10 +23,14 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
+
+import java.io.File;
 
 
 /**
@@ -161,5 +165,13 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     }
     catch( Exception ex ) {}
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+
+    NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setQueryType("/admin/system")).getResponse();
+    NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
+    String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
+    // test delete index on core
+    CoreAdminRequest.unloadCore("corefoo", true, coreadmin);
+    File dir = new File(indexDir);
+    assertFalse("Index directory exists after core unload with deleteIndex=true", dir.exists());
   }
 }

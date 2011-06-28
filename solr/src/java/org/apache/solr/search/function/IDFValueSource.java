@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;

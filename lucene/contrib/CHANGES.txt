@@ -4,6 +4,11 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+ * LUCENE-3250: Wordnet's SynExpand requires a non-null Analyzer (it no longer
+   treats null as StandardAnalyzer).  (Robert Muir)
   
 Build
 
@@ -54,6 +59,19 @@ Bug Fixes
    not lowercasing the key before checking for the tag (Adriano Crestani)
 
 ======================= Lucene 3.x (not yet released) ================
+
+New Features
+
+ * LUCENE-3234: provide a limit on phrase analysis in FastVectorHighlighter for
+   highlighting speed up. Use FastVectorHighlighter.setPhraseLimit() to set limit
+   (e.g. 5000). (Mike Sokolov via Koji Sekiguchi)
+  
+API Changes
+   
+Bug Fixes
+
+
+======================= Lucene 3.3.0 =======================
 
 New Features
 

@@ -312,7 +312,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
 
     // create mapping from id2 space to id2 based on idField
-    idField = StringHelper.intern(idField);
     final Fields f1 = MultiFields.getFields(r1);
     if (f1 == null) {
       // make sure r2 is empty
@@ -669,7 +668,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       ArrayList<Field> fields = new ArrayList<Field>();      
       String idString = getIdString();
-      Field idField =  newField(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field idField =  newField("id", idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
@@ -720,7 +719,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": indexing id:" + idString);
       }
-      w.updateDocument(idTerm.createTerm(idString), d);
+      w.updateDocument(new Term("id", idString), d);
       //System.out.println(Thread.currentThread().getName() + ": indexing "+d);
       docs.put(idString, d);
     }
@@ -730,7 +729,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": del id:" + idString);
       }
-      w.deleteDocuments(idTerm.createTerm(idString));
+      w.deleteDocuments(new Term("id", idString));
       docs.remove(idString);
     }
 
@@ -739,7 +738,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": del query id:" + idString);
       }
-      w.deleteDocuments(new TermQuery(idTerm.createTerm(idString)));
+      w.deleteDocuments(new TermQuery(new Term("id", idString)));
       docs.remove(idString);
     }
 

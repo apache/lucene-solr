@@ -202,10 +202,10 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     SolrQueryRequest req = lrf.makeRequest();
     QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", null, req);
-    Query range = parser.parse();
+    Query range = parser.getQuery();
                                      
     QParser parser2 = QParser.getParser("{!frange l="+l+" u="+u+"}foomany_s", null, req);
-    Query frange = parser2.parse();
+    Query frange = parser2.getQuery();
     req.close();
 
     createIndex2(indexSize,"foomany_s");
@@ -228,13 +228,13 @@ public class TestSearchPerf extends AbstractSolrTestCase {
     SolrQueryRequest req = lrf.makeRequest();
 
     QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", null, req);
-    Query rangeQ = parser.parse();
+    Query rangeQ = parser.getQuery();
     List<Query> filters = new ArrayList<Query>();
     filters.add(rangeQ);
     req.close();
 
     parser = QParser.getParser("{!dismax qf=t10_100_ws pf=t10_100_ws ps=20}"+ t(0) + ' ' + t(1) + ' ' + t(2), null, req);
-    Query q= parser.parse();
+    Query q= parser.getQuery();
 
     // SolrIndexSearcher searcher = req.getSearcher();
     // DocSet range = searcher.getDocSet(rangeQ, null);

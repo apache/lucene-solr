@@ -60,7 +60,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator();
-    terms.seek(new BytesRef("field"));
+    terms.seekCeil(new BytesRef("field"));
     DocsEnum termDocs = terms.docs(reader.getDeletedDocs(), null);
     if (termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS)    {
       int docId = termDocs.docID();

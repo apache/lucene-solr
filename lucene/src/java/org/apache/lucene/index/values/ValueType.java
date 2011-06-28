@@ -18,8 +18,8 @@ package org.apache.lucene.index.values;
  */
 
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
+import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -32,16 +32,14 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public enum ValueType {
-  /*
-   * TODO: Add INT_32 INT_64 INT_16 & INT_8?!
-   */
+
   /**
-   * A 64 bit integer value. By default this type uses
+   * A variable bit signed integer value. By default this type uses
    * {@link PackedInts} to compress the values, as an offset
    * from the minimum value, as long as the value range
    * fits into 2<sup>63</sup>-1. Otherwise,
    * the default implementation falls back to fixed size 64bit
-   * integers.
+   * integers ({@link #FIXED_INTS_64}).
    * <p>
    * NOTE: this type uses <tt>0</tt> as the default value without any
    * distinction between provided <tt>0</tt> values during indexing. All
@@ -50,13 +48,65 @@ public enum ValueType {
    * value assigned. Custom default values must be assigned explicitly.
    * </p>
    */
-  INTS,
+  VAR_INTS,
+  
+  /**
+   * A 8 bit signed integer value. {@link Source} instances of
+   * this type return a <tt>byte</tt> array from {@link Source#getArray()}
+   * <p>
+   * NOTE: this type uses <tt>0</tt> as the default value without any
+   * distinction between provided <tt>0</tt> values during indexing. All
+   * documents without an explicit value will use <tt>0</tt> instead. In turn,
+   * {@link ValuesEnum} instances will not skip documents without an explicit
+   * value assigned. Custom default values must be assigned explicitly.
+   * </p>
+   */
+  FIXED_INTS_8,
+  
+  /**
+   * A 16 bit signed integer value. {@link Source} instances of
+   * this type return a <tt>short</tt> array from {@link Source#getArray()}
+   * <p>
+   * NOTE: this type uses <tt>0</tt> as the default value without any
+   * distinction between provided <tt>0</tt> values during indexing. All
+   * documents without an explicit value will use <tt>0</tt> instead. In turn,
+   * {@link ValuesEnum} instances will not skip documents without an explicit
+   * value assigned. Custom default values must be assigned explicitly.
+   * </p>
+   */
+  FIXED_INTS_16,
+  
+  /**
+   * A 32 bit signed integer value. {@link Source} instances of
+   * this type return a <tt>int</tt> array from {@link Source#getArray()}
+   * <p>
+   * NOTE: this type uses <tt>0</tt> as the default value without any
+   * distinction between provided <tt>0</tt> values during indexing. All
+   * documents without an explicit value will use <tt>0</tt> instead. In turn,
+   * {@link ValuesEnum} instances will not skip documents without an explicit
+   * value assigned. Custom default values must be assigned explicitly.
+   * </p>
+   */
+  FIXED_INTS_32,
 
+  /**
+   * A 64 bit signed integer value. {@link Source} instances of
+   * this type return a <tt>long</tt> array from {@link Source#getArray()}
+   * <p>
+   * NOTE: this type uses <tt>0</tt> as the default value without any
+   * distinction between provided <tt>0</tt> values during indexing. All
+   * documents without an explicit value will use <tt>0</tt> instead. In turn,
+   * {@link ValuesEnum} instances will not skip documents without an explicit
+   * value assigned. Custom default values must be assigned explicitly.
+   * </p>
+   */
+  FIXED_INTS_64,
   /**
    * A 32 bit floating point value. By default there is no compression
    * applied. To fit custom float values into less than 32bit either a custom
    * implementation is needed or values must be encoded into a
-   * {@link #BYTES_FIXED_STRAIGHT} type.
+   * {@link #BYTES_FIXED_STRAIGHT} type. {@link Source} instances of
+   * this type return a <tt>float</tt> array from {@link Source#getArray()}
    * <p>
    * NOTE: this type uses <tt>0.0f</tt> as the default value without any
    * distinction between provided <tt>0.0f</tt> values during indexing. All
@@ -67,10 +117,12 @@ public enum ValueType {
    */
   FLOAT_32,
   /**
+   * 
    * A 64 bit floating point value. By default there is no compression
    * applied. To fit custom float values into less than 64bit either a custom
    * implementation is needed or values must be encoded into a
-   * {@link #BYTES_FIXED_STRAIGHT} type.
+   * {@link #BYTES_FIXED_STRAIGHT} type. {@link Source} instances of
+   * this type return a <tt>double</tt> array from {@link Source#getArray()}
    * <p>
    * NOTE: this type uses <tt>0.0d</tt> as the default value without any
    * distinction between provided <tt>0.0d</tt> values during indexing. All

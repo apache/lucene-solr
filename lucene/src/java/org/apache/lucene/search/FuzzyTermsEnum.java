@@ -263,8 +263,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public void seek(BytesRef term, TermState state) throws IOException {
-    actualEnum.seek(term, state);
+  public void seekExact(BytesRef term, TermState state) throws IOException {
+    actualEnum.seekExact(term, state);
   }
   
   @Override
@@ -283,13 +283,18 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
-    return actualEnum.seek(text, useCache);
+  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    return actualEnum.seekExact(text, useCache);
+  }
+
+  @Override
+  public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    return actualEnum.seekCeil(text, useCache);
   }
   
   @Override
-  public SeekStatus seek(long ord) throws IOException {
-    return actualEnum.seek(ord);
+  public void seekExact(long ord) throws IOException {
+    actualEnum.seekExact(ord);
   }
   
   @Override

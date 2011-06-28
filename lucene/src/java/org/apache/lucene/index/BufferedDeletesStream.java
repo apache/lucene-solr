@@ -380,7 +380,7 @@ class BufferedDeletesStream {
       // Since we visit terms sorted, we gain performance
       // by re-using the same TermsEnum and seeking only
       // forwards
-      if (term.field() != currentField) {
+      if (!term.field().equals(currentField)) {
         assert currentField == null || currentField.compareTo(term.field()) < 0;
         currentField = term.field();
         Terms terms = fields.terms(currentField);
@@ -398,7 +398,7 @@ class BufferedDeletesStream {
 
       // System.out.println("  term=" + term);
 
-      if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
+      if (termsEnum.seekExact(term.bytes(), false)) {
         DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
 
         if (docsEnum != null) {

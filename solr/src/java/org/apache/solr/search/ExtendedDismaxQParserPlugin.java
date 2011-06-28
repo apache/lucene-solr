@@ -22,6 +22,8 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
@@ -35,10 +37,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.function.BoostedQuery;
-import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.ProductFloatFunction;
 import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.analysis.*;
 

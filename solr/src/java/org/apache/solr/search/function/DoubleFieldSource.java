@@ -17,13 +17,15 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueDouble;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.DoubleValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.DoubleValues;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueDouble;
 
 import java.io.IOException;
 import java.util.Map;

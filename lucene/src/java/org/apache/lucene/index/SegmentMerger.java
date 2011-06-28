@@ -31,6 +31,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -132,17 +133,19 @@ final class SegmentMerger {
 
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
-    for (String file : files) {
-      assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
-                : ".del file is not allowed in .cfs: " + file;
-      assert !IndexFileNames.isSeparateNormsFile(file) 
-                : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
-      cfsWriter.addFile(file);
+    CompoundFileDirectory cfsDir = directory.createCompoundOutput(fileName);
+    try {
+      for (String file : files) {
+        assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
+                  : ".del file is not allowed in .cfs: " + file;
+        assert !IndexFileNames.isSeparateNormsFile(file) 
+                  : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
+        directory.copy(cfsDir, file, file);
+        checkAbort.work(directory.fileLength(file));
+      }
+    } finally {
+      cfsDir.close();
     }
-
-    // Perform the merge
-    cfsWriter.close();
 
     return files;
   }

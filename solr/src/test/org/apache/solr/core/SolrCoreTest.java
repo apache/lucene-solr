@@ -207,9 +207,13 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
 
   public void inform(SolrCore core) {
     core.addCloseHook( new CloseHook() {
-      public void close(SolrCore core) {
+      @Override
+      public void preClose(SolrCore core) {
         closed = true;
       }
+
+      @Override
+      public void postClose(SolrCore core) {}
     });
   }
 }

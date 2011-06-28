@@ -100,14 +100,13 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
       return getTopLevelQuery();
     } else {
       final BooleanQuery bq = getTopLevelQuery();
-      final Term placeholderTerm = new Term(query.field);
       final BytesRefHash pendingTerms = col.pendingTerms;
       final int sort[] = pendingTerms.sort(col.termsEnum.getComparator());
       for(int i = 0; i < size; i++) {
         final int pos = sort[i];
         // docFreq is not used for constant score here, we pass 1
         // to explicitely set a fake value, so it's not calculated
-        addClause(bq, placeholderTerm.createTerm(pendingTerms.get(pos, new BytesRef())), 1, 1.0f, col.array.termState[pos]);
+        addClause(bq, new Term(query.field, pendingTerms.get(pos, new BytesRef())), 1, 1.0f, col.array.termState[pos]);
       }
       // Strip scores
       final Query result = new ConstantScoreQuery(bq);

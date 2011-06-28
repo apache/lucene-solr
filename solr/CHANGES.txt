@@ -238,6 +238,8 @@ Other Changes
 
 * SOLR-2576: Remove deprecated SpellingResult.add(Token, int).
   (James Dyer via rmuir)
+
+* LUCENE-3232: Moved MutableValue classes to new 'common' module. (Chris Male)
   
 Documentation
 ----------------------
@@ -246,6 +248,48 @@ Documentation
   (Eric Pugh and hossman)
 
 ======================= 3.x (not yet released) ================
+
+New Features
+----------------------
+
+* SOLR-2458: post.jar enhanced to handle JSON, CSV and <optimize> (janhoy)
+
+* LUCENE-3234: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.
+  (Mike Sokolov via koji)
+
+* SOLR-2429: Ability to add cache=false to queries and query filters to avoid
+  using the filterCache or queryCache.  A cost may also be specified and is used
+  to order the evaluation of non-cached filters from least to greatest cost .
+  For very expensive query filters (cost >= 100) if the query implements
+  the PostFilter interface, it will be used to obtain a Collector that is
+  checked only for documents that match the main query and all other filters.
+  The "frange" query now implements the PostFilter interface.  (yonik)
+
+
+Optimizations
+----------------------
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
+
+Build
+----------------------
+
+Documentation
+----------------------
+
+==================  3.3.0  ==================
+
+Upgrading from Solr 3.2.0
+----------------------
+ * SolrCore's CloseHook API has been changed in a backward-incompatible way. It
+   has been changed from an interface to an abstract class. Any custom 
+   components which use the SolrCore.addCloseHook method will need to
+   be modified accordingly. To migrate, put your old CloseHook#close impl into
+   CloseHook#preClose.
 
 New Features
 ----------------------
@@ -271,6 +315,8 @@ New Features
 
 * SOLR-1331 -- Added a srcCore parameter to CoreAdminHandler's mergeindexes action
   to merge one or more cores' indexes to a target core (shalin)
+
+* SOLR-2610 -- Add an option to delete index through CoreAdmin UNLOAD action (shalin)
 
 Optimizations
 ----------------------

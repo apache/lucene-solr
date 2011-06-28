@@ -46,12 +46,14 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
@@ -2190,13 +2192,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
         message("creating compound file " + compoundFileName);
         // Now build compound file
-        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-        for(String fileName : newSegment.files()) {
-          cfsWriter.addFile(fileName);
+        final Directory cfsDir = directory.createCompoundOutput(compoundFileName);
+        IOException prior = null;
+        try {
+          for(String fileName : newSegment.files()) {
+            directory.copy(cfsDir, fileName, fileName);
+          }
+        } catch(IOException ex) {
+          prior = ex;
+        } finally {
+          IOUtils.closeSafely(prior, cfsDir);
         }
-
         // Perform the merge
-        cfsWriter.close();
+        
         synchronized(this) {
           deleter.deleteNewFiles(newSegment.files());
         }
@@ -2502,20 +2510,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
     String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
     Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
-    for (String file : files) {
-      String newFileName = segName + IndexFileNames.stripSegmentName(file);
-      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
-          && !IndexFileNames.isSeparateNormsFile(file)) {
-        cfsWriter.addFile(file, info.dir);
-      } else {
-        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-        info.dir.copy(directory, file, newFileName);
+    final CompoundFileDirectory cfsdir = directory.createCompoundOutput(segFileName);
+    try {
+      for (String file : files) {
+        String newFileName = segName + IndexFileNames.stripSegmentName(file);
+        if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+            && !IndexFileNames.isSeparateNormsFile(file)) {
+          info.dir.copy(cfsdir, file, file);
+        } else {
+          assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+          info.dir.copy(directory, file, newFileName);
+        }
       }
+    } finally {
+      IOUtils.closeSafely(true, cfsdir);
     }
-    
-    // Create the .cfs
-    cfsWriter.close();
     
     info.dir = directory;
     info.name = segName;
@@ -3515,6 +3524,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
+              
+              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
               deleter.deleteNewFiles(merge.info.files());
             }
           }

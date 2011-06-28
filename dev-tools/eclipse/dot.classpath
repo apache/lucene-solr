@@ -40,8 +40,12 @@
 	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
+	<classpathentry kind="src" path="modules/common/src/java"/>
+	<classpathentry kind="src" path="modules/common/src/test"/>
 	<classpathentry kind="src" path="modules/grouping/src/java"/>
 	<classpathentry kind="src" path="modules/grouping/src/test"/>
+  <classpathentry kind="src" path="modules/queries/src/java"/>
+	<classpathentry kind="src" path="modules/queries/src/test"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
 	<classpathentry kind="src" path="solr/src/java"/>

@@ -126,7 +126,6 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    checkDistributed(rb);
   }
 
 
@@ -181,7 +180,7 @@ public class QueryComponent extends SearchComponent
         slices = cloudState.getSlices(cloudDescriptor.getCollectionName());
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
-        
+
         /***
          rb.slices = new String[slices.size()];
          for (int i=0; i<rb.slices.length; i++) {
@@ -288,6 +287,7 @@ public class QueryComponent extends SearchComponent
       DocListAndSet res = new DocListAndSet();
       res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
       if (rb.isNeedDocSet()) {
+        // TODO: create a cache for this!
         List<Query> queries = new ArrayList<Query>();
         queries.add(rb.getQuery());
         List<Query> filters = rb.getFilters();
@@ -435,8 +435,8 @@ public class QueryComponent extends SearchComponent
       }
 
       for (SortField sortField: sortFields) {
-        int type = sortField.getType();
-        if (type==SortField.SCORE || type==SortField.DOC) continue;
+        SortField.Type type = sortField.getType();
+        if (type==SortField.Type.SCORE || type==SortField.Type.DOC) continue;
 
         FieldComparator comparator = null;
         FieldComparator comparators[] = (leaves==null) ? null : new FieldComparator[leaves.length];

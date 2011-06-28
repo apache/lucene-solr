@@ -1075,8 +1075,8 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexWriter w3 = new IndexWriter(dir, conf);
     w3.addIndexes(readers);
     w3.close();
-    // we should now see segments_X, segments.gen,_Y.cfs, _Z.fnx
-    assertEquals("Only one compound segment should exist", 4, dir.listAll().length);
+    // we should now see segments_X, segments.gen,_Y.cfs,_Y.cfe, _Z.fnx
+    assertEquals("Only one compound segment should exist", 5, dir.listAll().length);
   }
   
   // LUCENE-3126: tests that if a non-CFS segment is copied, it is converted to

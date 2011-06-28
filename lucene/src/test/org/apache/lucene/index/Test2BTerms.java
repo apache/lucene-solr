@@ -255,7 +255,7 @@ public class Test2BTerms extends LuceneTestCase {
       final long t1 = System.currentTimeMillis();
       System.out.println("  took " + (t1-t0) + " millis");
 
-      TermsEnum.SeekStatus result = termsEnum.seek(term);
+      TermsEnum.SeekStatus result = termsEnum.seekCeil(term);
       if (result != TermsEnum.SeekStatus.FOUND) {
         if (result == TermsEnum.SeekStatus.END) {
           System.out.println("  FAILED: got END");

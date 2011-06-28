@@ -15,7 +15,7 @@
     <orderEntry type="library" name="Solr library" level="project" />
     <orderEntry type="library" name="Solr DIH library" level="project" />
     <orderEntry type="module" module-name="solr" />
-    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene" />
   </component>
 </module>

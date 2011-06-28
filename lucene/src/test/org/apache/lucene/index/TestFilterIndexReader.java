@@ -155,7 +155,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }
     
-    assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(new BytesRef("one")));
+    assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
     DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getDeletedDocs(reader),
                                                             null);

@@ -78,7 +78,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     _TestUtil.rmDir(destDir2);
     destDir2.mkdirs();
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
-    assertEquals(3, destDir2.listFiles().length);
+    assertEquals(4, destDir2.listFiles().length);
     Directory fsDirDest2 = newFSDirectory(destDir2);
     r = IndexReader.open(fsDirDest2, true);
     assertEquals(50, r.maxDoc());

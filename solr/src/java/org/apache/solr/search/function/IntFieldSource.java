@@ -17,11 +17,13 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.common.mutable.MutableValue;
+import org.apache.lucene.common.mutable.MutableValueInt;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.util.Bits;
-import org.apache.solr.search.MutableValueInt;
-import org.apache.solr.search.MutableValue;
 import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.IntValues;
 

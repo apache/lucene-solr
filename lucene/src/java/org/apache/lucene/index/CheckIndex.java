@@ -32,6 +32,7 @@ import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 import java.text.NumberFormat;
 import java.io.PrintStream;
@@ -338,6 +339,27 @@ public class CheckIndex {
       return result;
     }
 
+    // find the oldest and newest segment versions
+    String oldest = Integer.toString(Integer.MAX_VALUE), newest = Integer.toString(Integer.MIN_VALUE);
+    String oldSegs = null;
+    boolean foundNonNullVersion = false;
+    Comparator<String> versionComparator = StringHelper.getVersionComparator();
+    for (SegmentInfo si : sis) {
+      String version = si.getVersion();
+      if (version == null) {
+        // pre-3.1 segment
+        oldSegs = "pre-3.1";
+      } else {
+        foundNonNullVersion = true;
+        if (versionComparator.compare(version, oldest) < 0) {
+          oldest = version;
+        }
+        if (versionComparator.compare(version, newest) > 0) {
+          newest = version;
+        }
+      }
+    }
+
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getCurrentSegmentFileName();
     IndexInput input = null;
@@ -372,7 +394,7 @@ public class CheckIndex {
     } else if (format == DefaultSegmentInfosWriter.FORMAT_HAS_VECTORS) {
       sFormat = "FORMAT_HAS_VECTORS [Lucene 3.1]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_3_1) {
-      sFormat = "FORMAT_3_1 [Lucene 3.1]";
+      sFormat = "FORMAT_3_1 [Lucene 3.1+]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
       sFormat = "FORMAT_4_0 [Lucene 4.0]";
     } else if (format == DefaultSegmentInfosWriter.FORMAT_CURRENT) {
@@ -396,7 +418,19 @@ public class CheckIndex {
       userDataString = "";
     }
 
-    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat + userDataString);
+    String versionString = null;
+    if (oldSegs != null) {
+      if (foundNonNullVersion) {
+        versionString = "versions=[" + oldSegs + " .. " + newest + "]";
+      } else {
+        versionString = "version=" + oldSegs;
+      }
+    } else {
+      versionString = oldest.equals(newest) ? ( "version=" + oldest ) : ("versions=[" + oldest + " .. " + newest + "]");
+    }
+
+    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments
+        + " " + versionString + " format=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -847,7 +881,7 @@ public class CheckIndex {
 
         // Test seek to last term:
         if (lastTerm != null) {
-          if (terms.seek(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) {
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
 
@@ -874,14 +908,14 @@ public class CheckIndex {
             // Seek by ord
             for(int i=seekCount-1;i>=0;i--) {
               long ord = i*(termCount/seekCount);
-              terms.seek(ord);
+              terms.seekExact(ord);
               seekTerms[i] = new BytesRef(terms.term());
             }
 
             // Seek by term
             long totDocCount = 0;
             for(int i=seekCount-1;i>=0;i--) {
-              if (terms.seek(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
+              if (terms.seekCeil(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
@@ -991,7 +1025,11 @@ public class CheckIndex {
             case FLOAT_64:
               values.getFloat();
               break;
-            case INTS:
+            case VAR_INTS:
+            case FIXED_INTS_16:
+            case FIXED_INTS_32:
+            case FIXED_INTS_64:
+            case FIXED_INTS_8:
               values.getInt();
               break;
             default:

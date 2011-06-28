@@ -19,6 +19,7 @@ package org.apache.lucene.search.regex;
 
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FilteredTermsEnum;
+import org.apache.lucene.search.RegexpQuery; // javadoc
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.AttributeSource;
@@ -29,7 +30,10 @@ import java.io.IOException;
 /** Implements the regular expression term search query.
  * The expressions supported depend on the regular expression implementation
  * used by way of the {@link RegexCapabilities} interface.
- *
+ * <p>
+ * NOTE: You may wish to consider using the regex query support 
+ * in {@link RegexpQuery} instead, as it has better performance.
+ * 
  * @see RegexTermsEnum
  */
 public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {

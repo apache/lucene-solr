@@ -30,21 +30,32 @@ import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 public class FieldPhraseList {
 
   LinkedList<WeightedPhraseInfo> phraseList = new LinkedList<WeightedPhraseInfo>();
-
+  
+  /**
+   * create a FieldPhraseList that has no limit on the number of phrases to analyze
+   * 
+   * @param fieldTermStack FieldTermStack object
+   * @param fieldQuery FieldQuery object
+   */
+  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery){
+      this (fieldTermStack, fieldQuery, Integer.MAX_VALUE);
+  }
+  
   /**
    * a constructor.
    * 
    * @param fieldTermStack FieldTermStack object
    * @param fieldQuery FieldQuery object
+   * @param phraseLimit maximum size of phraseList
    */
-  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery ){
+  public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit){
     final String field = fieldTermStack.getFieldName();
 
     LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
     QueryPhraseMap currMap = null;
     QueryPhraseMap nextMap = null;
-    while( !fieldTermStack.isEmpty() ){
-      
+    while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) )
+    {      
       phraseCandidate.clear();
 
       TermInfo ti = fieldTermStack.pop();

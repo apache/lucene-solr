@@ -62,10 +62,14 @@
         property="suggest.uptodate" classpath.property="suggest.jar"/>
   <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
         property="grouping.uptodate" classpath.property="grouping.jar"/>
+  <module-uptodate name="common-module" module-src-name="common" jarfile="${common.dir}/../modules/common/build/lucene-common-module-${version}.jar"
+        property="common-module.uptodate" classpath.property="common-module.jar"/>
+  <module-uptodate name="queries" jarfile="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"
+        property="queries.uptodate" classpath.property="queries.jar"/>
   <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
   <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
   <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
-  <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
+  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries-contrib.uptodate" classpath.property="queries-contrib.jar"/>
   <contrib-uptodate name="spatial" property="spatial.uptodate" classpath.property="spatial.jar"/>
 
   <path id="solr.base.classpath">
@@ -74,10 +78,12 @@
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
-  	<pathelement path="${queries.jar}"/>
+  	<pathelement path="${queries-contrib.jar}"/>
   	<pathelement path="${spatial.jar}"/>
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
+    <pathelement path="${common-module.jar}"/>
+    <pathelement path="${queries.jar}"/>
   	<pathelement location="${common-solr.dir}/build/classes/solrj"/>
   	<pathelement location="${common-solr.dir}/build/classes/webapp"/>
   	<pathelement location="${common-solr.dir}/build/classes/java"/>

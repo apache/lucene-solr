@@ -16,12 +16,21 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.function.*;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Create a range query over a function.
@@ -48,7 +57,7 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws ParseException {
         funcStr = localParams.get(QueryParsing.V, null);
-        Query funcQ = subQuery(funcStr, FunctionQParserPlugin.NAME).parse();
+        Query funcQ = subQuery(funcStr, FunctionQParserPlugin.NAME).getQuery();
         if (funcQ instanceof FunctionQuery) {
           vs = ((FunctionQuery)funcQ).getValueSource();
         } else {
@@ -62,10 +71,51 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
 
         // TODO: add a score=val option to allow score to be the value
         ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
-        SolrConstantScoreQuery csq = new SolrConstantScoreQuery(rf);
-        return csq;
+        FunctionRangeQuery frq = new FunctionRangeQuery(rf);
+        return frq;
       }
     };
   }
 
+}
+
+// This class works as either a normal constant score query, or as a PostFilter using a collector
+class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFilter {
+  final ValueSourceRangeFilter rangeFilt;
+
+  public FunctionRangeQuery(ValueSourceRangeFilter filter) {
+    super(filter);
+    this.rangeFilt = filter;
+  }
+
+  @Override
+  public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
+    Map fcontext = ValueSource.newContext(searcher);
+    return new FunctionRangeCollector(fcontext);
+  }
+
+  class FunctionRangeCollector extends DelegatingCollector {
+    final Map fcontext;
+    ValueSourceScorer scorer;
+    int maxdoc;
+
+    public FunctionRangeCollector(Map fcontext) {
+      this.fcontext = fcontext;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      if (doc<maxdoc && scorer.matches(doc)) {
+        delegate.collect(doc);
+      }
+    }
+
+    @Override
+    public void setNextReader(IndexReader.AtomicReaderContext context) throws IOException {
+      maxdoc = context.reader.maxDoc();
+      DocValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
+      scorer = dv.getRangeScorer(context.reader, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
+      super.setNextReader(context);
+    }
+  }
 }

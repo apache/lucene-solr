@@ -110,6 +110,7 @@ ul
 {
     border: 1px solid #c0c0c0;
     min-height: 600px;
+    min-width:750px;
     position: relative;
 }
 
@@ -402,7 +403,6 @@ ul
 #menu .config a { background-image: url( ../img/ico/gear.png ); }
 #menu .analysis a { background-image: url( ../img/ico/funnel.png ); }
 #menu .schema-browser a { background-image: url( ../img/ico/book-open-text.png ); }
-#menu .stats a { background-image: url( ../img/ico/chart.png ); }
 #menu .replication a { background-image: url( ../img/ico/node.png ); }
 #menu .distribution a { background-image: url( ../img/ico/node-select.png ); }
 #menu .ping a { background-image: url( ../img/ico/system-monitor.png ); }
@@ -437,6 +437,14 @@ ul
 {
     background-position: 0 50%;
     padding-left: 21px;
+}
+
+#content iframe
+{
+    border: 0;
+    display: block;
+    min-height: 400px;
+    width: 100%;
 }
 
 #content > pre
@@ -941,25 +949,62 @@ pre.syntax .tex .formula
 
 /* plugins */
 
-#content #plugins .loader
+#content #plugins #navigation
+{
+    background-image: url( ../img/div.gif );
+    background-position: 100% 0;
+    background-repeat: repeat-y;
+    width: 20%;
+}
+
+#content #plugins #navigation a
 {
     background-position: 0 50%;
+    border-right: 1px solid #f0f0f0;
+    display: block;
+    margin-left: 1px;
+    padding: 3px 0;
     padding-left: 21px;
 }
 
-#content #plugins .block h2 { background-image: url( ../img/ico/block-small.png ); }
-#content #plugins #core h2 { background-image: url( ../img/ico/terminal.png ); }
-#content #plugins #queryhandler h2 { background-image: url( ../img/ico/magnifier.png ); }
-#content #plugins #updatehandler h2 { background-image: url( ../img/ico/arrow-circle.png ); }
-#content #plugins #cache h2 { background-image: url( ../img/ico/disk-black.png ); }
-#content #plugins #highlighting h2 { background-image: url( ../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .cache a { background-image: url( ../img/ico/disk-black.png ); }
+#content #plugins #navigation .core a { background-image: url( ../img/ico/toolbox.png ); }
+#content #plugins #navigation .other a { background-image: url( ../img/ico/zone.png ); }
+#content #plugins #navigation .highlighting a { background-image: url( ../img/ico/highlighter-text.png ); }
+#content #plugins #navigation .updatehandler a{ background-image: url( ../img/ico/arrow-circle.png ); }
+#content #plugins #navigation .queryhandler a { background-image: url( ../img/ico/magnifier.png ); }
 
-#content #plugins .block .entry
+#content #plugins #navigation a:hover
 {
-    padding-top: 10px;
+    background-color: #fafafa;
 }
 
-#content #plugins .block .entry a
+#content #plugins #navigation .current a
+{
+    background-color: #fff;
+    border-right-color: #fff;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: bold;
+}
+
+#content #plugins #frame
+{
+    float: right;
+    width: 78%;
+}
+
+#content #plugins #frame .entry
+{
+    margin-bottom: 10px;
+}
+
+#content #plugins #frame .entry:last-child
+{
+    margin-bottom: 0;
+}
+
+#content #plugins #frame .entry a
 {
     background-image: url( ../img/ico/chevron-small-expand.png );
     background-position: 0 50%;
@@ -968,67 +1013,67 @@ pre.syntax .tex .formula
     padding-left: 21px;
 }
 
-#content #plugins .block .entry.expanded a
+#content #plugins #frame .entry.expanded a
 {
     background-image: url( ../img/ico/chevron-small.png );
 }
 
-#content #plugins .block .entry.expanded ul
+#content #plugins #frame .entry.expanded ul
 {
     display: block;
 }
 
-#content #plugins .block .entry ul
+#content #plugins #frame .entry ul
 {
     display: none;
     padding-top: 5px;
     margin-left: 21px;
 }
 
-#content #plugins .block .entry li
+#content #plugins #frame .entry li
 {
     padding-top: 2px;
     padding-bottom: 2px;
 }
 
-#content #plugins .block .entry li.stats
+#content #plugins #frame .entry li.stats
 {
     border-top: 1px solid #c0c0c0;
     margin-top: 5px;
     padding-top: 5px;
 }
 
-#content #plugins .block .entry li.odd
+#content #plugins #frame .entry li.odd
 {
     background-color: #f8f8f8;
 }
 
-#content #plugins .block .entry dt,
-#content #plugins .block .entry .stats span
+#content #plugins #frame .entry dt,
+#content #plugins #frame .entry .stats span
 {
     float: left;
     width: 11%;
 }
 
-#content #plugins .block .entry dd,
-#content #plugins .block .entry .stats ul
+#content #plugins #frame .entry dd,
+#content #plugins #frame .entry .stats ul
 {
     float: right;
     width: 88%;
 }
 
-#content #plugins .block .entry .stats ul
+#content #plugins #frame .entry .stats ul
 {
     margin: 0;
     padding: 0;
 }
 
-#content #plugins .block .entry .stats dt
+#content #plugins #frame .entry .stats dt
 {
     width: 27%;
 }
 
-#content #plugins .block .entry .stats dd
+#content #plugins #frame .entry .stats dd
 {
     width: 72%;
 }
@@ -2098,6 +2143,29 @@ pre.syntax .tex .formula
 }
 
 #content #threads #thread-dump tbody .details
+{
+    display: none;
+}
+
+#content #threads .controls
+{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#content #threads .controls a
+{
+    background-image: url( ../img/ico/chevron-small-expand.png );
+    padding-left: 21px;
+}
+
+#content #threads.expanded .controls a
+{
+    background-image: url( ../img/ico/chevron-small.png );
+}
+
+#content #threads.expanded .controls .expand,
+#content #threads.collapsed .controls .collapse
 {
     display: none;
 }

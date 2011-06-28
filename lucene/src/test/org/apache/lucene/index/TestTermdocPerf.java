@@ -104,7 +104,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     int ret=0;
     DocsEnum tdocs = null;
     for (int i=0; i<iter; i++) {
-      tenum.seek(new BytesRef("val"));
+      tenum.seekCeil(new BytesRef("val"));
       tdocs = tenum.docs(MultiFields.getDeletedDocs(reader), tdocs);
       while (tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         ret += tdocs.docID();

@@ -26,7 +26,7 @@
   <import file="../contrib-build.xml"/>
 
   <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
-  <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
+  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
 
   <path id="classpath">
     <pathelement path="${memory.jar}"/>

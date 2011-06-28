@@ -430,7 +430,7 @@ public class TestNRTThreads extends LuceneTestCase {
                       trigger = totTermCount.get()/10;
                       //System.out.println("trigger " + trigger);
                       shift = random.nextInt(trigger);
-                      termsEnum.seek(new BytesRef(""));
+                      termsEnum.seekCeil(new BytesRef(""));
                       continue;
                     }
                     seenTermCount++;
@@ -579,7 +579,7 @@ public class TestNRTThreads extends LuceneTestCase {
 
   private int runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
-    return s.search(q, null, 10, new Sort(new SortField("title", SortField.STRING))).totalHits;
+    return s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
   }
 
   private void smokeTestReader(IndexReader r) throws Exception {

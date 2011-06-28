@@ -59,7 +59,7 @@ public class NumericIndexDocValueSource extends ValueSource {
         }
       };
 
-    case INTS:
+    case VAR_INTS:
       return new DocValues() {
         @Override
         public String toString(int doc) {

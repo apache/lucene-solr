@@ -135,7 +135,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * @throws UnsupportedOperationException
    */
   @Override
-  public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
 
@@ -143,7 +143,15 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * @throws UnsupportedOperationException
    */
   @Override
-  public SeekStatus seek(long ord) throws IOException {
+  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
+  }
+
+  /** This enum does not support seeking!
+   * @throws UnsupportedOperationException
+   */
+  @Override
+  public void seekExact(long ord) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
 
@@ -166,7 +174,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * @throws UnsupportedOperationException
    */
   @Override
-  public void seek(BytesRef term, TermState state) throws IOException {
+  public void seekExact(BytesRef term, TermState state) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
   
@@ -189,7 +197,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
         final BytesRef t = nextSeekTerm(actualTerm);
         // Make sure we always seek forward:
         assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
-        if (t == null || tenum.seek(t, false) == SeekStatus.END) {
+        if (t == null || tenum.seekCeil(t, false) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
           return null;
         }

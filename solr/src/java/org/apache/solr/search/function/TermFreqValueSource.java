@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -50,7 +51,7 @@ public class TermFreqValueSource extends DocFreqValueSource {
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
-        docs = terms.docs(null, indexedBytes, null);
+        docs = terms == null ? null : terms.docs(null, indexedBytes, null);
         if (docs == null) {
           docs = new DocsEnum() {
             @Override

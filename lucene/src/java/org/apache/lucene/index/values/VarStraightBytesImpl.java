@@ -56,10 +56,6 @@ class VarStraightBytesImpl {
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
-    public Writer(Directory dir, String id) throws IOException {
-      this(dir, id, new AtomicLong());
-    }
-
     // Fills up to but not including this docID
     private void fill(final int docID) {
       if (docID >= docToAddress.length) {

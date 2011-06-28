@@ -387,7 +387,7 @@ public final class Bytes {
     }
 
     @Override
-    protected void add(int docID) throws IOException {
+    protected void mergeDoc(int docID) throws IOException {
       add(docID, bytesRef);
     }
 

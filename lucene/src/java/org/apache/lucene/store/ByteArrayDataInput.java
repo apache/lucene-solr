@@ -17,6 +17,8 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
+
 /** @lucene.experimental */
 public final class ByteArrayDataInput extends DataInput {
 
@@ -25,9 +27,16 @@ public final class ByteArrayDataInput extends DataInput {
   private int pos;
   private int limit;
 
-  // TODO: allow BytesRef (slice) too
   public ByteArrayDataInput(byte[] bytes) {
-    this.bytes = bytes;
+    reset(bytes);
+  }
+
+  public ByteArrayDataInput(byte[] bytes, int offset, int len) {
+    reset(bytes, offset, len);
+  }
+
+  public ByteArrayDataInput() {
+    reset(BytesRef.EMPTY_BYTES);
   }
 
   public void reset(byte[] bytes) {
@@ -41,7 +50,7 @@ public final class ByteArrayDataInput extends DataInput {
   public void reset(byte[] bytes, int offset, int len) {
     this.bytes = bytes;
     pos = offset;
-    limit = len;
+    limit = offset + len;
   }
 
   public boolean eof() {
@@ -59,12 +68,14 @@ public final class ByteArrayDataInput extends DataInput {
  
   @Override
   public int readInt() {
+    assert pos+4 <= limit;
     return ((bytes[pos++] & 0xFF) << 24) | ((bytes[pos++] & 0xFF) << 16)
       | ((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF);
   }
  
   @Override
   public long readLong() {
+    assert pos+8 <= limit;
     final int i1 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
       ((bytes[pos++] & 0xff) << 8) | (bytes[pos++] & 0xff);
     final int i2 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
@@ -74,9 +85,11 @@ public final class ByteArrayDataInput extends DataInput {
 
   @Override
   public int readVInt() {
+    checkBounds();
     byte b = bytes[pos++];
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
+      checkBounds();
       b = bytes[pos++];
       i |= (b & 0x7F) << shift;
     }
@@ -85,9 +98,11 @@ public final class ByteArrayDataInput extends DataInput {
  
   @Override
   public long readVLong() {
+    checkBounds();
     byte b = bytes[pos++];
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
+      checkBounds();
       b = bytes[pos++];
       i |= (b & 0x7FL) << shift;
     }
@@ -97,7 +112,7 @@ public final class ByteArrayDataInput extends DataInput {
   // NOTE: AIOOBE not EOF if you read too much
   @Override
   public byte readByte() {
-    assert pos < limit;
+    checkBounds();
     return bytes[pos++];
   }
 
@@ -107,5 +122,10 @@ public final class ByteArrayDataInput extends DataInput {
     assert pos + len <= limit;
     System.arraycopy(bytes, pos, b, offset, len);
     pos += len;
+  }
+
+  private boolean checkBounds() {
+    assert pos < limit;
+    return true;
   }
 }

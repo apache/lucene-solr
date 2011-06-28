@@ -16,7 +16,6 @@ package org.apache.lucene.misc;
   * limitations under the License.
   */
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -40,7 +39,7 @@ public class IndexMergeTool {
     FSDirectory mergedIndex = FSDirectory.open(new File(args[0]));
 
     IndexWriter writer = new IndexWriter(mergedIndex, new IndexWriterConfig(
-        Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        Version.LUCENE_CURRENT, null)
         .setOpenMode(OpenMode.CREATE));
 
     Directory[] indexes = new Directory[args.length - 1];
