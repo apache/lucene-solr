@@ -14,6 +14,10 @@ Bug fixes
   corruption), don't read that to mean the index is empty.  (Gregory
   Tarr, Mark Harwood, Simon Willnauer, Mike McCandless)
 
+* LUCENE-3254: Fixed minor bug in deletes were written to disk,
+  causing the file to sometimes be larger than it needed to be.  (Mike
+  McCandless)
+
 Optimizations
   
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
