@@ -35,6 +35,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -490,5 +491,26 @@ public class _TestUtil {
         Assert.assertFalse(actualSD instanceof FieldDoc);
       }
     }
+  }
+
+  // NOTE: this is likely buggy, and cannot clone fields
+  // with tokenStreamValues, etc.  Use at your own risk!!
+
+  // TODO: is there a pre-existing way to do this!!!
+  public static Document cloneDocument(Document doc1) {
+    final Document doc2 = new Document();
+    for(Fieldable f : doc1.getFields()) {
+      Field field1 = (Field) f;
+      
+      Field field2 = new Field(field1.name(),
+                               field1.stringValue(),
+                               field1.isStored() ? Field.Store.YES : Field.Store.NO,
+                               field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
+      field2.setOmitNorms(field1.getOmitNorms());
+      field2.setOmitTermFreqAndPositions(field1.getOmitTermFreqAndPositions());
+      doc2.add(field2);
+    }
+
+    return doc2;
   }
 }

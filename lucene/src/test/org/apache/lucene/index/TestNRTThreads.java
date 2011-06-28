@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -67,28 +66,6 @@ public class TestNRTThreads extends LuceneTestCase {
       this.packID = packID;
       this.subIDs = subIDs;
     }
-  }
-
-  // TODO: is there a pre-existing way to do this!!!
-  private Document cloneDoc(Document doc1) {
-    final Document doc2 = new Document();
-    for(Fieldable f : doc1.getFields()) {
-      Field field1 = (Field) f;
-      
-      Field field2 = new Field(field1.name(),
-                               field1.stringValue(),
-                               field1.isStored() ? Field.Store.YES : Field.Store.NO,
-                               field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
-      if (field1.getOmitNorms()) {
-        field2.setOmitNorms(true);
-      }
-      if (field1.getOmitTermFreqAndPositions()) {
-        field2.setOmitTermFreqAndPositions(true);
-      }
-      doc2.add(field2);
-    }
-
-    return doc2;
   }
 
   @Test
@@ -218,7 +195,7 @@ public class TestNRTThreads extends LuceneTestCase {
 
                     allSubDocs.add(subDocs);
                     doc.add(packIDField);
-                    docsList.add(cloneDoc(doc));
+                    docsList.add(_TestUtil.cloneDocument(doc));
                     docIDs.add(doc.get("docid"));
 
                     final int maxDocCount = _TestUtil.nextInt(random, 1, 10);
@@ -227,7 +204,7 @@ public class TestNRTThreads extends LuceneTestCase {
                       if (doc == null) {
                         break;
                       }
-                      docsList.add(cloneDoc(doc));
+                      docsList.add(_TestUtil.cloneDocument(doc));
                       docIDs.add(doc.get("docid"));
                     }
                     addCount.addAndGet(docsList.size());
