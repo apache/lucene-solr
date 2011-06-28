@@ -215,9 +215,36 @@ def testChanges(project, version, changesURLString):
     raise RuntimeError('did not see Contrib-Changes.html link from %s' % changesURLString)
 
   s = load(changesURL)
+  checkChangesContent(s, version, changesURL, project, True)
 
-  if s.find('Release %s' % version) == -1:
-    raise RuntimeError('did not see "Release %s" in %s' % (version, changesURL))
+def testChangesText(dir, version, project):
+  "Checks all CHANGES.txt under this dir."
+  for root, dirs, files in os.walk(dir):
+
+    # NOTE: O(N) but N should be smallish:
+    if 'CHANGES.txt' in files:
+      fullPath = '%s/CHANGES.txt' % root
+      print 'CHECK %s' % fullPath
+      checkChangesContent(open(fullPath).read(), version, fullPath, project, False)
+      
+def checkChangesContent(s, version, name, project, isHTML):
+
+  if isHTML and s.find('Release %s' % version) == -1:
+    raise RuntimeError('did not see "Release %s" in %s' % (version, name))
+
+  if s.lower().find('not yet released') != -1:
+    raise RuntimeError('saw "not yet released" in %s' % name)
+
+  if not isHTML:
+    if project == 'lucene':
+      sub = 'Lucene %s' % version
+    else:
+      sub = version
+      
+    if s.find(sub) == -1:
+      # contrib/benchmark never seems to include release info:
+      if name.find('/benchmark/') == -1:
+        raise RuntimeError('did not see "%s" in %s' % (sub, name))
   
 def run(command, logFile):
   if os.system('%s > %s 2>&1' % (command, logFile)):
@@ -339,6 +366,8 @@ def verifyUnpacked(project, artifact, unpackPath, version):
   else:
     if project == 'lucene':
       testDemo(isSrc, version)
+
+  testChangesText('.', version, project)
 
 def testDemo(isSrc, version):
   print '    test demo...'
