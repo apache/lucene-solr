@@ -41,6 +41,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
   private static IndexReader reader;
   private static Directory dir;
   private static int numDocs;
+  private static String splitDoc;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -59,6 +60,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
       doc.add(field);
       iw.addDocument(doc);
     }
+    splitDoc = _TestUtil.randomUnicodeString(random);
     reader = iw.getReader();
     iw.close();
 
@@ -76,6 +78,15 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     dir = null;
   }
   
+  private void doCheckSorting(TopDocs docs) throws Exception {
+    String prev = "";
+    for (ScoreDoc doc : docs.scoreDocs) {
+      String value = reader.document(doc.doc).get("field");
+      assertTrue(collator.compare(value, prev) >= 0);
+      prev = value;
+    }
+  }
+  
   public void testSort() throws Exception {
     SortField sf = new SortField("field", new FieldComparatorSource() {
       @Override
@@ -83,13 +94,16 @@ public class TestSlowCollationMethods extends LuceneTestCase {
         return new SlowCollatedStringComparator(numHits, fieldname, collator);
       }
     });
-    TopFieldDocs docs = searcher.search(new MatchAllDocsQuery(), null, numDocs, new Sort(sf));
-    String prev = "";
-    for (ScoreDoc doc : docs.scoreDocs) {
-      String value = reader.document(doc.doc).get("field");
-      assertTrue(collator.compare(value, prev) >= 0);
-      prev = value;
-    }
+    final Sort sort = new Sort(sf);
+    
+    final TopDocs docs1 = searcher.search(TermRangeQuery.newStringRange("field", null, splitDoc, true, true), null, numDocs/(1+random.nextInt(4)), sort);
+    doCheckSorting(docs1);
+    
+    final TopDocs docs2 = searcher.search(TermRangeQuery.newStringRange("field", splitDoc, null, true, true), null, numDocs/(1+random.nextInt(4)), sort);
+    doCheckSorting(docs2);
+    
+    final TopDocs docs = TopDocs.merge(sort, numDocs/(1+random.nextInt(4)), new TopDocs[]{docs1, docs2});
+    doCheckSorting(docs);
   }
   
   private void doTestRanges(String startPoint, String endPoint, Query query) throws Exception {
