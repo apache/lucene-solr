@@ -13,7 +13,6 @@
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
-    <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="lucene" />
   </component>
 </module>

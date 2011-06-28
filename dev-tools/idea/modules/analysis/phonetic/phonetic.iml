@@ -21,7 +21,7 @@
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene" />
   </component>
 </module>
