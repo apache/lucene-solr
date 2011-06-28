@@ -656,7 +656,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         }
       } else {
         for (int docid = -1; (docid = idIter.advance(docid+1)) < max; ) {
-          if (skipDocs != null && skipDocs.get(docid)) continue;
           collector.collect(docid);
         }
       }

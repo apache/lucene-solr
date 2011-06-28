@@ -254,7 +254,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
       }
       assertU(commit());
 
-
+      int totalMatches=0;
+      int nonZeros=0;
       for (int qiter=0; qiter<queryIter; qiter++) {
         model.clear();
         List<String> params = new ArrayList<String>();
@@ -295,6 +296,11 @@ public class TestFiltering extends SolrTestCaseJ4 {
         long expectedMultiSelect = model.multiSelect.cardinality();
         long expectedFacetQuery = model.facetQuery.cardinality();
 
+        totalMatches += expected;
+        if (expected > 0) {
+          nonZeros++;
+        }
+
         if (iiter==-1 && qiter==-1) {
           // set breakpoint here to debug a specific issue
           System.out.println("request="+params);
@@ -316,6 +322,11 @@ public class TestFiltering extends SolrTestCaseJ4 {
         }
 
       }
+
+      // After making substantial changes to this test, make sure that we still get a
+      // decent number of queries that match some documents
+      // System.out.println("totalMatches=" + totalMatches + " nonZeroQueries="+nonZeros);
+
     }
   }
 
