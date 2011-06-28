@@ -56,11 +56,12 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-smartcn label="Smart Chinese Analyzer" href="ext:javadocs-contrib-smartcn"/>
 		    <javadoc-contrib-stempel label="Stempel Polish Analyzer" href="ext:javadocs-contrib-stempel"/>
 		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
-        <javadoc-contrib-demo label="Demo" href="ext:javadocs-contrib-demo"/>
-            <javadoc-contrib-grouping label="Grouping" href="ext:javadocs-contrib-grouping"/>
+		    <javadoc-contrib-demo label="Demo" href="ext:javadocs-contrib-demo"/>
+	            <javadoc-contrib-grouping label="Grouping" href="ext:javadocs-contrib-grouping"/>
 		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
 		    <javadoc-contrib-icu label="ICU" href="ext:javadocs-contrib-icu"/>
 		    <javadoc-contrib-instantiated label="Instantiated" href="ext:javadocs-contrib-instantiated"/>
+		    <javadoc-contrib-join label="Join" href="ext:javadocs-contrib-join"/>
 		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
 		    <javadoc-contrib-misc label="Miscellaneous" href="ext:javadocs-contrib-misc"/>
 		    <javadoc-contrib-queries label="Queries" href="ext:javadocs-contrib-queries"/>
@@ -104,11 +105,12 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-smartcn href="api/contrib-smartcn/index.html"/>
 	<javadocs-contrib-stempel href="api/contrib-stempel/index.html"/>
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
-  <javadocs-contrib-demo href="api/contrib-demo/index.html"/>
-    <javadocs-contrib-grouping href="api/contrib-grouping/index.html"/>
+	<javadocs-contrib-demo href="api/contrib-demo/index.html"/>
+	<javadocs-contrib-grouping href="api/contrib-grouping/index.html"/>
 	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
-    <javadocs-contrib-icu href="api/contrib-icu/index.html"/>
+	<javadocs-contrib-icu href="api/contrib-icu/index.html"/>
 	<javadocs-contrib-instantiated href="api/contrib-instantiated/index.html"/>
+	<javadocs-contrib-join href="api/contrib-join/index.html"/>
 	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
 	<javadocs-contrib-misc href="api/contrib-misc/index.html"/>
 	<javadocs-contrib-queries href="api/contrib-queries/index.html"/>

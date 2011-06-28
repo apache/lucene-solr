@@ -90,7 +90,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * Only implemented by primitive queries, which re-write to themselves.
    */
   public Weight createWeight(Searcher searcher) throws IOException {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 
   /**

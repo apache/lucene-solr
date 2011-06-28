@@ -87,6 +87,11 @@
                 <p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a></p>
             </section>
             
+            <section id="join"><title>join</title>
+                <p>Enables joining of parent and child documents when indexed as a doc block</p>
+                <p>See <a href="../api/contrib-join/index.html">join javadoc</a></p>
+            </section>
+
             <section id="memory"><title>memory</title>
                 <p>High-performance single-document main memory index.</p>
                 <p>See <a href="../api/contrib-memory/index.html">memory javadoc</a></p>

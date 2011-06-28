@@ -31,12 +31,12 @@ import org.apache.lucene.util.PriorityQueue;
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */
-public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueue.Entry> {
+public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends PriorityQueue<T> {
 
-  final static class Entry extends ScoreDoc {
-    int slot;
+  public static class Entry extends ScoreDoc {
+    public int slot;
 
-    Entry(int slot, int doc, float score) {
+    public Entry(int slot, int doc, float score) {
       super(doc, score);
       this.slot = slot;
     }
@@ -51,7 +51,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
    * An implementation of {@link FieldValueHitQueue} which is optimized in case
    * there is just one comparator.
    */
-  private static final class OneComparatorFieldValueHitQueue extends FieldValueHitQueue {
+  private static final class OneComparatorFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
     private final FieldComparator comparator;
     private final int oneReverseMul;
@@ -97,7 +97,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
    * An implementation of {@link FieldValueHitQueue} which is optimized in case
    * there is more than one comparator.
    */
-  private static final class MultiComparatorsFieldValueHitQueue extends FieldValueHitQueue {
+  private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
 
     public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size)
         throws IOException {
@@ -162,22 +162,26 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
    *          The number of hits to retain. Must be greater than zero.
    * @throws IOException
    */
-  public static FieldValueHitQueue create(SortField[] fields, int size) throws IOException {
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) throws IOException {
 
     if (fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
 
     if (fields.length == 1) {
-      return new OneComparatorFieldValueHitQueue(fields, size);
+      return new OneComparatorFieldValueHitQueue<T>(fields, size);
     } else {
-      return new MultiComparatorsFieldValueHitQueue(fields, size);
+      return new MultiComparatorsFieldValueHitQueue<T>(fields, size);
     }
   }
   
-  FieldComparator[] getComparators() { return comparators; }
+  public FieldComparator[] getComparators() {
+    return comparators;
+  }
 
-  int[] getReverseMul() { return reverseMul; }
+  public int[] getReverseMul() {
+    return reverseMul;
+  }
 
   /** Stores the sort criteria being used. */
   protected final SortField[] fields;
