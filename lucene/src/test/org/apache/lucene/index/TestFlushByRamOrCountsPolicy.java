@@ -50,16 +50,15 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   public void testFlushByRam() throws CorruptIndexException,
       LockObtainFailedException, IOException, InterruptedException {
-    int[] numThreads = new int[] { 2 + atLeast(1), 1 };
-    for (int i = 0; i < numThreads.length; i++) {
-      final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2) + random.nextDouble();
-      runFlushByRam(numThreads[i], ramBuffer
-         , false);
-    }
-    for (int i = 0; i < numThreads.length; i++) {
-      // with a 256 mb ram buffer we should never stall
-      runFlushByRam(numThreads[i], 256.d, true);
-    }
+    final double ramBuffer = (TEST_NIGHTLY ? 1 : 10) + atLeast(2)
+        + random.nextDouble();
+    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), ramBuffer, false);
+  }
+  
+  public void testFlushByRamLargeBuffer() throws CorruptIndexException,
+      LockObtainFailedException, IOException, InterruptedException {
+    // with a 256 mb ram buffer we should never stall
+    runFlushByRam(1 + random.nextInt(TEST_NIGHTLY ? 5 : 1), 256.d, true);
   }
 
   protected void runFlushByRam(int numThreads, double maxRamMB,
