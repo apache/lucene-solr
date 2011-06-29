@@ -62,3 +62,12 @@ WordBreakTestUnicode_*.java (under modules/analysis/common/src/test/)
 is derived from Unicode data such as the Unicode Character Database. 
 See http://unicode.org/copyright.html for more details.
 
+The Morfologik analyzer (morfologik) includes BSD-licensed software
+developed by Dawid Weiss and Marcin Miłkowski (http://morfologik.blogspot.com/).
+
+Morfologik uses data from Polish ispell/myspell dictionary
+(http://www.sjp.pl/slownik/en/) licenced on the terms of (inter alia)
+LGPL and Creative Commons ShareAlike.
+
+Morfologic includes data from BSD-licensed dictionary of Polish (SGJP)
+(http://sgjp.pl/morfeusz/)

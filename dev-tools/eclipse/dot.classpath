@@ -38,14 +38,15 @@
 	<classpathentry kind="src" path="modules/analysis/stempel/src/java"/>
 	<classpathentry kind="src" path="modules/analysis/stempel/src/resources"/>
 	<classpathentry kind="src" path="modules/analysis/stempel/src/test"/>
+	<classpathentry kind="src" path="modules/analysis/morfologik/src/java"/>
+	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
 	<classpathentry kind="src" path="modules/common/src/java"/>
 	<classpathentry kind="src" path="modules/common/src/test"/>
 	<classpathentry kind="src" path="modules/grouping/src/java"/>
 	<classpathentry kind="src" path="modules/grouping/src/test"/>
-  <classpathentry kind="src" path="modules/queries/src/java"/>
-	<classpathentry kind="src" path="modules/queries/src/test"/>
+	<classpathentry kind="src" path="modules/queries/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
 	<classpathentry kind="src" path="solr/src/java"/>
@@ -80,6 +81,9 @@
 	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-polish-1.5.2.jar"/>
+	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-stemming-1.5.2.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-beanutils-1.7.0.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-collections-3.1.jar"/>
 	<classpathentry kind="lib" path="modules/benchmark/lib/commons-compress-1.1.jar"/>
