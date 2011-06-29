@@ -34,6 +34,7 @@
     <module>analyzers</module>
     <module>benchmark</module>
     <module>demo</module>
+    <module>facet</module>
     <module>grouping</module>
     <module>highlighter</module>
     <module>icu</module>
