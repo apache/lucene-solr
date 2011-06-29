@@ -9,6 +9,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/analyzers/stempel/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/benchmark/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/demo/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/contrib/facet/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/grouping/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/highlighter/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/icu/build.xml" />

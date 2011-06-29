@@ -9,6 +9,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/analyzers/stempel/stempel.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/benchmark/benchmark.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/demo/demo.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/facet/facet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/highlighter/highlighter.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/icu/icu.iml" />
