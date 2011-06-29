@@ -108,6 +108,7 @@ public class BlockJoinQuery extends Query {
     this.scoreMode = scoreMode;
   }
 
+  @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new BlockJoinWeight(this, childQuery.createWeight(searcher), parentsFilter, scoreMode);
   }

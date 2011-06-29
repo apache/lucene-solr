@@ -70,7 +70,7 @@ New Features
    new contrib/join module, to enable searches that require joining
    between parent and child documents.  Joined (children + parent)
    documents must be indexed as a document block, using
-   IndexWriter.add/UpdateDocuments ((Mark Harwood, Mike McCandless)
+   IndexWriter.add/UpdateDocuments (Mark Harwood, Mike McCandless)
 
 API Changes
    
