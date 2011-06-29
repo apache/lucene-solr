@@ -199,4 +199,9 @@ final class SegmentCoreReaders {
       }
     }
   }
+
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(owner=" + owner + ")";
+  }
 }
