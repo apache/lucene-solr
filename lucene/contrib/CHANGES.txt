@@ -65,7 +65,13 @@ New Features
  * LUCENE-3234: provide a limit on phrase analysis in FastVectorHighlighter for
    highlighting speed up. Use FastVectorHighlighter.setPhraseLimit() to set limit
    (e.g. 5000). (Mike Sokolov via Koji Sekiguchi)
-  
+
+ * LUCENE-3079: a new facet module which provides faceted indexing & search
+   capabilities. It allows managing a taxonomy of categories, and index them
+   with documents. It also provides search API for aggregating (e.g. count)
+   the weights of the categories that are relevant to the search results. 
+   (Shai Erera)
+   
  * LUCENE-3171: Added BlockJoinQuery and BlockJoinCollector, under the
    new contrib/join module, to enable searches that require joining
    between parent and child documents.  Joined (children + parent)

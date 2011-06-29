@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="facet" default="default">
+
+  <description>
+    Faceted search module
+  </description>
+
+  <property name="build.dir" location="build/" />
+  <import file="../../lucene/contrib/contrib-build.xml"/>
+
+  <property name="build.dir" location="build/" />
+  <property name="dist.dir" location="dist/" />
+
+  <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
+  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
+      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
+
+  <path id="examples.classpath">
+    <path refid="classpath" />
+    <pathelement location="${build.dir}/classes/java" />
+    <pathelement path="${analyzers-common.jar}" />
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <pathelement location="${build.dir}/classes/examples" />
+    <pathelement path="${analyzers-common.jar}" />
+  </path>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}" />
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-examples" description="Compiles Facets examples">
+    <compile srcdir="src/examples" destdir="${build.dir}/classes/examples">
+      <classpath refid="examples.classpath" />
+    </compile>
+  </target>
+  
+  <target name="jar-examples" depends="compile-examples">
+    <jarify basedir="${build.dir}/classes/examples" 
+          destfile="${build.dir}/${final.name}-examples.jar" 
+          title="Lucene Search Engine: ${ant.project.name}-examples" />
+  </target>
+
+  <target name="jar-analyzers-common" unless="analyzers-common.uptodate">
+    <subant target="jar-core">
+      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
+    </subant>
+  </target>
+    
+  <target name="compile-core" depends="jar-analyzers-common,common.compile-core,compile-examples" description="Compiles facet classes" />
+
+  <target name="jar-core" depends="common.jar-core,jar-examples" />
+
+</project>
