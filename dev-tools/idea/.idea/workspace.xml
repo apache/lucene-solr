@@ -57,6 +57,13 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
+    <configuration default="false" name="facet module" type="JUnit" factoryName="JUnit">
+      <module name="facet" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/facet/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="grouping module" type="JUnit" factoryName="JUnit">
       <module name="grouping" />
       <option name="TEST_OBJECT" value="package" />
@@ -190,7 +197,7 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="27">
+    <list size="28">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.benchmark module" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
@@ -199,25 +206,26 @@
       <item index="5" class="java.lang.String" itemvalue="JUnit.dataimporthandler contrib" />
       <item index="6" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.extras from dataimporthandler contrib" />
-      <item index="8" class="java.lang.String" itemvalue="JUnit.grouping module" />
-      <item index="9" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
-      <item index="10" class="java.lang.String" itemvalue="JUnit.icu analysis module" />
-      <item index="11" class="java.lang.String" itemvalue="JUnit.instantiated contrib" />
-      <item index="12" class="java.lang.String" itemvalue="JUnit.lucene" />
-      <item index="13" class="java.lang.String" itemvalue="JUnit.memory contrib" />
-      <item index="14" class="java.lang.String" itemvalue="JUnit.misc contrib" />
-      <item index="15" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
-      <item index="16" class="java.lang.String" itemvalue="JUnit.queries contrib" />
-      <item index="17" class="java.lang.String" itemvalue="JUnit.queries module" />
-      <item index="18" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
-      <item index="19" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.solr" />
-      <item index="21" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
-      <item index="22" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
-      <item index="23" class="java.lang.String" itemvalue="JUnit.suggest module" />
-      <item index="24" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="25" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="26" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="8" class="java.lang.String" itemvalue="JUnit.facet module" />
+      <item index="9" class="java.lang.String" itemvalue="JUnit.grouping module" />
+      <item index="10" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
+      <item index="11" class="java.lang.String" itemvalue="JUnit.icu analysis module" />
+      <item index="12" class="java.lang.String" itemvalue="JUnit.instantiated contrib" />
+      <item index="13" class="java.lang.String" itemvalue="JUnit.lucene" />
+      <item index="14" class="java.lang.String" itemvalue="JUnit.memory contrib" />
+      <item index="15" class="java.lang.String" itemvalue="JUnit.misc contrib" />
+      <item index="16" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
+      <item index="17" class="java.lang.String" itemvalue="JUnit.queries contrib" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.queries module" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
+      <item index="21" class="java.lang.String" itemvalue="JUnit.solr" />
+      <item index="22" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
+      <item index="23" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
+      <item index="24" class="java.lang.String" itemvalue="JUnit.suggest module" />
+      <item index="25" class="java.lang.String" itemvalue="JUnit.uima contrib" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>
