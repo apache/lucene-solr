@@ -25,11 +25,13 @@ import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -51,9 +53,7 @@ class FixedDerefBytesImpl {
   static class Writer extends BytesWriterBase {
     private int size = -1;
     private int[] docToID;
-    private final BytesRefHash hash = new BytesRefHash(pool,
-        BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
-            BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+    private final BytesRefHash hash;
     public Writer(Directory dir, String id, AtomicLong bytesUsed)
         throws IOException {
       this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
@@ -62,11 +62,12 @@ class FixedDerefBytesImpl {
 
     public Writer(Directory dir, String id, Allocator allocator,
         AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+      hash = new BytesRefHash(new ByteBlockPool(allocator),
+          BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
+              BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
       docToID = new int[1];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT); // TODO BytesRefHash
-                                                            // uses bytes too!
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
     @Override
@@ -75,20 +76,14 @@ class FixedDerefBytesImpl {
         return;
       if (size == -1) {
         size = bytes.length;
-        datOut.writeInt(size);
       } else if (bytes.length != size) {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
       }
       int ord = hash.add(bytes);
-
-      if (ord >= 0) {
-        // new added entry
-        datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-      } else {
+      if (ord < 0) {
         ord = (-ord) - 1;
       }
-
       if (docID >= docToID.length) {
         final int size = docToID.length;
         docToID = ArrayUtil.grow(docToID, 1 + docID);
@@ -102,11 +97,27 @@ class FixedDerefBytesImpl {
     // some last docs that we didn't see
     @Override
     public void finish(int docCount) throws IOException {
+      boolean success = false;
+      final int numValues = hash.size();
+      final IndexOutput datOut = getDataOut();
       try {
-        if (size == -1) {
-          datOut.writeInt(size);
+        datOut.writeInt(size);
+        if (size != -1) {
+          final BytesRef bytesRef = new BytesRef(size);
+          for (int i = 0; i < numValues; i++) {
+            hash.get(i, bytesRef);
+            datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
+          }
         }
-        final int count = 1 + hash.size();
+        success = true;
+      } finally {
+        IOUtils.closeSafely(!success, datOut);
+        hash.close();
+      }
+      success = false;
+      final IndexOutput idxOut = getIndexOut();
+      try {
+        final int count = 1 + numValues;
         idxOut.writeInt(count - 1);
         // write index
         final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
@@ -120,9 +131,9 @@ class FixedDerefBytesImpl {
           w.add(0);
         }
         w.finish();
+        success = true;
       } finally {
-        hash.close();
-        super.finish(docCount);
+        IOUtils.closeSafely(!success, idxOut);
         bytesUsed
             .addAndGet((-docToID.length) * RamUsageEstimator.NUM_BYTES_INT);
         docToID = null;

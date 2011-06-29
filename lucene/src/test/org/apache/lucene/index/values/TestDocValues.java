@@ -64,7 +64,7 @@ public class TestDocValues extends LuceneTestCase {
     Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes);
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
-    final int fixedLength = 3 + random.nextInt(7);
+    final int fixedLength = 1 + atLeast(50);
     for (int i = 0; i < 100; i++) {
       final String s;
       if (i > 0 && random.nextInt(5) <= 2) {

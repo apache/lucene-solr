@@ -329,8 +329,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final int numValues = 50 + atLeast(10);
     for (ValueType byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
-
-      int bytesSize = 1 + atLeast(10);
+      final int bytesSize = 1 + atLeast(50);
       OpenBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
       final IndexReader r = IndexReader.open(w, withDeletions);
@@ -357,7 +356,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           assertNotNull("expected none null - " + msg, br);
           if (br.length != 0) {
             assertEquals("expected zero bytes of length " + bytesSize + " - "
-                + msg, bytesSize, br.length);
+                + msg + br.utf8ToString(), bytesSize, br.length);
             for (int j = 0; j < br.length; j++) {
               assertEquals("Byte at index " + j + " doesn't match - " + msg, 0,
                   br.bytes[br.offset + j]);
@@ -391,12 +390,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         while (withDeletions && deleted.get(v++)) {
           upto += bytesSize;
         }
-
         BytesRef br = bytes.getBytes(i, new BytesRef());
         if (bytesEnum.docID() != i) {
           assertEquals("seek failed for index " + i + " " + msg, i, bytesEnum
               .advance(i));
         }
+        assertTrue(msg, br.length > 0);
         for (int j = 0; j < br.length; j++, upto++) {
           assertTrue(" enumRef not initialized " + msg,
               enumRef.bytes.length > 0);
