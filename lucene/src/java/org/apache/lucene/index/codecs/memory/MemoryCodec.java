@@ -471,7 +471,7 @@ public class MemoryCodec extends Codec {
 
     @Override
     public int nextPosition() {
-      if (VERBOSE) System.out.println("    nextPos storePayloads=" + storePayloads);
+      if (VERBOSE) System.out.println("    nextPos storePayloads=" + storePayloads + " this=" + this);
       assert posPending > 0;
       posPending--;
       if (!storePayloads) {
@@ -488,6 +488,9 @@ public class MemoryCodec extends Codec {
         payload.offset = in.getPosition();
         in.skipBytes(payloadLength);
         payload.length = payloadLength;
+        // Necessary, in case caller changed the
+        // payload.bytes from prior call:
+        payload.bytes = buffer;
         payloadRetrieved = false;
       }
 

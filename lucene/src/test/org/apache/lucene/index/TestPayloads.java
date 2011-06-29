@@ -241,6 +241,14 @@ public class TestPayloads extends LuceneTestCase {
                       BytesRef br = tps[j].getPayload();
                       System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
                       offset += br.length;
+                      // Just to ensure all codecs can
+                      // handle a caller that mucks with the
+                      // returned payload:
+                      if (rarely()) {
+                        br.bytes = new byte[random.nextInt(5)];
+                      }
+                      br.length = 0;
+                      br.offset = 0;
                     }
                 }
             }

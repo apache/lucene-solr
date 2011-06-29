@@ -19,7 +19,8 @@ package org.apache.lucene.util;
 
 /**
  * Represents char[], as a slice (offset + length) into an existing char[].
- * 
+ * The {@link #chars} member should never be null; use
+ * {@link #EMPTY_ARRAY} if necessary.
  * @lucene.internal
  */
 public final class CharsRef implements Comparable<CharsRef>, CharSequence {

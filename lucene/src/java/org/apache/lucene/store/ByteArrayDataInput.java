@@ -59,6 +59,7 @@ public final class ByteArrayDataInput extends DataInput {
 
   public void skipBytes(int count) {
     pos += count;
+    assert pos <= limit;
   }
 
   @Override
