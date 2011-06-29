@@ -108,8 +108,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void testImmediateDiskFullWithThreads() throws Exception {
 
     int NUM_THREADS = 3;
-
-    for(int iter=0;iter<10;iter++) {
+    final int numIterations = TEST_NIGHTLY ? 10 : 3;
+    for(int iter=0;iter<numIterations;iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
       }
@@ -155,8 +155,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   // still want to be robust to this case:
   public void testCloseWithThreads() throws Exception {
     int NUM_THREADS = 3;
-
-    for(int iter=0;iter<7;iter++) {
+    int numIterations = TEST_NIGHTLY ? 7 : 3;
+    for(int iter=0;iter<numIterations;iter++) {
       Directory dir = newDirectory();
 
       IndexWriter writer = new IndexWriter(
