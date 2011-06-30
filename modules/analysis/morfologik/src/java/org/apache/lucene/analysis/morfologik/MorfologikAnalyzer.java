@@ -62,14 +62,14 @@ public class MorfologikAnalyzer extends ReusableAnalyzerBase {
 
   /**
    * Creates a
-   * {@link ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
    * 
    * @param field ignored field name
    * @param reader source of tokens
    * 
    * @return A
-   *         {@link ReusableAnalyzerBase.TokenStreamComponents}
+   *         {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter} and {@link MorfologikFilter}.
    */

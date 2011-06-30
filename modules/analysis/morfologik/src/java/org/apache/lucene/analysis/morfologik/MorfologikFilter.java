@@ -35,10 +35,11 @@ import org.apache.lucene.util.Version;
 
 /**
  * {@link TokenFilter} using Morfologik library.
- * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  *
  * MorfologikFilter contains a {@link MorphosyntacticTagAttribute}, which provides morphosyntactic
  * annotations for produced lemmas. See the Morfologik documentation for details.
+ * 
+ * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  */
 public class MorfologikFilter extends TokenFilter {
 
