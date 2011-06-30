@@ -27,10 +27,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -798,6 +796,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     // per step)
 
     while (otherTaxonomiesLeft>0) {
+      // TODO: use a pq here
       String first=null;
       for (int i=0; i<taxonomies.length; i++) {
         if (currentOthers[i]==null) continue;
@@ -819,7 +818,6 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
         int newordinal = internalAddCategory(cp, cp.length());
         // TODO (Facet): we already had this term in our hands before, in nextTE...
         // // TODO (Facet): no need to make this term?
-        Term t = new Term(Consts.FULL, first);
         for (int i=0; i<taxonomies.length; i++) {
           if (first.equals(currentOthers[i])) {
             // remember the remapping of this ordinal. Note how
@@ -828,8 +826,6 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
             // like Lucene's merge works, we hope there are few seeks.
             // TODO (Facet): is there a quicker way? E.g., not specifying the
             // next term by name every time?
-            SeekStatus result = othertes[i].seekCeil(t.bytes(), false);
-            assert result == SeekStatus.FOUND;
             otherdocsEnum[i] = othertes[i].docs(MultiFields.getDeletedDocs(otherreaders[i]), otherdocsEnum[i]);
             otherdocsEnum[i].nextDoc(); // TODO (Facet): check?
             int origordinal = otherdocsEnum[i].docID();
@@ -847,10 +843,6 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
         // to be added because it already existed in the main taxonomy.
 
         // TODO (Facet): Again, is there a quicker way?
-        Term t = new Term(Consts.FULL, first);
-        // TODO: fix bug in MTE seekExact and use that instead.
-        SeekStatus result = mainte.seekCeil(t.bytes(), false);
-        assert result == SeekStatus.FOUND; // // TODO (Facet): explicit check / throw exception?
         mainde = mainte.docs(MultiFields.getDeletedDocs(mainreader), mainde);
         mainde.nextDoc(); // TODO (Facet): check?
         int newordinal = mainde.docID();
@@ -859,8 +851,6 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
         for (int i=0; i<taxonomies.length; i++) {
           if (first.equals(currentOthers[i])) {
             // TODO (Facet): again, is there a quicker way?
-            result = othertes[i].seekCeil(t.bytes(), false);
-            assert result == SeekStatus.FOUND; // TODO (Facet): explicit check / throw exception?
             otherdocsEnum[i] = othertes[i].docs(MultiFields.getDeletedDocs(otherreaders[i]), otherdocsEnum[i]);
             otherdocsEnum[i].nextDoc(); // TODO (Facet): check?
             int origordinal = otherdocsEnum[i].docID();

@@ -43,6 +43,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
 
   private BytesRef lastSeek;
+  private boolean lastSeekExact;
   private final BytesRef lastSeekScratch = new BytesRef();
 
   private int numTop;
@@ -149,6 +150,7 @@ public final class MultiTermsEnum extends TermsEnum {
     }
 
     lastSeek = null;
+    lastSeekExact = true;
 
     for(int i=0;i<numSubs;i++) {
       final boolean status;
@@ -179,6 +181,7 @@ public final class MultiTermsEnum extends TermsEnum {
       if (status) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
+        assert term.equals(currentSubs[i].current);
       }
     }
 
@@ -191,6 +194,7 @@ public final class MultiTermsEnum extends TermsEnum {
   public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
     queue.clear();
     numTop = 0;
+    lastSeekExact = false;
 
     boolean seekOpt = false;
     if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
@@ -293,6 +297,17 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public BytesRef next() throws IOException {
+    if (lastSeekExact) {
+      // Must seekCeil at this point, so those subs that
+      // didn't have the term can find the following term.
+      // NOTE: we could save some CPU by only seekCeil the
+      // subs that didn't match the last exact seek... but
+      // most impls short-circuit if you seekCeil to term
+      // they are already on.
+      final SeekStatus status = seekCeil(current);
+      assert status == SeekStatus.FOUND;
+      lastSeekExact = false;
+    }
     lastSeek = null;
 
     // restore queue
