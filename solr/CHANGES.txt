@@ -272,6 +272,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-2625: TermVectorComponent throws NPE if TF-IDF option is used without DF
+  option. (Daniel Erenrich, Simon Willnauer)
+
 Other Changes
 ----------------------
 
