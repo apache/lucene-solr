@@ -120,7 +120,7 @@ public final class BitVector implements Cloneable, Bits {
     return size;
   }
 
-  // @Override -- not until Java 1.6
+  @Override
   public int length() {
     return size;
   }

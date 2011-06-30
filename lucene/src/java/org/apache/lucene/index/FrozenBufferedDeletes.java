@@ -93,22 +93,22 @@ class FrozenBufferedDeletes {
 
   public Iterable<Term> termsIterable() {
     return new Iterable<Term>() {
-      // @Override -- not until Java 1.6
+      @Override
       public Iterator<Term> iterator() {
         return new Iterator<Term>() {
           private int upto;
 
-          // @Override -- not until Java 1.6
+          @Override
           public boolean hasNext() {
             return upto < terms.length;
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public Term next() {
             return terms[upto++];
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public void remove() {
             throw new UnsupportedOperationException();
           }
@@ -119,24 +119,24 @@ class FrozenBufferedDeletes {
 
   public Iterable<QueryAndLimit> queriesIterable() {
     return new Iterable<QueryAndLimit>() {
-      // @Override -- not until Java 1.6
+      @Override
       public Iterator<QueryAndLimit> iterator() {
         return new Iterator<QueryAndLimit>() {
           private int upto;
 
-          // @Override -- not until Java 1.6
+          @Override
           public boolean hasNext() {
             return upto < queries.length;
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public QueryAndLimit next() {
             QueryAndLimit ret = new QueryAndLimit(queries[upto], queryLimits[upto]);
             upto++;
             return ret;
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public void remove() {
             throw new UnsupportedOperationException();
           }

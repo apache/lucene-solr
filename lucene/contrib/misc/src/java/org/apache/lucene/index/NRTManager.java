@@ -351,7 +351,7 @@ public class NRTManager implements Closeable {
   }
 
   /** NOTE: caller must separately close the writer. */
-  // @Override -- not until Java 1.6
+  @Override
   public void close() throws IOException {
     swapSearcher(null, indexingGen.getAndIncrement(), true);
   }

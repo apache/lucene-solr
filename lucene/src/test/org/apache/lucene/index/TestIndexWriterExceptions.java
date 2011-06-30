@@ -59,23 +59,23 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       this.doc = doc;
     }
 
-    // @Override -- not until Java 1.6
+    @Override
     public Iterator<Document> iterator() {
       return new Iterator<Document>() {
         int upto;
 
-        // @Override -- not until Java 1.6
+        @Override
         public boolean hasNext() {
           return upto < count;
         }
 
-        // @Override -- not until Java 1.6
+        @Override
         public Document next() {
           upto++;
           return doc;
         }
 
-        // @Override -- not until Java 1.6
+        @Override
         public void remove() {
           throw new UnsupportedOperationException();
         }

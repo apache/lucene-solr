@@ -136,7 +136,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
       return capacity();
   }
 
-  // @Override -- not until Java 1.6
+  @Override
   public int length() {
     return bits.length << 6;
   }

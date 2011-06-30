@@ -137,7 +137,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   }
 
   final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
-    // @Override -- not until Java 1.6
+    @Override
     public void finished(IndexReader reader) {
       FieldCache.DEFAULT.purge(reader);
     }
