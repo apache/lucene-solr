@@ -253,6 +253,10 @@ Other Changes
   (James Dyer via rmuir)
 
 * LUCENE-3232: Moved MutableValue classes to new 'common' module. (Chris Male)
+
+* LUCENE-2883: FunctionQuery, DocValues (and its impls), ValueSource (and its
+  impls) and BoostedQuery have been consolidated into the queries module.  They
+  can now be found at o.a.l.queries.function. 
   
 Documentation
 ----------------------

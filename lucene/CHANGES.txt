@@ -152,6 +152,10 @@ Changes in backwards compatibility policy
 * LUCENE-2548: Field names (eg in Term, FieldInfo) are no longer
   interned.  (Mike McCandless)
 
+* LUCENE-2883: The contents of o.a.l.search.function has been consolidated into
+  the queries module and can be found at o.a.l.queries.function.  See MIGRATE.txt
+  for more information (Chris Male)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
