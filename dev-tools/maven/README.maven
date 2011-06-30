@@ -21,7 +21,7 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
 
 B. How to generate Lucene Maven artifacts
 
-   1. Prerequisites: JDK 1.5+ and Ant 1.7.X
+   1. Prerequisites: JDK 1.6+ and Ant 1.7.X
 
    2. Run the following command from the lucene/ directory:
 
@@ -59,8 +59,7 @@ D. How to use Maven to build Lucene/Solr
 
    The details, followed by some example Maven commands:
 
-   1. Prerequisites: JDK 1.5+ (for Lucene); JDK 1.6+ (for Solr);
-                     Maven 2.2.1 or 3.0.X
+   1. Prerequisites: JDK 1.6 and Maven 2.2.1 or 3.0.X
 
    2. Make sure your sources are up to date.  If you checked your sources out
       from the Apache Subversion repository, run "svn update" from the top

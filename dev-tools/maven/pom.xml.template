@@ -41,7 +41,7 @@
   <properties>
     <base.specification.version>4.0.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.5</java.compat.version>
+    <java.compat.version>1.6</java.compat.version>
     <jetty.version>6.1.26</jetty.version>
     <patched.jetty.version>6.1.26-patched-JETTY-1340</patched.jetty.version>
     <slf4j.version>1.6.1</slf4j.version>
