@@ -570,10 +570,10 @@
      <mkdir dir="${dest}/META-INF/" />
      <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
         <!--
-        http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
-        http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
-        http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
-        http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+        http://java.sun.com/j2se/1.6.0/docs/guide/jar/jar.html#JAR%20Manifest
+        http://java.sun.com/j2se/1.6.0/docs/guide/versioning/spec/versioning2.html
+        http://java.sun.com/j2se/1.6.0/docs/api/java/lang/Package.html
+        http://java.sun.com/j2se/1.6.0/docs/api/java/util/jar/package-summary.html
         http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
         -->
         <!-- Don't set 'Manifest-Version' it identifies the version of the
