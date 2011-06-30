@@ -14,6 +14,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/highlighter/highlighter.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/icu/icu.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/instantiated/instantiated.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/join/join.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries.iml" />
