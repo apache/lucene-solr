@@ -39,6 +39,7 @@
     <module>highlighter</module>
     <module>icu</module>
     <module>instantiated</module>
+    <module>join</module>
     <module>memory</module>
     <module>misc</module>
     <module>queries</module>
