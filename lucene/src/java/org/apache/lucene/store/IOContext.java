@@ -10,7 +10,7 @@ package org.apache.lucene.store;
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
-* Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -26,60 +26,64 @@ package org.apache.lucene.store;
 public class IOContext {
 
   /**
-   * Context is a enumerator which specifies the context in which the Directory is being used for.
+   * Context is a enumerator which specifies the context in which the Directory
+   * is being used for.
    */
-  public enum Context {MERGE,READ,FLUSH,DEFAULT};
-  
+  public enum Context {
+    MERGE, READ, FLUSH, DEFAULT
+  };
+
   /**
    * An object of a enumerator Context type
    */
   public final Context context;
-  
+
   public final MergeInfo mergeInfo;
-  
+
   public final FlushInfo flushInfo;
-  
+
   public final boolean readOnce;
-  
+
   public static final IOContext DEFAULT = new IOContext(Context.DEFAULT);
-  
+
   public static final IOContext READONCE = new IOContext(true);
-  
+
   public static final IOContext READ = new IOContext(false);
-  
-  public IOContext () {
+
+  public IOContext() {
     this(false);
   }
-  
-  public IOContext (FlushInfo flushInfo) {
+
+  public IOContext(FlushInfo flushInfo) {
     assert flushInfo != null;
     this.context = Context.FLUSH;
     this.mergeInfo = null;
     this.readOnce = false;
-    this.flushInfo = flushInfo;    
+    this.flushInfo = flushInfo;
   }
-  
-  public IOContext (Context context) {
-    this(context, null);    
+
+  public IOContext(Context context) {
+    this(context, null);
   }
-  
-  private IOContext (boolean readOnce) {
+
+  private IOContext(boolean readOnce) {
     this.context = Context.READ;
-    this.mergeInfo = null;    
+    this.mergeInfo = null;
     this.readOnce = readOnce;
     this.flushInfo = null;
   }
-  
-  public IOContext (MergeInfo mergeInfo) {    
+
+  public IOContext(MergeInfo mergeInfo) {
     this(Context.MERGE, mergeInfo);
   }
 
-  private IOContext (Context context, MergeInfo mergeInfo ) {
-    assert context != Context.MERGE || context != Context.FLUSH || mergeInfo != null;
+  private IOContext(Context context, MergeInfo mergeInfo) {
+    assert context != Context.MERGE || mergeInfo != null : "MergeInfo must not be null if context is MERGE";
+    assert context != Context.FLUSH : "Use IOContext(FlushInfo) to create a FLUSH IOContext";
     this.context = context;
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
     this.flushInfo = null;
   }
-  
+
 }

@@ -196,7 +196,6 @@ public class MockDirectoryWrapper extends Directory {
         long length = fileLength(name);
         byte[] zeroes = new byte[256];
         long upto = 0;
-        //nocommit - randomize the IOContext here?
         IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         while(upto < length) {
           final int limit = (int) Math.min(length-upto, zeroes.length);
@@ -206,7 +205,6 @@ public class MockDirectoryWrapper extends Directory {
         out.close();
       } else if (count % 3 == 2) {
         // Truncate the file:
-        //nocommit - randomize the IOContext here?
         IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.setLength(fileLength(name)/2);
         out.close();
@@ -374,7 +372,6 @@ public class MockDirectoryWrapper extends Directory {
     }
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    // nocommit - randomize the IOContext here?
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState)), name);
     addFileHandle(io, name, false);
     openFilesForWrite.add(name);
@@ -415,7 +412,6 @@ public class MockDirectoryWrapper extends Directory {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    // nocommit - randomize IOContext here?
     IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState)));
     addFileHandle(ii, name, true);
     return ii;

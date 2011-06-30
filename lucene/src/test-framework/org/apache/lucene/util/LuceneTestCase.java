@@ -1059,8 +1059,7 @@ public abstract class LuceneTestCase extends Assert {
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-      //nocommit randomiz the IOContext here?
-     d.copy(impl, file, file, IOContext.DEFAULT);
+     d.copy(impl, file, file, newIOContext(r));
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
@@ -1316,33 +1315,27 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static IOContext newIOContext(Random random) {
-    int randomNumDocs=4192, size=2048;
-    int type = random.nextInt(5);
-    IOContext context = IOContext.DEFAULT;
-    switch(type) {
-      case 0:
-        context = IOContext.DEFAULT;
-        break;
-        
-      case 1:
-        context = IOContext.READ;
-        break;
-        
-      case 2:
-        context = IOContext.READONCE;
-        break;
-        
-      case 3:
-        randomNumDocs = random.nextInt(4192);
-        size = random.nextInt(2048);
-        context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
-        break;
-        
-      case 4:
-        randomNumDocs = random.nextInt(4192);
-        size = random.nextInt(2048);
-        context = new IOContext(new FlushInfo(randomNumDocs, size));       
-        break;
+    final int randomNumDocs = random.nextInt(4192);
+    final int size = random.nextInt(512) * randomNumDocs;
+    final IOContext context;
+    switch (random.nextInt(5)) {
+    case 0:
+      context = IOContext.DEFAULT;
+      break;
+    case 1:
+      context = IOContext.READ;
+      break;
+    case 2:
+      context = IOContext.READONCE;
+      break;
+    case 3:
+      context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
+      break;
+    case 4:
+      context = new IOContext(new FlushInfo(randomNumDocs, size));
+      break;
+     default:
+       context = IOContext.DEFAULT;
     }
     return context;
   }

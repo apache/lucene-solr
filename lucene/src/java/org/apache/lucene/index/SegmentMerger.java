@@ -236,7 +236,6 @@ final class SegmentMerger {
     int docCount = 0;
 
     setMatchingSegmentReaders();
-    // nocommit - should we rather use IOContext.MERGE here?
     final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, context);
     try {
       int idx = 0;

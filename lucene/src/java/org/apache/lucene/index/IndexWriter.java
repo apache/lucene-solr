@@ -2470,7 +2470,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
-      // nocommit - we should pass a MergeInfo here into merge to create corresponding IOContext instances?
       int docCount = merger.merge();                // merge 'em
 
       final FieldInfos fieldInfos = merger.fieldInfos();
