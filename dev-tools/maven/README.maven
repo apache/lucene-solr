@@ -59,7 +59,7 @@ D. How to use Maven to build Lucene/Solr
 
    The details, followed by some example Maven commands:
 
-   1. Prerequisites: JDK 1.6 and Maven 2.2.1 or 3.0.X
+   1. Prerequisites: JDK 1.6+ and Maven 2.2.1 or 3.0.X
 
    2. Make sure your sources are up to date.  If you checked your sources out
       from the Apache Subversion repository, run "svn update" from the top
