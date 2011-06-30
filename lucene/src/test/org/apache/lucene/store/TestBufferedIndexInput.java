@@ -29,7 +29,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -94,11 +93,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                IOContext.DEFAULT, 10), inputBufferSize, random);
+        newIOContext(random), 10), inputBufferSize, random);
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             IOContext.DEFAULT, 10), inputBufferSize, random);
+        newIOContext(random), 10), inputBufferSize, random);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)

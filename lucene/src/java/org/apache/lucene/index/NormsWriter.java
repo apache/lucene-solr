@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store

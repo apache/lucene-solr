@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -192,35 +193,35 @@ public abstract class Writer extends DocValuesConsumer {
    * @throws IOException
    */
   public static Writer create(ValueType type, String id, Directory directory,
-      Comparator<BytesRef> comp, AtomicLong bytesUsed) throws IOException {
+      Comparator<BytesRef> comp, AtomicLong bytesUsed, IOContext context) throws IOException {
     if (comp == null) {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
     switch (type) {
     case INTS:
-      return Ints.getWriter(directory, id, true, bytesUsed);
+      return Ints.getWriter(directory, id, true, bytesUsed, context);
     case FLOAT_32:
-      return Floats.getWriter(directory, id, 4, bytesUsed);
+      return Floats.getWriter(directory, id, 4, bytesUsed, context);
     case FLOAT_64:
-      return Floats.getWriter(directory, id, 8, bytesUsed);
+      return Floats.getWriter(directory, id, 8, bytesUsed, context);
     case BYTES_FIXED_STRAIGHT:
       return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, true,
-          bytesUsed);
+          bytesUsed, context);
     case BYTES_FIXED_DEREF:
       return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, true,
-          bytesUsed);
+          bytesUsed, context);
     case BYTES_FIXED_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, true,
-          bytesUsed);
+          bytesUsed, context);
     case BYTES_VAR_STRAIGHT:
       return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, false,
-          bytesUsed);
+          bytesUsed, context);
     case BYTES_VAR_DEREF:
       return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, false,
-          bytesUsed);
+          bytesUsed, context);
     case BYTES_VAR_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false,
-          bytesUsed);
+          bytesUsed, context);
     default:
       throw new IllegalArgumentException("Unknown Values: " + type);
     }

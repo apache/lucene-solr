@@ -17,36 +17,33 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 
 public class TestCopyBytes extends LuceneTestCase {
-
+  
   private byte value(int idx) {
-    return (byte) ((idx%256) * (1+(idx/256)));
+    return (byte) ((idx % 256) * (1 + (idx / 256)));
   }
-
-
+  
   @Test
   public void testCopyBytes() throws Exception {
     int num = atLeast(10);
-    for(int iter=0;iter<num;iter++) {
+    for (int iter = 0; iter < num; iter++) {
       Directory dir = newDirectory();
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter + " dir=" + dir);
       }
-
+      
       // make random file
-      IndexOutput out = dir.createOutput("test", IOContext.DEFAULT);
+      IndexOutput out = dir.createOutput("test", newIOContext(random));
       byte[] bytes = new byte[_TestUtil.nextInt(random, 1, 77777)];
       final int size = _TestUtil.nextInt(random, 1, 1777777);
       int upto = 0;
       int byteUpto = 0;
-      while(upto < size) {
+      while (upto < size) {
         bytes[byteUpto++] = value(upto);
         upto++;
         if (byteUpto == bytes.length) {
@@ -54,24 +51,25 @@ public class TestCopyBytes extends LuceneTestCase {
           byteUpto = 0;
         }
       }
-
+      
       out.writeBytes(bytes, 0, byteUpto);
       assertEquals(size, out.getFilePointer());
       out.close();
       assertEquals(size, dir.fileLength("test"));
-
+      
       // copy from test -> test2
-      final IndexInput in = dir.openInput("test", IOContext.DEFAULT);
-
-      out = dir.createOutput("test2", IOContext.DEFAULT);
-
+      final IndexInput in = dir.openInput("test", newIOContext(random));
+      
+      out = dir.createOutput("test2", newIOContext(random));
+      
       upto = 0;
-      while(upto < size) {
+      while (upto < size) {
         if (random.nextBoolean()) {
           out.writeByte(in.readByte());
           upto++;
         } else {
-          final int chunk = Math.min(_TestUtil.nextInt(random, 1, bytes.length), size-upto);
+          final int chunk = Math.min(
+              _TestUtil.nextInt(random, 1, bytes.length), size - upto);
           out.copyBytes(in, chunk);
           upto += chunk;
         }
@@ -79,26 +77,27 @@ public class TestCopyBytes extends LuceneTestCase {
       assertEquals(size, upto);
       out.close();
       in.close();
-
+      
       // verify
-      IndexInput in2 = dir.openInput("test2", IOContext.DEFAULT);
+      IndexInput in2 = dir.openInput("test2", newIOContext(random));
       upto = 0;
-      while(upto < size) {
+      while (upto < size) {
         if (random.nextBoolean()) {
           final byte v = in2.readByte();
           assertEquals(value(upto), v);
           upto++;
         } else {
-          final int limit = Math.min(_TestUtil.nextInt(random, 1, bytes.length), size-upto);
+          final int limit = Math.min(
+              _TestUtil.nextInt(random, 1, bytes.length), size - upto);
           in2.readBytes(bytes, 0, limit);
-          for(int byteIdx=0;byteIdx<limit;byteIdx++) {
+          for (int byteIdx = 0; byteIdx < limit; byteIdx++) {
             assertEquals(value(upto), bytes[byteIdx]);
             upto++;
           }
         }
       }
       in2.close();
-
+      
       dir.deleteFile("test");
       dir.deleteFile("test2");
       

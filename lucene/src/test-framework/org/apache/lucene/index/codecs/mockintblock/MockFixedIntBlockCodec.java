@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.mockintblock;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -103,8 +102,8 @@ public class MockFixedIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT);
+    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+      IndexOutput out = dir.createOutput(fileName, context);
       boolean success = false;
       try {
         FixedIntBlockIndexOutput ret = new FixedIntBlockIndexOutput(out, blockSize) {
@@ -226,6 +225,6 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
   }
 }

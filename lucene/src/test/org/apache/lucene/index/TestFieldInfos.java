@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 
@@ -48,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
     
-    IndexOutput output = dir.createOutput(filename, IOContext.DEFAULT);
+    IndexOutput output = dir.createOutput(filename, newIOContext(random));
     assertTrue(output != null);
     //Use a RAMOutputStream
   

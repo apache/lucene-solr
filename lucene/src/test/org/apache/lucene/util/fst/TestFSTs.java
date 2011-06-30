@@ -29,7 +29,7 @@ import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IOContext;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -468,11 +468,13 @@ public class TestFSTs extends LuceneTestCase {
       }
       FST<T> fst = builder.finish();
 
-      if (random.nextBoolean() && fst != null) {
-        IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
+      if (random.nextBoolean() && fst != null) {        
+        TestFSTs t = new TestFSTs();
+        IOContext context = t.newIOContext(random);
+        IndexOutput out = dir.createOutput("fst.bin", context);
         fst.save(out);
         out.close();
-        IndexInput in = dir.openInput("fst.bin", IOContext.DEFAULT);
+        IndexInput in = dir.openInput("fst.bin", context);
         try {
           fst = new FST<T>(in, outputs);
         } finally {

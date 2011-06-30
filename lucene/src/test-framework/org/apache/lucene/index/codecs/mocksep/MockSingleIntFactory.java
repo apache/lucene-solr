@@ -18,7 +18,7 @@ package org.apache.lucene.index.codecs.mocksep;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.IOContext;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
@@ -32,7 +32,7 @@ public class MockSingleIntFactory extends IntStreamFactory {
     return new MockSingleIntIndexInput(dir, fileName, context);
   }
   @Override
-  public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-    return new MockSingleIntIndexOutput(dir, fileName);
+  public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+    return new MockSingleIntIndexOutput(dir, fileName, context);
   }
 }

@@ -19,12 +19,12 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IOContext;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IOContext.Context;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
   java.util.BitSet, but also includes the following:

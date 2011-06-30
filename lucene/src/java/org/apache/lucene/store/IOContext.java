@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.store;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,6 +37,8 @@ public class IOContext {
   
   public final MergeInfo mergeInfo;
   
+  public final FlushInfo flushInfo;
+  
   public final boolean readOnce;
   
   public static final IOContext DEFAULT = new IOContext(Context.DEFAULT);
@@ -49,14 +51,23 @@ public class IOContext {
     this(false);
   }
   
-  public IOContext(Context context) {
+  public IOContext (FlushInfo flushInfo) {
+    assert flushInfo != null;
+    this.context = Context.FLUSH;
+    this.mergeInfo = null;
+    this.readOnce = false;
+    this.flushInfo = flushInfo;    
+  }
+  
+  public IOContext (Context context) {
     this(context, null);    
   }
   
-  private IOContext(boolean readOnce) {
+  private IOContext (boolean readOnce) {
     this.context = Context.READ;
     this.mergeInfo = null;    
     this.readOnce = readOnce;
+    this.flushInfo = null;
   }
   
   public IOContext (MergeInfo mergeInfo) {    
@@ -64,10 +75,11 @@ public class IOContext {
   }
 
   private IOContext (Context context, MergeInfo mergeInfo ) {
-    assert context != Context.MERGE || mergeInfo != null;
+    assert context != Context.MERGE || context != Context.FLUSH || mergeInfo != null;
     this.context = context;
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
+    this.flushInfo = null;
   }
   
 }

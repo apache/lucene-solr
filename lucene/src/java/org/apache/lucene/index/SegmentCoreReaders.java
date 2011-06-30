@@ -24,6 +24,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */

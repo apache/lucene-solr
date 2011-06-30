@@ -118,16 +118,16 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       this.skipInterval = skipInterval;
       this.skipMinimum = skipInterval; /* set to the same for now */
       final String docFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, DOC_EXTENSION);
-      docOut = factory.createOutput(state.directory, docFileName);
+      docOut = factory.createOutput(state.directory, docFileName, state.context);
       docIndex = docOut.index();
       
       if (state.fieldInfos.hasProx()) {
         final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
-        freqOut = factory.createOutput(state.directory, frqFileName);
+        freqOut = factory.createOutput(state.directory, frqFileName, state.context);
         freqIndex = freqOut.index();
         
         final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
-        posOut = factory.createOutput(state.directory, posFileName);
+        posOut = factory.createOutput(state.directory, posFileName, state.context);
         posIndex = posOut.index();
         
         // TODO: -- only if at least one field stores payloads?

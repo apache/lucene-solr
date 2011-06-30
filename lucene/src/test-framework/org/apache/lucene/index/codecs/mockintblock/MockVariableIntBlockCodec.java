@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs.mockintblock;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -49,6 +48,7 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -107,8 +107,8 @@ public class MockVariableIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      final IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT);
+    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+      final IndexOutput out = dir.createOutput(fileName, context);
       boolean success = false;
       try {
         out.writeInt(baseBlockSize);
@@ -248,6 +248,6 @@ public class MockVariableIntBlockCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
   }
 }

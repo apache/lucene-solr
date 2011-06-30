@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
-import org.apache.lucene.index.IOContext;
 
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's

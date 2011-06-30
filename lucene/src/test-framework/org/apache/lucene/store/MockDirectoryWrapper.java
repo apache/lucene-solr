@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.LuceneTestCase;
@@ -198,7 +197,7 @@ public class MockDirectoryWrapper extends Directory {
         byte[] zeroes = new byte[256];
         long upto = 0;
         //nocommit - randomize the IOContext here?
-        IndexOutput out = delegate.createOutput(name, IOContext.DEFAULT);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         while(upto < length) {
           final int limit = (int) Math.min(length-upto, zeroes.length);
           out.writeBytes(zeroes, 0, limit);
@@ -208,7 +207,7 @@ public class MockDirectoryWrapper extends Directory {
       } else if (count % 3 == 2) {
         // Truncate the file:
         //nocommit - randomize the IOContext here?
-        IndexOutput out = delegate.createOutput(name, IOContext.DEFAULT);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.setLength(fileLength(name)/2);
         out.close();
       }
@@ -376,7 +375,7 @@ public class MockDirectoryWrapper extends Directory {
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     // nocommit - randomize the IOContext here?
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, context), name);
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState)), name);
     addFileHandle(io, name, false);
     openFilesForWrite.add(name);
     
@@ -417,7 +416,7 @@ public class MockDirectoryWrapper extends Directory {
     }
 
     // nocommit - randomize IOContext here?
-    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, context));
+    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState)));
     addFileHandle(ii, name, true);
     return ii;
   }

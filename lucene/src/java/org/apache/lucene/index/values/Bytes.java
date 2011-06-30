@@ -23,12 +23,12 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
@@ -107,9 +107,8 @@ public final class Bytes {
    *           if the files for the writer can not be created.
    */
   public static Writer getWriter(Directory dir, String id, Mode mode,
-      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed)
+      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed, IOContext context)
       throws IOException {
-    //nocommit this and all the blow need an IOContext too
 
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
@@ -119,19 +118,19 @@ public final class Bytes {
 
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        return new FixedStraightBytesImpl.Writer(dir, id);
+        return new FixedStraightBytesImpl.Writer(dir, id, context);
       } else if (mode == Mode.DEREF) {
-        return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed);
+        return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
+        return new FixedSortedBytesImpl.Writer(dir, id, comp, bytesUsed, context);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
-        return new VarStraightBytesImpl.Writer(dir, id, bytesUsed);
+        return new VarStraightBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.DEREF) {
-        return new VarDerefBytesImpl.Writer(dir, id, bytesUsed);
+        return new VarDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
+        return new VarSortedBytesImpl.Writer(dir, id, comp, bytesUsed, context);
       }
     }
 
@@ -160,25 +159,24 @@ public final class Bytes {
    *           if an {@link IOException} occurs
    */
   public static IndexDocValues getValues(Directory dir, String id, Mode mode,
-      boolean fixedSize, int maxDoc) throws IOException {
-    //nocommit this and all the readers below need an IOContext too
+      boolean fixedSize, int maxDoc, IOContext context) throws IOException {
 
     // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        return new FixedStraightBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedStraightBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.DEREF) {
-        return new FixedDerefBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedDerefBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc, context);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
-        return new VarStraightBytesImpl.Reader(dir, id, maxDoc);
+        return new VarStraightBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.DEREF) {
-        return new VarDerefBytesImpl.Reader(dir, id, maxDoc);
+        return new VarDerefBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Reader(dir, id, maxDoc);
+        return new VarSortedBytesImpl.Reader(dir, id, maxDoc, context);
       }
     }
 

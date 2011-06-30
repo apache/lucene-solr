@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
@@ -33,6 +32,7 @@ import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
@@ -68,8 +68,10 @@ final class SegmentMerger {
   private SegmentWriteState segmentWriteState;
 
   private PayloadProcessorProvider payloadProcessorProvider;
+  
+  private IOContext context;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, IOContext context) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
@@ -85,6 +87,7 @@ final class SegmentMerger {
       };
     }
     this.termIndexInterval = termIndexInterval;
+    this.context = context;
   }
 
   public FieldInfos fieldInfos() {
@@ -234,8 +237,7 @@ final class SegmentMerger {
 
     setMatchingSegmentReaders();
     // nocommit - should we rather use IOContext.MERGE here?
-    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, IOContext.DEFAULT);
-
+    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, context);
     try {
       int idx = 0;
       for (IndexReader reader : readers) {
@@ -269,8 +271,7 @@ final class SegmentMerger {
       // entering the index.  See LUCENE-1282 for
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
-    //nocommit if Merge then what to initialize OneMerge with ?
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, IOContext.DEFAULT);
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, context);
 
     return docCount;
   }
@@ -355,9 +356,8 @@ final class SegmentMerger {
    * @throws IOException
    */
   private final void mergeVectors() throws IOException {
-    //nocommit Putting MERGE context here would lead to assert error. What should MergeInfo be initialized with here?
     TermVectorsWriter termVectorsWriter =
-      new TermVectorsWriter(directory, segment, fieldInfos, new IOContext(Context.DEFAULT));
+      new TermVectorsWriter(directory, segment, fieldInfos, context);
 
     try {
       int idx = 0;
@@ -616,8 +616,7 @@ final class SegmentMerger {
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) {
-            //nocommit Putting MERGE context here would lead to assert error. What should MergeInfo be initialized with here?
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), new IOContext(Context.DEFAULT));
+            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), context);
             output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
           for (IndexReader reader : readers) {

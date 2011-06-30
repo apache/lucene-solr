@@ -36,6 +36,7 @@ import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /**

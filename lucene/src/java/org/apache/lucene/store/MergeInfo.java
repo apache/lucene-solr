@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.store;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +15,12 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//nocommit javadoc
+
+/**
+ * <p>A MergeInfo provides information required for a MERGE context and other optimization operations.
+ *  It is used as part of an {@link IOContext} in case of MERGE context.</p>
+ */
+
 public class MergeInfo {
   
   public int totalDocCount;
@@ -25,6 +30,15 @@ public class MergeInfo {
   boolean isExternal;               // used by IndexWriter
   
   boolean optimize;                 // used by IndexWriter
+  
+
+  /**
+   * <p>Creates a new {@link MergeInfo} instance from
+   * the values required for a MERGE {@link IOContext} context.
+   * 
+   * These values are only estimates and are not the actual values.
+   * 
+   */
 
   public MergeInfo(int totalDocCount, long estimatedMergeBytes, boolean isExternal, boolean optimize) {
     this.totalDocCount = totalDocCount;

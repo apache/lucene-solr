@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection; // for javadocs
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.IOUtils;
 
 /** A Directory is a flat list of files.  Files may be written once, when they

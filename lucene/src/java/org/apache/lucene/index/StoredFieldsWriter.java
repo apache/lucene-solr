@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -60,7 +60,7 @@ final class StoredFieldsWriter {
       // It's possible that all documents seen in this segment
       // hit non-aborting exceptions, in which case we will
       // not have yet init'd the FieldsWriter:
-      initFieldsWriter();
+      initFieldsWriter(state.context);
       fill(state.numDocs);
     }
 
@@ -76,10 +76,9 @@ final class StoredFieldsWriter {
     }
   }
 
-  private synchronized void initFieldsWriter() throws IOException {
+  private synchronized void initFieldsWriter(IOContext context) throws IOException {
     if (fieldsWriter == null) {
-      // nocommit - is this always a flush here or should we have a IOContext argument?
-      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment(), new IOContext(Context.FLUSH));
+      fieldsWriter = new FieldsWriter(docWriter.directory, docWriter.getSegment(), context);
       lastDocID = 0;
     }
   }
@@ -109,7 +108,7 @@ final class StoredFieldsWriter {
   void finishDocument() throws IOException {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
 
-    initFieldsWriter();
+    initFieldsWriter(IOContext.DEFAULT);
     fill(docState.docID);
 
     if (fieldsWriter != null && numStoredFields > 0) {

@@ -20,11 +20,11 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
@@ -55,17 +55,16 @@ class FixedDerefBytesImpl {
     private final BytesRefHash hash = new BytesRefHash(pool,
         BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
             BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
-    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      //nocommit this needs an IOContext too
       this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
-          bytesUsed);
+          bytesUsed, context);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
-        AtomicLong bytesUsed) throws IOException {
+        AtomicLong bytesUsed, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed, IOContext.DEFAULT);
+          new ByteBlockPool(allocator), bytesUsed, context);
       docToID = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT); // TODO BytesRefHash
                                                             // uses bytes too!
@@ -135,8 +134,8 @@ class FixedDerefBytesImpl {
   public static class Reader extends BytesReaderBase {
     private final int size;
 
-    Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, IOContext.DEFAULT);
+    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context);
       size = datIn.readInt();
     }
 

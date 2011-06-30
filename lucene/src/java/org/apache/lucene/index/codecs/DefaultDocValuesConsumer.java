@@ -29,6 +29,7 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 
 public class DefaultDocValuesConsumer extends PerDocConsumer {
@@ -55,7 +56,7 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
         docValuesId(segmentName, codecId, field.number),
         // TODO can we have a compound file per segment and codec for
         // docvalues?
-        directory, comparator, bytesUsed);
+        directory, comparator, bytesUsed, IOContext.DEFAULT);
   }
   
   @SuppressWarnings("fallthrough")

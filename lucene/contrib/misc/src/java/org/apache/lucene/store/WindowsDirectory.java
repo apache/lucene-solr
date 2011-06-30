@@ -20,7 +20,6 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.NativeFSLockFactory; // javadoc
 

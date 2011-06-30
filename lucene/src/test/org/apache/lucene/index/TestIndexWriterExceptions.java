@@ -39,6 +39,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -935,7 +936,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter " + i);
       }
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir, IOContext.DEFAULT));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir, newIOContext(random)));
       conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergeScheduler(new ConcurrentMergeScheduler());
       ((ConcurrentMergeScheduler) conf.getMergeScheduler()).setSuppressExceptions();
       w = new IndexWriter(dir, conf);
@@ -1039,8 +1040,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
     final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
-    IndexInput in = dir.openInput(segmentsFileName, IOContext.DEFAULT);
-    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen), IOContext.DEFAULT);
+    IndexInput in = dir.openInput(segmentsFileName, newIOContext(random));
+    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen), newIOContext(random));
     out.copyBytes(in, in.length()-1);
     byte b = in.readByte();
     out.writeByte((byte) (1+b));
@@ -1084,8 +1085,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
                                                                  1+gen);
-      IndexInput in = dir.openInput(fileNameIn, IOContext.DEFAULT);
-      IndexOutput out = dir.createOutput(fileNameOut, IOContext.DEFAULT);
+      IndexInput in = dir.openInput(fileNameIn, newIOContext(random));
+      IndexOutput out = dir.createOutput(fileNameOut, newIOContext(random));
       long length = in.length();
       for(int i=0;i<length-1;i++) {
         out.writeByte(in.readByte());
@@ -1185,8 +1186,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
                                                                  1+gen);
-      IndexInput in = dir.openInput(fileNameIn, IOContext.DEFAULT);
-      IndexOutput out = dir.createOutput(fileNameOut, IOContext.DEFAULT);
+      IndexInput in = dir.openInput(fileNameIn, newIOContext(random));
+      IndexOutput out = dir.createOutput(fileNameOut, newIOContext(random));
       long length = in.length();
       for(int i=0;i<length-1;i++) {
         out.writeByte(in.readByte());

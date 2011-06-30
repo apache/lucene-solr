@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.store.IOContext;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
@@ -224,8 +225,7 @@ class BufferedDeletesStream {
 
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
-        //nocommit is IOContext.DEFAULT the right thing to do here?
-        final SegmentReader reader = readerPool.get(info, false, IOContext.DEFAULT);
+        final SegmentReader reader = readerPool.get(info, false, IOContext.READ);
         int delCount = 0;
         final boolean segAllDeletes;
         try {

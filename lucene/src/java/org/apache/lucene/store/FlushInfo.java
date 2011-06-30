@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.store;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,30 +17,29 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
+/**
+ * <p>A FlushInfo provides information required for a FLUSH context and other optimization operations.
+ *  It is used as part of an {@link IOContext} in case of FLUSH context.</p>
+ */
 
-import org.apache.lucene.store.IOContext;
 
-public class TestMultiReader extends TestDirectoryReader {
-
-  @Override
-  protected IndexReader openReader() throws IOException {
-    IndexReader reader;
-
-    sis.read(dir);
-    SegmentReader reader1 = SegmentReader.get(false, sis.info(0), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
-    SegmentReader reader2 = SegmentReader.get(false, sis.info(1), IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
-    readers[0] = reader1;
-    readers[1] = reader2;
-    assertTrue(reader1 != null);
-    assertTrue(reader2 != null);
-
-    reader = new MultiReader(readers);
-
-    assertTrue(dir != null);
-    assertTrue(sis != null);
-    
-    return reader;
+public class FlushInfo {
+  
+  public final int numDocs;
+  
+  public final long estimatedSegmentSize;
+  
+  /**
+   * <p>Creates a new {@link FlushInfo} instance from
+   * the values required for a FLUSH {@link IOContext} context.
+   * 
+   * These values are only estimates and are not the actual values.
+   * 
+   */
+  
+  public FlushInfo(int numDocs, long estimatedSegmentSize) {
+    this.numDocs = numDocs;
+    this.estimatedSegmentSize = estimatedSegmentSize;
   }
 
 }

@@ -17,11 +17,11 @@ package org.apache.lucene.index.codecs.mocksep;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import java.io.IOException;
 
@@ -36,9 +36,8 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  public MockSingleIntIndexOutput(Directory dir, String fileName) throws IOException {
-    //nocommit pass IOContext in via ctor!
-    out = dir.createOutput(fileName, IOContext.DEFAULT);
+  public MockSingleIntIndexOutput(Directory dir, String fileName, IOContext context) throws IOException {
+    out = dir.createOutput(fileName, context);
     boolean success = false;
     try {
       CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);

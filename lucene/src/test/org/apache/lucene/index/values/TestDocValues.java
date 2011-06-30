@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
@@ -61,7 +62,7 @@ public class TestDocValues extends LuceneTestCase {
 
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes);
+    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes, newIOContext(random));
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
     final int fixedLength = 3 + random.nextInt(7);
@@ -81,7 +82,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(maxDoc);
     assertEquals(0, trackBytes.get());
 
-    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
+    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc, newIOContext(random));
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum bytesEnum = getEnum(r);
       assertNotNull("enum is null", bytesEnum);
@@ -185,7 +186,7 @@ public class TestDocValues extends LuceneTestCase {
       for (int rx = 1; rx < 63; rx++, maxV *= 2) {
         Directory dir = newDirectory();
         final AtomicLong trackBytes = new AtomicLong(0);
-        Writer w = Ints.getWriter(dir, "test", false, trackBytes);
+        Writer w = Ints.getWriter(dir, "test", false, trackBytes, newIOContext(random));
         values[0] = maxMin[j];
         w.add(0, values[0]);
         values[1] = maxMin[j+1];
@@ -199,7 +200,7 @@ public class TestDocValues extends LuceneTestCase {
         w.finish(NUM_VALUES + additionalDocs);
         assertEquals(0, trackBytes.get());
 
-        IndexDocValues r = Ints.getValues(dir, "test", false);
+        IndexDocValues r = Ints.getValues(dir, "test", false, newIOContext(random));
         for (int iter = 0; iter < 2; iter++) {
           Source s = getSource(r);
           for (int i = 0; i < NUM_VALUES; i++) {
@@ -250,7 +251,7 @@ public class TestDocValues extends LuceneTestCase {
   private void runTestFloats(int precision, double delta) throws IOException {
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Floats.getWriter(dir, "test", precision, trackBytes);
+    Writer w = Floats.getWriter(dir, "test", precision, trackBytes, newIOContext(random));
     final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
@@ -263,7 +264,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(NUM_VALUES + additionalValues);
     assertEquals(0, trackBytes.get());
 
-    IndexDocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
+    IndexDocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues, newIOContext(random));
     for (int iter = 0; iter < 2; iter++) {
       Source s = getSource(r);
       for (int i = 0; i < NUM_VALUES; i++) {

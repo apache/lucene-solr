@@ -17,9 +17,8 @@ package org.apache.lucene.index.codecs.sep;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.IOContext;
 
 import java.io.IOException;
 
@@ -30,5 +29,5 @@ public abstract class IntStreamFactory {
   }
 
 //  public abstract IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException;
-  public abstract IntIndexOutput createOutput(Directory dir, String fileName) throws IOException;
+  public abstract IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException;
 }

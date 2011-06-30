@@ -20,10 +20,10 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.IntsImpl.IntsReader;
 import org.apache.lucene.index.values.IntsImpl.IntsWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * @lucene.experimental
@@ -35,14 +35,13 @@ public class Ints {
   }
 
   public static Writer getWriter(Directory dir, String id,
-      boolean useFixedArray, AtomicLong bytesUsed) throws IOException {
+      boolean useFixedArray, AtomicLong bytesUsed, IOContext context) throws IOException {
     // TODO - implement fixed?!
-    return new IntsWriter(dir, id, bytesUsed, IOContext.DEFAULT);
+    return new IntsWriter(dir, id, bytesUsed, context);
   }
 
   public static IndexDocValues getValues(Directory dir, String id,
-      boolean useFixedArray) throws IOException {
-    //nocommit this needs an IOContext too
-    return new IntsReader(dir, id, IOContext.DEFAULT);
+      boolean useFixedArray, IOContext context) throws IOException {
+    return new IntsReader(dir, id, context);
   }
 }

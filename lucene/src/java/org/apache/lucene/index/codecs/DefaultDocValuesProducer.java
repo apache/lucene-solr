@@ -22,7 +22,6 @@ import java.util.TreeMap;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.IndexDocValues;
@@ -30,6 +29,7 @@ import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Abstract base class for FieldsProducer implementations supporting
@@ -57,9 +57,8 @@ public class DefaultDocValuesProducer extends PerDocValues {
    *           if an {@link IOException} occurs
    */
   public DefaultDocValuesProducer(SegmentInfo si, Directory dir,
-      FieldInfos fieldInfo, int codecId) throws IOException {
-    //nocommit this needs an IOContext
-    docValues = load(fieldInfo, si.name, si.docCount, dir, codecId);
+      FieldInfos fieldInfo, int codecId, IOContext context) throws IOException {
+    docValues = load(fieldInfo, si.name, si.docCount, dir, codecId, context);
   }
 
   /**
@@ -73,7 +72,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
 
   // Only opens files... doesn't actually load any values
   protected TreeMap<String, IndexDocValues> load(FieldInfos fieldInfos,
-      String segment, int docCount, Directory dir, int codecId)
+      String segment, int docCount, Directory dir, int codecId, IOContext context)
       throws IOException {
     TreeMap<String, IndexDocValues> values = new TreeMap<String, IndexDocValues>();
     boolean success = false;
@@ -87,7 +86,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
           final String id = DefaultDocValuesConsumer.docValuesId(segment,
               codecId, fieldInfo.number);
           values.put(field,
-              loadDocValues(docCount, dir, id, fieldInfo.getDocValues()));
+              loadDocValues(docCount, dir, id, fieldInfo.getDocValues(), context));
         }
       }
       success = true;
@@ -121,27 +120,26 @@ public class DefaultDocValuesProducer extends PerDocValues {
    *           if the given {@link ValueType} is not supported
    */
   protected IndexDocValues loadDocValues(int docCount, Directory dir, String id,
-      ValueType type) throws IOException {
-    // nocommit this needs an IOContext too
+      ValueType type, IOContext context) throws IOException {
     switch (type) {
     case INTS:
-      return Ints.getValues(dir, id, false);
+      return Ints.getValues(dir, id, false, context);
     case FLOAT_32:
-      return Floats.getValues(dir, id, docCount);
+      return Floats.getValues(dir, id, docCount, context);
     case FLOAT_64:
-      return Floats.getValues(dir, id, docCount);
+      return Floats.getValues(dir, id, docCount, context);
     case BYTES_FIXED_STRAIGHT:
-      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, true, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, true, docCount, context);
     case BYTES_FIXED_DEREF:
-      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, true, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, true, docCount, context);
     case BYTES_FIXED_SORTED:
-      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, true, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, true, docCount, context);
     case BYTES_VAR_STRAIGHT:
-      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, false, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.STRAIGHT, false, docCount, context);
     case BYTES_VAR_DEREF:
-      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, false, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.DEREF, false, docCount, context);
     case BYTES_VAR_SORTED:
-      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, false, docCount);
+      return Bytes.getValues(dir, id, Bytes.Mode.SORTED, false, docCount, context);
     default:
       throw new IllegalStateException("unrecognized index values mode " + type);
     }

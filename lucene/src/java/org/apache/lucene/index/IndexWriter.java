@@ -39,9 +39,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -49,8 +47,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
@@ -2188,7 +2190,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     setDiagnostics(newSegment, "flush");
     
-    IOContext context = new IOContext(Context.FLUSH);
+    IOContext context = new IOContext(new FlushInfo(newSegment.docCount, newSegment.sizeInBytes(true)));
 
     boolean success = false;
     try {
@@ -2447,6 +2449,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void addIndexes(IndexReader... readers) throws CorruptIndexException, IOException {
     ensureOpen();
+    int numDocs = 0;
 
     try {
       if (infoStream != null)
@@ -2454,11 +2457,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       flush(false, true);
 
       String mergedName = newSegmentName();
+      for (IndexReader indexReader : readers) {
+        numDocs += indexReader.numDocs();
+       }
+       final IOContext context = new IOContext(new MergeInfo(numDocs, -1, true, false));      
+
       // TODO: somehow we should fix this merge so it's
       // abortable so that IW.close(false) is able to stop it
       SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(),
                                                mergedName, null, payloadProcessorProvider,
-                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)));
+                                               globalFieldNumberMap.newFieldInfos(SegmentCodecsBuilder.create(codecs)), context);
 
       for (IndexReader reader : readers)      // add new indexes
         merger.add(reader);
@@ -2483,7 +2491,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Now create the compound file if needed
       if (useCompoundFile) {
-        IOContext context = new IOContext(new MergeInfo(info.docCount, info.sizeInBytes(true), true, false));
         merger.createCompoundFile(mergedName + ".cfs", info, context);
 
         // delete new non cfs files directly: they were never
@@ -3429,7 +3436,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     IOContext context = new IOContext(merge.getMergeInfo());
 
     SegmentMerger merger = new SegmentMerger(directory, config.getTermIndexInterval(), mergedName, merge,
-                                             payloadProcessorProvider, merge.info.getFieldInfos());
+                                             payloadProcessorProvider, merge.info.getFieldInfos(), context);
 
     if (infoStream != null) {
       message("merging " + merge.segString(directory) + " mergeVectors=" + merge.info.getFieldInfos().hasVectors());

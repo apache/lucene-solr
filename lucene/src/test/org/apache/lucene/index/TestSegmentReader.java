@@ -27,8 +27,9 @@ import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IOContext.Context;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -78,7 +79,7 @@ public class TestSegmentReader extends LuceneTestCase {
     Document docToDelete = new Document();
     DocHelper.setupDoc(docToDelete);
     SegmentInfo info = DocHelper.writeDoc(random, dir, docToDelete);
-    SegmentReader deleteReader = SegmentReader.get(false, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.READ);
+    SegmentReader deleteReader = SegmentReader.get(false, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);

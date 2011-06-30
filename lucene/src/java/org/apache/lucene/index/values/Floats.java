@@ -20,11 +20,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IOContext;
-import org.apache.lucene.index.IOContext.Context;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
@@ -53,22 +52,21 @@ public class Floats {
 
   
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
-      AtomicLong bytesUsed) throws IOException {
+      AtomicLong bytesUsed, IOContext context) throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
       throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
           + precisionBytes);
     }
     if (precisionBytes == 4) {
-      return new Float4Writer(dir, id, bytesUsed);
+      return new Float4Writer(dir, id, bytesUsed, context);
     } else {
-      return new Float8Writer(dir, id, bytesUsed);
+      return new Float8Writer(dir, id, bytesUsed, context);
     }
   }
 
-  public static IndexDocValues getValues(Directory dir, String id, int maxDoc)
+  public static IndexDocValues getValues(Directory dir, String id, int maxDoc, IOContext context)
       throws IOException {
-    //nocommit this needs an IOContext too
-    return new FloatsReader(dir, id, maxDoc, IOContext.READ);
+    return new FloatsReader(dir, id, maxDoc, context);
   }
 
   abstract static class FloatsWriter extends Writer {
@@ -147,9 +145,9 @@ public class Floats {
   // Writes 4 bytes (float) per value
   static class Float4Writer extends FloatsWriter {
 
-    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed)
+    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, 4, bytesUsed, new IOContext(Context.FLUSH));
+      super(dir, id, 4, bytesUsed, context);
     }
 
     @Override
@@ -190,9 +188,9 @@ public class Floats {
   // Writes 8 bytes (double) per value
   static class Float8Writer extends FloatsWriter {
 
-    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed)
+    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, 8, bytesUsed, new IOContext(Context.FLUSH));
+      super(dir, id, 8, bytesUsed, context);
     }
 
     @Override

@@ -24,12 +24,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store._TestHelper;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util._TestUtil;
 
 
@@ -74,7 +75,7 @@ public class TestCompoundFile extends LuceneTestCase
     private void createRandomFile(Directory dir, String name, int size)
     throws IOException
     {
-        IndexOutput os = dir.createOutput(name, new IOContext(Context.FLUSH));
+        IndexOutput os = dir.createOutput(name, newIOContext(random));
         for (int i=0; i<size; i++) {
             byte b = (byte) (Math.random() * 256);
             os.writeByte(b);
@@ -92,7 +93,7 @@ public class TestCompoundFile extends LuceneTestCase
                                     int size)
     throws IOException
     {
-        IndexOutput os = dir.createOutput(name, new IOContext(Context.FLUSH));
+        IndexOutput os = dir.createOutput(name, newIOContext(random));
         for (int i=0; i < size; i++) {
             os.writeByte(start);
             start ++;
@@ -202,13 +203,13 @@ public class TestCompoundFile extends LuceneTestCase
         for (int i=0; i<data.length; i++) {
             String name = "t" + data[i];
             createSequenceFile(dir, name, (byte) 0, data[i]);
-            CompoundFileWriter csw = new CompoundFileWriter(dir, name + ".cfs", IOContext.DEFAULT);
+            CompoundFileWriter csw = new CompoundFileWriter(dir, name + ".cfs", newIOContext(random));
             csw.addFile(name);
             csw.close();
 
-            CompoundFileReader csr = new CompoundFileReader(dir, name + ".cfs", IOContext.DEFAULT);
-            IndexInput expected = dir.openInput(name, IOContext.DEFAULT);
-            IndexInput actual = csr.openInput(name, IOContext.DEFAULT);
+            CompoundFileReader csr = new CompoundFileReader(dir, name + ".cfs", newIOContext(random));
+            IndexInput expected = dir.openInput(name, newIOContext(random));
+            IndexInput actual = csr.openInput(name, newIOContext(random));
             assertSameStreams(name, expected, actual);
             assertSameSeekBehavior(name, expected, actual);
             expected.close();
@@ -225,21 +226,21 @@ public class TestCompoundFile extends LuceneTestCase
         createSequenceFile(dir, "d1", (byte) 0, 15);
         createSequenceFile(dir, "d2", (byte) 0, 114);
 
-        CompoundFileWriter csw = new CompoundFileWriter(dir, "d.csf", IOContext.DEFAULT);
+        CompoundFileWriter csw = new CompoundFileWriter(dir, "d.csf", newIOContext(random));
         csw.addFile("d1");
         csw.addFile("d2");
         csw.close();
 
-        CompoundFileReader csr = new CompoundFileReader(dir, "d.csf", IOContext.DEFAULT);
-        IndexInput expected = dir.openInput("d1", IOContext.DEFAULT);
-        IndexInput actual = csr.openInput("d1", IOContext.DEFAULT);
+        CompoundFileReader csr = new CompoundFileReader(dir, "d.csf", newIOContext(random));
+        IndexInput expected = dir.openInput("d1", newIOContext(random));
+        IndexInput actual = csr.openInput("d1", newIOContext(random));
         assertSameStreams("d1", expected, actual);
         assertSameSeekBehavior("d1", expected, actual);
         expected.close();
         actual.close();
 
-        expected = dir.openInput("d2", IOContext.DEFAULT);
-        actual = csr.openInput("d2", IOContext.DEFAULT);
+        expected = dir.openInput("d2", newIOContext(random));
+        actual = csr.openInput("d2", newIOContext(random));
         assertSameStreams("d2", expected, actual);
         assertSameSeekBehavior("d2", expected, actual);
         expected.close();
@@ -275,7 +276,7 @@ public class TestCompoundFile extends LuceneTestCase
         createRandomFile(dir, segment + ".notIn2", 51);
 
         // Now test
-        CompoundFileWriter csw = new CompoundFileWriter(dir, "test.cfs", IOContext.DEFAULT);
+        CompoundFileWriter csw = new CompoundFileWriter(dir, "test.cfs", newIOContext(random));
         final String data[] = new String[] {
             ".zero", ".one", ".ten", ".hundred", ".big1", ".big2", ".big3",
             ".big4", ".big5", ".big6", ".big7"
@@ -285,10 +286,10 @@ public class TestCompoundFile extends LuceneTestCase
         }
         csw.close();
 
-        CompoundFileReader csr = new CompoundFileReader(dir, "test.cfs", IOContext.DEFAULT);
+        CompoundFileReader csr = new CompoundFileReader(dir, "test.cfs", newIOContext(random));
         for (int i=0; i<data.length; i++) {
-            IndexInput check = dir.openInput(segment + data[i], IOContext.DEFAULT);
-            IndexInput test = csr.openInput(segment + data[i], IOContext.DEFAULT);
+            IndexInput check = dir.openInput(segment + data[i], newIOContext(random));
+            IndexInput test = csr.openInput(segment + data[i], newIOContext(random));
             assertSameStreams(data[i], check, test);
             assertSameSeekBehavior(data[i], check, test);
             test.close();
@@ -304,7 +305,7 @@ public class TestCompoundFile extends LuceneTestCase
      *  the size of each file is 1000 bytes.
      */
     private void setUp_2() throws IOException {
-        CompoundFileWriter cw = new CompoundFileWriter(dir, "f.comp", IOContext.DEFAULT);
+        CompoundFileWriter cw = new CompoundFileWriter(dir, "f.comp", newIOContext(random));
         for (int i=0; i<20; i++) {
             createSequenceFile(dir, "f" + i, (byte) 0, 2000);
             cw.addFile("f" + i);
@@ -321,13 +322,13 @@ public class TestCompoundFile extends LuceneTestCase
     throws IOException
     {
         // Setup the test file - we need more than 1024 bytes
-        IndexOutput os = fsdir.createOutput(file, IOContext.DEFAULT);
+        IndexOutput os = fsdir.createOutput(file, newIOContext(random));
         for(int i=0; i<2000; i++) {
             os.writeByte((byte) i);
         }
         os.close();
 
-        IndexInput in = fsdir.openInput(file, IOContext.DEFAULT);
+        IndexInput in = fsdir.openInput(file, newIOContext(random));
 
         // This read primes the buffer in IndexInput
         in.readByte();
@@ -371,16 +372,16 @@ public class TestCompoundFile extends LuceneTestCase
 
     public void testClonedStreamsClosing() throws IOException {
         setUp_2();
-        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", IOContext.DEFAULT);
+        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", newIOContext(random));
 
         // basic clone
-        IndexInput expected = dir.openInput("f11", IOContext.DEFAULT);
+        IndexInput expected = dir.openInput("f11", newIOContext(random));
 
         // this test only works for FSIndexInput
         assertTrue(_TestHelper.isSimpleFSIndexInput(expected));
         assertTrue(_TestHelper.isSimpleFSIndexInputOpen(expected));
 
-        IndexInput one = cr.openInput("f11", IOContext.DEFAULT);
+        IndexInput one = cr.openInput("f11", newIOContext(random));
         assertTrue(isCSIndexInputOpen(one));
 
         IndexInput two = (IndexInput) one.clone();
@@ -428,14 +429,14 @@ public class TestCompoundFile extends LuceneTestCase
      */
     public void testRandomAccess() throws IOException {
         setUp_2();
-        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", IOContext.DEFAULT);
+        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", newIOContext(random));
 
         // Open two files
-        IndexInput e1 = dir.openInput("f11", IOContext.DEFAULT);
-        IndexInput e2 = dir.openInput("f3", IOContext.DEFAULT);
+        IndexInput e1 = dir.openInput("f11", newIOContext(random));
+        IndexInput e2 = dir.openInput("f3", newIOContext(random));
 
-        IndexInput a1 = cr.openInput("f11", IOContext.DEFAULT);
-        IndexInput a2 = dir.openInput("f3", IOContext.DEFAULT);
+        IndexInput a1 = cr.openInput("f11", newIOContext(random));
+        IndexInput a2 = dir.openInput("f3", newIOContext(random));
 
         // Seek the first pair
         e1.seek(100);
@@ -507,11 +508,11 @@ public class TestCompoundFile extends LuceneTestCase
      */
     public void testRandomAccessClones() throws IOException {
         setUp_2();
-        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", IOContext.DEFAULT);
+        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", newIOContext(random));
 
         // Open two files
-        IndexInput e1 = cr.openInput("f11", IOContext.DEFAULT);
-        IndexInput e2 = cr.openInput("f3", IOContext.DEFAULT);
+        IndexInput e1 = cr.openInput("f11", newIOContext(random));
+        IndexInput e2 = cr.openInput("f3", newIOContext(random));
 
         IndexInput a1 = (IndexInput) e1.clone();
         IndexInput a2 = (IndexInput) e2.clone();
@@ -584,11 +585,11 @@ public class TestCompoundFile extends LuceneTestCase
 
     public void testFileNotFound() throws IOException {
         setUp_2();
-        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", IOContext.DEFAULT);
+        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", newIOContext(random));
 
         // Open two files
         try {
-            cr.openInput("bogus", IOContext.DEFAULT);
+            cr.openInput("bogus", newIOContext(random));
             fail("File not found");
 
         } catch (IOException e) {
@@ -602,8 +603,8 @@ public class TestCompoundFile extends LuceneTestCase
 
     public void testReadPastEOF() throws IOException {
         setUp_2();
-        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", IOContext.DEFAULT);
-        IndexInput is = cr.openInput("f2", IOContext.DEFAULT);
+        CompoundFileReader cr = new CompoundFileReader(dir, "f.comp", newIOContext(random));
+        IndexInput is = cr.openInput("f2", newIOContext(random));
         is.seek(is.length() - 10);
         byte b[] = new byte[100];
         is.readBytes(b, 0, 10);
@@ -633,7 +634,7 @@ public class TestCompoundFile extends LuceneTestCase
      * will correctly increment the file pointer.
      */
     public void testLargeWrites() throws IOException {
-        IndexOutput os = dir.createOutput("testBufferStart.txt", IOContext.DEFAULT);
+        IndexOutput os = dir.createOutput("testBufferStart.txt", newIOContext(random));
 
         byte[] largeBuf = new byte[2048];
         for (int i=0; i<largeBuf.length; i++) {
@@ -655,13 +656,13 @@ public class TestCompoundFile extends LuceneTestCase
        createSequenceFile(dir, "d1", (byte) 0, 15);
 
        Directory newDir = newDirectory();
-       CompoundFileWriter csw = new CompoundFileWriter(newDir, "d.csf", IOContext.DEFAULT);
+       CompoundFileWriter csw = new CompoundFileWriter(newDir, "d.csf", newIOContext(random));
        csw.addFile("d1", dir);
        csw.close();
 
-       CompoundFileReader csr = new CompoundFileReader(newDir, "d.csf", IOContext.DEFAULT);
-       IndexInput expected = dir.openInput("d1", IOContext.DEFAULT);
-       IndexInput actual = csr.openInput("d1", IOContext.DEFAULT);
+       CompoundFileReader csr = new CompoundFileReader(newDir, "d.csf", newIOContext(random));
+       IndexInput expected = dir.openInput("d1", newIOContext(random));
+       IndexInput actual = csr.openInput("d1", newIOContext(random));
        assertSameStreams("d1", expected, actual);
        assertSameSeekBehavior("d1", expected, actual);
        expected.close();

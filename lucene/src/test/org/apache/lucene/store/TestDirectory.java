@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -32,7 +31,7 @@ public class TestDirectory extends LuceneTestCase {
     for (Directory dir : dirs) {
       dir.close();
       try {
-        dir.createOutput("test", IOContext.DEFAULT);
+        dir.createOutput("test", newIOContext(random));
         fail("did not hit expected exception");
       } catch (AlreadyClosedException ace) {
       }
@@ -57,7 +56,7 @@ public class TestDirectory extends LuceneTestCase {
       dir.ensureOpen();
       String fname = "foo." + i;
       String lockname = "foo" + i + ".lck";
-      IndexOutput out = dir.createOutput(fname, IOContext.DEFAULT);
+      IndexOutput out = dir.createOutput(fname, newIOContext(random));
       out.writeByte((byte)i);
       out.close();
 
@@ -71,7 +70,7 @@ public class TestDirectory extends LuceneTestCase {
         // closed and will cause a failure to delete the file.
         if (d2 instanceof MMapDirectory) continue;
         
-        IndexInput input = d2.openInput(fname, IOContext.DEFAULT);
+        IndexInput input = d2.openInput(fname, newIOContext(random));
         assertEquals((byte)i, input.readByte());
         input.close();
       }
@@ -142,7 +141,7 @@ public class TestDirectory extends LuceneTestCase {
   private void checkDirectoryFilter(Directory dir) throws IOException {
     String name = "file";
     try {
-      dir.createOutput(name, IOContext.DEFAULT).close();
+      dir.createOutput(name, newIOContext(random)).close();
       assertTrue(dir.fileExists(name));
       assertTrue(Arrays.asList(dir.listAll()).contains(name));
     } finally {
@@ -157,7 +156,7 @@ public class TestDirectory extends LuceneTestCase {
       path.mkdirs();
       new File(path, "subdir").mkdirs();
       Directory fsDir = new SimpleFSDirectory(path, null);
-      assertEquals(0, new RAMDirectory(fsDir, IOContext.DEFAULT).listAll().length);
+      assertEquals(0, new RAMDirectory(fsDir, newIOContext(random)).listAll().length);
     } finally {
       _TestUtil.rmDir(path);
     }
@@ -168,7 +167,7 @@ public class TestDirectory extends LuceneTestCase {
     File path = _TestUtil.getTempDir("testnotdir");
     Directory fsDir = new SimpleFSDirectory(path, null);
     try {
-      IndexOutput out = fsDir.createOutput("afile", IOContext.DEFAULT);
+      IndexOutput out = fsDir.createOutput("afile", newIOContext(random));
       out.close();
       assertTrue(fsDir.fileExists("afile"));
       try {

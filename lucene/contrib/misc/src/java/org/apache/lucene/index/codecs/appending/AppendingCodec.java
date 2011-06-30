@@ -99,13 +99,12 @@ public class AppendingCodec extends Codec {
 
     boolean success = false;
     try {
-      //nocommit we should pass the IOContext down to the TermIndexReader
       indexReader = new AppendingTermsIndexReader(state.dir,
               state.fieldInfos,
               state.segmentInfo.name,
               state.termsIndexDivisor,
               BytesRef.getUTF8SortedAsUnicodeComparator(),
-              state.codecId);
+              state.codecId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -155,6 +154,6 @@ public class AppendingCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
   }
 }

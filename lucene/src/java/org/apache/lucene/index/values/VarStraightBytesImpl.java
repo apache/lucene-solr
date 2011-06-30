@@ -20,11 +20,11 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
@@ -50,16 +50,15 @@ class VarStraightBytesImpl {
     private int lastDocID = -1;
     private long[] docToAddress;
 
-    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      //nocommit this needs an IOContext too
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed, IOContext.DEFAULT);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed, context);
       docToAddress = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
-    public Writer(Directory dir, String id) throws IOException {
-      this(dir, id, new AtomicLong());
+    public Writer(Directory dir, String id, IOContext context) throws IOException {
+      this(dir, id, new AtomicLong(), context);
     }
 
     // Fills up to but not including this docID
@@ -123,8 +122,8 @@ class VarStraightBytesImpl {
   public static class Reader extends BytesReaderBase {
     private final int maxDoc;
 
-    Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true, IOContext.DEFAULT);
+    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context);
       this.maxDoc = maxDoc;
     }
 

@@ -60,6 +60,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -1029,7 +1030,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     try {
       // Create my own random file:
-      IndexOutput out = dir.createOutput("myrandomfile", IOContext.DEFAULT);
+      IndexOutput out = dir.createOutput("myrandomfile", newIOContext(random));
       out.writeByte((byte) 42);
       out.close();
 

@@ -60,7 +60,10 @@ import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -1312,6 +1315,38 @@ public abstract class LuceneTestCase extends Assert {
     return sb.toString();
   }
 
+  public static IOContext newIOContext(Random random) {
+    int randomNumDocs=4192, size=2048;
+    int type = random.nextInt(5);
+    IOContext context = IOContext.DEFAULT;
+    switch(type) {
+      case 0:
+        context = IOContext.DEFAULT;
+        break;
+        
+      case 1:
+        context = IOContext.READ;
+        break;
+        
+      case 2:
+        context = IOContext.READONCE;
+        break;
+        
+      case 3:
+        randomNumDocs = random.nextInt(4192);
+        size = random.nextInt(2048);
+        context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
+        break;
+        
+      case 4:
+        randomNumDocs = random.nextInt(4192);
+        size = random.nextInt(2048);
+        context = new IOContext(new FlushInfo(randomNumDocs, size));       
+        break;
+    }
+    return context;
+  }
+  
   // recorded seed: for beforeClass
   private static long staticSeed;
   // seed for individual test methods, changed in @before

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-import org.apache.lucene.index.IOContext;
 
 /**
  * Expert: A Directory instance that switches files between

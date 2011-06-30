@@ -31,7 +31,6 @@ import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
-import org.apache.lucene.index.IOContext;
 import org.apache.lucene.util.Constants;
 
 /** File-based {@link Directory} implementation that uses

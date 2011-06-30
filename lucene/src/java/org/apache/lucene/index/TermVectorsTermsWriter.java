@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.IOContext.Context;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -90,7 +92,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     if (tvx == null) {
       boolean success = false;
       try {
-        IOContext context = new IOContext(Context.FLUSH);
+        IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
         // If we hit an exception while init'ing the term
         // vector output files, we must abort this segment
         // because those files will be in an unknown
