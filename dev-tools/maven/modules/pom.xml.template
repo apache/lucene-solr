@@ -36,6 +36,7 @@
     <module>common</module>
     <module>facet</module>
     <module>grouping</module>
+    <module>join</module>
     <module>queries</module>
     <module>suggest</module>
   </modules>
