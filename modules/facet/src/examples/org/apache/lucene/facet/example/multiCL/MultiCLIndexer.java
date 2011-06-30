@@ -1,5 +1,6 @@
 package org.apache.lucene.facet.example.multiCL;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -162,7 +163,7 @@ public class MultiCLIndexer {
     int nDocsAdded = 0;
     int nFacetsAdded = 0;
     for (int docNum = 0; docNum < SimpleUtils.docTexts.length; docNum++) {
-      List<CategoryPath> facetList = SimpleUtils.categoryPathArrayToList(cPaths[docNum]);
+      List<CategoryPath> facetList = Arrays.asList(cPaths[docNum]);
 
       // we do not alter indexing parameters!
       // a category document builder will add the categories to a document

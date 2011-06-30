@@ -1,5 +1,6 @@
 package org.apache.lucene.facet.example.simple;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -62,7 +63,7 @@ public class SimpleIndexer {
     for (int docNum=0; docNum<SimpleUtils.docTexts.length; docNum++) {
 
       // obtain the sample facets for current document
-      List<CategoryPath> facetList = SimpleUtils.categoryPathArrayToList(SimpleUtils.categories[docNum]);
+      List<CategoryPath> facetList = Arrays.asList(SimpleUtils.categories[docNum]);
 
       // we do not alter indexing parameters!  
       // a category document builder will add the categories to a document once build() is called

@@ -72,16 +72,4 @@ public class SimpleUtils {
    */
   public static final Analyzer analyzer = new WhitespaceAnalyzer(ExampleUtils.EXAMPLE_VER);
 
-  /**
-   * Utility method: List of category paths out of an array of them...
-   * @param categoryPaths input array of category paths.
-   */
-  public static List<CategoryPath> categoryPathArrayToList (CategoryPath...categoryPaths) {
-    ArrayList<CategoryPath> res = new ArrayList<CategoryPath>();
-    for (CategoryPath categoryPath : categoryPaths) {
-      res.add(categoryPath);
-    }
-    return res;
-  }
-
 }
