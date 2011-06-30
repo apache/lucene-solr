@@ -1,4 +1,4 @@
-package org.apache.lucene.search.function;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,7 +49,7 @@ public class CustomScoreProvider {
 
   /**
    * Compute a custom score by the subQuery score and a number of 
-   * {@link ValueSourceQuery} scores.
+   * {@link org.apache.lucene.queries.function.FunctionQuery} scores.
    * <p> 
    * Subclasses can override this method to modify the custom score.  
    * <p>

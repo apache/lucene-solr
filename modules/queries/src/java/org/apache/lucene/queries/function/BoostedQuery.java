@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.queries.function;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,10 +17,6 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search.function;
-
-import org.apache.lucene.queries.function.DocValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;

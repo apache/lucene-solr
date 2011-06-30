@@ -1,4 +1,4 @@
-package org.apache.lucene.search.function;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,9 +36,7 @@ import org.apache.lucene.util.ToStringUtils;
  * Query that sets document score as a programmatic function of several (sub) scores:
  * <ol>
  *    <li>the score of its subQuery (any query)</li>
- *    <li>(optional) the score of its ValueSourceQuery (or queries).
- *        For most simple/convenient use cases this query is likely to be a 
- *        {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQuery}</li>
+ *    <li>(optional) the score of its ValueSourceQuery (or queries).</li>
  * </ol>
  * Subclasses can modify the computation by overriding {@link #getCustomScoreProvider}.
  * 
@@ -47,42 +45,38 @@ import org.apache.lucene.util.ToStringUtils;
 public class CustomScoreQuery extends Query {
 
   private Query subQuery;
-  private ValueSourceQuery[] valSrcQueries; // never null (empty array if there are no valSrcQueries).
-  private boolean strict = false; // if true, valueSource part of query does not take part in weights normalization.  
-  
+  private Query[] scoringQueries; // never null (empty array if there are no valSrcQueries).
+  private boolean strict = false; // if true, valueSource part of query does not take part in weights normalization.
+
   /**
    * Create a CustomScoreQuery over input subQuery.
    * @param subQuery the sub query whose scored is being customized. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
-    this(subQuery, new ValueSourceQuery[0]);
+    this(subQuery, new Query[0]);
   }
 
   /**
-   * Create a CustomScoreQuery over input subQuery and a {@link ValueSourceQuery}.
+   * Create a CustomScoreQuery over input subQuery and a {@link org.apache.lucene.queries.function.FunctionQuery}.
    * @param subQuery the sub query whose score is being customized. Must not be null.
-   * @param valSrcQuery a value source query whose scores are used in the custom score
-   * computation. For most simple/convenient use case this would be a 
-   * {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQuery}.
-   * This parameter is optional - it can be null.
+   * @param scoringQuery a value source query whose scores are used in the custom score
+   * computation.  This parameter is optional - it can be null.
    */
-  public CustomScoreQuery(Query subQuery, ValueSourceQuery valSrcQuery) {
-	  this(subQuery, valSrcQuery!=null ? // don't want an array that contains a single null.. 
-        new ValueSourceQuery[] {valSrcQuery} : new ValueSourceQuery[0]);
+  public CustomScoreQuery(Query subQuery, Query scoringQuery) {
+	  this(subQuery, scoringQuery!=null ? // don't want an array that contains a single null..
+        new Query[] {scoringQuery} : new Query[0]);
   }
 
   /**
-   * Create a CustomScoreQuery over input subQuery and a {@link ValueSourceQuery}.
+   * Create a CustomScoreQuery over input subQuery and a {@link org.apache.lucene.queries.function.FunctionQuery}.
    * @param subQuery the sub query whose score is being customized. Must not be null.
-   * @param valSrcQueries value source queries whose scores are used in the custom score
-   * computation. For most simple/convenient use case these would be 
-   * {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQueries}.
-   * This parameter is optional - it can be null or even an empty array.
+   * @param scoringQueries value source queries whose scores are used in the custom score
+   * computation.  This parameter is optional - it can be null or even an empty array.
    */
-  public CustomScoreQuery(Query subQuery, ValueSourceQuery... valSrcQueries) {
+  public CustomScoreQuery(Query subQuery, Query... scoringQueries) {
     this.subQuery = subQuery;
-    this.valSrcQueries = valSrcQueries!=null?
-        valSrcQueries : new ValueSourceQuery[0];
+    this.scoringQueries = scoringQueries !=null?
+        scoringQueries : new Query[0];
     if (subQuery == null) throw new IllegalArgumentException("<subquery> must not be null!");
   }
 
@@ -97,11 +91,11 @@ public class CustomScoreQuery extends Query {
       clone.subQuery = sq;
     }
 
-    for(int i = 0; i < valSrcQueries.length; i++) {
-      final ValueSourceQuery v = (ValueSourceQuery) valSrcQueries[i].rewrite(reader);
-      if (v != valSrcQueries[i]) {
+    for(int i = 0; i < scoringQueries.length; i++) {
+      final Query v = scoringQueries[i].rewrite(reader);
+      if (v != scoringQueries[i]) {
         if (clone == null) clone = (CustomScoreQuery) clone();
-        clone.valSrcQueries[i] = v;
+        clone.scoringQueries[i] = v;
       }
     }
     
@@ -112,8 +106,8 @@ public class CustomScoreQuery extends Query {
   @Override
   public void extractTerms(Set<Term> terms) {
     subQuery.extractTerms(terms);
-    for(int i = 0; i < valSrcQueries.length; i++) {
-      valSrcQueries[i].extractTerms(terms);
+    for(int i = 0; i < scoringQueries.length; i++) {
+      scoringQueries[i].extractTerms(terms);
     }
   }
 
@@ -122,9 +116,9 @@ public class CustomScoreQuery extends Query {
   public Object clone() {
     CustomScoreQuery clone = (CustomScoreQuery)super.clone();
     clone.subQuery = (Query) subQuery.clone();
-    clone.valSrcQueries = new ValueSourceQuery[valSrcQueries.length];
-    for(int i = 0; i < valSrcQueries.length; i++) {
-      clone.valSrcQueries[i] = (ValueSourceQuery) valSrcQueries[i].clone();
+    clone.scoringQueries = new Query[scoringQueries.length];
+    for(int i = 0; i < scoringQueries.length; i++) {
+      clone.scoringQueries[i] = (Query) scoringQueries[i].clone();
     }
     return clone;
   }
@@ -134,8 +128,8 @@ public class CustomScoreQuery extends Query {
   public String toString(String field) {
     StringBuilder sb = new StringBuilder(name()).append("(");
     sb.append(subQuery.toString(field));
-    for(int i = 0; i < valSrcQueries.length; i++) {
-      sb.append(", ").append(valSrcQueries[i].toString(field));
+    for(int i = 0; i < scoringQueries.length; i++) {
+      sb.append(", ").append(scoringQueries[i].toString(field));
     }
     sb.append(")");
     sb.append(strict?" STRICT" : "");
@@ -156,16 +150,16 @@ public class CustomScoreQuery extends Query {
     if (this.getBoost() != other.getBoost() ||
         !this.subQuery.equals(other.subQuery) ||
         this.strict != other.strict ||
-        this.valSrcQueries.length != other.valSrcQueries.length) {
+        this.scoringQueries.length != other.scoringQueries.length) {
       return false;
     }
-    return Arrays.equals(valSrcQueries, other.valSrcQueries);
+    return Arrays.equals(scoringQueries, other.scoringQueries);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(valSrcQueries))
+    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(scoringQueries))
       ^ Float.floatToIntBits(getBoost()) ^ (strict ? 1234 : 4321);
   }
   
@@ -188,9 +182,9 @@ public class CustomScoreQuery extends Query {
 
     public CustomWeight(IndexSearcher searcher) throws IOException {
       this.subQueryWeight = subQuery.createWeight(searcher);
-      this.valSrcWeights = new Weight[valSrcQueries.length];
-      for(int i = 0; i < valSrcQueries.length; i++) {
-        this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);
+      this.valSrcWeights = new Weight[scoringQueries.length];
+      for(int i = 0; i < scoringQueries.length; i++) {
+        this.valSrcWeights[i] = scoringQueries[i].createWeight(searcher);
       }
       this.qStrict = strict;
     }

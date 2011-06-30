@@ -1,4 +1,4 @@
-package org.apache.lucene.search.function;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,9 +17,15 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionTestSetup;
+import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
+import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
+import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.cache.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import java.io.IOException;
@@ -43,48 +49,64 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
    * Test that CustomScoreQuery of Type.BYTE returns the expected scores.
    */
   @Test
-  public void testCustomScoreByte() throws Exception, ParseException {
+  public void testCustomScoreByte() throws Exception {
     // INT field values are small enough to be parsed as byte
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.BYTE, 1.0);
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.BYTE, 2.0);
+    ByteValuesCreator valuesCreator = new ByteValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
+    FunctionQuery functionQuery = new FunctionQuery(new ByteFieldSource(valuesCreator));
+
+    doTestCustomScore(functionQuery, 1.0);
+    doTestCustomScore(functionQuery, 2.0);
   }
 
   /**
    * Test that CustomScoreQuery of Type.SHORT returns the expected scores.
    */
   @Test
-  public void testCustomScoreShort() throws Exception, ParseException {
+  public void testCustomScoreShort() throws Exception {
     // INT field values are small enough to be parsed as short
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.SHORT, 1.0);
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.SHORT, 3.0);
+    ShortValuesCreator valuesCreator = new ShortValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
+    FunctionQuery functionQuery = new FunctionQuery(new ShortFieldSource(valuesCreator));
+
+    doTestCustomScore(functionQuery, 1.0);
+    doTestCustomScore(functionQuery, 3.0);
   }
 
   /**
    * Test that CustomScoreQuery of Type.INT returns the expected scores.
    */
   @Test
-  public void testCustomScoreInt() throws Exception, ParseException {
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.INT, 1.0);
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.INT, 4.0);
+  public void testCustomScoreInt() throws Exception {
+    IntValuesCreator valuesCreator = new IntValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
+    FunctionQuery functionQuery = new FunctionQuery(new IntFieldSource(valuesCreator));
+
+    doTestCustomScore(functionQuery, 1.0);
+    doTestCustomScore(functionQuery, 4.0);
   }
 
   /**
    * Test that CustomScoreQuery of Type.FLOAT returns the expected scores.
    */
   @Test
-  public void testCustomScoreFloat() throws Exception, ParseException {
+  public void testCustomScoreFloat() throws Exception {
     // INT field can be parsed as float
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.FLOAT, 1.0);
-    doTestCustomScore(INT_FIELD, FieldScoreQuery.Type.FLOAT, 5.0);
+    FloatValuesCreator valuesCreator = new FloatValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
+    FunctionQuery functionQuery = new FunctionQuery(new FloatFieldSource(valuesCreator));
+
+    doTestCustomScore(functionQuery, 1.0);
+    doTestCustomScore(functionQuery, 5.0);
+
     // same values, but in float format
-    doTestCustomScore(FLOAT_FIELD, FieldScoreQuery.Type.FLOAT, 1.0);
-    doTestCustomScore(FLOAT_FIELD, FieldScoreQuery.Type.FLOAT, 6.0);
+    valuesCreator = new FloatValuesCreator(FLOAT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
+    functionQuery = new FunctionQuery(new FloatFieldSource(valuesCreator));
+
+    doTestCustomScore(functionQuery, 1.0);
+    doTestCustomScore(functionQuery, 6.0);
   }
 
   // must have static class otherwise serialization tests fail
   private static class CustomAddQuery extends CustomScoreQuery {
     // constructor
-    CustomAddQuery(Query q, ValueSourceQuery qValSrc) {
+    CustomAddQuery(Query q, FunctionQuery qValSrc) {
       super(q, qValSrc);
     }
 
@@ -119,7 +141,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   // must have static class otherwise serialization tests fail
   private static class CustomMulAddQuery extends CustomScoreQuery {
     // constructor
-    CustomMulAddQuery(Query q, ValueSourceQuery qValSrc1, ValueSourceQuery qValSrc2) {
+    CustomMulAddQuery(Query q, FunctionQuery qValSrc1, FunctionQuery qValSrc2) {
       super(q, qValSrc1, qValSrc2);
     }
 
@@ -228,10 +250,9 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
   
   // Test that FieldScoreQuery returns docs with expected score.
-  private void doTestCustomScore(String field, FieldScoreQuery.Type tp, double dboost) throws Exception, ParseException {
+  private void doTestCustomScore(FunctionQuery functionQuery, double dboost) throws Exception {
     float boost = (float) dboost;
     IndexSearcher s = new IndexSearcher(dir, true);
-    FieldScoreQuery qValSrc = new FieldScoreQuery(field, tp); // a query that would score by the field
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, anlzr);
     String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
 
@@ -245,19 +266,19 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q2CustomNeutral);
 
     // custom query, that should (by default) multiply the scores of q1 by that of the field
-    CustomScoreQuery q3CustomMul = new CustomScoreQuery(q1, qValSrc);
+    CustomScoreQuery q3CustomMul = new CustomScoreQuery(q1, functionQuery);
     q3CustomMul.setStrict(true);
     q3CustomMul.setBoost(boost);
     log(q3CustomMul);
 
     // custom query, that should add the scores of q1 to that of the field
-    CustomScoreQuery q4CustomAdd = new CustomAddQuery(q1, qValSrc);
+    CustomScoreQuery q4CustomAdd = new CustomAddQuery(q1, functionQuery);
     q4CustomAdd.setStrict(true);
     q4CustomAdd.setBoost(boost);
     log(q4CustomAdd);
 
     // custom query, that multiplies and adds the field score to that of q1
-    CustomScoreQuery q5CustomMulAdd = new CustomMulAddQuery(q1, qValSrc, qValSrc);
+    CustomScoreQuery q5CustomMulAdd = new CustomMulAddQuery(q1, functionQuery, functionQuery);
     q5CustomMulAdd.setStrict(true);
     q5CustomMulAdd.setBoost(boost);
     log(q5CustomMulAdd);

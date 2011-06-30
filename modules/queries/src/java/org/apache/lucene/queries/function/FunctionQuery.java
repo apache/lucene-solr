@@ -197,7 +197,7 @@ public class FunctionQuery extends Query {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (FunctionQuery.class != o.getClass()) return false;
+    if (!FunctionQuery.class.isInstance(o)) return false;
     FunctionQuery other = (FunctionQuery)o;
     return this.getBoost() == other.getBoost()
             && this.func.equals(other.func);
