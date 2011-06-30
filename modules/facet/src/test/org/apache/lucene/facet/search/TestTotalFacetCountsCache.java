@@ -5,13 +5,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,6 +36,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
 
@@ -106,13 +109,23 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     initCache();
   }
 
+  /** runs a few instances of {@link MultiCLSearcher} in parallel */
+  public void testGeneralSynchronization() throws Exception {
+    int numIters = atLeast(2);
+    for (int i = 0; i < numIters; i++) {
+      doTestGeneralSynchronization(_TestUtil.nextInt(random, 2, 4),
+                                  random.nextBoolean() ? -1 : _TestUtil.nextInt(random, 1, 10),
+                                  _TestUtil.nextInt(random, 0, 3));
+    }
+  }
+
   /**
    * Run many instances of {@link MultiCLSearcher} in parallel, results should
    * be sane. Each instance has a random delay for reading bytes, to ensure
    * that threads finish in different order than started.
    */
-  @Test
-  public void testGeneralSynchronization() throws Exception {
+  @Test @Nightly
+  public void testGeneralSynchronizationBig() throws Exception {
     int[] numThreads = new int[] { 2, 3, 5, 8 };
     int[] sleepMillis = new int[] { -1, 1, 20, 33 };
     int[] cacheSize = new int[] { 0,1,2,3,5 };
@@ -130,17 +143,20 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
       InterruptedException {
     TFC.setCacheSize(cacheSize);
     SlowRAMDirectory slowIndexDir = new SlowRAMDirectory(-1, random);
+    MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random, slowIndexDir);
     SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random);
+    MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random, slowTaxoDir);
+    
 
     // Index documents without the "slowness"
-    MultiCLIndexer.index(slowIndexDir, slowTaxoDir);
+    MultiCLIndexer.index(indexDir, taxoDir);
 
     slowIndexDir.setSleepMillis(sleepMillis);
     slowTaxoDir.setSleepMillis(sleepMillis);
     
     // Open the slow readers
-    IndexReader slowIndexReader = IndexReader.open(slowIndexDir);
-    TaxonomyReader slowTaxoReader = new LuceneTaxonomyReader(slowTaxoDir);
+    IndexReader slowIndexReader = IndexReader.open(indexDir);
+    TaxonomyReader slowTaxoReader = new LuceneTaxonomyReader(taxoDir);
 
     // Class to perform search and return results as threads
     class Multi extends Thread {
@@ -221,6 +237,8 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // we're done, close the index reader and the taxonomy.
     slowIndexReader.close();
     slowTaxoReader.close();
+    indexDir.close();
+    taxoDir.close();
   }
 
   /**
@@ -321,6 +339,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     readers[0].close();
     r2.close();
     outputFile.delete();
+    IOUtils.closeSafely(false, dirs[0]);
   }
 
   private int assertReadFromDisc(TotalFacetCounts totalCounts, int prevGen, String errMsg) {
@@ -384,6 +403,9 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
         readers[0].indexReader, readers[0].taxReader, iParams, null);
     assertReadFromDisc(totalCounts, 0, "after reading from disk.");
     outputFile.delete();
+    writers[0].close();
+    readers[0].close();
+    IOUtils.closeSafely(false, dirs[0]);
   }
 
   /**
@@ -397,7 +419,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Write index using 'normal' directories
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     LuceneTaxonomyWriter tw = new LuceneTaxonomyWriter(taxoDir);
     DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
     // Add documents and facets
@@ -508,8 +530,13 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     assertTrue("with cache of size 2 res no. 1 should come from cache",
         totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null));
     
+    writers[0].close();
+    writers[1].close();
     readers[0].close();
     readers[1].close();
+    for (Directory[] dirset : dirs) {
+      IOUtils.closeSafely(false, dirset);
+    }
   }
 
 }

@@ -2,7 +2,7 @@ package org.apache.lucene.facet.search.params;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,8 +53,8 @@ public class FacetRequestTest extends LuceneTestCase {
   @Test
   public void testGetFacetResultHandlerDifferentTaxonomy() throws Exception {
     FacetRequest fr = new CountFacetRequest(new CategoryPath("a"), 10);
-    RAMDirectory dir1 = new RAMDirectory();
-    RAMDirectory dir2 = new RAMDirectory();
+    Directory dir1 = newDirectory();
+    Directory dir2 = newDirectory();
     // create empty indexes, so that LTR ctor won't complain about a missing index.
     new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
@@ -63,6 +63,10 @@ public class FacetRequestTest extends LuceneTestCase {
     FacetResultsHandler frh1 = fr.createFacetResultsHandler(tr1);
     FacetResultsHandler frh2 = fr.createFacetResultsHandler(tr2);
     assertTrue("should not return the same FacetResultHandler instance for different TaxonomyReader instances", frh1 != frh2);
+    tr1.close();
+    tr2.close();
+    dir1.close();
+    dir2.close();
   }
   
   @Test
@@ -70,13 +74,15 @@ public class FacetRequestTest extends LuceneTestCase {
     // Tests that after a FRH is created by FR, changes to FR are not reflected
     // in the FRH.
     FacetRequest fr = new CountFacetRequest(new CategoryPath("a"), 10);
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     // create empty indexes, so that LTR ctor won't complain about a missing index.
     new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     TaxonomyReader tr = new LuceneTaxonomyReader(dir);
     FacetResultsHandler frh = fr.createFacetResultsHandler(tr);
     fr.setDepth(10);
     assertEquals(FacetRequest.DEFAULT_DEPTH, frh.getFacetRequest().getDepth());
+    tr.close();
+    dir.close();
   }
   
   @Test

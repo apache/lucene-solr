@@ -11,7 +11,8 @@ import java.util.Map;
 
 import org.apache.lucene.DocumentBuilder.DocumentBuilderException;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -20,21 +21,19 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
@@ -131,15 +130,15 @@ public abstract class FacetTestBase extends LuceneTestCase {
     }
 
     if (onDisk) {
-      File indexFile = new File(TEMP_DIR,"index");
-      indexDir = FSDirectory.open(indexFile);
-      taxoDir = FSDirectory.open(new File(indexFile,"facets"));
+      File indexFile = _TestUtil.getTempDir("index");
+      indexDir = newFSDirectory(indexFile);
+      taxoDir = newFSDirectory(new File(indexFile,"facets"));
     } else { 
-      indexDir = new RAMDirectory();
-      taxoDir = new RAMDirectory();
+      indexDir = newDirectory();
+      taxoDir = newDirectory();
     }
     
-    IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(TEST_VERSION_CURRENT, getAnalyzer()));
+    RandomIndexWriter iw = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, getAnalyzer()));
     TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
     
     populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
@@ -153,7 +152,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     // prepare for searching
     taxoReader = new LuceneTaxonomyReader(taxoDir);
     indexReader = IndexReader.open(indexDir);
-    searcher = new IndexSearcher(indexReader);
+    searcher = newSearcher(indexReader);
   }
 
   /** Returns a default facet indexing params */
@@ -187,7 +186,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * Populate the test index+taxonomy for this test.
    * <p>Subclasses can override this to test different scenarios
    */
-  protected void populateIndex(IndexWriter iw, TaxonomyWriter taxo, FacetIndexingParams iParams)
+  protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo, FacetIndexingParams iParams)
       throws IOException, DocumentBuilderException, CorruptIndexException {
     // add test documents 
     int numDocsToIndex = numDocsToIndex();
@@ -211,7 +210,9 @@ public abstract class FacetTestBase extends LuceneTestCase {
     indexReader = null;
     searcher.close();
     searcher = null;
+    indexDir.close();
     indexDir = null;
+    taxoDir.close();
     taxoDir = null;
   }
   
@@ -220,7 +221,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * Sub classes should override in order to test with different analyzer.
    */
   protected Analyzer getAnalyzer() {
-    return new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    return new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
   }
   
   /** convenience method: convert sub results to an array */  
@@ -233,7 +234,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   }
   
   /** utility Create a dummy document with specified categories and content */
-  protected final void indexDoc(FacetIndexingParams iParams, IndexWriter iw,
+  protected final void indexDoc(FacetIndexingParams iParams, RandomIndexWriter iw,
       TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException,
       CorruptIndexException {
     Document d = new Document();

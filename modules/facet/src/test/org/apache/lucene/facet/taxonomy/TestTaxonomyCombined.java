@@ -158,13 +158,14 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriter() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     // Also check TaxonomyWriter.getSize() - see that the taxonomy's size
     // is what we expect it to be.
     assertEquals(expectedCategories.length, tw.getSize());
     tw.close();
+    indexDir.close();
   }
 
   /**  testWriterTwice is exactly like testWriter, except that after adding
@@ -173,7 +174,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterTwice() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     // run fillTaxonomy again - this will try to add the same categories
@@ -184,6 +185,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     // extraneous categories were created:
     assertEquals(expectedCategories.length, tw.getSize());    
     tw.close();
+    indexDir.close();
   }
 
   /**  testWriterTwice2 is similar to testWriterTwice, except that the index
@@ -194,7 +196,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterTwice2() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -206,6 +208,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     fillTaxonomy(tw);
     assertEquals(expectedCategories.length, tw.getSize());    
     tw.close();
+    indexDir.close();
   }
   
   /**
@@ -217,7 +220,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterTwice3() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     // First, create and fill the taxonomy
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
@@ -239,6 +242,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw.commit();
     assertEquals(expectedCategories.length+1, tw.getSize());    
     tw.close();
+    indexDir.close();
   }  
   
   /**  Another set of tests for the writer, which don't use an array and
@@ -248,7 +252,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterSimpler() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     assertEquals(1, tw.getSize()); // the root only
     // Test that adding a new top-level category works
@@ -283,6 +287,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(9, tw.getSize());
     
     tw.close();
+    indexDir.close();
   }
   
   /**  Test writing an empty index, and seeing that a reader finds in it
@@ -291,7 +296,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testRootOnly() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     // right after opening the index, it should already contain the
     // root, so have size 1:
@@ -303,6 +308,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
     assertEquals(0, tr.getOrdinal(new CategoryPath()));
     tr.close();
+    indexDir.close();
   }
 
   /**  The following test is exactly the same as testRootOnly, except we
@@ -312,7 +318,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testRootOnly2() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     tw.commit();
     TaxonomyReader tr = new LuceneTaxonomyReader(indexDir);
@@ -322,6 +328,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(0, tr.getOrdinal(new CategoryPath()));
     tw.close();
     tr.close();
+    indexDir.close();
   }
 
   /**  Basic tests for TaxonomyReader's category <=> ordinal transformations
@@ -331,7 +338,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testReaderBasic() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -373,6 +380,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(new CategoryPath("Author", "Jules Verne")));
 
     tr.close();
+    indexDir.close();
   }
 
   /**  Tests for TaxonomyReader's getParent() method.
@@ -389,7 +397,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
 
   @Test
   public void testReaderParent() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -436,6 +444,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     }
 
     tr.close();
+    indexDir.close();
   }
   
   /**
@@ -453,7 +462,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterParent1() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -464,11 +473,12 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     
     tw.close();
     tr.close();
+    indexDir.close();
   }
 
   @Test
   public void testWriterParent2() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.commit();
@@ -478,6 +488,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     
     tw.close();
     tr.close();
+    indexDir.close();
   }
   
   private void checkWriterParent(TaxonomyReader tr, TaxonomyWriter tw) throws Exception {
@@ -530,7 +541,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testReaderParentArray() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -541,6 +552,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       assertEquals(tr.getParent(i), parents[i]);
     }
     tr.close();
+    indexDir.close();
   }
   
   /**
@@ -550,7 +562,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testChildrenArrays() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -601,6 +613,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       }
     }
     tr.close();
+    indexDir.close();
   }
 
   /**
@@ -613,7 +626,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testChildrenArraysInvariants() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     tw.close();
@@ -685,6 +698,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     }
   
     tr.close();
+    indexDir.close();
   }
   
   /**
@@ -692,7 +706,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testChildrenArraysGrowth() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     tw.addCategory(new CategoryPath("hi", "there"));
     tw.commit();
@@ -722,6 +736,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertTrue(Arrays.equals(new int[] { -1, -1, -1, 2, 1 }, ca.getOlderSiblingArray()));
     tw.close();
     tr.close();
+    indexDir.close();
   }
   
   /**
@@ -731,7 +746,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
   @Ignore
   public void testTaxonomyReaderRefreshRaces() throws Exception {
     // compute base child arrays - after first chunk, and after the other
-    Directory indexDirBase =  new RAMDirectory();
+    Directory indexDirBase =  newDirectory();
     TaxonomyWriter twBase = new LuceneTaxonomyWriter(indexDirBase);
     twBase.addCategory(new CategoryPath("a", "0"));
     final CategoryPath abPath = new CategoryPath("a", "b");
@@ -757,6 +772,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     for (int retry=0; retry<100; retry++) {
       assertConsistentYoungestChild(abPath, abOrd, abYoungChildBase1,  abYoungChildBase2, retry);
     }
+    indexDirBase.close();
   }
 
   private void assertConsistentYoungestChild(final CategoryPath abPath,
@@ -848,7 +864,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testSeparateReaderAndWriter() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     tw.commit();
     TaxonomyReader tr = new LuceneTaxonomyReader(indexDir);
@@ -910,11 +926,12 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(3, tr.getSize()); 
     tw.close();
     tr.close();
+    indexDir.close();
   }
   
   @Test
   public void testSeparateReaderAndWriter2() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     tw.commit();
     TaxonomyReader tr = new LuceneTaxonomyReader(indexDir);
@@ -940,6 +957,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(2, tr.getSize()); // still root only...
     tw.close();
     tr.close();
+    indexDir.close();
   }
   
   /**
@@ -948,6 +966,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterLock() throws Exception {
+    // native fslock impl gets angry if we use it, so use RAMDirectory explicitly.
     Directory indexDir = new RAMDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     tw.addCategory(new CategoryPath("hi", "there"));
@@ -975,6 +994,8 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tr.refresh();
     assertEquals(3, tr.getOrdinal(new CategoryPath("hey")));
     tr.close();
+    tw.close();
+    indexDir.close();
   }
   
   /**
@@ -1032,13 +1053,14 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterCheckPaths() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomyCheckPaths(tw);
     // Also check TaxonomyWriter.getSize() - see that the taxonomy's size
     // is what we expect it to be.
     assertEquals(expectedCategories.length, tw.getSize());
     tw.close();
+    indexDir.close();
   }
   
   /**
@@ -1050,7 +1072,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    */
   @Test
   public void testWriterCheckPaths2() throws Exception {
-    Directory indexDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(indexDir);
     fillTaxonomy(tw);
     checkPaths(tw);
@@ -1063,6 +1085,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     fillTaxonomy(tw);
     checkPaths(tw);
     tw.close();
+    indexDir.close();
   }
 
 //  TODO (Facet): test multiple readers, one writer. Have the multiple readers

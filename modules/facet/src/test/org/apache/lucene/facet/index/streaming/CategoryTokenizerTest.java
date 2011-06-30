@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.facet.index.CategoryContainerTestBase;
@@ -46,8 +46,9 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
    */
   @Test
   public void testTokensDefaultParams() throws IOException {
+    Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
-        new RAMDirectory());
+        directory);
     DefaultFacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
     CategoryTokenizer tokenizer = new CategoryTokenizer(
         new CategoryAttributesStream(categoryContainer),
@@ -73,6 +74,7 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
     assertEquals("Wrong number of tokens", 3, nTokens);
 
     taxonomyWriter.close();
+    directory.close();
   }
 
   /**
@@ -83,8 +85,9 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
    */
   @Test
   public void testLongCategoryPath() throws IOException {
+    Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
-        new RAMDirectory());
+        directory);
 
     List<CategoryPath> longCategory = new ArrayList<CategoryPath>();
     longCategory.add(new CategoryPath("one", "two", "three", "four",
@@ -107,5 +110,6 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
     assertFalse("Unexpected token", tokenizer.incrementToken());
 
     taxonomyWriter.close();
+    directory.close();
   }
 }

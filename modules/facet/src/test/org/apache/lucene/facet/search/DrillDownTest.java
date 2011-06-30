@@ -3,15 +3,16 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -19,7 +20,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,6 +58,8 @@ public class DrillDownTest extends LuceneTestCase {
   private FacetSearchParams nonDefaultParams;
   private static IndexReader reader;
   private static LuceneTaxonomyReader taxo;
+  private static Directory dir;
+  private static Directory taxoDir;
   
   public DrillDownTest() throws IOException {
     PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
@@ -71,10 +73,11 @@ public class DrillDownTest extends LuceneTestCase {
   }
   @BeforeClass
   public static void createIndexes() throws CorruptIndexException, LockObtainFailedException, IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     
-    Directory taxoDir = new RAMDirectory();
+    taxoDir = newDirectory();
     TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
     
     for (int i = 0; i < 100; i++) {
@@ -98,10 +101,9 @@ public class DrillDownTest extends LuceneTestCase {
     }
     
     taxoWriter.close();
-    writer.commit();
+    reader = writer.getReader();
     writer.close();
     
-    reader = IndexReader.open(dir, true);
     taxo = new LuceneTaxonomyReader(taxoDir);
   }
   
@@ -127,7 +129,7 @@ public class DrillDownTest extends LuceneTestCase {
   
   @Test
   public void testQuery() throws IOException {
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // Making sure the query yields 25 documents with the facet "a"
     Query q = DrillDown.query(defaultParams, new CategoryPath("a"));
@@ -155,7 +157,7 @@ public class DrillDownTest extends LuceneTestCase {
   
   @Test
   public void testQueryImplicitDefaultParams() throws IOException {
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     // Create the base query to start with
     Query q = DrillDown.query(defaultParams, new CategoryPath("a"));
@@ -178,11 +180,16 @@ public class DrillDownTest extends LuceneTestCase {
   public static void closeIndexes() throws IOException {
     if (reader != null) {
       reader.close();
+      reader = null;
     }
     
     if (taxo != null) {
       taxo.close();
+      taxo = null;
     }
+    
+    dir.close();
+    taxoDir.close();
   }
     
 }

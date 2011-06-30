@@ -3,19 +3,18 @@ package org.apache.lucene.facet.search.association;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.enhancements.EnhancementsDocumentBuilder;
 import org.apache.lucene.facet.enhancements.association.AssociationEnhancement;
@@ -53,8 +52,9 @@ import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
 /** Test for associations */
 public class AssociationsFacetRequestTest extends LuceneTestCase {
 
-  private static Directory dir = new RAMDirectory();
-  private static Directory taxoDir = new RAMDirectory();
+  private static Directory dir;
+  private static IndexReader reader;
+  private static Directory taxoDir;
   
   private static final CategoryPath aint = new CategoryPath("int", "a");
   private static final CategoryPath bint = new CategoryPath("int", "b");
@@ -63,8 +63,11 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClassAssociationsFacetRequestTest() throws Exception {
+    dir = newDirectory();
+    taxoDir = newDirectory();
     // preparations - index, taxonomy, content
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     
     TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
     
@@ -87,18 +90,22 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     }
     
     taxoWriter.close();
+    reader = writer.getReader();
     writer.close();
   }
   
   @AfterClass
   public static void afterClassAssociationsFacetRequestTest() throws Exception {
+    reader.close();
+    reader = null;
     dir.close();
+    dir = null;
     taxoDir.close();
+    taxoDir = null;
   }
   
   @Test
   public void testIntSumAssociation() throws Exception {
-    IndexReader reader = IndexReader.open(dir, true);
     LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
 
     // facet requests for two facets
@@ -110,7 +117,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
 
     FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
     
-    new IndexSearcher(reader).search(q, fc);
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.search(q, fc);
     List<FacetResult> res = fc.getFacetResults();
     
     assertNotNull("No results!",res);
@@ -118,14 +126,12 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     assertEquals("Wrong count for category 'a'!",200, (int) res.get(0).getFacetResultNode().getValue());
     assertEquals("Wrong count for category 'b'!",150, (int) res.get(1).getFacetResultNode().getValue());
     
+    searcher.close();
     taxo.close();
-    reader.close();
   }
   
   @Test
   public void testFloatSumAssociation() throws Exception {
-    
-    IndexReader reader = IndexReader.open(dir, true);
     LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
 
     // facet requests for two facets
@@ -137,7 +143,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
 
     FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
     
-    new IndexSearcher(reader).search(q, fc);
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.search(q, fc);
     List<FacetResult> res = fc.getFacetResults();
     
     assertNotNull("No results!",res);
@@ -145,8 +152,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     assertEquals("Wrong count for category 'a'!",50f, (float) res.get(0).getFacetResultNode().getValue(), 0.00001);
     assertEquals("Wrong count for category 'b'!",10f, (float) res.get(1).getFacetResultNode().getValue(), 0.00001);
     
+    searcher.close();
     taxo.close();
-    reader.close();
   }  
     
   @Test
@@ -154,7 +161,6 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     // Same category list cannot be aggregated by two different aggregators. If
     // you want to do that, you need to separate the categories into two
     // category list (you'll still have one association list).
-    IndexReader reader = IndexReader.open(dir, true);
     LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
 
     // facet requests for two facets
@@ -168,13 +174,16 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
 
     FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
     
-    new IndexSearcher(reader).search(q, fc);
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.search(q, fc);
     try {
       fc.getFacetResults();
       fail("different aggregators for same category list should not be supported");
     } catch (RuntimeException e) {
       // ok - expected
     }
+    searcher.close();
+    taxo.close();
   }  
 
 }

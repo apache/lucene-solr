@@ -1,22 +1,23 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -95,20 +96,20 @@ public class CategoryListIteratorTest extends LuceneTestCase {
 
   @Test
   public void testPayloadIntDecodingIterator() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     for (int i = 0; i < data.length; i++) {
       dts.setIdx(i);
       Document doc = new Document();
       doc.add(new Field("f", dts));
       writer.addDocument(doc);
     }
-    writer.commit();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
     CategoryListIterator cli = new PayloadIntDecodingIterator(reader, new Term(
         "f","1"), dts.encoder.createMatchingDecoder());
     cli.init();
@@ -127,6 +128,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     }
     assertEquals("Missing categories!",10,totalCategories);
     reader.close();
+    dir.close();
   }
 
   /**
@@ -139,12 +141,21 @@ public class CategoryListIteratorTest extends LuceneTestCase {
    */
   @Test
   public void testPayloadIteratorWithInvalidDoc() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
     DataTokenStream dts2 = new DataTokenStream("2",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    // this test requires that no payloads ever be randomly present!
+    final Analyzer noPayloadsAnalyzer = new Analyzer() {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new MockTokenizer(reader, MockTokenizer.KEYWORD, false);
+      }
+    };
+    // NOTE: test is wired to LogMP... because test relies on certain docids having payloads
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, noPayloadsAnalyzer).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
       dts.setIdx(i);
       Document doc = new Document();
@@ -170,10 +181,9 @@ public class CategoryListIteratorTest extends LuceneTestCase {
       
     }
 
-    writer.commit();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir, true);
     CategoryListIterator cli = new PayloadIntDecodingIterator(reader, new Term(
         "f","1"), dts.encoder.createMatchingDecoder());
     cli.init();
@@ -202,6 +212,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     // Ok.. went through the first 4 docs, now lets try the 6th doc (docid 5)
     assertFalse("Doc #6 (docid=5) should not have a payload!",cli.skipTo(5));
     reader.close();
+    dir.close();
   }
 
 }

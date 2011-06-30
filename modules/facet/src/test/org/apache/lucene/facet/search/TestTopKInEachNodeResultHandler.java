@@ -4,22 +4,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -70,8 +69,8 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
         Integer.MAX_VALUE };
 
     for (int partitionSize : partitionSizes) {
-      Directory iDir = new RAMDirectory();
-      Directory tDir = new RAMDirectory();
+      Directory iDir = newDirectory();
+      Directory tDir = newDirectory();
 
       if (VERBOSE) {
         System.out.println("Partition Size: " + partitionSize);
@@ -85,9 +84,9 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
         }
       };
 
-      IndexWriter iw = new IndexWriter(iDir,
-          new IndexWriterConfig(TEST_VERSION_CURRENT,
-              new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
+      RandomIndexWriter iw = new RandomIndexWriter(random, iDir,
+          newIndexWriterConfig(TEST_VERSION_CURRENT,
+              new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
       TaxonomyWriter tw = new LuceneTaxonomyWriter(tDir);
       prvt_add(iParams, iw, tw, "a", "b");
       prvt_add(iParams, iw, tw, "a", "b", "1");
@@ -106,12 +105,12 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       prvt_add(iParams, iw, tw, "a", "d");
       prvt_add(iParams, iw, tw, "a", "e");
 
-      iw.commit();
+      IndexReader ir = iw.getReader();
       iw.close();
       tw.commit();
       tw.close();
 
-      IndexSearcher is = new IndexSearcher(iDir);
+      IndexSearcher is = newSearcher(ir);
       LuceneTaxonomyReader tr = new LuceneTaxonomyReader(tDir);
 
       // Get all of the documents and run the query, then do different
@@ -320,11 +319,15 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertFalse("Shouldn't have found anything for a FacetRequest " +
           "of a facet that doesn't exist in the index.", hasDoctor);
       assertEquals("Shouldn't have found more than seven request.", 7, facetResults.size());
+      ir.close();
+      tr.close();
+      iDir.close();
+      tDir.close();
     }
 
   }
 
-  private void prvt_add(DefaultFacetIndexingParams iParams, IndexWriter iw,
+  private void prvt_add(DefaultFacetIndexingParams iParams, RandomIndexWriter iw,
                     TaxonomyWriter tw, String... strings) throws IOException,
       CorruptIndexException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();

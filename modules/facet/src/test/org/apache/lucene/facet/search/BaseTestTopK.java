@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.lucene.DocumentBuilder.DocumentBuilderException;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 
 import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -48,7 +48,7 @@ public abstract class BaseTestTopK extends FacetTestBase {
   private int nextInt;
 
   @Override
-  protected void populateIndex(IndexWriter iw, TaxonomyWriter taxo,
+  protected void populateIndex(RandomIndexWriter iw, TaxonomyWriter taxo,
       FacetIndexingParams iParams) throws IOException,
       DocumentBuilderException, CorruptIndexException {
     currDoc = -1;

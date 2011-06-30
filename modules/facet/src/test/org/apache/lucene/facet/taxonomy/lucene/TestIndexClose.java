@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
@@ -13,10 +12,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
@@ -50,7 +50,7 @@ public class TestIndexClose extends LuceneTestCase {
   @Test
   public void testLeaks() throws Exception {
     LeakChecker checker = new LeakChecker();
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     LuceneTaxonomyWriter tw = checker.openWriter(dir);
     tw.close();
     assertEquals(0, checker.nopen());
@@ -88,6 +88,7 @@ public class TestIndexClose extends LuceneTestCase {
     }
     tw.close();
     assertEquals(0, checker.nopen());
+    dir.close();
   }
 
   private static class LeakChecker {
@@ -132,7 +133,7 @@ public class TestIndexClose extends LuceneTestCase {
       protected void openLuceneIndex (Directory directory, OpenMode openMode)
       throws CorruptIndexException, LockObtainFailedException, IOException {
         indexWriter = new InstrumentedIndexWriter(directory,
-            new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+            newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
                 .setOpenMode(openMode));
       }
 

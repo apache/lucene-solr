@@ -1,12 +1,11 @@
 package org.apache.lucene.facet.enhancements.association;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,10 +54,11 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     EnhancementsIndexingParams iParams = new DefaultEnhancementsIndexingParams(
         new AssociationEnhancement());
 
-    Directory iDir = new RAMDirectory();
-    Directory tDir = new RAMDirectory();
+    Directory iDir = newDirectory();
+    Directory tDir = newDirectory();
     
-    IndexWriter w = new IndexWriter(iDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    RandomIndexWriter w = new RandomIndexWriter(random, iDir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     LuceneTaxonomyWriter taxoW = new LuceneTaxonomyWriter(tDir);
     
     CategoryContainer cc = new CategoryContainer();
@@ -72,9 +72,9 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     builder.setCategories(cc);
     w.addDocument(builder.build(new Document()));
     taxoW.close();
+    IndexReader reader = w.getReader();
     w.close();
     
-    IndexReader reader = IndexReader.open(iDir);
     LuceneTaxonomyReader taxo = new LuceneTaxonomyReader(tDir);
     String field = iParams.getCategoryListParams(new CategoryPath("0")).getTerm().field();
     AssociationsPayloadIterator api = new AssociationsPayloadIterator(reader, field);
@@ -93,5 +93,10 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     }
     
     assertTrue("No categories found for doc #0", flag);
+    
+    reader.close();
+    taxo.close();
+    iDir.close();
+    tDir.close();
   }
 }

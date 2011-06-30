@@ -100,8 +100,6 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
   }
   
   private void doTestComplements() throws Exception {
-    assertTrue("Would like to test this with deletions!",indexReader.hasDeletions());
-    assertTrue("Would like to test this with deletions!",indexReader.numDeletedDocs()>0);
     Query q = new MatchAllDocsQuery(); //new TermQuery(new Term(TEXT,"white"));
     if (VERBOSE) {
       System.out.println("Query: "+q);

@@ -4,14 +4,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -90,8 +89,8 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     // FacetRequest's dimension
     CategoryListParams clp = new CategoryListParams();
     FacetIndexingParams iParams = new DefaultFacetIndexingParams(clp);
-    Directory indexDir = new RAMDirectory();
-    Directory taxoDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
     populateIndex(iParams, indexDir, taxoDir);
 
     TaxonomyReader taxo = new LuceneTaxonomyReader(taxoDir);
@@ -122,6 +121,10 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     countForbiddenDimension = null;
     validateFacetedSearch(iParams, taxo, reader, clCache, allDocs, new String[] {
             "author", "date" }, new int[] { 5, 5 }, new int[] { 5, 2 });
+    taxo.close();
+    reader.close();
+    indexDir.close();
+    taxoDir.close();
   }
 
   private void validateFacetedSearch(FacetIndexingParams iParams,
@@ -163,7 +166,8 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
 
   private void populateIndex(FacetIndexingParams iParams, Directory indexDir,
       Directory taxoDir) throws Exception {
-    IndexWriter writer = new IndexWriter(indexDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexDir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     TaxonomyWriter taxoWriter = new LuceneTaxonomyWriter(taxoDir);
 
     for (CategoryPath[] categories : perDocCategories) {

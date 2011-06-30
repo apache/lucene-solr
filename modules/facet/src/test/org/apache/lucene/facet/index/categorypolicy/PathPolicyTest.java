@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -52,8 +52,9 @@ public class PathPolicyTest extends LuceneTestCase {
 
   @Test
   public void testNonTopLevelPathPolicy() throws Exception {
+    Directory dir = newDirectory();
     TaxonomyWriter taxonomy = null;
-    taxonomy = new LuceneTaxonomyWriter(new RAMDirectory());
+    taxonomy = new LuceneTaxonomyWriter(dir);
 
     CategoryPath[] topLevelPaths = new CategoryPath[10];
     String[] topLevelStrings = new String[10];
@@ -88,5 +89,7 @@ public class PathPolicyTest extends LuceneTestCase {
           + nonTopLevelPaths[i],
           pathPolicy.shouldAdd(nonTopLevelPaths[i]));
     }
+    taxonomy.close();
+    dir.close();
   }
 }
