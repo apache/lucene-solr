@@ -14,12 +14,12 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,11 +55,11 @@ import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyWriter;
 
 public class FacetTestUtils {
 
-  public static Directory[][] createIndexTaxonomyDirs(int number) {
+  public static Directory[][] createIndexTaxonomyDirs(int number) throws IOException {
     Directory[][] dirs = new Directory[number][2];
     for (int i = 0; i < number; i++) {
-      dirs[i][0] = new RAMDirectory();
-      dirs[i][1] = new RAMDirectory();
+      dirs[i][0] = LuceneTestCase.newDirectory();
+      dirs[i][1] = LuceneTestCase.newDirectory();
     }
     return dirs;
   }
@@ -122,7 +122,7 @@ public class FacetTestUtils {
     return collectors;
   }
   
-  public static void add(FacetIndexingParams iParams, IndexWriter iw,
+  public static void add(FacetIndexingParams iParams, RandomIndexWriter iw,
       TaxonomyWriter tw, String... strings) throws IOException,
       CorruptIndexException {
     ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();

@@ -59,8 +59,6 @@ public class TestScoredDocIdCollector extends FacetTestBase {
   @Test
   public void testConstantScore() throws Exception {
     // test that constant score works well
-    assertTrue("Would like to test this with deletions!",indexReader.hasDeletions());
-    assertTrue("Would like to test this with deletions!",indexReader.numDeletedDocs()>0);
 
     Query q = new TermQuery(new Term(CONTENT_FIELD, "white"));
     if (VERBOSE) {

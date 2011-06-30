@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -108,6 +109,7 @@ public class TestTotalFacetCounts extends LuceneTestCase {
       ++partition;
     }
     readers[0].close();
+    IOUtils.closeSafely(false, dirs[0]);
     tmpFile.delete();
   }
 

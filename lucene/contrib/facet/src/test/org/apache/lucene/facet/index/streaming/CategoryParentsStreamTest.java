@@ -3,7 +3,7 @@ package org.apache.lucene.facet.index.streaming;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.facet.FacetException;
@@ -49,8 +49,9 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    */
   @Test
   public void testStreamDefaultParams() throws IOException {
+    Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
-        new RAMDirectory());
+        directory);
     CategoryParentsStream stream = new CategoryParentsStream(
         new CategoryAttributesStream(categoryContainer),
         taxonomyWriter, new DefaultFacetIndexingParams());
@@ -63,6 +64,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     assertEquals("Wrong number of tokens", 6, nTokens);
 
     taxonomyWriter.close();
+    directory.close();
   }
 
   /**
@@ -74,8 +76,9 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    */
   @Test
   public void testStreamNonTopLevelParams() throws IOException {
+    Directory directory = newDirectory();
     final TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
-        new RAMDirectory());
+        directory);
     FacetIndexingParams indexingParams = new DefaultFacetIndexingParams() {
       @Override
       protected OrdinalPolicy fixedOrdinalPolicy() {
@@ -102,6 +105,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     assertEquals("Wrong number of tokens", 4, nTokens);
 
     taxonomyWriter.close();
+    directory.close();
   }
 
   /**
@@ -113,7 +117,8 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    */
   @Test
   public void testNoRetainableAttributes() throws IOException, FacetException {
-    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(new RAMDirectory());
+    Directory directory = newDirectory();
+    TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(directory);
 
     new CategoryParentsStream(new CategoryAttributesStream(categoryContainer),
         taxonomyWriter, new DefaultFacetIndexingParams());
@@ -133,6 +138,8 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     }
     assertEquals("Wrong number of tokens with attributes", 1, nAttributes);
 
+    taxonomyWriter.close();
+    directory.close();
   }
 
   /**
@@ -144,8 +151,9 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    */
   @Test
   public void testRetainableAttributes() throws IOException, FacetException {
+    Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(
-        new RAMDirectory());
+        directory);
 
     FacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
     new CategoryParentsStream(new CategoryAttributesStream(
@@ -176,6 +184,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     assertEquals("Wrong number of tokens with attributes", 3, nAttributes);
 
     taxonomyWriter.close();
+    directory.close();
   }
 
   private final class MyCategoryListTokenizer extends CategoryListTokenizer {

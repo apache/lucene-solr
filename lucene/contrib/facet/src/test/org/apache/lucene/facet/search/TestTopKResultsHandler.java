@@ -140,6 +140,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       assertEquals(6.0, parentRes.getValue(), Double.MIN_VALUE);
       frn = resultNodesAsArray(parentRes);
       assertEquals(1.0, frn[0].getValue(), Double.MIN_VALUE);
+      closeAll();
     }
   }
   
@@ -234,6 +235,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       assertEquals("Shouldn't have found anything for a FacetRequest "
           + "of a facet that doesn't exist in the index.", 0, facetResults.size());
 
+      closeAll();
     }
   }
 }

@@ -1,15 +1,16 @@
 package org.apache.lucene.facet.util;
 
 import java.io.IOException;
+import java.util.Random;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -17,7 +18,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
 
   @Test
   public void testComplementIterator() throws Exception {
-    final int n = 100000;
+    final int n = atLeast(10000);
     final OpenBitSet bits = new OpenBitSet(n);
     for (int i = 0; i < 5 * n; i++) {
       bits.flip(random.nextInt(n));
@@ -59,19 +59,22 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
 
     ScoredDocIDs scoredDocIDs = ScoredDocIdsUtils.createScoredDocIds(bits, n); 
 
-    IndexReader reader = createReaderWithNDocs(n);
+    Directory dir = newDirectory();
+    IndexReader reader = createReaderWithNDocs(random, n, dir);
     try { 
       assertEquals(n - verify.cardinality(), ScoredDocIdsUtils.getComplementSet(scoredDocIDs, 
         reader).size());
     } finally {
       reader.close();
+      dir.close();
     }
   }
 
   @Test
   public void testAllDocs() throws Exception {
     int maxDoc = 3;
-    IndexReader reader = createReaderWithNDocs(maxDoc);
+    Directory dir = newDirectory();
+    IndexReader reader = createReaderWithNDocs(random, maxDoc, dir);
     try {
       ScoredDocIDs all = ScoredDocIdsUtils.createAllDocsScoredDocIDs(reader);
       assertEquals("invalid size", maxDoc, all.size());
@@ -93,6 +96,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       assertEquals(2, docIDsIter.advance(0));
     } finally {
       reader.close();
+      dir.close();
     }
   }
   
@@ -117,7 +121,8 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       }
     };
     
-    IndexReader reader = createReaderWithNDocs(N_DOCS, docFactory);
+    Directory dir = newDirectory();
+    IndexReader reader = createReaderWithNDocs(random, N_DOCS, docFactory, dir);
     try {
       int numErasedDocs = reader.numDeletedDocs();
 
@@ -140,7 +145,9 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       // Get all 'alpha' documents
       ScoredDocIdCollector collector = ScoredDocIdCollector.create(reader.maxDoc(), false);
       Query q = new TermQuery(new Term(DocumentFactory.field, DocumentFactory.alphaTxt));
-      new IndexSearcher(reader).search(q, collector);
+      IndexSearcher searcher = newSearcher(reader);
+      searcher.search(q, collector);
+      searcher.close();
 
       ScoredDocIDs scoredDocIds = collector.getScoredDocIDs();
       OpenBitSet resultSet = new OpenBitSetDISI(scoredDocIds.getDocIDs().iterator(), reader.maxDoc());
@@ -168,15 +175,15 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       }
     } finally {
       reader.close();
+      dir.close();
     }
   }
   
   /**
    * Creates an index with n documents, this method is meant for testing purposes ONLY
-   * Node that this reader is NOT read-only and document can be deleted.  
    */
-  static IndexReader createReaderWithNDocs(int nDocs) throws IOException {
-    return createReaderWithNDocs(nDocs, new DocumentFactory(nDocs));
+  static IndexReader createReaderWithNDocs(Random random, int nDocs, Directory directory) throws IOException {
+    return createReaderWithNDocs(random, nDocs, new DocumentFactory(nDocs), directory);
   }
 
   private static class DocumentFactory {
@@ -214,23 +221,21 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     }
   }
 
-  static IndexReader createReaderWithNDocs(int nDocs, DocumentFactory docFactory) throws IOException {
-    Directory ramDir = new RAMDirectory();
-
+  static IndexReader createReaderWithNDocs(Random random, int nDocs, DocumentFactory docFactory, Directory dir) throws IOException {
     // Create the index
-    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     for (int docNum = 0; docNum < nDocs; docNum++) {
       writer.addDocument(docFactory.getDoc(docNum));
     }
-    writer.commit();
     writer.close();
 
     // Delete documents marked for deletion
-    IndexReader reader = IndexReader.open(ramDir, false);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocuments(new Term(DocumentFactory.field, DocumentFactory.delTxt));
     reader.close();
 
     // Open a fresh read-only reader with the deletions in place
-    return IndexReader.open(ramDir, true);
+    return IndexReader.open(dir, true);
   }
 }

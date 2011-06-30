@@ -3,10 +3,11 @@ package org.apache.lucene.facet.taxonomy.lucene;
 import java.io.File;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.lucene.LuceneTaxonomyReader;
@@ -36,16 +37,16 @@ public class TestAddTaxonomies extends LuceneTestCase {
 
   @Test
   public void test1() throws Exception {
-    Directory dir1 = new RAMDirectory();
+    Directory dir1 = newDirectory();
     LuceneTaxonomyWriter tw1 = new LuceneTaxonomyWriter(dir1);
     tw1.addCategory(new CategoryPath("Author", "Mark Twain"));
     tw1.addCategory(new CategoryPath("Animals", "Dog"));
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = newDirectory();
     LuceneTaxonomyWriter tw2 = new LuceneTaxonomyWriter(dir2);
     tw2.addCategory(new CategoryPath("Author", "Rob Pike"));
     tw2.addCategory(new CategoryPath("Aardvarks", "Bob"));
     tw2.close();
-    Directory dir3 = new RAMDirectory();
+    Directory dir3 = newDirectory();
     LuceneTaxonomyWriter tw3 = new LuceneTaxonomyWriter(dir3);
     tw3.addCategory(new CategoryPath("Author", "Zebra Smith"));
     tw3.addCategory(new CategoryPath("Aardvarks", "Bob"));
@@ -93,10 +94,26 @@ public class TestAddTaxonomies extends LuceneTestCase {
     assertEquals(5, map1[3]);
     assertEquals(7, map1[4]);
     assertEquals(6, map1[5]);
+    
+    tr.close();
+    dir1.close();
+    dir2.close();
+    dir3.close();
+  }
+
+  // a reasonable random test
+  public void testmedium() throws Exception {
+    int numTests = atLeast(3);
+    for (int i = 0; i < numTests; i++) {
+      dotest(_TestUtil.nextInt(random, 1, 10), 
+             _TestUtil.nextInt(random, 1, 100), 
+             _TestUtil.nextInt(random, 100, 1000),
+             random.nextBoolean());
+    }
   }
 
   // A more comprehensive and big random test.
-  @Test
+  @Test @Nightly
   public void testbig() throws Exception {
     dotest(2, 1000, 5000, false);
     dotest(10, 10000, 100, false);
@@ -113,8 +130,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     Directory copydirs[] = new Directory[ntaxonomies];
 
     for (int i=0; i<ntaxonomies; i++) {
-      dirs[i] = new RAMDirectory();
-      copydirs[i] = new RAMDirectory();
+      dirs[i] = newDirectory();
+      copydirs[i] = newDirectory();
       LuceneTaxonomyWriter tw = new LuceneTaxonomyWriter(dirs[i]);
       LuceneTaxonomyWriter copytw = new LuceneTaxonomyWriter(copydirs[i]);
       for (int j=0; j<ncats; j++) {
@@ -135,6 +152,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
     if (ntaxonomies>1) {
       for (int i=0; i<ntaxonomies-1; i++) {
         if (disk) {
+          // TODO: use a LTC tempfile
           maps[i] = new DiskOrdinalMap(new File(System.getProperty("java.io.tmpdir"),
               "tmpmap"+i));
         } else {
@@ -193,7 +211,7 @@ public class TestAddTaxonomies extends LuceneTestCase {
         int otherord = main.getOrdinal(other.getPath(j));
         assertTrue(otherord != TaxonomyReader.INVALID_ORDINAL);
       }
-      tr.close();
+      other.close();
     }
 
     // Check that all the new categories in the merged taxonomy exist in
@@ -229,6 +247,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     }
 
     main.close();
+    IOUtils.closeSafely(false, dirs);
+    IOUtils.closeSafely(false, copydirs);
   }
 
 }

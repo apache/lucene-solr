@@ -4,15 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -49,23 +49,27 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
   
   @Test
   public void testTaxonomyMergeUtils() throws Exception {
-    Directory dir = new RAMDirectory();
-    Directory taxDir = new RAMDirectory();    
+    Directory dir = newDirectory();
+    Directory taxDir = newDirectory();    
     buildIndexWithFacets(dir, taxDir, true);
     
-    Directory dir1 = new RAMDirectory();
-    Directory taxDir1 = new RAMDirectory();
+    Directory dir1 = newDirectory();
+    Directory taxDir1 = newDirectory();
     buildIndexWithFacets(dir1, taxDir1, false);
     
     TaxonomyMergeUtils.merge(dir, taxDir, dir1, taxDir1);
     
     verifyResults(dir1, taxDir1);
+    dir1.close();
+    taxDir1.close();
+    dir.close();
+    taxDir.close();
   }
 
   private void verifyResults(Directory dir, Directory taxDir) throws IOException {
     IndexReader reader1 = IndexReader.open(dir);
     LuceneTaxonomyReader taxReader = new LuceneTaxonomyReader(taxDir);
-    IndexSearcher searcher = new IndexSearcher(reader1);
+    IndexSearcher searcher = newSearcher(reader1);
     FacetSearchParams fsp = new FacetSearchParams();
     fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
     FacetsCollector collector = new FacetsCollector(fsp, reader1, taxReader);
@@ -81,11 +85,14 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
       }
       assertEquals(NUM_DOCS ,weight);
     }
+    reader1.close();
+    taxReader.close();
   }
 
   private void buildIndexWithFacets(Directory dir, Directory taxDir, boolean asc) throws IOException {
-    IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    IndexWriter writer = new IndexWriter(dir, config);
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
+        new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     
     LuceneTaxonomyWriter taxonomyWriter = new LuceneTaxonomyWriter(taxDir);
     for (int i = 1; i <= NUM_DOCS; i++) {

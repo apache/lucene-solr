@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,8 +46,9 @@ public class OrdinalPolicyTest extends LuceneTestCase {
 
   @Test
   public void testNonTopLevelOrdinalPolicy() throws Exception {
+    Directory dir = newDirectory();
     TaxonomyWriter taxonomy = null;
-    taxonomy = new LuceneTaxonomyWriter(new RAMDirectory());
+    taxonomy = new LuceneTaxonomyWriter(dir);
 
     int[] topLevelOrdinals = new int[10];
     String[] topLevelStrings = new String[10];
@@ -85,6 +86,8 @@ public class OrdinalPolicyTest extends LuceneTestCase {
 
     // check illegal ordinal
     assertFalse("Should not add illegal ordinal", ordinalPolicy.shouldAdd(100000));
+    taxonomy.close();
+    dir.close();
   }
 
 }

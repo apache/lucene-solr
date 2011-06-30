@@ -4,14 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -45,8 +44,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
 
   @Test
   public void testTwoEmptyAndNonEmptyByteArrays() throws Exception {
-    Directory indexDir = new RAMDirectory();
-    Directory taxoDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
 
     EnhancementsIndexingParams indexingParams = 
       new DefaultEnhancementsIndexingParams(
@@ -57,8 +56,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
     categoryPaths.add(new CategoryPath("a", "b"));
 
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document
@@ -67,9 +66,9 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     indexWriter.addDocument(new EnhancementsDocumentBuilder(taxo,
         indexingParams).setCategoryPaths(categoryPaths).build(doc));
 
+    IndexReader indexReader = indexWriter.getReader();
     indexWriter.close();
 
-    IndexReader indexReader = IndexReader.open(indexDir);
     Term term = DrillDown.term(indexingParams, new CategoryPath("a","b"));
     EnhancementsPayloadIterator iterator = new EnhancementsPayloadIterator(
         indexingParams.getCategoryEnhancements(), indexReader, term);
@@ -82,13 +81,17 @@ public class TwoEnhancementsTest extends LuceneTestCase {
         .getCategoryData(new CategoryEnhancementDummy3());
     assertTrue("Bad array returned for CategoryEnhancementDummy3", Arrays
         .equals(dummy3, CategoryEnhancementDummy3.CATEGORY_TOKEN_BYTES));
+    indexReader.close();
+    indexDir.close();
+    taxo.close();
+    taxoDir.close();
   }
 
   @Test
   public void testTwoNonEmptyByteArrays() throws Exception {
     // add document with a category containing data for both enhancements
-    Directory indexDir = new RAMDirectory();
-    Directory taxoDir = new RAMDirectory();
+    Directory indexDir = newDirectory();
+    Directory taxoDir = newDirectory();
 
     EnhancementsIndexingParams indexingParams = 
       new DefaultEnhancementsIndexingParams(
@@ -98,8 +101,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
     categoryPaths.add(new CategoryPath("a", "b"));
 
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter indexWriter = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir);
 
     // a category document builder will add the categories to a document
@@ -108,9 +111,9 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     indexWriter.addDocument(new EnhancementsDocumentBuilder(taxo,
         indexingParams).setCategoryPaths(categoryPaths).build(doc));
 
+    IndexReader indexReader = indexWriter.getReader();
     indexWriter.close();
 
-    IndexReader indexReader = IndexReader.open(indexDir);
     Term term = DrillDown.term(indexingParams, new CategoryPath("a","b"));
     EnhancementsPayloadIterator iterator = new EnhancementsPayloadIterator(
         indexingParams.getCategoryEnhancements(), indexReader, term);
@@ -125,5 +128,9 @@ public class TwoEnhancementsTest extends LuceneTestCase {
         .getCategoryData(new CategoryEnhancementDummy3());
     assertTrue("Bad array returned for CategoryEnhancementDummy3", Arrays
         .equals(dummy3, CategoryEnhancementDummy3.CATEGORY_TOKEN_BYTES));
+    indexReader.close();
+    taxo.close();
+    indexDir.close();
+    taxoDir.close();
   }
 }

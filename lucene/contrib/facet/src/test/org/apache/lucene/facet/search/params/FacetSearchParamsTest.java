@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -36,11 +36,13 @@ public class FacetSearchParamsTest extends LuceneTestCase {
     FacetSearchParams fsp = new FacetSearchParams();
     assertEquals("unexpected default facet indexing params class", DefaultFacetIndexingParams.class.getName(), fsp.getFacetIndexingParams().getClass().getName());
     assertEquals("no facet requests should be added by default", 0, fsp.getFacetRequests().size());
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     new LuceneTaxonomyWriter(dir).close();
     TaxonomyReader tr = new LuceneTaxonomyReader(dir);
     assertEquals("unexpected partition offset for 0 categories", 1, PartitionsUtils.partitionOffset(fsp, 1, tr));
     assertEquals("unexpected partition size for 0 categories", 1, PartitionsUtils.partitionSize(fsp,tr));
+    tr.close();
+    dir.close();
   }
   
   @Test
@@ -53,7 +55,7 @@ public class FacetSearchParamsTest extends LuceneTestCase {
   @Test
   public void testPartitionSizeWithCategories() throws Exception {
     FacetSearchParams fsp = new FacetSearchParams();
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     TaxonomyWriter tw = new LuceneTaxonomyWriter(dir);
     tw.addCategory(new CategoryPath("a"));
     tw.commit();
@@ -61,6 +63,8 @@ public class FacetSearchParamsTest extends LuceneTestCase {
     TaxonomyReader tr = new LuceneTaxonomyReader(dir);
     assertEquals("unexpected partition offset for 1 categories", 2, PartitionsUtils.partitionOffset(fsp, 1, tr));
     assertEquals("unexpected partition size for 1 categories", 2, PartitionsUtils.partitionSize(fsp,tr));
+    tr.close();
+    dir.close();
   }
   
   @Test

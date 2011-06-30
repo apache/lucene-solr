@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,8 +45,8 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
   @BeforeClass
   public static void buildAssociationIndex() throws Exception {
     // create Directories for the search index and for the taxonomy index
-    indexDir = new RAMDirectory();
-    taxoDir = new RAMDirectory();
+    indexDir = newDirectory();
+    taxoDir = newDirectory();
 
     // index the sample documents
     if (VERBOSE) {
@@ -73,6 +72,7 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
     assertTrue("Missing instance of tags/lucene in doc 1", iterator.setdoc(1));
     assoc = (Integer) iterator.getCategoryData(associationEnhancement);
     assertEquals("Unexpected association value for tags/lucene in doc 1", 1, assoc, 1E-5);
+    indexReader.close();
   }
 
   @Test
@@ -84,6 +84,7 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
     assertTrue("Unexpected failure of init()", iterator.init());
     assertFalse("Unexpected payload for root/a/f2 in doc 0", iterator.setdoc(0));
     assertFalse("Unexpected instance of root/a/f2 in doc 1", iterator.setdoc(1));
+    indexReader.close();
   }
 
   @Test
@@ -98,11 +99,14 @@ public class EnhancementsPayloadIteratorTest extends LuceneTestCase {
     float assoc = Float.intBitsToFloat((Integer) iterator
         .getCategoryData(associationEnhancement));
     assertEquals("Unexpected association value for genre/computing in doc 1", 0.34f, assoc, 0.001);
+    indexReader.close();
   }
 
   @AfterClass
   public static void closeDirectories() throws IOException {
     indexDir.close();
+    indexDir = null;
     taxoDir.close();
+    taxoDir = null;
   }
 }

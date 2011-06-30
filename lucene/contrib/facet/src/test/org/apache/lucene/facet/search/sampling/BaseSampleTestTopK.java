@@ -101,6 +101,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
           }
         }
       }
+      closeAll();
     }
   }
   

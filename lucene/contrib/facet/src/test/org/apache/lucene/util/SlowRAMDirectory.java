@@ -28,6 +28,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 /**
  * Test utility - slow directory
  */
+// TODO: move to test-framework and sometimes use in tests?
 public class SlowRAMDirectory extends RAMDirectory {
 
   private static final int IO_SLEEP_THRESHOLD = 50;

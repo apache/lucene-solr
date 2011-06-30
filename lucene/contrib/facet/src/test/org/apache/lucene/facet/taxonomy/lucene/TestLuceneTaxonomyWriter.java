@@ -6,7 +6,6 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -52,7 +51,7 @@ public class TestLuceneTaxonomyWriter extends LuceneTestCase {
   public void testCommit() throws Exception {
     // Verifies that nothing is committed to the underlying Directory, if
     // commit() wasn't called.
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
     assertFalse(IndexReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
@@ -68,7 +67,7 @@ public class TestLuceneTaxonomyWriter extends LuceneTestCase {
   @Test
   public void testCommitUserData() throws Exception {
     // Verifies that committed data is retrievable
-    Directory dir = new RAMDirectory();
+    Directory dir = newDirectory();
     LuceneTaxonomyWriter ltw = new LuceneTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, new NoOpCache());
     assertFalse(IndexReader.indexExists(dir));
     ltw.commit(); // first commit, so that an index will be created
