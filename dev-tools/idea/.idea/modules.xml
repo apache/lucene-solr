@@ -23,6 +23,7 @@
       <module filepath="$PROJECT_DIR$/modules/common/common.iml" />
       <module filepath="$PROJECT_DIR$/modules/facet/facet.iml" />
       <module filepath="$PROJECT_DIR$/modules/grouping/grouping.iml" />
+      <module filepath="$PROJECT_DIR$/modules/join/join.iml" />
       <module filepath="$PROJECT_DIR$/modules/queries/queries.iml" />
       <module filepath="$PROJECT_DIR$/modules/suggest/suggest.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
