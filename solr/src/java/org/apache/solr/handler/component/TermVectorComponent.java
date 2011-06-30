@@ -89,7 +89,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       return;
     }
 
-    NamedList termVectors = new NamedList();
+    NamedList<Object> termVectors = new NamedList<Object>();
     rb.rsp.add(TERM_VECTORS, termVectors);
     FieldOptions allFields = new FieldOptions();
     //figure out what options we have, and try to get the appropriate vector
@@ -118,7 +118,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     IndexSchema schema = rb.req.getSchema();
     //Build up our per field mapping
     Map<String, FieldOptions> fieldOptions = new HashMap<String, FieldOptions>();
-    NamedList warnings = new NamedList();
+    NamedList<List<String>>  warnings = new NamedList<List<String>> ();
     List<String>  noTV = new ArrayList<String>();
     List<String>  noPos = new ArrayList<String>();
     List<String>  noOff = new ArrayList<String>();
@@ -142,11 +142,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
             option.tfIdf = params.getFieldBool(field, TermVectorParams.TF_IDF, allFields.tfIdf);
             //Validate these are even an option
             option.positions = params.getFieldBool(field, TermVectorParams.POSITIONS, allFields.positions);
-            if (option.positions == true && sf.storeTermPositions() == false){
+            if (option.positions && !sf.storeTermPositions()){
               noPos.add(field);
             }
             option.offsets = params.getFieldBool(field, TermVectorParams.OFFSETS, allFields.offsets);
-            if (option.offsets == true && sf.storeTermOffsets() == false){
+            if (option.offsets && !sf.storeTermOffsets()){
               noOff.add(field);
             }
           } else {//field doesn't have term vectors
@@ -159,26 +159,26 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
     } //else, deal with all fields
     boolean hasWarnings = false;
-    if (noTV.isEmpty() == false) {
+    if (!noTV.isEmpty()) {
       warnings.add("noTermVectors", noTV);
       hasWarnings = true;
     }
-    if (noPos.isEmpty() == false) {
+    if (!noPos.isEmpty()) {
       warnings.add("noPositions", noPos);
       hasWarnings = true;
     }
-    if (noOff.isEmpty() == false) {
+    if (!noOff.isEmpty()) {
       warnings.add("noOffsets", noOff);
       hasWarnings = true;
     }
-    if (hasWarnings == true) {
+    if (hasWarnings) {
       termVectors.add("warnings", warnings);
     }
 
     DocListAndSet listAndSet = rb.getResults();
     List<Integer> docIds = getInts(params.getParams(TermVectorParams.DOC_IDS));
     Iterator<Integer> iter;
-    if (docIds != null && docIds.isEmpty() == false) {
+    if (docIds != null && !docIds.isEmpty()) {
       iter = docIds.iterator();
     } else {
       DocList list = listAndSet.docList;
@@ -199,7 +199,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     mapper.fieldOptions = allFields; //this will only stay set if fieldOptions.isEmpty() (in other words, only if the user didn't set any fields)
     while (iter.hasNext()) {
       Integer docId = iter.next();
-      NamedList docNL = new NamedList();
+      NamedList<Object> docNL = new NamedList<Object>();
       mapper.docNL = docNL;
       termVectors.add("doc-" + docId, docNL);
 
@@ -215,7 +215,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           termVectors.add("uniqueKeyFieldName", uniqFieldName);
         }
       }
-      if (fieldOptions.isEmpty() == false) {
+      if (!fieldOptions.isEmpty()) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           mapper.fieldOptions = entry.getValue();
           reader.getTermFreqVector(docId, entry.getKey(), mapper);
@@ -284,7 +284,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   private static class TVMapper extends TermVectorMapper {
     private IndexReader reader;
-    private NamedList docNL;
+    private NamedList<Object> docNL;
 
     //needs to be set for each new field
     FieldOptions fieldOptions;
@@ -292,7 +292,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     //internal vars not passed in by construction
     private boolean useOffsets, usePositions;
     //private Map<String, Integer> idfCache;
-    private NamedList fieldNL;
+    private NamedList<Object> fieldNL;
     private Term currentTerm;
 
 
@@ -302,13 +302,13 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     @Override
     public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-      NamedList termInfo = new NamedList();
+      NamedList<Object> termInfo = new NamedList<Object>();
         fieldNL.add(term, termInfo);
-        if (fieldOptions.termFreq == true) {
+        if (fieldOptions.termFreq) {
           termInfo.add("tf", frequency);
         }
-        if (useOffsets == true) {
-          NamedList theOffsets = new NamedList();
+        if (useOffsets) {
+          NamedList<Integer> theOffsets = new NamedList<Integer>();
           termInfo.add("offsets", theOffsets);
           for (int i = 0; i < offsets.length; i++) {
             TermVectorOffsetInfo offset = offsets[i];
@@ -316,17 +316,17 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
             theOffsets.add("end", offset.getEndOffset());
           }
         }
-        if (usePositions == true) {
-          NamedList positionsNL = new NamedList();
+        if (usePositions) {
+          NamedList<Integer> positionsNL = new NamedList<Integer>();
           for (int i = 0; i < positions.length; i++) {
             positionsNL.add("position", positions[i]);
           }
           termInfo.add("positions", positionsNL);
         }
-        if (fieldOptions.docFreq == true) {
+        if (fieldOptions.docFreq) {
           termInfo.add("df", getDocFreq(term));
         }
-        if (fieldOptions.tfIdf == true) {
+        if (fieldOptions.tfIdf) {
           double tfIdfVal = ((double) frequency) / getDocFreq(term);
           termInfo.add("tf-idf", tfIdfVal);
         }
@@ -336,7 +336,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       int result = 1;
       currentTerm = currentTerm.createTerm(term);
       try {
-        TermEnum termEnum = reader.terms(currentTerm);
+        final TermEnum termEnum = reader.terms(currentTerm);
         if (termEnum != null && termEnum.term().equals(currentTerm)) {
           result = termEnum.docFreq();
         }
@@ -348,13 +348,10 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-
-      if (fieldOptions.docFreq == true && reader != null) {
-        this.currentTerm = new Term(field);
-      }
+      currentTerm = new Term(field);
       useOffsets = storeOffsets && fieldOptions.offsets;
       usePositions = storePositions && fieldOptions.positions;
-      fieldNL = new NamedList();
+      fieldNL = new NamedList<Object>();
       docNL.add(field, fieldNL);
     }
 

@@ -1,24 +1,4 @@
 package org.apache.solr.handler.component;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.TermVectorParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,6 +16,19 @@ import java.util.List;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.TermVectorParams;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -140,7 +133,40 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
        , TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true")
        ,"/termVectors/doc-0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
-    );    
+    );
+    
+    assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
+        , TermVectorParams.ALL, "true")
+        ,"/termVectors/doc-0/test_posofftv/anoth=={'tf':1, 'offsets':{'start':20, 'end':27}, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+     );
+    
+    // test each combination at random
+    final List<String> list = new ArrayList<String>();
+    list.addAll(Arrays.asList("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"));
+    String[][] options = new String[][] { 
+        { TermVectorParams.TF, "'tf':1" },
+        { TermVectorParams.OFFSETS, "'offsets':{'start':20, 'end':27}" },
+        { TermVectorParams.POSITIONS, "'positions':{'position':1}" },
+        { TermVectorParams.DF, "'df':2" },
+        { TermVectorParams.TF_IDF, "'tf-idf':0.5" } };
+    StringBuilder expected = new StringBuilder("/termVectors/doc-0/test_posofftv/anoth=={");
+    boolean first = true;
+    for (int i = 0; i < options.length; i++) {
+      final boolean use = random.nextBoolean();
+      if (use) {
+        if (!first) {
+          expected.append(", ");
+        }
+        first = false;
+        expected.append(options[i][1]);
+        
+      }
+      list.add(options[i][0]);
+      list.add(use ? "true" : "false");
+    }
+    
+    expected.append("}");
+    assertJQ(req(list.toArray(new String[0])), expected.toString());
   }
 
   @Test
