@@ -1,4 +1,4 @@
-package org.apache.lucene.search.function;
+package org.apache.lucene.queries.function.valuesource;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,10 +17,13 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 
 /**
  * Expert: obtains numeric field values from a {@link IndexDocValues} field.
@@ -39,13 +42,14 @@ public class NumericIndexDocValueSource extends ValueSource {
   }
 
   @Override
-  public DocValues getValues(AtomicReaderContext context) throws IOException {
-    final IndexDocValues.Source source = context.reader.docValues(field)
+  public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
+    final IndexDocValues.Source source = readerContext.reader.docValues(field)
         .getSource();
     ValueType type = source.type();
     switch (type) {
     case FLOAT_32:
     case FLOAT_64:
+      // TODO (chrism) Change to use FloatDocValues and IntDocValues
       return new DocValues() {
 
         @Override

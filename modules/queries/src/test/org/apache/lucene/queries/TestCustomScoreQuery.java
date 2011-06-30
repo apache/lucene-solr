@@ -19,6 +19,7 @@ package org.apache.lucene.queries;
 
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
@@ -51,11 +52,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @Test
   public void testCustomScoreByte() throws Exception {
     // INT field values are small enough to be parsed as byte
-    ByteValuesCreator valuesCreator = new ByteValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    FunctionQuery functionQuery = new FunctionQuery(new ByteFieldSource(valuesCreator));
-
-    doTestCustomScore(functionQuery, 1.0);
-    doTestCustomScore(functionQuery, 2.0);
+    doTestCustomScore(BYTE_VALUESOURCE, 1.0);
+    doTestCustomScore(BYTE_VALUESOURCE, 2.0);
   }
 
   /**
@@ -64,11 +62,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   @Test
   public void testCustomScoreShort() throws Exception {
     // INT field values are small enough to be parsed as short
-    ShortValuesCreator valuesCreator = new ShortValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    FunctionQuery functionQuery = new FunctionQuery(new ShortFieldSource(valuesCreator));
-
-    doTestCustomScore(functionQuery, 1.0);
-    doTestCustomScore(functionQuery, 3.0);
+    doTestCustomScore(SHORT_VALUESOURCE, 1.0);
+    doTestCustomScore(SHORT_VALUESOURCE, 3.0);
   }
 
   /**
@@ -76,11 +71,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
    */
   @Test
   public void testCustomScoreInt() throws Exception {
-    IntValuesCreator valuesCreator = new IntValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    FunctionQuery functionQuery = new FunctionQuery(new IntFieldSource(valuesCreator));
-
-    doTestCustomScore(functionQuery, 1.0);
-    doTestCustomScore(functionQuery, 4.0);
+    doTestCustomScore(INT_VALUESOURCE, 1.0);
+    doTestCustomScore(INT_VALUESOURCE, 4.0);
   }
 
   /**
@@ -90,17 +82,14 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   public void testCustomScoreFloat() throws Exception {
     // INT field can be parsed as float
     FloatValuesCreator valuesCreator = new FloatValuesCreator(INT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    FunctionQuery functionQuery = new FunctionQuery(new FloatFieldSource(valuesCreator));
+    FloatFieldSource fieldSource = new FloatFieldSource(valuesCreator);
 
-    doTestCustomScore(functionQuery, 1.0);
-    doTestCustomScore(functionQuery, 5.0);
+    doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 1.0);
+    doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 5.0);
 
     // same values, but in float format
-    valuesCreator = new FloatValuesCreator(FLOAT_FIELD, null, CachedArrayCreator.CACHE_VALUES_AND_BITS);
-    functionQuery = new FunctionQuery(new FloatFieldSource(valuesCreator));
-
-    doTestCustomScore(functionQuery, 1.0);
-    doTestCustomScore(functionQuery, 6.0);
+    doTestCustomScore(FLOAT_VALUESOURCE, 1.0);
+    doTestCustomScore(FLOAT_VALUESOURCE, 6.0);
   }
 
   // must have static class otherwise serialization tests fail
@@ -250,7 +239,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
   
   // Test that FieldScoreQuery returns docs with expected score.
-  private void doTestCustomScore(FunctionQuery functionQuery, double dboost) throws Exception {
+  private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
+    FunctionQuery functionQuery = new FunctionQuery(valueSource);
     float boost = (float) dboost;
     IndexSearcher s = new IndexSearcher(dir, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, anlzr);

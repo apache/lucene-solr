@@ -1,4 +1,4 @@
-package org.apache.lucene.search.function;
+package org.apache.lucene.queries.function;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,8 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
+import org.apache.lucene.queries.function.valuesource.ReverseOrdFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ReaderUtil;
 import org.junit.BeforeClass;
@@ -63,12 +65,12 @@ public class TestOrdValues extends FunctionTestSetup {
     IndexSearcher s = new IndexSearcher(dir, true);
     ValueSource vs;
     if (inOrder) {
-      vs = new MultiValueSource(new OrdFieldSource(field));
+      vs = new OrdFieldSource(field);
     } else {
-      vs = new MultiValueSource(new ReverseOrdFieldSource(field));
+      vs = new ReverseOrdFieldSource(field);
     }
 
-    Query q = new ValueSourceQuery(vs);
+    Query q = new FunctionQuery(vs);
     log("test: " + q);
     QueryUtils.check(random, q, s);
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
@@ -117,7 +119,7 @@ public class TestOrdValues extends FunctionTestSetup {
     } else {
       vs = new ReverseOrdFieldSource(field);
     }
-    Query q = new ValueSourceQuery(vs);
+    Query q = new FunctionQuery(vs);
     TopDocs td = s.search(q, null, 1000);
     assertEquals("All docs should be matched!", N_DOCS, td.totalHits);
     ScoreDoc sd[] = td.scoreDocs;
@@ -134,125 +136,6 @@ public class TestOrdValues extends FunctionTestSetup {
       assertTrue("id of result " + i + " shuould be " + expectedId + " != " + score, expectedId.equals(id));
     }
     s.close();
-  }
-
-  /**
-   * Test caching OrdFieldSource
-   */
-  @Test
-  public void testCachingOrd() throws CorruptIndexException, Exception {
-    doTestCaching(ID_FIELD, true);
-  }
-
-  /**
-   * Test caching for ReverseOrdFieldSource
-   */
-  @Test
-  public void testCachingReverseOrd() throws CorruptIndexException, Exception {
-    doTestCaching(ID_FIELD, false);
-  }
-
-  // Test that values loaded for FieldScoreQuery are cached properly and consumes the proper RAM resources.
-  private void doTestCaching(String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir, true);
-    Object innerArray = null;
-
-    boolean warned = false; // print warning once
-
-    for (int i = 0; i < 10; i++) {
-      ValueSource vs;
-      if (inOrder) {
-        vs = new OrdFieldSource(field);
-      } else {
-        vs = new ReverseOrdFieldSource(field);
-      }
-      ValueSourceQuery q = new ValueSourceQuery(vs);
-      ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
-      try {
-        assertEquals("All docs should be matched!", N_DOCS, h.length);
-        AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
-
-        for (AtomicReaderContext leaf : leaves) {
-          if (i == 0) {
-            innerArray = q.valSrc.getValues(leaf).getInnerArray();
-          } else {
-            log(i + ".  compare: " + innerArray + " to " + q.valSrc.getValues(leaf).getInnerArray());
-            assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(leaf).getInnerArray());
-          }
-        }
-      } catch (UnsupportedOperationException e) {
-        if (!warned) {
-          System.err.println("WARNING: " + testName() + " cannot fully test values of " + q);
-          warned = true;
-        }
-      }
-    }
-
-    ValueSource vs;
-    ValueSourceQuery q;
-    ScoreDoc[] h;
-
-    // verify that different values are loaded for a different field
-    String field2 = INT_FIELD;
-    assertFalse(field.equals(field2)); // otherwise this test is meaningless.
-    if (inOrder) {
-      vs = new OrdFieldSource(field2);
-    } else {
-      vs = new ReverseOrdFieldSource(field2);
-    }
-    q = new ValueSourceQuery(vs);
-    h = s.search(q, null, 1000).scoreDocs;
-    assertEquals("All docs should be matched!", N_DOCS, h.length);
-    AtomicReaderContext[] leaves = ReaderUtil.leaves(s.getTopReaderContext());
-
-    for (AtomicReaderContext leaf : leaves) {
-      try {
-        log("compare (should differ): " + innerArray + " to "
-                + q.valSrc.getValues(leaf).getInnerArray());
-        assertNotSame(
-                "different values should be loaded for a different field!",
-                innerArray, q.valSrc.getValues(leaf).getInnerArray());
-      } catch (UnsupportedOperationException e) {
-        if (!warned) {
-          System.err.println("WARNING: " + testName()
-                  + " cannot fully test values of " + q);
-          warned = true;
-        }
-      }
-    }
-    s.close();
-    // verify new values are reloaded (not reused) for a new reader
-    s = new IndexSearcher(dir, true);
-    if (inOrder) {
-      vs = new OrdFieldSource(field);
-    } else {
-      vs = new ReverseOrdFieldSource(field);
-    }
-    q = new ValueSourceQuery(vs);
-    h = s.search(q, null, 1000).scoreDocs;
-    assertEquals("All docs should be matched!", N_DOCS, h.length);
-    leaves = ReaderUtil.leaves(s.getTopReaderContext());
-
-    for (AtomicReaderContext leaf : leaves) {
-      try {
-        log("compare (should differ): " + innerArray + " to "
-                + q.valSrc.getValues(leaf).getInnerArray());
-        assertNotSame(
-                "cached field values should not be reused if reader as changed!",
-                innerArray, q.valSrc.getValues(leaf).getInnerArray());
-      } catch (UnsupportedOperationException e) {
-        if (!warned) {
-          System.err.println("WARNING: " + testName()
-                  + " cannot fully test values of " + q);
-          warned = true;
-        }
-      }
-    }
-    s.close();
-  }
-
-  private String testName() {
-    return getClass().getName() + "." + getName();
   }
   
   // LUCENE-1250
