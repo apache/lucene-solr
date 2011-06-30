@@ -33,7 +33,11 @@ API Changes
    in half. (Robert Muir)
    
 New Features
-   
+
+ * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 
+   (accurate stemmer) for Polish (includes morphosyntactic annotations).
+   (Michał Dybizbański, Dawid Weiss)
+
  * LUCENE-2413: Consolidated Solr analysis components into common. 
    New features from Solr now available to Lucene users include:
    - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
