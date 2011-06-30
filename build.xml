@@ -45,7 +45,7 @@
     </sequential>
   </target>
 
-  <property name="version" value="3.3-SNAPSHOT"/>
+  <property name="version" value="3.4-SNAPSHOT"/>
   <target name="get-maven-poms"
           description="Copy Maven POMs from dev-tools/maven/ to their target locations">
     <copy todir="." overwrite="true">
