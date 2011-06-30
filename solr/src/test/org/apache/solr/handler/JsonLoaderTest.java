@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.noggit.JSONParser;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -70,7 +69,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "},\n" +
       "\n" +
       "'commit': {},\n" +
-      "'optimize': { 'waitFlush':false, 'waitSearcher':false },\n" +
+      "'optimize': { 'waitSearcher':false },\n" +
       "\n" +
       "'delete': { 'id':'ID' },\n" +
       "'delete': { 'query':'QUERY' },\n" +
@@ -109,12 +108,10 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( 2, p.commitCommands.size() );
     CommitUpdateCommand commit = p.commitCommands.get( 0 );
     assertFalse( commit.optimize );
-    assertTrue( commit.waitFlush );
     assertTrue( commit.waitSearcher );
     
     commit = p.commitCommands.get( 1 );
     assertTrue( commit.optimize );
-    assertFalse( commit.waitFlush );
     assertFalse( commit.waitSearcher );
     
 

@@ -105,13 +105,13 @@ class JsonLoader extends ContentStreamLoader {
           }
           else if( v.equals( XmlUpdateRequestHandler.COMMIT ) ) {
             CommitUpdateCommand cmd = new CommitUpdateCommand(req,  false );
-            cmd.waitFlush = cmd.waitSearcher = true;
+            cmd.waitSearcher = true;
             parseCommitOptions( cmd );
             processor.processCommit( cmd );
           }
           else if( v.equals( XmlUpdateRequestHandler.OPTIMIZE ) ) {
             CommitUpdateCommand cmd = new CommitUpdateCommand(req, true );
-            cmd.waitFlush = cmd.waitSearcher = true;
+            cmd.waitSearcher = true;
             parseCommitOptions( cmd );
             processor.processCommit( cmd );
           }
@@ -206,9 +206,6 @@ class JsonLoader extends ContentStreamLoader {
         if( parser.wasKey() ) {
           if( XmlUpdateRequestHandler.WAIT_SEARCHER.equals( key ) ) {
             cmd.waitSearcher = parser.getBoolean();
-          }
-          else if( XmlUpdateRequestHandler.WAIT_FLUSH.equals( key ) ) {
-            cmd.waitFlush = parser.getBoolean();
           }
           else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key: "+key+" ["+parser.getPosition()+"]" );

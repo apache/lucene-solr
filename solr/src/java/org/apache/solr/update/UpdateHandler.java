@@ -56,7 +56,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected final FieldType idFieldType;
 
   protected Vector<SolrEventListener> commitCallbacks = new Vector<SolrEventListener>();
+  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
+
+  /**
+   * Called when a SolrCore using this UpdateHandler is closed.
+   */
+  public abstract void decref();
+  
+  /**
+   * Called when this UpdateHandler is shared with another SolrCore.
+   */
+  public abstract void incref();
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -81,6 +92,12 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+  protected void callPostSoftCommitCallbacks() {
+    for (SolrEventListener listener : softCommitCallbacks) {
+      listener.postSoftCommit();
+    }
+  }  
+  
   protected void callPostOptimizeCallbacks() {
     for (SolrEventListener listener : optimizeCallbacks) {
       listener.postCommit();
@@ -93,10 +110,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
-  }
-
-  protected SolrIndexWriter createMainIndexWriter(String name, boolean removeAllExisting) throws IOException {
-    return new SolrIndexWriter(name,core.getNewIndexDir(), core.getDirectoryFactory(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
   }
 
   protected final Term idTerm(String readableId) {
@@ -126,6 +139,23 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     if (f == null) return null;
     return idFieldType.storedToIndexed(f);
   }
+  
+  /**
+   * Allows the UpdateHandler to create the SolrIndexSearcher after it
+   * has issued a 'softCommit'. 
+   * 
+   * @param previousSearcher
+   * @throws IOException
+   */
+  public abstract SolrIndexSearcher reopenSearcher(SolrIndexSearcher previousSearcher) throws IOException;
+  
+  /**
+   * Called when the Writer should be opened again - eg when replication replaces
+   * all of the index files.
+   * 
+   * @throws IOException
+   */
+  public abstract void newIndexWriter() throws IOException;
 
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
@@ -185,6 +215,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public void registerCommitCallback( SolrEventListener listener )
   {
     commitCallbacks.add( listener );
+  }
+  
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   *
+   * @see SolrCoreAware
+   */
+  public void registerSoftCommitCallback( SolrEventListener listener )
+  {
+    softCommitCallbacks.add( listener );
   }
 
   /**

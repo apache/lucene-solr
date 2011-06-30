@@ -17,8 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -32,34 +30,19 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-propinject-indexdefault.xml", "schema.xml");
   }
-  
-  class ExposeWriterHandler extends DirectUpdateHandler2 {
-    public ExposeWriterHandler() throws IOException {
-      super(h.getCore());
-    }
-
-    public IndexWriter getWriter() throws IOException {
-      forceOpenWriter();
-      return writer;
-    }
-  }
 
   @Test
   public void testMergePolicyDefaults() throws Exception {
-    ExposeWriterHandler uh = new ExposeWriterHandler();
-    IndexWriter writer = uh.getWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
     assertEquals(32.0, mp.getMaxMergeMB(), 0);
-    uh.close();
   }
   
   @Test
   public void testPropsDefaults() throws Exception {
-    ExposeWriterHandler uh = new ExposeWriterHandler();
-    IndexWriter writer = uh.getWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getConfig().getMergeScheduler();
     assertEquals(4, cms.getMaxThreadCount());
-    uh.close();
   }
 
 }

@@ -288,6 +288,25 @@
        </autoCommit>
       -->
 
+    <!-- SoftAutoCommit
+
+         Perform a 'soft' commit automatically under certain conditions.
+         This commit avoids ensuring that data is synched to disk.
+
+         maxDocs - Maximum number of documents to add since the last
+                   soft commit before automaticly triggering a new soft commit.
+
+         maxTime - Maximum amount of time in ms that is allowed to pass
+                   since a document was added before automaticly
+                   triggering a new soft commit. 
+      -->
+     <!--
+       <autoSoftCommit> 
+         <maxDocs>10000</maxDocs>
+         <maxTime>1000</maxTime> 
+       </autoSoftCommit>
+      -->
+
     <!-- Update Related Event Listeners
          
          Various IndexWriter related events can trigger Listeners to

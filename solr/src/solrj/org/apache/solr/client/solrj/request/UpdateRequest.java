@@ -155,7 +155,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
     else if( action == ACTION.COMMIT ) {
       params.set( UpdateParams.COMMIT, "true" );
     }
-    params.set( UpdateParams.WAIT_FLUSH, waitFlush+"" );
     params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
     return this;
   }
