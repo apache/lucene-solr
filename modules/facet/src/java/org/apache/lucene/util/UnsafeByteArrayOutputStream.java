@@ -2,7 +2,6 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -72,7 +71,11 @@ public class UnsafeByteArrayOutputStream extends OutputStream {
   }
 
   private void grow(int newLength) {
-    buffer = Arrays.copyOf(buffer, newLength);
+    // It actually should be: (Java 1.7, when its intrinsic on all machines)
+    // buffer = Arrays.copyOf(buffer, newLength);
+    byte[] newBuffer = new byte[newLength];
+    System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+    buffer = newBuffer;
   }
 
   /**
