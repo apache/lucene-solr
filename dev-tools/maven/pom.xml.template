@@ -281,6 +281,11 @@
         <version>3.5.0</version>
       </dependency>
       <dependency>
+        <groupId>org.carrot2</groupId>
+        <artifactId>morfologik-polish</artifactId>
+        <version>1.5.2</version>
+      </dependency>
+      <dependency>
         <groupId>org.codehaus.woodstox</groupId>
         <artifactId>wstx-asl</artifactId>
         <version>3.2.7</version>
