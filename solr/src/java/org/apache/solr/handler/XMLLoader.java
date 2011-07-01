@@ -48,7 +48,7 @@ import java.io.IOException;
  **/
 class XMLLoader extends ContentStreamLoader {
   protected UpdateRequestProcessor processor;
-  private XMLInputFactory inputFactory;
+  protected XMLInputFactory inputFactory;
 
   public XMLLoader(UpdateRequestProcessor processor, XMLInputFactory inputFactory) {
     this.processor = processor;

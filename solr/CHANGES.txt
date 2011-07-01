@@ -282,6 +282,11 @@ New Features
   checked only for documents that match the main query and all other filters.
   The "frange" query now implements the PostFilter interface.  (yonik)
 
+* SOLR-2630: Added new XsltUpdateRequestHandler that works like
+  XmlUpdateRequestHandler but allows to transform the POSTed XML document
+  using XSLT. This allows to POST arbitrary XML documents to the update
+  handler, as long as you also provide a XSL to transform them to a valid
+  Solr input document.  (Upayavira, Uwe Schindler)
 
 Optimizations
 ----------------------

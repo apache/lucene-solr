@@ -911,6 +911,12 @@
     </lst>
   </requestHandler>
 
+  <!-- XSLT Update Request Handler
+       Transforms incoming XML with stylesheet identified by tr=
+  -->
+  <requestHandler name="/update/xslt"
+                   startup="lazy"
+                   class="solr.XsltUpdateRequestHandler"/>
 
   <!-- Field Analysis Request Handler
 
