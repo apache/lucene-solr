@@ -56,6 +56,11 @@ public class PingRequestHandler extends RequestHandlerBase
           "Unknown RequestHandler: "+qt );
     }
     
+    if( handler instanceof PingRequestHandler ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+          "Cannot execute the PingRequestHandler recursively" );
+    }
+    
     // Execute the ping query and catch any possible exception
     Throwable ex = null;
     try {
