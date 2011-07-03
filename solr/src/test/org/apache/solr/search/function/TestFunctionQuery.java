@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Similarity;
@@ -303,7 +304,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}docfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
-    assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");
 
     Similarity similarity = new DefaultSimilarity();
 
@@ -394,6 +394,27 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
 
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+  }
+
+  /**
+   * test collection-level term stats (new in 4.x indexes)
+   */
+  public void testTotalTermFreq() throws Exception {
+    assumeFalse("PreFlex codec does not support collection-level term stats", 
+        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+    
+    clearIndex();
+    
+    assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
+    assertU(adoc("id","2", "a_t","how now brown cow"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","3", "a_t","brown cow"));
+    assertU(adoc("id","4"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","5"));
+    assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
+    assertU(commit());
+    assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");    
   }
 
   @Test
