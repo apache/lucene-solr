@@ -133,7 +133,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         numIteratedDocs++;
         int docNum = it.getDocID();
         assertFalse(
-            "Deleted docs must not appear in the allDocsScoredDocIds set",
+            "Deleted docs must not appear in the allDocsScoredDocIds set: " + docNum,
             docFactory.markedDeleted(docNum));
       }
 
@@ -222,9 +222,11 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
   }
 
   static IndexReader createReaderWithNDocs(Random random, int nDocs, DocumentFactory docFactory, Directory dir) throws IOException {
-    // Create the index
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+    // Create the index - force log-merge policy since we rely on docs order.
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT,
+            new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
+            .setMergePolicy(newLogMergePolicy()));
     for (int docNum = 0; docNum < nDocs; docNum++) {
       writer.addDocument(docFactory.getDoc(docNum));
     }
