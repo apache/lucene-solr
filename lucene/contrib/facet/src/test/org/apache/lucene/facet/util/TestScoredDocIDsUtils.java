@@ -124,23 +124,18 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexReader reader = createReaderWithNDocs(random, N_DOCS, docFactory, dir);
     try {
-      int numErasedDocs = reader.numDeletedDocs();
-
       ScoredDocIDs allDocs = ScoredDocIdsUtils.createAllDocsScoredDocIDs(reader);
       ScoredDocIDsIterator it = allDocs.iterator();
       int numIteratedDocs = 0;
       while (it.next()) {
         numIteratedDocs++;
         int docNum = it.getDocID();
-        assertFalse(
+        assertNull(
             "Deleted docs must not appear in the allDocsScoredDocIds set: " + docNum,
-            docFactory.markedDeleted(docNum));
+            reader.document(docNum).getFieldable("del"));
       }
 
       assertEquals("Wrong number of (live) documents", allDocs.size(), numIteratedDocs);
-      
-      assertEquals("Wrong number of (live) documents", N_DOCS
-          - numErasedDocs, numIteratedDocs);
 
       // Get all 'alpha' documents
       ScoredDocIdCollector collector = ScoredDocIdCollector.create(reader.maxDoc(), false);
@@ -166,9 +161,9 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         assertFalse(
             "Complement-Set must not contain deleted documents (doc="+docNum+")",
             reader.isDeleted(docNum));
-        assertFalse(
-            "Complement-Set must not contain deleted documents (doc="+docNum+")",
-            docFactory.markedDeleted(docNum));
+        assertNull(
+            "Complement-Set must not contain docs from the original set (doc="+ docNum+")",
+            reader.document(docNum).getFieldable("del"));
         assertFalse(
             "Complement-Set must not contain docs from the original set (doc="+docNum+")",
             resultSet.fastGet(docNum));
@@ -208,6 +203,9 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       Document doc = new Document();
       if (markedDeleted(docNum)) {
         doc.add(deletionMark);
+        // Add a special field for docs that are marked for deletion. Later we
+        // assert that those docs are not returned by all-scored-doc-IDs.
+        doc.add(new Field("del", Integer.toString(docNum), Store.YES, Index.NO));
       }
 
       if (haveAlpha(docNum)) {
@@ -222,11 +220,9 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
   }
 
   static IndexReader createReaderWithNDocs(Random random, int nDocs, DocumentFactory docFactory, Directory dir) throws IOException {
-    // Create the index - force log-merge policy since we rely on docs order.
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(random, TEST_VERSION_CURRENT,
-            new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
-            .setMergePolicy(newLogMergePolicy()));
+            new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
     for (int docNum = 0; docNum < nDocs; docNum++) {
       writer.addDocument(docFactory.getDoc(docNum));
     }
