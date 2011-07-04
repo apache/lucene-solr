@@ -26,11 +26,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -61,8 +60,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamConcurrent(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectors(true);
+      document.add(new Field(FIELD, customType, new TokenStreamConcurrent()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -105,8 +107,12 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamConcurrent(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+
+      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectors(true);
+      document.add(new Field(FIELD, customType, new TokenStreamConcurrent()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -175,8 +181,12 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamSparse(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+
+      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectors(true);
+      document.add(new Field(FIELD, customType, new TokenStreamSparse()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -218,8 +228,12 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, TEXT, Store.YES, Index.ANALYZED,
-          TermVector.WITH_OFFSETS));
+
+      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      customType.setStored(true);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectors(true);
+      document.add(new Field(FIELD, customType, TEXT));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -259,8 +273,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamSparse(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectors(true);
+      document.add(new Field(FIELD, customType, new TokenStreamSparse()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

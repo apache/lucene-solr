@@ -16,7 +16,7 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 
 import java.util.List;
 import java.util.Map;
@@ -64,10 +64,14 @@ public class InstantiatedDocument {
     this.vectorSpace = vectorSpace;
   }
 
-  public Document getDocument() {
+  public Document getDocument2() {
     return document;
   }
-
+  
+  //nocommit this code is temporary!!
+  public org.apache.lucene.document.Document getDocument() {
+    return null;
+  }
 
   @Override
   public String toString() {

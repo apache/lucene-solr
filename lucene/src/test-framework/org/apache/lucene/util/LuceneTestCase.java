@@ -40,6 +40,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -1071,6 +1072,23 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index);
+  }
+
+  public static org.apache.lucene.document2.Field newField(String name, String value, FieldType type) {
+    return newField(random, name, value, type);
+  }
+  
+  public static org.apache.lucene.document2.Field newField(Random random, String name, String value, FieldType type) {
+    if (usually(random)) {
+      // most of the time, don't modify the params
+      return new org.apache.lucene.document2.Field(name, type, value);
+    }
+
+    if (!type.stored() && random.nextBoolean()) {
+      type.setStored(true); // randomly store it
+    }
+    
+    return new org.apache.lucene.document2.Field(name, type, value);
   }
   
   /**

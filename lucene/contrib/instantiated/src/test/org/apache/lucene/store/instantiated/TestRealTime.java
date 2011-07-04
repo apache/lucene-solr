@@ -18,8 +18,9 @@ package org.apache.lucene.store.instantiated;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
@@ -43,7 +44,7 @@ public class TestRealTime extends LuceneTestCase {
     Collector collector;
 
     doc = new Document();
-    doc.add(new Field("f", "a", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(new StringField("f", "a"));
     writer.addDocument(doc);
     writer.commit();
 
@@ -52,7 +53,7 @@ public class TestRealTime extends LuceneTestCase {
     assertEquals(1, collector.hits);
 
     doc = new Document();
-    doc.add(new Field("f", "a", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(new StringField("f", "a"));
     writer.addDocument(doc);
     writer.commit();
 

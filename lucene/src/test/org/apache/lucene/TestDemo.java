@@ -21,8 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.ParseException;
@@ -54,8 +55,9 @@ public class TestDemo extends LuceneTestCase {
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
-    doc.add(newField("fieldname", text, Field.Store.YES,
-        Field.Index.ANALYZED));
+    FieldType textType = new FieldType(TextField.DEFAULT_TYPE);
+    textType.setStored(true);
+    doc.add(newField("fieldname", text, textType));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -70,7 +72,7 @@ public class TestDemo extends LuceneTestCase {
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      org.apache.lucene.document.Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
     }
 

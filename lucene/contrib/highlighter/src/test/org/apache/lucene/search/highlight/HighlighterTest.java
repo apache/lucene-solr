@@ -42,11 +42,11 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -112,7 +112,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document doc = searcher.doc(hits.scoreDocs[i].doc);
+      org.apache.lucene.document.Document doc = searcher.doc(hits.scoreDocs[i].doc);
       String storedField = doc.get(FIELD_NAME);
 
       TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -1531,7 +1531,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, v, Store.YES, Index.ANALYZED ) );
+    FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+    customType.setStored(true);
+    doc.add( new Field( f, customType, v));
     return doc;
   }
   
@@ -1566,7 +1568,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TopDocs hits = searcher.search(query, null, 10);
     for( int i = 0; i < hits.totalHits; i++ ){
-      Document doc = searcher.doc( hits.scoreDocs[i].doc );
+      org.apache.lucene.document.Document doc = searcher.doc( hits.scoreDocs[i].doc );
       String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
       if (VERBOSE) System.out.println("result:" +  result);
       assertEquals("more <B>random</B> words for second field", result);
@@ -1656,21 +1658,23 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    FieldType storedNumericType = new FieldType(NumericField.DEFAULT_TYPE);
+    storedNumericType.setStored(true);
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(1);
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(3);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(5);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(7);
     doc = new Document();
     doc.add(nfield);
@@ -1691,7 +1695,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
-    Field f = new Field(FIELD_NAME, text, Field.Store.YES, Field.Index.ANALYZED);
+
+    FieldType storedType = new FieldType(TextField.DEFAULT_TYPE);
+    storedType.setStored(true);
+    Field f = new Field(FIELD_NAME, storedType, text);
     d.add(f);
     writer.addDocument(d);
 
