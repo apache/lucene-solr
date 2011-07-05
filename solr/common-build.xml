@@ -127,7 +127,7 @@
   <property name="javadoc.years" value="2006 - ${year}" />
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.link.java"
-            value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+            value="http://download.oracle.com/javase/1.5.0/docs/api/"/>
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
