@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /** 
  * Tests for {@link SmartChineseSentenceTokenizerFactory} and 
- * {@link SmartCHineseWordTokenFilterFactory}
+ * {@link SmartChineseWordTokenFilterFactory}
  */
 public class TestSmartChineseFactories extends BaseTokenTestCase {
   /** Test showing the behavior with whitespace */
