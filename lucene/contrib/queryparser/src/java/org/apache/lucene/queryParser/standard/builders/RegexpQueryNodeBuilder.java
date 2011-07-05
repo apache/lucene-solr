@@ -20,8 +20,8 @@ package org.apache.lucene.queryParser.standard.builders;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
 import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
+import org.apache.lucene.queryParser.standard.processors.MultiTermRewriteMethodProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.RegexpQuery;
 
@@ -41,7 +41,7 @@ public class RegexpQueryNodeBuilder implements StandardQueryBuilder {
         regexpNode.textToBytesRef()));
 
     MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode
-        .getTag(MultiTermRewriteMethodAttribute.TAG_ID);
+        .getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       q.setRewriteMethod(method);
     }

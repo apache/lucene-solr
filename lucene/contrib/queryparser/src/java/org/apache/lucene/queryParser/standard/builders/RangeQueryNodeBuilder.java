@@ -21,8 +21,8 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
-import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
+import org.apache.lucene.queryParser.standard.processors.MultiTermRewriteMethodProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 
@@ -55,7 +55,7 @@ public class RangeQueryNodeBuilder implements StandardQueryBuilder {
 
     TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, lower.getTextAsString(), upper.getTextAsString(), lowerInclusive, upperInclusive);
     
-    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod)queryNode.getTag(MultiTermRewriteMethodAttribute.TAG_ID);
+    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod)queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       rangeQuery.setRewriteMethod(method);
     }

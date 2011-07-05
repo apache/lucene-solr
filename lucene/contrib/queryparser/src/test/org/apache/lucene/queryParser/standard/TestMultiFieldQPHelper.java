@@ -28,7 +28,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.core.QueryNodeException;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -133,7 +134,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertEquals("(b:one t:one) f:two", q.toString());
 
     // AND mode:
-    mfqp.setDefaultOperator(Operator.AND);
+    mfqp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     q = mfqp.parse("one two", null);
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
     q = mfqp.parse("\"aa bb cc\" \"dd ee\"", null);
@@ -329,7 +330,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     mfqp.setMultiFields(new String[] { "body" });
     mfqp.setAnalyzer(analyzer);
-    mfqp.setDefaultOperator(Operator.AND);
+    mfqp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     Query q = mfqp.parse("the footest", null);
     IndexSearcher is = new IndexSearcher(ramDir, true);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;

@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser.standard.config;
+package org.apache.lucene.queryParser.core.config;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,19 +17,26 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
-import org.apache.lucene.queryParser.standard.processors.AnalyzerQueryNodeProcessor;
-import org.apache.lucene.util.Attribute;
-
 /**
- * This attribute is used by {@link AnalyzerQueryNodeProcessor} processor and
- * must be defined in the {@link QueryConfigHandler}. It provides to this
- * processor the {@link Analyzer}, if there is one, which will be used to
- * analyze the query terms. <br/>
+ * An instance of this class represents a key that is used to retrieve a value
+ * from {@link AbstractQueryConfig}. It also holds the value's type, which is
+ * defined in the generic argument.
  * 
+ * @see AbstractQueryConfig
  */
-public interface AnalyzerAttribute extends Attribute {
-  public void setAnalyzer(Analyzer analyzer);
-  public Analyzer getAnalyzer();
+final public class ConfigurationKey<T> {
+  
+  private ConfigurationKey() {}
+  
+  /**
+   * Creates a new instance.
+   * 
+   * @param <T> the value's type
+   * 
+   * @return a new instance
+   */
+  public static <T> ConfigurationKey<T> newInstance() {
+    return new ConfigurationKey<T>();
+  }
+  
 }

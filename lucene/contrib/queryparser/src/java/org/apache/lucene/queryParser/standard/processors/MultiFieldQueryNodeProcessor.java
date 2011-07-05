@@ -27,7 +27,8 @@ import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.MultiFieldAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
  * This processor is used to expand terms so the query looks for the same term
@@ -35,13 +36,13 @@ import org.apache.lucene.queryParser.standard.config.MultiFieldAttribute;
  * <br/>
  * This processor looks for every {@link FieldableNode} contained in the query
  * node tree. If a {@link FieldableNode} is found, it checks if there is a
- * {@link MultiFieldAttribute} defined in the {@link QueryConfigHandler}. If
+ * {@link ConfigurationKeys#MULTI_FIELDS} defined in the {@link QueryConfigHandler}. If
  * there is, the {@link FieldableNode} is cloned N times and the clones are
  * added to a {@link BooleanQueryNode} together with the original node. N is
  * defined by the number of fields that it will be expanded to. The
  * {@link BooleanQueryNode} is returned. <br/>
  * 
- * @see MultiFieldAttribute
+ * @see ConfigurationKeys#MULTI_FIELDS
  */
 public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
@@ -78,14 +79,12 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
       FieldableNode fieldNode = (FieldableNode) node;
 
       if (fieldNode.getField() == null) {
+        CharSequence[] fields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
 
-        if (!getQueryConfigHandler().hasAttribute(MultiFieldAttribute.class)) {
+        if (fields == null) {
           throw new IllegalArgumentException(
-              "MultiFieldAttribute should be set on the QueryConfigHandler");
+              "StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
         }
-
-        CharSequence[] fields = getQueryConfigHandler().getAttribute(
-            MultiFieldAttribute.class).getFields();
 
         if (fields != null && fields.length > 0) {
           fieldNode.setField(fields[0]);

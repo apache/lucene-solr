@@ -57,14 +57,12 @@ public class UniqueFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
             "A config handler is expected by the processor UniqueFieldQueryNodeProcessor!");
       }
 
-      if (!queryConfig.hasAttribute(UniqueFieldAttribute.class)) {
+      if (!queryConfig.has(SpansQueryConfigHandler.UNIQUE_FIELD)) {
         throw new IllegalArgumentException(
             "UniqueFieldAttribute should be defined in the config handler!");
       }
 
-      CharSequence uniqueField = queryConfig.getAttribute(
-          UniqueFieldAttribute.class).getUniqueField();
-
+      String uniqueField = queryConfig.get(SpansQueryConfigHandler.UNIQUE_FIELD);
       fieldNode.setField(uniqueField);
 
     }

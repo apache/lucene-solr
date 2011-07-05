@@ -17,17 +17,30 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
-import org.apache.lucene.queryParser.standard.processors.AllowLeadingWildcardProcessor;
-import org.apache.lucene.util.Attribute;
+import org.apache.lucene.search.FuzzyQuery;
 
-/**
- * This attribute is used by {@link AllowLeadingWildcardProcessor} processor and
- * must be defined in the {@link QueryConfigHandler}. It basically tells the
- * processor if it should allow leading wildcard. <br/>
- * 
- */
-public interface AllowLeadingWildcardAttribute extends Attribute {
-  public void setAllowLeadingWildcard(boolean allowLeadingWildcard);
-  public boolean isAllowLeadingWildcard();
+public class FuzzyConfig {
+  
+  private int prefixLength = FuzzyQuery.defaultPrefixLength;
+
+  private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
+  
+  public FuzzyConfig() {}
+
+  public int getPrefixLength() {
+    return prefixLength;
+  }
+
+  public void setPrefixLength(int prefixLength) {
+    this.prefixLength = prefixLength;
+  }
+
+  public float getMinSimilarity() {
+    return minSimilarity;
+  }
+
+  public void setMinSimilarity(float minSimilarity) {
+    this.minSimilarity = minSimilarity;
+  }
+  
 }

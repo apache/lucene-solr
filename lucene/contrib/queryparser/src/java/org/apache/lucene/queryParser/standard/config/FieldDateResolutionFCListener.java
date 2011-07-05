@@ -17,20 +17,23 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.FieldConfigListener;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
  * This listener listens for every field configuration request and assign a
- * {@link DateResolutionAttribute} to the equivalent {@link FieldConfig} based
- * on a defined map: fieldName -> DateTools.Resolution stored in
- * {@link FieldDateResolutionMapAttribute} in the
- * {@link DateResolutionAttribute}.
+ * {@link ConfigurationKeys#DATE_RESOLUTION} to the equivalent {@link FieldConfig} based
+ * on a defined map: fieldName -> {@link Resolution} stored in
+ * {@link ConfigurationKeys#FIELD_DATE_RESOLUTION_MAP}.
  * 
- * @see DateResolutionAttribute
- * @see FieldDateResolutionMapAttribute
+ * @see ConfigurationKeys#DATE_RESOLUTION
+ * @see ConfigurationKeys#FIELD_DATE_RESOLUTION_MAP
  * @see FieldConfig
  * @see FieldConfigListener
  */
@@ -43,29 +46,21 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
   }
 
   public void buildFieldConfig(FieldConfig fieldConfig) {
-    DateResolutionAttribute fieldDateResAttr = fieldConfig
-        .addAttribute(DateResolutionAttribute.class);
     DateTools.Resolution dateRes = null;
+    Map<CharSequence, DateTools.Resolution> dateResMap = this.config.get(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP);
 
-    if (this.config.hasAttribute(FieldDateResolutionMapAttribute.class)) {
-      FieldDateResolutionMapAttribute dateResMapAttr = this.config
-          .addAttribute(FieldDateResolutionMapAttribute.class);
-      dateRes = dateResMapAttr.getFieldDateResolutionMap().get(
+    if (dateResMap != null) {
+      dateRes = dateResMap.get(
           fieldConfig.getField());
     }
 
     if (dateRes == null) {
-
-      if (this.config.hasAttribute(DateResolutionAttribute.class)) {
-        DateResolutionAttribute dateResAttr = this.config
-            .addAttribute(DateResolutionAttribute.class);
-        dateRes = dateResAttr.getDateResolution();
-
-      }
-
+      dateRes = this.config.get(ConfigurationKeys.DATE_RESOLUTION);
     }
 
-    fieldDateResAttr.setDateResolution(dateRes);
+    if (dateRes != null) {
+      fieldConfig.set(ConfigurationKeys.DATE_RESOLUTION, dateRes);
+    }
 
   }
 
