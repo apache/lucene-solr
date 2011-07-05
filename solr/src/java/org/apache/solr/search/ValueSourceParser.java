@@ -547,6 +547,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
+    alias("totaltermfreq","ttf");
+
+    addParser("sumtotaltermfreq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        String field = fp.parseArg();
+        return new SumTotalTermFreqValueSource(field);
+      }
+    });
+    alias("sumtotaltermfreq","sttf");
 
     addParser("idf", new ValueSourceParser() {
       @Override

@@ -415,6 +415,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
     assertU(commit());
     assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");    
+    assertQ(req("fl","*,score","q", "{!func}ttf(a_t,'cow')", "fq","id:6"), "//float[@name='score']='7.0'");
+    assertQ(req("fl","*,score","q", "{!func}sumtotaltermfreq('a_t')", "fq","id:6"), "//float[@name='score']='11.0'");
+    assertQ(req("fl","*,score","q", "{!func}sttf(a_t)", "fq","id:6"), "//float[@name='score']='11.0'");
   }
 
   @Test
