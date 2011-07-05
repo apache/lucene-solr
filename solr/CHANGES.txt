@@ -185,7 +185,7 @@ Bug Fixes
 ----------------------
 
 * SOLR-1908: Fixed SignatureUpdateProcessor to fail to initialize on
-  invalid config.  Specificly: a signatureField that does not exist,
+  invalid config.  Specifically: a signatureField that does not exist,
   or overwriteDupes=true with a signatureField that is not indexed.
   (hossman)
 
@@ -692,8 +692,8 @@ New Features
   for specifying when the upper & lower end points of computed date
   ranges should be included in the range.  Legal values are: "all",
   "lower", "upper", "edge", and "outer".  For backwards compatibility
-  the default value is the set: [lower,upper,edge], so that al ranges
-  between start and ed are inclusive of their endpoints, but the
+  the default value is the set: [lower,upper,edge], so that all ranges
+  between start and end are inclusive of their endpoints, but the
   "before" and "after" ranges are not.
 
 * SOLR-945: JSON update handler that accepts add, delete, commit
@@ -758,7 +758,7 @@ New Features
 * SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
   See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
 
-* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
+* SOLR-2325: Allow tagging and exclusion of main query for faceting. (yonik)
 
 * SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)
