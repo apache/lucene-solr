@@ -20,6 +20,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -134,7 +135,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       taxoDir = newDirectory();
     }
     
-    RandomIndexWriter iw = new RandomIndexWriter(random, indexDir, newIndexWriterConfig(TEST_VERSION_CURRENT, getAnalyzer()));
+    RandomIndexWriter iw = new RandomIndexWriter(random, indexDir, getIndexWriterConfig(getAnalyzer()));
     TaxonomyWriter taxo = new LuceneTaxonomyWriter(taxoDir, OpenMode.CREATE);
     
     populateIndex(iw, taxo, getFacetIndexingParams(partitionSize));
@@ -149,6 +150,11 @@ public abstract class FacetTestBase extends LuceneTestCase {
     taxoReader = new LuceneTaxonomyReader(taxoDir);
     indexReader = IndexReader.open(indexDir);
     searcher = newSearcher(indexReader);
+  }
+  
+  /** Returns indexing params for the main index */
+  protected IndexWriterConfig getIndexWriterConfig(Analyzer analyzer) {
+    return newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
   }
 
   /** Returns a default facet indexing params */

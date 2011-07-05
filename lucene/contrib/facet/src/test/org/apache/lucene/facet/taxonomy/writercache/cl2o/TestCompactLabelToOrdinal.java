@@ -36,7 +36,7 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
 
     CompactLabelToOrdinal compact = new CompactLabelToOrdinal(2000000, 0.15f, 3);
 
-    final int n = 100 * 1000;
+    final int n = atLeast(10 * 1000);
     final int numUniqueValues = 50 * 1000;
 
     String[] uniqueValues = new String[numUniqueValues];
