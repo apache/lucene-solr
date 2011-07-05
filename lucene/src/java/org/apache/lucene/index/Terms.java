@@ -57,9 +57,12 @@ public abstract class Terms {
     }
   }
 
-  /** Returns the number of documents containing the
-   *  specified term text.  Returns 0 if the term does not
-   *  exist. */
+  /** Returns the total number of occurrences of this term
+   *  across all documents (the sum of the freq() for each
+   *  doc that has this term).  This will be -1 if the
+   *  codec doesn't support this measure.  Note that, like
+   *  other term measures, this measure does not take
+   *  deleted documents into account. */
   public long totalTermFreq(BytesRef text) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
