@@ -32,41 +32,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 public class TestTopKResultsHandlerRandom extends BaseTestTopK {
-
-  /**
-   * Try out faceted search in it's most basic form (no sampling nor complement
-   * that is). In this test lots (and lots..) of randomly generated data is
-   * being indexed, and later on an "over-all" faceted search is performed. The
-   * results are checked against the DF of each facet by itself
-   */
-  @Test
-  public void testCountsComplementDisabled() throws Exception {
-    doTestCounts(false);
-  }
-
-  private void doTestCounts(boolean doComplement) throws Exception,
-      IOException, IllegalAccessException, InstantiationException {
-    for (int partitionSize : partitionSizes) {
-      initIndex(partitionSize);
-      
-      List<FacetResult> facetResults = countFacets(partitionSize, 100000, doComplement);
-      assertCountsAndCardinality(facetCountsTruth(), facetResults);
-      
-      closeAll();
-    }
-  }
-
-  /**
-   * Try out faceted search with complements. In this test lots (and lots..) of
-   * randomly generated data is being indexed, and later on, a "beta" faceted
-   * search is performed - retrieving ~90% of the documents so complements takes
-   * place in here. The results are checked against the a regular (a.k.a
-   * no-complement, no-sampling) faceted search with the same parameters.
-   */
-  @Test
-  public void testCountsComplementEnforced() throws Exception {
-    doTestCounts(true);
-  }
   
   private List<FacetResult> countFacets(int partitionSize, int numResults, final boolean doComplement)
       throws IOException, IllegalAccessException, InstantiationException {
@@ -96,6 +61,25 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
   public void testTopCountsOrder() throws Exception {
     for (int partitionSize : partitionSizes) {
       initIndex(partitionSize);
+      
+      /*
+       * Try out faceted search in it's most basic form (no sampling nor complement
+       * that is). In this test lots (and lots..) of randomly generated data is
+       * being indexed, and later on an "over-all" faceted search is performed. The
+       * results are checked against the DF of each facet by itself
+       */
+      List<FacetResult> facetResults = countFacets(partitionSize, 100000, false);
+      assertCountsAndCardinality(facetCountsTruth(), facetResults);
+      
+      /*
+       * Try out faceted search with complements. In this test lots (and lots..) of
+       * randomly generated data is being indexed, and later on, a "beta" faceted
+       * search is performed - retrieving ~90% of the documents so complements takes
+       * place in here. The results are checked against the a regular (a.k.a
+       * no-complement, no-sampling) faceted search with the same parameters.
+       */
+      facetResults = countFacets(partitionSize, 100000, true);
+      assertCountsAndCardinality(facetCountsTruth(), facetResults);
       
       List<FacetResult> allFacetResults = countFacets(partitionSize, 100000, false);
       

@@ -7,7 +7,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.junit.Test;
 
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.facet.search.BaseTestTopK;
@@ -48,22 +47,12 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
       TaxonomyReader taxoReader, IndexReader indexReader,
       FacetSearchParams searchParams);
   
-  @Test
-  public void testCountUsingComplementSampling() throws Exception {
-    doTestWithSamping(true);
-  }
-  
-  @Test
-  public void testCountUsingSampling() throws Exception {
-    doTestWithSamping(false);
-  }
-  
   /**
    * Try out faceted search with sampling enabled and complements either disabled or enforced
    * Lots of randomly generated data is being indexed, and later on a "90% docs" faceted search
    * is performed. The results are compared to non-sampled ones.
    */
-  private void doTestWithSamping(boolean complement) throws Exception, IOException {
+  public void testCountUsingSamping() throws Exception, IOException {
     for (int partitionSize : partitionSizes) {
       initIndex(partitionSize);
       
@@ -84,24 +73,30 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
       
       FacetSearchParams samplingSearchParams = searchParamsWithRequests(K, partitionSize); 
 
-      // try several times in case of failure, because the test has a chance to fail 
-      // if the top K facets are not sufficiently common with the sample set
-      for (int n=RETRIES; n>0; n--) {
-        FacetsCollector samplingFC = samplingCollector(complement, sampler,  samplingSearchParams);
-        
-        searcher.search(q, samplingFC);
-        List<FacetResult> sampledResults = samplingFC.getFacetResults();
-        
-        try {
-          assertSameResults(expectedResults, sampledResults);
-          break; // succeeded
-        } catch (Exception e) {
-          if (n<=1) { // otherwise try again
-            throw e; 
-          }
+      assertSampling(expectedResults, q, sampler, samplingSearchParams, false);
+      assertSampling(expectedResults, q, sampler, samplingSearchParams, true);
+
+      closeAll();
+    }
+  }
+  
+  private void assertSampling(List<FacetResult> expected, Query q, Sampler sampler, FacetSearchParams params, boolean complement) throws Exception {
+    // try several times in case of failure, because the test has a chance to fail 
+    // if the top K facets are not sufficiently common with the sample set
+    for (int n=RETRIES; n>0; n--) {
+      FacetsCollector samplingFC = samplingCollector(false, sampler, params);
+      
+      searcher.search(q, samplingFC);
+      List<FacetResult> sampledResults = samplingFC.getFacetResults();
+      
+      try {
+        assertSameResults(expected, sampledResults);
+        break; // succeeded
+      } catch (Exception e) {
+        if (n<=1) { // otherwise try again
+          throw e; 
         }
       }
-      closeAll();
     }
   }
   

@@ -6,8 +6,11 @@ import java.util.List;
 
 import org.apache.lucene.DocumentBuilder.DocumentBuilderException;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.util._TestUtil;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -104,5 +107,10 @@ public abstract class BaseTestTopK extends FacetTestBase {
   @Override
   protected int numDocsToIndex() {
     return 20000;
+  }
+
+  @Override
+  protected IndexWriterConfig getIndexWriterConfig(Analyzer analyzer) {
+    return super.getIndexWriterConfig(analyzer).setMaxBufferedDocs(_TestUtil.nextInt(random, 500, 10000));
   }
 }
