@@ -29,6 +29,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ import java.util.*;
  * Refer SOLR-281
  *
  */
-public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
+public class SearchHandler extends RequestHandlerBase implements SolrCoreAware , PluginInfoInitialized
 {
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
