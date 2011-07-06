@@ -216,7 +216,8 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4  {
 
     assertTrue(container1.getZkController().getCloudState().liveNodesContain(
         container2.getZkController().getNodeName()));
-    core.close();
+
+    // core.close();  // this core is managed by container1 now
   }
 
   @Override
