@@ -1843,6 +1843,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return openTime;
   }
 
+  @Override
+  public Explanation explain(Query query, int doc) throws IOException {
+    return super.explain(QueryUtils.makeQueryable(query), doc);
+  }
+
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////

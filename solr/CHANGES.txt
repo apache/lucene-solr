@@ -300,6 +300,8 @@ Bug Fixes
 * SOLR-2631: PingRequestHandler should not allow to ping itsself using "qt"
   param to prevent infinite loop. (Edoardo Tosca, Uwe Schindler)
 
+* SOLR-2636: Fix explain functionality for negative queries. (Tom Hill via yonik)
+
 Other Changes
 ----------------------
 
