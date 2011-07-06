@@ -962,7 +962,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * requested document is deleted, and therefore asking for a deleted document
    * may yield unspecified results. Usually this is not required, however you
    * can test if the doc is deleted by checking the {@link
-   * Bits} returned from {@link MultiFields#getDeletedDocs}.
+   * Bits} returned from {@link MultiFields#getLiveDocs}.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -987,7 +987,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * requested document is deleted, and therefore asking for a deleted document
    * may yield unspecified results. Usually this is not required, however you
    * can test if the doc is deleted by checking the {@link
-   * Bits} returned from {@link MultiFields#getDeletedDocs}.
+   * Bits} returned from {@link MultiFields#getLiveDocs}.
    * 
    * @param n Get the document at the <code>n</code><sup>th</sup> position
    * @param fieldSelector The {@link FieldSelector} to use to determine what
@@ -1136,7 +1136,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null, if either the field or
    *  term does not exist. */
-  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -1145,7 +1145,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     final Terms terms = fields.terms(field);
     if (terms != null) {
-      return terms.docs(skipDocs, term, null);
+      return terms.docs(liveDocs, term, null);
     } else {
       return null;
     }
@@ -1155,7 +1155,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  field & term.  This may return null, if either the
    *  field or term does not exist, or, positions were not
    *  stored for this term. */
-  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+  public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
     final Fields fields = fields();
@@ -1164,7 +1164,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     final Terms terms = fields.terms(field);
     if (terms != null) {
-      return terms.docsAndPositions(skipDocs, term, null);
+      return terms.docsAndPositions(liveDocs, term, null);
     } else {
       return null;
     }
@@ -1175,7 +1175,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists or the {@link TermState} is invalid for the underlying
    * implementation.*/
-  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+  public DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -1184,7 +1184,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     final Terms terms = fields.terms(field);
     if (terms != null) {
-      return terms.docs(skipDocs, term, state, null);
+      return terms.docs(liveDocs, term, state, null);
     } else {
       return null;
     }
@@ -1195,7 +1195,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * {@link TermState}. This may return null, if either the field or the term
    * does not exists, the {@link TermState} is invalid for the underlying
    * implementation, or positions were not stored for this term.*/
-  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term, TermState state) throws IOException {
+  public DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, TermState state) throws IOException {
     assert state != null;
     assert field != null;
     final Fields fields = fields();
@@ -1204,7 +1204,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
     final Terms terms = fields.terms(field);
     if (terms != null) {
-      return terms.docsAndPositions(skipDocs, term, state, null);
+      return terms.docsAndPositions(liveDocs, term, state, null);
     } else {
       return null;
     }
@@ -1260,7 +1260,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     DocsEnum docs = MultiFields.getTermDocsEnum(this,
-                                                MultiFields.getDeletedDocs(this),
+                                                MultiFields.getLiveDocs(this),
                                                 term.field(),
                                                 term.bytes());
     if (docs == null) return 0;
@@ -1385,15 +1385,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public abstract Collection<String> getFieldNames(FieldOption fldOption);
 
-  /** Returns the {@link Bits} representing deleted docs.  A
-   *  set bit indicates the doc ID has been deleted.  This
-   *  method should return null when there are no deleted
-   *  docs.
+  /** Returns the {@link Bits} representing live (not
+   *  deleted) docs.  A set bit indicates the doc ID has not
+   *  been deleted.  If this method returns null it means
+   *  there are no deleted documents (all documents are
+   *  live).
    *
-   *  The returned instance has been safely published for use by
-   *  multiple threads without additional synchronization.
+   *  The returned instance has been safely published for
+   *  use by multiple threads without additional
+   *  synchronization.
    * @lucene.experimental */
-  public abstract Bits getDeletedDocs();
+  public abstract Bits getLiveDocs();
 
   /**
    * Expert: return the IndexCommit that this reader has

@@ -24,7 +24,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -479,13 +478,14 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    * in each position - one of each position is sufficient (OR logic)
    */
   public void testZeroPosIncrSloppyParsedAnd() throws IOException, ParseException {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new CannedAnalyzer(INCR_0_QUERY_TOKENS_AND));
-    final Query q = qp.parse("\"this text is acually ignored\"");
-    assertTrue("wrong query type!", q instanceof MultiPhraseQuery);
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term[]{ new Term("field", "a"), new Term("field", "1") }, -1);
+    q.add(new Term[]{ new Term("field", "b"), new Term("field", "1") }, 0);
+    q.add(new Term[]{ new Term("field", "c") }, 1);
     doTestZeroPosIncrSloppy(q, 0);
-    ((MultiPhraseQuery) q).setSlop(1);
+    q.setSlop(1);
     doTestZeroPosIncrSloppy(q, 0);
-    ((MultiPhraseQuery) q).setSlop(2);
+    q.setSlop(2);
     doTestZeroPosIncrSloppy(q, 1);
   }
   

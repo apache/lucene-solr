@@ -18,11 +18,11 @@ package org.apache.solr.core;
 
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.ValueSourceParser;
-import org.apache.solr.search.function.SimpleFloatFunction;
 
 
 /**

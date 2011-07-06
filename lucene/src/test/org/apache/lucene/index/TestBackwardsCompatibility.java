@@ -281,10 +281,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
     for(int i=0;i<35;i++) {
-      if (!delDocs.get(i)) {
+      if (liveDocs.get(i)) {
         Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
         if (d.getField("content3") == null) {

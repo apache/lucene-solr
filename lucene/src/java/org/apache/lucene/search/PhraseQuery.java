@@ -212,17 +212,17 @@ public class PhraseQuery extends Query {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
+      final Bits liveDocs = reader.getLiveDocs();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
-      final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
-        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
+        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(liveDocs,
                                                                      t.field(),
                                                                      t.bytes());
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (reader.termDocsEnum(delDocs, t.field(), t.bytes()) != null) {
+          if (reader.termDocsEnum(liveDocs, t.field(), t.bytes()) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {

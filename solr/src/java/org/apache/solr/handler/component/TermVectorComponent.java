@@ -5,7 +5,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.index.Terms;
@@ -103,8 +102,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     allFields.tfIdf = params.getBool(TermVectorParams.TF_IDF, false);
     //boolean cacheIdf = params.getBool(TermVectorParams.IDF, false);
     //short cut to all values.
-    boolean all = params.getBool(TermVectorParams.ALL, false);
-    if (all == true) {
+    if (params.getBool(TermVectorParams.ALL, false)) {
       allFields.termFreq = true;
       allFields.positions = true;
       allFields.offsets = true;
@@ -145,11 +143,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
             option.tfIdf = params.getFieldBool(field, TermVectorParams.TF_IDF, allFields.tfIdf);
             //Validate these are even an option
             option.positions = params.getFieldBool(field, TermVectorParams.POSITIONS, allFields.positions);
-            if (option.positions == true && sf.storeTermPositions() == false){
+            if (option.positions && !sf.storeTermPositions()){
               noPos.add(field);
             }
             option.offsets = params.getFieldBool(field, TermVectorParams.OFFSETS, allFields.offsets);
-            if (option.offsets == true && sf.storeTermOffsets() == false){
+            if (option.offsets && !sf.storeTermOffsets()){
               noOff.add(field);
             }
           } else {//field doesn't have term vectors
@@ -162,26 +160,26 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       }
     } //else, deal with all fields
     boolean hasWarnings = false;
-    if (noTV.isEmpty() == false) {
+    if (!noTV.isEmpty()) {
       warnings.add("noTermVectors", noTV);
       hasWarnings = true;
     }
-    if (noPos.isEmpty() == false) {
+    if (!noPos.isEmpty()) {
       warnings.add("noPositions", noPos);
       hasWarnings = true;
     }
-    if (noOff.isEmpty() == false) {
+    if (!noOff.isEmpty()) {
       warnings.add("noOffsets", noOff);
       hasWarnings = true;
     }
-    if (hasWarnings == true) {
+    if (hasWarnings) {
       termVectors.add("warnings", warnings);
     }
 
     DocListAndSet listAndSet = rb.getResults();
     List<Integer> docIds = getInts(params.getParams(TermVectorParams.DOC_IDS));
     Iterator<Integer> iter;
-    if (docIds != null && docIds.isEmpty() == false) {
+    if (docIds != null && !docIds.isEmpty()) {
       iter = docIds.iterator();
     } else {
       DocList list = listAndSet.docList;
@@ -218,7 +216,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           termVectors.add("uniqueKeyFieldName", uniqFieldName);
         }
       }
-      if (fieldOptions.isEmpty() == false) {
+      if (!fieldOptions.isEmpty()) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           mapper.fieldOptions = entry.getValue();
           reader.getTermFreqVector(docId, entry.getKey(), mapper);
@@ -310,7 +308,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       if (fieldOptions.termFreq == true) {
         termInfo.add("tf", frequency);
       }
-      if (useOffsets == true) {
+      if (useOffsets) {
         NamedList<Number> theOffsets = new NamedList<Number>();
         termInfo.add("offsets", theOffsets);
         for (int i = 0; i < offsets.length; i++) {
@@ -319,17 +317,17 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           theOffsets.add("end", offset.getEndOffset());
         }
       }
-      if (usePositions == true) {
+      if (usePositions) {
         NamedList<Integer> positionsNL = new NamedList<Integer>();
         for (int i = 0; i < positions.length; i++) {
           positionsNL.add("position", positions[i]);
         }
         termInfo.add("positions", positionsNL);
       }
-      if (fieldOptions.docFreq == true) {
+      if (fieldOptions.docFreq) {
         termInfo.add("df", getDocFreq(term));
       }
-      if (fieldOptions.tfIdf == true) {
+      if (fieldOptions.tfIdf) {
         double tfIdfVal = ((double) frequency) / getDocFreq(term);
         termInfo.add("tf-idf", tfIdfVal);
       }
@@ -362,12 +360,12 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
     @Override
     public boolean isIgnoringPositions() {
-      return fieldOptions.positions == false;  // if we are not interested in positions, then return true telling Lucene to skip loading them
+      return !fieldOptions.positions;  // if we are not interested in positions, then return true telling Lucene to skip loading them
     }
 
     @Override
     public boolean isIgnoringOffsets() {
-      return fieldOptions.offsets == false;  //  if we are not interested in offsets, then return true telling Lucene to skip loading them
+      return !fieldOptions.offsets;  //  if we are not interested in offsets, then return true telling Lucene to skip loading them
     }
   }
 

@@ -2214,8 +2214,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
-      if (flushedSegment.deletedDocuments != null) {
-        final int delCount = flushedSegment.deletedDocuments.count();
+      if (flushedSegment.liveDocs != null) {
+        final int delCount = flushedSegment.segmentInfo.docCount - flushedSegment.liveDocs.count();
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
@@ -2230,7 +2230,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // shortly-to-be-opened SegmentReader and let it
           // carry the changes; there's no reason to use
           // filesystem as intermediary here.
-          flushedSegment.deletedDocuments.write(directory, delFileName);
+          flushedSegment.liveDocs.write(directory, delFileName);
           success2 = true;
         } finally {
           if (!success2) {
@@ -2931,9 +2931,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Reader was skipped because it was 100% deletions
         continue;
       }
-      final Bits prevDelDocs = previousReader.getDeletedDocs();
+      final Bits prevLiveDocs = previousReader.getLiveDocs();
       final SegmentReader currentReader = merge.readers.get(i);
-      final Bits currentDelDocs = currentReader.getDeletedDocs();
+      final Bits currentLiveDocs = currentReader.getLiveDocs();
       if (previousReader.hasDeletions()) {
 
         // There were deletes on this segment when the merge
@@ -2948,10 +2948,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // committed since we started the merge, so we
           // must merge them:
           for(int j=0;j<docCount;j++) {
-            if (prevDelDocs.get(j))
-              assert currentDelDocs.get(j);
+            if (!prevLiveDocs.get(j))
+              assert !currentLiveDocs.get(j);
             else {
-              if (currentDelDocs.get(j)) {
+              if (!currentLiveDocs.get(j)) {
                 mergedReader.doDelete(docUpto);
                 delCount++;
               }
@@ -2965,7 +2965,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // This segment had no deletes before but now it
         // does:
         for(int j=0; j<docCount; j++) {
-          if (currentDelDocs.get(j)) {
+          if (!currentLiveDocs.get(j)) {
             mergedReader.doDelete(docUpto);
             delCount++;
           }

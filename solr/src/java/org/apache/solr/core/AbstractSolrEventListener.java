@@ -37,6 +37,11 @@ public class AbstractSolrEventListener implements SolrEventListener {
   public void postCommit() {
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+  public void postSoftCommit() {
+    throw new UnsupportedOperationException();
+  }
 
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     throw new UnsupportedOperationException();

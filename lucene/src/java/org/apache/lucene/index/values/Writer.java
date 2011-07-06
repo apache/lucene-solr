@@ -147,12 +147,12 @@ public abstract class Writer extends DocValuesConsumer {
       // impl. will get the correct reference for the type
       // it supports
       int docID = state.docBase;
-      final Bits bits = state.bits;
+      final Bits liveDocs = state.liveDocs;
       final int docCount = state.docCount;
       int currentDocId;
       if ((currentDocId = valEnum.advance(0)) != ValuesEnum.NO_MORE_DOCS) {
         for (int i = 0; i < docCount; i++) {
-          if (bits == null || !bits.get(i)) {
+          if (liveDocs == null || liveDocs.get(i)) {
             if (currentDocId < i) {
               if ((currentDocId = valEnum.advance(i)) == ValuesEnum.NO_MORE_DOCS) {
                 break; // advance can jump over default values

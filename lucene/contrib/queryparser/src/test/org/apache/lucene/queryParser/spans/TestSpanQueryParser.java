@@ -127,11 +127,10 @@ public class TestSpanQueryParser extends LuceneTestCase {
     return getSpanQuery("", query);
   }
 
-  public SpanQuery getSpanQuery(CharSequence uniqueField, CharSequence query)
+  public SpanQuery getSpanQuery(String uniqueField, CharSequence query)
       throws QueryNodeException {
-    UniqueFieldAttribute uniqueFieldAtt = this.spanQueryConfigHandler
-        .getAttribute(UniqueFieldAttribute.class);
-    uniqueFieldAtt.setUniqueField(uniqueField);
+    
+    this.spanQueryConfigHandler.set(SpansQueryConfigHandler.UNIQUE_FIELD, uniqueField);
 
     QueryNode queryTree = this.queryParser.parse(query, "defaultField");
     queryTree = this.spanProcessorPipeline.process(queryTree);

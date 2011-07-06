@@ -138,8 +138,8 @@ public class TestIndicesEquals extends LuceneTestCase {
     testTermEnum.seekCeil(new BytesRef(t.text()));
     assertEquals(aprioriTermEnum.term(), testTermEnum.term());
 
-    DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), null);
-    DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), null);
+    DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getLiveDocs(aprioriReader), null);
+    DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getLiveDocs(testReader), null);
 
     assertEquals(aprioriTermDocs.nextDoc(), testTermDocs.nextDoc());
     assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
@@ -186,8 +186,8 @@ public class TestIndicesEquals extends LuceneTestCase {
     
     assertEquals(aprioriTermEnum.next(), testTermEnum.next());
     
-    aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), aprioriTermDocs);
-    testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), testTermDocs);
+    aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getLiveDocs(aprioriReader), aprioriTermDocs);
+    testTermDocs = testTermEnum.docs(MultiFields.getLiveDocs(testReader), testTermDocs);
 
     while (aprioriTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
       assertTrue(testTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
@@ -309,13 +309,13 @@ public class TestIndicesEquals extends LuceneTestCase {
     assertEquals(air.numDocs(), tir.numDocs());
     assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());
 
-    final Bits aDelDocs = MultiFields.getDeletedDocs(air);
-    final Bits tDelDocs = MultiFields.getDeletedDocs(tir);
-    assertTrue((aDelDocs != null && tDelDocs != null) || 
-               (aDelDocs == null && tDelDocs == null));
-    if (aDelDocs != null) {
+    final Bits aLiveDocs = MultiFields.getLiveDocs(air);
+    final Bits tLiveDocs = MultiFields.getLiveDocs(tir);
+    assertTrue((aLiveDocs != null && tLiveDocs != null) || 
+               (aLiveDocs == null && tLiveDocs == null));
+    if (aLiveDocs != null) {
       for (int d =0; d<air.maxDoc(); d++) {
-        assertEquals(aDelDocs.get(d), tDelDocs.get(d));
+        assertEquals(aLiveDocs.get(d), tLiveDocs.get(d));
       }
     }
 
@@ -366,13 +366,13 @@ public class TestIndicesEquals extends LuceneTestCase {
       }
     }
 
-    final Bits apDelDocs = MultiFields.getDeletedDocs(aprioriReader);
-    final Bits testDelDocs = MultiFields.getDeletedDocs(testReader);
-    assertTrue((apDelDocs != null && testDelDocs != null) || 
-               (apDelDocs == null && testDelDocs == null));
-    if (apDelDocs != null) {
+    final Bits apLiveDocs = MultiFields.getLiveDocs(aprioriReader);
+    final Bits testLiveDocs = MultiFields.getLiveDocs(testReader);
+    assertTrue((apLiveDocs != null && testLiveDocs != null) || 
+               (apLiveDocs == null && testLiveDocs == null));
+    if (apLiveDocs != null) {
       for (int docIndex = 0; docIndex < aprioriReader.numDocs(); docIndex++) {
-        assertEquals(apDelDocs.get(docIndex), testDelDocs.get(docIndex));
+        assertEquals(apLiveDocs.get(docIndex), testLiveDocs.get(docIndex));
       }
     }
 
@@ -407,8 +407,8 @@ public class TestIndicesEquals extends LuceneTestCase {
 
         // compare termDocs seeking
 
-        DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), null);
-        DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), null);
+        DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getLiveDocs(aprioriReader), null);
+        DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getLiveDocs(testReader), null);
         
         while (aprioriTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           assertTrue(testTermDocs.advance(aprioriTermDocs.docID()) != DocsEnum.NO_MORE_DOCS);
@@ -419,8 +419,8 @@ public class TestIndicesEquals extends LuceneTestCase {
         
         assertEquals(aprioriReader.docFreq(aprioriField, aprioriTermEnum.term()), testReader.docFreq(aprioriField, testTermEnum.term()));
 
-        aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), aprioriTermDocs);
-        testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), testTermDocs);
+        aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getLiveDocs(aprioriReader), aprioriTermDocs);
+        testTermDocs = testTermEnum.docs(MultiFields.getLiveDocs(testReader), testTermDocs);
 
         while (true) {
           if (aprioriTermDocs.nextDoc() == DocsEnum.NO_MORE_DOCS) {
@@ -439,8 +439,8 @@ public class TestIndicesEquals extends LuceneTestCase {
 
         // compare term positions
 
-        DocsAndPositionsEnum aprioriTermPositions = aprioriTermEnum.docsAndPositions(MultiFields.getDeletedDocs(aprioriReader), null);
-        DocsAndPositionsEnum testTermPositions = testTermEnum.docsAndPositions(MultiFields.getDeletedDocs(testReader), null);
+        DocsAndPositionsEnum aprioriTermPositions = aprioriTermEnum.docsAndPositions(MultiFields.getLiveDocs(aprioriReader), null);
+        DocsAndPositionsEnum testTermPositions = testTermEnum.docsAndPositions(MultiFields.getLiveDocs(testReader), null);
 
         if (VERBOSE) {
           System.out.println("TEST: enum1=" + aprioriTermPositions + " enum2=" + testTermPositions);

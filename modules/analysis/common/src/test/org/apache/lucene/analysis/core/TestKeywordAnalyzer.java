@@ -83,12 +83,12 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
     IndexReader reader = IndexReader.open(dir, true);
     DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                              MultiFields.getDeletedDocs(reader),
+                                              MultiFields.getLiveDocs(reader),
                                               "partnum",
                                               new BytesRef("Q36"));
     assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
     td = MultiFields.getTermDocsEnum(reader,
-                                     MultiFields.getDeletedDocs(reader),
+                                     MultiFields.getLiveDocs(reader),
                                      "partnum",
                                      new BytesRef("Q37"));
     assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);

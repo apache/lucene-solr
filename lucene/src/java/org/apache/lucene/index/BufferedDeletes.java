@@ -196,7 +196,7 @@ class BufferedDeletes {
 
   public Iterable<Term> termsIterable() {
     return new Iterable<Term>() {
-      // @Override -- not until Java 1.6
+      @Override
       public Iterator<Term> iterator() {
         return terms.keySet().iterator();
       }
@@ -206,23 +206,23 @@ class BufferedDeletes {
   public Iterable<QueryAndLimit> queriesIterable() {
     return new Iterable<QueryAndLimit>() {
       
-      // @Override -- not until Java 1.6
+      @Override
       public Iterator<QueryAndLimit> iterator() {
         return new Iterator<QueryAndLimit>() {
           private final Iterator<Map.Entry<Query,Integer>> iter = queries.entrySet().iterator();
 
-          // @Override -- not until Java 1.6
+          @Override
           public boolean hasNext() {
             return iter.hasNext();
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public QueryAndLimit next() {
             final Map.Entry<Query,Integer> ent = iter.next();
             return new QueryAndLimit(ent.getKey(), ent.getValue());
           }
 
-          // @Override -- not until Java 1.6
+          @Override
           public void remove() {
             throw new UnsupportedOperationException();
           }

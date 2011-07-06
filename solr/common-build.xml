@@ -36,7 +36,7 @@
   <property name="dist.dir" location="${common-solr.dir}/dist"/>
   <property name="tests.userdir" value="${common-solr.dir}/src/test-files"/>
   <property name="javadoc.dir" location="${common-solr.dir}/build/docs/api"/>
-  <property name="javadoc.link" value="http://java.sun.com/javase/6/docs/api/"/>
+  <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
 
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/lib" includes="**/*.jar"/>
@@ -62,8 +62,6 @@
         property="suggest.uptodate" classpath.property="suggest.jar"/>
   <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
         property="grouping.uptodate" classpath.property="grouping.jar"/>
-  <module-uptodate name="common-module" module-src-name="common" jarfile="${common.dir}/../modules/common/build/lucene-common-module-${version}.jar"
-        property="common-module.uptodate" classpath.property="common-module.jar"/>
   <module-uptodate name="queries" jarfile="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"
         property="queries.uptodate" classpath.property="queries.jar"/>
   <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
@@ -82,7 +80,6 @@
   	<pathelement path="${spatial.jar}"/>
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
-    <pathelement path="${common-module.jar}"/>
     <pathelement path="${queries.jar}"/>
   	<pathelement location="${common-solr.dir}/build/classes/solrj"/>
   	<pathelement location="${common-solr.dir}/build/classes/webapp"/>

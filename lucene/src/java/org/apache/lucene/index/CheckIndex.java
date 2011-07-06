@@ -17,12 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -30,19 +34,15 @@ import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValuesEnum;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-
-import java.text.NumberFormat;
-import java.io.PrintStream;
-import java.io.IOException;
-import java.io.File;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * Basic tool and API to check the health of an index and
@@ -520,13 +520,13 @@ public class CheckIndex {
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
-          if (reader.deletedDocs.count() != info.getDelCount()) {
-            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs deletedDocs.count()=" + reader.deletedDocs.count());
+          if (reader.liveDocs.count() != info.docCount - info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + (info.docCount - info.getDelCount()) + " vs reader=" + reader.liveDocs.count());
           }
-          if (reader.deletedDocs.count() > reader.maxDoc()) {
-            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs deletedDocs.count()=" + reader.deletedDocs.count());
+          if ((info.docCount-reader.liveDocs.count()) > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs del count=" + (info.docCount-reader.liveDocs.count()));
           }
-          if (info.docCount - numDocs != info.getDelCount()){
+          if (info.docCount - numDocs != info.getDelCount()) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           }
           segInfoStat.numDeleted = info.docCount - numDocs;
@@ -654,7 +654,7 @@ public class CheckIndex {
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
 
     final int maxDoc = reader.maxDoc();
-    final Bits delDocs = reader.getDeletedDocs();
+    final Bits liveDocs = reader.getLiveDocs();
 
     final IndexSearcher is = new IndexSearcher(reader);
 
@@ -712,8 +712,8 @@ public class CheckIndex {
           final int docFreq = terms.docFreq();
           status.totFreq += docFreq;
 
-          docs = terms.docs(delDocs, docs);
-          postings = terms.docsAndPositions(delDocs, postings);
+          docs = terms.docs(liveDocs, docs);
+          postings = terms.docsAndPositions(liveDocs, postings);
 
           if (hasOrd) {
             long ord = -1;
@@ -815,7 +815,7 @@ public class CheckIndex {
             if (hasPositions) {
               for(int idx=0;idx<7;idx++) {
                 final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-                postings = terms.docsAndPositions(delDocs, postings);
+                postings = terms.docsAndPositions(liveDocs, postings);
                 final int docID = postings.advance(skipDocID);
                 if (docID == DocsEnum.NO_MORE_DOCS) {
                   break;
@@ -851,7 +851,7 @@ public class CheckIndex {
             } else {
               for(int idx=0;idx<7;idx++) {
                 final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-                docs = terms.docs(delDocs, docs);
+                docs = terms.docs(liveDocs, docs);
                 final int docID = docs.advance(skipDocID);
                 if (docID == DocsEnum.NO_MORE_DOCS) {
                   break;
@@ -919,7 +919,7 @@ public class CheckIndex {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
-              docs = terms.docs(delDocs, docs);
+              docs = terms.docs(liveDocs, docs);
               if (docs == null) {
                 throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
               }
@@ -967,9 +967,9 @@ public class CheckIndex {
       }
 
       // Scan stored fields for all documents
-      final Bits delDocs = reader.getDeletedDocs();
+      final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (delDocs == null || !delDocs.get(j)) {
+        if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
@@ -1063,9 +1063,9 @@ public class CheckIndex {
         infoStream.print("    test: term vectors........");
       }
 
-      final Bits delDocs = reader.getDeletedDocs();
+      final Bits liveDocs = reader.getLiveDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (delDocs == null || !delDocs.get(j)) {
+        if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           TermFreqVector[] tfv = reader.getTermFreqVectors(j);
           if (tfv != null) {

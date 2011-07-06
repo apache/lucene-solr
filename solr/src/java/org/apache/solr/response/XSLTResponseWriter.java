@@ -35,6 +35,7 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.xslt.TransformerProvider;
 
@@ -53,6 +54,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
   private static final Logger log = LoggerFactory.getLogger(XSLTResponseWriter.class);
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
   public void init(NamedList n) {
       final SolrParams p = SolrParams.toSolrParams(n);
@@ -126,6 +128,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
     if(result==null) {
       result = TransformerProvider.instance.getTransformer(solrConfig, xslt,xsltCacheLifetimeSeconds.intValue());
+      result.setErrorListener(xmllog);
       ctx.put(CONTEXT_TRANSFORMER_KEY,result);
     }
     return result;

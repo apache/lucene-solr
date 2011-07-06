@@ -147,7 +147,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     IndexReader r = writer.getReader();
     IndexReader r1 = r.getSequentialSubReaders()[0];
-    printDelDocs(r1.getDeletedDocs());
+    printDelDocs(r1.getLiveDocs());
     int[] docs = toDocsArray(id3, null, r);
     System.out.println("id3 docs:"+Arrays.toString(docs));
     // there shouldn't be any docs for id:3

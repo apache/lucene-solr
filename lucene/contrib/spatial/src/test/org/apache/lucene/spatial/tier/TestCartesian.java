@@ -35,10 +35,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.function.CustomScoreQuery;
-import org.apache.lucene.search.function.CustomScoreProvider;
-import org.apache.lucene.search.function.FieldScoreQuery;
-import org.apache.lucene.search.function.FieldScoreQuery.Type;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 import org.apache.lucene.spatial.geometry.DistanceUnits;
@@ -216,33 +212,6 @@ public class TestCartesian extends LuceneTestCase {
     if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
     Query tq = new TermQuery(new Term("metafile", "doc"));
-
-    FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-
-    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
-
-      @Override
-      protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
-        return new CustomScoreProvider(context) {
-          @Override // TODO: broken, as reader is not used!
-          public float customScore(int doc, float subQueryScore, float valSrcScore){
-            if (VERBOSE) System.out.println(doc);
-            if (dq.distanceFilter.getDistance(doc) == null)
-              return 0;
-
-            double distance = dq.distanceFilter.getDistance(doc);
-            // boost score shouldn't exceed 1
-            if (distance < 1.0d)
-              distance = 1.0d;
-            //boost by distance is invertly proportional to
-            // to distance from center point to location
-            float score = (float) ((miles - distance) / miles );
-            return score * subQueryScore;
-          }
-        };
-      }
-      
-    };
     // Create a distance sort
     // As the radius filter has performed the distance calculations
     // already, pass in the filter to reuse the results.
@@ -252,7 +221,7 @@ public class TestCartesian extends LuceneTestCase {
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    TopDocs hits = searcher.search(customScore,null, 1000, sort);
+    TopDocs hits = searcher.search(dq.getQuery(tq),null, 1000, sort);
     int results = hits.totalHits;
     ScoreDoc[] scoreDocs = hits.scoreDocs; 
     
@@ -312,33 +281,6 @@ public class TestCartesian extends LuceneTestCase {
     if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
     Query tq = new TermQuery(new Term("metafile", "doc"));
-
-    FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-
-    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
-
-      @Override
-      protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
-        return new CustomScoreProvider(context) {
-          @Override // TODO: broken, as reader is not used!
-          public float customScore(int doc, float subQueryScore, float valSrcScore){
-            if (VERBOSE) System.out.println(doc);
-            if (dq.distanceFilter.getDistance(doc) == null)
-              return 0;
-
-            double distance = dq.distanceFilter.getDistance(doc);
-            // boost score shouldn't exceed 1
-            if (distance < 1.0d)
-              distance = 1.0d;
-            //boost by distance is invertly proportional to
-            // to distance from center point to location
-            float score = (float) ((miles - distance) / miles );
-            return score * subQueryScore;
-          }
-        };
-      }
-      
-    };
     // Create a distance sort
     // As the radius filter has performed the distance calculations
     // already, pass in the filter to reuse the results.
@@ -348,7 +290,7 @@ public class TestCartesian extends LuceneTestCase {
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    TopDocs hits = searcher.search(customScore,null, 1000, sort);
+    TopDocs hits = searcher.search(dq.getQuery(tq),null, 1000, sort);
     int results = hits.totalHits;
     ScoreDoc[] scoreDocs = hits.scoreDocs; 
 
@@ -410,31 +352,6 @@ public class TestCartesian extends LuceneTestCase {
       if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents
       Query tq = new TermQuery(new Term("metafile", "doc"));
-    
-      FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-    
-      CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
-        @Override
-        protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
-          return new CustomScoreProvider(context) {
-            @Override // TODO: broken, as reader is not used!
-            public float customScore(int doc, float subQueryScore, float valSrcScore){
-              if (VERBOSE) System.out.println(doc);
-              if (dq.distanceFilter.getDistance(doc) == null)
-                return 0;
-          
-              double distance = dq.distanceFilter.getDistance(doc);
-              // boost score shouldn't exceed 1
-              if (distance < 1.0d)
-                distance = 1.0d;
-              //boost by distance is invertly proportional to
-              // to distance from center point to location
-              float score = (float) ( (miles - distance) / miles );
-              return score * subQueryScore;
-            }
-          };
-        }
-      };
       // Create a distance sort
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.
@@ -444,7 +361,7 @@ public class TestCartesian extends LuceneTestCase {
     
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      TopDocs hits = searcher.search(customScore,null, 1000, sort);
+      TopDocs hits = searcher.search(dq.getQuery(tq),null, 1000, sort);
       int results = hits.totalHits;
       ScoreDoc[] scoreDocs = hits.scoreDocs; 
     
@@ -506,30 +423,6 @@ public class TestCartesian extends LuceneTestCase {
       if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents
       Query tq = new TermQuery(new Term("metafile", "doc"));
-	    
-      FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-      CustomScoreQuery customScore = new CustomScoreQuery(tq,fsQuery){
-        @Override
-        protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) {
-          return new CustomScoreProvider(context) {
-              @Override // TODO: broken, as reader is not used!
-              public float customScore(int doc, float subQueryScore, float valSrcScore){
-              if (VERBOSE) System.out.println(doc);
-              if (dq.distanceFilter.getDistance(doc) == null)
-                return 0;
-            
-              double distance = dq.distanceFilter.getDistance(doc);
-              // boost score shouldn't exceed 1
-              if (distance < 1.0d)
-                distance = 1.0d;
-              //boost by distance is invertly proportional to
-              // to distance from center point to location
-              float score = (float) ( (miles - distance) / miles );
-              return score * subQueryScore;
-            }
-          };
-        }
-      };
       // Create a distance sort
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.
@@ -539,7 +432,7 @@ public class TestCartesian extends LuceneTestCase {
 	    
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      TopDocs hits = searcher.search(customScore,dq.getFilter(), 1000); //,sort);
+      TopDocs hits = searcher.search(tq,dq.getFilter(), 1000); //,sort);
       int results = hits.totalHits;
       ScoreDoc[] scoreDocs = hits.scoreDocs; 
 	    

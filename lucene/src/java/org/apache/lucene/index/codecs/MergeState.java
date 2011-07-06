@@ -39,7 +39,7 @@ public class MergeState {
   public int[] delCounts;                         // Deletion count per reader
   public int[] docBase;                           // New docID base per reader
   public int mergedDocCount;                      // Total # merged docs
-  public Bits multiDeletedDocs;
+  public Bits multiLiveDocs;
   public CheckAbort checkAbort;
 
   // Updated per field;

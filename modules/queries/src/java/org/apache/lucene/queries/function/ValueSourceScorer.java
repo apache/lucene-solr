@@ -30,7 +30,7 @@ public class ValueSourceScorer extends Scorer {
   protected final int maxDoc;
   protected final DocValues values;
   protected boolean checkDeletes;
-  private final Bits delDocs;
+  private final Bits liveDocs;
 
   protected ValueSourceScorer(IndexReader reader, DocValues values) {
     super(null);
@@ -38,7 +38,7 @@ public class ValueSourceScorer extends Scorer {
     this.maxDoc = reader.maxDoc();
     this.values = values;
     setCheckDeletes(true);
-    this.delDocs = MultiFields.getDeletedDocs(reader);
+    this.liveDocs = MultiFields.getLiveDocs(reader);
   }
 
   public IndexReader getReader() {
@@ -50,7 +50,7 @@ public class ValueSourceScorer extends Scorer {
   }
 
   public boolean matches(int doc) {
-    return (!checkDeletes || !delDocs.get(doc)) && matchesValue(doc);
+    return (!checkDeletes || liveDocs.get(doc)) && matchesValue(doc);
   }
 
   public boolean matchesValue(int doc) {

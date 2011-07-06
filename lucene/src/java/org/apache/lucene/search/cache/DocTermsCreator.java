@@ -105,7 +105,7 @@ public class DocTermsCreator extends EntryCreatorWithOptions<DocTerms>
     if (terms != null) {
       int termCount = 0;
       final TermsEnum termsEnum = terms.iterator();
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits liveDocs = MultiFields.getLiveDocs(reader);
       DocsEnum docs = null;
       while(true) {
         if (termCount++ == termCountHardLimit) {
@@ -120,7 +120,7 @@ public class DocTermsCreator extends EntryCreatorWithOptions<DocTerms>
           break;
         }
         final long pointer = bytes.copyUsingLengthPrefix(term);
-        docs = termsEnum.docs(delDocs, docs);
+        docs = termsEnum.docs(liveDocs, docs);
         while (true) {
           final int docID = docs.nextDoc();
           if (docID == DocIdSetIterator.NO_MORE_DOCS) {

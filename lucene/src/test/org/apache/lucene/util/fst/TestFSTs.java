@@ -714,12 +714,12 @@ public class TestFSTs extends LuceneTestCase {
 
             if (random.nextBoolean()) {
               if (VERBOSE) {
-                System.out.println("  do advanceCeil(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+                System.out.println("  do seekCeil(" + inputToString(inputMode, pairs.get(upto).input) + ")");
               }
               isDone = fstEnum.seekCeil(pairs.get(upto).input) == null;
             } else {
               if (VERBOSE) {
-                System.out.println("  do advanceFloor(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+                System.out.println("  do seekFloor(" + inputToString(inputMode, pairs.get(upto).input) + ")");
               }
               isDone = fstEnum.seekFloor(pairs.get(upto).input) == null;
             }

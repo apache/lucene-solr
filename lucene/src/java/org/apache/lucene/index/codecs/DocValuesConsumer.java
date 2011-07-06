@@ -114,8 +114,8 @@ public abstract class DocValuesConsumer {
       final IndexDocValues r = reader.docValues(mergeState.fieldInfo.name);
       if (r != null) {
         merged = true;
-        merge(new Writer.MergeState(r, docBase, reader.maxDoc(), reader
-            .getDeletedDocs()));
+        merge(new Writer.MergeState(r, docBase, reader.maxDoc(),
+                                    reader.getLiveDocs()));
       }
       docBase += reader.numDocs();
     }
@@ -152,15 +152,15 @@ public abstract class DocValuesConsumer {
     public final int docBase;
     /** the number of documents in this MergeState */
     public final int docCount;
-    /** the deleted bits for this MergeState */
-    public final Bits bits;
+    /** the not deleted bits for this MergeState */
+    public final Bits liveDocs;
 
-    public MergeState(IndexDocValues reader, int docBase, int docCount, Bits bits) {
+    public MergeState(IndexDocValues reader, int docBase, int docCount, Bits liveDocs) {
       assert reader != null;
       this.reader = reader;
       this.docBase = docBase;
       this.docCount = docCount;
-      this.bits = bits;
+      this.liveDocs = liveDocs;
     }
   }
 }

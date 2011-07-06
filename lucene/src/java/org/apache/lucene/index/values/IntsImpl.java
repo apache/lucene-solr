@@ -182,7 +182,7 @@ class IntsImpl {
       merging = true;
       if (typeOrd != PACKED) {
         initDataOut(typeOrd); // init datOut since we merge directly
-        if (state.bits == null && state.reader instanceof IntsReader) {
+        if (state.liveDocs == null && state.reader instanceof IntsReader) {
           // no deleted docs - try bulk copy
           final IntsReader reader = (IntsReader) state.reader;
           if (reader.type == typeOrd) {

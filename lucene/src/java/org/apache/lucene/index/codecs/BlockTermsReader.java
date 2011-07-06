@@ -688,23 +688,23 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
         //System.out.println("  state.docFreq=" + state.docFreq);
-        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
+        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, liveDocs, reuse);
         assert docsEnum != null;
         return docsEnum;
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         //System.out.println("BTR.d&p this=" + this);
         decodeMetaData();
         if (fieldInfo.omitTermFreqAndPositions) {
           return null;
         } else {
-          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, skipDocs, reuse);
+          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse);
           //System.out.println("  return d&pe=" + dpe);
           return dpe;
         }

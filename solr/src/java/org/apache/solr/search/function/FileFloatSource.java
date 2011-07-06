@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.solr.core.SolrCore;
@@ -76,9 +77,8 @@ public class FileFloatSource extends ValueSource {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    int offset = 0;
+    final int off = readerContext.docBase;
     ReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
-    final int off = offset;
 
     final float[] arr = getCachedFloats(topLevelContext.reader);
     return new FloatDocValues(this) {
@@ -245,7 +245,7 @@ public class FileFloatSource extends ValueSource {
       DocsEnum docsEnum = null;
 
       // removing deleted docs shouldn't matter
-      // final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      // final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
         int delimIndex = line.indexOf(delimiter);

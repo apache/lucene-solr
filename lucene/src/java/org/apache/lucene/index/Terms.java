@@ -57,9 +57,12 @@ public abstract class Terms {
     }
   }
 
-  /** Returns the number of documents containing the
-   *  specified term text.  Returns 0 if the term does not
-   *  exist. */
+  /** Returns the total number of occurrences of this term
+   *  across all documents (the sum of the freq() for each
+   *  doc that has this term).  This will be -1 if the
+   *  codec doesn't support this measure.  Note that, like
+   *  other term measures, this measure does not take
+   *  deleted documents into account. */
   public long totalTermFreq(BytesRef text) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
@@ -71,10 +74,10 @@ public abstract class Terms {
 
   /** Get {@link DocsEnum} for the specified term.  This
    *  method may return null if the term does not exist. */
-  public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, BytesRef text, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
-      return termsEnum.docs(skipDocs, reuse);
+      return termsEnum.docs(liveDocs, reuse);
     } else {
       return null;
     }
@@ -83,10 +86,10 @@ public abstract class Terms {
   /** Get {@link DocsEnum} for the specified term.  This
    *  method will may return null if the term does not
    *  exists, or positions were not indexed. */ 
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
+      return termsEnum.docsAndPositions(liveDocs, reuse);
     } else {
       return null;
     }
@@ -98,10 +101,10 @@ public abstract class Terms {
    * 
    * @see TermsEnum#termState()
    * @see TermsEnum#seekExact(BytesRef, TermState) */
-  public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     termsEnum.seekExact(term, termState);
-    return termsEnum.docs(skipDocs, reuse);
+    return termsEnum.docs(liveDocs, reuse);
   }
 
   /**
@@ -111,10 +114,10 @@ public abstract class Terms {
    * 
    * @see TermsEnum#termState()
    * @see TermsEnum#seekExact(BytesRef, TermState) */
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     termsEnum.seekExact(term, termState);
-    return termsEnum.docsAndPositions(skipDocs, reuse);
+    return termsEnum.docsAndPositions(liveDocs, reuse);
   }
 
   public long getUniqueTermCount() throws IOException {

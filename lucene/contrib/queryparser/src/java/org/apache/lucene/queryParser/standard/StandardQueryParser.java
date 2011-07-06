@@ -23,25 +23,15 @@ import java.util.TooManyListenersException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryParserHelper;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.standard.builders.StandardQueryTreeBuilder;
-import org.apache.lucene.queryParser.standard.config.AllowLeadingWildcardAttribute;
-import org.apache.lucene.queryParser.standard.config.AnalyzerAttribute;
-import org.apache.lucene.queryParser.standard.config.DateResolutionAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultPhraseSlopAttribute;
-import org.apache.lucene.queryParser.standard.config.FieldBoostMapAttribute;
-import org.apache.lucene.queryParser.standard.config.FieldDateResolutionMapAttribute;
-import org.apache.lucene.queryParser.standard.config.FuzzyAttribute;
-import org.apache.lucene.queryParser.standard.config.LocaleAttribute;
-import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute;
-import org.apache.lucene.queryParser.standard.config.MultiFieldAttribute;
-import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
-import org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute;
+import org.apache.lucene.queryParser.standard.config.FuzzyConfig;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.FuzzyQuery;
@@ -179,9 +169,8 @@ public class StandardQueryParser extends QueryParserHelper {
    * Gets implicit operator setting, which will be either {@link Operator#AND}
    * or {@link Operator#OR}.
    */
-  public Operator getDefaultOperator() {
-    DefaultOperatorAttribute attr = getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
-    return attr.getOperator();
+  public StandardQueryConfigHandler.Operator getDefaultOperator() {
+    return getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
   }
 
   /**
@@ -192,9 +181,8 @@ public class StandardQueryParser extends QueryParserHelper {
    * In {@link Operator#AND} mode terms are considered to be in conjunction: the
    * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
    */
-  public void setDefaultOperator(Operator operator) {
-    DefaultOperatorAttribute attr = getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
-    attr.setOperator(operator);
+  public void setDefaultOperator(StandardQueryConfigHandler.Operator operator) {
+    getQueryConfigHandler().set(ConfigurationKeys.DEFAULT_OPERATOR, operator);
   }
 
   /**
@@ -207,16 +195,22 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-    LowercaseExpandedTermsAttribute attr = getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
-    attr.setLowercaseExpandedTerms(lowercaseExpandedTerms);
+    getQueryConfigHandler().set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms);
   }
 
   /**
    * @see #setLowercaseExpandedTerms(boolean)
    */
   public boolean getLowercaseExpandedTerms() {
-    LowercaseExpandedTermsAttribute attr = getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
-    return attr.isLowercaseExpandedTerms();
+    Boolean lowercaseExpandedTerms = getQueryConfigHandler().get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS);
+    
+    if (lowercaseExpandedTerms == null) {
+      return true;
+      
+    } else {
+      return lowercaseExpandedTerms;
+    }
+    
   }
 
   /**
@@ -229,8 +223,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
-    AllowLeadingWildcardAttribute attr = getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
-    attr.setAllowLeadingWildcard(allowLeadingWildcard);
+    getQueryConfigHandler().set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, allowLeadingWildcard);
   }
 
   /**
@@ -243,16 +236,22 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setEnablePositionIncrements(boolean enabled) {
-    PositionIncrementsAttribute attr = getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
-    attr.setPositionIncrementsEnabled(enabled);
+    getQueryConfigHandler().set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, enabled);
   }
 
   /**
    * @see #setEnablePositionIncrements(boolean)
    */
   public boolean getEnablePositionIncrements() {
-    PositionIncrementsAttribute attr = getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
-    return attr.isPositionIncrementsEnabled();
+    Boolean enablePositionsIncrements = getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
+    
+    if (enablePositionsIncrements == null) {
+       return false;
+       
+    } else {
+      return enablePositionsIncrements;
+    }
+    
   }
 
   /**
@@ -266,27 +265,40 @@ public class StandardQueryParser extends QueryParserHelper {
    * not relevant then use this change the rewrite method.
    */
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
-    MultiTermRewriteMethodAttribute attr = getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);
-    attr.setMultiTermRewriteMethod(method);
+    getQueryConfigHandler().set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, method);
   }
 
   /**
    * @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod)
    */
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
-    MultiTermRewriteMethodAttribute attr = getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);    
-    return attr.getMultiTermRewriteMethod();
+    return getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
   }
 
+  /**
+   * Set the fields a query should be expanded to when the field is
+   * <code>null</code>
+   * 
+   * @param fields the fields used to expand the query
+   */
   public void setMultiFields(CharSequence[] fields) {
 
     if (fields == null) {
       fields = new CharSequence[0];
     }
 
-    MultiFieldAttribute attr = getQueryConfigHandler().addAttribute(MultiFieldAttribute.class);
-    attr.setFields(fields);
+    getQueryConfigHandler().set(ConfigurationKeys.MULTI_FIELDS, fields);
 
+  }
+
+  /**
+   * Returns the fields used to expand the query when the field for a
+   * certain query is <code>null</code>
+   * 
+   * @param fields the fields used to expand the query
+   */
+  public void getMultiFields(CharSequence[] fields) {
+    getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
   }
 
   /**
@@ -296,65 +308,84 @@ public class StandardQueryParser extends QueryParserHelper {
    *          The fuzzyPrefixLength to set.
    */
   public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
-    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
-    attr.setPrefixLength(fuzzyPrefixLength);
+    QueryConfigHandler config = getQueryConfigHandler();
+    FuzzyConfig fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG);
+    
+    if (fuzzyConfig == null) {
+      fuzzyConfig = new FuzzyConfig();
+      config.set(ConfigurationKeys.FUZZY_CONFIG, fuzzyConfig);
+    }
+
+    fuzzyConfig.setPrefixLength(fuzzyPrefixLength);
+    
   }
 
   /**
    * Set locale used by date range parsing.
    */
   public void setLocale(Locale locale) {
-    LocaleAttribute attr = getQueryConfigHandler().addAttribute(LocaleAttribute.class);
-    attr.setLocale(locale);
+    getQueryConfigHandler().set(ConfigurationKeys.LOCALE, locale);
   }
 
   /**
    * Returns current locale, allowing access by subclasses.
    */
   public Locale getLocale() {
-    LocaleAttribute attr = getQueryConfigHandler().addAttribute(LocaleAttribute.class);
-    return attr.getLocale();
+    return getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
   }
 
   /**
    * Sets the default slop for phrases. If zero, then exact phrase matches are
    * required. Default value is zero.
+   * 
+   * @deprecated renamed to {@link #setPhraseSlop(int)}
    */
+  @Deprecated
   public void setDefaultPhraseSlop(int defaultPhraseSlop) {
-    DefaultPhraseSlopAttribute attr = getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
-    attr.setDefaultPhraseSlop(defaultPhraseSlop);
+    getQueryConfigHandler().set(ConfigurationKeys.PHRASE_SLOP, defaultPhraseSlop);
+  }
+  
+  /**
+   * Sets the default slop for phrases. If zero, then exact phrase matches are
+   * required. Default value is zero.
+   */
+  public void setPhraseSlop(int defaultPhraseSlop) {
+    getQueryConfigHandler().set(ConfigurationKeys.PHRASE_SLOP, defaultPhraseSlop);
   }
 
   public void setAnalyzer(Analyzer analyzer) {
-    AnalyzerAttribute attr = getQueryConfigHandler().getAttribute(AnalyzerAttribute.class);
-    attr.setAnalyzer(analyzer);
+    getQueryConfigHandler().set(ConfigurationKeys.ANALYZER, analyzer);
   }
   
   public Analyzer getAnalyzer() {    
-    QueryConfigHandler config = this.getQueryConfigHandler();
-
-    if ( config.hasAttribute(AnalyzerAttribute.class)) {
-      AnalyzerAttribute attr = config.getAttribute(AnalyzerAttribute.class);
-      return attr.getAnalyzer();
-    }
-
-    return null;       
+    return getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);       
   }
 
   /**
    * @see #setAllowLeadingWildcard(boolean)
    */
   public boolean getAllowLeadingWildcard() {
-    AllowLeadingWildcardAttribute attr = getQueryConfigHandler().addAttribute(AllowLeadingWildcardAttribute.class);
-    return attr.isAllowLeadingWildcard();
+    Boolean allowLeadingWildcard = getQueryConfigHandler().get(ConfigurationKeys.ALLOW_LEADING_WILDCARD);
+    
+    if (allowLeadingWildcard == null) {
+      return false;
+      
+    } else {
+      return allowLeadingWildcard;
+    }
   }
 
   /**
    * Get the minimal similarity for fuzzy queries.
    */
   public float getFuzzyMinSim() {
-    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
-    return attr.getFuzzyMinSimilarity();
+    FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
+    
+    if (fuzzyConfig == null) {
+      return FuzzyQuery.defaultMinSimilarity;
+    } else {
+      return fuzzyConfig.getMinSimilarity();
+    }
   }
 
   /**
@@ -363,16 +394,27 @@ public class StandardQueryParser extends QueryParserHelper {
    * @return Returns the fuzzyPrefixLength.
    */
   public int getFuzzyPrefixLength() {
-    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
-    return attr.getPrefixLength();
+    FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
+    
+    if (fuzzyConfig == null) {
+      return FuzzyQuery.defaultPrefixLength;
+    } else {
+      return fuzzyConfig.getPrefixLength();
+    }
   }
 
   /**
    * Gets the default slop for phrases.
    */
   public int getPhraseSlop() {
-    DefaultPhraseSlopAttribute attr = getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
-    return attr.getDefaultPhraseSlop();
+    Integer phraseSlop = getQueryConfigHandler().get(ConfigurationKeys.PHRASE_SLOP);
+    
+    if (phraseSlop == null) {
+      return 0;
+      
+    } else {
+      return phraseSlop;
+    }
   }
 
   /**
@@ -380,23 +422,83 @@ public class StandardQueryParser extends QueryParserHelper {
    * {@link FuzzyQuery#defaultMinSimilarity}.
    */
   public void setFuzzyMinSim(float fuzzyMinSim) {
-    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
-    attr.setFuzzyMinSimilarity(fuzzyMinSim);
+    QueryConfigHandler config = getQueryConfigHandler();
+    FuzzyConfig fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG);
+    
+    if (fuzzyConfig == null) {
+      fuzzyConfig = new FuzzyConfig();
+      config.set(ConfigurationKeys.FUZZY_CONFIG, fuzzyConfig);
+    }
+
+    fuzzyConfig.setMinSimilarity(fuzzyMinSim);
   }
   
+  /**
+   * Sets the boost used for each field.
+   * 
+   * @param boosts a collection that maps a field to its boost 
+   */
   public void setFieldsBoost(Map<String, Float> boosts) {
-    FieldBoostMapAttribute attr = getQueryConfigHandler().addAttribute(FieldBoostMapAttribute.class);
-    attr.setFieldBoostMap(boosts);
+    getQueryConfigHandler().set(ConfigurationKeys.FIELD_BOOST_MAP, boosts);
+  }
+  
+  /**
+   * Returns the field to boost map used to set boost for each field.
+   * 
+   * @return the field to boost map 
+   */
+  public Map<String, Float> getFieldsBoost() {
+    return getQueryConfigHandler().get(ConfigurationKeys.FIELD_BOOST_MAP);
   }
 
+  /**
+   * Sets the default {@link Resolution} used for certain field when
+   * no {@link Resolution} is defined for this field.
+   * 
+   * @param dateResolution the default {@link Resolution}
+   */
   public void setDateResolution(DateTools.Resolution dateResolution) {
-    DateResolutionAttribute attr = getQueryConfigHandler().addAttribute(DateResolutionAttribute.class);
-    attr.setDateResolution(dateResolution);
+    getQueryConfigHandler().set(ConfigurationKeys.DATE_RESOLUTION, dateResolution);
+  }
+  
+  /**
+   * Returns the default {@link Resolution} used for certain field when
+   * no {@link Resolution} is defined for this field.
+   * 
+   * @return the default {@link Resolution}
+   */
+  public DateTools.Resolution getDateResolution() {
+    return getQueryConfigHandler().get(ConfigurationKeys.DATE_RESOLUTION);
   }
 
+  /**
+   * Sets the {@link Resolution} used for each field
+   * 
+   * @param dateRes a collection that maps a field to its {@link Resolution}
+   * 
+   * @deprecated this method was renamed to {@link #setDateResolutionMap(Map)} 
+   */
+  @Deprecated
   public void setDateResolution(Map<CharSequence, DateTools.Resolution> dateRes) {
-    FieldDateResolutionMapAttribute attr = getQueryConfigHandler().addAttribute(FieldDateResolutionMapAttribute.class);
-    attr.setFieldDateResolutionMap(dateRes);
+    setDateResolutionMap(dateRes);
+  }
+  
+  /**
+   * Returns the field to {@link Resolution} map used to normalize each date field.
+   * 
+   * @return the field to {@link Resolution} map
+   */
+  public Map<CharSequence, DateTools.Resolution> getDateResolutionMap() {
+    return getQueryConfigHandler().get(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP);
+  }
+  
+  /**
+   * Sets the {@link Resolution} used for each field
+   * 
+   * @param dateRes a collection that maps a field to its {@link Resolution}
+   */
+  public void setDateResolutionMap(Map<CharSequence, DateTools.Resolution> dateRes) {
+    getQueryConfigHandler().set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP, dateRes);
   }
   
 }

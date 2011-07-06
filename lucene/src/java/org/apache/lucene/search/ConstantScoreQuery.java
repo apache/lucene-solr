@@ -136,16 +136,18 @@ public class ConstantScoreQuery extends Query {
       if (filter != null) {
         assert query == null;
         final DocIdSet dis = filter.getDocIdSet(context);
-        if (dis == null)
+        if (dis == null) {
           return null;
+        }
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi =
-          innerWeight.scorer(context, scorerContext);
+        disi = innerWeight.scorer(context, scorerContext);
       }
-      if (disi == null)
+
+      if (disi == null) {
         return null;
+      }
       return new ConstantScorer(disi, this);
     }
     

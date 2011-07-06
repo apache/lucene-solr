@@ -148,7 +148,11 @@ New Features
 * SOLR-2533: Converted ValueSource.ValueSourceSortField over to new rewriteable Lucene
   SortFields.  ValueSourceSortField instances must be rewritten before they can be used.
   This is done by SolrIndexSearcher when necessary. (Chris Male).
-  
+
+* SOLR-2193, SOLR-2565: You may now specify a 'soft' commit when committing. This will
+  use Lucene's NRT feature to avoid guaranteeing documents are on stable storage in exchange
+  for faster reopen times. There is also a new 'soft' autocommit tracker that can be
+  configured. (Mark Miller, Robert Muir)
 
 Optimizations
 ----------------------
@@ -170,12 +174,18 @@ Optimizations
 * SOLR-2092: Speed up single-valued and multi-valued "fc" faceting. Typical
   improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
   is very large (deep paging). (yonik)
+  
+* SOLR-2193, SOLR-2565: The default Solr update handler has been improved so
+  that it uses fewer locks, keeps the IndexWriter open rather than closing it
+  on each commit (ie commits no longer wait for background merges to complete), 
+  works with SolrCore to provide faster 'soft' commits, and has an improved API 
+  that requires less instanceof special casing. (Mark Miller, Robert Muir)
 
 Bug Fixes
 ----------------------
 
 * SOLR-1908: Fixed SignatureUpdateProcessor to fail to initialize on
-  invalid config.  Specificly: a signatureField that does not exist,
+  invalid config.  Specifically: a signatureField that does not exist,
   or overwriteDupes=true with a signatureField that is not indexed.
   (hossman)
 
@@ -195,7 +205,10 @@ Bug Fixes
 
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
-
+  
+* SOLR-2193, SOLR-2565:  SolrCores now properly share IndexWriters across SolrCore reloads.
+  (Mark Miller, Robert Muir)
+  
 Other Changes
 ----------------------
 
@@ -240,6 +253,10 @@ Other Changes
   (James Dyer via rmuir)
 
 * LUCENE-3232: Moved MutableValue classes to new 'common' module. (Chris Male)
+
+* LUCENE-2883: FunctionQuery, DocValues (and its impls), ValueSource (and its
+  impls) and BoostedQuery have been consolidated into the queries module.  They
+  can now be found at o.a.l.queries.function. 
   
 Documentation
 ----------------------
@@ -265,12 +282,25 @@ New Features
   checked only for documents that match the main query and all other filters.
   The "frange" query now implements the PostFilter interface.  (yonik)
 
+* SOLR-2630: Added new XsltUpdateRequestHandler that works like
+  XmlUpdateRequestHandler but allows to transform the POSTed XML document
+  using XSLT. This allows to POST arbitrary XML documents to the update
+  handler, as long as you also provide a XSL to transform them to a valid
+  Solr input document.  (Upayavira, Uwe Schindler)
 
 Optimizations
 ----------------------
 
 Bug Fixes
 ----------------------
+
+* SOLR-2625: TermVectorComponent throws NPE if TF-IDF option is used without DF
+  option. (Daniel Erenrich, Simon Willnauer)
+
+* SOLR-2631: PingRequestHandler should not allow to ping itsself using "qt"
+  param to prevent infinite loop. (Edoardo Tosca, Uwe Schindler)
+
+* SOLR-2636: Fix explain functionality for negative queries. (Tom Hill via yonik)
 
 Other Changes
 ----------------------
@@ -664,8 +694,8 @@ New Features
   for specifying when the upper & lower end points of computed date
   ranges should be included in the range.  Legal values are: "all",
   "lower", "upper", "edge", and "outer".  For backwards compatibility
-  the default value is the set: [lower,upper,edge], so that al ranges
-  between start and ed are inclusive of their endpoints, but the
+  the default value is the set: [lower,upper,edge], so that all ranges
+  between start and end are inclusive of their endpoints, but the
   "before" and "after" ranges are not.
 
 * SOLR-945: JSON update handler that accepts add, delete, commit
@@ -730,7 +760,7 @@ New Features
 * SOLR-2129: Added a Solr module for dynamic metadata extraction/indexing with Apache UIMA.
   See contrib/uima/README.txt for more information.  (Tommaso Teofili via rmuir)
 
-* SOLR-2325: Allow tagging and exlcusion of main query for faceting. (yonik)
+* SOLR-2325: Allow tagging and exclusion of main query for faceting. (yonik)
 
 * SOLR-2263: Add ability for RawResponseWriter to stream binary files as well as
   text files.  (Eric Pugh via yonik)

@@ -87,13 +87,13 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
-      return in.docs(skipDocs, text, reuse);
+    public DocsEnum docs(Bits liveDocs, BytesRef text, DocsEnum reuse) throws IOException {
+      return in.docs(liveDocs, text, reuse);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
-      return in.docsAndPositions(skipDocs, text, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
+      return in.docsAndPositions(liveDocs, text, reuse);
     }
 
     @Override
@@ -172,13 +172,13 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-      return in.docs(skipDocs, reuse);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      return in.docs(liveDocs, reuse);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return in.docsAndPositions(skipDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+      return in.docsAndPositions(liveDocs, reuse);
     }
 
     @Override
@@ -301,8 +301,8 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
-  public Bits getDeletedDocs() {
-    return in.getDeletedDocs();
+  public Bits getLiveDocs() {
+    return in.getLiveDocs();
   }
   
   @Override

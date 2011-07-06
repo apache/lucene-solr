@@ -34,8 +34,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 
 /**
- * FieldQuery breaks down query object into terms/phrases and keep
- * them in QueryPhraseMap structure.
+ * FieldQuery breaks down query object into terms/phrases and keeps
+ * them in a QueryPhraseMap structure.
  */
 public class FieldQuery {
 

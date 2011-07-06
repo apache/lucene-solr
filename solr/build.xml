@@ -46,11 +46,11 @@
           depends="contrib-build.javadocs"/>
 
   <!-- hackish we have to call init/clover here, but solr core depends upon solrj? -->
-  <target name="compile-core" depends="init, clover, compile-common-module,
-        compile-analyzers-common, compile-analyzers-phonetic, compile-suggest,
-        compile-highlighter, compile-memory, compile-misc, compile-queries-contrib,
-        compile-spatial, compile-grouping, compile-queries, compile-solrj,
-        common.compile-core, compile-webapp"
+  <target name="compile-core" depends="init, clover, compile-analyzers-common,
+        compile-analyzers-phonetic, compile-suggest, compile-highlighter, 
+        compile-memory, compile-misc, compile-queries-contrib, compile-spatial, 
+        compile-grouping, compile-queries, compile-solrj, common.compile-core, 
+        compile-webapp"
   	  unless="solr-core.compiled">
   </target>
 
@@ -153,9 +153,6 @@
   </target>
   <target name="compile-grouping" unless="grouping.uptodate">
   	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false"/>
-  </target>
-  <target name="compile-common-module" unless="common-module.uptodate">
-  	<ant dir="${common.dir}/../modules/common" target="default" inheritAll="false"/>
   </target>
   <target name="compile-queries" unless="queries.uptodate">
   	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false"/>

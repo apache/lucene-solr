@@ -17,14 +17,20 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
@@ -44,31 +50,60 @@ class FixedStraightBytesImpl {
     private int size = -1;
     // start at -1 if the first added value is > 0
     private int lastDocID = -1;
-    private byte[] oneRecord;
+    private final ByteBlockPool pool;
+    private boolean merge;
+    private final int byteBlockSize;
+    private IndexOutput datOut;
 
-    public Writer(Directory dir, String id) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, false, null, null);
+    public Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+      pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
+      byteBlockSize = BYTE_BLOCK_SIZE;
     }
-
 
     @Override
     public void add(int docID, BytesRef bytes) throws IOException {
+      assert lastDocID < docID;
+      assert !merge;
       if (size == -1) {
+        if (bytes.length > BYTE_BLOCK_SIZE) {
+          throw new IllegalArgumentException("bytes arrays > " + Short.MAX_VALUE + " are not supported");
+        }
         size = bytes.length;
-        datOut.writeInt(size);
-        oneRecord = new byte[size];
+        pool.nextBuffer();
       } else if (bytes.length != size) {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
       }
-      fill(docID);
-      assert bytes.bytes.length >= bytes.length;
-      datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+      if (lastDocID+1 < docID) {
+        advancePool(docID);
+      }
+      pool.copy(bytes);
+      lastDocID = docID;
+    }
+    
+    private final void advancePool(int docID) {
+      assert !merge;
+      long numBytes = (docID - (lastDocID+1))*size;
+      while(numBytes > 0) {
+        if (numBytes + pool.byteUpto < byteBlockSize) {
+          pool.byteUpto += numBytes;
+          numBytes = 0;
+        } else {
+          numBytes -= byteBlockSize - pool.byteUpto;
+          pool.nextBuffer();
+        }
+      }
+      assert numBytes == 0;
     }
 
     @Override
     protected void merge(MergeState state) throws IOException {
-      if (state.bits == null && state.reader instanceof Reader) {
+      merge = true;
+      datOut = getDataOut();
+      boolean success = false;
+      try {
+      if (state.liveDocs == null && state.reader instanceof Reader) {
         Reader reader = (Reader) state.reader;
         final int maxDocs = reader.maxDoc;
         if (maxDocs == 0) {
@@ -77,47 +112,91 @@ class FixedStraightBytesImpl {
         if (size == -1) {
           size = reader.size;
           datOut.writeInt(size);
-          oneRecord = new byte[size];
         }
-        fill(state.docBase);
+        if (lastDocID+1 < state.docBase) {
+          fill(datOut, state.docBase);
+          lastDocID = state.docBase-1;
+        }
         // TODO should we add a transfer to API to each reader?
         final IndexInput cloneData = reader.cloneData();
         try {
           datOut.copyBytes(cloneData, size * maxDocs);
         } finally {
-          cloneData.close();  
+          IOUtils.closeSafely(true, cloneData);  
         }
         
-        lastDocID += maxDocs - 1;
+        lastDocID += maxDocs;
       } else {
         super.merge(state);
       }
+      success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(!success, datOut);
+        }
+      }
+    }
+    
+    
+
+    @Override
+    protected void mergeDoc(int docID) throws IOException {
+      assert lastDocID < docID;
+      if (size == -1) {
+        size = bytesRef.length;
+        datOut.writeInt(size);
+      }
+      assert size == bytesRef.length;
+      if (lastDocID+1 < docID) {
+        fill(datOut, docID);
+      }
+      datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
+      lastDocID = docID;
     }
 
+
+
     // Fills up to but not including this docID
-    private void fill(int docID) throws IOException {
+    private void fill(IndexOutput datOut, int docID) throws IOException {
       assert size >= 0;
-      for (int i = lastDocID + 1; i < docID; i++) {
-        datOut.writeBytes(oneRecord, size);
+      final long numBytes = (docID - (lastDocID+1))*size;
+      final byte zero = 0;
+      for (long i = 0; i < numBytes; i++) {
+        datOut.writeByte(zero);
       }
-      lastDocID = docID;
     }
 
     @Override
     public void finish(int docCount) throws IOException {
+      boolean success = false;
       try {
-        if (size == -1) {// no data added
-          datOut.writeInt(0);
+        if (!merge) {
+          // indexing path - no disk IO until here
+          assert datOut == null;
+          datOut = getDataOut();
+          if (size == -1) {
+            datOut.writeInt(0);
+          } else {
+            datOut.writeInt(size);
+            pool.writePool(datOut);
+          }
+          if (lastDocID + 1 < docCount) {
+            fill(datOut, docCount);
+          }
         } else {
-          fill(docCount);
+          // merge path - datOut should be initialized
+          assert datOut != null;
+          if (size == -1) {// no data added
+            datOut.writeInt(0);
+          } else {
+            fill(datOut, docCount);
+          }
         }
+        success = true;
       } finally {
-        super.finish(docCount);
+        pool.dropBuffersAndReset();
+        IOUtils.closeSafely(!success, datOut);
       }
-    }
-
-    public long ramBytesUsed() {
-      return oneRecord == null ? 0 : oneRecord.length;
     }
   }
   

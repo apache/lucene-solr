@@ -51,7 +51,7 @@ public class InputStreamDataInput extends DataInput implements Closeable {
     }
   }
 
-  //@Override -- not until Java 1.6
+  @Override
   public void close() throws IOException {
     is.close();
   }

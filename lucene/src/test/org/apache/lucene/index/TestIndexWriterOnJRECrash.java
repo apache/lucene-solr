@@ -47,7 +47,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     tempDir.mkdir();
   }
   
-  @Override
+  @Override @Nightly
   public void testNRTThreads() throws Exception {
     String vendor = Constants.JAVA_VENDOR;
     assumeTrue(vendor + " JRE not supported.", 

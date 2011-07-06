@@ -21,12 +21,12 @@ import org.apache.lucene.util.Bits;
 
 public class InstantiatedDocsEnum extends DocsEnum {
   private int upto;
-  private Bits skipDocs;
+  private Bits liveDocs;
   private InstantiatedTerm term;
   protected InstantiatedTermDocumentInformation currentDoc;
 
-  public InstantiatedDocsEnum reset(Bits skipDocs, InstantiatedTerm term) {
-    this.skipDocs = skipDocs;
+  public InstantiatedDocsEnum reset(Bits liveDocs, InstantiatedTerm term) {
+    this.liveDocs = liveDocs;
     this.term = term;
     upto = -1;
     return this;
@@ -44,7 +44,7 @@ public class InstantiatedDocsEnum extends DocsEnum {
       return NO_MORE_DOCS;
     } else {
       currentDoc = term.getAssociatedDocuments()[upto];
-      if (skipDocs == null || !skipDocs.get(currentDoc.getDocument().getDocumentNumber())) {
+      if (liveDocs == null || liveDocs.get(currentDoc.getDocument().getDocumentNumber())) {
         return docID();
       } else {
         return nextDoc();
@@ -65,7 +65,7 @@ public class InstantiatedDocsEnum extends DocsEnum {
     }
     currentDoc = term.getAssociatedDocuments()[upto];
 
-    if (skipDocs != null && skipDocs.get(currentDoc.getDocument().getDocumentNumber())) {
+    if (liveDocs != null && !liveDocs.get(currentDoc.getDocument().getDocumentNumber())) {
       return nextDoc();
     } else {
       return docID();

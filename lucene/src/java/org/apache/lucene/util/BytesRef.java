@@ -20,7 +20,8 @@ package org.apache.lucene.util;
 import java.util.Comparator;
 
 /** Represents byte[], as a slice (offset + length) into an
- *  existing byte[].
+ *  existing byte[].  The {@link #bytes} member should never be null;
+ *  use {@link #EMPTY_BYTES} if necessary.
  *
  *  @lucene.experimental */
 public final class BytesRef implements Comparable<BytesRef> {

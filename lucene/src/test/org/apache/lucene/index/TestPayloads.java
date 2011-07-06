@@ -223,7 +223,7 @@ public class TestPayloads extends LuceneTestCase {
         DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
         for (int i = 0; i < numTerms; i++) {
           tps[i] = MultiFields.getTermPositionsEnum(reader,
-                                                    MultiFields.getDeletedDocs(reader),
+                                                    MultiFields.getLiveDocs(reader),
                                                     terms[i].field(),
                                                     new BytesRef(terms[i].text()));
         }
@@ -241,6 +241,14 @@ public class TestPayloads extends LuceneTestCase {
                       BytesRef br = tps[j].getPayload();
                       System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
                       offset += br.length;
+                      // Just to ensure all codecs can
+                      // handle a caller that mucks with the
+                      // returned payload:
+                      if (rarely()) {
+                        br.bytes = new byte[random.nextInt(5)];
+                      }
+                      br.length = 0;
+                      br.offset = 0;
                     }
                 }
             }
@@ -252,7 +260,7 @@ public class TestPayloads extends LuceneTestCase {
          *  test lazy skipping
          */        
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
-                                                                   MultiFields.getDeletedDocs(reader),
+                                                                   MultiFields.getLiveDocs(reader),
                                                                    terms[0].field(),
                                                                    new BytesRef(terms[0].text()));
         tp.nextDoc();
@@ -280,7 +288,7 @@ public class TestPayloads extends LuceneTestCase {
          * Test different lengths at skip points
          */
         tp = MultiFields.getTermPositionsEnum(reader,
-                                              MultiFields.getDeletedDocs(reader),
+                                              MultiFields.getLiveDocs(reader),
                                               terms[1].field(),
                                               new BytesRef(terms[1].text()));
         tp.nextDoc();
@@ -323,7 +331,7 @@ public class TestPayloads extends LuceneTestCase {
         
         reader = IndexReader.open(dir, true);
         tp = MultiFields.getTermPositionsEnum(reader,
-                                              MultiFields.getDeletedDocs(reader),
+                                              MultiFields.getLiveDocs(reader),
                                               fieldName,
                                               new BytesRef(singleTerm));
         tp.nextDoc();
@@ -508,11 +516,11 @@ public class TestPayloads extends LuceneTestCase {
         writer.close();
         IndexReader reader = IndexReader.open(dir, true);
         TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator();
-        Bits delDocs = MultiFields.getDeletedDocs(reader);
+        Bits liveDocs = MultiFields.getLiveDocs(reader);
         DocsAndPositionsEnum tp = null;
         while (terms.next() != null) {
           String termText = terms.term().utf8ToString();
-          tp = terms.docsAndPositions(delDocs, tp);
+          tp = terms.docsAndPositions(liveDocs, tp);
           while(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             int freq = tp.freq();
             for (int i = 0; i < freq; i++) {

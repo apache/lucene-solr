@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -95,18 +94,6 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     // delete a document:
     is.getIndexReader().deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
-    assertEquals(2, hits.length);
-    
-    // test parsable toString()
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "key", analyzer);
-    hits = is.search(qp.parse(new MatchAllDocsQuery().toString()), null, 1000).scoreDocs;
-    assertEquals(2, hits.length);
-
-    // test parsable toString() with non default boost
-    Query maq = new MatchAllDocsQuery();
-    maq.setBoost(2.3f);
-    Query pq = qp.parse(maq.toString());
-    hits = is.search(pq, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     
     is.close();

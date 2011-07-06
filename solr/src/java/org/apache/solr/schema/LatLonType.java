@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
@@ -30,7 +31,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
-import org.apache.solr.search.function.VectorValueSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -389,7 +389,7 @@ class SpatialDistanceQuery extends Query {
     int doc=-1;
     final DocValues latVals;
     final DocValues lonVals;
-    final Bits delDocs;
+    final Bits liveDocs;
 
 
     final double lonMin, lonMax, lon2Min, lon2Max, latMin, latMax;
@@ -411,7 +411,7 @@ class SpatialDistanceQuery extends Query {
       this.qWeight = w.getValue();
       this.reader = readerContext.reader;
       this.maxDoc = reader.maxDoc();
-      this.delDocs = reader.getDeletedDocs();
+      this.liveDocs = reader.getLiveDocs();
       latVals = latSource.getValues(weight.latContext, readerContext);
       lonVals = lonSource.getValues(weight.lonContext, readerContext);
 
@@ -489,7 +489,7 @@ class SpatialDistanceQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (delDocs != null && delDocs.get(doc)) continue;
+        if (liveDocs != null && !liveDocs.get(doc)) continue;
         if (!match()) continue;
         return doc;
       }

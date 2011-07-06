@@ -252,14 +252,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-    return actualEnum.docs(skipDocs, reuse);
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+    return actualEnum.docs(liveDocs, reuse);
   }
   
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs,
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
       DocsAndPositionsEnum reuse) throws IOException {
-    return actualEnum.docsAndPositions(skipDocs, reuse);
+    return actualEnum.docsAndPositions(liveDocs, reuse);
   }
   
   @Override

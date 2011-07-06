@@ -428,7 +428,7 @@ public class FST<T> {
       final int sizeNeeded = fixedArrayStart + node.numArcs * maxBytesPerArc;
       bytes = ArrayUtil.grow(bytes, sizeNeeded);
       if (maxBytesPerArc > 255) {
-        throw new IllegalStateException("max arc size is too large (" + maxBytesPerArc + ")");
+        throw new IllegalStateException("max arc size is too large (" + maxBytesPerArc + "); disable array arcs by calling Builder.setAllowArrayArcs(false)");
       }
       bytes[fixedArrayStart-1] = (byte) maxBytesPerArc;
 

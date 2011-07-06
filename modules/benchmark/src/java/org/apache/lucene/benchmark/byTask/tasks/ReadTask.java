@@ -96,9 +96,9 @@ public abstract class ReadTask extends PerfTask {
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
-      Bits delDocs = MultiFields.getDeletedDocs(reader);
+      Bits liveDocs = MultiFields.getLiveDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
-        if (null == delDocs || ! delDocs.get(m)) {
+        if (null == liveDocs || liveDocs.get(m)) {
           doc = reader.document(m);
           res += (doc == null ? 0 : 1);
         }

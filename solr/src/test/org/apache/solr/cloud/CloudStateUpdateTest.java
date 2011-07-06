@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * TODO: look at hostPort used below
  */
-public class CloudStateUpdateTest extends SolrTestCaseJ4 {
+public class CloudStateUpdateTest extends SolrTestCaseJ4  {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
@@ -68,15 +68,14 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
+    createTempDir();
     System.setProperty("zkClientTimeout", "3000");
-    
+
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
@@ -95,7 +94,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     dataDir3 = new File(dataDir + File.separator + "data3");
     dataDir3.mkdirs();
     
-    dataDir4 = new File(dataDir + File.separator + "data3");
+    dataDir4 = new File(dataDir + File.separator + "data4");
     dataDir4.mkdirs();
     
     // set some system properties for use by tests
@@ -103,31 +102,21 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
     System.setProperty("hostPort", "1661");
-    CoreContainer.Initializer init1 = new CoreContainer.Initializer() {
-      {
-        this.dataDir = CloudStateUpdateTest.this.dataDir1.getAbsolutePath();
-      }
-    };
-    
+    CoreContainer.Initializer init1 = new CoreContainer.Initializer();
+    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir1.getAbsolutePath());
     container1 = init1.initialize();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1662");
-    init2 = new CoreContainer.Initializer() {
-      {
-        this.dataDir = CloudStateUpdateTest.this.dataDir2.getAbsolutePath();
-      }
-    };
-    
+    init2 = new CoreContainer.Initializer();
+    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir2.getAbsolutePath());
     container2 = init2.initialize();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1663");
-    CoreContainer.Initializer init3 = new CoreContainer.Initializer() {
-      {
-        this.dataDir = CloudStateUpdateTest.this.dataDir3.getAbsolutePath();
-      }
-    };
+    CoreContainer.Initializer init3 = new CoreContainer.Initializer();
+   
+    System.setProperty("solr.data.dir", CloudStateUpdateTest.this.dataDir3.getAbsolutePath());
     container3 = init3.initialize();
     System.clearProperty("hostPort");
     
@@ -153,6 +142,7 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
     dcore.setDataDir(dataDir4.getAbsolutePath());
 
     SolrCore core = container1.create(dcore);
+    
     container1.register(core, false);
     
     ZkController zkController2 = container2.getZkController();
@@ -226,7 +216,8 @@ public class CloudStateUpdateTest extends SolrTestCaseJ4 {
 
     assertTrue(container1.getZkController().getCloudState().liveNodesContain(
         container2.getZkController().getNodeName()));
-    
+
+    // core.close();  // this core is managed by container1 now
   }
 
   @Override

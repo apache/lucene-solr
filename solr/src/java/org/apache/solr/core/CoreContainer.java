@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
@@ -43,6 +42,8 @@ import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.util.SystemIdResolver;
+import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
+import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.zookeeper.KeeperException;
@@ -82,6 +83,7 @@ public class CoreContainer
   protected Integer zkClientTimeout;
   protected String solrHome;
   protected String defaultCoreName = "";
+  private SolrXMLSerializer solrXMLSerializer = new SolrXMLSerializer();
   private ZkController zkController;
   private SolrZkServer zkServer;
 
@@ -250,7 +252,7 @@ public class CoreContainer
     }
   }
 
-  private static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
+  static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
     if(file == null) file = "conf"+File.separator+ "solrcore.properties";
     File corePropsFile = new File(file);
     if(!corePropsFile.isAbsolute()){
@@ -648,9 +650,8 @@ public class CoreContainer
         schema = new IndexSchema(config, dcore.getSchemaName(), null);
       }
     }
-    String dataDir = null;
 
-    SolrCore core = new SolrCore(dcore.getName(), dataDir, config, schema, dcore);
+    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
     return core;
   }
     
@@ -712,7 +713,7 @@ public class CoreContainer
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
-    SolrCore newCore = create(core.getCoreDescriptor());
+    SolrCore newCore = core.reload(libLoader);
     register(name, newCore, false);
   }
 
@@ -847,172 +848,79 @@ public class CoreContainer
 
   /** Persists the cores config file in a user provided file. */
   public void persistFile(File file) {
-    log.info("Persisting cores config to " + (file==null ? configFile : file));
-
-    File tmpFile = null;
-    try {
-      // write in temp first
-      if (file == null) {
-        file = tmpFile = File.createTempFile("solr", ".xml", configFile.getParentFile());
-      }
-      java.io.FileOutputStream out = new java.io.FileOutputStream(file);
-        Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
-        persist(writer);
-        writer.flush();
-        writer.close();
-        out.close();
-        // rename over origin or copy it this fails
-        if (tmpFile != null) {
-          if (tmpFile.renameTo(configFile))
-            tmpFile = null;
-          else
-            fileCopy(tmpFile, configFile);
-        }
-    } 
-    catch(java.io.FileNotFoundException xnf) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, xnf);
-    } 
-    catch(java.io.IOException xio) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, xio);
-    } 
-    finally {
-      if (tmpFile != null) {
-        if (!tmpFile.delete())
-          tmpFile.deleteOnExit();
-      }
-    }
-  }
-  
-  /** Write the cores configuration through a writer.*/
-  void persist(Writer w) throws IOException {
-    w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
-    w.write("<solr");
-    if (this.libDir != null) {
-      writeAttribute(w,"sharedLib",libDir);
-    }
-    if(zkHost != null) writeAttribute(w, "zkHost", zkHost);
-    writeAttribute(w,"persistent",isPersistent());
-    w.write(">\n");
-
-    if (containerProperties != null && !containerProperties.isEmpty())  {
-      writeProperties(w, containerProperties, "  ");
-    }
-    w.write("  <cores");
-    writeAttribute(w, "adminPath",adminPath);
-    if(adminHandler != null) writeAttribute(w, "adminHandler", adminHandler);
-    if(shareSchema) writeAttribute(w, "shareSchema", "true");
-    if(!defaultCoreName.equals("")) writeAttribute(w, "defaultCoreName", defaultCoreName);
-    if(host != null) writeAttribute(w, "host", host);
-    if(hostPort != null) writeAttribute(w, "hostPort", hostPort);
-    if(zkClientTimeout != null) writeAttribute(w, "zkClientTimeout", zkClientTimeout);
-    if(hostContext != null) writeAttribute(w, "hostContext", hostContext);
-    w.write(">\n");
-
-    synchronized(cores) {
+    log.info("Persisting cores config to " + (file == null ? configFile : file));
+    // <solr attrib="value">
+    Map<String,String> rootSolrAttribs = new HashMap<String,String>();
+    if (libDir != null) rootSolrAttribs.put("sharedLib", libDir);
+    rootSolrAttribs.put("persistent", Boolean.toString(isPersistent()));
+    
+    // <solr attrib="value"> <cores attrib="value">
+    Map<String,String> coresAttribs = new HashMap<String,String>();
+    coresAttribs.put("adminPath", adminPath);
+    if (adminHandler != null) coresAttribs.put("adminHandler", adminHandler);
+    if (shareSchema) coresAttribs.put("shareSchema", "true");
+    if (!defaultCoreName.equals("")) coresAttribs.put("defaultCoreName",
+        defaultCoreName);
+    if (host != null) coresAttribs.put("host", host);
+    if (hostPort != null) coresAttribs.put("hostPort", hostPort);
+    if (zkClientTimeout != null) coresAttribs.put("zkClientTimeout", Integer.toString(zkClientTimeout));
+    if (hostContext != null) coresAttribs.put("hostContext", hostContext);
+    
+    List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrCoreXMLDef>();
+    
+    synchronized (cores) {
+      Map<String,String> coreAttribs = new HashMap<String,String>();
       for (SolrCore solrCore : cores.values()) {
-        persist(w,solrCore.getCoreDescriptor());
+        CoreDescriptor dcore = solrCore.getCoreDescriptor();
+        
+        coreAttribs.put("name", dcore.name.equals("") ? defaultCoreName
+            : dcore.name);
+        coreAttribs.put("instanceDir", dcore.getInstanceDir());
+        // write config (if not default)
+        String opt = dcore.getConfigName();
+        if (opt != null && !opt.equals(dcore.getDefaultConfigName())) {
+          coreAttribs.put("config", opt);
+        }
+        // write schema (if not default)
+        opt = dcore.getSchemaName();
+        if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
+          coreAttribs.put("schema", opt);
+        }
+        opt = dcore.getPropertiesName();
+        if (opt != null) {
+          coreAttribs.put("properties", opt);
+        }
+        opt = dcore.dataDir;
+        if (opt != null) coreAttribs.put("dataDir", opt);
+        
+        CloudDescriptor cd = dcore.getCloudDescriptor();
+        if (cd != null) {
+          opt = cd.getShardId();
+          if (opt != null) coreAttribs.put("shard", opt);
+          // only write out the collection name if it's not the default (the
+          // core
+          // name)
+          opt = cd.getCollectionName();
+          if (opt != null && !opt.equals(dcore.name)) coreAttribs.put(
+              "collection", opt);
+        }
+        
+        SolrCoreXMLDef solrCoreXMLDef = new SolrCoreXMLDef();
+        solrCoreXMLDef.coreAttribs = coreAttribs;
+        solrCoreXMLDef.coreProperties = dcore.getCoreProperties();
+        solrCoreXMLDefs.add(solrCoreXMLDef);
       }
-    }
-
-    w.write("  </cores>\n");
-    w.write("</solr>\n");
-  }
-
-  private void writeAttribute(Writer w, String name, Object value) throws IOException {
-    if (value == null) return;
-    w.write(" ");
-    w.write(name);
-    w.write("=\"");
-    XML.escapeAttributeValue(value.toString(), w);
-    w.write("\"");
-  }
-  
-  /** Writes the cores configuration node for a given core. */
-  void persist(Writer w, CoreDescriptor dcore) throws IOException {
-    w.write("    <core");
-    writeAttribute(w,"name",dcore.name.equals("") ? defaultCoreName : dcore.name);
-    writeAttribute(w,"instanceDir",dcore.getInstanceDir());
-    //write config (if not default)
-    String opt = dcore.getConfigName();
-    if (opt != null && !opt.equals(dcore.getDefaultConfigName())) {
-      writeAttribute(w, "config",opt);
-    }
-    //write schema (if not default)
-    opt = dcore.getSchemaName();
-    if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
-      writeAttribute(w,"schema",opt);
-    }
-    opt = dcore.getPropertiesName();
-    if (opt != null) {
-      writeAttribute(w,"properties",opt);
-    }
-    opt = dcore.dataDir;
-    if (opt != null) writeAttribute(w,"dataDir",opt);
-
-    CloudDescriptor cd = dcore.getCloudDescriptor();
-    if (cd != null) {
-      opt = cd.getShardId();
-      if (opt != null)
-        writeAttribute(w,"shard",opt);
-      // only write out the collection name if it's not the default (the core name)
-      opt = cd.getCollectionName();
-      if (opt != null && !opt.equals(dcore.name))
-        writeAttribute(w,"collection",opt);
-    }
-
-    if (dcore.getCoreProperties() == null || dcore.getCoreProperties().isEmpty())
-      w.write("/>\n"); // core
-    else  {
-      w.write(">\n");
-      writeProperties(w, dcore.getCoreProperties(), "      ");
-      w.write("    </core>\n");
+      
+      SolrXMLDef solrXMLDef = new SolrXMLDef();
+      solrXMLDef.coresDefs = solrCoreXMLDefs;
+      solrXMLDef.containerProperties = containerProperties;
+      solrXMLDef.solrAttribs = rootSolrAttribs;
+      solrXMLDef.coresAttribs = coresAttribs;
+      solrXMLSerializer.persistFile(file == null ? configFile : file,
+          solrXMLDef);
     }
   }
 
-  private void writeProperties(Writer w, Properties props, String indent) throws IOException {
-    for (Map.Entry<Object, Object> entry : props.entrySet()) {
-      w.write(indent + "<property");
-      writeAttribute(w,"name",entry.getKey());
-      writeAttribute(w,"value",entry.getValue());
-      w.write("/>\n");
-    }
-  }
-
-  /** Copies a src file to a dest file:
-   *  used to circumvent the platform discrepancies regarding renaming files.
-   */
-  public static void fileCopy(File src, File dest) throws IOException {
-    IOException xforward = null;
-    FileInputStream fis =  null;
-    FileOutputStream fos = null;
-    FileChannel fcin = null;
-    FileChannel fcout = null;
-    try {
-      fis = new FileInputStream(src);
-      fos = new FileOutputStream(dest);
-      fcin = fis.getChannel();
-      fcout = fos.getChannel();
-      // do the file copy 32Mb at a time
-      final int MB32 = 32*1024*1024;
-      long size = fcin.size();
-      long position = 0;
-      while (position < size) {
-        position += fcin.transferTo(position, MB32, fcout);
-      }
-    } 
-    catch(IOException xio) {
-      xforward = xio;
-    } 
-    finally {
-      if (fis   != null) try { fis.close(); fis = null; } catch(IOException xio) {}
-      if (fos   != null) try { fos.close(); fos = null; } catch(IOException xio) {}
-      if (fcin  != null && fcin.isOpen() ) try { fcin.close();  fcin = null;  } catch(IOException xio) {}
-      if (fcout != null && fcout.isOpen()) try { fcout.close(); fcout = null; } catch(IOException xio) {}
-    }
-    if (xforward != null) {
-      throw xforward;
-    }
-  }
 
   public String getSolrHome() {
     return solrHome;

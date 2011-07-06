@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Similarity;
@@ -65,11 +66,25 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // lrf.args.put("version","2.0");
     for (float val : values) {
       String s = Float.toString(val);
+
       if (field!=null) assertU(adoc("id", s, field, s));
       else assertU(adoc("id", s));
+
+      if (random.nextInt(100) < 20) {
+        if (field!=null) assertU(adoc("id", s, field, s));
+        else assertU(adoc("id", s));
+      }
+
+      if (random.nextInt(100) < 20) {
+        assertU(commit());
+
+      }
+
+
       // System.out.println("added doc for " + val);
     }
-    assertU(optimize()); // squeeze out any possible deleted docs
+    // assertU(optimize()); // squeeze out any possible deleted docs
+    assertU(commit());
   }
 
   // replace \0 with the field name and create a parseable string 
@@ -379,6 +394,30 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
 
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+  }
+
+  /**
+   * test collection-level term stats (new in 4.x indexes)
+   */
+  public void testTotalTermFreq() throws Exception {
+    assumeFalse("PreFlex codec does not support collection-level term stats", 
+        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+    
+    clearIndex();
+    
+    assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
+    assertU(adoc("id","2", "a_t","how now brown cow"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","3", "a_t","brown cow"));
+    assertU(adoc("id","4"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","5"));
+    assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
+    assertU(commit());
+    assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");    
+    assertQ(req("fl","*,score","q", "{!func}ttf(a_t,'cow')", "fq","id:6"), "//float[@name='score']='7.0'");
+    assertQ(req("fl","*,score","q", "{!func}sumtotaltermfreq('a_t')", "fq","id:6"), "//float[@name='score']='11.0'");
+    assertQ(req("fl","*,score","q", "{!func}sttf(a_t)", "fq","id:6"), "//float[@name='score']='11.0'");
   }
 
   @Test

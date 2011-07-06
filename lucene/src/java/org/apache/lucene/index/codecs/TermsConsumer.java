@@ -67,7 +67,7 @@ public abstract class TermsConsumer {
       MultiDocsEnum docsEnumIn = null;
 
       while((term = termsEnum.next()) != null) {
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(mergeState.multiDeletedDocs, docsEnumIn);
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(mergeState.multiLiveDocs, docsEnumIn);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
@@ -89,7 +89,7 @@ public abstract class TermsConsumer {
       postingsEnum.setMergeState(mergeState);
       MultiDocsAndPositionsEnum postingsEnumIn = null;
       while((term = termsEnum.next()) != null) {
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(mergeState.multiDeletedDocs, postingsEnumIn);
+        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(mergeState.multiLiveDocs, postingsEnumIn);
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
           // set PayloadProcessor

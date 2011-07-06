@@ -27,19 +27,20 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
-import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 
 /**
- * This processor verifies if the attribute
- * {@link LowercaseExpandedTermsAttribute} is defined in the
+ * This processor verifies if 
+ * {@link ConfigurationKeys#LOWERCASE_EXPANDED_TERMS} is defined in the
  * {@link QueryConfigHandler}. If it is and the expanded terms should be
  * lower-cased, it looks for every {@link WildcardQueryNode},
  * {@link FuzzyQueryNode} and {@link ParametricQueryNode} and lower-case its
  * term. <br/>
  * 
- * @see LowercaseExpandedTermsAttribute
+ * @see ConfigurationKeys#LOWERCASE_EXPANDED_TERMS
  */
 public class LowercaseExpandedTermsQueryNodeProcessor extends
     QueryNodeProcessorImpl {
@@ -50,17 +51,10 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
   @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
+    Boolean lowercaseExpandedTerms = getQueryConfigHandler().get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS);
 
-    if (getQueryConfigHandler().hasAttribute(
-        LowercaseExpandedTermsAttribute.class)) {
-
-      if (getQueryConfigHandler().getAttribute(
-          LowercaseExpandedTermsAttribute.class).isLowercaseExpandedTerms()) {
-        
-        return super.process(queryTree);
-        
-      }
-
+    if (lowercaseExpandedTerms != null && lowercaseExpandedTerms) {
+      return super.process(queryTree);
     }
 
     return queryTree;

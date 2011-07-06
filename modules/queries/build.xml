@@ -26,20 +26,5 @@
 
   <import file="../../lucene/contrib/contrib-build.xml"/>
 
-  <module-uptodate name="common-module"
-                   module-src-name="common"
-                   property="common-module.uptodate" classpath.property="common-module.jar"/>
-
-  <path id="classpath">
-    <pathelement path="${common-module.jar}"/>
-    <path refid="base.classpath"/>
-  </path>
-
-  <target name="compile-common-module" unless="common-module.uptodate">
-    <ant dir="${common.dir}/../modules/common" target="default" inheritall="false"/>
-  </target>
-
-  <target name="compile-core" depends="compile-common-module, common.compile-core"/>
-
   <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven"/>
 </project>

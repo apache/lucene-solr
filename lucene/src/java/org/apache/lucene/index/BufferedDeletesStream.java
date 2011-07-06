@@ -143,7 +143,7 @@ class BufferedDeletesStream {
 
   // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
   private static final Comparator<SegmentInfo> sortSegInfoByDelGen = new Comparator<SegmentInfo>() {
-    // @Override -- not until Java 1.6
+    @Override
     public int compare(SegmentInfo si1, SegmentInfo si2) {
       final long cmp = si1.getBufferedDeletesGen() - si2.getBufferedDeletesGen();
       if (cmp > 0) {
@@ -162,7 +162,7 @@ class BufferedDeletesStream {
   };
   
   /** Resolves the buffered deleted Term/Query/docIDs, into
-   *  actual deleted docIDs in the deletedDocs BitVector for
+   *  actual deleted docIDs in the liveDocs BitVector for
    *  each SegmentReader. */
   public synchronized ApplyDeletesResult applyDeletes(IndexWriter.ReaderPool readerPool, List<SegmentInfo> infos) throws IOException {
     final long t0 = System.currentTimeMillis();
@@ -399,7 +399,7 @@ class BufferedDeletesStream {
       // System.out.println("  term=" + term);
 
       if (termsEnum.seekExact(term.bytes(), false)) {
-        DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
+        DocsEnum docsEnum = termsEnum.docs(reader.getLiveDocs(), docs);
 
         if (docsEnum != null) {
           while (true) {

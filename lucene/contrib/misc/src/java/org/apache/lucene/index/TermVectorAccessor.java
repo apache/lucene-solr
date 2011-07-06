@@ -96,7 +96,7 @@ public class TermVectorAccessor {
       positions.clear();
     }
 
-    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    final Bits liveDocs = MultiFields.getLiveDocs(indexReader);
 
     Terms terms = MultiFields.getTerms(indexReader, field);
     boolean anyTerms = false;
@@ -109,9 +109,9 @@ public class TermVectorAccessor {
         if (text != null) {
           anyTerms = true;
           if (!mapper.isIgnoringPositions()) {
-            docs = postings = termsEnum.docsAndPositions(delDocs, postings);
+            docs = postings = termsEnum.docsAndPositions(liveDocs, postings);
           } else {
-            docs = termsEnum.docs(delDocs, docs);
+            docs = termsEnum.docs(liveDocs, docs);
           }
 
           int docID = docs.advance(documentNumber);

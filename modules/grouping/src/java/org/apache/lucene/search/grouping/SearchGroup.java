@@ -171,7 +171,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
   private static class GroupMerger<T> {
 
     private final GroupComparator<T> groupComp;
-    private final SortedSet<MergedGroup<T>> queue;
+    private final NavigableSet<MergedGroup<T>> queue;
     private final Map<T,MergedGroup<T>> groupsSeen;
 
     public GroupMerger(Sort groupSort) throws IOException {
@@ -242,10 +242,8 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
 
       // Prune un-competitive groups:
       while(queue.size() > topN) {
-        // TODO java 1.6: .pollLast
-        final MergedGroup<T> group = queue.last();
+        final MergedGroup<T> group = queue.pollLast();
         //System.out.println("PRUNE: " + group);
-        queue.remove(group);
         group.inQueue = false;
       }
     }
@@ -270,9 +268,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       int count = 0;
 
       while(queue.size() != 0) {
-        // TODO Java 1.6: pollFirst()
-        final MergedGroup<T> group = queue.first();
-        queue.remove(group);
+        final MergedGroup<T> group = queue.pollFirst();
         group.processed = true;
         //System.out.println("  pop: shards=" + group.shards + " group=" + (group.groupValue == null ? "null" : (((BytesRef) group.groupValue).utf8ToString())) + " sortValues=" + Arrays.toString(group.topValues));
         if (count++ >= offset) {

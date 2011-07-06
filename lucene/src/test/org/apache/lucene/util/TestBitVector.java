@@ -170,9 +170,10 @@ public class TestBitVector extends LuceneTestCase
       MockDirectoryWrapper d = new  MockDirectoryWrapper(random, new RAMDirectory());
       d.setPreventDoubleWrite(false);
       BitVector bv = new BitVector(size);
+      bv.invertAll();
       for (int i=0; i<count1; i++) {
-        bv.set(i);
-        assertEquals(i+1,bv.count());
+        bv.clear(i);
+        assertEquals(i+1,size-bv.count());
       }
       bv.write(d, "TESTBV");
       // gradually increase number of set bits
@@ -180,8 +181,8 @@ public class TestBitVector extends LuceneTestCase
         BitVector bv2 = new BitVector(d, "TESTBV");
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
-        bv.set(i);
-        assertEquals(i+1,bv.count());
+        bv.clear(i);
+        assertEquals(i+1,size-bv.count());
         bv.write(d, "TESTBV");
       }
       // now start decreasing number of set bits
@@ -189,8 +190,8 @@ public class TestBitVector extends LuceneTestCase
         BitVector bv2 = new BitVector(d, "TESTBV");
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
-        bv.clear(i);
-        assertEquals(i,bv.count());
+        bv.set(i);
+        assertEquals(i,size-bv.count());
         bv.write(d, "TESTBV");
       }
     }

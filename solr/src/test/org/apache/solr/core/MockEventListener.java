@@ -40,6 +40,11 @@ public class MockEventListener implements SolrEventListener {
   public void postCommit() {
     /* NOOP */
   }
+  
+  @Override
+  public void postSoftCommit() {
+    /* NOOP */
+  }
 
   public void newSearcher(SolrIndexSearcher newSearcher, 
                           SolrIndexSearcher currentSearcher) {

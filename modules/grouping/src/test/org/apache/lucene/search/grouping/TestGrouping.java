@@ -193,7 +193,7 @@ public class TestGrouping extends LuceneTestCase {
   private Comparator<GroupDoc> getComparator(Sort sort) {
     final SortField[] sortFields = sort.getSort();
     return new Comparator<GroupDoc>() {
-      // @Override -- Not until Java 1.6
+      @Override
       public int compare(GroupDoc d1, GroupDoc d2) {
         for(SortField sf : sortFields) {
           final int cmp;

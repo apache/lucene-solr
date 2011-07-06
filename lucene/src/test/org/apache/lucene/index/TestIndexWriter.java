@@ -536,7 +536,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Term t = new Term("field", "a");
       assertEquals(1, reader.docFreq(t));
       DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                MultiFields.getDeletedDocs(reader),
+                                                MultiFields.getLiveDocs(reader),
                                                 "field",
                                                 new BytesRef("a"));
       td.nextDoc();
@@ -947,7 +947,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, hits.length);
 
     DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
-                                                                MultiFields.getDeletedDocs(s.getIndexReader()),
+                                                                MultiFields.getLiveDocs(s.getIndexReader()),
                                                                 "field",
                                                                 new BytesRef("a"));
 

@@ -63,7 +63,7 @@ public class TermsFilter extends Filter
     OpenBitSet result=new OpenBitSet(reader.maxDoc());
     Fields fields = reader.fields();
     BytesRef br = new BytesRef();
-    Bits delDocs = reader.getDeletedDocs();
+    Bits liveDocs = reader.getLiveDocs();
     if (fields != null) {
       String lastField = null;
       Terms termsC = null;
@@ -80,7 +80,7 @@ public class TermsFilter extends Filter
         if (terms != null) {
           br.copy(term.bytes());
           if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
-            docs = termsEnum.docs(delDocs, docs);
+            docs = termsEnum.docs(liveDocs, docs);
             while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
               result.set(docs.docID());
             }

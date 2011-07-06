@@ -131,7 +131,7 @@ public class Floats {
       if (datOut == null) {
         initDataOut();
       }
-      if (state.bits == null && state.reader instanceof FloatsReader) {
+      if (state.liveDocs == null && state.reader instanceof FloatsReader) {
         // no deletes - bulk copy
         final FloatsReader reader = (FloatsReader) state.reader;
         assert reader.precisionBytes == (int) precision;

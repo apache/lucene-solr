@@ -32,35 +32,29 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.atomic.AtomicLong;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryParsing;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
+ *  TODO: add soft commitWithin support
+ * 
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler {
+  protected IndexWriterProvider indexWriterProvider;
 
   // stats
   AtomicLong addCommands = new AtomicLong();
@@ -79,66 +73,61 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong numErrorsCumulative = new AtomicLong();
 
   // tracks when auto-commit should occur
-  protected final CommitTracker tracker;
-
-  // iwCommit protects internal data and open/close of the IndexWriter and
-  // is a mutex. Any use of the index writer should be protected by iwAccess, 
-  // which admits multiple simultaneous acquisitions.  iwAccess is 
-  // mutually-exclusive with the iwCommit lock.
-  protected final Lock iwAccess, iwCommit;
-
-  protected IndexWriter writer;
+  protected final CommitTracker commitTracker;
+  protected final CommitTracker softCommitTracker;
 
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
-
-    // Pass fairness=true so commit request is not starved
-    // when add/updates are running hot (SOLR-2342):
-    ReadWriteLock rwl = new ReentrantReadWriteLock(true);
-    iwAccess = rwl.readLock();
-    iwCommit = rwl.writeLock();
-
-    tracker = new CommitTracker();
+   
+    indexWriterProvider = new DefaultIndexWriterProvider(core);
+    
+    UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
+        .getUpdateHandlerInfo();
+    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
+    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
+    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    
+    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
+    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
+    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+  }
+  
+  public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
+    super(core);
+    if (updateHandler instanceof DirectUpdateHandler2) {
+      this.indexWriterProvider = ((DirectUpdateHandler2)updateHandler).indexWriterProvider;
+    } else {
+      // the impl has changed, so we cannot use the old state - decref it
+      updateHandler.decref();
+      indexWriterProvider = new DefaultIndexWriterProvider(core);
+    }
+    
+    UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
+        .getUpdateHandlerInfo();
+    int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
+    int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
+    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    
+    int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
+    int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
+    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    
   }
 
-  // must only be called when iwCommit lock held
   private void deleteAll() throws IOException {
-    core.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
-    closeWriter();
-    writer = createMainIndexWriter("DirectUpdateHandler2", true);
+    SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
+    indexWriterProvider.getIndexWriter().deleteAll();
   }
 
-  // must only be called when iwCommit lock held
-  protected void openWriter() throws IOException {
-    if (writer==null) {
-      writer = createMainIndexWriter("DirectUpdateHandler2", false);
-    }
-  }
-
-  // must only be called when iwCommit lock held
-  protected void closeWriter() throws IOException {
-    try {
-      numDocsPending.set(0);
-      if (writer!=null) writer.close();
-    } finally {
-      // if an exception causes the writelock to not be
-      // released, we could try and delete it here
-      writer=null;
-    }
-  }
-
-  // must only be called when iwCommit lock held
   protected void rollbackWriter() throws IOException {
-    try {
-      numDocsPending.set(0);
-      if (writer!=null) writer.rollback();
-    } finally {
-      writer = null;
-    }
+    numDocsPending.set(0);
+    indexWriterProvider.rollbackIndexWriter();
+    
   }
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
+    IndexWriter writer = indexWriterProvider.getIndexWriter();
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
@@ -148,19 +137,18 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       cmd.overwrite = false;
     }
 
-    iwAccess.lock();
+
     try {
-
-      // We can't use iwCommit to protect internal data here, since it would
-      // block other addDoc calls.  Hence, we synchronize to protect internal
-      // state.  This is safe as all other state-changing operations are
-      // protected with iwCommit (which iwAccess excludes from this block).
-      synchronized (this) {
-        // adding document -- prep writer
-        openWriter();
-        tracker.addedDocument( cmd.commitWithin );
-      } // end synchronized block
-
+      boolean triggered = commitTracker.addedDocument( cmd.commitWithin );
+    
+      if (!triggered) {
+        // if we hard commit, don't soft commit
+        softCommitTracker.addedDocument( cmd.commitWithin );
+      } else {
+        // still inc softCommit
+        softCommitTracker.docsSinceCommit++;
+      }
+      
       // this is the only unsynchronized code in the iwAccess block, which
       // should account for most of the time
 			Term updateTerm = null;
@@ -192,7 +180,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
       rc = 1;
     } finally {
-      iwAccess.unlock();
       if (rc!=1) {
         numErrors.incrementAndGet();
         numErrorsCumulative.incrementAndGet();
@@ -211,16 +198,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    iwCommit.lock();
-    try {
-      openWriter();
-      writer.deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
-    } finally {
-      iwCommit.unlock();
-    }
+    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
 
-    if( tracker.timeUpperBound > 0 ) {
-      tracker.scheduleCommitWithin( tracker.timeUpperBound );
+    if (commitTracker.timeUpperBound > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
+    } else if (softCommitTracker.timeUpperBound > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
     }
   }
 
@@ -230,7 +213,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     deleteByQueryCommands.incrementAndGet();
     deleteByQueryCommandsCumulative.incrementAndGet();
-
     boolean madeIt=false;
     boolean delAll=false;
     try {
@@ -241,26 +223,23 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       } catch (ParseException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-
+      
       delAll = MatchAllDocsQuery.class == q.getClass();
-
-      iwCommit.lock();
-      try {
-        if (delAll) {
-          deleteAll();
-        } else {
-          openWriter();
-          writer.deleteDocuments(q);
-        }
-      } finally {
-        iwCommit.unlock();
+      
+      if (delAll) {
+        deleteAll();
+      } else {
+        indexWriterProvider.getIndexWriter().deleteDocuments(q);
       }
-
-      madeIt=true;
-
-      if( tracker.timeUpperBound > 0 ) {
-        tracker.scheduleCommitWithin( tracker.timeUpperBound );
+      
+      madeIt = true;
+      
+      if (commitTracker.timeUpperBound > 0) {
+        commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
+      } else if (softCommitTracker.timeUpperBound > 0) {
+        softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
       }
+      
     } finally {
       if (!madeIt) {
         numErrors.incrementAndGet();
@@ -274,42 +253,30 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     mergeIndexesCommands.incrementAndGet();
     int rc = -1;
 
-    iwCommit.lock();
-    try {
-      log.info("start " + cmd);
-
-      IndexReader[] readers = cmd.readers;
-      if (readers != null && readers.length > 0) {
-        openWriter();
-        writer.addIndexes(readers);
-        rc = 1;
-      } else {
-        rc = 0;
-      }
-      log.info("end_mergeIndexes");
-    } finally {
-      iwCommit.unlock();
+    log.info("start " + cmd);
+    
+    IndexReader[] readers = cmd.readers;
+    if (readers != null && readers.length > 0) {
+      indexWriterProvider.getIndexWriter().addIndexes(readers);
+      rc = 1;
+    } else {
+      rc = 0;
     }
+    log.info("end_mergeIndexes");
 
-    if (rc == 1 && tracker.timeUpperBound > 0) {
-      tracker.scheduleCommitWithin(tracker.timeUpperBound);
+    // TODO: consider soft commit issues
+    if (rc == 1 && commitTracker.timeUpperBound > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
+    } else if (rc == 1 && softCommitTracker.timeUpperBound > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
     }
 
     return rc;
   }
 
-   public void forceOpenWriter() throws IOException  {
-    iwCommit.lock();
-    try {
-      openWriter();
-    } finally {
-      iwCommit.unlock();
-    }
-  }
-
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
-
+    IndexWriter writer = indexWriterProvider.getIndexWriter();
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
     } else {
@@ -323,38 +290,50 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     boolean error=true;
-    iwCommit.lock();
     try {
       log.info("start "+cmd);
 
       if (cmd.optimize) {
-        openWriter();
         writer.optimize(cmd.maxOptimizeSegments);
       } else if (cmd.expungeDeletes) {
-        openWriter();
         writer.expungeDeletes();
       }
       
-      closeWriter();
+      if (!cmd.softCommit) {
+        writer.commit();
+        
+        callPostCommitCallbacks();
+      } else {
+        callPostSoftCommitCallbacks();
+      }
 
-      callPostCommitCallbacks();
+
       if (cmd.optimize) {
         callPostOptimizeCallbacks();
       }
+      
       // open a new searcher in the sync block to avoid opening it
       // after a deleteByQuery changed the index, or in between deletes
       // and adds of another commit being done.
-      core.getSearcher(true,false,waitSearcher);
+      if (cmd.softCommit) {
+        core.getSearcher(true,false,waitSearcher, true);
+      } else {
+        core.getSearcher(true,false,waitSearcher);
+      }
 
       // reset commit tracking
-      tracker.didCommit();
 
+      if (cmd.softCommit) {
+        softCommitTracker.didCommit();
+      } else {
+        commitTracker.didCommit();
+      }
+      
       log.info("end_commit_flush");
 
       error=false;
     }
     finally {
-      iwCommit.unlock();
       addCommands.set(0);
       deleteByIdCommands.set(0);
       deleteByQueryCommands.set(0);
@@ -374,16 +353,36 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  @Override
+  public SolrIndexSearcher reopenSearcher(SolrIndexSearcher previousSearcher) throws IOException {
+    
+    IndexReader currentReader = previousSearcher.getIndexReader();
+    IndexReader newReader;
+
+    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(), true);
+  
+    
+    if (newReader == currentReader) {
+      currentReader.incRef();
+    }
+    
+    return new SolrIndexSearcher(core, schema, "main", newReader, true, true);
+  }
+  
+  @Override
+  public void newIndexWriter() throws IOException {
+    indexWriterProvider.newIndexWriter();
+  }
+  
   /**
    * @since Solr 1.4
    */
   @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
-
     rollbackCommands.incrementAndGet();
 
     boolean error=true;
-    iwCommit.lock();
+
     try {
       log.info("start "+cmd);
 
@@ -392,14 +391,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       //callPostRollbackCallbacks();
 
       // reset commit tracking
-      tracker.didRollback();
-
+      commitTracker.didRollback();
+      softCommitTracker.didRollback();
+      
       log.info("end_rollback");
 
       error=false;
     }
     finally {
-      iwCommit.unlock();
       addCommandsCumulative.set(
           addCommandsCumulative.get() - addCommands.getAndSet( 0 ) );
       deleteByIdCommandsCumulative.set(
@@ -414,160 +413,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   @Override
   public void close() throws IOException {
     log.info("closing " + this);
-    iwCommit.lock();
-    try{
-      // cancel any pending operations
-      if( tracker.pending != null ) {
-        tracker.pending.cancel( true );
-        tracker.pending = null;
-      }
-      tracker.scheduler.shutdown();
-      closeWriter();
-    } finally {
-      iwCommit.unlock();
-    }
+    
+    commitTracker.close();
+    softCommitTracker.close();
+
+    numDocsPending.set(0);
+    indexWriterProvider.decref();
+    
     log.info("closed " + this);
-  }
-
-  /** Helper class for tracking autoCommit state.
-   *
-   * Note: This is purely an implementation detail of autoCommit and will
-   * definitely change in the future, so the interface should not be
-   * relied-upon
-   *
-   * Note: all access must be synchronized.
-   */
-  class CommitTracker implements Runnable
-  {
-    // scheduler delay for maxDoc-triggered autocommits
-    public final int DOC_COMMIT_DELAY_MS = 250;
-
-    // settings, not final so we can change them in testing
-    int docsUpperBound;
-    long timeUpperBound;
-
-    private final ScheduledExecutorService scheduler =
-       Executors.newScheduledThreadPool(1);
-    private ScheduledFuture pending;
-
-    // state
-    long docsSinceCommit;
-    int autoCommitCount = 0;
-    long lastAddedTime = -1;
-
-    public CommitTracker() {
-      docsSinceCommit = 0;
-      pending = null;
-
-      docsUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs;   //getInt("updateHandler/autoCommit/maxDocs", -1);
-      timeUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime;    //getInt("updateHandler/autoCommit/maxTime", -1);
-
-      SolrCore.log.info("AutoCommit: " + this);
-    }
-
-    /** schedule individual commits */
-    public synchronized void scheduleCommitWithin(long commitMaxTime)
-    {
-      _scheduleCommitWithin( commitMaxTime );
-    }
-
-    private void _scheduleCommitWithin(long commitMaxTime)
-    {
-      // Check if there is a commit already scheduled for longer then this time
-      if( pending != null &&
-          pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime )
-      {
-        pending.cancel(false);
-        pending = null;
-      }
-
-      // schedule a new commit
-      if( pending == null ) {
-        pending = scheduler.schedule( this, commitMaxTime, TimeUnit.MILLISECONDS );
-      }
-    }
-
-    /** Indicate that documents have been added
-     */
-    public void addedDocument( int commitWithin ) {
-      docsSinceCommit++;
-      lastAddedTime = System.currentTimeMillis();
-      // maxDocs-triggered autoCommit
-      if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
-        _scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
-      }
-
-      // maxTime-triggered autoCommit
-      long ctime = (commitWithin>0) ? commitWithin : timeUpperBound;
-      if( ctime > 0 ) {
-        _scheduleCommitWithin( ctime );
-      }
-    }
-
-    /** Inform tracker that a commit has occurred, cancel any pending commits */
-    public void didCommit() {
-      if( pending != null ) {
-        pending.cancel(false);
-        pending = null; // let it start another one
-      }
-      docsSinceCommit = 0;
-    }
-
-    /** Inform tracker that a rollback has occurred, cancel any pending commits */
-    public void didRollback() {
-      if( pending != null ) {
-        pending.cancel(false);
-        pending = null; // let it start another one
-      }
-      docsSinceCommit = 0;
-    }
-
-    /** This is the worker part for the ScheduledFuture **/
-    public synchronized void run() {
-      long started = System.currentTimeMillis();
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-      try {
-        CommitUpdateCommand command = new CommitUpdateCommand(req, false );
-        command.waitFlush = true;
-        command.waitSearcher = true;
-        //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
-        commit( command );
-        autoCommitCount++;
-      }
-      catch (Exception e) {
-        log.error( "auto commit error..." );
-        e.printStackTrace();
-      }
-      finally {
-        pending = null;
-        req.close();
-      }
-
-      // check if docs have been submitted since the commit started
-      if( lastAddedTime > started ) {
-        if( docsUpperBound > 0 && docsSinceCommit > docsUpperBound ) {
-          pending = scheduler.schedule( this, 100, TimeUnit.MILLISECONDS );
-        }
-        else if( timeUpperBound > 0 ) {
-          pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
-        }
-      }
-    }
-
-    // to facilitate testing: blocks if called during commit
-    public synchronized int getCommitCount() { return autoCommitCount; }
-
-    @Override
-    public String toString() {
-      if(timeUpperBound > 0 || docsUpperBound > 0) {
-        return
-          (timeUpperBound > 0 ? ("if uncommited for " + timeUpperBound + "ms; ") : "") +
-          (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommited docs ") : "");
-
-      } else {
-        return "disabled";
-      }
-    }
   }
 
 
@@ -606,13 +459,20 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (tracker.docsUpperBound > 0) {
-      lst.add("autocommit maxDocs", tracker.docsUpperBound);
+    if (commitTracker.docsUpperBound > 0) {
+      lst.add("autocommit maxDocs", commitTracker.docsUpperBound);
     }
-    if (tracker.timeUpperBound > 0) {
-      lst.add("autocommit maxTime", "" + tracker.timeUpperBound + "ms");
+    if (commitTracker.timeUpperBound > 0) {
+      lst.add("autocommit maxTime", "" + commitTracker.timeUpperBound + "ms");
     }
-    lst.add("autocommits", tracker.autoCommitCount);
+    lst.add("autocommits", commitTracker.autoCommitCount);
+    if (softCommitTracker.docsUpperBound > 0) {
+      lst.add("soft autocommit maxDocs", softCommitTracker.docsUpperBound);
+    }
+    if (softCommitTracker.timeUpperBound > 0) {
+      lst.add("soft autocommit maxTime", "" + softCommitTracker.timeUpperBound + "ms");
+    }
+    lst.add("soft autocommits", softCommitTracker.autoCommitCount);
     lst.add("optimizes", optimizeCommands.get());
     lst.add("rollbacks", rollbackCommands.get());
     lst.add("expungeDeletes", expungeDeleteCommands.get());
@@ -633,5 +493,23 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   @Override
   public String toString() {
     return "DirectUpdateHandler2" + getStatistics();
+  }
+  
+  public IndexWriterProvider getIndexWriterProvider() {
+    return indexWriterProvider;
+  }
+
+  @Override
+  public void decref() {
+    try {
+      indexWriterProvider.decref();
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "", e, false);
+    }
+  }
+
+  @Override
+  public void incref() {
+    indexWriterProvider.incref();
   }
 }

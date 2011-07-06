@@ -26,8 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -117,16 +115,7 @@ public class TestBoolean2 extends LuceneTestCase {
     "w1 w3 xx w2 yy w3"
   };
 
-  public Query makeQuery(String queryText) throws ParseException {
-    Query q = (new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random))).parse(queryText);
-    return q;
-  }
-
-  public void queriesTest(String queryText, int[] expDocNrs) throws Exception {
-//System.out.println();
-//System.out.println("Query: " + queryText);
-
-    Query query = makeQuery(queryText);
+  public void queriesTest(Query query, int[] expDocNrs) throws Exception {
     TopScoreDocCollector collector = TopScoreDocCollector.create(1000, false);
     searcher.search(query, null, collector);
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
@@ -143,70 +132,98 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @Test
   public void testQueries01() throws Exception {
-    String queryText = "+w3 +xx";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
     int[] expDocNrs = {2,3};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries02() throws Exception {
-    String queryText = "+w3 xx";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2,3,1,0};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries03() throws Exception {
-    String queryText = "w3 xx";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2,3,1,0};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries04() throws Exception {
-    String queryText = "w3 -xx";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {1,0};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries05() throws Exception {
-    String queryText = "+w3 -xx";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {1,0};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries06() throws Exception {
-    String queryText = "+w3 -xx -w5";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
+    query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {1};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries07() throws Exception {
-    String queryText = "-w3 -xx -w5";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST_NOT);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
+    query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries08() throws Exception {
-    String queryText = "+w3 xx -w5";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
     int[] expDocNrs = {2,3,1};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries09() throws Exception {
-    String queryText = "+w3 +xx +w2 zz";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "w2")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
     int[] expDocNrs = {2, 3};
-    queriesTest(queryText, expDocNrs);
+    queriesTest(query, expDocNrs);
   }
 
   @Test
   public void testQueries10() throws Exception {
-    String queryText = "+w3 +xx +w2 zz";
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "w2")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(field, "zz")), BooleanClause.Occur.SHOULD);
+
     int[] expDocNrs = {2, 3};
     SimilarityProvider oldSimilarity = searcher.getSimilarityProvider();
     try {
@@ -216,7 +233,7 @@ public class TestBoolean2 extends LuceneTestCase {
           return overlap / ((float)maxOverlap - 1);
         }
       });
-      queriesTest(queryText, expDocNrs);
+      queriesTest(query, expDocNrs);
     } finally {
       searcher.setSimilarityProvider(oldSimilarity);
     }

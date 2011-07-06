@@ -21,6 +21,7 @@ import java.util.*;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -35,7 +36,6 @@ import org.apache.solr.response.transform.RenameFieldsTransformer;
 import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
-import org.apache.solr.search.function.QueryValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -249,7 +249,7 @@ public class DocTermOrds {
 
     boolean testedOrd = false;
 
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -312,7 +312,7 @@ public class DocTermOrds {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        docsEnum = te.docs(delDocs, docsEnum);
+        docsEnum = te.docs(liveDocs, docsEnum);
 
         final DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
 
@@ -653,13 +653,13 @@ public class DocTermOrds {
     }
 
     @Override    
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-      return termsEnum.docs(skipDocs, reuse);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      return termsEnum.docs(liveDocs, reuse);
     }
 
     @Override    
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+      return termsEnum.docsAndPositions(liveDocs, reuse);
     }
 
     @Override

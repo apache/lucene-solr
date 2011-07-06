@@ -80,7 +80,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         pr.add(ir1);
         pr.add(ir2);
 
-        Bits delDocs = pr.getDeletedDocs();
+        Bits liveDocs = pr.getLiveDocs();
 
         FieldsEnum fe = pr.fields().iterator();
 
@@ -92,31 +92,31 @@ public class TestParallelTermEnum extends LuceneTestCase {
         TermsEnum te = fe.terms();
 
         assertEquals("brown", te.next().utf8ToString());
-        DocsEnum td = te.docs(delDocs, null);
+        DocsEnum td = te.docs(liveDocs, null);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("fox", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("jumps", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("quick", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("the", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
@@ -127,31 +127,31 @@ public class TestParallelTermEnum extends LuceneTestCase {
         te = fe.terms();
 
         assertEquals("brown", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("fox", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("jumps", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("quick", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("the", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
@@ -162,37 +162,37 @@ public class TestParallelTermEnum extends LuceneTestCase {
         te = fe.terms();
 
         assertEquals("dog", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("fox", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("jumps", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("lazy", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("over", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
 
         assertEquals("the", te.next().utf8ToString());
-        td = te.docs(delDocs, td);
+        td = te.docs(liveDocs, td);
         assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
         assertEquals(0, td.docID());
         assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
