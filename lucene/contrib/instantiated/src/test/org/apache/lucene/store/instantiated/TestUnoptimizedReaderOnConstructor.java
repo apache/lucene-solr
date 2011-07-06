@@ -53,8 +53,9 @@ public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
     unoptimizedReader.deleteDocument(2);
 
     try {
-     new InstantiatedIndex(unoptimizedReader);
+      new InstantiatedIndex(unoptimizedReader);
     } catch (Exception e) {
+      e.printStackTrace(System.out);
       fail("No exceptions when loading an unoptimized reader!");
     }
 

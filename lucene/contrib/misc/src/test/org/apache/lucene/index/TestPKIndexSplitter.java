@@ -87,9 +87,9 @@ public class TestPKIndexSplitter extends LuceneTestCase {
   }
   
   private void checkContents(IndexReader ir, String indexname) throws Exception {
-    final Bits delDocs = MultiFields.getDeletedDocs(ir);
+    final Bits liveDocs = MultiFields.getLiveDocs(ir);
     for (int i = 0; i < ir.maxDoc(); i++) {
-      if (delDocs == null || !delDocs.get(i)) {
+      if (liveDocs == null || liveDocs.get(i)) {
         assertEquals(indexname, ir.document(i).get("indexname"));
       }
     }

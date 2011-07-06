@@ -139,7 +139,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
                         DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  MultiFields.getLiveDocs(reader),
                                                                   KEY_FIELD,
                                                                   new BytesRef(url));
 			int lastDoc=0;
@@ -163,7 +163,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
                         DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  MultiFields.getLiveDocs(reader),
                                                                   KEY_FIELD,
                                                                   new BytesRef(url));
 			int lastDoc=0;

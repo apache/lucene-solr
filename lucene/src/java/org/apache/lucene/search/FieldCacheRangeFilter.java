@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -533,9 +532,9 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     @Override
     public DocIdSetIterator iterator() throws IOException {
 
-      final Bits skipDocs = canIgnoreDeletedDocs ? null : reader.getDeletedDocs();
+      final Bits liveDocs = canIgnoreDeletedDocs ? null : reader.getLiveDocs();
 
-      if (skipDocs == null) {
+      if (liveDocs == null) {
         // Specialization optimization disregard deletions
         return new DocIdSetIterator() {
           private int doc = -1;
@@ -575,7 +574,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final int maxDoc = reader.maxDoc();
 
         // a DocIdSetIterator generating docIds by
-        // incrementing a variable & checking skipDocs -
+        // incrementing a variable & checking liveDocs -
         return new DocIdSetIterator() {
           private int doc = -1;
           @Override
@@ -590,14 +589,14 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
               if (doc >= maxDoc) {
                 return doc = NO_MORE_DOCS;
               }
-            } while (skipDocs.get(doc) || !matchDoc(doc));
+            } while (!liveDocs.get(doc) || !matchDoc(doc));
             return doc;
           }
         
           @Override
           public int advance(int target) {
             for(doc=target;doc<maxDoc;doc++) {
-              if (!skipDocs.get(doc) && matchDoc(doc)) {
+              if (liveDocs.get(doc) && matchDoc(doc)) {
                 return doc;
               }
             }

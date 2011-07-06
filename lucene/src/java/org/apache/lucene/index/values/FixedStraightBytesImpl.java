@@ -103,7 +103,7 @@ class FixedStraightBytesImpl {
       datOut = getDataOut();
       boolean success = false;
       try {
-      if (state.bits == null && state.reader instanceof Reader) {
+      if (state.liveDocs == null && state.reader instanceof Reader) {
         Reader reader = (Reader) state.reader;
         final int maxDocs = reader.maxDoc;
         if (maxDocs == 0) {

@@ -86,7 +86,7 @@ public class DuplicateFilter extends Filter
 	
   private OpenBitSet correctBits(IndexReader reader) throws IOException {
     OpenBitSet bits = new OpenBitSet(reader.maxDoc()); //assume all are INvalid
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
@@ -96,7 +96,7 @@ public class DuplicateFilter extends Filter
         if (currTerm == null) {
           break;
         } else {
-          docs = termsEnum.docs(delDocs, docs);
+          docs = termsEnum.docs(liveDocs, docs);
           int doc = docs.nextDoc();
           if (doc != DocsEnum.NO_MORE_DOCS) {
             if (keepMode == KM_USE_FIRST_OCCURRENCE) {
@@ -124,7 +124,7 @@ public class DuplicateFilter extends Filter
 		
     OpenBitSet bits=new OpenBitSet(reader.maxDoc());
     bits.set(0,reader.maxDoc()); //assume all are valid
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
@@ -136,7 +136,7 @@ public class DuplicateFilter extends Filter
         } else {
           if (termsEnum.docFreq() > 1) {
             // unset potential duplicates
-            docs = termsEnum.docs(delDocs, docs);
+            docs = termsEnum.docs(liveDocs, docs);
             int doc = docs.nextDoc();
             if (doc != DocsEnum.NO_MORE_DOCS) {
               if (keepMode == KM_USE_FIRST_OCCURRENCE) {

@@ -266,11 +266,11 @@ public abstract class FacetTestBase extends LuceneTestCase {
       if (terms == null) {
         continue;
       }
-      Bits deletedDocs = MultiFields.getDeletedDocs(indexReader);
+      Bits liveDocs = MultiFields.getLiveDocs(indexReader);
       TermsEnum te = terms.iterator();
       DocsEnum de = null;
       while (te.next() != null) {
-        de = te.docs(deletedDocs, de);
+        de = te.docs(liveDocs, de);
         int cnt = 0;
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           cnt++;

@@ -100,19 +100,19 @@ public final class MultiFields extends Fields {
     }
   }
 
-  public static Bits getDeletedDocs(IndexReader r) {
+  public static Bits getLiveDocs(IndexReader r) {
     Bits result;
     if (r.hasDeletions()) {
 
-      final List<Bits> delDocs = new ArrayList<Bits>();
+      final List<Bits> liveDocs = new ArrayList<Bits>();
       final List<Integer> starts = new ArrayList<Integer>();
 
       try {
         final int maxDoc = new ReaderUtil.Gather(r) {
             @Override
             protected void add(int base, IndexReader r) throws IOException {
-              // record all delDocs, even if they are null
-              delDocs.add(r.getDeletedDocs());
+              // record all liveDocs, even if they are null
+              liveDocs.add(r.getLiveDocs());
               starts.add(base);
             }
           }.run();
@@ -122,12 +122,12 @@ public final class MultiFields extends Fields {
         throw new RuntimeException(ioe);
       }
 
-      assert delDocs.size() > 0;
-      if (delDocs.size() == 1) {
+      assert liveDocs.size() > 0;
+      if (liveDocs.size() == 1) {
         // Only one actual sub reader -- optimize this case
-        result = delDocs.get(0);
+        result = liveDocs.get(0);
       } else {
-        result = new MultiBits(delDocs, starts);
+        result = new MultiBits(liveDocs, starts, true);
       }
 
     } else {
@@ -150,12 +150,12 @@ public final class MultiFields extends Fields {
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null if the term does not
    *  exist. */
-  public static DocsEnum getTermDocsEnum(IndexReader r, Bits skipDocs, String field, BytesRef term) throws IOException {
+  public static DocsEnum getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      return terms.docs(skipDocs, term, null);
+      return terms.docs(liveDocs, term, null);
     } else {
       return null;
     }
@@ -164,12 +164,12 @@ public final class MultiFields extends Fields {
   /** Returns {@link DocsAndPositionsEnum} for the specified
    *  field & term.  This may return null if the term does
    *  not exist or positions were not indexed. */
-  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits skipDocs, String field, BytesRef term) throws IOException {
+  public static DocsAndPositionsEnum getTermPositionsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term) throws IOException {
     assert field != null;
     assert term != null;
     final Terms terms = getTerms(r, field);
     if (terms != null) {
-      return terms.docsAndPositions(skipDocs, term, null);
+      return terms.docsAndPositions(liveDocs, term, null);
     } else {
       return null;
     }

@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -35,7 +34,6 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   int upto;
   DocsAndPositionsEnum current;
   int currentBase;
-  Bits skipDocs;
   int doc = -1;
 
   MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {

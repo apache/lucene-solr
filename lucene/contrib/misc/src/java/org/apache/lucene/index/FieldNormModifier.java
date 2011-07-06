@@ -120,7 +120,7 @@ public class FieldNormModifier {
 
       final FieldInvertState invertState = new FieldInvertState();
       for(IndexReader subReader : subReaders) {
-        final Bits delDocs = subReader.getDeletedDocs();
+        final Bits liveDocs = subReader.getLiveDocs();
 
         int[] termCounts = new int[subReader.maxDoc()];
         Fields fields = subReader.fields();
@@ -130,7 +130,7 @@ public class FieldNormModifier {
             TermsEnum termsEnum = terms.iterator();
             DocsEnum docs = null;
             while(termsEnum.next() != null) {
-              docs = termsEnum.docs(delDocs, docs);
+              docs = termsEnum.docs(liveDocs, docs);
               while(true) {
                 int docID = docs.nextDoc();
                 if (docID != docs.NO_MORE_DOCS) {
@@ -145,7 +145,7 @@ public class FieldNormModifier {
 
         invertState.setBoost(1.0f);
         for (int d = 0; d < termCounts.length; d++) {
-          if (delDocs == null || !delDocs.get(d)) {
+          if (liveDocs == null || liveDocs.get(d)) {
             invertState.setLength(termCounts[d]);
             subReader.setNorm(d, field, fieldSim.encodeNormValue(fieldSim.computeNorm(invertState)));
           }

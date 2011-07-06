@@ -339,10 +339,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
           // deterministic (just for this Term's docs).
-          if (state.deletedDocs == null) {
-            state.deletedDocs = new BitVector(state.numDocs);
+          if (state.liveDocs == null) {
+            state.liveDocs = new BitVector(state.numDocs);
+            state.liveDocs.invertAll();
           }
-          state.deletedDocs.set(docID);
+          state.liveDocs.clear(docID);
         }
 
         // Carefully copy over the prox + payload info,

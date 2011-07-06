@@ -33,7 +33,7 @@ public class SegmentTermDocs {
   //protected SegmentReader parent;
   private final FieldInfos fieldInfos;
   private final TermInfosReader tis;
-  protected Bits skipDocs;
+  protected Bits liveDocs;
   protected IndexInput freqStream;
   protected int count;
   protected int df;
@@ -53,18 +53,6 @@ public class SegmentTermDocs {
   protected boolean currentFieldStoresPayloads;
   protected boolean currentFieldOmitTermFreqAndPositions;
   
-  /*
-  protected SegmentTermDocs(SegmentReader parent) {
-    this.parent = parent;
-    this.freqStream = (IndexInput) parent.core.freqStream.clone();
-    synchronized (parent) {
-      this.deletedDocs = parent.deletedDocs;
-    }
-    this.skipInterval = parent.core.getTermsReader().getSkipInterval();
-    this.maxSkipLevels = parent.core.getTermsReader().getMaxSkipLevels();
-  }
-  */
-
   public SegmentTermDocs(IndexInput freqStream, TermInfosReader tis, FieldInfos fieldInfos) {
     this.freqStream = (IndexInput) freqStream.clone();
     this.tis = tis;
@@ -78,8 +66,8 @@ public class SegmentTermDocs {
     seek(ti, term);
   }
 
-  public void setSkipDocs(Bits skipDocs) {
-    this.skipDocs = skipDocs;
+  public void setLiveDocs(Bits liveDocs) {
+    this.liveDocs = liveDocs;
   }
 
   public void seek(SegmentTermEnum segmentTermEnum) throws IOException {
@@ -149,7 +137,7 @@ public class SegmentTermDocs {
       
       count++;
 
-      if (skipDocs == null || !skipDocs.get(doc)) {
+      if (liveDocs == null || liveDocs.get(doc)) {
         break;
       }
       skippingDoc();
@@ -175,7 +163,7 @@ public class SegmentTermDocs {
           freq = freqStream.readVInt();     // else read freq
         count++;
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           docs[i] = doc;
           freqs[i] = freq;
           ++i;
@@ -192,7 +180,7 @@ public class SegmentTermDocs {
       doc += freqStream.readVInt();       
       count++;
 
-      if (skipDocs == null || !skipDocs.get(doc)) {
+      if (liveDocs == null || liveDocs.get(doc)) {
         docs[i] = doc;
         // Hardware freq to 1 when term freqs were not
         // stored in the index

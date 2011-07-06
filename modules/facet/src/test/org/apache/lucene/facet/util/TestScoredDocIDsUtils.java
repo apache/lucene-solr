@@ -158,12 +158,12 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       // now make sure the documents in the complement set are not deleted
       // and not in the original result set
       ScoredDocIDsIterator compIterator = complementSet.iterator();
-      Bits deleted = MultiFields.getDeletedDocs(reader);
+      Bits live = MultiFields.getLiveDocs(reader);
       while (compIterator.next()) {
         int docNum = compIterator.getDocID();
         assertFalse(
             "Complement-Set must not contain deleted documents (doc="+docNum+")",
-            deleted != null && deleted.get(docNum));
+            live != null && !live.get(docNum));
         assertNull(
             "Complement-Set must not contain docs from the original set (doc="+ docNum+")",
             reader.document(docNum).getFieldable("del"));

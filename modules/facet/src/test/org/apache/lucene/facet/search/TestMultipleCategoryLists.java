@@ -91,7 +91,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // Obtain facets results and hand-test them
     assertCorrectResults(facetsCollector);
 
-    DocsEnum td = MultiFields.getTermDocsEnum(ir, MultiFields.getDeletedDocs(ir), "$facets", new BytesRef("$fulltree$"));
+    DocsEnum td = MultiFields.getTermDocsEnum(ir, MultiFields.getLiveDocs(ir), "$facets", new BytesRef("$fulltree$"));
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     tr.close();

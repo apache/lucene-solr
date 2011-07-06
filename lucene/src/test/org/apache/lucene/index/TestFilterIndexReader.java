@@ -87,8 +87,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-        return new TestPositions(super.docsAndPositions(skipDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in));
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+        return new TestPositions(super.docsAndPositions(liveDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in));
       }
     }
 
@@ -157,7 +157,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
     
-    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getDeletedDocs(reader),
+    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getLiveDocs(reader),
                                                             null);
     while (positions.nextDoc() != DocsEnum.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);

@@ -86,7 +86,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     
     for (int i = 0; i < 2; i++) {
       counter = 0;
-      DocsAndPositionsEnum tp = reader.termPositionsEnum(reader.getDeletedDocs(),
+      DocsAndPositionsEnum tp = reader.termPositionsEnum(reader.getLiveDocs(),
                                                          term.field(),
                                                          new BytesRef(term.text()));
 

@@ -133,7 +133,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   * compatibility.  This is *not* equal to {@link #cardinality}
   */
   public long size() {
-      return capacity();
+    return capacity();
   }
 
   @Override
@@ -869,7 +869,6 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     // empty sets from returning 0, which is too common.
     return (int)((h>>32) ^ h) + 0x98761234;
   }
-
 }
 
 

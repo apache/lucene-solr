@@ -52,8 +52,8 @@ public class PayloadIterator {
       throws IOException {
     this.buffer = buffer;
     // TODO (Facet): avoid Multi*?
-    Bits deletedDocs = MultiFields.getDeletedDocs(indexReader);
-    this.tp = MultiFields.getTermPositionsEnum(indexReader, deletedDocs, term.field(), term.bytes());
+    Bits liveDocs = MultiFields.getLiveDocs(indexReader);
+    this.tp = MultiFields.getTermPositionsEnum(indexReader, liveDocs, term.field(), term.bytes());
   }
 
   /**

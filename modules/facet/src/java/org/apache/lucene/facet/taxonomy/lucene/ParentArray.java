@@ -102,8 +102,8 @@ class ParentArray {
 
     // Read the new part of the parents array from the positions:
     // TODO (Facet): avoid Multi*?
-    Bits deletedDocs = MultiFields.getDeletedDocs(indexReader);
-    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(indexReader, deletedDocs,
+    Bits liveDocs = MultiFields.getLiveDocs(indexReader);
+    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(indexReader, liveDocs,
         Consts.FIELD_PAYLOADS, new BytesRef(Consts.PAYLOAD_PARENT));
       if ((positions == null || positions.advance(first) == DocsAndPositionsEnum.NO_MORE_DOCS) && first < num) {
         throw new CorruptIndexException("Missing parent data for category " + first);

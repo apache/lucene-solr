@@ -97,7 +97,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                                                MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                                                MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
                                                                 new BytesRef("1"));
     pos.nextDoc();
@@ -105,7 +105,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, pos.nextPosition());
     
     pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                           MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                           MultiFields.getLiveDocs(searcher.getIndexReader()),
                                            "field",
                                            new BytesRef("2"));
     pos.nextDoc();
@@ -213,9 +213,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     final IndexReader readerFromWriter = writer.getReader();
     SlowMultiReaderWrapper r = new SlowMultiReaderWrapper(readerFromWriter);
 
-    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getDeletedDocs(),
-                                                     "content",
-                                                     new BytesRef("a"));
+    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getLiveDocs(),
+                                                  "content",
+                                                  new BytesRef("a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);

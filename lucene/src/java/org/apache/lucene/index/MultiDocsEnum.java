@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil;
 import java.io.IOException;
 
@@ -33,7 +32,6 @@ public final class MultiDocsEnum extends DocsEnum {
   int upto;
   DocsEnum current;
   int currentBase;
-  Bits skipDocs;
   int doc = -1;
 
   MultiDocsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {

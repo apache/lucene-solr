@@ -951,7 +951,7 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
       PreDocsEnum docsEnum;
       if (reuse == null || !(reuse instanceof PreDocsEnum)) {
         docsEnum = new PreDocsEnum();
@@ -961,11 +961,11 @@ public class PreFlexFields extends FieldsProducer {
           docsEnum = new PreDocsEnum();
         }
       }
-      return docsEnum.reset(termEnum, skipDocs);
+      return docsEnum.reset(termEnum, liveDocs);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       PreDocsAndPositionsEnum docsPosEnum;
       if (fieldInfo.omitTermFreqAndPositions) {
         return null;
@@ -977,7 +977,7 @@ public class PreFlexFields extends FieldsProducer {
           docsPosEnum = new PreDocsAndPositionsEnum();
         }
       }
-      return docsPosEnum.reset(termEnum, skipDocs);        
+      return docsPosEnum.reset(termEnum, liveDocs);        
     }
   }
 
@@ -992,8 +992,8 @@ public class PreFlexFields extends FieldsProducer {
       return freqStream;
     }
 
-    public PreDocsEnum reset(SegmentTermEnum termEnum, Bits skipDocs) throws IOException {
-      docs.setSkipDocs(skipDocs);
+    public PreDocsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
+      docs.setLiveDocs(liveDocs);
       docs.seek(termEnum);
       return this;
     }
@@ -1048,8 +1048,8 @@ public class PreFlexFields extends FieldsProducer {
       return freqStream;
     }
 
-    public DocsAndPositionsEnum reset(SegmentTermEnum termEnum, Bits skipDocs) throws IOException {
-      pos.setSkipDocs(skipDocs);
+    public DocsAndPositionsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
+      pos.setLiveDocs(liveDocs);
       pos.seek(termEnum);
       return this;
     }

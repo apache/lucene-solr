@@ -484,7 +484,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     // Make sure the doc that hit the exception was marked
     // as deleted:
     DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                              MultiFields.getDeletedDocs(reader),
+                                              MultiFields.getLiveDocs(reader),
                                               t.field(),
                                               new BytesRef(t.text()));
 
@@ -624,10 +624,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertEquals(expected, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
-        final Bits delDocs = MultiFields.getDeletedDocs(reader);
-        assertNotNull(delDocs);
+        final Bits liveDocs = MultiFields.getLiveDocs(reader);
+        assertNotNull(liveDocs);
         for(int j=0;j<reader.maxDoc();j++) {
-          if (delDocs.get(j))
+          if (!liveDocs.get(j))
             numDel++;
           else {
             reader.document(j);
@@ -653,7 +653,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      assertNull(MultiFields.getDeletedDocs(reader));
+      assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermFreqVectors(j);
@@ -743,10 +743,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
-      assertNotNull(delDocs);
+      final Bits liveDocs = MultiFields.getLiveDocs(reader);
+      assertNotNull(liveDocs);
       for(int j=0;j<reader.maxDoc();j++) {
-        if (delDocs.get(j))
+        if (!liveDocs.get(j))
           numDel++;
         else {
           reader.document(j);
@@ -771,7 +771,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      assertNull(MultiFields.getDeletedDocs(reader));
+      assertNull(MultiFields.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermFreqVectors(j);

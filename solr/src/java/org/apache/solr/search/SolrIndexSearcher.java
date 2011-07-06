@@ -493,7 +493,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
     BytesRef termBytes = t.bytes();
-    DocsEnum docs = terms.docs(MultiFields.getDeletedDocs(reader), termBytes, null);
+    DocsEnum docs = terms.docs(MultiFields.getLiveDocs(reader), termBytes, null);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -646,12 +646,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
 
       collector.setNextReader(leaf);
-      Bits skipDocs = reader.getDeletedDocs();
+      Bits liveDocs = reader.getLiveDocs();
       int max = reader.maxDoc();
 
       if (idIter == null) {
         for (int docid = 0; docid<max; docid++) {
-          if (skipDocs != null && skipDocs.get(docid)) continue;
+          if (liveDocs != null && !liveDocs.get(docid)) continue;
           collector.collect(docid);
         }
       } else {
@@ -795,7 +795,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     int bitsSet = 0;
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.deletedDocs, deState.docsEnum);
+    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum);
     if (deState.docsEnum == null) {
       deState.docsEnum = docsEnum;
     }
@@ -884,8 +884,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           Terms terms = fields.terms(t.field());
           BytesRef termBytes = t.bytes();
           
-          Bits skipDocs = reader.getDeletedDocs();
-          DocsEnum docsEnum = terms==null ? null : terms.docs(skipDocs, termBytes, null);
+          Bits liveDocs = reader.getLiveDocs();
+          DocsEnum docsEnum = terms==null ? null : terms.docs(liveDocs, termBytes, null);
 
           if (docsEnum != null) {
             DocsEnum.BulkReadResult readResult = docsEnum.getBulkResult();
@@ -1727,7 +1727,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public static class DocsEnumState {
     public String fieldName;  // currently interned for as long as lucene requires it
     public TermsEnum termsEnum;
-    public Bits deletedDocs;
+    public Bits liveDocs;
     public DocsEnum docsEnum;
 
     public int minSetSizeCached;

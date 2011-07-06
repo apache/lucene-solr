@@ -611,6 +611,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
     final int N = 10;
 
     for(int pass=0;pass<2;pass++) {
+      if (VERBOSE) {
+        System.out.println("TEST: pass=" + pass);
+      }
 
       boolean useCompoundFile = (pass % 2) != 0;
 
@@ -631,7 +634,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       for(int i=0;i<N+1;i++) {
         if (VERBOSE) {
-          System.out.println("\nTEST: cycle i=" + i);
+          System.out.println("\nTEST: write i=" + i);
         }
         conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -692,8 +695,14 @@ public class TestDeletionPolicy extends LuceneTestCase {
       int expectedCount = 176;
       searcher.close();
       for(int i=0;i<N+1;i++) {
+        if (VERBOSE) {
+          System.out.println("TEST: i=" + i);
+        }
         try {
           IndexReader reader = IndexReader.open(dir, true);
+          if (VERBOSE) {
+            System.out.println("  got reader=" + reader);
+          }
 
           // Work backwards in commits on what the expected
           // count should be.
@@ -706,7 +715,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
               expectedCount -= 17;
             }
           }
-          assertEquals(expectedCount, hits.length);
+          assertEquals("maxDoc=" + searcher.maxDoc() + " numDocs=" + searcher.getIndexReader().numDocs(), expectedCount, hits.length);
           searcher.close();
           reader.close();
           if (i == N) {

@@ -80,12 +80,12 @@ public class ScoredDocIdsUtils {
       return; // return immediately
     }
     
-    Bits bits = MultiFields.getDeletedDocs(reader);
+    Bits bits = MultiFields.getLiveDocs(reader);
 
     DocIdSetIterator it = set.iterator();
     int doc = DocIdSetIterator.NO_MORE_DOCS;
     while ((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (bits.get(doc)) {
+      if (!bits.get(doc)) {
         set.fastClear(doc);
       }
     }
@@ -339,7 +339,7 @@ public class ScoredDocIdsUtils {
         @Override
         public DocIdSetIterator iterator() throws IOException {
           return new DocIdSetIterator() {
-            final Bits deletedDocs = MultiFields.getDeletedDocs(reader);
+            final Bits liveDocs = MultiFields.getLiveDocs(reader);
             private int next = -1;
 
             @Override
@@ -359,7 +359,7 @@ public class ScoredDocIdsUtils {
             public int nextDoc() throws IOException {
               do {
                 ++next;
-              } while (next < maxDoc && deletedDocs != null && deletedDocs.get(next));
+              } while (next < maxDoc && liveDocs != null && !liveDocs.get(next));
 
               return next < maxDoc ? next : NO_MORE_DOCS;
             }

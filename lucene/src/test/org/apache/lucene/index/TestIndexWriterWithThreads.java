@@ -203,7 +203,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       // Quick test to make sure index is not corrupt:
       IndexReader reader = IndexReader.open(dir, true);
       DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                                  MultiFields.getDeletedDocs(reader),
+                                                  MultiFields.getLiveDocs(reader),
                                                   "field",
                                                   new BytesRef("aaa"));
       int count = 0;
@@ -268,7 +268,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       if (success) {
         IndexReader reader = IndexReader.open(dir, true);
-        final Bits delDocs = MultiFields.getDeletedDocs(reader);
+        final Bits delDocs = MultiFields.getLiveDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
             reader.document(j);

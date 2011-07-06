@@ -245,7 +245,7 @@ public class FileFloatSource extends ValueSource {
       DocsEnum docsEnum = null;
 
       // removing deleted docs shouldn't matter
-      // final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      // final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
         int delimIndex = line.indexOf(delimiter);

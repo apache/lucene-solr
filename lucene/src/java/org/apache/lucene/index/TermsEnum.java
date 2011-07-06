@@ -147,16 +147,16 @@ public abstract class TermsEnum {
    *  call this when the enum is unpositioned.  This method
    *  will not return null.
    *  
-   * @param skipDocs set bits are documents that should not
+   * @param liveDocs set bits are documents that should not
    * be returned
    * @param reuse pass a prior DocsEnum for possible reuse */
-  public abstract DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException;
+  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException;
 
   /** Get {@link DocsAndPositionsEnum} for the current term.
    *  Do not call this when the enum is unpositioned.
    *  This method will only return null if positions were
    *  not indexed into the postings by this codec. */
-  public abstract DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
+  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -224,12 +224,12 @@ public abstract class TermsEnum {
     }
 
     @Override
-    public DocsEnum docs(Bits bits, DocsEnum reuse) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
       throw new IllegalStateException("this method should never be called");
     }
       
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
       throw new IllegalStateException("this method should never be called");
     }
       

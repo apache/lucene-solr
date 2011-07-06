@@ -322,12 +322,12 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         throw new UnsupportedOperationException();
       }
 

@@ -215,8 +215,8 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
     try {
       indexReaderLock.readLock().lock();
       // TODO (Facet): avoid Multi*?
-      Bits deletedDocs = MultiFields.getDeletedDocs(indexReader);
-      DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, deletedDocs, Consts.FULL, new BytesRef(path));
+      Bits liveDocs = MultiFields.getLiveDocs(indexReader);
+      DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, liveDocs, Consts.FULL, new BytesRef(path));
       if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         ret = docs.docID();
       }

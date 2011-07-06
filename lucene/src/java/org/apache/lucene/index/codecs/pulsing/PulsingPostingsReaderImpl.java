@@ -167,7 +167,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   // TODO: we could actually reuse, by having TL that
   // holds the last wrapped reuse, and vice-versa
   @Override
-  public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.postingsSize != -1) {
       PulsingDocsEnum postings;
@@ -179,20 +179,20 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       } else {
         postings = new PulsingDocsEnum(field);
       }
-      return postings.reset(skipDocs, termState);
+      return postings.reset(liveDocs, termState);
     } else {
       // TODO: not great that we lose reuse of PulsingDocsEnum in this case:
       if (reuse instanceof PulsingDocsEnum) {
-        return wrappedPostingsReader.docs(field, termState.wrappedTermState, skipDocs, null);
+        return wrappedPostingsReader.docs(field, termState.wrappedTermState, liveDocs, null);
       } else {
-        return wrappedPostingsReader.docs(field, termState.wrappedTermState, skipDocs, reuse);
+        return wrappedPostingsReader.docs(field, termState.wrappedTermState, liveDocs, reuse);
       }
     }
   }
 
   // TODO: -- not great that we can't always reuse
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (field.omitTermFreqAndPositions) {
       return null;
     }
@@ -211,12 +211,12 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         postings = new PulsingDocsAndPositionsEnum(field);
       }
 
-      return postings.reset(skipDocs, termState);
+      return postings.reset(liveDocs, termState);
     } else {
       if (reuse instanceof PulsingDocsAndPositionsEnum) {
-        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, skipDocs, null);
+        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, null);
       } else {
-        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, skipDocs, reuse);
+        return wrappedPostingsReader.docsAndPositions(field, termState.wrappedTermState, liveDocs, reuse);
       }
     }
   }
@@ -225,7 +225,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean omitTF;
     private final boolean storePayloads;
-    private Bits skipDocs;
+    private Bits liveDocs;
     private int docID;
     private int freq;
     private int payloadLength;
@@ -235,7 +235,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       storePayloads = fieldInfo.storePayloads;
     }
 
-    public PulsingDocsEnum reset(Bits skipDocs, PulsingTermState termState) {
+    public PulsingDocsEnum reset(Bits liveDocs, PulsingTermState termState) {
       //System.out.println("PR docsEnum termState=" + termState + " docFreq=" + termState.docFreq);
       assert termState.postingsSize != -1;
       final byte[] bytes = new byte[termState.postingsSize];
@@ -244,7 +244,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       docID = 0;
       payloadLength = 0;
       freq = 1;
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
       return this;
     }
 
@@ -291,7 +291,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           }
         }
 
-        if (skipDocs == null || !skipDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(docID)) {
           //System.out.println("  return docID=" + docID + " freq=" + freq);
           return docID;
         }
@@ -323,7 +323,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean storePayloads;
 
-    private Bits skipDocs;
+    private Bits liveDocs;
     private int docID;
     private int freq;
     private int posPending;
@@ -341,12 +341,12 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       return storePayloads == fieldInfo.storePayloads;
     }
 
-    public PulsingDocsAndPositionsEnum reset(Bits skipDocs, PulsingTermState termState) {
+    public PulsingDocsAndPositionsEnum reset(Bits liveDocs, PulsingTermState termState) {
       assert termState.postingsSize != -1;
       final byte[] bytes = new byte[termState.postingsSize];
       System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
       postings.reset(bytes);
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
       payloadLength = 0;
       posPending = 0;
       docID = 0;
@@ -378,7 +378,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         }
         posPending = freq;
 
-        if (skipDocs == null || !skipDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(docID)) {
           //System.out.println("  return docID=" + docID + " freq=" + freq);
           position = 0;
           return docID;

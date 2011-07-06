@@ -281,7 +281,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     // Make sure position is still incremented when
     // massive term is skipped:
     DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader,
-                                                                MultiFields.getDeletedDocs(reader),
+                                                                MultiFields.getLiveDocs(reader),
                                                                 "content",
                                                                 new BytesRef("another"));
     assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);

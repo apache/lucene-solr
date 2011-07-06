@@ -106,11 +106,11 @@ public class TestNRTThreads extends LuceneTestCase {
           System.out.println("TEST: now warm merged reader=" + reader);
         }
         final int maxDoc = reader.maxDoc();
-        final Bits delDocs = reader.getDeletedDocs();
+        final Bits liveDocs = reader.getLiveDocs();
         int sum = 0;
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
-          if (delDocs == null || !delDocs.get(docID)) {
+          if (liveDocs == null || liveDocs.get(docID)) {
             final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }

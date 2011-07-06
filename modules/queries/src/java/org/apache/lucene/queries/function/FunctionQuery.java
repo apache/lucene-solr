@@ -112,7 +112,7 @@ public class FunctionQuery extends Query {
     int doc=-1;
     final DocValues vals;
     final boolean hasDeletions;
-    final Bits delDocs;
+    final Bits liveDocs;
 
     public AllScorer(AtomicReaderContext context, FunctionWeight w) throws IOException {
       super(w);
@@ -121,8 +121,8 @@ public class FunctionQuery extends Query {
       this.reader = context.reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();
-      this.delDocs = MultiFields.getDeletedDocs(reader);
-      assert !hasDeletions || delDocs != null;
+      this.liveDocs = MultiFields.getLiveDocs(reader);
+      assert !hasDeletions || liveDocs != null;
       vals = func.getValues(weight.context, context);
     }
 
@@ -142,7 +142,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (hasDeletions && delDocs.get(doc)) continue;
+        if (hasDeletions && !liveDocs.get(doc)) continue;
         return doc;
       }
     }

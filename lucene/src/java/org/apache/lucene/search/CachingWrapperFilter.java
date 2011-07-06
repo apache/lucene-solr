@@ -103,13 +103,13 @@ public class CachingWrapperFilter extends Filter {
         value = cache.get(delCoreKey);
 
         if (value == null) {
-          // now for core match, but dynamically AND NOT
-          // deletions
+          // now for core match, but dynamically AND
+          // live docs
           value = cache.get(coreKey);
           if (value != null) {
-            final Bits delDocs = reader.getDeletedDocs();
-            if (delDocs != null) {
-              value = mergeDeletes(delDocs, value);
+            final Bits liveDocs = reader.getLiveDocs();
+            if (liveDocs != null) {
+              value = mergeLiveDocs(liveDocs, value);
             }
           }
         }
@@ -118,7 +118,7 @@ public class CachingWrapperFilter extends Filter {
       return value;
     }
 
-    protected abstract T mergeDeletes(Bits delDocs, T value);
+    protected abstract T mergeLiveDocs(Bits liveDocs, T value);
 
     public synchronized void put(Object coreKey, Object delCoreKey, T value) {
       if (deletesMode == DeletesMode.IGNORE) {
@@ -158,11 +158,11 @@ public class CachingWrapperFilter extends Filter {
     this.filter = filter;
     cache = new FilterCache<DocIdSet>(deletesMode) {
       @Override
-      public DocIdSet mergeDeletes(final Bits delDocs, final DocIdSet docIdSet) {
+      public DocIdSet mergeLiveDocs(final Bits liveDocs, final DocIdSet docIdSet) {
         return new FilteredDocIdSet(docIdSet) {
           @Override
-            protected boolean match(int docID) {
-            return !delDocs.get(docID);
+          protected boolean match(int docID) {
+            return liveDocs.get(docID);
           }
         };
       }
@@ -197,7 +197,7 @@ public class CachingWrapperFilter extends Filter {
   public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
     final IndexReader reader = context.reader;
     final Object coreKey = reader.getCoreCacheKey();
-    final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;
+    final Object delCoreKey = reader.hasDeletions() ? reader.getLiveDocs() : coreKey;
 
     DocIdSet docIdSet = cache.get(reader, coreKey, delCoreKey);
     if (docIdSet != null) {

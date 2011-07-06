@@ -190,8 +190,8 @@ public class HighFreqTerms {
       return 0;
     }
 
-    Bits skipDocs = MultiFields.getDeletedDocs(reader);
-    if (skipDocs == null) {
+    Bits liveDocs = MultiFields.getLiveDocs(reader);
+    if (liveDocs == null) {
       // TODO: we could do this up front, during the scan
       // (next()), instead of after-the-fact here w/ seek,
       // if the codec supports it and there are no del
@@ -202,7 +202,7 @@ public class HighFreqTerms {
       }
     }
     
-    DocsEnum de = termsEnum.docs(skipDocs, null);
+    DocsEnum de = termsEnum.docs(liveDocs, null);
 
     // use DocsEnum.read() and BulkResult api
     final DocsEnum.BulkReadResult bulkresult = de.getBulkResult();

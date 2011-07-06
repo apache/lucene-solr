@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -39,6 +40,7 @@ public final class BitVector implements Cloneable, Bits {
   private byte[] bits;
   private int size;
   private int count;
+  private int version;
 
   /** Constructs a vector capable of holding <code>n</code> bits. */
   public BitVector(int n) {
@@ -92,8 +94,10 @@ public final class BitVector implements Cloneable, Bits {
       return true;
     else {
       bits[pos] = (byte) (v | flag);
-      if (count != -1)
+      if (count != -1) {
         count++;
+        assert count <= size;
+      }
       return false;
     }
   }
@@ -105,6 +109,25 @@ public final class BitVector implements Cloneable, Bits {
     }
     bits[bit >> 3] &= ~(1 << (bit & 7));
     count = -1;
+  }
+
+  public final boolean getAndClear(int bit) {
+    if (bit >= size) {
+      throw new ArrayIndexOutOfBoundsException(bit);
+    }
+    final int pos = bit >> 3;
+    final int v = bits[pos];
+    final int flag = 1 << (bit & 7);
+    if ((flag & v) == 0) {
+      return false;
+    } else {
+      bits[pos] &= ~flag;
+      if (count != -1) {
+        count--;
+        assert count >= 0;
+      }
+      return true;
+    }
   }
 
   /** Returns <code>true</code> if <code>bit</code> is one and
@@ -133,8 +156,9 @@ public final class BitVector implements Cloneable, Bits {
     if (count == -1) {
       int c = 0;
       int end = bits.length;
-      for (int i = 0; i < end; i++)
+      for (int i = 0; i < end; i++) {
         c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+      }
       count = c;
     }
     return count;
@@ -144,8 +168,9 @@ public final class BitVector implements Cloneable, Bits {
   public final int getRecomputedCount() {
     int c = 0;
     int end = bits.length;
-    for (int i = 0; i < end; i++)
+    for (int i = 0; i < end; i++) {
       c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+    }
     return c;
   }
 
@@ -171,13 +196,21 @@ public final class BitVector implements Cloneable, Bits {
   private static String CODEC = "BitVector";
 
   // Version before version tracking was added:
-  private final static int VERSION_PRE = -1;
+  public final static int VERSION_PRE = -1;
 
   // First version:
-  private final static int VERSION_START = 0;
+  public final static int VERSION_START = 0;
+
+  // Changed DGaps to encode gaps between cleared bits, not
+  // set:
+  public final static int VERSION_DGAPS_CLEARED = 1;
 
   // Increment version to change it:
-  private final static int VERSION_CURRENT = VERSION_START;
+  public final static int VERSION_CURRENT = VERSION_DGAPS_CLEARED;
+
+  public int getVersion() {
+    return version;
+  }
 
   /** Writes this vector to the file <code>name</code> in Directory
     <code>d</code>, in a format that can be read by the constructor {@link
@@ -188,13 +221,46 @@ public final class BitVector implements Cloneable, Bits {
       output.writeInt(-2);
       CodecUtil.writeHeader(output, CODEC, VERSION_CURRENT);
       if (isSparse()) { 
-        writeDgaps(output); // sparse bit-set more efficiently saved as d-gaps.
+        // sparse bit-set more efficiently saved as d-gaps.
+        writeClearedDgaps(output);
       } else {
         writeBits(output);
       }
     } finally {
       output.close();
     }
+  }
+
+  /** Invert all bits */
+  public void invertAll() {
+    if (count != -1) {
+      count = size - count;
+    }
+    if (bits.length > 0) {
+      for(int idx=0;idx<bits.length;idx++) {
+        bits[idx] = (byte) (~bits[idx]);
+      }
+      clearUnusedBits();
+    }
+  }
+
+  private void clearUnusedBits() {
+    // Take care not to invert the "unused" bits in the
+    // last byte:
+    if (bits.length > 0) {
+      final int lastNBits = size & 7;
+      if (lastNBits != 0) {
+        final int mask = (1 << lastNBits)-1;
+        bits[bits.length-1] &= mask;
+      }
+    }
+  }
+
+  /** Set all bits */
+  public void setAll() {
+    Arrays.fill(bits, (byte) 0xff);
+    clearUnusedBits();
+    count = size;
   }
      
   /** Write as a bit set */
@@ -205,19 +271,20 @@ public final class BitVector implements Cloneable, Bits {
   }
   
   /** Write as a d-gaps list */
-  private void writeDgaps(IndexOutput output) throws IOException {
+  private void writeClearedDgaps(IndexOutput output) throws IOException {
     output.writeInt(-1);            // mark using d-gaps                         
     output.writeInt(size());        // write size
     output.writeInt(count());       // write count
     int last=0;
-    int n = count();
+    int numCleared = size()-count();
     int m = bits.length;
-    for (int i=0; i<m && n>0; i++) {
-      if (bits[i]!=0) {
+    for (int i=0; i<m && numCleared>0; i++) {
+      if (bits[i]!=0xff) {
         output.writeVInt(i-last);
         output.writeByte(bits[i]);
         last = i;
-        n -= BYTE_COUNTS[bits[i] & 0xFF];
+        numCleared -= (8-BYTE_COUNTS[bits[i] & 0xFF]);
+        assert numCleared >= 0;
       }
     }
   }
@@ -225,12 +292,12 @@ public final class BitVector implements Cloneable, Bits {
   /** Indicates if the bit vector is sparse and should be saved as a d-gaps list, or dense, and should be saved as a bit set. */
   private boolean isSparse() {
 
-    final int setCount = count();
-    if (setCount == 0) {
+    final int clearedCount = size() - count();
+    if (clearedCount == 0) {
       return true;
     }
 
-    final int avgGapLength = bits.length / setCount;
+    final int avgGapLength = bits.length / clearedCount;
 
     // expected number of bytes for vInt encoding of each gap
     final int expectedDGapBytes;
@@ -266,17 +333,21 @@ public final class BitVector implements Cloneable, Bits {
 
     try {
       final int firstInt = input.readInt();
-      final int version;
+
       if (firstInt == -2) {
         // New format, with full header & version:
-        version = CodecUtil.checkHeader(input, CODEC, VERSION_START, VERSION_START);
+        version = CodecUtil.checkHeader(input, CODEC, VERSION_START, VERSION_CURRENT);
         size = input.readInt();
       } else {
         version = VERSION_PRE;
         size = firstInt;
       }
       if (size == -1) {
-        readDgaps(input);
+        if (version >= VERSION_DGAPS_CLEARED) {
+          readClearedDgaps(input);
+        } else {
+          readSetDgaps(input);
+        }
       } else {
         readBits(input);
       }
@@ -293,7 +364,7 @@ public final class BitVector implements Cloneable, Bits {
   }
 
   /** read as a d-gaps list */ 
-  private void readDgaps(IndexInput input) throws IOException {
+  private void readSetDgaps(IndexInput input) throws IOException {
     size = input.readInt();       // (re)read size
     count = input.readInt();        // read count
     bits = new byte[(size >> 3) + 1];     // allocate bits
@@ -303,6 +374,24 @@ public final class BitVector implements Cloneable, Bits {
       last += input.readVInt();
       bits[last] = input.readByte();
       n -= BYTE_COUNTS[bits[last] & 0xFF];
+      assert n >= 0;
     }          
+  }
+
+  /** read as a d-gaps cleared bits list */ 
+  private void readClearedDgaps(IndexInput input) throws IOException {
+    size = input.readInt();       // (re)read size
+    count = input.readInt();        // read count
+    bits = new byte[(size >> 3) + 1];     // allocate bits
+    Arrays.fill(bits, (byte) 0xff);
+    clearUnusedBits();
+    int last=0;
+    int numCleared = size()-count();
+    while (numCleared>0) {
+      last += input.readVInt();
+      bits[last] = input.readByte();
+      numCleared -= 8-BYTE_COUNTS[bits[last] & 0xFF];
+      assert numCleared >= 0;
+    }
   }
 }

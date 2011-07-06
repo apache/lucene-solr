@@ -285,19 +285,19 @@ class JoinQuery extends Query {
         }
       }
 
-      Bits fromDeletedDocs = MultiFields.getDeletedDocs(fromSearcher.getIndexReader());
-      Bits toDeletedDocs = fromSearcher == toSearcher ? fromDeletedDocs : MultiFields.getDeletedDocs(toSearcher.getIndexReader());
+      Bits fromLiveDocs = MultiFields.getLiveDocs(fromSearcher.getIndexReader());
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : MultiFields.getLiveDocs(toSearcher.getIndexReader());
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
       fromDeState.fieldName = fromField;
-      fromDeState.deletedDocs = fromDeletedDocs;
+      fromDeState.liveDocs = fromLiveDocs;
       fromDeState.termsEnum = termsEnum;
       fromDeState.docsEnum = null;
       fromDeState.minSetSizeCached = minDocFreqFrom;
 
       toDeState = new SolrIndexSearcher.DocsEnumState();
       toDeState.fieldName = toField;
-      toDeState.deletedDocs = toDeletedDocs;
+      toDeState.liveDocs = toLiveDocs;
       toDeState.termsEnum = toTermsEnum;
       toDeState.docsEnum = null;
       toDeState.minSetSizeCached = minDocFreqTo;
@@ -314,7 +314,7 @@ class JoinQuery extends Query {
 
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
-          // OK to skip deletedDocs, since we check for intersection with docs matching query
+          // OK to skip liveDocs, since we check for intersection with docs matching query
           fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum);
           DocsEnum docsEnum = fromDeState.docsEnum;
 
@@ -393,8 +393,8 @@ class JoinQuery extends Query {
             } else {
               toTermDirectCount++;
 
-              // need to use deletedDocs here so we don't map to any deleted ones
-              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.deletedDocs, toDeState.docsEnum);
+              // need to use liveDocs here so we don't map to any deleted ones
+              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum);
               DocsEnum docsEnum = toDeState.docsEnum;              
 
               if (docsEnum instanceof MultiDocsEnum) {

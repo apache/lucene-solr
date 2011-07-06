@@ -191,5 +191,3 @@ public abstract class ValueSource implements Serializable {
     }
   }
 }
-
-

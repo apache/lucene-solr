@@ -769,7 +769,7 @@ public class MemoryIndex {
     }
 
     @Override
-    public Bits getDeletedDocs() {
+    public Bits getLiveDocs() {
       return null;
     }
     
@@ -925,19 +925,19 @@ public class MemoryIndex {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
         if (reuse == null || !(reuse instanceof MemoryDocsEnum)) {
           reuse = new MemoryDocsEnum();
         }
-        return ((MemoryDocsEnum) reuse).reset(skipDocs, info.sortedTerms[termUpto].getValue());
+        return ((MemoryDocsEnum) reuse).reset(liveDocs, info.sortedTerms[termUpto].getValue());
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
         if (reuse == null || !(reuse instanceof MemoryDocsAndPositionsEnum)) {
           reuse = new MemoryDocsAndPositionsEnum();
         }
-        return ((MemoryDocsAndPositionsEnum) reuse).reset(skipDocs, info.sortedTerms[termUpto].getValue());
+        return ((MemoryDocsAndPositionsEnum) reuse).reset(liveDocs, info.sortedTerms[termUpto].getValue());
       }
 
       @Override
@@ -962,10 +962,10 @@ public class MemoryIndex {
     private class MemoryDocsEnum extends DocsEnum {
       private ArrayIntList positions;
       private boolean hasNext;
-      private Bits skipDocs;
+      private Bits liveDocs;
 
-      public DocsEnum reset(Bits skipDocs, ArrayIntList positions) {
-        this.skipDocs = skipDocs;
+      public DocsEnum reset(Bits liveDocs, ArrayIntList positions) {
+        this.liveDocs = liveDocs;
         this.positions = positions;
         hasNext = true;
         return this;
@@ -978,7 +978,7 @@ public class MemoryIndex {
 
       @Override
       public int nextDoc() {
-        if (hasNext && (skipDocs == null || !skipDocs.get(0))) {
+        if (hasNext && (liveDocs == null || liveDocs.get(0))) {
           hasNext = false;
           return 0;
         } else {
@@ -1001,10 +1001,10 @@ public class MemoryIndex {
       private ArrayIntList positions;
       private int posUpto;
       private boolean hasNext;
-      private Bits skipDocs;
+      private Bits liveDocs;
 
-      public DocsAndPositionsEnum reset(Bits skipDocs, ArrayIntList positions) {
-        this.skipDocs = skipDocs;
+      public DocsAndPositionsEnum reset(Bits liveDocs, ArrayIntList positions) {
+        this.liveDocs = liveDocs;
         this.positions = positions;
         posUpto = 0;
         hasNext = true;
@@ -1018,7 +1018,7 @@ public class MemoryIndex {
 
       @Override
       public int nextDoc() {
-        if (hasNext && (skipDocs == null || !skipDocs.get(0))) {
+        if (hasNext && (liveDocs == null || liveDocs.get(0))) {
           hasNext = false;
           return 0;
         } else {

@@ -346,7 +346,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
     final MultiDocsEnum docsEnum;
     if (reuse != null) {
       docsEnum = (MultiDocsEnum) reuse;
@@ -354,11 +354,11 @@ public final class MultiTermsEnum extends TermsEnum {
       docsEnum = new MultiDocsEnum();
     }
     
-    final MultiBits multiSkipDocs;
-    if (skipDocs instanceof MultiBits) {
-      multiSkipDocs = (MultiBits) skipDocs;
+    final MultiBits multiLiveDocs;
+    if (liveDocs instanceof MultiBits) {
+      multiLiveDocs = (MultiBits) liveDocs;
     } else {
-      multiSkipDocs = null;
+      multiLiveDocs = null;
     }
 
     int upto = 0;
@@ -369,22 +369,22 @@ public final class MultiTermsEnum extends TermsEnum {
 
       final Bits b;
 
-      if (multiSkipDocs != null) {
+      if (multiLiveDocs != null) {
         // optimize for common case: requested skip docs is a
         // congruent sub-slice of MultiBits: in this case, we
-        // just pull the skipDocs from the sub reader, rather
+        // just pull the liveDocs from the sub reader, rather
         // than making the inefficient
         // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(entry.subSlice);
+        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(entry.subSlice);
         if (sub.matches) {
           b = sub.result;
         } else {
           // custom case: requested skip docs is foreign:
           // must slice it on every access
-          b = new BitsSlice(skipDocs, entry.subSlice);
+          b = new BitsSlice(liveDocs, entry.subSlice);
         }
-      } else if (skipDocs != null) {
-        b = new BitsSlice(skipDocs, entry.subSlice);
+      } else if (liveDocs != null) {
+        b = new BitsSlice(liveDocs, entry.subSlice);
       } else {
         // no deletions
         b = null;
@@ -407,7 +407,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     final MultiDocsAndPositionsEnum docsAndPositionsEnum;
     if (reuse != null) {
       docsAndPositionsEnum = (MultiDocsAndPositionsEnum) reuse;
@@ -415,11 +415,11 @@ public final class MultiTermsEnum extends TermsEnum {
       docsAndPositionsEnum = new MultiDocsAndPositionsEnum();
     }
     
-    final MultiBits multiSkipDocs;
-    if (skipDocs instanceof MultiBits) {
-      multiSkipDocs = (MultiBits) skipDocs;
+    final MultiBits multiLiveDocs;
+    if (liveDocs instanceof MultiBits) {
+      multiLiveDocs = (MultiBits) liveDocs;
     } else {
-      multiSkipDocs = null;
+      multiLiveDocs = null;
     }
 
     int upto = 0;
@@ -430,23 +430,23 @@ public final class MultiTermsEnum extends TermsEnum {
 
       final Bits b;
 
-      if (multiSkipDocs != null) {
+      if (multiLiveDocs != null) {
         // Optimize for common case: requested skip docs is a
         // congruent sub-slice of MultiBits: in this case, we
-        // just pull the skipDocs from the sub reader, rather
+        // just pull the liveDocs from the sub reader, rather
         // than making the inefficient
         // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(top[i].subSlice);
+        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(top[i].subSlice);
         if (sub.matches) {
           b = sub.result;
         } else {
           // custom case: requested skip docs is foreign:
           // must slice it on every access (very
           // inefficient)
-          b = new BitsSlice(skipDocs, top[i].subSlice);
+          b = new BitsSlice(liveDocs, top[i].subSlice);
         }
-      } else if (skipDocs != null) {
-        b = new BitsSlice(skipDocs, top[i].subSlice);
+      } else if (liveDocs != null) {
+        b = new BitsSlice(liveDocs, top[i].subSlice);
       } else {
         // no deletions
         b = null;

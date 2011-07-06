@@ -206,9 +206,9 @@ public class ParallelReader extends IndexReader {
     }
   }
   
-   @Override
-  public Bits getDeletedDocs() {
-    return MultiFields.getDeletedDocs(readers.get(0));
+  @Override
+  public Bits getLiveDocs() {
+    return MultiFields.getLiveDocs(readers.get(0));
   }
 
   @Override

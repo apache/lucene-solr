@@ -182,9 +182,9 @@ public class InstantiatedIndex
     }
 
     // create documents
-    final Bits delDocs = MultiFields.getDeletedDocs(sourceIndexReader);
+    final Bits liveDocs = MultiFields.getLiveDocs(sourceIndexReader);
     for (int i = 0; i < sourceIndexReader.maxDoc(); i++) {
-      if (delDocs != null && delDocs.get(i)) {
+      if (liveDocs != null && !liveDocs.get(i)) {
         deletedDocuments.set(i);
       } else {
         InstantiatedDocument document = new InstantiatedDocument();
@@ -254,7 +254,7 @@ public class InstantiatedIndex
     // create term-document informations
     for (InstantiatedTerm term : orderedTerms) {
       DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(sourceIndexReader,
-                                                                            MultiFields.getDeletedDocs(sourceIndexReader),
+                                                                            MultiFields.getLiveDocs(sourceIndexReader),
                                                                             term.getTerm().field(),
                                                                             new BytesRef(term.getTerm().text()));
       int position = 0;

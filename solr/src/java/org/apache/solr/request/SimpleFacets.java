@@ -673,7 +673,7 @@ public class SimpleFacets {
             if (deState==null) {
               deState = new SolrIndexSearcher.DocsEnumState();
               deState.fieldName = field;
-              deState.deletedDocs = MultiFields.getDeletedDocs(r);
+              deState.liveDocs = MultiFields.getLiveDocs(r);
               deState.termsEnum = termsEnum;
               deState.docsEnum = docsEnum;
             }

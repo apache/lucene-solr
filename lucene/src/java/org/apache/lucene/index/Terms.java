@@ -74,10 +74,10 @@ public abstract class Terms {
 
   /** Get {@link DocsEnum} for the specified term.  This
    *  method may return null if the term does not exist. */
-  public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, BytesRef text, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
-      return termsEnum.docs(skipDocs, reuse);
+      return termsEnum.docs(liveDocs, reuse);
     } else {
       return null;
     }
@@ -86,10 +86,10 @@ public abstract class Terms {
   /** Get {@link DocsEnum} for the specified term.  This
    *  method will may return null if the term does not
    *  exists, or positions were not indexed. */ 
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seekExact(text, true)) {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
+      return termsEnum.docsAndPositions(liveDocs, reuse);
     } else {
       return null;
     }
@@ -101,10 +101,10 @@ public abstract class Terms {
    * 
    * @see TermsEnum#termState()
    * @see TermsEnum#seekExact(BytesRef, TermState) */
-  public DocsEnum docs(Bits skipDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, BytesRef term, TermState termState, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     termsEnum.seekExact(term, termState);
-    return termsEnum.docs(skipDocs, reuse);
+    return termsEnum.docs(liveDocs, reuse);
   }
 
   /**
@@ -114,10 +114,10 @@ public abstract class Terms {
    * 
    * @see TermsEnum#termState()
    * @see TermsEnum#seekExact(BytesRef, TermState) */
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, BytesRef term, TermState termState, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     termsEnum.seekExact(term, termState);
-    return termsEnum.docsAndPositions(skipDocs, reuse);
+    return termsEnum.docsAndPositions(liveDocs, reuse);
   }
 
   public long getUniqueTermCount() throws IOException {

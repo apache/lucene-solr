@@ -118,19 +118,19 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
     if (reuse == null || !(reuse instanceof InstantiatedDocsEnum)) {
       reuse = new InstantiatedDocsEnum();
     }
-    return ((InstantiatedDocsEnum) reuse).reset(skipDocs, terms[upto]);
+    return ((InstantiatedDocsEnum) reuse).reset(liveDocs, terms[upto]);
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
     if (reuse == null || !(reuse instanceof InstantiatedDocsAndPositionsEnum)) {
       reuse = new InstantiatedDocsAndPositionsEnum();
     }
-    return ((InstantiatedDocsAndPositionsEnum) reuse).reset(skipDocs, terms[upto]);
+    return ((InstantiatedDocsAndPositionsEnum) reuse).reset(liveDocs, terms[upto]);
   }
 
   @Override

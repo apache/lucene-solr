@@ -97,7 +97,7 @@ class VarStraightBytesImpl {
       datOut = getDataOut();
       boolean success = false;
       try {
-        if (state.bits == null && state.reader instanceof Reader) {
+        if (state.liveDocs == null && state.reader instanceof Reader) {
           // bulk merge since we don't have any deletes
           Reader reader = (Reader) state.reader;
           final int maxDocs = reader.maxDoc;
