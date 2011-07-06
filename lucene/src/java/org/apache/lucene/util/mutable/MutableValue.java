@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
 /** @lucene.internal */
 public abstract class MutableValue implements Comparable {

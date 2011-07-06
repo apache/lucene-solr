@@ -17,8 +17,6 @@
 
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueStr;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -27,6 +25,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueStr;
 
 import java.io.IOException;
 

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
-public class MutableValueLong extends MutableValue {
-  public long value;
+public class MutableValueDouble extends MutableValue {
+  public double value;
 
   @Override
   public Object toObject() {
@@ -26,14 +26,14 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueLong s = (MutableValueLong) source;
-    exists = s.exists;
+    MutableValueDouble s = (MutableValueDouble) source;
     value = s.value;
+    exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueLong v = new MutableValueLong();
+    MutableValueDouble v = new MutableValueDouble();
     v.value = this.value;
     v.exists = this.exists;
     return v;
@@ -41,23 +41,23 @@ public class MutableValueLong extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueLong b = (MutableValueLong)other;
+    MutableValueDouble b = (MutableValueDouble)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueLong b = (MutableValueLong)other;
-    long bv = b.value;
-    if (value<bv) return -1;
-    if (value>bv) return 1;
-    if (exists == b.exists) return 0;
-    return exists ? 1 : -1;
+    MutableValueDouble b = (MutableValueDouble)other;
+    int c = Double.compare(value, b.value);
+    if (c != 0) return c;
+    if (!exists) return -1;
+    if (!b.exists) return 1;
+    return 0;
   }
-
 
   @Override
   public int hashCode() {
-    return (int)value + (int)(value>>32);
+    long x = Double.doubleToLongBits(value);
+    return (int)x + (int)(x>>>32);
   }
 }

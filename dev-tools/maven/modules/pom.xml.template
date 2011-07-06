@@ -33,7 +33,6 @@
   <modules>
     <module>analysis</module>
     <module>benchmark</module>
-    <module>common</module>
     <module>facet</module>
     <module>grouping</module>
     <module>join</module>

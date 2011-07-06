@@ -17,8 +17,6 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueLong;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
@@ -27,6 +25,8 @@ import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.CachedArray.LongValues;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueLong;
 
 
 import java.io.IOException;

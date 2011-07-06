@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
-public class MutableValueFloat extends MutableValue {
-  public float value;
+public class MutableValueLong extends MutableValue {
+  public long value;
 
   @Override
   public Object toObject() {
@@ -26,14 +26,14 @@ public class MutableValueFloat extends MutableValue {
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueFloat s = (MutableValueFloat) source;
-    value = s.value;
+    MutableValueLong s = (MutableValueLong) source;
     exists = s.exists;
+    value = s.value;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueFloat v = new MutableValueFloat();
+    MutableValueLong v = new MutableValueLong();
     v.value = this.value;
     v.exists = this.exists;
     return v;
@@ -41,21 +41,23 @@ public class MutableValueFloat extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueFloat b = (MutableValueFloat)other;
+    MutableValueLong b = (MutableValueLong)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueFloat b = (MutableValueFloat)other;
-    int c = Float.compare(value, b.value);
-    if (c != 0) return c;
+    MutableValueLong b = (MutableValueLong)other;
+    long bv = b.value;
+    if (value<bv) return -1;
+    if (value>bv) return 1;
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
   }
 
+
   @Override
   public int hashCode() {
-    return Float.floatToIntBits(value);
+    return (int)value + (int)(value>>32);
   }
 }

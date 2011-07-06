@@ -42,8 +42,6 @@
 	<classpathentry kind="src" path="modules/analysis/morfologik/src/test"/>	
 	<classpathentry kind="src" path="modules/benchmark/src/java"/>
 	<classpathentry kind="src" path="modules/benchmark/src/test"/>
-	<classpathentry kind="src" path="modules/common/src/java"/>
-	<classpathentry kind="src" path="modules/common/src/test"/>
 	<classpathentry kind="src" path="modules/facet/src/java"/>
  	<classpathentry kind="src" path="modules/facet/src/examples"/>
  	<classpathentry kind="src" path="modules/facet/src/test"/>

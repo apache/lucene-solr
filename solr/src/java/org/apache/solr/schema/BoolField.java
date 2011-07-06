@@ -17,8 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueBool;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -28,6 +26,8 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;

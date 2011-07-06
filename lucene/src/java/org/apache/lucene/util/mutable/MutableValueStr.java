@@ -14,47 +14,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
-public class MutableValueBool extends MutableValue {
-  public boolean value;
+import org.apache.lucene.util.BytesRef;
+
+public class MutableValueStr extends MutableValue {
+  public BytesRef value = new BytesRef();
 
   @Override
   public Object toObject() {
-    return exists ? value : null;
+    return exists ? value.utf8ToString() : null;
   }
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueBool s = (MutableValueBool) source;
-    value = s.value;
+    MutableValueStr s = (MutableValueStr) source;
     exists = s.exists;
+    value.copy(s.value);
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueBool v = new MutableValueBool();
-    v.value = this.value;
+    MutableValueStr v = new MutableValueStr();
+    v.value.copy(value);
     v.exists = this.exists;
     return v;
   }
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueBool b = (MutableValueBool)other;
-    return value == b.value && exists == b.exists;
+    MutableValueStr b = (MutableValueStr)other;
+    return value.equals(b.value) && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueBool b = (MutableValueBool)other;
-    if (value != b.value) return value ? 1 : 0;
+    MutableValueStr b = (MutableValueStr)other;
+    int c = value.compareTo(b.value);
+    if (c != 0) return c;
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
   }
 
+
   @Override
   public int hashCode() {
-    return value ? 2 : (exists ? 1 : 0);
+    return value.hashCode();
   }
 }

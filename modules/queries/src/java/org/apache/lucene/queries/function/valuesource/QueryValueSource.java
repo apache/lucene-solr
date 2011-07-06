@@ -17,9 +17,6 @@
 
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueFloat;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -27,6 +24,8 @@ import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueFloat;
 
 import java.io.IOException;
 import java.util.Map;

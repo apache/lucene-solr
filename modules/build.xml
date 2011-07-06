@@ -24,7 +24,6 @@
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -39,7 +38,6 @@
       <subant target="compile" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -54,7 +52,6 @@
       <subant target="compile-test" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -69,7 +66,6 @@
       <subant target="javadocs" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -85,7 +81,6 @@
       <subant target="dist-maven" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -99,7 +94,6 @@
       <subant target="validate" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />
@@ -115,7 +109,6 @@
       <subant target="clean" inheritall="false" failonerror="true">
         <fileset dir="analysis" includes="build.xml" />
         <fileset dir="benchmark" includes="build.xml" />
-        <fileset dir="common" includes="build.xml" />
         <fileset dir="facet" includes="build.xml" />
         <fileset dir="grouping" includes="build.xml" />
         <fileset dir="join" includes="build.xml" />

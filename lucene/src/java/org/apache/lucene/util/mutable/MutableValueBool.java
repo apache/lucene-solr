@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
-public class MutableValueInt extends MutableValue {
-  public int value;
-  
+public class MutableValueBool extends MutableValue {
+  public boolean value;
+
   @Override
   public Object toObject() {
     return exists ? value : null;
@@ -26,14 +26,14 @@ public class MutableValueInt extends MutableValue {
 
   @Override
   public void copy(MutableValue source) {
-    MutableValueInt s = (MutableValueInt) source;
+    MutableValueBool s = (MutableValueBool) source;
     value = s.value;
     exists = s.exists;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueInt v = new MutableValueInt();
+    MutableValueBool v = new MutableValueBool();
     v.value = this.value;
     v.exists = this.exists;
     return v;
@@ -41,26 +41,20 @@ public class MutableValueInt extends MutableValue {
 
   @Override
   public boolean equalsSameType(Object other) {
-    MutableValueInt b = (MutableValueInt)other;
+    MutableValueBool b = (MutableValueBool)other;
     return value == b.value && exists == b.exists;
   }
 
   @Override
   public int compareSameType(Object other) {
-    MutableValueInt b = (MutableValueInt)other;
-    int ai = value;
-    int bi = b.value;
-    if (ai<bi) return -1;
-    else if (ai>bi) return 1;
-
+    MutableValueBool b = (MutableValueBool)other;
+    if (value != b.value) return value ? 1 : 0;
     if (exists == b.exists) return 0;
     return exists ? 1 : -1;
   }
 
-
   @Override
   public int hashCode() {
-    // TODO: if used in HashMap, it already mixes the value... maybe use a straight value?
-    return (value>>8) + (value>>16);
+    return value ? 2 : (exists ? 1 : 0);
   }
 }

@@ -14,50 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.common.mutable;
+package org.apache.lucene.util.mutable;
 
-public class MutableValueDouble extends MutableValue {
-  public double value;
+import java.util.Date;
 
+public class MutableValueDate extends MutableValueLong {
   @Override
   public Object toObject() {
-    return exists ? value : null;
-  }
-
-  @Override
-  public void copy(MutableValue source) {
-    MutableValueDouble s = (MutableValueDouble) source;
-    value = s.value;
-    exists = s.exists;
+    return exists ? new Date(value) : null;
   }
 
   @Override
   public MutableValue duplicate() {
-    MutableValueDouble v = new MutableValueDouble();
+    MutableValueDate v = new MutableValueDate();
     v.value = this.value;
     v.exists = this.exists;
     return v;
-  }
-
-  @Override
-  public boolean equalsSameType(Object other) {
-    MutableValueDouble b = (MutableValueDouble)other;
-    return value == b.value && exists == b.exists;
-  }
-
-  @Override
-  public int compareSameType(Object other) {
-    MutableValueDouble b = (MutableValueDouble)other;
-    int c = Double.compare(value, b.value);
-    if (c != 0) return c;
-    if (!exists) return -1;
-    if (!b.exists) return 1;
-    return 0;
-  }
-
-  @Override
-  public int hashCode() {
-    long x = Double.doubleToLongBits(value);
-    return (int)x + (int)(x>>>32);
-  }
+  }  
 }

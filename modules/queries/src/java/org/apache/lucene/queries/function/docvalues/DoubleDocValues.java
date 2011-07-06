@@ -1,9 +1,9 @@
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueDouble;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueDouble;
 
 public abstract class DoubleDocValues extends DocValues {
   protected final ValueSource vs;

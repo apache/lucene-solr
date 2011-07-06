@@ -16,8 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.common.mutable.MutableValueDate;
-import org.apache.lucene.common.mutable.MutableValueLong;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
@@ -35,6 +33,8 @@ import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.mutable.MutableValueDate;
+import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;

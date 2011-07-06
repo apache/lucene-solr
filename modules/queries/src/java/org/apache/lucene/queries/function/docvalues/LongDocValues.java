@@ -1,9 +1,9 @@
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.common.mutable.MutableValue;
-import org.apache.lucene.common.mutable.MutableValueLong;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueLong;
 
 
 public abstract class LongDocValues extends DocValues {
