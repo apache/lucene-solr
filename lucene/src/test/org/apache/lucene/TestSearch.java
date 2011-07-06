@@ -17,6 +17,8 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -30,7 +32,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.queryParser.*;
 
 /** JUnit adaptation of an older test case SearchTest. */
 public class TestSearch extends LuceneTestCase {
@@ -100,24 +101,13 @@ public class TestSearch extends LuceneTestCase {
 
       IndexSearcher searcher = new IndexSearcher(directory, true);
 
-      String[] queries = {
-        "a b",
-        "\"a b\"",
-        "\"a b c\"",
-        "a c",
-        "\"a c\"",
-        "\"a c e\"",
-      };
       ScoreDoc[] hits = null;
 
       Sort sort = new Sort(new SortField[] {
           SortField.FIELD_SCORE,
           new SortField("id", SortField.Type.INT)});
 
-      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "contents", analyzer);
-      parser.setPhraseSlop(4);
-      for (int j = 0; j < queries.length; j++) {
-        Query query = parser.parse(queries[j]);
+      for (Query query : buildQueries()) {
         out.println("Query: " + query.toString("contents"));
         if (VERBOSE) {
           System.out.println("TEST: query=" + query);
@@ -133,5 +123,43 @@ public class TestSearch extends LuceneTestCase {
       }
       searcher.close();
       directory.close();
+  }
+
+  private List<Query> buildQueries() {
+    List<Query> queries = new ArrayList<Query>();
+
+    BooleanQuery booleanAB = new BooleanQuery();
+    booleanAB.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);
+    booleanAB.add(new TermQuery(new Term("contents", "b")), BooleanClause.Occur.SHOULD);
+    queries.add(booleanAB);
+
+    PhraseQuery phraseAB = new PhraseQuery();
+    phraseAB.add(new Term("contents", "a"));
+    phraseAB.add(new Term("contents", "b"));
+    queries.add(phraseAB);
+
+    PhraseQuery phraseABC = new PhraseQuery();
+    phraseABC.add(new Term("contents", "a"));
+    phraseABC.add(new Term("contents", "b"));
+    phraseABC.add(new Term("contents", "c"));
+    queries.add(phraseABC);
+
+    BooleanQuery booleanAC = new BooleanQuery();
+    booleanAC.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);
+    booleanAC.add(new TermQuery(new Term("contents", "c")), BooleanClause.Occur.SHOULD);
+    queries.add(booleanAC);
+
+    PhraseQuery phraseAC = new PhraseQuery();
+    phraseAC.add(new Term("contents", "a"));
+    phraseAC.add(new Term("contents", "c"));
+    queries.add(phraseAC);
+
+    PhraseQuery phraseACE = new PhraseQuery();
+    phraseACE.add(new Term("contents", "a"));
+    phraseACE.add(new Term("contents", "c"));
+    phraseACE.add(new Term("contents", "e"));
+    queries.add(phraseACE);
+
+    return queries;
   }
 }

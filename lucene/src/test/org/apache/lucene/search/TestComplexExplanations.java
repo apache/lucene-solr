@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.spans.*;
 
@@ -57,8 +58,12 @@ public class TestComplexExplanations extends TestExplanations {
   public void test1() throws Exception {
     
     BooleanQuery q = new BooleanQuery();
-    
-    q.add(qp.parse("\"w1 w2\"~1"), Occur.MUST);
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.setSlop(1);
+    phraseQuery.add(new Term(FIELD, "w1"));
+    phraseQuery.add(new Term(FIELD, "w2"));
+    q.add(phraseQuery, Occur.MUST);
     q.add(snear(st("w2"),
                 sor("w5","zz"),
                 4, true),
@@ -66,7 +71,7 @@ public class TestComplexExplanations extends TestExplanations {
     q.add(snear(sf("w3",2), st("w2"), st("w3"), 5, true),
           Occur.SHOULD);
     
-    Query t = new FilteredQuery(qp.parse("xx"),
+    Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
                                 new ItemizedFilter(new int[] {1,3}));
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
@@ -79,14 +84,25 @@ public class TestComplexExplanations extends TestExplanations {
     dm.add(snear(st("w2"),
                  sor("w5","zz"),
                  4, true));
-    dm.add(qp.parse("QQ"));
-    dm.add(qp.parse("xx yy -zz"));
-    dm.add(qp.parse("-xx -w1"));
+    dm.add(new TermQuery(new Term(FIELD, "QQ")));
+
+    BooleanQuery xxYYZZ = new BooleanQuery();
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "xx")), Occur.SHOULD);
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "zz")), Occur.MUST_NOT);
+
+    dm.add(xxYYZZ);
+
+    BooleanQuery xxW1 = new BooleanQuery();
+    xxW1.add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST_NOT);
+    xxW1.add(new TermQuery(new Term(FIELD, "w1")), Occur.MUST_NOT);
+
+    dm.add(xxW1);
 
     DisjunctionMaxQuery dm2 = new DisjunctionMaxQuery(0.5f);
-    dm2.add(qp.parse("w1"));
-    dm2.add(qp.parse("w2"));
-    dm2.add(qp.parse("w3"));
+    dm2.add(new TermQuery(new Term(FIELD, "w1")));
+    dm2.add(new TermQuery(new Term(FIELD, "w2")));
+    dm2.add(new TermQuery(new Term(FIELD, "w3")));
     dm.add(dm2);
 
     q.add(dm, Occur.SHOULD);
@@ -105,8 +121,12 @@ public class TestComplexExplanations extends TestExplanations {
   public void test2() throws Exception {
     
     BooleanQuery q = new BooleanQuery();
-    
-    q.add(qp.parse("\"w1 w2\"~1"), Occur.MUST);
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.setSlop(1);
+    phraseQuery.add(new Term(FIELD, "w1"));
+    phraseQuery.add(new Term(FIELD, "w2"));
+    q.add(phraseQuery, Occur.MUST);
     q.add(snear(st("w2"),
                 sor("w5","zz"),
                 4, true),
@@ -114,7 +134,7 @@ public class TestComplexExplanations extends TestExplanations {
     q.add(snear(sf("w3",2), st("w2"), st("w3"), 5, true),
           Occur.SHOULD);
     
-    Query t = new FilteredQuery(qp.parse("xx"),
+    Query t = new FilteredQuery(new TermQuery(new Term(FIELD, "xx")),
                                 new ItemizedFilter(new int[] {1,3}));
     t.setBoost(1000);
     q.add(t, Occur.SHOULD);
@@ -127,14 +147,25 @@ public class TestComplexExplanations extends TestExplanations {
     dm.add(snear(st("w2"),
                  sor("w5","zz"),
                  4, true));
-    dm.add(qp.parse("QQ"));
-    dm.add(qp.parse("xx yy -zz"));
-    dm.add(qp.parse("-xx -w1"));
+    dm.add(new TermQuery(new Term(FIELD, "QQ")));
+
+    BooleanQuery xxYYZZ = new BooleanQuery();
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "xx")), Occur.SHOULD);
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
+    xxYYZZ.add(new TermQuery(new Term(FIELD, "zz")), Occur.MUST_NOT);
+
+    dm.add(xxYYZZ);
+
+    BooleanQuery xxW1 = new BooleanQuery();
+    xxW1.add(new TermQuery(new Term(FIELD, "xx")), Occur.MUST_NOT);
+    xxW1.add(new TermQuery(new Term(FIELD, "w1")), Occur.MUST_NOT);
+
+    dm.add(xxW1);
 
     DisjunctionMaxQuery dm2 = new DisjunctionMaxQuery(0.5f);
-    dm2.add(qp.parse("w1"));
-    dm2.add(qp.parse("w2"));
-    dm2.add(qp.parse("w3"));
+    dm2.add(new TermQuery(new Term(FIELD, "w1")));
+    dm2.add(new TermQuery(new Term(FIELD, "w2")));
+    dm2.add(new TermQuery(new Term(FIELD, "w3")));
     dm.add(dm2);
 
     q.add(dm, Occur.SHOULD);
@@ -161,7 +192,9 @@ public class TestComplexExplanations extends TestExplanations {
   // with scores of 0 wrapped in other queries
 
   public void testT3() throws Exception {
-    bqtest("w1^0.0", new int[] { 0,1,2,3 });
+    TermQuery query = new TermQuery(new Term(FIELD, "w1"));
+    query.setBoost(0);
+    bqtest(query, new int[] { 0,1,2,3 });
   }
 
   public void testMA3() throws Exception {
@@ -171,7 +204,9 @@ public class TestComplexExplanations extends TestExplanations {
   }
   
   public void testFQ5() throws Exception {
-    bqtest(new FilteredQuery(qp.parse("xx^0"),
+    TermQuery query = new TermQuery(new Term(FIELD, "xx"));
+    query.setBoost(0);
+    bqtest(new FilteredQuery(query,
                              new ItemizedFilter(new int[] {1,3})),
            new int[] {3});
   }
@@ -184,8 +219,19 @@ public class TestComplexExplanations extends TestExplanations {
   
   public void testDMQ10() throws Exception {
     DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.5f);
-    q.add(qp.parse("yy w5^100"));
-    q.add(qp.parse("xx^0"));
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "yy")), Occur.SHOULD);
+    TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
+    boostedQuery.setBoost(100);
+    query.add(boostedQuery, Occur.SHOULD);
+
+    q.add(query);
+
+    TermQuery xxBoostedQuery = new TermQuery(new Term(FIELD, "xx"));
+    xxBoostedQuery.setBoost(0);
+
+    q.add(xxBoostedQuery);
     q.setBoost(0.0f);
     bqtest(q, new int[] { 0,2,3 });
   }
@@ -201,21 +247,51 @@ public class TestComplexExplanations extends TestExplanations {
   
   public void testBQ12() throws Exception {
     // NOTE: using qtest not bqtest
-    qtest("w1 w2^0.0", new int[] { 0,1,2,3 });
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), Occur.SHOULD);
+    TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w2"));
+    boostedQuery.setBoost(0);
+    query.add(boostedQuery, Occur.SHOULD);
+    
+    qtest(query, new int[] { 0,1,2,3 });
   }
   public void testBQ13() throws Exception {
     // NOTE: using qtest not bqtest
-    qtest("w1 -w5^0.0", new int[] { 1,2,3 });
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), Occur.SHOULD);
+    TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w5"));
+    boostedQuery.setBoost(0);
+    query.add(boostedQuery, Occur.MUST_NOT);
+
+    qtest(query, new int[] { 1,2,3 });
   }
   public void testBQ18() throws Exception {
     // NOTE: using qtest not bqtest
-    qtest("+w1^0.0 w2", new int[] { 0,1,2,3 });
+    BooleanQuery query = new BooleanQuery();
+    TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
+    boostedQuery.setBoost(0);
+    query.add(boostedQuery, Occur.MUST);
+    query.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
+    
+    qtest(query, new int[] { 0,1,2,3 });
   }
   public void testBQ21() throws Exception {
-    bqtest("(+w1 w2)^0.0", new int[] { 0,1,2,3 });
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(FIELD, "w1")), Occur.MUST);
+    query.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
+    query.setBoost(0);
+
+    bqtest(query, new int[] { 0,1,2,3 });
   }
   public void testBQ22() throws Exception {
-    bqtest("(+w1^0.0 w2)^0.0", new int[] { 0,1,2,3 });
+    BooleanQuery query = new BooleanQuery();
+    TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
+    boostedQuery.setBoost(0);
+    query.add(boostedQuery, Occur.MUST);
+    query.add(new TermQuery(new Term(FIELD, "w2")), Occur.SHOULD);
+    query.setBoost(0);
+
+    bqtest(query, new int[] { 0,1,2,3 });
   }
 
   public void testST3() throws Exception {

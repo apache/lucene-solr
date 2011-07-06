@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -142,19 +141,22 @@ public class TestBooleanQuery extends LuceneTestCase {
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
     iw2.close();
-    
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
-    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+
+    BooleanQuery query = new BooleanQuery(); // Query: +foo -ba*
+    query.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
+    WildcardQuery wildcardQuery = new WildcardQuery(new Term("field", "ba*"));
+    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    query.add(wildcardQuery, BooleanClause.Occur.MUST_NOT);
     
     MultiReader multireader = new MultiReader(reader1, reader2);
     IndexSearcher searcher = new IndexSearcher(multireader);
-    assertEquals(0, searcher.search(qp.parse("+foo -ba*"), 10).totalHits);
+    assertEquals(0, searcher.search(query, 10).totalHits);
     
     final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
     searcher = new IndexSearcher(multireader, es);
     if (VERBOSE)
-      System.out.println("rewritten form: " + searcher.rewrite(qp.parse("+foo -ba*")));
-    assertEquals(0, searcher.search(qp.parse("+foo -ba*"), 10).totalHits);
+      System.out.println("rewritten form: " + searcher.rewrite(query));
+    assertEquals(0, searcher.search(query, 10).totalHits);
     es.shutdown();
     es.awaitTermination(1, TimeUnit.SECONDS);
 

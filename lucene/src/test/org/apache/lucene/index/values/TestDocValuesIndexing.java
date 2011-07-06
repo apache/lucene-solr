@@ -42,11 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues.Source;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
@@ -77,8 +73,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * Simple test case to show how to use the API
    */
-  public void testDocValuesSimple() throws CorruptIndexException, IOException,
-      ParseException {
+  public void testDocValuesSimple() throws CorruptIndexException, IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
@@ -98,9 +93,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     assertTrue(reader.isOptimized());
 
     IndexSearcher searcher = new IndexSearcher(reader);
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "docId",
-        new MockAnalyzer(random));
-    TopDocs search = searcher.search(parser.parse("0 OR 1 OR 2 OR 3 OR 4"), 10);
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("docId", "0")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "1")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "2")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "3")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("docId", "4")), BooleanClause.Occur.SHOULD);
+
+    TopDocs search = searcher.search(query, 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
     IndexDocValues docValues = MultiPerDocValues.getPerDocs(reader).docValues("docId");

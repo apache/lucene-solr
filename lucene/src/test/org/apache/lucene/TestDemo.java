@@ -25,12 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -42,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestDemo extends LuceneTestCase {
 
-  public void testDemo() throws IOException, ParseException {
+  public void testDemo() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random);
 
     // Store the index in memory:
@@ -63,9 +58,7 @@ public class TestDemo extends LuceneTestCase {
     IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
 
     assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
-    // Parse a simple query that searches for "text":
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fieldname", analyzer);
-    Query query = parser.parse("text");
+    Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, null, 1);
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
@@ -75,8 +68,10 @@ public class TestDemo extends LuceneTestCase {
     }
 
     // Test simple phrase query
-    query = parser.parse("\"to be\"");
-    assertEquals(1, isearcher.search(query, null, 1).totalHits);
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("fieldname", "to"));
+    phraseQuery.add(new Term("fieldname", "be"));
+    assertEquals(1, isearcher.search(phraseQuery, null, 1).totalHits);
 
     isearcher.close();
     directory.close();

@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
@@ -382,10 +381,10 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
-    qp.setEnablePositionIncrements(true);
-    PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
+    PhraseQuery q = new PhraseQuery(); // Query "this hi this is a test is"
+    q.add(new Term("field", "hi"), 1);
+    q.add(new Term("field", "test"), 5);
+    
     assertEquals("field:\"? hi ? ? ? test\"", q.toString());
     q.add(new Term("field", "hello"), 1);
     assertEquals("field:\"? hi|hello ? ? ? test\"", q.toString());

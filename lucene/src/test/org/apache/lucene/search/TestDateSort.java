@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -27,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -80,9 +80,7 @@ public class TestDateSort extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.Type.STRING, true));
-
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, new MockAnalyzer(random));
-    Query query = queryParser.parse("Document");
+    Query query = new TermQuery(new Term(TEXT_FIELD, "document"));
 
     // Execute the search and process the search results.
     String[] actualOrder = new String[5];

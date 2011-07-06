@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -58,8 +56,6 @@ public class TestExplanations extends LuceneTestCase {
   public static final String FIELD = "field";
   // same contents, but no field boost
   public static final String ALTFIELD = "alt";
-  public static final QueryParser qp =
-    new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
   
   @AfterClass
   public static void afterClassTestExplanations() throws Exception {
@@ -95,15 +91,6 @@ public class TestExplanations extends LuceneTestCase {
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz"
   };
-
-  public Query makeQuery(String queryText) throws ParseException {
-    return qp.parse(queryText);
-  }
-
-  /** check the expDocNrs first, then check the query (and the explanations) */
-  public void qtest(String queryText, int[] expDocNrs) throws Exception {
-    qtest(makeQuery(queryText), expDocNrs);
-  }
   
   /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
@@ -119,15 +106,6 @@ public class TestExplanations extends LuceneTestCase {
   public void bqtest(Query q, int[] expDocNrs) throws Exception {
     qtest(reqB(q), expDocNrs);
     qtest(optB(q), expDocNrs);
-  }
-  /**
-   * Tests a query using qtest after wrapping it with both optB and reqB
-   * @see #qtest
-   * @see #reqB
-   * @see #optB
-   */
-  public void bqtest(String queryText, int[] expDocNrs) throws Exception {
-    bqtest(makeQuery(queryText), expDocNrs);
   }
   
   /** 
@@ -217,27 +195,13 @@ public class TestExplanations extends LuceneTestCase {
    * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
    * with a second prohibited clause which will never match anything
    */
-  public Query optB(String q) throws Exception {
-    return optB(makeQuery(q));
-  }
-  /**
-   * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
-   * with a second prohibited clause which will never match anything
-   */
   public Query optB(Query q) throws Exception {
     BooleanQuery bq = new BooleanQuery(true);
     bq.add(q, BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
     return bq;
   }
-  
-  /**
-   * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
-   * with a second optional clause which will match everything
-   */
-  public Query reqB(String q) throws Exception {
-    return reqB(makeQuery(q));
-  }
+
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
    * with a second optional clause which will match everything
