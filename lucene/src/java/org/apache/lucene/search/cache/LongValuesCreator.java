@@ -61,8 +61,8 @@ public class LongValuesCreator extends CachedArrayCreator<LongValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.LONG;
+  public SortField.Type getSortType() {
+    return SortField.Type.LONG;
   }
 
 

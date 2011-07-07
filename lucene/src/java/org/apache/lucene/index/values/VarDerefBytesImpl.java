@@ -28,12 +28,14 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -114,7 +116,7 @@ class VarDerefBytesImpl {
 
     private final AddressByteStartArray array = new AddressByteStartArray(1,
         bytesUsed);
-    private final BytesRefHash hash = new BytesRefHash(pool, 16, array);
+    private final BytesRefHash hash;
 
     public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
@@ -124,8 +126,8 @@ class VarDerefBytesImpl {
 
     public Writer(Directory dir, String id, Allocator allocator,
         AtomicLong bytesUsed, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      hash = new BytesRefHash(new ByteBlockPool(allocator), 16, array);
       docToAddress = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
@@ -145,8 +147,7 @@ class VarDerefBytesImpl {
       final int docAddress;
       if (e >= 0) {
         docAddress = array.address[e] = address;
-        address += writePrefixLength(datOut, bytes);
-        datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+        address += bytes.length < 128 ? 1 : 2;
         address += bytes.length;
       } else {
         docAddress = array.address[(-e) - 1];
@@ -170,6 +171,24 @@ class VarDerefBytesImpl {
     // some last docs that we didn't see
     @Override
     public void finish(int docCount) throws IOException {
+      final IndexOutput datOut = getDataOut();
+      boolean success = false;
+      try {
+        final int size = hash.size();
+        final BytesRef bytesRef = new BytesRef();
+        for (int i = 0; i < size; i++) {
+          hash.get(i, bytesRef);
+          writePrefixLength(datOut, bytesRef);
+          datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
+        }
+        success = true;
+      } finally {
+        hash.close();
+        IOUtils.closeSafely(!success, datOut);
+      }
+      
+      final IndexOutput idxOut = getIndexOut();
+      success = false;
       try {
         idxOut.writeInt(address - 1);
         // write index
@@ -190,9 +209,9 @@ class VarDerefBytesImpl {
           w.add(0);
         }
         w.finish();
+        success = true;
       } finally {
-        hash.close();
-        super.finish(docCount);
+        IOUtils.closeSafely(!success,idxOut);
         bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
             * (-docToAddress.length));
         docToAddress = null;

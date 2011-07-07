@@ -19,16 +19,16 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.Version;
 
 /**
@@ -87,13 +87,14 @@ public class PKIndexSplitter {
   }
     
   public static class DocumentFilteredIndexReader extends FilterIndexReader {
-    final Bits readerDels;
+    final Bits liveDocs;
     final int numDocs;
     
     public DocumentFilteredIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
       super(new SlowMultiReaderWrapper(reader));
       
-      final OpenBitSetDISI bits = new OpenBitSetDISI(in.maxDoc());
+      final int maxDoc = in.maxDoc();
+      final OpenBitSetDISI bits = new OpenBitSetDISI(maxDoc);
       final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext());
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
@@ -101,23 +102,24 @@ public class PKIndexSplitter {
           bits.inPlaceOr(it);
         }
       }
-      // this is somehow inverse, if we negate the filter, we delete all documents it matches!
-      if (!negateFilter) {
-        bits.flip(0, in.maxDoc());
+      if (negateFilter) {
+        bits.flip(0, maxDoc);
       }
 
       if (in.hasDeletions()) {
-        final Bits oldDelBits = in.getDeletedDocs();
-        assert oldDelBits != null;
-        for (int i = 0; i < in.maxDoc(); i++) {
-          if (oldDelBits.get(i)) {
-            bits.set(i);
+        final Bits oldLiveDocs = in.getLiveDocs();
+        assert oldLiveDocs != null;
+        final DocIdSetIterator it = bits.iterator();
+        for (int i = it.nextDoc(); i < maxDoc; i = it.nextDoc()) {
+          if (!oldLiveDocs.get(i)) {
+            // we can safely modify the current bit, as the iterator already stepped over it:
+            bits.fastClear(i);
           }
         }
       }
       
-      this.readerDels = bits;
-      this.numDocs = in.maxDoc() - (int) bits.cardinality();
+      this.liveDocs = bits;
+      this.numDocs = (int) bits.cardinality();
     }
     
     @Override
@@ -131,8 +133,8 @@ public class PKIndexSplitter {
     }
     
     @Override
-    public Bits getDeletedDocs() {
-      return readerDels;
+    public Bits getLiveDocs() {
+      return liveDocs;
     }
   }
 }

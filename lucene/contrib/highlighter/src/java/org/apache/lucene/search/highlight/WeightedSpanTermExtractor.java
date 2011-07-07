@@ -41,7 +41,6 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
@@ -63,7 +62,7 @@ public class WeightedSpanTermExtractor {
 
   public WeightedSpanTermExtractor(String defaultField) {
     if (defaultField != null) {
-      this.defaultField = StringHelper.intern(defaultField);
+      this.defaultField = defaultField;
     }
   }
 
@@ -314,8 +313,8 @@ public class WeightedSpanTermExtractor {
    * Necessary to implement matches for queries against <code>defaultField</code>
    */
   private boolean fieldNameComparator(String fieldNameToCheck) {
-    boolean rv = fieldName == null || fieldNameToCheck == fieldName
-        || fieldNameToCheck == defaultField;
+    boolean rv = fieldName == null || fieldName.equals(fieldNameToCheck)
+      || (defaultField != null && defaultField.equals(fieldNameToCheck));
     return rv;
   }
 
@@ -372,7 +371,7 @@ public class WeightedSpanTermExtractor {
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
     if (fieldName != null) {
-      this.fieldName = StringHelper.intern(fieldName);
+      this.fieldName = fieldName;
     } else {
       this.fieldName = null;
     }
@@ -408,7 +407,7 @@ public class WeightedSpanTermExtractor {
   public Map<String,WeightedSpanTerm> getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
       IndexReader reader) throws IOException {
     if (fieldName != null) {
-      this.fieldName = StringHelper.intern(fieldName);
+      this.fieldName = fieldName;
     } else {
       this.fieldName = null;
     }

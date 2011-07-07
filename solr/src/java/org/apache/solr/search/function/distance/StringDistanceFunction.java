@@ -18,10 +18,10 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.spell.StringDistance;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.FloatDocValues;
-import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.Map;

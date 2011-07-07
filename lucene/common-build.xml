@@ -95,15 +95,15 @@
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.5"/>
-  <property name="javac.target" value="1.5"/>
-  <property name="javac.source.backwards" value="1.5"/>
-  <property name="javac.target.backwards" value="1.5"/>
+  <property name="javac.source" value="1.6"/>
+  <property name="javac.target" value="1.6"/>
+  <property name="javac.source.backwards" value="1.6"/>
+  <property name="javac.target.backwards" value="1.6"/>
   <!-- clover wants to run with -lib, otherwise we prefer a repeatable
        classpath -->
   <property name="javac.includeAntRuntime" value="${run.clover}"/>
 
-  <property name="javadoc.link" value="http://java.sun.com/j2se/1.5/docs/api/"/>
+  <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.charset" value="utf-8"/>
   <property name="javadoc.dir" value="${common.dir}/build/docs/api"/>
@@ -838,8 +838,6 @@
       <!-- Lucene  -->
       <arg value="-c" />
       <arg value="${basedir}/lib" />
-      <arg value="-c" />
-      <arg value="${basedir}/contrib/queries/lib" />
     </java>
   </target>
 

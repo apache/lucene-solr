@@ -20,33 +20,28 @@ package org.apache.lucene.queryParser.core.config;
 import java.util.LinkedList;
 
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessor;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.queryParser.core.util.StringUtils;
 
 /**
  * This class can be used to hold any query configuration and no field
- * configuration. For field configuration, it creates a empty
+ * configuration. For field configuration, it creates an empty
  * {@link FieldConfig} object and delegate it to field config listeners, 
  * these are responsible for setting up all the field configuration.
  * 
  * {@link QueryConfigHandler} should be extended by classes that intends to
  * provide configuration to {@link QueryNodeProcessor} objects.
  * 
- * This class extends {@link AttributeSource}, so {@link Attribute}s can be
- * attached to it.
- * 
  * The class that extends {@link QueryConfigHandler} should also provide
  * {@link FieldConfig} objects for each collection field.
  * 
- * @see Attribute
  * @see FieldConfig
  * @see FieldConfigListener
  * @see QueryConfigHandler
  */
-public abstract class QueryConfigHandler extends AttributeSource {
-
-  private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
+public abstract class QueryConfigHandler extends AbstractQueryConfig {
   
+  final private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
+
   /**
    * Returns an implementation of
    * {@link FieldConfig} for a specific field name. If the implemented
@@ -61,7 +56,7 @@ public abstract class QueryConfigHandler extends AttributeSource {
    *         {@link QueryConfigHandler} has no configuration for that field
    */
   public FieldConfig getFieldConfig(String fieldName) {
-    FieldConfig fieldConfig = new FieldConfig(fieldName);
+    FieldConfig fieldConfig = new FieldConfig(StringUtils.toString(fieldName));
 
     for (FieldConfigListener listener : this.listeners) {
       listener.buildFieldConfig(fieldConfig);

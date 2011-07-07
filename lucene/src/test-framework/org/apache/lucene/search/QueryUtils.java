@@ -114,10 +114,13 @@ public class QueryUtils {
         if (wrap) {
           IndexSearcher wrapped;
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, -1), false);
+          FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
           wrapped.close();
           check(random, q1, wrapped = wrapUnderlyingReader(random, s,  0), false);
+          FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
           wrapped.close();
           check(random, q1, wrapped = wrapUnderlyingReader(random, s, +1), false);
+          FieldCache.DEFAULT.purge(wrapped.getIndexReader()); // // our wrapping can create insanity otherwise
           wrapped.close();
         }
         checkExplanations(q1,s);
@@ -148,23 +151,35 @@ public class QueryUtils {
     // we can't put deleted docs before the nested reader, because
     // it will throw off the docIds
     IndexReader[] readers = new IndexReader[] {
-      edge < 0 ? r : IndexReader.open(makeEmptyIndex(random, 0), true),
-      IndexReader.open(makeEmptyIndex(random, 0), true),
-      new MultiReader(IndexReader.open(makeEmptyIndex(random, edge < 0 ? 4 : 0), true),
-          IndexReader.open(makeEmptyIndex(random, 0), true),
-          0 == edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true)),
-      IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 7), true),
-      IndexReader.open(makeEmptyIndex(random, 0), true),
-      new MultiReader(IndexReader.open(makeEmptyIndex(random, 0 < edge ? 0 : 5), true),
-          IndexReader.open(makeEmptyIndex(random, 0), true),
-          0 < edge ? r : IndexReader.open(makeEmptyIndex(random, 0), true))
+      edge < 0 ? r : emptyReaders[0],
+      emptyReaders[0],
+      new MultiReader(edge < 0 ? emptyReaders[4] : emptyReaders[0],
+          emptyReaders[0],
+          0 == edge ? r : emptyReaders[0]),
+      0 < edge ? emptyReaders[0] : emptyReaders[7],
+      emptyReaders[0],
+      new MultiReader(0 < edge ? emptyReaders[0] : emptyReaders[5],
+          emptyReaders[0],
+          0 < edge ? r : emptyReaders[0])
     };
     IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
     out.setSimilarityProvider(s.getSimilarityProvider());
     return out;
   }
+  
+  static final IndexReader[] emptyReaders = new IndexReader[8];
+  static {
+    try {
+      emptyReaders[0] = makeEmptyIndex(new Random(0), 0);
+      emptyReaders[4] = makeEmptyIndex(new Random(0), 4);
+      emptyReaders[5] = makeEmptyIndex(new Random(0), 5);
+      emptyReaders[7] = makeEmptyIndex(new Random(0), 7);
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
 
-  private static Directory makeEmptyIndex(Random random, final int numDeletedDocs) 
+  private static IndexReader makeEmptyIndex(Random random, final int numDeletedDocs) 
     throws IOException {
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
@@ -188,8 +203,7 @@ public class QueryUtils {
       IndexReader r = IndexReader.open(d, true);
       Assert.assertEquals("reader has wrong number of deleted docs", 
                           numDeletedDocs, r.numDeletedDocs());
-      r.close();
-      return d;
+      return r;
   }
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc

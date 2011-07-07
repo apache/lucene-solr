@@ -687,7 +687,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testThreadSafety() throws Exception {
     final Directory dir = newDirectory();
-    final int n = atLeast(30);
+    // NOTE: this also controls the number of threads!
+    final int n = _TestUtil.nextInt(random, 20, 40);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < n; i++) {
@@ -1114,16 +1115,16 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     SegmentReader sr2 = (SegmentReader) r2.getSequentialSubReaders()[0]; // and reopened IRs
 
     // At this point they share the same BitVector
-    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+    assertTrue(sr1.liveDocs==sr2.liveDocs);
 
     r2.deleteDocument(0);
 
     // r1 should not see the delete
-    final Bits r1DelDocs = MultiFields.getDeletedDocs(r1);
-    assertFalse(r1DelDocs != null && r1DelDocs.get(0));
+    final Bits r1LiveDocs = MultiFields.getLiveDocs(r1);
+    assertFalse(r1LiveDocs != null && !r1LiveDocs.get(0));
 
     // Now r2 should have made a private copy of deleted docs:
-    assertTrue(sr1.deletedDocs!=sr2.deletedDocs);
+    assertTrue(sr1.liveDocs!=sr2.liveDocs);
 
     r1.close();
     r2.close();
@@ -1149,12 +1150,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     SegmentReader sr2 = (SegmentReader) rs2[0];
 
     // At this point they share the same BitVector
-    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
-    final BitVector delDocs = sr1.deletedDocs;
+    assertTrue(sr1.liveDocs==sr2.liveDocs);
+    final BitVector liveDocs = sr1.liveDocs;
     r1.close();
 
     r2.deleteDocument(0);
-    assertTrue(delDocs==sr2.deletedDocs);
+    assertTrue(liveDocs==sr2.liveDocs);
     r2.close();
     dir.close();
   }

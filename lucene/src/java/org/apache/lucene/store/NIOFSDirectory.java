@@ -24,6 +24,9 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
 
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
+import org.apache.lucene.util.IOUtils;
+
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
  * positional read, which allows multiple threads to read from the same file
@@ -77,6 +80,47 @@ public class NIOFSDirectory extends FSDirectory {
     ensureOpen();
     return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
   }
+  
+  @Override
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new NIOFSCompoundFileDirectory(name, context);
+  }
+
+  private final class NIOFSCompoundFileDirectory extends CompoundFileDirectory {
+    private SimpleFSIndexInput.Descriptor fd;
+    private FileChannel fc;
+
+    public NIOFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
+      super(NIOFSDirectory.this, fileName, context);
+      IndexInput stream = null;
+      try {
+        File f = new File(NIOFSDirectory.this.getDirectory(), fileName);
+        fd = new SimpleFSIndexInput.Descriptor(f, "r");
+        fc = fd.getChannel();
+        stream = new NIOFSIndexInput(fd, fc, 0, fd.length, readBufferSize,
+            getReadChunkSize());
+        initForRead(CompoundFileDirectory.readEntries(stream, NIOFSDirectory.this, fileName));
+        stream.close();
+      } catch (IOException e) {
+        // throw our original exception
+        IOUtils.closeSafely(e, fc, fd, stream);
+      }
+    }
+    
+    @Override
+    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
+      return new NIOFSIndexInput(fd, fc, offset, length, readBufferSize, getReadChunkSize());
+    }
+
+    @Override
+    public synchronized void close() throws IOException {
+      try {
+        IOUtils.closeSafely(false, fc, fd);
+      } finally {
+        super.close();
+      }
+    }
+  }
 
   protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
 
@@ -90,6 +134,12 @@ public class NIOFSDirectory extends FSDirectory {
     public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
       super(path, context, chunkSize);
       channel = file.getChannel();
+    }
+    
+    public NIOFSIndexInput(Descriptor file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) throws IOException {
+      super(file, off, length, bufferSize, chunkSize);
+      channel = fc;
+      isClone = true;
     }
 
     @Override
@@ -145,7 +195,11 @@ public class NIOFSDirectory extends FSDirectory {
       int readLength = bb.limit() - readOffset;
       assert readLength == len;
 
-      long pos = getFilePointer();
+      long pos = getFilePointer() + off;
+      
+      if (pos + len > end) {
+        throw new IOException("read past EOF");
+      }
 
       try {
         while (readLength > 0) {
@@ -159,9 +213,6 @@ public class NIOFSDirectory extends FSDirectory {
           }
           bb.limit(limit);
           int i = channel.read(bb, pos);
-          if (i == -1) {
-            throw new IOException("read past EOF");
-          }
           pos += i;
           readOffset += i;
           readLength -= i;

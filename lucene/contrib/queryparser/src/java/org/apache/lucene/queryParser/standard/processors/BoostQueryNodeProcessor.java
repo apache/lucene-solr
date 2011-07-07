@@ -27,14 +27,14 @@ import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.util.StringUtils;
-import org.apache.lucene.queryParser.standard.config.BoostAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
  * This processor iterates the query node tree looking for every
- * {@link FieldableNode} that has the attribute {@link BoostAttribute} in its
+ * {@link FieldableNode} that has {@link ConfigurationKeys#BOOST} in its
  * config. If there is, the boost is applied to that {@link FieldableNode}. <br/>
  * 
- * @see BoostAttribute
+ * @see ConfigurationKeys#BOOST
  * @see QueryConfigHandler
  * @see FieldableNode
  */
@@ -53,10 +53,12 @@ public class BoostQueryNodeProcessor extends QueryNodeProcessorImpl {
         CharSequence field = fieldNode.getField();
         FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
 
-        if (fieldConfig != null && fieldConfig.hasAttribute(BoostAttribute.class)) {
-          BoostAttribute boostAttr = fieldConfig.getAttribute(BoostAttribute.class);
+        if (fieldConfig != null) {
+          Float boost = fieldConfig.get(ConfigurationKeys.BOOST);
 
-          return new BoostQueryNode(node, boostAttr.getBoost());
+          if (boost != null) {
+            return new BoostQueryNode(node, boost);
+          }
 
         }
 

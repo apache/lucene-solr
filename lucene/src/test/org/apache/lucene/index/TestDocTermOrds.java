@@ -479,7 +479,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         Terms terms = MultiFields.getTerms(r, "field");
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
-          TermsEnum.SeekStatus result = termsEnum.seek(prefixRef, false);
+          TermsEnum.SeekStatus result = termsEnum.seekCeil(prefixRef, false);
           if (result != TermsEnum.SeekStatus.END) {
             assertFalse("term=" + termsEnum.term().utf8ToString() + " matches prefix=" + prefixRef.utf8ToString(), termsEnum.term().startsWith(prefixRef));
           } else {
@@ -494,7 +494,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     if (VERBOSE) {
       System.out.println("TEST: TERMS:");
-      te.seek(0);
+      te.seekExact(0);
       while(true) {
         System.out.println("  ord=" + te.ord() + " term=" + te.term().utf8ToString());
         if (te.next() == null) {
@@ -515,7 +515,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       while(true) {
         final int chunk = iter.read(buffer);
         for(int idx=0;idx<chunk;idx++) {
-          assertEquals(TermsEnum.SeekStatus.FOUND, te.seek((long) buffer[idx]));
+          te.seekExact((long) buffer[idx]);
           final BytesRef expected = termsArray[answers[upto++]];
           if (VERBOSE) {
             System.out.println("  exp=" + expected.utf8ToString() + " actual=" + te.term().utf8ToString());

@@ -74,11 +74,11 @@ public class TestStressAdvance extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("\nTEST: iter=" + iter + " iter2=" + iter2);
         }
-        assertEquals(TermsEnum.SeekStatus.FOUND, te.seek(new BytesRef("a")));
+        assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("a")));
         de = te.docs(null, de);
         testOne(de, aDocIDs);
 
-        assertEquals(TermsEnum.SeekStatus.FOUND, te.seek(new BytesRef("b")));
+        assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("b")));
         de = te.docs(null, de);
         testOne(de, bDocIDs);
       }

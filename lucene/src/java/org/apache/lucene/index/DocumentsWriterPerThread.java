@@ -114,13 +114,13 @@ public class DocumentsWriterPerThread {
   static class FlushedSegment {
     final SegmentInfo segmentInfo;
     final BufferedDeletes segmentDeletes;
-    final BitVector deletedDocuments;
+    final BitVector liveDocs;
 
     private FlushedSegment(SegmentInfo segmentInfo,
-        BufferedDeletes segmentDeletes, BitVector deletedDocuments) {
+        BufferedDeletes segmentDeletes, BitVector liveDocs) {
       this.segmentInfo = segmentInfo;
       this.segmentDeletes = segmentDeletes;
-      this.deletedDocuments = deletedDocuments;
+      this.liveDocs = liveDocs;
     }
   }
 
@@ -437,9 +437,10 @@ public class DocumentsWriterPerThread {
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
     if (pendingDeletes.docIDs.size() > 0) {
-      flushState.deletedDocs = new BitVector(numDocsInRAM);
+      flushState.liveDocs = new BitVector(numDocsInRAM);
+      flushState.liveDocs.invertAll();
       for(int delDocID : pendingDeletes.docIDs) {
-        flushState.deletedDocs.set(delDocID);
+        flushState.liveDocs.clear(delDocID);
       }
       pendingDeletes.bytesUsed.addAndGet(-pendingDeletes.docIDs.size() * BufferedDeletes.BYTES_PER_DEL_DOCID);
       pendingDeletes.docIDs.clear();
@@ -463,7 +464,7 @@ public class DocumentsWriterPerThread {
       pendingDeletes.terms.clear();
       final SegmentInfo newSegment = new SegmentInfo(segment, flushState.numDocs, directory, false, flushState.segmentCodecs, fieldInfos.asReadOnly());
       if (infoStream != null) {
-        message("new segment has " + (flushState.deletedDocs == null ? 0 : flushState.deletedDocs.count()) + " deleted docs");
+        message("new segment has " + (flushState.liveDocs == null ? 0 : (flushState.numDocs - flushState.liveDocs.count())) + " deleted docs");
         message("new segment has " + (newSegment.getHasVectors() ? "vectors" : "no vectors"));
         message("flushedFiles=" + newSegment.files());
         message("flushed codecs=" + newSegment.getSegmentCodecs());
@@ -492,7 +493,7 @@ public class DocumentsWriterPerThread {
       doAfterFlush();
       success = true;
 
-      return new FlushedSegment(newSegment, segmentDeletes, flushState.deletedDocs);
+      return new FlushedSegment(newSegment, segmentDeletes, flushState.liveDocs);
     } finally {
       if (!success) {
         if (segment != null) {

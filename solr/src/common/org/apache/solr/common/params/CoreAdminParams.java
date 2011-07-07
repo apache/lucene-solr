@@ -69,6 +69,9 @@ public interface CoreAdminParams
   /** The shard id in solr cloud */
   public final static String SHARD = "shard";
 
+  /** If you unload a core, delete the index too */
+  public final static String DELETE_INDEX = "deleteIndex";
+
   public enum CoreAdminAction {
     STATUS,  
     LOAD,

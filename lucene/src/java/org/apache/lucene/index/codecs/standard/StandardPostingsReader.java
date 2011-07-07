@@ -157,7 +157,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     //System.out.println("SPR.readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
-      termState.bytesReader = new ByteArrayDataInput(null);
+      termState.bytesReader = new ByteArrayDataInput();
     } else if (termState.bytes.length < len) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
     }
@@ -201,7 +201,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
     
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     SegmentDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
@@ -214,11 +214,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
         docsEnum = new SegmentDocsEnum(freqIn);
       }
     }
-    return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
+    return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
     }
@@ -237,7 +237,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentDocsAndPositionsAndPayloadsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
     } else {
       SegmentDocsAndPositionsEnum docsEnum;
       if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
@@ -251,7 +251,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
         }
       }
-      return docsEnum.reset(fieldInfo, (StandardTermState) termState, skipDocs);
+      return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
     }
   }
 
@@ -268,7 +268,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     int doc;                                      // doc we last read
     int freq;                                     // freq we last read
 
-    Bits skipDocs;
+    Bits liveDocs;
 
     long freqOffset;
     int skipOffset;
@@ -281,13 +281,13 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.freqIn = (IndexInput) freqIn.clone();
     }
 
-    public SegmentDocsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
       omitTF = fieldInfo.omitTermFreqAndPositions;
       if (omitTF) {
         freq = 1;
       }
       storePayloads = fieldInfo.storePayloads;
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
       freqOffset = termState.freqOffset;
       skipOffset = termState.skipOffset;
 
@@ -328,7 +328,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           }
         }
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           break;
         }
       }
@@ -358,7 +358,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
           }
         }
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           docs[i] = doc;
           freqs[i] = freq;
           ++i;
@@ -436,7 +436,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     int freq;                                     // freq we last read
     int position;
 
-    Bits skipDocs;
+    Bits liveDocs;
 
     long freqOffset;
     int skipOffset;
@@ -454,11 +454,11 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
       assert !fieldInfo.omitTermFreqAndPositions;
       assert !fieldInfo.storePayloads;
 
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
 
       // TODO: for full enum case (eg segment merging) this
       // seek is unnecessary; maybe we can avoid in such
@@ -505,7 +505,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         }
         posPendingCount += freq;
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           break;
         }
       }
@@ -627,7 +627,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     int freq;                                     // freq we last read
     int position;
 
-    Bits skipDocs;
+    Bits liveDocs;
 
     long freqOffset;
     int skipOffset;
@@ -648,7 +648,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       this.proxIn = (IndexInput) proxIn.clone();
     }
 
-    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits skipDocs) throws IOException {
+    public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
       assert !fieldInfo.omitTermFreqAndPositions;
       assert fieldInfo.storePayloads;
       if (payload == null) {
@@ -656,7 +656,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         payload.bytes = new byte[1];
       }
 
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
 
       // TODO: for full enum case (eg segment merging) this
       // seek is unnecessary; maybe we can avoid in such
@@ -702,7 +702,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         }
         posPendingCount += freq;
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           break;
         }
       }

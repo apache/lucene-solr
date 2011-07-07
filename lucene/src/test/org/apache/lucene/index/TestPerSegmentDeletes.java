@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -148,7 +147,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     IndexReader r = writer.getReader();
     IndexReader r1 = r.getSequentialSubReaders()[0];
-    printDelDocs(r1.getDeletedDocs());
+    printDelDocs(r1.getLiveDocs());
     int[] docs = toDocsArray(id3, null, r);
     System.out.println("id3 docs:"+Arrays.toString(docs));
     // there shouldn't be any docs for id:3
@@ -225,8 +224,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator();
-    SeekStatus ss = ctermsEnum.seek(new BytesRef(term.text()), false);
-    if (ss.equals(SeekStatus.FOUND)) {
+    if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {
       DocsEnum docsEnum = ctermsEnum.docs(bits, null);
       return toArray(docsEnum);
     }

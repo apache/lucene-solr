@@ -25,19 +25,20 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.DefaultPhraseSlopAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
 
 /**
- * This processor verifies if the attribute {@link DefaultPhraseSlopAttribute}
+ * This processor verifies if {@link ConfigurationKeys#PHRASE_SLOP}
  * is defined in the {@link QueryConfigHandler}. If it is, it looks for every
  * {@link TokenizedPhraseQueryNode} and {@link MultiPhraseQueryNode} that does
  * not have any {@link SlopQueryNode} applied to it and creates an
  * {@link SlopQueryNode} and apply to it. The new {@link SlopQueryNode} has the
- * same slop value defined in the attribute. <br/>
+ * same slop value defined in the configuration. <br/>
  * 
  * @see SlopQueryNode
- * @see DefaultPhraseSlopAttribute
+ * @see ConfigurationKeys#PHRASE_SLOP
  */
 public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl {
 
@@ -54,10 +55,10 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
     QueryConfigHandler queryConfig = getQueryConfigHandler();
 
     if (queryConfig != null) {
-
-      if (queryConfig.hasAttribute(DefaultPhraseSlopAttribute.class)) {
-        this.defaultPhraseSlop = queryConfig.getAttribute(
-            DefaultPhraseSlopAttribute.class).getDefaultPhraseSlop();
+      Integer defaultPhraseSlop = queryConfig.get(ConfigurationKeys.PHRASE_SLOP); 
+      
+      if (defaultPhraseSlop != null) {
+        this.defaultPhraseSlop = defaultPhraseSlop;
 
         return super.process(queryTree);
 

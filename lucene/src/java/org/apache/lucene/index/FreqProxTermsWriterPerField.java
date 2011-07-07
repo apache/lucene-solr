@@ -234,8 +234,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
-    final Term protoTerm = new Term(fieldName);
-
     final boolean currentFieldOmitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
 
     final Map<Term,Integer> segDeletes;
@@ -274,7 +272,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
       final int delDocLimit;
       if (segDeletes != null) {
-        final Integer docIDUpto = segDeletes.get(protoTerm.createTerm(text));
+        final Integer docIDUpto = segDeletes.get(new Term(fieldName, text));
         if (docIDUpto != null) {
           delDocLimit = docIDUpto;
         } else {
@@ -341,10 +339,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           // Mark it deleted.  TODO: we could also skip
           // writing its postings; this would be
           // deterministic (just for this Term's docs).
-          if (state.deletedDocs == null) {
-            state.deletedDocs = new BitVector(state.numDocs);
+          if (state.liveDocs == null) {
+            state.liveDocs = new BitVector(state.numDocs);
+            state.liveDocs.invertAll();
           }
-          state.deletedDocs.set(docID);
+          state.liveDocs.clear(docID);
         }
 
         // Carefully copy over the prox + payload info,

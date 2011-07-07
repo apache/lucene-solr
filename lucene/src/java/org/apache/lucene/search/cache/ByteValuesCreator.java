@@ -61,8 +61,8 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.BYTE;
+  public SortField.Type getSortType() {
+    return SortField.Type.BYTE;
   }
 
   //--------------------------------------------------------------------------------

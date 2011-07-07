@@ -42,7 +42,6 @@ import org.apache.lucene.search.cache.CachedArray.IntValues;
 import org.apache.lucene.search.cache.CachedArray.LongValues;
 import org.apache.lucene.search.cache.CachedArray.ShortValues;
 import org.apache.lucene.util.FieldCacheSanityChecker;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -138,7 +137,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   }
 
   final static IndexReader.ReaderFinishedListener purgeReader = new IndexReader.ReaderFinishedListener() {
-    // @Override -- not until Java 1.6
+    @Override
     public void finished(IndexReader reader) {
       FieldCache.DEFAULT.purge(reader);
     }
@@ -246,7 +245,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
 
     /** Creates one of these objects for a custom comparator/parser. */
     Entry (String field, EntryCreator<T> custom) {
-      this.field = StringHelper.intern(field);
+      this.field = field;
       this.creator = custom;
     }
 
@@ -255,7 +254,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     public boolean equals (Object o) {
       if (o instanceof Entry) {
         Entry other = (Entry) o;
-        if (other.field == field) {
+        if (other.field.equals(field)) {
           if (other.creator == null) {
             if (creator == null) return true;
           } else if (other.creator.equals (creator)) {

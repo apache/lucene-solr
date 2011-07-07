@@ -116,22 +116,9 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testTermIndexInterval() throws Exception {
-    class ExposeWriterHandler extends DirectUpdateHandler2 {
-      public ExposeWriterHandler() throws IOException {
-        super(h.getCore());
-      }
-
-      public IndexWriter getWriter() throws IOException {
-        forceOpenWriter();
-        return writer;
-      }
-    }
-
-    ExposeWriterHandler duh = new ExposeWriterHandler();
-    IndexWriter writer = duh.getWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
     int interval = writer.getConfig().getTermIndexInterval();
     assertEquals(256, interval);
-    duh.close();
   }
 
   @Test

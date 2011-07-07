@@ -32,7 +32,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.IOUtils;
@@ -102,6 +101,7 @@ public final class Bytes {
    *          {@link Writer}. A call to {@link Writer#finish(int)} will release
    *          all internally used resources and frees the memeory tracking
    *          reference.
+   * @param context 
    * @return a new {@link Writer} instance
    * @throws IOException
    *           if the files for the writer can not be created.
@@ -109,7 +109,6 @@ public final class Bytes {
   public static Writer getWriter(Directory dir, String id, Mode mode,
       Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed, IOContext context)
       throws IOException {
-
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
     if (comp == null) {
@@ -118,7 +117,7 @@ public final class Bytes {
 
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        return new FixedStraightBytesImpl.Writer(dir, id, context);
+        return new FixedStraightBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.DEREF) {
         return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
@@ -340,37 +339,57 @@ public final class Bytes {
   // TODO: open up this API?!
   static abstract class BytesWriterBase extends Writer {
     private final String id;
-    protected IndexOutput idxOut;
-    protected IndexOutput datOut;
+    private IndexOutput idxOut;
+    private IndexOutput datOut;
     protected BytesRef bytesRef;
-    protected final ByteBlockPool pool;
+    private final Directory dir;
+    private final String codecName;
+    private final int version;
+    private final IOContext context;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version, boolean initIndex, ByteBlockPool pool,
-        AtomicLong bytesUsed, IOContext context) throws IOException {
+        int version, AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
-      this.pool = pool;
-      datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-            DATA_EXTENSION), context);
+      this.dir = dir;
+      this.codecName = codecName;
+      this.version = version;
+      this.context = context;
+    }
+    
+    protected IndexOutput getDataOut() throws IOException {
+      if (datOut == null) {
+        boolean success = false;
+        try {
+          datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
+              DATA_EXTENSION), context);
+          CodecUtil.writeHeader(datOut, codecName, version);
+          success = true;
+        } finally {
+          if (!success) {
+            IOUtils.closeSafely(true, datOut);
+          }
+        }
+      }
+      return datOut;
+    }
+
+    protected IndexOutput getIndexOut() throws IOException {
       boolean success = false;
       try {
-        CodecUtil.writeHeader(datOut, codecName, version);
-        if (initIndex) {
+        if (idxOut == null) {
           idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
               INDEX_EXTENSION), context);
           CodecUtil.writeHeader(idxOut, codecName, version);
-        } else {
-          idxOut = null;
         }
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, datOut, idxOut);
+          IOUtils.closeSafely(true, idxOut);
         }
       }
+      return idxOut;
     }
-
     /**
      * Must be called only with increasing docIDs. It's OK for some docIDs to be
      * skipped; they will be filled with 0 bytes.
@@ -379,18 +398,10 @@ public final class Bytes {
     public abstract void add(int docID, BytesRef bytes) throws IOException;
 
     @Override
-    public void finish(int docCount) throws IOException {
-      try {
-        IOUtils.closeSafely(false, datOut, idxOut);
-      } finally {
-        if (pool != null) {
-          pool.reset();
-        }
-      }
-    }
+    public abstract void finish(int docCount) throws IOException;
 
     @Override
-    protected void add(int docID) throws IOException {
+    protected void mergeDoc(int docID) throws IOException {
       add(docID, bytesRef);
     }
 

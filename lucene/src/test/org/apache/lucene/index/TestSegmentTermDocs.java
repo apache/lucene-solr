@@ -61,8 +61,8 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
     TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator();
-    terms.seek(new BytesRef("field"));
-    DocsEnum termDocs = terms.docs(reader.getDeletedDocs(), null);
+    terms.seekCeil(new BytesRef("field"));
+    DocsEnum termDocs = terms.docs(reader.getLiveDocs(), null);
     if (termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS)    {
       int docId = termDocs.docID();
       assertTrue(docId == 0);
@@ -81,7 +81,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor, newIOContext(random));
       assertTrue(reader != null);
-      DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
+      DocsEnum termDocs = reader.termDocsEnum(reader.getLiveDocs(),
                                               "textField2",
                                               new BytesRef("bad"));
 
@@ -92,7 +92,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor, newIOContext(random));
       assertTrue(reader != null);
-      DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
+      DocsEnum termDocs = reader.termDocsEnum(reader.getLiveDocs(),
                                               "junk",
                                               new BytesRef("bad"));
       assertNull(termDocs);
@@ -127,7 +127,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, null, true, indexDivisor);
 
     DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
-                                                 MultiFields.getDeletedDocs(reader),
+                                                 MultiFields.getLiveDocs(reader),
                                                  ta.field(),
                                                  new BytesRef(ta.text()));
     
@@ -150,7 +150,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     // without next
     tdocs = MultiFields.getTermDocsEnum(reader,
-                                        MultiFields.getDeletedDocs(reader),
+                                        MultiFields.getLiveDocs(reader),
                                         ta.field(),
                                         new BytesRef(ta.text()));
     
@@ -166,7 +166,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     // with next
     tdocs = MultiFields.getTermDocsEnum(reader,
-                                        MultiFields.getDeletedDocs(reader),
+                                        MultiFields.getLiveDocs(reader),
                                         tb.field(),
                                         new BytesRef(tb.text()));
 
@@ -188,7 +188,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     // without next
     tdocs = MultiFields.getTermDocsEnum(reader,
-                                        MultiFields.getDeletedDocs(reader),
+                                        MultiFields.getLiveDocs(reader),
                                         tb.field(),
                                         new BytesRef(tb.text()));
     
@@ -206,7 +206,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     // with next
     tdocs = MultiFields.getTermDocsEnum(reader,
-                                        MultiFields.getDeletedDocs(reader),
+                                        MultiFields.getLiveDocs(reader),
                                         tc.field(),
                                         new BytesRef(tc.text()));
 
@@ -230,7 +230,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     //without next
     tdocs = MultiFields.getTermDocsEnum(reader,
-                                        MultiFields.getDeletedDocs(reader),
+                                        MultiFields.getLiveDocs(reader),
                                         tc.field(),
                                         new BytesRef(tc.text()));
     assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);

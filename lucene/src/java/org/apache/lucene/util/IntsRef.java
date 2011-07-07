@@ -18,10 +18,13 @@ package org.apache.lucene.util;
  */
 
 /** Represents int[], as a slice (offset + length) into an
- *  existing int[].
+ *  existing int[].  The {@link #ints} member should never be null; use
+ *  {@link #EMPTY_INTS} if necessary.
  *
  *  @lucene.internal */
 public final class IntsRef implements Comparable<IntsRef> {
+
+  public static final int[] EMPTY_INTS = new int[0];
 
   public int[] ints;
   public int offset;

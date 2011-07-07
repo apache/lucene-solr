@@ -658,15 +658,6 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // should be ok
     server.ping();
     
-    try {
-      SolrPing ping = new SolrPing();
-      ping.getParams().set( "qt", "unknown handler! ignore_exception" );
-      ping.process( server );
-      fail( "sent unknown query type!" );
-    }
-    catch( Exception ex ) {
-      // expected
-    }
   }
   
   @Test

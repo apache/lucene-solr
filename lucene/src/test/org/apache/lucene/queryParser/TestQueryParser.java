@@ -19,7 +19,6 @@ package org.apache.lucene.queryParser;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.text.Collator;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -42,24 +41,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RegexpQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -1253,4 +1238,96 @@ public class TestQueryParser extends LuceneTestCase {
     Query actual = qp.parse("[abc TO def]");
     assertEquals(expected, actual);
   }
+
+  public void testDistanceAsEditsParsing() throws Exception {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
+    FuzzyQuery q = (FuzzyQuery) qp.parse("foobar~2");
+    assertEquals(2f, q.getMinSimilarity(), 0.0001f);
+  }
+
+  public void testPhraseQueryToString() throws ParseException {
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
+    qp.setEnablePositionIncrements(true);
+    PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
+    assertEquals("field:\"? hi ? ? ? test\"", q.toString());
+  }
+
+  public void testParseWildcardAndPhraseQueries() throws ParseException {
+    String field = "content";
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random));
+    qp.setAllowLeadingWildcard(true);
+
+    String prefixQueries[][] = {
+        {"a*", "ab*", "abc*",},
+        {"h*", "hi*", "hij*", "\\\\7*"},
+        {"o*", "op*", "opq*", "\\\\\\\\*"},
+    };
+
+    String wildcardQueries[][] = {
+        {"*a*", "*ab*", "*abc**", "ab*e*", "*g?", "*f?1", "abc**"},
+        {"*h*", "*hi*", "*hij**", "hi*k*", "*n?", "*m?1", "hij**"},
+        {"*o*", "*op*", "*opq**", "op*q*", "*u?", "*t?1", "opq**"},
+    };
+
+     // test queries that must be prefix queries
+    for (int i = 0; i < prefixQueries.length; i++) {
+      for (int j = 0; j < prefixQueries[i].length; j++) {
+        String queryString = prefixQueries[i][j];
+        Query q = qp.parse(queryString);
+        assertEquals(PrefixQuery.class, q.getClass());
+      }
+    }
+
+    // test queries that must be wildcard queries
+    for (int i = 0; i < wildcardQueries.length; i++) {
+      for (int j = 0; j < wildcardQueries[i].length; j++) {
+        String qtxt = wildcardQueries[i][j];
+        Query q = qp.parse(qtxt);
+        assertEquals(WildcardQuery.class, q.getClass());
+      }
+    }
+  }
+
+  public void testPhraseQueryPositionIncrements() throws Exception {
+    CharacterRunAutomaton stopStopList =
+    new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
+
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field",
+        new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopStopList, false));
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("field", "1"));
+    phraseQuery.add(new Term("field", "2"));
+
+    assertEquals(phraseQuery, qp.parse("\"1 2\""));
+    assertEquals(phraseQuery, qp.parse("\"1 stop 2\""));
+
+    qp.setEnablePositionIncrements(true);
+    assertEquals(phraseQuery, qp.parse("\"1 stop 2\""));
+
+    qp.setEnablePositionIncrements(false);
+    assertEquals(phraseQuery, qp.parse("\"1 stop 2\""));
+
+    qp = new QueryParser(TEST_VERSION_CURRENT, "field",
+                         new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopStopList, true));
+    qp.setEnablePositionIncrements(true);
+
+    phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("field", "1"));
+    phraseQuery.add(new Term("field", "2"), 2);
+    assertEquals(phraseQuery, qp.parse("\"1 stop 2\""));
+  }
+
+  public void testMatchAllQueryParsing() throws Exception {
+    // test simple parsing of MatchAllDocsQuery
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "key", new MockAnalyzer(random));
+    assertEquals(new MatchAllDocsQuery(), qp.parse(new MatchAllDocsQuery().toString()));
+
+    // test parsing with non-default boost
+    MatchAllDocsQuery query = new MatchAllDocsQuery();
+    query.setBoost(2.3f);
+    assertEquals(query, qp.parse(query.toString()));
+  }
+  
 }

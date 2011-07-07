@@ -30,22 +30,6 @@
 
   <import file="../contrib-build.xml"/>
 
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-
-  <path id="classpath">
-	 <pathelement path="${analyzers-common.jar}"/>
-	 <path refid="base.classpath"/>
-  </path>
-
-  <target name="compile-core" depends="compile-analyzers-common, common.compile-core" />
-
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-    </subant>
-  </target>
-	
   <target name="index" depends="compile" description="Build WordNet index">
     <fail if="synindex.exists">
       Index already exists - must remove first.
@@ -80,26 +64,6 @@
 
       <arg file="${synindex.dir}"/>
       <arg value="${word}"/>
-    </java>
-  </target>
-
-  <target name="expand" description="Perform synonym expansion on a query">
-    <fail unless="synindex.exists">
-      Index does not exist.
-    </fail>
-
-    <fail unless="query">
-      Must specify 'query' property.
-    </fail>
-    
-    <java classname="org.apache.lucene.wordnet.SynExpand">
-      <classpath>
-        <path refid="compile.classpath"/>
-        <pathelement location="${build.dir}/classes"/>
-      </classpath>
-
-      <arg file="${synindex.dir}"/>
-      <arg value="${query}"/>
     </java>
   </target>
 

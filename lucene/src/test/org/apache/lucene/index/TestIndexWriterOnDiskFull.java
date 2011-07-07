@@ -143,8 +143,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   public void testAddIndexOnDiskFull() throws IOException
   {
     int START_COUNT = 57;
-    int NUM_DIR = 50;
-    int END_COUNT = START_COUNT + NUM_DIR*25;
+    int NUM_DIR = TEST_NIGHTLY ? 50 : 5;
+    int END_COUNT = START_COUNT + NUM_DIR* (TEST_NIGHTLY ? 25 : 5);
     
     // Build up a bunch of dirs that have indexes which we
     // will then merge together by calling addIndexes(*):

@@ -20,7 +20,7 @@ package org.apache.lucene.queryParser.core.config;
 /**
  * This interface should be implemented by classes that wants to listen for
  * field configuration requests. The implementation receives a
- * {@link FieldConfig} object and may add/change its attributes.
+ * {@link FieldConfig} object and may add/change its configuration.
  * 
  * @see FieldConfig
  * @see QueryConfigHandler

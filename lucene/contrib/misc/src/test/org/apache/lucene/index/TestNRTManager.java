@@ -134,11 +134,11 @@ public class TestNRTManager extends LuceneTestCase {
           System.out.println("TEST: now warm merged reader=" + reader);
         }
         final int maxDoc = reader.maxDoc();
-        final Bits delDocs = reader.getDeletedDocs();
+        final Bits liveDocs = reader.getLiveDocs();
         int sum = 0;
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
-          if (delDocs == null || !delDocs.get(docID)) {
+          if (liveDocs == null || liveDocs.get(docID)) {
             final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }
@@ -524,7 +524,7 @@ public class TestNRTManager extends LuceneTestCase {
                           //System.out.println("trigger " + trigger);
                           shift = random.nextInt(trigger);
                         }
-                        termsEnum.seek(new BytesRef(""));
+                        termsEnum.seekCeil(new BytesRef(""));
                         continue;
                       }
                       seenTermCount++;
@@ -670,7 +670,7 @@ public class TestNRTManager extends LuceneTestCase {
 
   private int runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
-    return s.search(q, null, 10, new Sort(new SortField("title", SortField.STRING))).totalHits;
+    return s.search(q, null, 10, new Sort(new SortField("title", SortField.Type.STRING))).totalHits;
   }
 
   private void smokeTestSearcher(IndexSearcher s) throws Exception {

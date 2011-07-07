@@ -19,7 +19,6 @@ package org.apache.lucene.index.codecs;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldsReader;
 import org.apache.lucene.index.IndexFileNames;
@@ -69,12 +68,12 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
           Directory dir = directory;
           if (si.getDocStoreOffset() != -1) {
             if (si.getDocStoreIsCompoundFile()) {
-              dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+              dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
                   si.getDocStoreSegment(), "",
                   IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context);
             }
           } else if (si.getUseCompoundFile()) {
-            dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
+            dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
                 si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
           }
 

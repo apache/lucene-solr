@@ -120,6 +120,16 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               ,"//result[@numFound='1']"
               );
 
+       // frange as filter not cached
+      assertQ(req( "q","*:*", "fq", "{!frange cache=false v="+f+" l='"+v+"' u='"+v+"'}" )
+              ,"//result[@numFound='1']"
+              );
+
+       // frange as filter run after the main query
+      assertQ(req( "q","*:*", "fq", "{!frange cache=false cost=100 v="+f+" l='"+v+"' u='"+v+"'}" )
+              ,"//result[@numFound='1']"
+              );
+
       // exists()
       assertQ(req( "fq","id:999", "q", "{!frange l=1 u=1}if(exists("+f+"),1,0)" )
               ,"//result[@numFound='1']"

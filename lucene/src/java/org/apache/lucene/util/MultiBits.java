@@ -34,13 +34,16 @@ public final class MultiBits implements Bits {
   // length is 1+subs.length (the last entry has the maxDoc):
   private final int[] starts;
 
-  public MultiBits(List<Bits> bits, List<Integer> starts) {
+  private final boolean defaultValue;
+
+  public MultiBits(List<Bits> bits, List<Integer> starts, boolean defaultValue) {
     assert starts.size() == 1+bits.size();
     this.subs = bits.toArray(Bits.EMPTY_ARRAY);
     this.starts = new int[starts.size()];
     for(int i=0;i<this.starts.length;i++) {
       this.starts[i] = starts.get(i);
     }
+    this.defaultValue = defaultValue;
   }
 
   private boolean checkLength(int reader, int doc) {
@@ -54,7 +57,7 @@ public final class MultiBits implements Bits {
     assert reader != -1;
     final Bits bits = subs[reader];
     if (bits == null) {
-      return false;
+      return defaultValue;
     } else {
       assert checkLength(reader, doc);
       return bits.get(doc-starts[reader]);

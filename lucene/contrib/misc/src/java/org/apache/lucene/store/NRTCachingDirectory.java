@@ -21,13 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexWriter;       // javadocs
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.store.RAMDirectory;      // javadocs
 import org.apache.lucene.util.IOUtils;
 
@@ -220,6 +215,26 @@ public class NRTCachingDirectory extends Directory {
       return delegate.openInput(name, context);
     }
   }
+
+  @Override
+  public synchronized CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    if (cache.fileExists(name)) {
+      return cache.openCompoundInput(name, context);
+    } else {
+      return delegate.openCompoundInput(name, context);
+    }
+  }
+  
+  @Override
+  public synchronized CompoundFileDirectory createCompoundOutput(String name, IOContext context)
+      throws IOException {
+    if (cache.fileExists(name)) {
+      throw new IOException("File " + name + "already exists");
+    } else {
+      return delegate.createCompoundOutput(name, context);
+    }
+  }
+
 
   /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */

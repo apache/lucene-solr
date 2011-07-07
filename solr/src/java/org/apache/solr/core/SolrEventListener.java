@@ -31,6 +31,8 @@ public interface SolrEventListener extends NamedListInitializedPlugin{
 
 
   public void postCommit();
+  
+  public void postSoftCommit();
 
   /** The searchers passed here are only guaranteed to be valid for the duration
    * of this method call, so care should be taken not to spawn threads or asynchronous

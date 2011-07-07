@@ -39,12 +39,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -283,10 +281,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
     for(int i=0;i<35;i++) {
-      if (!delDocs.get(i)) {
+      if (liveDocs.get(i)) {
         Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
         if (d.getField("content3") == null) {
@@ -538,7 +536,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs", newIOContext(random));
+      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", newIOContext(random));
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {
@@ -551,7 +549,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
       // Now verify file names:
-      String[] expected = new String[] {"_0.cfs",
+      String[] expected = new String[] {"_0.cfs", "_0.cfe",
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
                                "segments_2",
@@ -634,24 +632,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       // should be found exactly
       assertEquals(TermsEnum.SeekStatus.FOUND,
-                   terms.seek(aaaTerm));
+                   terms.seekCeil(aaaTerm));
       assertEquals(35, countDocs(terms.docs(null, null)));
       assertNull(terms.next());
 
       // should hit end of field
       assertEquals(TermsEnum.SeekStatus.END,
-                   terms.seek(new BytesRef("bbb")));
+                   terms.seekCeil(new BytesRef("bbb")));
       assertNull(terms.next());
 
       // should seek to aaa
       assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
-                   terms.seek(new BytesRef("a")));
+                   terms.seekCeil(new BytesRef("a")));
       assertTrue(terms.term().bytesEquals(aaaTerm));
       assertEquals(35, countDocs(terms.docs(null, null)));
       assertNull(terms.next());
 
       assertEquals(TermsEnum.SeekStatus.FOUND,
-                   terms.seek(aaaTerm));
+                   terms.seekCeil(aaaTerm));
       assertEquals(35, countDocs(terms.docs(null, null)));
       assertNull(terms.next());
 

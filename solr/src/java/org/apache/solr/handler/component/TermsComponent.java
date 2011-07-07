@@ -162,7 +162,7 @@ public class TermsComponent extends SearchComponent {
      BytesRef term = null;
 
       if (lowerBytes != null) {
-        if (termsEnum.seek(lowerBytes, true) == TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(lowerBytes, true) == TermsEnum.SeekStatus.END) {
           termsEnum = null;
         } else {
           term = termsEnum.term();

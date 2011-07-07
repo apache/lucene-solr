@@ -26,10 +26,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Exposes {@link Writer} and reader ({@link Source}) for 32 bit and 64 bit
@@ -45,11 +47,7 @@ public class Floats {
   private static final String CODEC_NAME = "SimpleFloats";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
-  private static final int INT_DEFAULT = Float
-      .floatToRawIntBits(0.0f);
-  private static final long LONG_DEFAULT = Double
-      .doubleToRawLongBits(0.0d);
-
+  private static final byte[] DEFAULTS = new byte[] {0,0,0,0,0,0,0,0};
   
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
       AtomicLong bytesUsed, IOContext context) throws IOException {
@@ -71,16 +69,29 @@ public class Floats {
 
   abstract static class FloatsWriter extends Writer {
     private final String id;
-    private FloatsRef floatsRef;
+    protected FloatsRef floatsRef;
     protected int lastDocId = -1;
     protected IndexOutput datOut;
     private final byte precision;
+    private final Directory dir;
+    private final IOContext context; 
 
     protected FloatsWriter(Directory dir, String id, int precision,
         AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.precision = (byte) precision;
+      this.dir = dir;
+      this.context = context;
+     
+    }
+
+    public long ramBytesUsed() {
+      return 0;
+    }
+    
+    final void initDataOut() throws IOException {
+      assert datOut == null;
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
           Writer.DATA_EXTENSION), context);
       boolean success = false;
@@ -96,12 +107,8 @@ public class Floats {
       }
     }
 
-    public long ramBytesUsed() {
-      return 0;
-    }
-
     @Override
-    protected void add(int docID) throws IOException {
+    protected void mergeDoc(int docID) throws IOException {
       add(docID, floatsRef.get());
     }
 
@@ -115,13 +122,20 @@ public class Floats {
       floatsRef = valuesEnum.getFloat();
     }
 
-    protected abstract int fillDefault(int num) throws IOException;
+    protected final int fillDefault(int numValues) throws IOException {
+      for (int i = 0; i < numValues; i++) {
+        datOut.writeBytes(DEFAULTS, precision);
+      }
+      return numValues;
+    }
 
     @Override
     protected void merge(MergeState state) throws IOException {
-      if (state.bits == null && state.reader instanceof FloatsReader) {
+      if (datOut == null) {
+        initDataOut();
+      }
+      if (state.liveDocs == null && state.reader instanceof FloatsReader) {
         // no deletes - bulk copy
-        // TODO: should be do bulks with deletes too?
         final FloatsReader reader = (FloatsReader) state.reader;
         assert reader.precisionBytes == (int) precision;
         if (reader.maxDoc == 0)
@@ -132,8 +146,10 @@ public class Floats {
           lastDocId += fillDefault(docBase - lastDocId - 1);
         }
         lastDocId += reader.transferTo(datOut);
-      } else
-        super.merge(state);
+      } else {
+        super.merge(state);        
+      }
+
     }
 
     @Override
@@ -143,11 +159,13 @@ public class Floats {
   }
 
   // Writes 4 bytes (float) per value
-  static class Float4Writer extends FloatsWriter {
-
+  static final class Float4Writer extends FloatsWriter {
+    private int[] values;
     protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
       super(dir, id, 4, bytesUsed, context);
+      values = new int[1];
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
 
     @Override
@@ -155,75 +173,110 @@ public class Floats {
         throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
+      if (docID >= values.length) {
+        final long len = values.length;
+        values = ArrayUtil.grow(values, 1 + docID);
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
+            * ((values.length) - len));
+      }
+      values[docID] = Float.floatToRawIntBits((float)v);
+      lastDocId = docID;
+    }
+
+    @Override
+    protected void mergeDoc(int docID) throws IOException {
+      assert datOut != null;
+      assert docID > lastDocId : "docID: " + docID
+      + " must be greater than the last added doc id: " + lastDocId;
       if (docID - lastDocId > 1) {
         // fill with default values
-        lastDocId += fillDefault(docID - lastDocId - 1);
+        fillDefault(docID - lastDocId - 1);
       }
       assert datOut != null;
-      datOut.writeInt(Float.floatToRawIntBits((float) v));
-      ++lastDocId;
+      datOut.writeInt(Float.floatToRawIntBits((float) floatsRef.get()));
+      lastDocId = docID;
     }
 
     @Override
     public void finish(int docCount) throws IOException {
+      boolean success = false;
       try {
-        if (docCount > lastDocId + 1)
-          for (int i = lastDocId; i < docCount; i++) {
-            datOut.writeInt(INT_DEFAULT); // default value
+        int numDefaultsToAppend = docCount - (lastDocId + 1);
+        if (datOut == null) {
+          initDataOut();
+          for (int i = 0; i <= lastDocId; i++) {
+            datOut.writeInt(values[i]);
           }
+        }
+        fillDefault(numDefaultsToAppend);
+        success = true;
       } finally {
-        datOut.close();
+        bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_INT
+            * ((values.length))));
+        values = null;
+        IOUtils.closeSafely(!success, datOut);
       }
     }
 
-    @Override
-    protected int fillDefault(int numValues) throws IOException {
-      for (int i = 0; i < numValues; i++) {
-        datOut.writeInt(INT_DEFAULT);
-      }
-      return numValues;
-    }
+    
   }
 
   // Writes 8 bytes (double) per value
-  static class Float8Writer extends FloatsWriter {
-
+  static final class Float8Writer extends FloatsWriter {
+    private long[] values;
     protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
       super(dir, id, 8, bytesUsed, context);
+      values = new long[1];
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG);
     }
 
     @Override
     public void add(int docID, double v) throws IOException {
       assert docID > lastDocId : "docID: " + docID
           + " must be greater than the last added doc id: " + lastDocId;
+      if (docID >= values.length) {
+        final long len = values.length;
+        values = ArrayUtil.grow(values, 1 + docID);
+        bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG
+            * ((values.length) - len));
+      }
+      values[docID] = Double.doubleToLongBits(v);
+      lastDocId = docID;
+    }
+    
+    @Override
+    protected void mergeDoc(int docID) throws IOException {
+      assert docID > lastDocId : "docID: " + docID
+      + " must be greater than the last added doc id: " + lastDocId;
       if (docID - lastDocId > 1) {
         // fill with default values
         lastDocId += fillDefault(docID - lastDocId - 1);
       }
       assert datOut != null;
-      datOut.writeLong(Double.doubleToRawLongBits(v));
-      ++lastDocId;
+      datOut.writeLong(Double.doubleToRawLongBits((float) floatsRef.get()));
+      lastDocId = docID;
     }
 
     @Override
     public void finish(int docCount) throws IOException {
+      boolean success = false;
       try {
-        if (docCount > lastDocId + 1)
-          for (int i = lastDocId; i < docCount; i++) {
-            datOut.writeLong(LONG_DEFAULT); // default value
+        int numDefaultsToAppend = docCount - (lastDocId + 1);
+        if (datOut == null) {
+          initDataOut();
+          for (int i = 0; i <= lastDocId; i++) {
+            datOut.writeLong(values[i]);
           }
+        }
+        fillDefault(numDefaultsToAppend);
+        success = true;
       } finally {
-        datOut.close();
+        bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG
+            * ((values.length))));
+        values = null;
+        IOUtils.closeSafely(!success, datOut);
       }
-    }
-
-    @Override
-    protected int fillDefault(int numValues) throws IOException {
-      for (int i = 0; i < numValues; i++) {
-        datOut.writeLong(LONG_DEFAULT);
-      }
-      return numValues;
     }
   }
 
@@ -291,7 +344,7 @@ public class Floats {
       }
     }
 
-    private class Source4 extends Source {
+    private final class Source4 extends Source {
       private final float[] values;
 
       Source4(final float[] values ) throws IOException {
@@ -318,12 +371,22 @@ public class Floats {
       }
 
       @Override
+      public Object getArray() {
+        return this.values;
+      }
+
+      @Override
+      public boolean hasArray() {
+        return true;
+      }
+
+      @Override
       public ValueType type() {
         return ValueType.FLOAT_32;
       }
     }
 
-    private class Source8 extends Source {
+    private final class Source8 extends Source {
       private final double[] values;
 
       Source8(final double[] values) throws IOException {
@@ -352,6 +415,16 @@ public class Floats {
       @Override
       public ValueType type() {
         return ValueType.FLOAT_64;
+      }
+      
+      @Override
+      public Object getArray() {
+        return this.values;
+      }
+
+      @Override
+      public boolean hasArray() {
+        return true;
       }
     }
 

@@ -11,7 +11,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" module-name="queries" />
+    <orderEntry type="module" module-name="queries-contrib" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="lucene" />
   </component>

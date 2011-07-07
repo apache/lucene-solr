@@ -46,57 +46,57 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
 
     sort = QueryParsing.parseSort("score asc", req);
     SortField[] flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.SCORE);
+    assertEquals(flds[0].getType(), SortField.Type.SCORE);
     assertTrue(flds[0].getReverse());
 
     sort = QueryParsing.parseSort("weight desc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
     sort = QueryParsing.parseSort("weight desc,bday asc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
-    assertEquals(flds[1].getType(), SortField.LONG);
+    assertEquals(flds[1].getType(), SortField.Type.LONG);
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getReverse(), false);
     //order aliases
     sort = QueryParsing.parseSort("weight top,bday asc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
-    assertEquals(flds[1].getType(), SortField.LONG);
+    assertEquals(flds[1].getType(), SortField.Type.LONG);
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getReverse(), false);
     sort = QueryParsing.parseSort("weight top,bday bottom", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
-    assertEquals(flds[1].getType(), SortField.LONG);
+    assertEquals(flds[1].getType(), SortField.Type.LONG);
     assertEquals(flds[1].getField(), "bday");
     assertEquals(flds[1].getReverse(), false);
 
     //test weird spacing
     sort = QueryParsing.parseSort("weight         desc,            bday         asc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[1].getField(), "bday");
-    assertEquals(flds[1].getType(), SortField.LONG);
+    assertEquals(flds[1].getType(), SortField.Type.LONG);
     //handles trailing commas
     sort = QueryParsing.parseSort("weight desc,", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
 
     //test functions
     sort = QueryParsing.parseSort("pow(weight, 2) desc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.REWRITEABLE);
+    assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2))");
@@ -104,12 +104,12 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     //test functions (more deep)
     sort = QueryParsing.parseSort("sum(product(r_f1,sum(d_f1,t_f1,1.0)),a_f1) asc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.REWRITEABLE);
+    assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     assertEquals(flds[0].getField(), "sum(product(float(r_f1),sum(float(d_f1),float(t_f1),const(1.0))),float(a_f1))");
 
     sort = QueryParsing.parseSort("pow(weight,                 2.0)         desc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.REWRITEABLE);
+    assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
@@ -117,27 +117,27 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
 
     sort = QueryParsing.parseSort("pow(weight, 2.0) desc, weight    desc,   bday    asc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.REWRITEABLE);
+    assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
 
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
 
-    assertEquals(flds[1].getType(), SortField.FLOAT);
+    assertEquals(flds[1].getType(), SortField.Type.FLOAT);
     assertEquals(flds[1].getField(), "weight");
     assertEquals(flds[2].getField(), "bday");
-    assertEquals(flds[2].getType(), SortField.LONG);
+    assertEquals(flds[2].getType(), SortField.Type.LONG);
     
     //handles trailing commas
     sort = QueryParsing.parseSort("weight desc,", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getType(), SortField.Type.FLOAT);
     assertEquals(flds[0].getField(), "weight");
 
     //Test literals in functions
     sort = QueryParsing.parseSort("strdist(foo_s1, \"junk\", jw) desc", req);
     flds = sort.getSort();
-    assertEquals(flds[0].getType(), SortField.REWRITEABLE);
+    assertEquals(flds[0].getType(), SortField.Type.REWRITEABLE);
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "strdist(str(foo_s1),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
 

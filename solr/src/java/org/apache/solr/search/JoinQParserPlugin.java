@@ -22,7 +22,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -281,24 +280,24 @@ class JoinQuery extends Query {
       if (prefix == null) {
         term = termsEnum.next();
       } else {
-        if (termsEnum.seek(prefix, true) != TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(prefix, true) != TermsEnum.SeekStatus.END) {
           term = termsEnum.term();
         }
       }
 
-      Bits fromDeletedDocs = MultiFields.getDeletedDocs(fromSearcher.getIndexReader());
-      Bits toDeletedDocs = fromSearcher == toSearcher ? fromDeletedDocs : MultiFields.getDeletedDocs(toSearcher.getIndexReader());
+      Bits fromLiveDocs = MultiFields.getLiveDocs(fromSearcher.getIndexReader());
+      Bits toLiveDocs = fromSearcher == toSearcher ? fromLiveDocs : MultiFields.getLiveDocs(toSearcher.getIndexReader());
 
       fromDeState = new SolrIndexSearcher.DocsEnumState();
-      fromDeState.fieldName = StringHelper.intern(fromField);
-      fromDeState.deletedDocs = fromDeletedDocs;
+      fromDeState.fieldName = fromField;
+      fromDeState.liveDocs = fromLiveDocs;
       fromDeState.termsEnum = termsEnum;
       fromDeState.docsEnum = null;
       fromDeState.minSetSizeCached = minDocFreqFrom;
 
       toDeState = new SolrIndexSearcher.DocsEnumState();
-      toDeState.fieldName = StringHelper.intern(toField);
-      toDeState.deletedDocs = toDeletedDocs;
+      toDeState.fieldName = toField;
+      toDeState.liveDocs = toLiveDocs;
       toDeState.termsEnum = toTermsEnum;
       toDeState.docsEnum = null;
       toDeState.minSetSizeCached = minDocFreqTo;
@@ -315,7 +314,7 @@ class JoinQuery extends Query {
 
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
-          // OK to skip deletedDocs, since we check for intersection with docs matching query
+          // OK to skip liveDocs, since we check for intersection with docs matching query
           fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum);
           DocsEnum docsEnum = fromDeState.docsEnum;
 
@@ -366,7 +365,7 @@ class JoinQuery extends Query {
         if (intersects) {
           fromTermHits++;
           fromTermHitsTotalDf++;
-          TermsEnum.SeekStatus status = toTermsEnum.seek(term);
+          TermsEnum.SeekStatus status = toTermsEnum.seekCeil(term);
           if (status == TermsEnum.SeekStatus.END) break;
           if (status == TermsEnum.SeekStatus.FOUND) {
             toTermHits++;
@@ -394,8 +393,8 @@ class JoinQuery extends Query {
             } else {
               toTermDirectCount++;
 
-              // need to use deletedDocs here so we don't map to any deleted ones
-              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.deletedDocs, toDeState.docsEnum);
+              // need to use liveDocs here so we don't map to any deleted ones
+              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum);
               DocsEnum docsEnum = toDeState.docsEnum;              
 
               if (docsEnum instanceof MultiDocsEnum) {

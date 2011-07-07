@@ -26,12 +26,17 @@ import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.ReaderIterator;
 
 // Variable length byte[] per document, no sharing
 
@@ -49,16 +54,16 @@ class VarStraightBytesImpl {
     // start at -1 if the first added value is > 0
     private int lastDocID = -1;
     private long[] docToAddress;
-
+    private final ByteBlockPool pool;
+    private IndexOutput datOut;
+    private boolean merge = false;
     public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true, null, bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       docToAddress = new long[1];
+      pool.nextBuffer(); // init
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
-    }
-
-    public Writer(Directory dir, String id, IOContext context) throws IOException {
-      this(dir, id, new AtomicLong(), context);
     }
 
     // Fills up to but not including this docID
@@ -72,21 +77,109 @@ class VarStraightBytesImpl {
       for (int i = lastDocID + 1; i < docID; i++) {
         docToAddress[i] = address;
       }
-      lastDocID = docID;
     }
 
     @Override
     public void add(int docID, BytesRef bytes) throws IOException {
-      if (bytes.length == 0)
+      assert !merge;
+      if (bytes.length == 0) {
         return; // default
+      }
       fill(docID);
       docToAddress[docID] = address;
-      datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+      pool.copy(bytes);
       address += bytes.length;
+      lastDocID = docID;
     }
+    
+    @Override
+    protected void merge(MergeState state) throws IOException {
+      merge = true;
+      datOut = getDataOut();
+      boolean success = false;
+      try {
+        if (state.liveDocs == null && state.reader instanceof Reader) {
+          // bulk merge since we don't have any deletes
+          Reader reader = (Reader) state.reader;
+          final int maxDocs = reader.maxDoc;
+          if (maxDocs == 0) {
+            return;
+          }
+          if (lastDocID+1 < state.docBase) {
+            fill(state.docBase);
+            lastDocID = state.docBase-1;
+          }
+          final long numDataBytes;
+          final IndexInput cloneIdx = reader.cloneIndex();
+          try {
+            numDataBytes = cloneIdx.readVLong();
+            final ReaderIterator iter = PackedInts.getReaderIterator(cloneIdx);
+            for (int i = 0; i < maxDocs; i++) {
+              long offset = iter.next();
+              ++lastDocID;
+              if (lastDocID >= docToAddress.length) {
+                int oldSize = docToAddress.length;
+                docToAddress = ArrayUtil.grow(docToAddress, 1 + lastDocID);
+                bytesUsed.addAndGet((docToAddress.length - oldSize)
+                    * RamUsageEstimator.NUM_BYTES_INT);
+              }
+              docToAddress[lastDocID] = address + offset;
+            }
+            address += numDataBytes; // this is the address after all addr pointers are updated
+            iter.close();
+          } finally {
+            IOUtils.closeSafely(true, cloneIdx);
+          }
+          final IndexInput cloneData = reader.cloneData();
+          try {
+            datOut.copyBytes(cloneData, numDataBytes);
+          } finally {
+            IOUtils.closeSafely(true, cloneData);  
+          }
+        } else {
+          super.merge(state);
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(!success, datOut);
+        }
+      }
+    }
+    
+    @Override
+    protected void mergeDoc(int docID) throws IOException {
+      assert merge;
+      assert lastDocID < docID;
+      if (bytesRef.length == 0) {
+        return; // default
+      }
+      fill(docID);
+      datOut.writeBytes(bytesRef.bytes, bytesRef.offset, bytesRef.length);
+      docToAddress[docID] = address;
+      address += bytesRef.length;
+      lastDocID = docID;
+    }
+    
 
     @Override
     public void finish(int docCount) throws IOException {
+      boolean success = false;
+      assert (!merge && datOut == null) || (merge && datOut != null); 
+      final IndexOutput datOut = getDataOut();
+      try {
+        if (!merge) {
+          // header is already written in getDataOut()
+          pool.writePool(datOut);
+        }
+        success = true;
+      } finally {
+        IOUtils.closeSafely(!success, datOut); 
+        pool.dropBuffersAndReset();
+      }
+
+      success = false;
+      final IndexOutput idxOut = getIndexOut();
       try {
         if (lastDocID == -1) {
           idxOut.writeVLong(0);
@@ -106,11 +199,12 @@ class VarStraightBytesImpl {
           }
           w.finish();
         }
+        success = true;
       } finally {
         bytesUsed.addAndGet(-(docToAddress.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToAddress = null;
-        super.finish(docCount);
+        IOUtils.closeSafely(!success, idxOut);
       }
     }
 
@@ -184,21 +278,23 @@ class VarStraightBytesImpl {
     }
 
     private class VarStraightBytesEnum extends ValuesEnum {
-      private final PackedInts.Reader addresses;
+      private final PackedInts.ReaderIterator addresses;
       private final IndexInput datIn;
       private final IndexInput idxIn;
       private final long fp;
       private final long totBytes;
       private int pos = -1;
+      private long nextAddress;
 
       protected VarStraightBytesEnum(AttributeSource source, IndexInput datIn,
           IndexInput idxIn) throws IOException {
         super(source, ValueType.BYTES_VAR_STRAIGHT);
         totBytes = idxIn.readVLong();
         fp = datIn.getFilePointer();
-        addresses = PackedInts.getReader(idxIn);
+        addresses = PackedInts.getReaderIterator(idxIn);
         this.datIn = datIn;
         this.idxIn = idxIn;
+        nextAddress = addresses.next();
       }
 
       @Override
@@ -212,7 +308,7 @@ class VarStraightBytesImpl {
         if (target >= maxDoc) {
           return pos = NO_MORE_DOCS;
         }
-        final long addr = addresses.get(target);
+        final long addr = pos+1 == target ? nextAddress : addresses.advance(target);
         if (addr == totBytes) { // empty values at the end
           bytesRef.length = 0;
           bytesRef.offset = 0;
@@ -220,7 +316,7 @@ class VarStraightBytesImpl {
         }
         datIn.seek(fp + addr);
         final int size = (int) (target == maxDoc - 1 ? totBytes - addr
-            : addresses.get(target + 1) - addr);
+            : (nextAddress = addresses.next()) - addr);
         if (bytesRef.bytes.length < size) {
           bytesRef.grow(size);
         }

@@ -27,9 +27,9 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-queries</artifactId>
+  <artifactId>lucene-queries-contrib</artifactId>
   <packaging>jar</packaging>
-  <name>Lucene Queries</name>
+  <name>Lucene Queries Contrib</name>
   <description>
     Queries - various query object exotica not in core
   </description>

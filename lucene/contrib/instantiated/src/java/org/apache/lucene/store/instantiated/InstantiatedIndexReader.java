@@ -107,11 +107,11 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public Bits getDeletedDocs() {
+  public Bits getLiveDocs() {
     return new Bits() {
       public boolean get(int n) {
-        return (index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
-          || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
+        return !(index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
+                   && !(uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
       }
 
       public int length() {
@@ -400,7 +400,7 @@ public class InstantiatedIndexReader extends IndexReader {
         if (i < 0) {
           i = -i - 1;
         }
-        if (i >= orderedTerms.length || orderedTerms[i].field() != field) {
+        if (i >= orderedTerms.length || !orderedTerms[i].field().equals(field)) {
           // field does not exist
           return null;
         }

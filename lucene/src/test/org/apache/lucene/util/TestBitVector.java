@@ -171,9 +171,10 @@ public class TestBitVector extends LuceneTestCase
       MockDirectoryWrapper d = new  MockDirectoryWrapper(random, new RAMDirectory());
       d.setPreventDoubleWrite(false);
       BitVector bv = new BitVector(size);
+      bv.invertAll();
       for (int i=0; i<count1; i++) {
-        bv.set(i);
-        assertEquals(i+1,bv.count());
+        bv.clear(i);
+        assertEquals(i+1,size-bv.count());
       }
       bv.write(d, "TESTBV", newIOContext(random));
       // gradually increase number of set bits
@@ -181,8 +182,8 @@ public class TestBitVector extends LuceneTestCase
         BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
-        bv.set(i);
-        assertEquals(i+1,bv.count());
+        bv.clear(i);
+        assertEquals(i+1,size-bv.count());
         bv.write(d, "TESTBV", newIOContext(random));
       }
       // now start decreasing number of set bits
@@ -190,8 +191,8 @@ public class TestBitVector extends LuceneTestCase
         BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
-        bv.clear(i);
-        assertEquals(i,bv.count());
+        bv.set(i);
+        assertEquals(i,size-bv.count());
         bv.write(d, "TESTBV", newIOContext(random));
       }
     }
@@ -212,70 +213,4 @@ public class TestBitVector extends LuceneTestCase
         }
         return equal;
     }
-    
-    private static int[] subsetPattern = new int[] { 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1 };
-    
-    /**
-     * Tests BitVector.subset() against the above pattern
-     */
-    public void testSubset() {
-    	doTestSubset(0, 0);
-    	doTestSubset(0, 20);
-    	doTestSubset(0, 7);
-    	doTestSubset(0, 8);
-    	doTestSubset(0, 9);
-    	doTestSubset(0, 15);
-    	doTestSubset(0, 16);
-    	doTestSubset(0, 17);
-    	doTestSubset(1, 7);
-    	doTestSubset(1, 8);
-    	doTestSubset(1, 9);
-    	doTestSubset(1, 15);
-    	doTestSubset(1, 16);
-    	doTestSubset(1, 17);
-    	doTestSubset(2, 20);
-    	doTestSubset(3, 20);
-    	doTestSubset(4, 20);
-    	doTestSubset(5, 20);
-    	doTestSubset(6, 20);
-    	doTestSubset(7, 14);
-    	doTestSubset(7, 15);
-    	doTestSubset(7, 16);
-    	doTestSubset(8, 15);
-    	doTestSubset(9, 20);
-    	doTestSubset(10, 20);
-    	doTestSubset(11, 20);
-    	doTestSubset(12, 20);
-    	doTestSubset(13, 20);
-    }
-    
-    /**
-     * Compare a subset against the corresponding portion of the test pattern
-     */
-    private void doTestSubset(int start, int end) {
-    	BitVector full = createSubsetTestVector();
-    	BitVector subset = full.subset(start, end);
-    	assertEquals(end - start, subset.size());
-    	int count = 0;
-    	for (int i = start, j = 0; i < end; i++, j++) {
-    		if (subsetPattern[i] == 1) {
-    			count++;
-    			assertTrue(subset.get(j));
-    		} else {
-    			assertFalse(subset.get(j));
-    		}
-    	}
-    	assertEquals(count, subset.count());
-    }
-    
-    private BitVector createSubsetTestVector() {
-    	BitVector bv = new BitVector(subsetPattern.length);
-    	for (int i = 0; i < subsetPattern.length; i++) {
-    		if (subsetPattern[i] == 1) {
-    			bv.set(i);
-    		}
-    	}
-    	return bv;
-    }
-    
 }

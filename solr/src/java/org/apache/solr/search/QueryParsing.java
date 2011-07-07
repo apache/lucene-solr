@@ -18,6 +18,8 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause;
@@ -43,8 +45,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.function.FunctionQuery;
-import org.apache.solr.search.function.QueryValueSource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -321,10 +321,10 @@ public class QueryParsing {
           if (top) {
             lst.add(SortField.FIELD_SCORE);
           } else {
-            lst.add(new SortField(null, SortField.SCORE, true));
+            lst.add(new SortField(null, SortField.Type.SCORE, true));
           }
         } else if (DOCID.equals(field)) {
-          lst.add(new SortField(null, SortField.DOC, top));
+          lst.add(new SortField(null, SortField.Type.DOC, top));
         } else {
           // try to find the field
           SchemaField sf = req.getSchema().getFieldOrNull(field);

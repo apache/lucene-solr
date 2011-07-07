@@ -35,6 +35,7 @@ import java.io.PrintStream;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
@@ -44,6 +45,9 @@ import java.util.Locale;
 
 public class SolrIndexWriter extends IndexWriter {
   private static Logger log = LoggerFactory.getLogger(SolrIndexWriter.class);
+  // These should *only* be used for debugging or monitoring purposes
+  public static final AtomicLong numOpens = new AtomicLong();
+  public static final AtomicLong numCloses = new AtomicLong();
 
   String name;
   private PrintStream infoStream;
@@ -90,6 +94,7 @@ public class SolrIndexWriter extends IndexWriter {
     this.name = name;
 
     setInfoStream(config);
+    numOpens.incrementAndGet();
   }
 
   private void setInfoStream(SolrIndexConfig config)
@@ -147,6 +152,7 @@ public class SolrIndexWriter extends IndexWriter {
       }
     } finally {
       isClosed = true;
+      numCloses.incrementAndGet();
     }
   }
 
@@ -163,6 +169,7 @@ public class SolrIndexWriter extends IndexWriter {
   protected void finalize() throws Throwable {
     try {
       if(!isClosed){
+        assert false : "SolrIndexWriter was not closed prior to finalize()";
         log.error("SolrIndexWriter was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
         close();
       }

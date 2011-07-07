@@ -34,8 +34,6 @@ import java.util.Map;
  * Test for ScriptTransformer
  * </p>
  * <p/>
- * All tests in this have been ignored because script support is only available
- * in Java 1.6+
  *
  *
  * @since solr 1.3

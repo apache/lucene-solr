@@ -129,8 +129,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
                       if( fmt != null ) {
                         log.info( fmt );
                         writer.write( String.format( fmt, 
-                            params.getBool( UpdateParams.WAIT_SEARCHER, false )+"",
-                            params.getBool( UpdateParams.WAIT_FLUSH, false )+"") );
+                            params.getBool( UpdateParams.WAIT_SEARCHER, false )+"") );
                       }
                     }
                     

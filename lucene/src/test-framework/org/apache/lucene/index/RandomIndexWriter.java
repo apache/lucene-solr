@@ -133,22 +133,22 @@ public class RandomIndexWriter implements Closeable {
       // addDocuments?  Would be better testing.
       w.addDocuments(new Iterable<Document>() {
 
-        // @Override -- not until Java 1.6
+        @Override
         public Iterator<Document> iterator() {
           return new Iterator<Document>() {
             boolean done;
             
-            // @Override -- not until Java 1.6
+            @Override
             public boolean hasNext() {
               return !done;
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public void remove() {
               throw new UnsupportedOperationException();
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public Document next() {
               if (done) {
                 throw new IllegalStateException();
@@ -200,8 +200,20 @@ public class RandomIndexWriter implements Closeable {
     case FLOAT_64:
       docValuesField.setFloat(random.nextDouble());
       break;
-    case INTS:
+    case VAR_INTS:
+      docValuesField.setInt(random.nextLong());
+      break;
+    case FIXED_INTS_16:
+      docValuesField.setInt(random.nextInt(Short.MAX_VALUE));
+      break;
+    case FIXED_INTS_32:
       docValuesField.setInt(random.nextInt());
+      break;
+    case FIXED_INTS_64:
+      docValuesField.setInt(random.nextLong());
+      break;
+    case FIXED_INTS_8:
+      docValuesField.setInt(random.nextInt(128));
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);
@@ -247,22 +259,22 @@ public class RandomIndexWriter implements Closeable {
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Document>() {
 
-        // @Override -- not until Java 1.6
+        @Override
         public Iterator<Document> iterator() {
           return new Iterator<Document>() {
             boolean done;
             
-            // @Override -- not until Java 1.6
+            @Override
             public boolean hasNext() {
               return !done;
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public void remove() {
               throw new UnsupportedOperationException();
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public Document next() {
               if (done) {
                 throw new IllegalStateException();

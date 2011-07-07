@@ -88,7 +88,7 @@ public class MultiPhraseQuery extends Query {
       field = terms[0].field();
 
     for (int i = 0; i < terms.length; i++) {
-      if (terms[i].field() != field) {
+      if (!terms[i].field().equals(field)) {
         throw new IllegalArgumentException(
             "All phrase terms must be in the same field (" + field + "): "
                 + terms[i]);
@@ -175,7 +175,7 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
-      final Bits delDocs = reader.getDeletedDocs();
+      final Bits liveDocs = reader.getLiveDocs();
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
@@ -196,12 +196,12 @@ public class MultiPhraseQuery extends Query {
           }
         } else {
           final Term term = terms[0];
-          postingsEnum = reader.termPositionsEnum(delDocs,
+          postingsEnum = reader.termPositionsEnum(liveDocs,
                                                   term.field(),
                                                   term.bytes());
 
           if (postingsEnum == null) {
-            if (reader.termDocsEnum(delDocs, term.field(), term.bytes()) != null) {
+            if (reader.termDocsEnum(liveDocs, term.field(), term.bytes()) != null) {
               // term does exist, but has no positions
               throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + term.text() + ")");
             } else {
@@ -497,15 +497,15 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   public UnionDocsAndPositionsEnum(IndexReader indexReader, Term[] terms) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
-    final Bits delDocs = indexReader.getDeletedDocs();
+    final Bits liveDocs = indexReader.getLiveDocs();
     for (int i = 0; i < terms.length; i++) {
-      DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
+      DocsAndPositionsEnum postings = indexReader.termPositionsEnum(liveDocs,
                                                                     terms[i].field(),
                                                                     terms[i].bytes());
       if (postings != null) {
         docsEnums.add(postings);
       } else {
-        if (indexReader.termDocsEnum(delDocs, terms[i].field(), terms[i].bytes()) != null) {
+        if (indexReader.termDocsEnum(liveDocs, terms[i].field(), terms[i].bytes()) != null) {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
         }

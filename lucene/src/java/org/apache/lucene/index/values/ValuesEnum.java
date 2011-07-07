@@ -71,13 +71,18 @@ public abstract class ValuesEnum extends DocIdSetIterator {
     case BYTES_VAR_STRAIGHT:
       bytesRef = new BytesRef();
       break;
-    case INTS:
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
+    case VAR_INTS:
       intsRef = new LongsRef(1);
       break;
     case FLOAT_32:
     case FLOAT_64:
       floatsRef = new FloatsRef(1);
       break;
+    
     }
   }
 

@@ -83,7 +83,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);
-    assertTrue(deleteReader.getDeletedDocs().get(0));
+    assertFalse(deleteReader.getLiveDocs().get(0));
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);
     deleteReader.close();
@@ -133,13 +133,13 @@ public class TestSegmentReader extends LuceneTestCase {
     }
     
     DocsEnum termDocs = MultiFields.getTermDocsEnum(reader,
-                                                    MultiFields.getDeletedDocs(reader),
+                                                    MultiFields.getLiveDocs(reader),
                                                     DocHelper.TEXT_FIELD_1_KEY,
                                                     new BytesRef("field"));
     assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
     termDocs = MultiFields.getTermDocsEnum(reader,
-                                           MultiFields.getDeletedDocs(reader),
+                                           MultiFields.getLiveDocs(reader),
                                            DocHelper.NO_NORMS_KEY,
                                            new BytesRef(DocHelper.NO_NORMS_TEXT));
 
@@ -147,7 +147,7 @@ public class TestSegmentReader extends LuceneTestCase {
 
     
     DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader,
-                                                                      MultiFields.getDeletedDocs(reader),
+                                                                      MultiFields.getLiveDocs(reader),
                                                                       DocHelper.TEXT_FIELD_1_KEY,
                                                                       new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first

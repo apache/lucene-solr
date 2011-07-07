@@ -18,12 +18,14 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -77,8 +79,6 @@ public class SpellChecker implements java.io.Closeable {
    */
   public static final String F_WORD = "word";
 
-  private static final Term F_WORD_TERM = new Term(F_WORD);
-
   /**
    * the spell index
    */
@@ -114,6 +114,17 @@ public class SpellChecker implements java.io.Closeable {
 
   private StringDistance sd;
   private Comparator<SuggestWord> comparator;
+  
+  /** we don't need to actually analyze any content:
+   *  all fields are indexed NOT_ANALYZED, but docsinverter
+   *  needs this for the offset gap!
+   */
+  private static Analyzer noAnalyzer = new Analyzer() {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return null;
+    }
+  };
 
   /**
    * Use the given directory as a spell checker index. The directory
@@ -170,7 +181,7 @@ public class SpellChecker implements java.io.Closeable {
       if (!IndexReader.indexExists(spellIndexDir)) {
           IndexWriter writer = new IndexWriter(spellIndexDir,
             new IndexWriterConfig(Version.LUCENE_CURRENT,
-                new WhitespaceAnalyzer(Version.LUCENE_CURRENT)));
+                noAnalyzer));
           writer.close();
       }
       swapSearcher(spellIndexDir);
@@ -468,7 +479,7 @@ public class SpellChecker implements java.io.Closeable {
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           Version.LUCENE_CURRENT,
-          new WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+          noAnalyzer)
           .setOpenMode(OpenMode.CREATE));
       writer.close();
       swapSearcher(dir);
@@ -486,7 +497,7 @@ public class SpellChecker implements java.io.Closeable {
     // obtainSearcher calls ensureOpen
     final IndexSearcher indexSearcher = obtainSearcher();
     try{
-      return indexSearcher.docFreq(F_WORD_TERM.createTerm(word)) > 0;
+      return indexSearcher.docFreq(new Term(F_WORD, word)) > 0;
     } finally {
       releaseSearcher(indexSearcher);
     }
@@ -505,7 +516,7 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).setRAMBufferSizeMB(ramMB));
+      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, noAnalyzer).setRAMBufferSizeMB(ramMB));
       ((TieredMergePolicy) writer.getConfig().getMergePolicy()).setMaxMergeAtOnce(mergeFactor);
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
@@ -539,7 +550,7 @@ public class SpellChecker implements java.io.Closeable {
             // we have a non-empty index, check if the term exists
             currentTerm.copy(word);
             for (TermsEnum te : termsEnums) {
-              if (te.seek(currentTerm, false) == TermsEnum.SeekStatus.FOUND) {
+              if (te.seekExact(currentTerm, false)) {
                 continue terms;
               }
             }

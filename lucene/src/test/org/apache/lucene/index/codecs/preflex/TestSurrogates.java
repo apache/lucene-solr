@@ -75,8 +75,15 @@ public class TestSurrogates extends LuceneTestCase {
   }
 
   private static class SortTermAsUTF16Comparator implements Comparator<Term> {
-    public int compare(Term o1, Term o2) {
-      return o1.compareToUTF16(o2);
+    private static final Comparator<BytesRef> legacyComparator = 
+      BytesRef.getUTF8SortedAsUTF16Comparator();
+
+    public int compare(Term term1, Term term2) {
+      if (term1.field().equals(term2.field())) {
+        return legacyComparator.compare(term1.bytes(), term2.bytes());
+      } else {
+        return term1.field().compareTo(term2.field());
+      }
     }
   }
 
@@ -159,7 +166,7 @@ public class TestSurrogates extends LuceneTestCase {
 
       // seek should find the term
       assertEquals(TermsEnum.SeekStatus.FOUND,
-                   te.seek(term.bytes()));
+                   te.seekCeil(term.bytes()));
       
       // now .next() this many times:
       int ct = _TestUtil.nextInt(r, 5, 100);
@@ -171,7 +178,7 @@ public class TestSurrogates extends LuceneTestCase {
           break;
         }
         term = fieldTerms.get(1+spot+i);
-        if (term.field() != field) {
+        if (!term.field().equals(field)) {
           assertNull(te.next());
           break;
         } else {
@@ -224,10 +231,10 @@ public class TestSurrogates extends LuceneTestCase {
 
           spot = -spot - 1;
 
-          if (spot == fieldTerms.size() || fieldTerms.get(spot).field() != field) {
-            assertEquals(TermsEnum.SeekStatus.END, te.seek(tx.bytes()));
+          if (spot == fieldTerms.size() || !fieldTerms.get(spot).field().equals(field)) {
+            assertEquals(TermsEnum.SeekStatus.END, te.seekCeil(tx.bytes()));
           } else {
-            assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(tx.bytes()));
+            assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(tx.bytes()));
 
             if (VERBOSE) {
               System.out.println("  got term=" + UnicodeUtil.toHexString(te.term().utf8ToString()));
@@ -247,7 +254,7 @@ public class TestSurrogates extends LuceneTestCase {
                 break;
               }
               Term term = fieldTerms.get(1+spot+i);
-              if (term.field() != field) {
+              if (!term.field().equals(field)) {
                 assertNull(te.next());
                 break;
               } else {

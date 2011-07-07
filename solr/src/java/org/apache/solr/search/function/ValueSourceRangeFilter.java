@@ -17,6 +17,7 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -48,6 +49,27 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.includeLower = lowerVal != null && includeLower;
     this.includeUpper = upperVal != null && includeUpper;
   }
+
+  public ValueSource getValueSource() {
+    return valueSource;
+  }
+
+  public String getLowerVal() {
+    return lowerVal;
+  }
+
+  public String getUpperVal() {
+    return upperVal;
+  }
+
+  public boolean isIncludeLower() {
+    return includeLower;
+  }
+
+  public boolean isIncludeUpper() {
+    return includeUpper;
+  }
+
 
   @Override
   public DocIdSet getDocIdSet(final Map context, final AtomicReaderContext readerContext) throws IOException {

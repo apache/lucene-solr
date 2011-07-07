@@ -17,24 +17,14 @@
 
 package org.apache.solr.handler;
 
-import org.apache.solr.common.SolrException;
+import javax.xml.stream.XMLInputFactory;
+
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-import java.io.Reader;
-import java.io.Writer;
-import java.util.HashMap;
 
 /**
  * Add documents to solr using the STAX XML parser.
@@ -52,7 +42,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   public static final String COMMIT = "commit";
   public static final String ROLLBACK = "rollback";
   public static final String WAIT_SEARCHER = "waitSearcher";
-  public static final String WAIT_FLUSH = "waitFlush";
+  public static final String SOFT_COMMIT = "softCommit";
 
   public static final String OVERWRITE = "overwrite";
   public static final String COMMIT_WITHIN = "commitWithin";

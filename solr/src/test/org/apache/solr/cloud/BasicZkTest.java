@@ -17,11 +17,11 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.SolrIndexWriter;
-
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,11 +45,10 @@ public class BasicZkTest extends AbstractZkTestCase {
     
     // test merge factor picked up
     SolrCore core = h.getCore();
-    SolrIndexWriter writer = new SolrIndexWriter("testWriter", core
-        .getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(),
-        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
+
+    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
+
     assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
-    writer.close();
     
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", req("qlkciyopsbgzyvkylsjhchghjrdf"),

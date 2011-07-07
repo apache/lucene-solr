@@ -364,3 +364,21 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   for applications that rely on Lucene's internal document ID
   assigment.  If so, you should instead use LogByteSize/DocMergePolicy
   during indexing.
+
+* LUCENE-2883: Lucene's o.a.l.search.function ValueSource based functionality, was consolidated
+  into module/queries along with Solr's similar functionality.  The following classes were moved:
+   - o.a.l.search.function.CustomScoreQuery -> o.a.l.queries.CustomScoreQuery
+   - o.a.l.search.function.CustomScoreProvider -> o.a.l.queries.CustomScoreProvider
+   - o.a.l.search.function.NumericIndexDocValueSource -> o.a.l.queries.function.valuesource.NumericIndexDocValueSource
+  The following lists the replacement classes for those removed:
+   - o.a.l.search.function.ByteFieldSource -> o.a.l.queries.function.valuesource.ByteFieldSource
+   - o.a.l.search.function.DocValues -> o.a.l.queries.function.DocValues
+   - o.a.l.search.function.FieldCacheSource -> o.a.l.queries.function.valuesource.FieldCacheSource
+   - o.a.l.search.function.FieldScoreQuery ->o.a.l.queries.function.FunctionQuery
+   - o.a.l.search.function.FloatFieldSource -> o.a.l.queries.function.valuesource.FloatFieldSource
+   - o.a.l.search.function.IntFieldSource -> o.a.l.queries.function.valuesource.IntFieldSource
+   - o.a.l.search.function.OrdFieldSource -> o.a.l.queries.function.valuesource.OrdFieldSource
+   - o.a.l.search.function.ReverseOrdFieldSource -> o.a.l.queries.function.valuesource.ReverseOrdFieldSource
+   - o.a.l.search.function.ShortFieldSource -> o.a.l.queries.function.valuesource.ShortFieldSource
+   - o.a.l.search.function.ValueSource -> o.a.l.queries.function.ValueSource
+   - o.a.l.search.function.ValueSourceQuery -> o.a.l.queries.function.FunctionQuery

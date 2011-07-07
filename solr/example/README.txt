@@ -29,7 +29,7 @@ the exampledocs subdirectory (while Solr is running), for example:
 
      cd exampledocs
      java -jar post.jar *.xml
-Or:  ./post.sh *.xml
+Or:  sh post.sh *.xml
 
 See also README.txt in the solr subdirectory, and check
 http://wiki.apache.org/solr/SolrResources for a list of tutorials and

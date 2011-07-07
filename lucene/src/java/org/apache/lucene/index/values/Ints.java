@@ -35,13 +35,12 @@ public class Ints {
   }
 
   public static Writer getWriter(Directory dir, String id,
-      boolean useFixedArray, AtomicLong bytesUsed, IOContext context) throws IOException {
-    // TODO - implement fixed?!
-    return new IntsWriter(dir, id, bytesUsed, context);
+      AtomicLong bytesUsed, ValueType type, IOContext context) throws IOException {
+    return new IntsWriter(dir, id, bytesUsed, type, context);
   }
 
   public static IndexDocValues getValues(Directory dir, String id,
-      boolean useFixedArray, IOContext context) throws IOException {
-    return new IntsReader(dir, id, context);
+      int numDocs, IOContext context) throws IOException {
+    return new IntsReader(dir, id, numDocs, context);
   }
 }

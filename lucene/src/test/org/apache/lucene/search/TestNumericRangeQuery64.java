@@ -41,7 +41,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   // shift the starting of the values to the left, to also have negative values:
   private static final long startOffset = - 1L << 31;
   // number of docs to generate for testing
-  private static final int noDocs = atLeast(5000);
+  private static final int noDocs = atLeast(4096);
   
   private static Directory directory = null;
   private static IndexReader reader = null;
@@ -60,7 +60,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       field6 = new NumericField("field6", 6, Field.Store.YES, true),
       field4 = new NumericField("field4", 4, Field.Store.YES, true),
       field2 = new NumericField("field2", 2, Field.Store.YES, true),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? Field.Store.YES : Field.Store.NO, true),
       ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
       ascfield6 = new NumericField("ascfield6", 6, Field.Store.NO, true),
       ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
@@ -530,7 +530,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       Query tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.LONG, true)));
+      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);

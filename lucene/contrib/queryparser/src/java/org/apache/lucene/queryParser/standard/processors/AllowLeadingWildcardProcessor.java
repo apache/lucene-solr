@@ -26,18 +26,18 @@ import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
-import org.apache.lucene.queryParser.standard.config.AllowLeadingWildcardAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.standard.parser.EscapeQuerySyntaxImpl;
 
 /**
- * This processor verifies if the attribute
- * {@link AllowLeadingWildcardAttribute} is defined in the
+ * This processor verifies if
+ * {@link ConfigurationKeys#ALLOW_LEADING_WILDCARD} is defined in the
  * {@link QueryConfigHandler}. If it is and leading wildcard is not allowed, it
  * looks for every {@link WildcardQueryNode} contained in the query node tree
  * and throws an exception if any of them has a leading wildcard ('*' or '?'). <br/>
  * 
- * @see AllowLeadingWildcardAttribute
+ * @see ConfigurationKeys#ALLOW_LEADING_WILDCARD
  */
 public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
 
@@ -47,11 +47,11 @@ public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
 
   @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
+    Boolean allowsLeadingWildcard = getQueryConfigHandler().get(ConfigurationKeys.ALLOW_LEADING_WILDCARD);
 
-    if (getQueryConfigHandler().hasAttribute(AllowLeadingWildcardAttribute.class)) {
+    if (allowsLeadingWildcard != null) {
 
-      AllowLeadingWildcardAttribute alwAttr= getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
-      if (!alwAttr.isAllowLeadingWildcard()) {
+      if (!allowsLeadingWildcard) {
         return super.process(queryTree);
       }
 

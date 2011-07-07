@@ -18,6 +18,8 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
@@ -28,8 +30,6 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SpatialOptions;
-import org.apache.solr.search.function.LiteralValueSource;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
 

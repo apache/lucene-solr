@@ -157,7 +157,7 @@ class PerSegmentSingleValuedFaceting {
         }
         if (seg.pos < seg.endTermIndex) {
           seg.tenum = seg.si.getTermsEnum();          
-          seg.tenum.seek(seg.pos);
+          seg.tenum.seekExact(seg.pos);
           seg.tempBR = seg.tenum.term();
           queue.add(seg);
         }

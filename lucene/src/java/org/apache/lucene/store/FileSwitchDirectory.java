@@ -149,4 +149,14 @@ public class FileSwitchDirectory extends Directory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     return getDirectory(name).openInput(name, context);
   }
+
+  @Override
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return getDirectory(name).openCompoundInput(name, context);
+  }
+  
+  @Override
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return getDirectory(name).createCompoundOutput(name, context);
+  }
 }

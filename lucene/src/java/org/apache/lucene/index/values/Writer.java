@@ -114,11 +114,11 @@ public abstract class Writer extends DocValuesConsumer {
    * the {@link Writer} implementation. The given document ID must always be
    * greater than the previous ID or <tt>0</tt> if called the first time.
    */
-  protected abstract void add(int docID) throws IOException;
+  protected abstract void mergeDoc(int docID) throws IOException;
 
   /**
    * Sets the next {@link ValuesEnum} to consume values from on calls to
-   * {@link #add(int)}
+   * {@link #mergeDoc(int)}
    * 
    * @param valuesEnum
    *          the next {@link ValuesEnum}, this must not be null
@@ -148,19 +148,19 @@ public abstract class Writer extends DocValuesConsumer {
       // impl. will get the correct reference for the type
       // it supports
       int docID = state.docBase;
-      final Bits bits = state.bits;
+      final Bits liveDocs = state.liveDocs;
       final int docCount = state.docCount;
       int currentDocId;
       if ((currentDocId = valEnum.advance(0)) != ValuesEnum.NO_MORE_DOCS) {
         for (int i = 0; i < docCount; i++) {
-          if (bits == null || !bits.get(i)) {
+          if (liveDocs == null || liveDocs.get(i)) {
             if (currentDocId < i) {
               if ((currentDocId = valEnum.advance(i)) == ValuesEnum.NO_MORE_DOCS) {
                 break; // advance can jump over default values
               }
             }
             if (currentDocId == i) { // we are on the doc to merge
-              add(docID);
+              mergeDoc(docID);
             }
             ++docID;
           }
@@ -198,8 +198,12 @@ public abstract class Writer extends DocValuesConsumer {
       comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     }
     switch (type) {
-    case INTS:
-      return Ints.getWriter(directory, id, true, bytesUsed, context);
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+    case FIXED_INTS_8:
+    case VAR_INTS:
+      return Ints.getWriter(directory, id, bytesUsed, type, context);
     case FLOAT_32:
       return Floats.getWriter(directory, id, 4, bytesUsed, context);
     case FLOAT_64:
@@ -222,6 +226,7 @@ public abstract class Writer extends DocValuesConsumer {
     case BYTES_VAR_SORTED:
       return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false,
           bytesUsed, context);
+
     default:
       throw new IllegalArgumentException("Unknown Values: " + type);
     }

@@ -129,7 +129,7 @@
   <property name="javadoc.years" value="2006 - ${year}" />
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.link.java"
-            value="http://java.sun.com/javase/6/docs/api/"/>
+            value="http://download.oracle.com/javase/6/docs/api/"/>
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
@@ -196,10 +196,11 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
-    <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries-contrib/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/grouping/build/classes/java" />
-  </path>   
+    <pathelement location="${common-solr.dir}/../modules/queries/build/classes/java" />
+  </path>
 
   <target name="prep-lucene-jars">
     <sequential>
@@ -244,14 +245,17 @@
       <fileset dir="../lucene/build/contrib/misc">
         <include name="lucene-misc-${version}.jar" />
       </fileset>
-      <fileset dir="../lucene/build/contrib/queries">
-        <include name="lucene-queries-${version}.jar" />
+      <fileset dir="../lucene/build/contrib/queries-contrib">
+        <include name="lucene-queries-contrib-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spatial">
         <include name="lucene-spatial-${version}.jar" />
       </fileset>
       <fileset dir="../modules/grouping/build">
         <include name="lucene-grouping-${version}.jar" />
+      </fileset>
+      <fileset dir="../modules/queries/build">
+        <include name="lucene-queries-${version}.jar" />
       </fileset>
       </copy>
   </target>  
@@ -268,6 +272,7 @@
       <fileset dir="../lucene/contrib/queries" includes="build.xml"/>
       <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
       <fileset dir="../modules/grouping" includes="build.xml"/>
+      <fileset dir="../modules/queries" includes="build.xml"/>
     </subant>
   </target>
    
@@ -559,10 +564,10 @@
      <mkdir dir="${dest}/META-INF/" />
      <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
         <!--
-        http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
-        http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
-        http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
-        http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+        http://java.sun.com/j2se/1.6.0/docs/guide/jar/jar.html#JAR%20Manifest
+        http://java.sun.com/j2se/1.6.0/docs/guide/versioning/spec/versioning2.html
+        http://java.sun.com/j2se/1.6.0/docs/api/java/lang/Package.html
+        http://java.sun.com/j2se/1.6.0/docs/api/java/util/jar/package-summary.html
         http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
         -->
         <!-- Don't set 'Manifest-Version' it identifies the version of the

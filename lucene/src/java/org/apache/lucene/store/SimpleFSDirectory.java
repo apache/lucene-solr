@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.util.IOUtils;
 
 
 /** A straightforward implementation of {@link FSDirectory}
@@ -58,6 +58,45 @@ public class SimpleFSDirectory extends FSDirectory {
     ensureOpen();
     return new SimpleFSIndexInput(new File(directory, name), context, getReadChunkSize());
   }
+  
+  @Override
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new SimpleFSCompoundFileDirectory(name, context);
+  }
+
+  private final class SimpleFSCompoundFileDirectory extends CompoundFileDirectory {
+    private SimpleFSIndexInput.Descriptor fd;
+
+    public SimpleFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
+      super(SimpleFSDirectory.this, fileName, context);
+      IndexInput stream = null;
+      try {
+        final File f = new File(SimpleFSDirectory.this.getDirectory(), fileName);
+        fd = new SimpleFSIndexInput.Descriptor(f, "r");
+        stream = new SimpleFSIndexInput(fd, 0, fd.length, readBufferSize,
+            getReadChunkSize());
+        initForRead(CompoundFileDirectory.readEntries(stream, SimpleFSDirectory.this, fileName));
+        stream.close();
+      } catch (IOException e) {
+        // throw our original exception
+        IOUtils.closeSafely(e, fd, stream);
+      }
+    }
+
+    @Override
+    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
+      return new SimpleFSIndexInput(fd, offset, length, readBufferSize, getReadChunkSize());
+    }
+
+    @Override
+    public synchronized void close() throws IOException {
+      try {
+        fd.close();
+      } finally {
+        super.close();
+      }
+    }
+  }
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
   
@@ -87,11 +126,24 @@ public class SimpleFSDirectory extends FSDirectory {
     boolean isClone;
     //  LUCENE-1566 - maximum read length on a 32bit JVM to prevent incorrect OOM 
     protected final int chunkSize;
+    protected final long off;
+    protected final long end;
     
     public SimpleFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
       super(context);
-      file = new Descriptor(path, "r");
+      this.file = new Descriptor(path, "r"); 
       this.chunkSize = chunkSize;
+      this.off = 0L;
+      this.end = file.length;
+    }
+    
+    public SimpleFSIndexInput(Descriptor file, long off, long length, int bufferSize, int chunkSize) throws IOException {
+      super(bufferSize);
+      this.file = file;
+      this.chunkSize = chunkSize;
+      this.off = off;
+      this.end = off + length;
+      this.isClone = true; // well, we are sorta?
     }
   
     /** IndexInput methods */
@@ -99,12 +151,16 @@ public class SimpleFSDirectory extends FSDirectory {
     protected void readInternal(byte[] b, int offset, int len)
          throws IOException {
       synchronized (file) {
-        long position = getFilePointer();
+        long position = off + getFilePointer();
         if (position != file.position) {
           file.seek(position);
           file.position = position;
         }
         int total = 0;
+
+        if (position + len > end) {
+          throw new IOException("read past EOF");
+        }
 
         try {
           do {
@@ -116,9 +172,6 @@ public class SimpleFSDirectory extends FSDirectory {
               readLength = chunkSize;
             }
             final int i = file.read(b, offset + total, readLength);
-            if (i == -1) {
-              throw new IOException("read past EOF");
-            }
             file.position += i;
             total += i;
           } while (total < len);
@@ -147,7 +200,7 @@ public class SimpleFSDirectory extends FSDirectory {
   
     @Override
     public long length() {
-      return file.length;
+      return end - off;
     }
   
     @Override

@@ -793,8 +793,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setScorer(Scorer scorer) {
       // wrap with a ScoreCachingWrappingScorer so that successive calls to
-      // score() will not incur score computation over and over again.
-      this.scorer = new ScoreCachingWrappingScorer(scorer);
+      // score() will not incur score computation over and
+      // over again.
+      if (!(scorer instanceof ScoreCachingWrappingScorer)) {
+        this.scorer = new ScoreCachingWrappingScorer(scorer);
+      } else {
+        this.scorer = scorer;
+      }
     }
     
     @Override

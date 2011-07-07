@@ -20,19 +20,20 @@ package org.apache.solr.search;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.*;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.FunctionQuery;
-import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -266,8 +267,8 @@ public class Grouping {
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
 
-    filter = cmd.getFilter() != null ? cmd.getFilter() : searcher.getDocSet(cmd.getFilterList());
-    luceneFilter = filter == null ? null : filter.getTopFilter();
+    SolrIndexSearcher.ProcessedFilter pf = searcher.getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
+    final Filter luceneFilter = pf.filter;
     maxDoc = searcher.maxDoc();
 
     needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
@@ -278,7 +279,7 @@ public class Grouping {
         cacheScores = true;
       } else {
         for (SortField field : commands.get(0).groupSort.getSort()) {
-          if (field.getType() == SortField.SCORE) {
+          if (field.getType() == SortField.Type.SCORE) {
             cacheScores = true;
             break;
           }
@@ -319,6 +320,11 @@ public class Grouping {
       }
     }
 
+    if (pf.postFilter != null) {
+      pf.postFilter.setLastDelegate(allCollectors);
+      allCollectors = pf.postFilter;
+    }
+
     if (allCollectors != null) {
       searcher.search(query, luceneFilter, allCollectors);
     }
@@ -347,6 +353,10 @@ public class Grouping {
             searcher.search(query, luceneFilter, secondPhaseCollectors);
           }
         } else {
+          if (pf.postFilter != null) {
+            pf.postFilter.setLastDelegate(secondPhaseCollectors);
+            secondPhaseCollectors = pf.postFilter;
+          }
           searcher.search(query, luceneFilter, secondPhaseCollectors);
         }
       }
@@ -628,7 +638,7 @@ public class Grouping {
       }
 
       sort = sort == null ? Sort.RELEVANCE : sort;
-      firstPass = new TermFirstPassGroupingCollector(groupBy, sort, actualGroupsToFind);
+      firstPass = new TermFirstPassGroupingCollectorJava6(groupBy, sort, actualGroupsToFind);
       return firstPass;
     }
 
@@ -995,6 +1005,22 @@ public class Grouping {
       docValues = groupByVS.getValues(vsContext, readerContext);
       filler = docValues.getValueFiller();
       mval = filler.getValue();
+    }
+
+    @Override
+    protected CollectedSearchGroup<MutableValue> pollLast() {
+      return orderedGroups.pollLast();
+    }
+  }
+
+  static class TermFirstPassGroupingCollectorJava6 extends TermFirstPassGroupingCollector {
+    public TermFirstPassGroupingCollectorJava6(String groupField, Sort groupSort, int topNGroups) throws IOException {
+      super(groupField, groupSort, topNGroups);
+    }
+
+    @Override
+    protected CollectedSearchGroup<BytesRef> pollLast() {
+      return orderedGroups.pollLast();
     }
   }
 

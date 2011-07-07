@@ -28,12 +28,14 @@ import org.apache.lucene.index.values.FixedDerefBytesImpl.Reader.DerefBytesEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -57,10 +59,7 @@ class FixedSortedBytesImpl {
     private int size = -1;
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
-
-    private final BytesRefHash hash = new BytesRefHash(pool,
-        BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
-            BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+    private final BytesRefHash hash;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         AtomicLong bytesUsed, IOContext context) throws IOException {
@@ -70,10 +69,12 @@ class FixedSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Allocator allocator, AtomicLong bytesUsed, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      ByteBlockPool pool = new ByteBlockPool(allocator);
+      hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
+          new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY,
+              bytesUsed));
       docToEntry = new int[1];
-      // docToEntry[0] = -1;
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
       this.comp = comp;
     }
@@ -84,7 +85,6 @@ class FixedSortedBytesImpl {
         return; // default - skip it
       if (size == -1) {
         size = bytes.length;
-        datOut.writeInt(size);
       } else if (bytes.length != size) {
         throw new IllegalArgumentException("expected bytes size=" + size
             + " but got " + bytes.length);
@@ -105,26 +105,36 @@ class FixedSortedBytesImpl {
     // some last docs that we didn't see
     @Override
     public void finish(int docCount) throws IOException {
+      final IndexOutput datOut = getDataOut();
+      boolean success = false;
+      final int count = hash.size();
+      final int[] address = new int[count];
+
       try {
-        if (size == -1) {// no data added
-          datOut.writeInt(size);
+        datOut.writeInt(size);
+        if (size != -1) {
+          final int[] sortedEntries = hash.sort(comp);
+          // first dump bytes data, recording address as we go
+          final BytesRef bytesRef = new BytesRef(size);
+          for (int i = 0; i < count; i++) {
+            final int e = sortedEntries[i];
+            final BytesRef bytes = hash.get(e, bytesRef);
+            assert bytes.length == size;
+            datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+            address[e] = 1 + i;
+          }
         }
-        final int[] sortedEntries = hash.sort(comp);
-        final int count = hash.size();
-        int[] address = new int[count];
-        // first dump bytes data, recording address as we go
-        for (int i = 0; i < count; i++) {
-          final int e = sortedEntries[i];
-          final BytesRef bytes = hash.get(e, new BytesRef());
-          assert bytes.length == size;
-          datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
-          address[e] = 1 + i;
-        }
-
+        success = true;
+      } finally {
+        IOUtils.closeSafely(!success, datOut);
+        hash.close();
+      }
+      final IndexOutput idxOut = getIndexOut();
+      success = false;
+      try {
         idxOut.writeInt(count);
-
         // next write index
-        PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
+        final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
             PackedInts.bitsRequired(count));
         final int limit;
         if (docCount > docToEntry.length) {
@@ -149,11 +159,10 @@ class FixedSortedBytesImpl {
         }
         w.finish();
       } finally {
-        super.finish(docCount);
+        IOUtils.closeSafely(!success, idxOut);
         bytesUsed.addAndGet((-docToEntry.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToEntry = null;
-        hash.close();
       }
     }
   }

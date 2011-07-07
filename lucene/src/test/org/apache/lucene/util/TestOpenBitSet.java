@@ -29,6 +29,20 @@ public class TestOpenBitSet extends LuceneTestCase {
       if (a.get(i) != b.get(i)) {
         fail("mismatch: BitSet=["+i+"]="+a.get(i));
       }
+      if (a.get(i) != b.get((long) i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
+    }
+  }
+
+  void doGetFast(BitSet a, OpenBitSet b, int max) {
+    for (int i=0; i<max; i++) {
+      if (a.get(i) != b.fastGet(i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
+      if (a.get(i) != b.fastGet((long) i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
     }
   }
 
@@ -41,9 +55,18 @@ public class TestOpenBitSet extends LuceneTestCase {
     } while (aa>=0);
   }
 
+  void doNextSetBitLong(BitSet a, OpenBitSet b) {
+    int aa=-1,bb=-1;
+    do {
+      aa = a.nextSetBit(aa+1);
+      bb = (int) b.nextSetBit((long) (bb+1));
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
+
   void doPrevSetBit(BitSet a, OpenBitSet b) {
-    int aa=a.length();
-    int bb=aa;
+    int aa = a.size() + random.nextInt(100);
+    int bb = aa;
     do {
       // aa = a.prevSetBit(aa-1);
       aa--;
@@ -51,6 +74,20 @@ public class TestOpenBitSet extends LuceneTestCase {
       	aa--;
       }
       bb = b.prevSetBit(bb-1);
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
+
+  void doPrevSetBitLong(BitSet a, OpenBitSet b) {
+    int aa = a.size() + random.nextInt(100);
+    int bb = aa;
+    do {
+      // aa = a.prevSetBit(aa-1);
+      aa--;
+      while ((aa >= 0) && (! a.get(aa))) {
+      	aa--;
+      }
+      bb = (int) b.prevSetBit((long) (bb-1));
       assertEquals(aa,bb);
     } while (aa>=0);
   }
@@ -99,15 +136,33 @@ public class TestOpenBitSet extends LuceneTestCase {
           idx = random.nextInt(sz);
           a.set(idx);
           b.fastSet(idx);
+          
+          idx = random.nextInt(sz);
+          a.set(idx);
+          b.fastSet((long) idx);
+          
           idx = random.nextInt(sz);
           a.clear(idx);
           b.fastClear(idx);
+          
+          idx = random.nextInt(sz);
+          a.clear(idx);
+          b.fastClear((long) idx);
+          
           idx = random.nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
 
           boolean val = b.flipAndGet(idx);
           boolean val2 = b.flipAndGet(idx);
+          assertTrue(val != val2);
+
+          idx = random.nextInt(sz);
+          a.flip(idx);
+          b.fastFlip((long) idx);
+
+          val = b.flipAndGet((long) idx);
+          val2 = b.flipAndGet((long) idx);
           assertTrue(val != val2);
 
           val = b.getAndSet(idx);
@@ -121,6 +176,7 @@ public class TestOpenBitSet extends LuceneTestCase {
 
       // test that the various ways of accessing the bits are equivalent
       doGet(a,b);
+      doGetFast(a, b, sz);
 
       // test ranges, including possible extension
       int fromIndex, toIndex;
@@ -136,17 +192,22 @@ public class TestOpenBitSet extends LuceneTestCase {
       aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.clear(fromIndex,toIndex);
 
-      doNextSetBit(aa,bb);  // a problem here is from clear() or nextSetBit
+      doNextSetBit(aa,bb); // a problem here is from clear() or nextSetBit
+      doNextSetBitLong(aa,bb);
+      
       doPrevSetBit(aa,bb);
+      doPrevSetBitLong(aa,bb);
 
       fromIndex = random.nextInt(sz+80);
       toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.set(fromIndex,toIndex);
 
-      doNextSetBit(aa,bb);  // a problem here is from set() or nextSetBit     
+      doNextSetBit(aa,bb); // a problem here is from set() or nextSetBit
+      doNextSetBitLong(aa,bb);
+    
       doPrevSetBit(aa,bb);
-
+      doPrevSetBitLong(aa,bb);
 
       if (a0 != null) {
         assertEquals( a.equals(a0), b.equals(b0));

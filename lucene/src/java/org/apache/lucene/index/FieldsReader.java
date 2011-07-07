@@ -365,7 +365,6 @@ public final class FieldsReader implements Cloneable {
       Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
       Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
       f = new Field(fi.name,     // name
-        false,
         fieldsStream.readString(), // read value
         Field.Store.YES,
         index,

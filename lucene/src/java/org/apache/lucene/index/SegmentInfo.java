@@ -30,11 +30,13 @@ import java.util.Set;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -246,7 +248,7 @@ public final class SegmentInfo implements Cloneable {
       }
       final Directory dirToTest;
       if (isCompoundFile) {
-        dirToTest = new CompoundFileReader(dir, IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE);
+        dirToTest = dir.openCompoundInput(IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE );
       } else {
         dirToTest = dir;
       }
@@ -264,7 +266,7 @@ public final class SegmentInfo implements Cloneable {
     if (fieldInfos == null) {
       Directory dir0 = dir;
       if (isCompoundFile && checkCompoundFile) {
-        dir0 = new CompoundFileReader(dir, IndexFileNames.segmentFileName(name,
+        dir0 = dir.openCompoundInput(IndexFileNames.segmentFileName(name,
             "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE);
       }
       try {
@@ -455,7 +457,7 @@ public final class SegmentInfo implements Cloneable {
     this.isCompoundFile = isCompoundFile;
     clearFilesCache();
   }
-
+  
   /**
    * Returns true if this segment is stored as a compound
    * file; else, false.
@@ -618,6 +620,10 @@ public final class SegmentInfo implements Cloneable {
 
     if (useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+      if (version != null && StringHelper.getVersionComparator().compare("3.4", version) <= 0) {
+        fileSet.add(IndexFileNames.segmentFileName(name, "",
+            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+      }
     } else {
       for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
         addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));

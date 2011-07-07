@@ -17,18 +17,21 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.FieldConfigListener;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
  * This listener listens for every field configuration request and assign a
- * {@link BoostAttribute} to the equivalent {@link FieldConfig} based on a
- * defined map: fieldName -> boostValue store in {@link FieldBoostMapAttribute}
- * in the {@link FieldBoostMapAttribute}.
+ * {@link ConfigurationKeys#BOOST} to the
+ * equivalent {@link FieldConfig} based on a defined map: fieldName -> boostValue stored in
+ * {@link ConfigurationKeys#FIELD_BOOST_MAP}.
  * 
- * @see BoostAttribute
- * @see FieldBoostMapAttribute
+ * @see ConfigurationKeys#FIELD_BOOST_MAP
+ * @see ConfigurationKeys#BOOST
  * @see FieldConfig
  * @see FieldConfigListener
  */
@@ -40,15 +43,14 @@ public class FieldBoostMapFCListener implements FieldConfigListener {
     this.config = config;
   }
 
-  public void buildFieldConfig(FieldConfig fieldConfig) {    
-    if (this.config.hasAttribute(FieldBoostMapAttribute.class)) {
-      FieldBoostMapAttribute fieldBoostMapAttr = this.config.getAttribute(FieldBoostMapAttribute.class);
-      BoostAttribute boostAttr = fieldConfig.addAttribute(BoostAttribute.class);
-      
-      Float boost = fieldBoostMapAttr.getFieldBoostMap().get(fieldConfig.getField());
+  public void buildFieldConfig(FieldConfig fieldConfig) {
+    Map<String, Float> fieldBoostMap = this.config.get(ConfigurationKeys.FIELD_BOOST_MAP);
+    
+    if (fieldBoostMap != null) {
+      Float boost = fieldBoostMap.get(fieldConfig.getField());
 
       if (boost != null) {
-        boostAttr.setBoost(boost.floatValue());
+        fieldConfig.set(ConfigurationKeys.BOOST, boost);
       }
 
     }

@@ -30,6 +30,7 @@ import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -653,7 +654,8 @@ public class SolrResourceLoader implements ResourceLoader
         SolrRequestHandler.class,
         QueryResponseWriter.class,
         SearchComponent.class,
-        UpdateRequestProcessorFactory.class
+        UpdateRequestProcessorFactory.class,
+        ShardHandlerFactory.class
       }
     );
 

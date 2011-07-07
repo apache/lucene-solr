@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
@@ -98,7 +97,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                                                MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                                                MultiFields.getLiveDocs(searcher.getIndexReader()),
                                                                 "field",
                                                                 new BytesRef("1"));
     pos.nextDoc();
@@ -106,7 +105,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, pos.nextPosition());
     
     pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
-                                           MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                           MultiFields.getLiveDocs(searcher.getIndexReader()),
                                            "field",
                                            new BytesRef("2"));
     pos.nextDoc();
@@ -193,38 +192,6 @@ public class TestPositionIncrement extends LuceneTestCase {
     q.add(new Term("field", "5"));
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-
-    // should not find "1 2" because there is a gap of 1 in the index
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-        new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopStopList, false));
-    q = (PhraseQuery) qp.parse("\"1 2\"");
-    hits = searcher.search(q, null, 1000).scoreDocs;
-    assertEquals(0, hits.length);
-
-    // omitted stop word cannot help because stop filter swallows the increments. 
-    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q, null, 1000).scoreDocs;
-    assertEquals(0, hits.length);
-
-    // query parser alone won't help, because stop filter swallows the increments. 
-    qp.setEnablePositionIncrements(true);
-    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q, null, 1000).scoreDocs;
-    assertEquals(0, hits.length);
-
-    // stop filter alone won't help, because query parser swallows the increments. 
-    qp.setEnablePositionIncrements(false);
-    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q, null, 1000).scoreDocs;
-    assertEquals(0, hits.length);
-      
-    // when both qp qnd stopFilter propagate increments, we should find the doc.
-    qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-                         new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, stopStopList, true));
-    qp.setEnablePositionIncrements(true);
-    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
     
     searcher.close();
     reader.close();
@@ -246,9 +213,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     final IndexReader readerFromWriter = writer.getReader();
     SlowMultiReaderWrapper r = new SlowMultiReaderWrapper(readerFromWriter);
 
-    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getDeletedDocs(),
-                                                     "content",
-                                                     new BytesRef("a"));
+    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getLiveDocs(),
+                                                  "content",
+                                                  new BytesRef("a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS);

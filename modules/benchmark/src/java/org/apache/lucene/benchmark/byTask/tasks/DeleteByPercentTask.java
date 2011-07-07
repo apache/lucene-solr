@@ -74,15 +74,15 @@ public class DeleteByPercentTask extends PerfTask {
     }
     while (numDeleted < numToDelete) {
       double delRate = ((double) (numToDelete-numDeleted))/r.numDocs();
-      Bits delDocs = MultiFields.getDeletedDocs(r);
+      Bits liveDocs = MultiFields.getLiveDocs(r);
       int doc = 0;
       while (doc < maxDoc && numDeleted < numToDelete) {
-        if ((delDocs == null || !delDocs.get(doc)) && random.nextDouble() <= delRate) {
+        if ((liveDocs == null || liveDocs.get(doc)) && random.nextDouble() <= delRate) {
           r.deleteDocument(doc);
           numDeleted++;
-          if (delDocs == null) {
-            delDocs = MultiFields.getDeletedDocs(r);
-            assert delDocs != null;
+          if (liveDocs == null) {
+            liveDocs = MultiFields.getLiveDocs(r);
+            assert liveDocs != null;
           }
         }
         doc++;

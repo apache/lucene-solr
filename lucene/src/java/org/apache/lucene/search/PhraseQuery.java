@@ -85,14 +85,15 @@ public class PhraseQuery extends Query {
    * @param position
    */
   public void add(Term term, int position) {
-      if (terms.size() == 0)
-          field = term.field();
-      else if (term.field() != field)
-          throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
+    if (terms.size() == 0) {
+      field = term.field();
+    } else if (!term.field().equals(field)) {
+      throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
+    }
 
-      terms.add(term);
-      positions.add(Integer.valueOf(position));
-      if (position > maxPosition) maxPosition = position;
+    terms.add(term);
+    positions.add(Integer.valueOf(position));
+    if (position > maxPosition) maxPosition = position;
   }
 
   /** Returns the set of terms in this phrase. */
@@ -211,17 +212,17 @@ public class PhraseQuery extends Query {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
       final IndexReader reader = context.reader;
+      final Bits liveDocs = reader.getLiveDocs();
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
-      final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
-        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
+        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(liveDocs,
                                                                      t.field(),
                                                                      t.bytes());
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (reader.termDocsEnum(delDocs, t.field(), t.bytes()) != null) {
+          if (reader.termDocsEnum(liveDocs, t.field(), t.bytes()) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {

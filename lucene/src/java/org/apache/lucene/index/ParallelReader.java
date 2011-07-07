@@ -206,9 +206,9 @@ public class ParallelReader extends IndexReader {
     }
   }
   
-   @Override
-  public Bits getDeletedDocs() {
-    return MultiFields.getDeletedDocs(readers.get(0));
+  @Override
+  public Bits getLiveDocs() {
+    return MultiFields.getLiveDocs(readers.get(0));
   }
 
   @Override
@@ -584,7 +584,7 @@ public class ParallelReader extends IndexReader {
       fields.put(field, perDocs.docValues(field));
     }
 
-    //@Override -- not until Java 1.6
+    @Override
     public void close() throws IOException {
       // nothing to do here
     }

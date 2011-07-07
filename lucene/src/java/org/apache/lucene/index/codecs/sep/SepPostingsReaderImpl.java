@@ -257,7 +257,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum)) {
@@ -272,11 +272,11 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
     }
 
-    return docsEnum.init(fieldInfo, termState, skipDocs);
+    return docsEnum.init(fieldInfo, termState, liveDocs);
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     assert !fieldInfo.omitTermFreqAndPositions;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;
@@ -292,7 +292,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
     }
 
-    return postingsEnum.init(fieldInfo, termState, skipDocs);
+    return postingsEnum.init(fieldInfo, termState, liveDocs);
   }
 
   class SepDocsEnum extends DocsEnum {
@@ -305,7 +305,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     // TODO: -- should we do omitTF with 2 different enum classes?
     private boolean omitTF;
     private boolean storePayloads;
-    private Bits skipDocs;
+    private Bits liveDocs;
     private final IntIndexInput.Reader docReader;
     private final IntIndexInput.Reader freqReader;
     private long skipFP;
@@ -338,8 +338,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       }
     }
 
-    SepDocsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits skipDocs) throws IOException {
-      this.skipDocs = skipDocs;
+    SepDocsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits liveDocs) throws IOException {
+      this.liveDocs = liveDocs;
       omitTF = fieldInfo.omitTermFreqAndPositions;
       storePayloads = fieldInfo.storePayloads;
 
@@ -384,7 +384,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           freq = freqReader.next();
         }
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           break;
         }
       }
@@ -409,7 +409,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           freq = freqReader.next();
         }
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           docs[i] = doc;
           freqs[i] = freq;
           //System.out.println("  docs[" + i + "]=" + doc + " count=" + count + " dF=" + docFreq);
@@ -494,7 +494,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     long freqStart;
 
     private boolean storePayloads;
-    private Bits skipDocs;
+    private Bits liveDocs;
     private final IntIndexInput.Reader docReader;
     private final IntIndexInput.Reader freqReader;
     private final IntIndexInput.Reader posReader;
@@ -529,8 +529,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       payloadIn = (IndexInput) SepPostingsReaderImpl.this.payloadIn.clone();
     }
 
-    SepDocsAndPositionsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits skipDocs) throws IOException {
-      this.skipDocs = skipDocs;
+    SepDocsAndPositionsEnum init(FieldInfo fieldInfo, SepTermState termState, Bits liveDocs) throws IOException {
+      this.liveDocs = liveDocs;
       storePayloads = fieldInfo.storePayloads;
       //System.out.println("Sep D&P init");
 
@@ -585,7 +585,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
 
         pendingPosCount += freq;
 
-        if (skipDocs == null || !skipDocs.get(doc)) {
+        if (liveDocs == null || liveDocs.get(doc)) {
           break;
         }
       }

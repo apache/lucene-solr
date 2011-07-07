@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
@@ -39,10 +38,10 @@ import java.net.URL;
  */
 public class SimplePostTool {
   public static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
-  public static final String VERSION_OF_THIS_TOOL = "1.3";
-  private static final String SOLR_OK_RESPONSE_EXCERPT = "<int name=\"status\">0</int>";
+  public static final String VERSION_OF_THIS_TOOL = "1.4";
 
   private static final String DEFAULT_COMMIT = "yes";
+  private static final String DEFAULT_OPTIMIZE = "no";
   private static final String DEFAULT_OUT = "no";
 
   private static final String DEFAULT_DATA_TYPE = "application/xml";
@@ -64,23 +63,27 @@ public class SimplePostTool {
   public static void main(String[] args) {
     info("version " + VERSION_OF_THIS_TOOL);
 
-    if (0 < args.length && "-help".equals(args[0])) {
+    if (0 < args.length && ("-help".equals(args[0]) || "--help".equals(args[0]) || "-h".equals(args[0]))) {
       System.out.println
         ("This is a simple command line tool for POSTing raw data to a Solr\n"+
          "port.  Data can be read from files specified as commandline args,\n"+
          "as raw commandline arg strings, or via STDIN.\n"+
          "Examples:\n"+
-         "  java -Ddata=files -jar post.jar *.xml\n"+
+         "  java -jar post.jar *.xml\n"+
          "  java -Ddata=args  -jar post.jar '<delete><id>42</id></delete>'\n"+
          "  java -Ddata=stdin -jar post.jar < hd.xml\n"+
+         "  java -Durl=http://localhost:8983/solr/update/csv -Dtype=text/csv -jar post.jar *.csv\n"+
+         "  java -Durl=http://localhost:8983/solr/update/json -Dtype=application/json -jar post.jar *.json\n"+
+         "  java -Durl=http://localhost:8983/solr/update/extract?literal.id=a -Dtype=application/pdf -jar post.jar a.pdf\n"+
          "Other options controlled by System Properties include the Solr\n"+
          "URL to POST to, the Content-Type of the data, whether a commit\n"+
-         "should be executed, and whether the response should be written\n"+
-         "to STDOUT. These are the defaults for all System Properties...\n"+
+         "or optimize should be executed, and whether the response should\n"+
+         "be written to STDOUT. These are the defaults for all System Properties:\n"+
          "  -Ddata=" + DEFAULT_DATA_MODE + "\n"+
          "  -Dtype=" + DEFAULT_DATA_TYPE + "\n"+
          "  -Durl=" + DEFAULT_POST_URL + "\n"+
          "  -Dcommit=" + DEFAULT_COMMIT + "\n"+
+         "  -Doptimize=" + DEFAULT_OPTIMIZE + "\n"+
          "  -Dout=" + DEFAULT_OUT + "\n");
       return;
     }
@@ -100,7 +103,6 @@ public class SimplePostTool {
       fatal("System Property 'data' is not valid for this tool: " + mode);
     }
 
-    final String doOut = System.getProperty("out", DEFAULT_OUT);
     if ("yes".equals(System.getProperty("out", DEFAULT_OUT))) {
       out = System.out;
     }
@@ -109,14 +111,16 @@ public class SimplePostTool {
       if (DATA_MODE_FILES.equals(mode)) {
         if (0 < args.length) {
           info("POSTing files to " + u + "..");
-          final int posted = t.postFiles(args, 0, out);
+          t.postFiles(args, 0, out);
+        } else {
+          info("No files specified. (Use -h for help)");
         }
         
       } else if (DATA_MODE_ARGS.equals(mode)) {
         if (0 < args.length) {
           info("POSTing args to " + u + "..");
           for (String a : args) {
-            t.postData(t.stringToStream(a), null, out);
+            t.postData(SimplePostTool.stringToStream(a), null, out);
           }
         }
         
@@ -126,10 +130,15 @@ public class SimplePostTool {
       }
       if ("yes".equals(System.getProperty("commit",DEFAULT_COMMIT))) {
         info("COMMITting Solr index changes..");
-        t.commit(out);
+        t.commit();
+      }
+      if ("yes".equals(System.getProperty("optimize",DEFAULT_OPTIMIZE))) {
+        info("Performing an OPTIMIZE..");
+        t.optimize();
       }
     
     } catch(RuntimeException e) {
+      e.printStackTrace();
       fatal("RuntimeException " + e);
     }
   }
@@ -174,8 +183,19 @@ public class SimplePostTool {
   /**
    * Does a simple commit operation 
    */
-  public void commit(OutputStream output) {
-    postData(stringToStream("<commit/>"), null, output);
+  public void commit() {
+    doGet(appendParam(solrUrl.toString(), "commit=true"));
+  }
+
+  /**
+   * Does a simple optimize operation 
+   */
+  public void optimize() {
+    doGet(appendParam(solrUrl.toString(), "optimize=true"));
+  }
+
+  private String appendParam(String url, String param) {
+    return url + (url.indexOf('?')>0 ? "&" : "?") + param;
   }
 
   /**
@@ -197,6 +217,34 @@ public class SimplePostTool {
       } catch (IOException e) {
         fatal("IOException while closing file: "+ e);
       }
+    }
+  }
+
+  /**
+   * Performs a simple get on the given URL
+   * @param url
+   */
+  public void doGet(String url) {
+    try {
+      doGet(new URL(url));
+    } catch (MalformedURLException e) {
+      fatal("The specified URL "+url+" is not a valid URL. Please check");
+    }
+  }
+  
+  /**
+   * Performs a simple get on the given URL
+   * @param url
+   */
+  public void doGet(URL url) {
+    try {
+      HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
+      if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
+        fatal("Solr returned an error #" + urlc.getResponseCode() + 
+            " " + urlc.getResponseMessage());
+      }
+    } catch (IOException e) {
+      fatal("An error occured posting data to "+url+". Please check that Solr is running.");
     }
   }
 

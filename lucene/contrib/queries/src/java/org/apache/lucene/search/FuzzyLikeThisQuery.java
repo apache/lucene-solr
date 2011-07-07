@@ -190,7 +190,6 @@ public class FuzzyLikeThisQuery extends Query
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
         
         int corpusNumDocs=reader.numDocs();
-        Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet<String> processedTerms=new HashSet<String>();
         ts.reset();
         while (ts.incrementToken()) 
@@ -201,7 +200,7 @@ public class FuzzyLikeThisQuery extends Query
                   processedTerms.add(term);
                   ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
                   float minScore=0;
-                  Term startTerm=internSavingTemplateTerm.createTerm(term);
+                  Term startTerm=new Term(f.fieldName, term);
                   AttributeSource atts = new AttributeSource();
                   MaxNonCompetitiveBoostAttribute maxBoostAtt =
                     atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);

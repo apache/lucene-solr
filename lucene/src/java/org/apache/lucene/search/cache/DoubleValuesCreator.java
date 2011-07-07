@@ -61,8 +61,8 @@ public class DoubleValuesCreator extends CachedArrayCreator<DoubleValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.DOUBLE;
+  public SortField.Type getSortType() {
+    return SortField.Type.DOUBLE;
   }
 
   //--------------------------------------------------------------------------------

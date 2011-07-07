@@ -24,17 +24,20 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.FuzzyAttribute;
+import org.apache.lucene.queryParser.standard.config.FuzzyConfig;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.search.FuzzyQuery;
 
 /**
  * This processor iterates the query node tree looking for every
  * {@link FuzzyQueryNode}, when this kind of node is found, it checks on the
- * query configuration for {@link FuzzyAttribute}, gets the fuzzy prefix length
- * and default similarity from it and set to the fuzzy node. For more
- * information about fuzzy prefix length check: {@link FuzzyQuery}. <br/>
+ * query configuration for
+ * {@link ConfigurationKeys#FUZZY_CONFIG}, gets the
+ * fuzzy prefix length and default similarity from it and set to the fuzzy node.
+ * For more information about fuzzy prefix length check: {@link FuzzyQuery}. <br/>
  * 
- * @see FuzzyAttribute
+ * @see ConfigurationKeys#FUZZY_CONFIG
  * @see FuzzyQuery
  * @see FuzzyQueryNode
  */
@@ -54,18 +57,17 @@ public class FuzzyQueryNodeProcessor extends QueryNodeProcessorImpl {
       FuzzyQueryNode fuzzyNode = (FuzzyQueryNode) node;
       QueryConfigHandler config = getQueryConfigHandler();
 
-      if (config != null && config.hasAttribute(FuzzyAttribute.class)) {
-        FuzzyAttribute fuzzyAttr = config.getAttribute(FuzzyAttribute.class);
-        fuzzyNode.setPrefixLength(fuzzyAttr.getPrefixLength());
+      FuzzyConfig fuzzyConfig = null;
+      
+      if (config != null && (fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG)) != null) {
+        fuzzyNode.setPrefixLength(fuzzyConfig.getPrefixLength());
 
         if (fuzzyNode.getSimilarity() < 0) {
-          fuzzyNode.setSimilarity(fuzzyAttr.getFuzzyMinSimilarity());
-
+          fuzzyNode.setSimilarity(fuzzyConfig.getMinSimilarity());
         }
-
+        
       } else if (fuzzyNode.getSimilarity() < 0) {
-        throw new IllegalArgumentException("No "
-            + FuzzyAttribute.class.getName() + " set in the config");
+        throw new IllegalArgumentException("No FUZZY_CONFIG set in the config");
       }
 
     }

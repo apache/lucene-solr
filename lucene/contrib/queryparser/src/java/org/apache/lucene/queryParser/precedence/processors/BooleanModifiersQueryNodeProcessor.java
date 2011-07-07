@@ -29,8 +29,9 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode.Modifier;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.precedence.PrecedenceQueryParser;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 
 /**
  * <p>
@@ -44,7 +45,7 @@ import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Op
  * if it is, the same operation when an {@link AndQueryNode} is found is applied to it.
  * </p>
  * 
- * @see DefaultOperatorAttribute
+ * @see ConfigurationKeys#DEFAULT_OPERATOR
  * @see PrecedenceQueryParser#setDefaultOperator
  */
 public class BooleanModifiersQueryNodeProcessor extends QueryNodeProcessorImpl {
@@ -59,14 +60,14 @@ public class BooleanModifiersQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
-
-    if (!getQueryConfigHandler().hasAttribute(DefaultOperatorAttribute.class)) {
+    Operator op = getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
+    
+    if (op == null) {
       throw new IllegalArgumentException(
-          "DefaultOperatorAttribute should be set on the QueryConfigHandler");
+          "StandardQueryConfigHandler.ConfigurationKeys.DEFAULT_OPERATOR should be set on the QueryConfigHandler");
     }
 
-    this.usingAnd = Operator.AND == getQueryConfigHandler().getAttribute(
-        DefaultOperatorAttribute.class).getOperator();
+    this.usingAnd = StandardQueryConfigHandler.Operator.AND == op;
 
     return super.process(queryTree);
 

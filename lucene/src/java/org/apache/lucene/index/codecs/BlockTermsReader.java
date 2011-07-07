@@ -92,7 +92,7 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public boolean equals(Object _other) {
       FieldAndTerm other = (FieldAndTerm) _other;
-      return other.field == field && term.bytesEquals(other.term);
+      return other.field.equals(field) && term.bytesEquals(other.term);
     }
 
     @Override
@@ -303,7 +303,7 @@ public class BlockTermsReader extends FieldsProducer {
          only valid if didIndexNext is true: */
       private BytesRef nextIndexTerm;
 
-      /* True after seek(TermState), do defer seeking.  If the app then
+      /* True after seekExact(TermState), do defer seeking.  If the app then
          calls next() (which is not "typical"), then we'll do the real seek */
       private boolean seekPending;
 
@@ -313,13 +313,13 @@ public class BlockTermsReader extends FieldsProducer {
       private int blocksSinceSeek;
 
       private byte[] termSuffixes;
-      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput(null);
+      private ByteArrayDataInput termSuffixesReader = new ByteArrayDataInput();
 
       /* Common prefix used for all terms in this block. */
       private int termBlockPrefix;
 
       private byte[] docFreqBytes;
-      private final ByteArrayDataInput freqReader = new ByteArrayDataInput(null);
+      private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
 
       public SegmentTermsEnum() throws IOException {
@@ -349,7 +349,7 @@ public class BlockTermsReader extends FieldsProducer {
       // return NOT_FOUND so it's a waste for us to fill in
       // the term that was actually NOT_FOUND
       @Override
-      public SeekStatus seek(final BytesRef target, final boolean useCache) throws IOException {
+      public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
 
         if (indexEnum == null) {
           throw new IllegalStateException("terms index was not loaded");
@@ -377,7 +377,7 @@ public class BlockTermsReader extends FieldsProducer {
           if (cachedState != null) {
             seekPending = true;
             //System.out.println("  cached!");
-            seek(target, cachedState);
+            seekExact(target, cachedState);
             //System.out.println("  term=" + term.utf8ToString());
             return SeekStatus.FOUND;
           }
@@ -689,30 +689,30 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
         //System.out.println("  state.docFreq=" + state.docFreq);
-        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, skipDocs, reuse);
+        final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, liveDocs, reuse);
         assert docsEnum != null;
         return docsEnum;
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         //System.out.println("BTR.d&p this=" + this);
         decodeMetaData();
         if (fieldInfo.omitTermFreqAndPositions) {
           return null;
         } else {
-          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, skipDocs, reuse);
+          DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse);
           //System.out.println("  return d&pe=" + dpe);
           return dpe;
         }
       }
 
       @Override
-      public void seek(BytesRef target, TermState otherState) throws IOException {
+      public void seekExact(BytesRef target, TermState otherState) throws IOException {
         //System.out.println("BTR.seek termState target=" + target.utf8ToString() + " " + target + " this=" + this);
         assert otherState != null && otherState instanceof BlockTermState;
         assert !doOrd || ((BlockTermState) otherState).ord < numTerms;
@@ -732,16 +732,13 @@ public class BlockTermsReader extends FieldsProducer {
       }
 
       @Override
-      public SeekStatus seek(long ord) throws IOException {
+      public void seekExact(long ord) throws IOException {
         //System.out.println("BTR.seek by ord ord=" + ord);
         if (indexEnum == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
 
-        if (ord >= numTerms) {
-          state.ord = numTerms-1;
-          return SeekStatus.END;
-        }
+        assert ord < numTerms;
 
         // TODO: if ord is in same terms block and
         // after current ord, we should avoid this seek just
@@ -769,9 +766,6 @@ public class BlockTermsReader extends FieldsProducer {
           left--;
           assert indexIsCurrent;
         }
-
-        // always found
-        return SeekStatus.FOUND;
       }
 
       @Override

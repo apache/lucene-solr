@@ -33,9 +33,11 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
-import org.apache.lucene.util.StringHelper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -75,9 +77,8 @@ public class FileFloatSource extends ValueSource {
 
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    int offset = 0;
+    final int off = readerContext.docBase;
     ReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
-    final int off = offset;
 
     final float[] arr = getCachedFloats(topLevelContext.reader);
     return new FloatDocValues(this) {
@@ -224,7 +225,7 @@ public class FileFloatSource extends ValueSource {
 
     BufferedReader r = new BufferedReader(new InputStreamReader(is));
 
-    String idName = StringHelper.intern(ffs.keyField.getName());
+    String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();
 
     // warning: lucene's termEnum.skipTo() is not optimized... it simply does a next()
@@ -244,7 +245,7 @@ public class FileFloatSource extends ValueSource {
       DocsEnum docsEnum = null;
 
       // removing deleted docs shouldn't matter
-      // final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      // final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
         int delimIndex = line.indexOf(delimiter);
@@ -268,7 +269,7 @@ public class FileFloatSource extends ValueSource {
           continue;  // go to next line in file.. leave values as default.
         }
 
-        if (termsEnum.seek(internalKey, false) != TermsEnum.SeekStatus.FOUND) {
+        if (!termsEnum.seekExact(internalKey, false)) {
           if (notFoundCount<10) {  // collect first 10 not found for logging
             notFound.add(key);
           }

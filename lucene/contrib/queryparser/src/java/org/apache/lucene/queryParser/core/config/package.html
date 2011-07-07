@@ -33,14 +33,7 @@ See {@link org.apache.lucene.queryParser.standard.config.StandardQueryConfigHand
 implementation.
 </p>
 <p>
-{@link org.apache.lucene.queryParser.core.config.FieldConfig} and {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}
- should use {@link org.apache.lucene.util.Attribute} to store all attributes
-required by the config implementation. See <tt>org.apache.lucene.queryParser.standard.config.*Attribute</tt>
-for reference implementation.
-</p>
-<p>
-The {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}, {@link org.apache.lucene.queryParser.core.config.FieldConfig},
- and {@link org.apache.lucene.util.Attribute}s are used in the processors to access config
+The {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler} and {@link org.apache.lucene.queryParser.core.config.FieldConfig} are used in the processors to access config
 information in a flexible and independent way.
 See {@link org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor} for a 
 reference implementation.

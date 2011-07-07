@@ -81,12 +81,17 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
         case BYTES_FIXED_STRAIGHT:
         case FLOAT_32:
         case FLOAT_64:
-        case INTS:
+        case VAR_INTS:
+        case FIXED_INTS_16:
+        case FIXED_INTS_32:
+        case FIXED_INTS_64:
+        case FIXED_INTS_8:
           files.add(IndexFileNames.segmentFileName(filename, "",
               Writer.DATA_EXTENSION));
           assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
               Writer.DATA_EXTENSION));
           break;
+      
         default:
           assert false;
         }

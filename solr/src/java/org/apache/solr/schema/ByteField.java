@@ -17,14 +17,14 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.ByteFieldSource;
 
 import java.io.IOException;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class ByteField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name, SortField.BYTE, reverse);
+    return new SortField(field.name, SortField.Type.BYTE, reverse);
   }
 
   @Override

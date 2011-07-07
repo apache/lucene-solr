@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.CompoundFileReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -37,6 +36,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -178,8 +178,8 @@ public class PreFlexFields extends FieldsProducer {
         // terms reader with index, the segment has switched
         // to CFS
 
-        if (!(dir instanceof CompoundFileReader)) {
-          dir0 = cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
+        if (!(dir instanceof CompoundFileDirectory)) {
+          dir0 = cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         } else {
           dir0 = dir;
         }
@@ -271,11 +271,11 @@ public class PreFlexFields extends FieldsProducer {
   private class PreTermsEnum extends TermsEnum {
     private SegmentTermEnum termEnum;
     private FieldInfo fieldInfo;
+    private String internedFieldName;
     private boolean skipNext;
     private BytesRef current;
 
     private SegmentTermEnum seekTermEnum;
-    private Term protoTerm;
     
     private static final byte UTF8_NON_BMP_LEAD = (byte) 0xf0;
     private static final byte UTF8_HIGH_BMP_LEAD = (byte) 0xee;
@@ -335,7 +335,7 @@ public class PreFlexFields extends FieldsProducer {
       }
 
       // Seek "back":
-      getTermsDict().seekEnum(te, protoTerm.createTerm(term), true);
+      getTermsDict().seekEnum(te, new Term(fieldInfo.name, term), true);
 
       // Test if the term we seek'd to in fact found a
       // surrogate pair at the same position as the E:
@@ -344,7 +344,7 @@ public class PreFlexFields extends FieldsProducer {
       // Cannot be null (or move to next field) because at
       // "worst" it'd seek to the same term we are on now,
       // unless we are being called from seek
-      if (t2 == null || t2.field() != fieldInfo.name) {
+      if (t2 == null || t2.field() != internedFieldName) {
         return false;
       }
 
@@ -462,13 +462,13 @@ public class PreFlexFields extends FieldsProducer {
           
         // TODO: more efficient seek?  can we simply swap
         // the enums?
-        getTermsDict().seekEnum(termEnum, protoTerm.createTerm(scratchTerm), true);
+        getTermsDict().seekEnum(termEnum, new Term(fieldInfo.name, scratchTerm), true);
 
         final Term t2 = termEnum.term();
 
         // We could hit EOF or different field since this
         // was a seek "forward":
-        if (t2 != null && t2.field() == fieldInfo.name) {
+        if (t2 != null && t2.field() == internedFieldName) {
 
           if (DEBUG_SURROGATES) {
             System.out.println("      got term=" + UnicodeUtil.toHexString(t2.text()) + " " + t2.bytes());
@@ -553,7 +553,7 @@ public class PreFlexFields extends FieldsProducer {
       // current term.
 
       // TODO: can we avoid this copy?
-      if (termEnum.term() == null || termEnum.term().field() != fieldInfo.name) {
+      if (termEnum.term() == null || termEnum.term().field() != internedFieldName) {
         scratchTerm.length = 0;
       } else {
         scratchTerm.copy(termEnum.term().bytes());
@@ -638,7 +638,7 @@ public class PreFlexFields extends FieldsProducer {
 
           // Seek "forward":
           // TODO: more efficient seek?
-          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(scratchTerm), true);
+          getTermsDict().seekEnum(seekTermEnum, new Term(fieldInfo.name, scratchTerm), true);
 
           scratchTerm.bytes[upTo] = scratch[0];
           scratchTerm.bytes[upTo+1] = scratch[1];
@@ -660,7 +660,7 @@ public class PreFlexFields extends FieldsProducer {
           // EOF or a different field:
           boolean matches;
 
-          if (t2 != null && t2.field() == fieldInfo.name) {
+          if (t2 != null && t2.field() == internedFieldName) {
             final BytesRef b2 = t2.bytes();
             assert b2.offset == 0;
             if (b2.length >= upTo+3 && isHighBMPChar(b2.bytes, upTo)) {
@@ -714,20 +714,21 @@ public class PreFlexFields extends FieldsProducer {
     void reset(FieldInfo fieldInfo) throws IOException {
       //System.out.println("pff.reset te=" + termEnum);
       this.fieldInfo = fieldInfo;
-      protoTerm = new Term(fieldInfo.name);
+      internedFieldName = fieldInfo.name.intern();
+      final Term term = new Term(internedFieldName);
       if (termEnum == null) {
-        termEnum = getTermsDict().terms(protoTerm);
-        seekTermEnum = getTermsDict().terms(protoTerm);
+        termEnum = getTermsDict().terms(term);
+        seekTermEnum = getTermsDict().terms(term);
         //System.out.println("  term=" + termEnum.term());
       } else {
-        getTermsDict().seekEnum(termEnum, protoTerm, true);
+        getTermsDict().seekEnum(termEnum, term, true);
       }
       skipNext = true;
 
       unicodeSortOrder = sortTermsByUnicode();
 
       final Term t = termEnum.term();
-      if (t != null && t.field() == fieldInfo.name) {
+      if (t != null && t.field() == internedFieldName) {
         newSuffixStart = 0;
         prevTerm.length = 0;
         surrogateDance();
@@ -746,7 +747,7 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(long ord) throws IOException {
+    public void seekExact(long ord) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -756,13 +757,13 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
       if (DEBUG_SURROGATES) {
         System.out.println("TE.seek target=" + UnicodeUtil.toHexString(term.utf8ToString()));
       }
       skipNext = false;
       final TermInfosReader tis = getTermsDict();
-      final Term t0 = protoTerm.createTerm(term);
+      final Term t0 = new Term(fieldInfo.name, term);
 
       assert termEnum != null;
 
@@ -770,7 +771,7 @@ public class PreFlexFields extends FieldsProducer {
 
       final Term t = termEnum.term();
 
-      if (t != null && t.field() == fieldInfo.name && term.bytesEquals(t.bytes())) {
+      if (t != null && t.field() == internedFieldName && term.bytesEquals(t.bytes())) {
         // If we found an exact match, no need to do the
         // surrogate dance
         if (DEBUG_SURROGATES) {
@@ -778,7 +779,7 @@ public class PreFlexFields extends FieldsProducer {
         }
         current = t.bytes();
         return SeekStatus.FOUND;
-      } else if (t == null || t.field() != fieldInfo.name) {
+      } else if (t == null || t.field() != internedFieldName) {
 
         // TODO: maybe we can handle this like the next()
         // into null?  set term as prevTerm then dance?
@@ -841,8 +842,9 @@ public class PreFlexFields extends FieldsProducer {
         surrogateDance();
 
         final Term t2 = termEnum.term();
-        if (t2 == null || t2.field() != fieldInfo.name) {
-          assert t2 == null || !t2.field().equals(fieldInfo.name); // make sure fields are in fact interned
+        if (t2 == null || t2.field() != internedFieldName) {
+          // PreFlex codec interns field names; verify:
+          assert t2 == null || !t2.field().equals(internedFieldName);
           current = null;
           return SeekStatus.END;
         } else {
@@ -886,7 +888,8 @@ public class PreFlexFields extends FieldsProducer {
         skipNext = false;
         if (termEnum.term() == null) {
           return null;
-        } else if (termEnum.term().field() != fieldInfo.name) {
+        // PreFlex codec interns field names:
+        } else if (termEnum.term().field() != internedFieldName) {
           return null;
         } else {
           return current = termEnum.term().bytes();
@@ -896,15 +899,16 @@ public class PreFlexFields extends FieldsProducer {
       // TODO: can we use STE's prevBuffer here?
       prevTerm.copy(termEnum.term().bytes());
 
-      if (termEnum.next() && termEnum.term().field() == fieldInfo.name) {
+      if (termEnum.next() && termEnum.term().field() == internedFieldName) {
         newSuffixStart = termEnum.newSuffixStart;
         if (DEBUG_SURROGATES) {
           System.out.println("  newSuffixStart=" + newSuffixStart);
         }
         surrogateDance();
         final Term t = termEnum.term();
-        if (t == null || t.field() != fieldInfo.name) {
-          assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
+        if (t == null || t.field() != internedFieldName) {
+          // PreFlex codec interns field names; verify:
+          assert t == null || !t.field().equals(internedFieldName);
           current = null;
         } else {
           current = t.bytes();
@@ -921,8 +925,9 @@ public class PreFlexFields extends FieldsProducer {
         surrogateDance();
         
         final Term t = termEnum.term();
-        if (t == null || t.field() != fieldInfo.name) {
-          assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
+        if (t == null || t.field() != internedFieldName) {
+          // PreFlex codec interns field names; verify:
+          assert t == null || !t.field().equals(internedFieldName);
           return null;
         } else {
           current = t.bytes();
@@ -947,7 +952,7 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
       PreDocsEnum docsEnum;
       if (reuse == null || !(reuse instanceof PreDocsEnum)) {
         docsEnum = new PreDocsEnum();
@@ -957,11 +962,11 @@ public class PreFlexFields extends FieldsProducer {
           docsEnum = new PreDocsEnum();
         }
       }
-      return docsEnum.reset(termEnum, skipDocs);
+      return docsEnum.reset(termEnum, liveDocs);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       PreDocsAndPositionsEnum docsPosEnum;
       if (fieldInfo.omitTermFreqAndPositions) {
         return null;
@@ -973,7 +978,7 @@ public class PreFlexFields extends FieldsProducer {
           docsPosEnum = new PreDocsAndPositionsEnum();
         }
       }
-      return docsPosEnum.reset(termEnum, skipDocs);        
+      return docsPosEnum.reset(termEnum, liveDocs);        
     }
   }
 
@@ -988,8 +993,8 @@ public class PreFlexFields extends FieldsProducer {
       return freqStream;
     }
 
-    public PreDocsEnum reset(SegmentTermEnum termEnum, Bits skipDocs) throws IOException {
-      docs.setSkipDocs(skipDocs);
+    public PreDocsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
+      docs.setLiveDocs(liveDocs);
       docs.seek(termEnum);
       return this;
     }
@@ -1044,8 +1049,8 @@ public class PreFlexFields extends FieldsProducer {
       return freqStream;
     }
 
-    public DocsAndPositionsEnum reset(SegmentTermEnum termEnum, Bits skipDocs) throws IOException {
-      pos.setSkipDocs(skipDocs);
+    public DocsAndPositionsEnum reset(SegmentTermEnum termEnum, Bits liveDocs) throws IOException {
+      pos.setLiveDocs(liveDocs);
       pos.seek(termEnum);
       return this;
     }

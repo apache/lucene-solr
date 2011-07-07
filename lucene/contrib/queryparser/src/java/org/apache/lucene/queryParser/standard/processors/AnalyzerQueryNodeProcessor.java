@@ -40,14 +40,14 @@ import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.AnalyzerAttribute;
-import org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 
 /**
- * This processor verifies if the attribute {@link AnalyzerQueryNodeProcessor}
+ * This processor verifies if {@link ConfigurationKeys#ANALYZER}
  * is defined in the {@link QueryConfigHandler}. If it is and the analyzer is
  * not <code>null</code>, it looks for every {@link FieldQueryNode} that is not
  * {@link WildcardQueryNode}, {@link FuzzyQueryNode} or
@@ -64,6 +64,7 @@ import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
  * If no term is returned by the analyzer a {@link NoTokenFoundQueryNode} object
  * is returned. <br/>
  * 
+ * @see ConfigurationKeys#ANALYZER
  * @see Analyzer
  * @see TokenStream
  */
@@ -79,24 +80,15 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
-
-    if (getQueryConfigHandler().hasAttribute(AnalyzerAttribute.class)) {
-
-      this.analyzer = getQueryConfigHandler().getAttribute(
-          AnalyzerAttribute.class).getAnalyzer();
-
+    Analyzer analyzer = getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);
+    
+    if (analyzer != null) {
+      this.analyzer = analyzer;
       this.positionIncrementsEnabled = false;
+      Boolean positionIncrementsEnabled = getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
 
-      if (getQueryConfigHandler().hasAttribute(
-          PositionIncrementsAttribute.class)) {
-
-        if (getQueryConfigHandler().getAttribute(
-            PositionIncrementsAttribute.class).isPositionIncrementsEnabled()) {
-
-          this.positionIncrementsEnabled = true;
-
-        }
-
+      if (positionIncrementsEnabled != null) {
+          this.positionIncrementsEnabled = positionIncrementsEnabled;
       }
 
       if (this.analyzer != null) {

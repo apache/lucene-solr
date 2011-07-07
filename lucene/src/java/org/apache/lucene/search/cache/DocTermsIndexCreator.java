@@ -34,7 +34,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -70,7 +69,6 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
   @Override
   public DocTermsIndex create(IndexReader reader) throws IOException
   {
-    String field = StringHelper.intern(this.field); // TODO?? necessary?
     Terms terms = MultiFields.getTerms(reader, field);
 
     final boolean fasterButMoreRAM = hasOption(FASTER_BUT_MORE_RAM);
@@ -241,13 +239,13 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
+      public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
         int low = 1;
         int high = numOrd-1;
         
         while (low <= high) {
           int mid = (low + high) >>> 1;
-          seek(mid);
+          seekExact(mid);
           int cmp = term.compareTo(text);
 
           if (cmp < 0)
@@ -261,19 +259,17 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
         if (low == numOrd) {
           return SeekStatus.END;
         } else {
-          seek(low);
+          seekExact(low);
           return SeekStatus.NOT_FOUND;
         }
       }
 
-      @Override
-      public SeekStatus seek(long ord) throws IOException {
+      public void seekExact(long ord) throws IOException {
         assert(ord >= 0 && ord <= numOrd);
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
         currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
         end = blockEnds[currentBlockNumber];
         currentOrd = (int)ord;
-        return SeekStatus.FOUND;
       }
 
       @Override
@@ -326,12 +322,12 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         throw new UnsupportedOperationException();
       }
 
@@ -341,9 +337,9 @@ public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
       }
 
       @Override
-      public void seek(BytesRef term, TermState state) throws IOException {
+      public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null && state instanceof OrdTermState;
-        this.seek(((OrdTermState)state).ord);
+        this.seekExact(((OrdTermState)state).ord);
       }
 
       @Override

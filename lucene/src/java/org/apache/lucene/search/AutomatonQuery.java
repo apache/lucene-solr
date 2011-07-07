@@ -117,7 +117,7 @@ public class AutomatonQuery extends MultiTermQuery {
         factory = new TermsEnumFactory() {
           @Override
           protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return new SingleTermsEnum(terms.iterator(), term.createTerm(singleton));
+            return new SingleTermsEnum(terms.iterator(), new Term(field, singleton));
           }
         };
       } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
@@ -126,7 +126,7 @@ public class AutomatonQuery extends MultiTermQuery {
         factory = new TermsEnumFactory() {
           @Override
           protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return new PrefixTermsEnum(terms.iterator(), term.createTerm(commonPrefix));
+            return new PrefixTermsEnum(terms.iterator(), new Term(field, commonPrefix));
           }
         };
       } else {

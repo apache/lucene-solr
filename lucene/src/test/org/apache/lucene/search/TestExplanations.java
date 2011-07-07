@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,6 +31,8 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Tests primitive queries (ie: that rewrite to themselves) to
@@ -47,29 +47,28 @@ import org.apache.lucene.util.LuceneTestCase;
  * @see "Subclasses for actual tests"
  */
 public class TestExplanations extends LuceneTestCase {
-  protected IndexSearcher searcher;
-  protected IndexReader reader;
-  protected Directory directory;
+  protected static IndexSearcher searcher;
+  protected static IndexReader reader;
+  protected static Directory directory;
   
   public static final String KEY = "KEY";
   // boost on this field is the same as the iterator for the doc
   public static final String FIELD = "field";
   // same contents, but no field boost
   public static final String ALTFIELD = "alt";
-  public static final QueryParser qp =
-    new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
-
-  @Override
-  public void tearDown() throws Exception {
+  
+  @AfterClass
+  public static void afterClassTestExplanations() throws Exception {
     searcher.close();
+    searcher = null;
     reader.close();
+    reader = null;
     directory.close();
-    super.tearDown();
+    directory = null;
   }
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
@@ -86,21 +85,12 @@ public class TestExplanations extends LuceneTestCase {
     searcher = newSearcher(reader);
   }
 
-  protected String[] docFields = {
+  protected static final String[] docFields = {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3 zz",
     "w1 xx w2 yy w3",
     "w1 w3 xx w2 yy w3 zz"
   };
-
-  public Query makeQuery(String queryText) throws ParseException {
-    return qp.parse(queryText);
-  }
-
-  /** check the expDocNrs first, then check the query (and the explanations) */
-  public void qtest(String queryText, int[] expDocNrs) throws Exception {
-    qtest(makeQuery(queryText), expDocNrs);
-  }
   
   /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
@@ -116,15 +106,6 @@ public class TestExplanations extends LuceneTestCase {
   public void bqtest(Query q, int[] expDocNrs) throws Exception {
     qtest(reqB(q), expDocNrs);
     qtest(optB(q), expDocNrs);
-  }
-  /**
-   * Tests a query using qtest after wrapping it with both optB and reqB
-   * @see #qtest
-   * @see #reqB
-   * @see #optB
-   */
-  public void bqtest(String queryText, int[] expDocNrs) throws Exception {
-    bqtest(makeQuery(queryText), expDocNrs);
   }
   
   /** 
@@ -214,27 +195,13 @@ public class TestExplanations extends LuceneTestCase {
    * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
    * with a second prohibited clause which will never match anything
    */
-  public Query optB(String q) throws Exception {
-    return optB(makeQuery(q));
-  }
-  /**
-   * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
-   * with a second prohibited clause which will never match anything
-   */
   public Query optB(Query q) throws Exception {
     BooleanQuery bq = new BooleanQuery(true);
     bq.add(q, BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
     return bq;
   }
-  
-  /**
-   * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
-   * with a second optional clause which will match everything
-   */
-  public Query reqB(String q) throws Exception {
-    return reqB(makeQuery(q));
-  }
+
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
    * with a second optional clause which will match everything

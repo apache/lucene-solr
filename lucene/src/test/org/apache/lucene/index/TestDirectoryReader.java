@@ -166,15 +166,15 @@ public class TestDirectoryReader extends LuceneTestCase {
 
     // test mixing up TermDocs and TermEnums from different readers.
     TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator();
-    te2.seek(new BytesRef("wow"));
+    te2.seekCeil(new BytesRef("wow"));
     DocsEnum td = MultiFields.getTermDocsEnum(mr2,
-                                              MultiFields.getDeletedDocs(mr2),
+                                              MultiFields.getLiveDocs(mr2),
                                               "body",
                                               te2.term());
 
     TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
-    te3.seek(new BytesRef("wow"));
-    td = te3.docs(MultiFields.getDeletedDocs(mr3),
+    te3.seekCeil(new BytesRef("wow"));
+    td = te3.docs(MultiFields.getLiveDocs(mr3),
                   td);
     
     int ret = 0;

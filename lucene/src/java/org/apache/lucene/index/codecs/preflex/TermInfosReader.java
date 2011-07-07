@@ -18,13 +18,15 @@ package org.apache.lucene.index.codecs.preflex;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 
@@ -189,7 +191,17 @@ public final class TermInfosReader {
     }
     return resources;
   }
+  
+  private static final Comparator<BytesRef> legacyComparator = 
+    BytesRef.getUTF8SortedAsUTF16Comparator();
 
+  private final int compareAsUTF16(Term term1, Term term2) {
+    if (term1.field().equals(term2.field())) {
+      return legacyComparator.compare(term1.bytes(), term2.bytes());
+    } else {
+      return term1.field().compareTo(term2.field());
+    }
+  }
 
   /** Returns the offset of the greatest index entry which is less than or equal to term.*/
   private int getIndexOffset(Term term) {
@@ -199,7 +211,7 @@ public final class TermInfosReader {
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
       assert indexTerms[mid] != null : "indexTerms = " + indexTerms.length + " mid=" + mid;
-      int delta = term.compareToUTF16(indexTerms[mid]);
+      int delta = compareAsUTF16(term, indexTerms[mid]);
       if (delta < 0)
 	hi = mid - 1;
       else if (delta > 0)
@@ -257,16 +269,16 @@ public final class TermInfosReader {
 
     // optimize sequential access: first try scanning cached enum w/o seeking
     if (enumerator.term() != null                 // term is at or past current
-	&& ((enumerator.prev() != null && term.compareToUTF16(enumerator.prev())> 0)
-	    || term.compareToUTF16(enumerator.term()) >= 0)) {
+	&& ((enumerator.prev() != null && compareAsUTF16(term, enumerator.prev())> 0)
+	    || compareAsUTF16(term, enumerator.term()) >= 0)) {
       int enumOffset = (int)(enumerator.position/totalIndexInterval)+1;
       if (indexTerms.length == enumOffset	  // but before end of block
-    || term.compareToUTF16(indexTerms[enumOffset]) < 0) {
+          || compareAsUTF16(term, indexTerms[enumOffset]) < 0) {
        // no need to seek
 
         final TermInfo ti;
         int numScans = enumerator.scanTo(term);
-        if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
+        if (enumerator.term() != null && compareAsUTF16(term, enumerator.term()) == 0) {
           ti = enumerator.termInfo;
           if (numScans > 1) {
             // we only  want to put this TermInfo into the cache if
@@ -304,7 +316,7 @@ public final class TermInfosReader {
     enumerator.scanTo(term);
     final TermInfo ti;
 
-    if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
+    if (enumerator.term() != null && compareAsUTF16(term, enumerator.term()) == 0) {
       ti = enumerator.termInfo;
       if (tiOrd == null) {
         if (useCache) {
@@ -361,9 +373,9 @@ public final class TermInfosReader {
     SegmentTermEnum enumerator = getThreadResources().termEnum;
     seekEnum(enumerator, indexOffset);
 
-    while(term.compareToUTF16(enumerator.term()) > 0 && enumerator.next()) {}
+    while(compareAsUTF16(term, enumerator.term()) > 0 && enumerator.next()) {}
 
-    if (term.compareToUTF16(enumerator.term()) == 0)
+    if (compareAsUTF16(term, enumerator.term()) == 0)
       return enumerator.position;
     else
       return -1;

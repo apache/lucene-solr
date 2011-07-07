@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -53,8 +54,8 @@ final class SegmentCoreReaders {
   
   FieldsReader fieldsReaderOrig;
   TermVectorsReader termVectorsReaderOrig;
-  CompoundFileReader cfsReader;
-  CompoundFileReader storeCFSReader;
+  CompoundFileDirectory cfsReader;
+  CompoundFileDirectory storeCFSReader;
 
   
   
@@ -74,7 +75,7 @@ final class SegmentCoreReaders {
     try {
       Directory dir0 = dir;
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
+        cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         dir0 = cfsReader;
       }
       cfsDir = dir0;
@@ -162,7 +163,7 @@ final class SegmentCoreReaders {
       if (si.getDocStoreOffset() != -1) {
         if (si.getDocStoreIsCompoundFile()) {
           assert storeCFSReader == null;
-          storeCFSReader = new CompoundFileReader(dir,
+          storeCFSReader = dir.openCompoundInput(
               IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
               context);
           storeDir = storeCFSReader;
@@ -176,7 +177,7 @@ final class SegmentCoreReaders {
         // was not used, but then we are asked to open doc
         // stores after the segment has switched to CFS
         if (cfsReader == null) {
-          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
+          cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         }
         storeDir = cfsReader;
         assert storeDir != null;
@@ -198,5 +199,10 @@ final class SegmentCoreReaders {
         termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, context, si.getDocStoreOffset(), si.docCount);
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(owner=" + owner + ")";
   }
 }

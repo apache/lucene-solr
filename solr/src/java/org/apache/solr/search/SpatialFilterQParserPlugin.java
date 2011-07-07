@@ -35,7 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * <ul>
  * <li>sfield - The field to filter on. Required.</li>
  * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
- * <li>d - The distance in km.  Requited.</li>
+ * <li>d - The distance in km.  Required.</li>
  * </ul>
  * The distance measure used currently depends on the FieldType.  LatLonType defaults to using haversine, PointType defaults to Euclidean (2-norm).
  *

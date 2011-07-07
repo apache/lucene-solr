@@ -30,7 +30,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
@@ -102,9 +101,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           return null;
         }
         if (scratch.startsWith(FIELD)) {
-          String field = StringHelper.intern(new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, "UTF-8"));
-          current = field;
-          return field;
+          return current = new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, "UTF-8");
         }
       }
     }
@@ -131,7 +128,23 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+
+      final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekExact(text);
+      if (result != null) {
+        PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>> pair1 = result.output;
+        PairOutputs.Pair<Long,Long> pair2 = pair1.output2;
+        docsStart = pair1.output1;
+        docFreq = pair2.output1.intValue();
+        totalTermFreq = pair2.output2;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekCeil(text);
@@ -183,7 +196,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seek(long ord) {
+    public void seekExact(long ord) {
       throw new UnsupportedOperationException();
     }
 
@@ -198,18 +211,18 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
  
     @Override
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
       SimpleTextDocsEnum docsEnum;
       if (reuse != null && reuse instanceof SimpleTextDocsEnum && ((SimpleTextDocsEnum) reuse).canReuse(in)) {
         docsEnum = (SimpleTextDocsEnum) reuse;
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, skipDocs, omitTF);
+      return docsEnum.reset(docsStart, liveDocs, omitTF);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       if (omitTF) {
         return null;
       }
@@ -220,7 +233,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
-      return docsAndPositionsEnum.reset(docsStart, skipDocs);
+      return docsAndPositionsEnum.reset(docsStart, liveDocs);
     }
     
     @Override
@@ -235,7 +248,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private boolean omitTF;
     private int docID;
     private int tf;
-    private Bits skipDocs;
+    private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
     
@@ -248,8 +261,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsEnum reset(long fp, Bits skipDocs, boolean omitTF) throws IOException {
-      this.skipDocs = skipDocs;
+    public SimpleTextDocsEnum reset(long fp, Bits liveDocs, boolean omitTF) throws IOException {
+      this.liveDocs = liveDocs;
       in.seek(fp);
       this.omitTF = omitTF;
       if (omitTF) {
@@ -279,7 +292,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         final long lineStart = in.getFilePointer();
         readLine(in, scratch);
         if (scratch.startsWith(DOC)) {
-          if (!first && (skipDocs == null || !skipDocs.get(docID))) {
+          if (!first && (liveDocs == null || liveDocs.get(docID))) {
             in.seek(lineStart);
             if (!omitTF) {
               tf = termFreq;
@@ -296,7 +309,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           // skip
         } else {
           assert scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.startsWith(END): "scratch=" + scratch.utf8ToString();
-          if (!first && (skipDocs == null || !skipDocs.get(docID))) {
+          if (!first && (liveDocs == null || liveDocs.get(docID))) {
             in.seek(lineStart);
             if (!omitTF) {
               tf = termFreq;
@@ -321,7 +334,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final IndexInput in;
     private int docID;
     private int tf;
-    private Bits skipDocs;
+    private Bits liveDocs;
     private final BytesRef scratch = new BytesRef(10);
     private final BytesRef scratch2 = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
@@ -338,8 +351,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
       return in == inStart;
     }
 
-    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits skipDocs) {
-      this.skipDocs = skipDocs;
+    public SimpleTextDocsAndPositionsEnum reset(long fp, Bits liveDocs) {
+      this.liveDocs = liveDocs;
       nextDocStart = fp;
       return this;
     }
@@ -363,7 +376,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
         final long lineStart = in.getFilePointer();
         readLine(in, scratch);
         if (scratch.startsWith(DOC)) {
-          if (!first && (skipDocs == null || !skipDocs.get(docID))) {
+          if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
             return docID;
@@ -379,7 +392,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           // skip
         } else {
           assert scratch.startsWith(TERM) || scratch.startsWith(FIELD) || scratch.startsWith(END);
-          if (!first && (skipDocs == null || !skipDocs.get(docID))) {
+          if (!first && (liveDocs == null || liveDocs.get(docID))) {
             nextDocStart = lineStart;
             in.seek(posStart);
             return docID;

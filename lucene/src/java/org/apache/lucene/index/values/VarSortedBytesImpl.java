@@ -28,11 +28,13 @@ import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
@@ -57,9 +59,7 @@ class VarSortedBytesImpl {
     private int[] docToEntry;
     private final Comparator<BytesRef> comp;
 
-    private final BytesRefHash hash = new BytesRefHash(pool,
-        BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
-            BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
+    private final BytesRefHash hash; 
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         AtomicLong bytesUsed, IOContext context) throws IOException {
@@ -69,13 +69,14 @@ class VarSortedBytesImpl {
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
         Allocator allocator, AtomicLong bytesUsed, IOContext context) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, true,
-          new ByteBlockPool(allocator), bytesUsed, context);
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
+      this.hash = new BytesRefHash(new ByteBlockPool(allocator),
+          BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
+              BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
       this.comp = comp;
       docToEntry = new int[1];
       docToEntry[0] = -1;
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
-
     }
 
     @Override
@@ -100,14 +101,16 @@ class VarSortedBytesImpl {
     @Override
     public void finish(int docCount) throws IOException {
       final int count = hash.size();
+      final IndexOutput datOut = getDataOut();
+      long offset = 0;
+      long lastOffset = 0;
+      final int[] index = new int[count];
+      final long[] offsets = new long[count];
+      boolean success = false;
       try {
         final int[] sortedEntries = hash.sort(comp);
         // first dump bytes data, recording index & offset as
         // we go
-        long offset = 0;
-        long lastOffset = 0;
-        final int[] index = new int[count];
-        final long[] offsets = new long[count];
         for (int i = 0; i < count; i++) {
           final int e = sortedEntries[i];
           offsets[i] = offset;
@@ -119,7 +122,14 @@ class VarSortedBytesImpl {
           lastOffset = offset;
           offset += bytes.length;
         }
-
+        success = true;
+      } finally {
+        IOUtils.closeSafely(!success, datOut);
+        hash.close();
+      }
+      final IndexOutput idxOut = getIndexOut();
+      success = false;
+      try {
         // total bytes of data
         idxOut.writeLong(offset);
 
@@ -146,11 +156,12 @@ class VarSortedBytesImpl {
           offsetWriter.add(offsets[i]);
         }
         offsetWriter.finish();
+        success = true;
       } finally {
-        super.finish(docCount);
         bytesUsed.addAndGet((-docToEntry.length)
             * RamUsageEstimator.NUM_BYTES_INT);
-        hash.close();
+        docToEntry = null;
+        IOUtils.closeSafely(!success, idxOut);
       }
     }
   }

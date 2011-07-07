@@ -76,10 +76,9 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   }
 
   @Override
-  public Bits getDeletedDocs() {
-    return MultiFields.getDeletedDocs(in);
+  public Bits getLiveDocs() {
+    return MultiFields.getLiveDocs(in);
   }
-
   
   @Override
   public IndexReader[] getSequentialSubReaders() {

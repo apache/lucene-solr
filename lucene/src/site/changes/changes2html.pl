@@ -23,7 +23,6 @@
 
 use strict;
 use warnings;
-use LWP::Simple;
 
 my $project_info_url = 'https://issues.apache.org/jira/rest/api/2.0.alpha1/project/LUCENE';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
@@ -674,7 +673,9 @@ sub setup_release_dates {
            '2.4.0' => '2008-10-06',     '2.4.1' => '2009-03-09',
            '2.9.0' => '2009-09-23',     '2.9.1' => '2009-11-06',
            '3.0.0' => '2009-11-25');
-  my $project_info_json = get($project_info_url) || die "Unable to download $project_info_url";
+
+  my $project_info_json = get_url_contents($project_info_url);
+  
   my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
@@ -690,6 +691,21 @@ sub setup_release_dates {
   return %release_dates;
 }
 
+#
+# returns contents of the passed in url
+#
+sub get_url_contents {
+  my $url = shift;
+  my $tryWget = `wget --no-check-certificate -O - $url`;
+  if ($? eq 0) {
+    return $tryWget;
+  }
+  my $tryCurl = `curl $url`;
+  if ($? eq 0) {
+    return $tryCurl;
+  }
+  die "could not retrieve $url with either wget or curl!";
+}
 
 #
 # setup_month_regex

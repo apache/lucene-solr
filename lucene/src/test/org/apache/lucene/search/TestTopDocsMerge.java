@@ -133,16 +133,16 @@ public class TestTopDocsMerge extends LuceneTestCase {
     }
 
     final List<SortField> sortFields = new ArrayList<SortField>();
-    sortFields.add(new SortField("string", SortField.STRING, true));
-    sortFields.add(new SortField("string", SortField.STRING, false));
-    sortFields.add(new SortField("int", SortField.INT, true));
-    sortFields.add(new SortField("int", SortField.INT, false));
-    sortFields.add(new SortField("float", SortField.FLOAT, true));
-    sortFields.add(new SortField("float", SortField.FLOAT, false));
-    sortFields.add(new SortField(null, SortField.SCORE, true));
-    sortFields.add(new SortField(null, SortField.SCORE, false));
-    sortFields.add(new SortField(null, SortField.DOC, true));
-    sortFields.add(new SortField(null, SortField.DOC, false));
+    sortFields.add(new SortField("string", SortField.Type.STRING, true));
+    sortFields.add(new SortField("string", SortField.Type.STRING, false));
+    sortFields.add(new SortField("int", SortField.Type.INT, true));
+    sortFields.add(new SortField("int", SortField.Type.INT, false));
+    sortFields.add(new SortField("float", SortField.Type.FLOAT, true));
+    sortFields.add(new SortField("float", SortField.Type.FLOAT, false));
+    sortFields.add(new SortField(null, SortField.Type.SCORE, true));
+    sortFields.add(new SortField(null, SortField.Type.SCORE, false));
+    sortFields.add(new SortField(null, SortField.Type.DOC, true));
+    sortFields.add(new SortField(null, SortField.Type.DOC, false));
 
     final int[] docStarts = new int[subSearchers.length];
     int docBase = 0;

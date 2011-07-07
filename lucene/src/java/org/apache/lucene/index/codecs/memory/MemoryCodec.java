@@ -270,7 +270,7 @@ public class MemoryCodec extends Codec {
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
 
-    private Bits skipDocs;
+    private Bits liveDocs;
     private int docUpto;
     private int docID;
     private int freq;
@@ -286,14 +286,14 @@ public class MemoryCodec extends Codec {
       return omitTFAP == this.omitTFAP && storePayloads == this.storePayloads;
     }
     
-    public FSTDocsEnum reset(BytesRef bufferIn, Bits skipDocs, int numDocs) {
+    public FSTDocsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
       assert numDocs > 0;
       if (buffer.length < bufferIn.length - bufferIn.offset) {
         buffer = ArrayUtil.grow(buffer, bufferIn.length - bufferIn.offset);
       }
       in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
       System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
       docID = 0;
       docUpto = 0;
       payloadLen = 0;
@@ -340,7 +340,7 @@ public class MemoryCodec extends Codec {
           }
         }
 
-        if (skipDocs == null || !skipDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(docID)) {
           if (VERBOSE) System.out.println("    return docID=" + docID + " freq=" + freq);
           return docID;
         }
@@ -376,7 +376,7 @@ public class MemoryCodec extends Codec {
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
 
-    private Bits skipDocs;
+    private Bits liveDocs;
     private int docUpto;
     private int docID;
     private int freq;
@@ -397,7 +397,7 @@ public class MemoryCodec extends Codec {
       return omitTFAP == this.omitTFAP && storePayloads == this.storePayloads;
     }
     
-    public FSTDocsAndPositionsEnum reset(BytesRef bufferIn, Bits skipDocs, int numDocs) {
+    public FSTDocsAndPositionsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
       assert numDocs > 0;
       if (VERBOSE) {
         System.out.println("D&P reset bytes this=" + this);
@@ -410,7 +410,7 @@ public class MemoryCodec extends Codec {
       }
       in.reset(buffer, 0, bufferIn.length - bufferIn.offset);
       System.arraycopy(bufferIn.bytes, bufferIn.offset, buffer, 0, bufferIn.length - bufferIn.offset);
-      this.skipDocs = skipDocs;
+      this.liveDocs = liveDocs;
       docID = 0;
       docUpto = 0;
       payload.bytes = buffer;
@@ -447,7 +447,7 @@ public class MemoryCodec extends Codec {
           }
         }
 
-        if (skipDocs == null || !skipDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(docID)) {
           pos = 0;
           posPending = freq;
           if (VERBOSE) System.out.println("    return docID=" + docID + " freq=" + freq);
@@ -472,7 +472,7 @@ public class MemoryCodec extends Codec {
 
     @Override
     public int nextPosition() {
-      if (VERBOSE) System.out.println("    nextPos storePayloads=" + storePayloads);
+      if (VERBOSE) System.out.println("    nextPos storePayloads=" + storePayloads + " this=" + this);
       assert posPending > 0;
       posPending--;
       if (!storePayloads) {
@@ -489,6 +489,9 @@ public class MemoryCodec extends Codec {
         payload.offset = in.getPosition();
         in.skipBytes(payloadLength);
         payload.length = payloadLength;
+        // Necessary, in case caller changed the
+        // payload.bytes from prior call:
+        payload.bytes = buffer;
         payloadRetrieved = false;
       }
 
@@ -534,7 +537,8 @@ public class MemoryCodec extends Codec {
   private final static class FSTTermsEnum extends TermsEnum {
     private final FieldInfo field;
     private final BytesRefFSTEnum<BytesRef> fstEnum;
-    private final ByteArrayDataInput buffer = new ByteArrayDataInput(null);
+    private final ByteArrayDataInput buffer = new ByteArrayDataInput();
+    private boolean didDecode;
 
     private int docFreq;
     private long totalTermFreq;
@@ -545,20 +549,31 @@ public class MemoryCodec extends Codec {
       fstEnum = new BytesRefFSTEnum<BytesRef>(fst);
     }
 
-    private void readTermStats() throws IOException {
-      buffer.reset(current.output.bytes, 0, current.output.length);
-      docFreq = buffer.readVInt();
-      if (!field.omitTermFreqAndPositions) {
-        totalTermFreq = docFreq + buffer.readVLong();
-      } else {
-        totalTermFreq = 0;
+    private void decodeMetaData() throws IOException {
+      if (!didDecode) {
+        buffer.reset(current.output.bytes, 0, current.output.length);
+        docFreq = buffer.readVInt();
+        if (!field.omitTermFreqAndPositions) {
+          totalTermFreq = docFreq + buffer.readVLong();
+        } else {
+          totalTermFreq = 0;
+        }
+        current.output.offset = buffer.getPosition();
+        if (VERBOSE) System.out.println("  df=" + docFreq + " totTF=" + totalTermFreq + " offset=" + buffer.getPosition() + " len=" + current.output.length);
+        didDecode = true;
       }
-      current.output.offset = buffer.getPosition();
-      if (VERBOSE) System.out.println("  df=" + docFreq + " totTF=" + totalTermFreq + " offset=" + buffer.getPosition() + " len=" + current.output.length);
     }
 
     @Override
-    public SeekStatus seek(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+      if (VERBOSE) System.out.println("te.seekExact text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
+      current = fstEnum.seekExact(text);
+      didDecode = false;
+      return current != null;
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
       if (VERBOSE) System.out.println("te.seek text=" + field.name + ":" + text.utf8ToString() + " this=" + this);
       current = fstEnum.seekCeil(text);
       if (current == null) {
@@ -571,7 +586,8 @@ public class MemoryCodec extends Codec {
           }
         }
 
-        readTermStats();
+        didDecode = false;
+
         if (text.equals(current.input)) {
           if (VERBOSE) System.out.println("  found!");
           return SeekStatus.FOUND;
@@ -583,7 +599,8 @@ public class MemoryCodec extends Codec {
     }
     
     @Override
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      decodeMetaData();
       FSTDocsEnum docsEnum;
       if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
         docsEnum = new FSTDocsEnum(field.omitTermFreqAndPositions, field.storePayloads);
@@ -593,14 +610,15 @@ public class MemoryCodec extends Codec {
           docsEnum = new FSTDocsEnum(field.omitTermFreqAndPositions, field.storePayloads);
         }
       }
-      return docsEnum.reset(current.output, skipDocs, docFreq);
+      return docsEnum.reset(current.output, liveDocs, docFreq);
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       if (field.omitTermFreqAndPositions) {
         return null;
       }
+      decodeMetaData();
       FSTDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse == null || !(reuse instanceof FSTDocsAndPositionsEnum)) {
         docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.omitTermFreqAndPositions, field.storePayloads);
@@ -611,7 +629,7 @@ public class MemoryCodec extends Codec {
         }
       }
       if (VERBOSE) System.out.println("D&P reset this=" + this);
-      return docsAndPositionsEnum.reset(current.output, skipDocs, docFreq);
+      return docsAndPositionsEnum.reset(current.output, liveDocs, docFreq);
     }
 
     @Override
@@ -627,18 +645,20 @@ public class MemoryCodec extends Codec {
         if (VERBOSE) System.out.println("  END");
         return null;
       }
-      readTermStats();
+      didDecode = false;
       if (VERBOSE) System.out.println("  term=" + field.name + ":" + current.input.utf8ToString());
       return current.input;
     }
 
     @Override
-    public int docFreq() {
+    public int docFreq() throws IOException {
+      decodeMetaData();
       return docFreq;
     }
 
     @Override
-    public long totalTermFreq() {
+    public long totalTermFreq() throws IOException {
+      decodeMetaData();
       return totalTermFreq;
     }
 
@@ -648,7 +668,7 @@ public class MemoryCodec extends Codec {
     }
 
     @Override
-    public SeekStatus seek(long ord) {
+    public void seekExact(long ord) {
       // NOTE: we could add this...
       throw new UnsupportedOperationException();
     }
@@ -658,7 +678,6 @@ public class MemoryCodec extends Codec {
       // NOTE: we could add this...
       throw new UnsupportedOperationException();
     }
-
   }
 
   private final static class TermsReader extends Terms {

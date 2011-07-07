@@ -95,7 +95,7 @@ public class SrndTruncQuery extends SimpleTerm {
       try {
         TermsEnum termsEnum = terms.iterator();
 
-        TermsEnum.SeekStatus status = termsEnum.seek(prefixRef);
+        TermsEnum.SeekStatus status = termsEnum.seekCeil(prefixRef);
         BytesRef text;
         if (status == TermsEnum.SeekStatus.FOUND) {
           text = prefixRef;

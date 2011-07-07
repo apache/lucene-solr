@@ -28,7 +28,7 @@
     <orderEntry type="module" module-name="smartcn" />
     <orderEntry type="module" module-name="solr" />
     <orderEntry type="module" module-name="stempel" />
-    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene" />
   </component>
 </module>

@@ -108,9 +108,33 @@ public abstract class Directory implements Closeable {
    * implementation may ignore the buffer size.  Currently
    * the only Directory implementations that respect this
    * parameter are {@link FSDirectory} and {@link
-   * org.apache.lucene.index.CompoundFileReader}.
+   * CompoundFileDirectory}.
   */
   public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
+  
+  /** 
+   * Returns a {@link CompoundFileDirectory} capable of
+   * reading the Lucene compound file format.  
+   * <p>
+   * The default implementation returns 
+   * {@link DefaultCompoundFileDirectory}.
+   * @lucene.experimental
+   */
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new DefaultCompoundFileDirectory(this, name, context, false);
+  }
+  
+  /** 
+   * Returns a {@link CompoundFileDirectory} capable of
+   * writing the Lucene compound file format.  
+   * <p>
+   * The default implementation returns 
+   * {@link DefaultCompoundFileDirectory}.
+   * @lucene.experimental
+   */
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return new DefaultCompoundFileDirectory(this, name, context, true);
+  }
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
@@ -194,10 +218,12 @@ public abstract class Directory implements Closeable {
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
-    IndexOutput os = to.createOutput(dest, context);
-    IndexInput is = openInput(src, context);
+    IndexOutput os = null;
+    IndexInput is = null;
     IOException priorException = null;
     try {
+      os = to.createOutput(dest, context);
+      is = openInput(src, context);
       is.copyBytes(os, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
