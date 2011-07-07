@@ -1057,13 +1057,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   protected abstract void doSetNorm(int doc, String field, byte value)
           throws CorruptIndexException, IOException;
 
-  /** Returns the sum of all byte-encoded normalization factors (treated
-   * as unsigned) for the named field of every document.
-   *
-   * @lucene.experimental
-   */
-  public abstract long getSumOfNorms(String field) throws IOException;
-  
   /**
    * Returns {@link Fields} for this reader.
    * This method may return null if the reader has no

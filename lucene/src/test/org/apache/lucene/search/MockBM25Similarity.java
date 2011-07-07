@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
 
@@ -98,15 +99,14 @@ public class MockBM25Similarity extends Similarity {
     return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
   }
   
-  /** return avg doc length across the field (zero if the field has no norms */
+  /** return avg doc length across the field (or 1 if the codec does not store sumTotalTermFreq) */
   private float avgDocumentLength(IndexSearcher searcher, String field) throws IOException {
     if (!searcher.reader.hasNorms(field)) {
       return 0f;
     } else {
-      long normsum = searcher.reader.getSumOfNorms(field);
+      long sumTotalTermFreq = MultiFields.getTerms(searcher.reader, field).getSumTotalTermFreq();
       long maxdoc = searcher.reader.maxDoc();
-      int avgnorm = (int) (normsum / (double) maxdoc);
-      return decodeNormValue((byte)avgnorm);
+      return sumTotalTermFreq == -1 ? 1f : (float) (sumTotalTermFreq / (double) maxdoc);
     }
   }
 

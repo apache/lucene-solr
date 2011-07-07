@@ -69,7 +69,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   // optionally used for the .nrm file shared by multiple norms
   IndexInput singleNormStream;
   AtomicInteger singleNormRef;
-  boolean singleNormHasSum = false;
 
   SegmentCoreReaders core;
 
@@ -569,15 +568,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized long getSumOfNorms(String field) throws IOException {
-    ensureOpen();
-    SegmentNorms norm = norms.get(field);
-    if (norm == null) return 0; // not indexed, or norms not stored
-    norm.bytes(); // load norms if not loaded
-    return norm.sum;
-  }
-
-  @Override
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     SegmentNorms norm = norms.get(field);
@@ -587,15 +577,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
 
     normsDirty = true;
-    norm.setNormValue(doc, value);// set the value
-    // TODO: maybe we should update the norm sum here,
-    // but its probably ok not to: in general reader changes
-    // like deleting docs don't update docfreq, etc.
+    norm.copyOnWrite()[doc] = value;                    // set the value
   }
 
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
-    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header is read inside this method)
-    long oldSignleNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header is read inside this method)
+    long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (FieldInfo fi : core.fieldInfos) {
       if (norms.containsKey(fi.name)) {
@@ -614,14 +600,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
         boolean singleNormFile = IndexFileNames.matchesExtension(fileName, IndexFileNames.NORMS_EXTENSION);
         IndexInput normInput = null;
         long normSeek;
-        boolean hasSum = false;
-       
+
         if (singleNormFile) {
-          
+          normSeek = nextNormSeek;
           if (singleNormStream == null) {
             singleNormStream = d.openInput(fileName, readBufferSize);
-            
-            singleNormHasSum = SegmentNorms.readVersion(singleNormStream) <= SegmentNorms.NORM_VERSION_NORM_SUM;
             singleNormRef = new AtomicInteger(1);
           } else {
             singleNormRef.incrementAndGet();
@@ -630,35 +613,25 @@ public class SegmentReader extends IndexReader implements Cloneable {
           // they are only used in a synchronized context.
           // If this were to change in the future, a clone could be done here.
           normInput = singleNormStream;
-          hasSum = singleNormHasSum;
-          // if the single norms file has no sum we need to use the max doc to sum up the seek offset
-          // otherwise simply use the nextNormSeek
-          normSeek = hasSum ? nextNormSeek : oldSignleNormSeek;
         } else {
           normInput = d.openInput(fileName);
           // if the segment was created in 3.2 or after, we wrote the header for sure,
           // and don't need to do the sketchy file size check. otherwise, we check 
           // if the size is exactly equal to maxDoc to detect a headerless file.
           // NOTE: remove this check in Lucene 5.0!
-            String version = si.getVersion();
-            final boolean isUnversioned = 
-              (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
-              && normInput.length() == maxDoc();
-            if (isUnversioned) {
-              normSeek = 0;
-            } else {
-              normSeek = SegmentNorms.NORMS_HEADER.length;
-              byte readVersion = SegmentNorms.readVersion(normInput);
-              hasSum = readVersion <=  SegmentNorms.NORM_VERSION_NORM_SUM;
-            }
+          String version = si.getVersion();
+          final boolean isUnversioned = 
+            (version == null || StringHelper.getVersionComparator().compare(version, "3.2") < 0)
+            && normInput.length() == maxDoc();
+          if (isUnversioned) {
+            normSeek = 0;
+          } else {
+            normSeek = SegmentNorms.NORMS_HEADER.length;
+          }
         }
-        
-        norms.put(fi.name, new SegmentNorms(normInput, fi.number, normSeek, this, hasSum));
-        nextNormSeek += hasSum ? 8 + maxDoc: maxDoc; // increment also if some norms are separate
-        // sum this up for bwcompat the single norm file in a later field could be pre 4.0 
-        // but earlier fields could have the norms sum already so we need to use the max
-        // doc to find the right offset.
-        oldSignleNormSeek += maxDoc;
+
+        norms.put(fi.name, new SegmentNorms(normInput, fi.number, normSeek, this));
+        nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
   }

@@ -630,15 +630,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public long getSumOfNorms(String field) throws IOException {
-    ensureOpen();
-    long total = 0;
-    for (int i = 0; i < subReaders.length; i++)
-      total += subReaders[i].getSumOfNorms(field);
-    return total;
-  }
-  
-  @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     int i = readerIndex(n);                           // find segment num

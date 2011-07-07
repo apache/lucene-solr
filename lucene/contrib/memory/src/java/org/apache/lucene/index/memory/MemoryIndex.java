@@ -1212,11 +1212,6 @@ public class MemoryIndex {
       }
       return norms;
     }
-  
-    @Override
-    public long getSumOfNorms(String field) throws IOException {
-      return norms(field)[0] & 0xff;
-    }
 
     @Override
     protected void doSetNorm(int doc, String fieldName, byte value) {

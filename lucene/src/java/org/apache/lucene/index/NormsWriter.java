@@ -52,12 +52,11 @@ final class NormsWriter extends InvertedDocEndConsumer {
     IndexOutput normsOut = state.directory.createOutput(normsFileName);
     boolean success = false;
     try {
-      normsOut.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
+      normsOut.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);
 
       int normCount = 0;
 
       for (FieldInfo fi : state.fieldInfos) {
-        long sum = 0;
         final NormsWriterPerField toWrite = (NormsWriterPerField) fieldsToFlush.get(fi);
         int upto = 0;
         if (toWrite != null && toWrite.upto > 0) {
@@ -67,13 +66,12 @@ final class NormsWriter extends InvertedDocEndConsumer {
           for (; docID < state.numDocs; docID++) {
             if (upto < toWrite.upto && toWrite.docIDs[upto] == docID) {
               normsOut.writeByte(toWrite.norms[upto]);
-              sum += (toWrite.norms[upto] & 0xff);
               upto++;
             } else {
               normsOut.writeByte((byte) 0);
             }
           }
-          normsOut.writeLong(sum);
+
           // we should have consumed every norm
           assert upto == toWrite.upto;
 
@@ -83,12 +81,10 @@ final class NormsWriter extends InvertedDocEndConsumer {
           // Fill entire field with default norm:
           for(;upto<state.numDocs;upto++)
             normsOut.writeByte((byte) 0);
-          normsOut.writeLong(sum);
         }
-        
-        assert 8*normCount+4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (8*normCount+4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
+
+        assert 4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
-      
       success = true;
     } finally {
       IOUtils.closeSafely(!success, normsOut);

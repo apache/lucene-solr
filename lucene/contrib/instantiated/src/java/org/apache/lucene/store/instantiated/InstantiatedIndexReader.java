@@ -336,11 +336,6 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public long getSumOfNorms(String field) throws IOException {
-    throw new UnsupportedOperationException("not supported by InstantiatedIndexReader");
-  }
-
-  @Override
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
     if (uncommittedNormsByFieldNameAndDocumentNumber == null) {
       uncommittedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());

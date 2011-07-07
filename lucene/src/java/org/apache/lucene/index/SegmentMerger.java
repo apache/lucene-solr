@@ -632,7 +632,6 @@ final class SegmentMerger {
             output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
-          long sum = 0;
           for (IndexReader reader : readers) {
             final int maxDoc = reader.maxDoc();
             byte normBuffer[] = reader.norms(fi.name);
@@ -644,7 +643,6 @@ final class SegmentMerger {
             }
             if (!reader.hasDeletions()) {
               //optimized case for segments without deleted docs
-              sum += reader.getSumOfNorms(fi.name);
               output.writeBytes(normBuffer, maxDoc);
             } else {
               // this segment has deleted docs, so we have to
@@ -653,13 +651,11 @@ final class SegmentMerger {
               for (int k = 0; k < maxDoc; k++) {
                 if (liveDocs.get(k)) {
                   output.writeByte(normBuffer[k]);
-                  sum += (normBuffer[k] & 0xff);
                 }
               }
             }
             checkAbort.work(maxDoc);
           }
-          output.writeLong(sum);
         }
       }
       success = true;

@@ -24,6 +24,7 @@ import org.apache.lucene.document.IndexDocValuesField; // javadoc
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader; // javadoc
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Terms; // javadoc
 import org.apache.lucene.search.spans.SpanQuery; // javadoc
 import org.apache.lucene.util.SmallFloat; // javadoc
 import org.apache.lucene.util.TermContext;
@@ -57,10 +58,7 @@ import org.apache.lucene.util.TermContext;
  * for all purposes.
  * <p>
  * Many formulas require the use of average document length, which can be computed via a 
- * combination of {@link IndexReader#getSumOfNorms(String)} and {@link IndexReader#maxDoc()},
- * however the default SmallFloat encoding will not work well in this case (a linear encoding
- * such as a simple shift should be used instead), and mixing index-time boosts into the
- * normalization byte will skew the averages.
+ * combination of {@link Terms#getSumTotalTermFreq()} and {@link IndexReader#maxDoc()},
  * <p>
  * Because index-time boost is handled entirely at the application level anyway,
  * an application can alternatively store the index-time boost separately using an 
