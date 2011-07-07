@@ -460,6 +460,11 @@ New features
   (MB/sec) of all running merges, to reduce impact ongoing merging has
   on searching, NRT reopen time, etc.  (Mike McCandless)
 
+* LUCENE-2793: Directory#createOutput & Directory#openInput now accept an
+  IOContext instead of a buffer size to allow low level optimizations for 
+  different usecases like merging, flushing and reading.
+  (Simon Willnauer, Mike McCandless, Varun Thacker)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
