@@ -325,16 +325,12 @@ public class CommonsHttpSolrServer extends SolrServer
 
                   String charSet = null;
                   PartSource source = new PartSource() {
-                    @Override
                     public long getLength() {
                       return c.getSize();
                     }
-                      
                     public String getFileName() {
                       return c.getName();
                     }
-
-                    @Override
                     public InputStream createInputStream() throws IOException {
                       return c.getStream();
                     }
