@@ -10,7 +10,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries-contrib.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser-contrib.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/wordnet/wordnet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
