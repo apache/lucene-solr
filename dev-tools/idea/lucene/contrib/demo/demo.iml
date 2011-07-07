@@ -11,12 +11,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-<<<<<<< .working
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="lucene" />
-=======
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene" />
->>>>>>> .merge-right.r1143775
   </component>
 </module>
