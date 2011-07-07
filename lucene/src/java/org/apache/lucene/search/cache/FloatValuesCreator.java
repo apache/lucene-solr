@@ -61,8 +61,8 @@ public class FloatValuesCreator extends CachedArrayCreator<FloatValues>
   }
   
   @Override
-  public int getSortTypeID() {
-    return SortField.FLOAT;
+  public SortField.Type getSortType() {
+    return SortField.Type.FLOAT;
   }
 
 

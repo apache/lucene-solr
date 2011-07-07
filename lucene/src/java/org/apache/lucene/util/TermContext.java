@@ -91,7 +91,7 @@ public final class TermContext {
         final Terms terms = fields.terms(field);
         if (terms != null) {
           final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
-          if (SeekStatus.FOUND == termsEnum.seek(bytes, cache)) { 
+          if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
             perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           }

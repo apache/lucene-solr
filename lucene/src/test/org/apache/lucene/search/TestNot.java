@@ -17,11 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,9 +44,11 @@ public class TestNot extends LuceneTestCase {
     IndexReader reader = writer.getReader();
 
     IndexSearcher searcher = newSearcher(reader);
-      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
-    Query query = parser.parse("a NOT b");
-    //System.out.println(query);
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("field", "b")), BooleanClause.Occur.MUST_NOT);
+
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     writer.close();

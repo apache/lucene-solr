@@ -73,7 +73,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     
     IndexReader reader = writer.getReader();
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
-                                                                          MultiFields.getDeletedDocs(reader),
+                                                                          MultiFields.getLiveDocs(reader),
                                                                           "preanalyzed",
                                                                           new BytesRef("term1"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -81,7 +81,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(0, termPositions.nextPosition());
 
     termPositions = MultiFields.getTermPositionsEnum(reader,
-                                                     MultiFields.getDeletedDocs(reader),
+                                                     MultiFields.getLiveDocs(reader),
                                                      "preanalyzed",
                                                      new BytesRef("term2"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -90,7 +90,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(3, termPositions.nextPosition());
     
     termPositions = MultiFields.getTermPositionsEnum(reader,
-                                                     MultiFields.getDeletedDocs(reader),
+                                                     MultiFields.getLiveDocs(reader),
                                                      "preanalyzed",
                                                      new BytesRef("term3"));
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);

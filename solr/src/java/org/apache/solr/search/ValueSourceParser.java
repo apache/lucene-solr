@@ -18,6 +18,13 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.BoostedQuery;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.BoolDocValues;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.queries.function.docvalues.LongDocValues;
+import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
@@ -32,7 +39,6 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.*;
-import org.apache.solr.search.function.*;
 
 import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -533,6 +539,24 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
     });
+
+    addParser("totaltermfreq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        TInfo tinfo = parseTerm(fp);
+        return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
+      }
+    });
+    alias("totaltermfreq","ttf");
+
+    addParser("sumtotaltermfreq", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        String field = fp.parseArg();
+        return new SumTotalTermFreqValueSource(field);
+      }
+    });
+    alias("sumtotaltermfreq","sttf");
 
     addParser("idf", new ValueSourceParser() {
       @Override

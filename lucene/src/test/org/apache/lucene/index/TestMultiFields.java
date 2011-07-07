@@ -90,9 +90,9 @@ public class TestMultiFields extends LuceneTestCase {
       w.close();
       //System.out.println("TEST reader=" + reader);
 
-      Bits delDocs = MultiFields.getDeletedDocs(reader);
+      Bits liveDocs = MultiFields.getLiveDocs(reader);
       for(int delDoc : deleted) {
-        assertTrue(delDocs.get(delDoc));
+        assertFalse(liveDocs.get(delDoc));
       }
       Terms terms2 = MultiFields.getTerms(reader, "field");
 
@@ -102,7 +102,7 @@ public class TestMultiFields extends LuceneTestCase {
           System.out.println("TEST: seek to term= "+ UnicodeUtil.toHexString(term.utf8ToString()));
         }
         
-        DocsEnum docsEnum = terms2.docs(delDocs, term, null);
+        DocsEnum docsEnum = terms2.docs(liveDocs, term, null);
         assertNotNull(docsEnum);
 
         for(int docID : docs.get(term)) {
@@ -121,7 +121,7 @@ public class TestMultiFields extends LuceneTestCase {
   /*
   private void verify(IndexReader r, String term, List<Integer> expected) throws Exception {
     DocsEnum docs = MultiFields.getTermDocsEnum(r,
-                                                MultiFields.getDeletedDocs(r),
+                                                MultiFields.getLiveDocs(r),
                                                 "field",
                                                 new BytesRef(term));
 

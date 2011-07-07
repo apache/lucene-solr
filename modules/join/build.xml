@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<project name="join" default="default">
+  <description>
+    Queries and collectors for performing joins
+  </description>
+
+  <property name="build.dir" location="build/" />
+  <import file="../../lucene/contrib/contrib-build.xml"/>
+
+  <property name="build.dir" location="build/" />
+  <property name="dist.dir" location="dist/" />
+
+  <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
+		   property="grouping.uptodate" classpath.property="grouping.jar"/>
+
+  <path id="classpath">
+    <pathelement path="${grouping.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <path id="run.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}/classes/java"/>
+  </path>
+
+  <property name="build.dir" location="build/" />
+  <property name="dist.dir" location="dist/" />
+  <property name="maven.dist.dir" location="../dist/maven" />
+
+  <target name="compile-grouping" unless="grouping.uptodate">
+    <subant target="default">
+      <fileset dir="${common.dir}/../modules/grouping" includes="build.xml"/>
+    </subant>
+  </target>
+
+  <target name="init" depends="contrib-build.init,compile-grouping"/>
+
+  <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven" />
+</project>

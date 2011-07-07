@@ -29,6 +29,20 @@ public class TestOpenBitSet extends LuceneTestCase {
       if (a.get(i) != b.get(i)) {
         fail("mismatch: BitSet=["+i+"]="+a.get(i));
       }
+      if (a.get(i) != b.get((long) i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
+    }
+  }
+
+  void doGetFast(BitSet a, OpenBitSet b, int max) {
+    for (int i=0; i<max; i++) {
+      if (a.get(i) != b.fastGet(i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
+      if (a.get(i) != b.fastGet((long) i)) {
+        fail("mismatch: BitSet=["+i+"]="+a.get(i));
+      }
     }
   }
 
@@ -37,6 +51,43 @@ public class TestOpenBitSet extends LuceneTestCase {
     do {
       aa = a.nextSetBit(aa+1);
       bb = b.nextSetBit(bb+1);
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
+
+  void doNextSetBitLong(BitSet a, OpenBitSet b) {
+    int aa=-1,bb=-1;
+    do {
+      aa = a.nextSetBit(aa+1);
+      bb = (int) b.nextSetBit((long) (bb+1));
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
+
+  void doPrevSetBit(BitSet a, OpenBitSet b) {
+    int aa = a.size() + random.nextInt(100);
+    int bb = aa;
+    do {
+      // aa = a.prevSetBit(aa-1);
+      aa--;
+      while ((aa >= 0) && (! a.get(aa))) {
+      	aa--;
+      }
+      bb = b.prevSetBit(bb-1);
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
+
+  void doPrevSetBitLong(BitSet a, OpenBitSet b) {
+    int aa = a.size() + random.nextInt(100);
+    int bb = aa;
+    do {
+      // aa = a.prevSetBit(aa-1);
+      aa--;
+      while ((aa >= 0) && (! a.get(aa))) {
+      	aa--;
+      }
+      bb = (int) b.prevSetBit((long) (bb-1));
       assertEquals(aa,bb);
     } while (aa>=0);
   }
@@ -85,15 +136,33 @@ public class TestOpenBitSet extends LuceneTestCase {
           idx = random.nextInt(sz);
           a.set(idx);
           b.fastSet(idx);
+          
+          idx = random.nextInt(sz);
+          a.set(idx);
+          b.fastSet((long) idx);
+          
           idx = random.nextInt(sz);
           a.clear(idx);
           b.fastClear(idx);
+          
+          idx = random.nextInt(sz);
+          a.clear(idx);
+          b.fastClear((long) idx);
+          
           idx = random.nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
 
           boolean val = b.flipAndGet(idx);
           boolean val2 = b.flipAndGet(idx);
+          assertTrue(val != val2);
+
+          idx = random.nextInt(sz);
+          a.flip(idx);
+          b.fastFlip((long) idx);
+
+          val = b.flipAndGet((long) idx);
+          val2 = b.flipAndGet((long) idx);
           assertTrue(val != val2);
 
           val = b.getAndSet(idx);
@@ -107,6 +176,7 @@ public class TestOpenBitSet extends LuceneTestCase {
 
       // test that the various ways of accessing the bits are equivalent
       doGet(a,b);
+      doGetFast(a, b, sz);
 
       // test ranges, including possible extension
       int fromIndex, toIndex;
@@ -122,15 +192,22 @@ public class TestOpenBitSet extends LuceneTestCase {
       aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.clear(fromIndex,toIndex);
 
-      doNextSetBit(aa,bb);  // a problem here is from clear() or nextSetBit
+      doNextSetBit(aa,bb); // a problem here is from clear() or nextSetBit
+      doNextSetBitLong(aa,bb);
+      
+      doPrevSetBit(aa,bb);
+      doPrevSetBitLong(aa,bb);
 
       fromIndex = random.nextInt(sz+80);
       toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.set(fromIndex,toIndex);
 
-      doNextSetBit(aa,bb);  // a problem here is from set() or nextSetBit     
-
+      doNextSetBit(aa,bb); // a problem here is from set() or nextSetBit
+      doNextSetBitLong(aa,bb);
+    
+      doPrevSetBit(aa,bb);
+      doPrevSetBitLong(aa,bb);
 
       if (a0 != null) {
         assertEquals( a.equals(a0), b.equals(b0));
@@ -168,7 +245,7 @@ public class TestOpenBitSet extends LuceneTestCase {
       b0=b;
     }
   }
-
+  
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() {
@@ -176,12 +253,13 @@ public class TestOpenBitSet extends LuceneTestCase {
     doRandomSets(atLeast(1200), atLeast(1000), 2);
   }
 
+  // uncomment to run a bigger test (~2 minutes).
+  /*
   public void testBig() {
-    // uncomment to run a bigger test (~2 minutes).
-    // rand = newRandom();
-    // doRandomSets(2000,200000, 1);
-    // doRandomSets(2000,200000, 2);
+    doRandomSets(2000,200000, 1);
+    doRandomSets(2000,200000, 2);
   }
+  */
 
   public void testEquals() {
     OpenBitSet b1 = new OpenBitSet(1111);
@@ -205,26 +283,6 @@ public class TestOpenBitSet extends LuceneTestCase {
     assertFalse(b1.equals(new Object()));
   }
   
-  public void testBitUtils()
-  {
-    long num = 100000;
-    assertEquals( 5, BitUtil.ntz(num) );
-    assertEquals( 5, BitUtil.ntz2(num) );
-    assertEquals( 5, BitUtil.ntz3(num) );
-    
-    num = 10;
-    assertEquals( 1, BitUtil.ntz(num) );
-    assertEquals( 1, BitUtil.ntz2(num) );
-    assertEquals( 1, BitUtil.ntz3(num) );
-
-    for (int i=0; i<64; i++) {
-      num = 1L << i;
-      assertEquals( i, BitUtil.ntz(num) );
-      assertEquals( i, BitUtil.ntz2(num) );
-      assertEquals( i, BitUtil.ntz3(num) );
-    }
-  }
-
   public void testHashCodeEquals() {
     OpenBitSet bs1 = new OpenBitSet(200);
     OpenBitSet bs2 = new OpenBitSet(64);
@@ -233,6 +291,35 @@ public class TestOpenBitSet extends LuceneTestCase {
     assertEquals(bs1, bs2);
     assertEquals(bs1.hashCode(), bs2.hashCode());
   } 
+
+  
+  private OpenBitSet makeOpenBitSet(int[] a) {
+    OpenBitSet bs = new OpenBitSet();
+    for (int e: a) {
+      bs.set(e);
+    }
+    return bs;
+  }
+
+  private BitSet makeBitSet(int[] a) {
+    BitSet bs = new BitSet();
+    for (int e: a) {
+      bs.set(e);
+    }
+    return bs;
+  }
+
+  private void checkPrevSetBitArray(int [] a) {
+    OpenBitSet obs = makeOpenBitSet(a);
+    BitSet bs = makeBitSet(a);
+    doPrevSetBit(bs, obs);
+  }
+
+  public void testPrevSetBit() {
+    checkPrevSetBitArray(new int[] {});
+    checkPrevSetBitArray(new int[] {0});
+    checkPrevSetBitArray(new int[] {0,2});
+  }
 }
 
 

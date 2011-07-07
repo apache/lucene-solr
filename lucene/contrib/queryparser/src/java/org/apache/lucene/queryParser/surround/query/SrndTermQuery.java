@@ -53,7 +53,7 @@ public class SrndTermQuery extends SimpleTerm {
     if (terms != null) {
       TermsEnum termsEnum = terms.iterator();
 
-      TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(getTermText()));
+      TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(getTermText()));
       if (status == TermsEnum.SeekStatus.FOUND) {
         mtv.visitMatchingTerm(getLuceneTerm(fieldName));
       }

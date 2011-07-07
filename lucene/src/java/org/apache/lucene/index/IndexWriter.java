@@ -46,12 +46,14 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.MapBackedSet;
@@ -236,7 +238,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private DocumentsWriter docWriter;
   final IndexFileDeleter deleter;
 
-  private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
+  private Map<SegmentInfo,Boolean> segmentsToOptimize = new HashMap<SegmentInfo,Boolean>();           // used by optimize to note those needing optimization
   private int optimizeMaxNumSegments;
 
   private Lock writeLock;
@@ -1664,7 +1666,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     synchronized(this) {
       resetMergeExceptions();
       segmentsToOptimize.clear();
-      segmentsToOptimize.addAll(segmentInfos.asSet());
+      for(SegmentInfo info : segmentInfos) {
+        segmentsToOptimize.put(info, Boolean.TRUE);
+      }
       optimizeMaxNumSegments = maxNumSegments;
 
       // Now mark all pending & running merges as optimize
@@ -1672,11 +1676,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
 
       for ( final MergePolicy.OneMerge merge: runningMerges ) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
+        segmentsToOptimize.put(merge.info, Boolean.TRUE);
       }
     }
 
@@ -1888,8 +1894,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableSet(segmentsToOptimize));
-
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, Collections.unmodifiableMap(segmentsToOptimize));
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
@@ -2187,13 +2192,19 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
         message("creating compound file " + compoundFileName);
         // Now build compound file
-        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-        for(String fileName : newSegment.files()) {
-          cfsWriter.addFile(fileName);
+        final Directory cfsDir = directory.createCompoundOutput(compoundFileName);
+        IOException prior = null;
+        try {
+          for(String fileName : newSegment.files()) {
+            directory.copy(cfsDir, fileName, fileName);
+          }
+        } catch(IOException ex) {
+          prior = ex;
+        } finally {
+          IOUtils.closeSafely(prior, cfsDir);
         }
-
         // Perform the merge
-        cfsWriter.close();
+        
         synchronized(this) {
           deleter.deleteNewFiles(newSegment.files());
         }
@@ -2203,8 +2214,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // Must write deleted docs after the CFS so we don't
       // slurp the del file into CFS:
-      if (flushedSegment.deletedDocuments != null) {
-        final int delCount = flushedSegment.deletedDocuments.count();
+      if (flushedSegment.liveDocs != null) {
+        final int delCount = flushedSegment.segmentInfo.docCount - flushedSegment.liveDocs.count();
         assert delCount > 0;
         newSegment.setDelCount(delCount);
         newSegment.advanceDelGen();
@@ -2219,7 +2230,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // shortly-to-be-opened SegmentReader and let it
           // carry the changes; there's no reason to use
           // filesystem as intermediary here.
-          flushedSegment.deletedDocuments.write(directory, delFileName);
+          flushedSegment.liveDocs.write(directory, delFileName);
           success2 = true;
         } finally {
           if (!success2) {
@@ -2499,20 +2510,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
     String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
     Collection<String> files = info.files();
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
-    for (String file : files) {
-      String newFileName = segName + IndexFileNames.stripSegmentName(file);
-      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
-          && !IndexFileNames.isSeparateNormsFile(file)) {
-        cfsWriter.addFile(file, info.dir);
-      } else {
-        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-        info.dir.copy(directory, file, newFileName);
+    final CompoundFileDirectory cfsdir = directory.createCompoundOutput(segFileName);
+    try {
+      for (String file : files) {
+        String newFileName = segName + IndexFileNames.stripSegmentName(file);
+        if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+            && !IndexFileNames.isSeparateNormsFile(file)) {
+          info.dir.copy(cfsdir, file, file);
+        } else {
+          assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+          info.dir.copy(directory, file, newFileName);
+        }
       }
+    } finally {
+      IOUtils.closeSafely(true, cfsdir);
     }
-    
-    // Create the .cfs
-    cfsWriter.close();
     
     info.dir = directory;
     info.name = segName;
@@ -2919,9 +2931,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Reader was skipped because it was 100% deletions
         continue;
       }
-      final Bits prevDelDocs = previousReader.getDeletedDocs();
+      final Bits prevLiveDocs = previousReader.getLiveDocs();
       final SegmentReader currentReader = merge.readers.get(i);
-      final Bits currentDelDocs = currentReader.getDeletedDocs();
+      final Bits currentLiveDocs = currentReader.getLiveDocs();
       if (previousReader.hasDeletions()) {
 
         // There were deletes on this segment when the merge
@@ -2936,10 +2948,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // committed since we started the merge, so we
           // must merge them:
           for(int j=0;j<docCount;j++) {
-            if (prevDelDocs.get(j))
-              assert currentDelDocs.get(j);
+            if (!prevLiveDocs.get(j))
+              assert !currentLiveDocs.get(j);
             else {
-              if (currentDelDocs.get(j)) {
+              if (!currentLiveDocs.get(j)) {
                 mergedReader.doDelete(docUpto);
                 delCount++;
               }
@@ -2953,7 +2965,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // This segment had no deletes before but now it
         // does:
         for(int j=0; j<docCount; j++) {
-          if (currentDelDocs.get(j)) {
+          if (!currentLiveDocs.get(j)) {
             mergedReader.doDelete(docUpto);
             delCount++;
           }
@@ -3042,7 +3054,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     if (merge.optimize) {
       // cascade the optimize:
-      segmentsToOptimize.add(merge.info);
+      if (!segmentsToOptimize.containsKey(merge.info)) {
+        segmentsToOptimize.put(merge.info, Boolean.FALSE);
+      }
     }
 
     return true;
@@ -3086,7 +3100,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * 
    * @lucene.experimental
    */
-  public final void merge(MergePolicy.OneMerge merge)
+  public void merge(MergePolicy.OneMerge merge)
     throws CorruptIndexException, IOException {
 
     boolean success = false;
@@ -3167,7 +3181,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (info.dir != directory) {
         isExternal = true;
       }
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.containsKey(info)) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = optimizeMaxNumSegments;
       }
@@ -3510,6 +3524,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
+              
+              deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
               deleter.deleteNewFiles(merge.info.files());
             }
           }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.mutable.MutableValue;
+
 public class MutableValueBool extends MutableValue {
   public boolean value;
 

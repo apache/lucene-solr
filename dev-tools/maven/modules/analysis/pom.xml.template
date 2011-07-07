@@ -33,6 +33,7 @@
   <modules>
     <module>common</module>
     <module>icu</module>
+    <module>morfologik</module>
     <module>phonetic</module>
     <module>smartcn</module>
     <module>stempel</module>

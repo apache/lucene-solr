@@ -481,13 +481,13 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     FieldsEnum fields = MultiFields.getFields(reader).iterator();
     String fieldName = null;
     while((fieldName = fields.next()) != null) {
-      if (fieldName == DocMaker.ID_FIELD || fieldName == DocMaker.DATE_MSEC_FIELD || fieldName == DocMaker.TIME_SEC_FIELD) {
+      if (fieldName.equals(DocMaker.ID_FIELD) || fieldName.equals(DocMaker.DATE_MSEC_FIELD) || fieldName.equals(DocMaker.TIME_SEC_FIELD)) {
         continue;
       }
       TermsEnum terms = fields.terms();
       DocsEnum docs = null;
       while(terms.next() != null) {
-        docs = terms.docs(MultiFields.getDeletedDocs(reader), docs);
+        docs = terms.docs(MultiFields.getLiveDocs(reader), docs);
         while(docs.nextDoc() != docs.NO_MORE_DOCS) {
           totalTokenCount2 += docs.freq();
         }

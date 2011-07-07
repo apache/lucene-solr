@@ -37,12 +37,17 @@ final class TermBuffer implements Cloneable {
 
   private BytesRef bytes = new BytesRef(10);
 
+  // Cannot be -1 since (strangely) we write that
+  // fieldNumber into index for first indexed term:
+  private int currentFieldNumber = -2;
+
   private static final Comparator<BytesRef> utf8AsUTF16Comparator = BytesRef.getUTF8SortedAsUTF16Comparator();
 
   int newSuffixStart;                             // only valid right after .read is called
 
   public int compareTo(TermBuffer other) {
     if (field == other.field) 	  // fields are interned
+                                  // (only by PreFlex codec)
       return utf8AsUTF16Comparator.compare(bytes, other.bytes);
     else
       return field.compareTo(other.field);
@@ -59,7 +64,13 @@ final class TermBuffer implements Cloneable {
     }
     bytes.length = totalLength;
     input.readBytes(bytes.bytes, newSuffixStart, length);
-    this.field = fieldInfos.fieldName(input.readVInt());
+    final int fieldNumber = input.readVInt();
+    if (fieldNumber != currentFieldNumber) {
+      currentFieldNumber = fieldNumber;
+      field = fieldInfos.fieldName(currentFieldNumber).intern();
+    } else {
+      assert field.equals(fieldInfos.fieldName(fieldNumber)): "currentFieldNumber=" + currentFieldNumber + " field=" + field + " vs " + fieldInfos.fieldName(fieldNumber);
+    }
   }
 
   public void set(Term term) {
@@ -68,12 +79,14 @@ final class TermBuffer implements Cloneable {
       return;
     }
     bytes.copy(term.bytes());
-    field = term.field();
+    field = term.field().intern();
+    currentFieldNumber = -1;
     this.term = term;
   }
 
   public void set(TermBuffer other) {
     field = other.field;
+    currentFieldNumber = other.currentFieldNumber;
     // dangerous to copy Term over, since the underlying
     // BytesRef could subsequently be modified:
     term = null;
@@ -83,6 +96,7 @@ final class TermBuffer implements Cloneable {
   public void reset() {
     field = null;
     term = null;
+    currentFieldNumber=  -1;
   }
 
   public Term toTerm() {
@@ -90,8 +104,7 @@ final class TermBuffer implements Cloneable {
       return null;
 
     if (term == null) {
-      term = new Term(field, new BytesRef(bytes), false);
-      //term = new Term(field, bytes, false);
+      term = new Term(field, new BytesRef(bytes));
     }
 
     return term;

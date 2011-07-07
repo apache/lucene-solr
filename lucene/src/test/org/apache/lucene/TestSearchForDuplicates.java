@@ -27,7 +27,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.queryParser.*;
 import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -102,9 +101,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       // try a search without OR
       IndexSearcher searcher = new IndexSearcher(directory, true);
 
-      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
-
-      Query query = parser.parse(HIGH_PRIORITY);
+      Query query = new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY));
       out.println("Query: " + query.toString(PRIORITY_FIELD));
       if (VERBOSE) {
         System.out.println("TEST: search query=" + query);
@@ -112,7 +109,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       final Sort sort = new Sort(new SortField[] {
           SortField.FIELD_SCORE,
-          new SortField(ID_FIELD, SortField.INT)});
+          new SortField(ID_FIELD, SortField.Type.INT)});
 
       ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
@@ -124,12 +121,12 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher = new IndexSearcher(directory, true);
       hits = null;
 
-      parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
+      BooleanQuery booleanQuery = new BooleanQuery();
+      booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, HIGH_PRIORITY)), BooleanClause.Occur.SHOULD);
+      booleanQuery.add(new TermQuery(new Term(PRIORITY_FIELD, MED_PRIORITY)), BooleanClause.Occur.SHOULD);
+      out.println("Query: " + booleanQuery.toString(PRIORITY_FIELD));
 
-      query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
-      out.println("Query: " + query.toString(PRIORITY_FIELD));
-
-      hits = searcher.search(query, null, MAX_DOCS, sort).scoreDocs;
+      hits = searcher.search(booleanQuery, null, MAX_DOCS, sort).scoreDocs;
       printHits(out, hits, searcher);
       checkHits(hits, MAX_DOCS, searcher);
 

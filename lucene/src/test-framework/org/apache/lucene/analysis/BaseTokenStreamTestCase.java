@@ -264,17 +264,64 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       TokenStream ts = a.reusableTokenStream("dummy", new StringReader(text));
       assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
       CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+      OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
+      PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
+      TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
       List<String> tokens = new ArrayList<String>();
+      List<String> types = new ArrayList<String>();
+      List<Integer> positions = new ArrayList<Integer>();
+      List<Integer> startOffsets = new ArrayList<Integer>();
+      List<Integer> endOffsets = new ArrayList<Integer>();
       ts.reset();
       while (ts.incrementToken()) {
         tokens.add(termAtt.toString());
-        // TODO: we could collect offsets etc here for better checking that reset() really works.
+        if (typeAtt != null) types.add(typeAtt.type());
+        if (posIncAtt != null) positions.add(posIncAtt.getPositionIncrement());
+        if (offsetAtt != null) {
+          startOffsets.add(offsetAtt.startOffset());
+          endOffsets.add(offsetAtt.endOffset());
+        }
       }
       ts.end();
       ts.close();
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
-      if (!tokens.isEmpty())
-        assertAnalyzesToReuse(a, text, tokens.toArray(new String[tokens.size()]));
+      if (!tokens.isEmpty()) {
+        if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
+          // offset + pos + type
+          assertAnalyzesToReuse(a, text, 
+            tokens.toArray(new String[tokens.size()]),
+            toIntArray(startOffsets),
+            toIntArray(endOffsets),
+            types.toArray(new String[types.size()]),
+            toIntArray(positions));
+        } else if (posIncAtt != null && offsetAtt != null) {
+          // offset + pos
+          assertAnalyzesToReuse(a, text, 
+              tokens.toArray(new String[tokens.size()]),
+              toIntArray(startOffsets),
+              toIntArray(endOffsets),
+              toIntArray(positions));
+        } else if (offsetAtt != null) {
+          // offset
+          assertAnalyzesToReuse(a, text, 
+              tokens.toArray(new String[tokens.size()]),
+              toIntArray(startOffsets),
+              toIntArray(endOffsets));
+        } else {
+          // terms only
+          assertAnalyzesToReuse(a, text, 
+              tokens.toArray(new String[tokens.size()]));
+        }
+      }
     }
+  }
+  
+  static int[] toIntArray(List<Integer> list) {
+    int ret[] = new int[list.size()];
+    int offset = 0;
+    for (Integer i : list) {
+      ret[offset++] = i;
+    }
+    return ret;
   }
 }

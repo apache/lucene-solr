@@ -54,7 +54,7 @@ public class CachingSpanFilter extends SpanFilter {
     }
     this.cache = new CachingWrapperFilter.FilterCache<SpanFilterResult>(deletesMode) {
       @Override
-      protected SpanFilterResult mergeDeletes(final Bits delDocs, final SpanFilterResult value) {
+      protected SpanFilterResult mergeLiveDocs(final Bits liveDocs, final SpanFilterResult value) {
         throw new IllegalStateException("DeletesMode.DYNAMIC is not supported");
       }
     };
@@ -73,7 +73,7 @@ public class CachingSpanFilter extends SpanFilter {
     final IndexReader reader = context.reader;
 
     final Object coreKey = reader.getCoreCacheKey();
-    final Object delCoreKey = reader.hasDeletions() ? reader.getDeletedDocs() : coreKey;
+    final Object delCoreKey = reader.hasDeletions() ? reader.getLiveDocs() : coreKey;
 
     SpanFilterResult result = cache.get(reader, coreKey, delCoreKey);
     if (result != null) {

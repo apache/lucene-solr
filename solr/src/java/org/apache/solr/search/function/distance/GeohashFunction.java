@@ -16,9 +16,9 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 
 import java.util.Map;

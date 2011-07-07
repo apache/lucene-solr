@@ -63,7 +63,7 @@ public class SrndPrefixQuery extends SimpleTerm {
       TermsEnum termsEnum = terms.iterator();
 
       boolean skip = false;
-      TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(getPrefix()));
+      TermsEnum.SeekStatus status = termsEnum.seekCeil(new BytesRef(getPrefix()));
       if (status == TermsEnum.SeekStatus.FOUND) {
         mtv.visitMatchingTerm(getLucenePrefixTerm(fieldName));
       } else if (status == TermsEnum.SeekStatus.NOT_FOUND) {

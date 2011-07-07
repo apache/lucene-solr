@@ -234,6 +234,25 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
+  public synchronized CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+    if (cache.fileExists(name)) {
+      return cache.openCompoundInput(name, bufferSize);
+    } else {
+      return delegate.openCompoundInput(name, bufferSize);
+    }
+  }
+  
+  @Override
+  public synchronized CompoundFileDirectory createCompoundOutput(String name)
+      throws IOException {
+    if (cache.fileExists(name)) {
+      throw new IOException("File " + name + "already exists");
+    } else {
+      return delegate.createCompoundOutput(name);
+    }
+  }
+
+  @Override
   public synchronized IndexInput openInput(String name, int bufferSize) throws IOException {
     if (cache.fileExists(name)) {
       return cache.openInput(name, bufferSize);

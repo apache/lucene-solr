@@ -59,6 +59,11 @@ public class TestFieldsReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     FaultyIndexInput.doFail = false;
   }
 

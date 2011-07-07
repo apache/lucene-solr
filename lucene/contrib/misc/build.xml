@@ -27,22 +27,6 @@
 
   <import file="../contrib-build.xml"/>
 
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-
-  <path id="classpath">
-	 <pathelement path="${analyzers-common.jar}"/>
-	 <path refid="base.classpath"/>
-  </path>
-
-  <target name="compile-core" depends="compile-analyzers-common, common.compile-core" />
-
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-    </subant>
-  </target>
-
   <target name="build-native-unix" >
     <mkdir dir="${common.build.dir}/native"/>
 

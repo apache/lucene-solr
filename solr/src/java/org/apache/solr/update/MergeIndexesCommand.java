@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -27,25 +28,21 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  */
 public class MergeIndexesCommand extends UpdateCommand {
-  public Directory[] dirs;
+  public IndexReader[] readers;
 
-  public MergeIndexesCommand(SolrQueryRequest req) {
-    this(null, req);
-  }
-
-  public MergeIndexesCommand(Directory[] dirs, SolrQueryRequest req) {
+  public MergeIndexesCommand(IndexReader[] readers, SolrQueryRequest req) {
     super("mergeIndexes", req);
-    this.dirs = dirs;
+    this.readers = readers;
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(commandName);
     sb.append(':');
-    if (dirs != null && dirs.length > 0) {
-      sb.append(dirs[0]);
-      for (int i = 1; i < dirs.length; i++) {
-        sb.append(",").append(dirs[i]);
+    if (readers != null && readers.length > 0) {
+      sb.append(readers[0].directory());
+      for (int i = 1; i < readers.length; i++) {
+        sb.append(",").append(readers[i].directory());
       }
     }
     return sb.toString();

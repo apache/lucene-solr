@@ -75,13 +75,12 @@ public class TermQuery extends Query {
       final String field = term.field();
       final IndexReader reader = context.reader;
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
-      final TermState state = termStates
-          .get(context.ord);
+      final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
         assert termNotInReader(reader, field, term.bytes()) : "no termstate found but term exists in reader";
         return null;
       }
-      final DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), field, term.bytes(), state);
+      final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field, term.bytes(), state);
       assert docs != null;
       return new TermScorer(this, docs, similarity.exactDocScorer(stats, field, context));
     }
@@ -95,7 +94,7 @@ public class TermQuery extends Query {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       IndexReader reader = context.reader;
-      DocsEnum docs = reader.termDocsEnum(reader.getDeletedDocs(), term.field(), term.bytes());
+      DocsEnum docs = reader.termDocsEnum(context.reader.getLiveDocs(), term.field(), term.bytes());
       if (docs != null) {
         int newDoc = docs.advance(doc);
         if (newDoc == doc) {

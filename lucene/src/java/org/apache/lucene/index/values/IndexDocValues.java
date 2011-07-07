@@ -254,6 +254,25 @@ public abstract class IndexDocValues implements Closeable {
      */
     public abstract ValuesEnum getEnum(AttributeSource attrSource)
         throws IOException;
+    
+    /**
+     * Returns <code>true</code> iff this {@link Source} exposes an array via
+     * {@link #getArray()} otherwise <code>false</code>.
+     * 
+     * @return <code>true</code> iff this {@link Source} exposes an array via
+     *         {@link #getArray()} otherwise <code>false</code>.
+     */
+    public boolean hasArray() {
+      return false;
+    }
+
+    /**
+     * Returns the internal array representation iff this {@link Source} uses an
+     * array as its inner representation, otherwise <code>null</code>.
+     */
+    public Object getArray() {
+      return null;
+    }
   }
 
   /**

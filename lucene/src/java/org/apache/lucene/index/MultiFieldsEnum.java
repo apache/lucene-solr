@@ -94,7 +94,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
     if (queue.size() > 0) {
       while(true) {
         top[numTop++] = queue.pop();
-        if (queue.size() == 0 || (queue.top()).current != top[0].current) {
+        if (queue.size() == 0 || !(queue.top()).current.equals(top[0].current)) {
           break;
         }
       }

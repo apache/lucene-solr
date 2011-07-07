@@ -87,7 +87,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       if (te == null) {
         br = null;
       } else {
-        TermsEnum.SeekStatus status = te.seek(new BytesRef(s));
+        TermsEnum.SeekStatus status = te.seekCeil(new BytesRef(s));
         if (status == TermsEnum.SeekStatus.END) {
           br = null;
         } else {
@@ -103,7 +103,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
     // test seeking before term
     if (size>0) {
-      assertEquals(size>0, te.seek(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
+      assertEquals(size>0, te.seekCeil(new BytesRef("000"), true) != TermsEnum.SeekStatus.END);
       assertEquals(0, te.ord());
       assertEquals(t(0), te.term().utf8ToString());
     }
@@ -113,7 +113,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       for (int i=0; i<size*2+10; i++) {
         int rnum = r.nextInt(size);
         String s = t(rnum);
-        assertTrue(te.seek((long) rnum) != TermsEnum.SeekStatus.END);
+        te.seekExact((long) rnum);
         BytesRef br = te.term();
         assertNotNull(br);
         assertEquals(rnum, (int) te.ord());

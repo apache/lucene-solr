@@ -36,11 +36,11 @@ public class MatchAllDocsQuery extends Query {
     final float score;
     private int doc = -1;
     private final int maxDoc;
-    private final Bits delDocs;
+    private final Bits liveDocs;
 
     MatchAllScorer(IndexReader reader, Weight w, float score) throws IOException {
       super(w);
-      delDocs = reader.getDeletedDocs();
+      liveDocs = reader.getLiveDocs();
       this.score = score;
       maxDoc = reader.maxDoc();
     }
@@ -53,7 +53,7 @@ public class MatchAllDocsQuery extends Query {
     @Override
     public int nextDoc() throws IOException {
       doc++;
-      while(delDocs != null && doc < maxDoc && delDocs.get(doc)) {
+      while(liveDocs != null && doc < maxDoc && !liveDocs.get(doc)) {
         doc++;
       }
       if (doc == maxDoc) {

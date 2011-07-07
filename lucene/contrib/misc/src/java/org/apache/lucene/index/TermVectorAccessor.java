@@ -15,7 +15,6 @@ package org.apache.lucene.index;
  *
  */
 
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -54,9 +53,6 @@ public class TermVectorAccessor {
    * @throws IOException
    */
   public void accept(IndexReader indexReader, int documentNumber, String fieldName, TermVectorMapper mapper) throws IOException {
-
-    fieldName = StringHelper.intern(fieldName);
-
     decoratedMapper.decorated = mapper;
     decoratedMapper.termVectorStored = false;
 
@@ -100,7 +96,7 @@ public class TermVectorAccessor {
       positions.clear();
     }
 
-    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    final Bits liveDocs = MultiFields.getLiveDocs(indexReader);
 
     Terms terms = MultiFields.getTerms(indexReader, field);
     boolean anyTerms = false;
@@ -113,9 +109,9 @@ public class TermVectorAccessor {
         if (text != null) {
           anyTerms = true;
           if (!mapper.isIgnoringPositions()) {
-            docs = postings = termsEnum.docsAndPositions(delDocs, postings);
+            docs = postings = termsEnum.docsAndPositions(liveDocs, postings);
           } else {
-            docs = termsEnum.docs(delDocs, docs);
+            docs = termsEnum.docs(liveDocs, docs);
           }
 
           int docID = docs.advance(documentNumber);

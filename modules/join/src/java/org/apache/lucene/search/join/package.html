@@ -1,0 +1,32 @@
+<html>
+<body>
+
+<p>This module supports index-time joins while searching, where joined
+  documents are indexed as a single document block using
+  {@link org.apache.lucene.index.IndexWriter#addDocuments}.  This is useful for any normalized content (XML documents or database tables).  In database terms, all rows for all
+  joined tables matching a single row of the primary table must be
+  indexed as a single document block, with the parent document
+  being last in the group.</p>
+
+<p>When you index in this way, the documents in your index are divided
+  into parent documents (the last document of each block) and child
+  documents (all others).  You provide a {@link org.apache.lucene.search.Filter} that identifies the
+  parent documents, as Lucene does not currently record any information
+  about doc blocks.</p>
+
+<p>At search time, use {@link org.apache.lucene.search.join.BlockJoinQuery} to remap
+  matches from any child {@link org.apache.lucene.search.Query} (ie, a query that matches only
+  child documents) up to the parent document space.  The resulting
+  {@link org.apache.lucene.search.join.BlockJoinQuery} can then be used as a clause in any query that
+  matches parent documents.</p>
+
+<p>If you only care about the parent documents matching the query, you
+  can use any collector to collect the parent hits, but if you'd also
+  like to see which child documents match for each parent document,
+  use the {@link org.apache.lucene.search.join.BlockJoinCollector} to collect the hits. Once the
+  search is done, you retrieve a {@link
+  org.apache.lucene.search.grouping.TopGroups} instance from the
+  {@link org.apache.lucene.search.join.BlockJoinCollector#getTopGroups} method.</p>
+
+</body>
+</html>

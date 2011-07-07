@@ -283,11 +283,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
   private static void printDocs(IndexReader r) throws Throwable {
     IndexReader[] subs = r.getSequentialSubReaders();
     for(IndexReader sub : subs) {
-      Bits delDocs = sub.getDeletedDocs();
+      Bits liveDocs = sub.getLiveDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
         Document doc = sub.document(docID);
-        if (delDocs == null || !delDocs.get(docID)) {
+        if (liveDocs == null || liveDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.get("id"));
         } else {
           System.out.println("    DEL docID=" + docID + " id:" + doc.get("id"));
@@ -312,7 +312,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
 
     // create mapping from id2 space to id2 based on idField
-    idField = StringHelper.intern(idField);
     final Fields f1 = MultiFields.getFields(r1);
     if (f1 == null) {
       // make sure r2 is empty
@@ -327,8 +326,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
     final TermsEnum termsEnum = terms1.iterator();
 
-    final Bits delDocs1 = MultiFields.getDeletedDocs(r1);
-    final Bits delDocs2 = MultiFields.getDeletedDocs(r2);
+    final Bits liveDocs1 = MultiFields.getLiveDocs(r1);
+    final Bits liveDocs2 = MultiFields.getLiveDocs(r2);
     
     Fields fields = MultiFields.getFields(r2);
     if (fields == null) {
@@ -336,7 +335,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       // deleted docs):
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = termsEnum.docs(delDocs1, docs);
+        docs = termsEnum.docs(liveDocs1, docs);
         while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           fail("r1 is not empty but r2 is");
         }
@@ -355,8 +354,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
         break;
       }
 
-      termDocs1 = termsEnum.docs(delDocs1, termDocs1);
-      termDocs2 = terms2.docs(delDocs2, term, termDocs2);
+      termDocs1 = termsEnum.docs(liveDocs1, termDocs1);
+      termDocs2 = terms2.docs(liveDocs2, term, termDocs2);
 
       if (termDocs1.nextDoc() == DocsEnum.NO_MORE_DOCS) {
         // This doc is deleted and wasn't replaced
@@ -444,7 +443,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs1 = termsEnum1.docs(delDocs1, docs1);
+        docs1 = termsEnum1.docs(liveDocs1, docs1);
         while (docs1.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int d = docs1.docID();
           int f = docs1.freq();
@@ -474,7 +473,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
         
         //System.out.println("TEST: term1=" + term1);
-        docs2 = termsEnum2.docs(delDocs2, docs2);
+        docs2 = termsEnum2.docs(liveDocs2, docs2);
         while (docs2.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int d = r2r1[docs2.docID()];
           int f = docs2.freq();
@@ -669,7 +668,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       ArrayList<Field> fields = new ArrayList<Field>();      
       String idString = getIdString();
-      Field idField =  newField(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field idField =  newField("id", idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
@@ -720,7 +719,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": indexing id:" + idString);
       }
-      w.updateDocument(idTerm.createTerm(idString), d);
+      w.updateDocument(new Term("id", idString), d);
       //System.out.println(Thread.currentThread().getName() + ": indexing "+d);
       docs.put(idString, d);
     }
@@ -730,7 +729,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": del id:" + idString);
       }
-      w.deleteDocuments(idTerm.createTerm(idString));
+      w.deleteDocuments(new Term("id", idString));
       docs.remove(idString);
     }
 
@@ -739,7 +738,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(Thread.currentThread().getName() + ": del query id:" + idString);
       }
-      w.deleteDocuments(new TermQuery(idTerm.createTerm(idString)));
+      w.deleteDocuments(new TermQuery(new Term("id", idString)));
       docs.remove(idString);
     }
 

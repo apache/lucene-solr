@@ -17,13 +17,13 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.search.function.DoubleDocValues;
-import org.apache.solr.search.function.MultiValueSource;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.Map;

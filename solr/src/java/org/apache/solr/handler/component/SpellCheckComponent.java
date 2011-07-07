@@ -702,6 +702,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     public void postCommit() {
     }
+
+    @Override
+    public void postSoftCommit() {
+    }
   }
 
   public Map<String, SolrSpellChecker> getSpellCheckers() {

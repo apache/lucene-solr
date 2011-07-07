@@ -31,7 +31,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.commons.io.IOUtils;
@@ -852,12 +851,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               ***/
             }
           }
-          if (core.getUpdateHandler() instanceof DirectUpdateHandler2) {
-            ((DirectUpdateHandler2) core.getUpdateHandler()).forceOpenWriter();
-          } else {
-            LOG.warn("The update handler being used is not an instance or sub-class of DirectUpdateHandler2. " +
-                    "Replicate on Startup cannot work.");
-          } 
+
+          // reboot the writer on the new index
+          core.getUpdateHandler().newIndexWriter();
 
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
@@ -889,11 +885,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private void registerCloseHook() {
     core.addCloseHook(new CloseHook() {
-      public void close(SolrCore core) {
+      @Override
+      public void preClose(SolrCore core) {
         if (snapPuller != null) {
           snapPuller.destroy();
         }
       }
+
+      @Override
+      public void postClose(SolrCore core) {}
     });
   }
 
@@ -965,6 +965,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
       public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) { /*no op*/}
+
+      @Override
+      public void postSoftCommit() {
+
+      }
     };
   }
 

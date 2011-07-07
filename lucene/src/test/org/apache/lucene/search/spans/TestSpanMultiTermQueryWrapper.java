@@ -72,6 +72,14 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     assertEquals(1, searcher.search(sfq, 10).totalHits);
   }
   
+  public void testPrefix() throws Exception {
+    WildcardQuery wq = new WildcardQuery(new Term("field", "extrem*"));
+    SpanQuery swq = new SpanMultiTermQueryWrapper<WildcardQuery>(wq);
+    // will only match "jumps over extremely very lazy broxn dog"
+    SpanFirstQuery sfq = new SpanFirstQuery(swq, 3);
+    assertEquals(1, searcher.search(sfq, 10).totalHits);
+  }
+  
   public void testFuzzy() throws Exception {
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "broan"));
     SpanQuery sfq = new SpanMultiTermQueryWrapper<FuzzyQuery>(fq);

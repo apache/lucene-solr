@@ -25,7 +25,7 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
+  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
   <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
   <property name="servlet.jar" location="${common.dir}/lib/servlet-api-2.4.jar"/>
   <available property="servlet.jar.present" type="file" file="${servlet.jar}"/>

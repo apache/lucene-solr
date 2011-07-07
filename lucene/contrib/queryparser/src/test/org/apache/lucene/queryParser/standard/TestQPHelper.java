@@ -19,7 +19,6 @@ package org.apache.lucene.queryParser.standard;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.text.Collator;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -52,7 +51,7 @@ import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -195,7 +194,7 @@ public class TestQPHelper extends LuceneTestCase {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
 
-    qp.setDefaultOperator(Operator.OR);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.OR);
 
     return qp;
 
@@ -284,7 +283,7 @@ public class TestQPHelper extends LuceneTestCase {
       a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
-    qp.setDefaultOperator(Operator.AND);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
 
     return qp.parse(query, "field");
 

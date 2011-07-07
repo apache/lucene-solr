@@ -15,11 +15,14 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/contrib/xml-query-parser/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/common/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/icu/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/analysis/morfologik/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/phonetic/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/smartcn/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/analysis/stempel/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/benchmark/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/facet/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/grouping/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/modules/join/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/modules/suggest/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build.xml" />

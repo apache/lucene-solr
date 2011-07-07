@@ -237,7 +237,7 @@ public class DocTermOrds {
     final TermsEnum te = terms.iterator();
     final BytesRef seekStart = termPrefix != null ? termPrefix : new BytesRef();
     //System.out.println("seekStart=" + seekStart.utf8ToString());
-    if (te.seek(seekStart) == TermsEnum.SeekStatus.END) {
+    if (te.seekCeil(seekStart) == TermsEnum.SeekStatus.END) {
       // No terms match
       return;
     }
@@ -249,7 +249,7 @@ public class DocTermOrds {
 
     boolean testedOrd = false;
 
-    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -312,7 +312,7 @@ public class DocTermOrds {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        docsEnum = te.docs(delDocs, docsEnum);
+        docsEnum = te.docs(liveDocs, docsEnum);
 
         final DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
 
@@ -653,13 +653,13 @@ public class DocTermOrds {
     }
 
     @Override    
-    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
-      return termsEnum.docs(skipDocs, reuse);
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
+      return termsEnum.docs(liveDocs, reuse);
     }
 
     @Override    
-    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
-      return termsEnum.docsAndPositions(skipDocs, reuse);
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+      return termsEnum.docsAndPositions(liveDocs, reuse);
     }
 
     @Override
@@ -693,7 +693,7 @@ public class DocTermOrds {
     }
 
     @Override
-    public SeekStatus seek(BytesRef target, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
 
       // already here
       if (term != null && term.equals(target)) {
@@ -704,7 +704,7 @@ public class DocTermOrds {
 
       if (startIdx >= 0) {
         // we hit the term exactly... lucky us!
-        TermsEnum.SeekStatus seekStatus = termsEnum.seek(target);
+        TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
         ord = startIdx << indexIntervalBits;
         setTerm();
@@ -717,7 +717,7 @@ public class DocTermOrds {
     
       if (startIdx == 0) {
         // our target occurs *before* the first term
-        TermsEnum.SeekStatus seekStatus = termsEnum.seek(target);
+        TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
         assert seekStatus == TermsEnum.SeekStatus.NOT_FOUND;
         ord = 0;
         setTerm();
@@ -733,7 +733,7 @@ public class DocTermOrds {
         // so we don't need to seek.
       } else {
         // seek to the right block
-        TermsEnum.SeekStatus seekStatus = termsEnum.seek(indexedTermsArray[startIdx]);
+        TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(indexedTermsArray[startIdx]);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
         ord = startIdx << indexIntervalBits;
         setTerm();
@@ -754,16 +754,16 @@ public class DocTermOrds {
     }
 
     @Override
-    public SeekStatus seek(long targetOrd) throws IOException {
+    public void seekExact(long targetOrd) throws IOException {
       int delta = (int) (targetOrd - ordBase - ord);
-      //System.out.println("  seek(ord) targetOrd=" + targetOrd + " delta=" + delta + " ord=" + ord);
+      //System.out.println("  seek(ord) targetOrd=" + targetOrd + " delta=" + delta + " ord=" + ord + " ii=" + indexInterval);
       if (delta < 0 || delta > indexInterval) {
         final int idx = (int) (targetOrd >>> indexIntervalBits);
         final BytesRef base = indexedTermsArray[idx];
         //System.out.println("  do seek term=" + base.utf8ToString());
         ord = idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
-        final TermsEnum.SeekStatus seekStatus = termsEnum.seek(base, true);
+        final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base, true);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
       } else {
         //System.out.println("seek w/in block");
@@ -772,15 +772,14 @@ public class DocTermOrds {
       while (--delta >= 0) {
         BytesRef br = termsEnum.next();
         if (br == null) {
-          term = null;
-          return null;
+          assert false;
+          return;
         }
         ord++;
       }
 
       setTerm();
-      return term == null ? SeekStatus.END : SeekStatus.FOUND;
-      //System.out.println("  return term=" + term.utf8ToString());
+      assert term != null;
     }
 
     private BytesRef setTerm() throws IOException {
@@ -794,8 +793,7 @@ public class DocTermOrds {
   }
 
   public BytesRef lookupTerm(TermsEnum termsEnum, int ord) throws IOException {
-    TermsEnum.SeekStatus status = termsEnum.seek(ord);
-    assert status == TermsEnum.SeekStatus.FOUND;
+    termsEnum.seekExact(ord);
     return termsEnum.term();
   }
 }

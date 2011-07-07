@@ -393,6 +393,56 @@ public final class ArrayUtil {
       return array;
   }
 
+  public static int[][] grow(int[][] array, int minSize) {
+    if (array.length < minSize) {
+      int[][] newArray = new int[oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else {
+      return array;
+    }
+  }
+
+  public static int[][] grow(int[][] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static int[][] shrink(int[][] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+    if (newSize != array.length) {
+      int[][] newArray = new int[newSize][];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else {
+      return array;
+    }
+  }
+
+  public static float[][] grow(float[][] array, int minSize) {
+    if (array.length < minSize) {
+      float[][] newArray = new float[oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else {
+      return array;
+    }
+  }
+
+  public static float[][] grow(float[][] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static float[][] shrink(float[][] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+    if (newSize != array.length) {
+      float[][] newArray = new float[newSize][];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else {
+      return array;
+    }
+  }
+
   /**
    * Returns hash of chars in range start (inclusive) to
    * end (inclusive)
@@ -617,6 +667,7 @@ public final class ArrayUtil {
    */
   public static <T> void mergeSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
     if (toIndex-fromIndex <= 1) return;
+    //System.out.println("SORT: " + (toIndex-fromIndex));
     getSorter(a, comp).mergeSort(fromIndex, toIndex-1);
   }
   

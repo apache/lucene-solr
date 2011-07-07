@@ -21,7 +21,7 @@ package org.apache.lucene.index;
  * Encapsulates all required internal state to position the associated
  * {@link TermsEnum} without re-seeking.
  * 
- * @see TermsEnum#seek(org.apache.lucene.util.BytesRef, TermState)
+ * @see TermsEnum#seekExact(org.apache.lucene.util.BytesRef, TermState)
  * @see TermsEnum#termState()
  * @lucene.experimental
  */

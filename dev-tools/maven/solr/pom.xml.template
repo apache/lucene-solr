@@ -39,7 +39,7 @@
     <module>contrib</module>
   </modules>
   <properties>
-    <java.compat.version>1.6</java.compat.version>
+    <tests.luceneMatchVersion>LUCENE_CURRENT</tests.luceneMatchVersion>
   </properties>
   <issueManagement>
     <system>JIRA</system>

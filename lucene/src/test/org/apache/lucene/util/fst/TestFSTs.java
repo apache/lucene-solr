@@ -588,7 +588,13 @@ public class TestFSTs extends LuceneTestCase {
               // ok doesn't exist
               //System.out.println("  seek " + inputToString(inputMode, term));
               final IntsRefFSTEnum.InputOutput<T> seekResult;
-              if (random.nextBoolean()) {
+              if (random.nextInt(3) == 0) {
+                if (VERBOSE) {
+                  System.out.println("  do non-exist seekExact term=" + inputToString(inputMode, term));
+                }
+                seekResult = fstEnum.seekExact(term);
+                pos = -1;
+              } else if (random.nextBoolean()) {
                 if (VERBOSE) {
                   System.out.println("  do non-exist seekFloor term=" + inputToString(inputMode, term));
                 }
@@ -625,7 +631,12 @@ public class TestFSTs extends LuceneTestCase {
           // seek to term that does exist:
           InputOutput<T> pair = pairs.get(random.nextInt(pairs.size()));
           final IntsRefFSTEnum.InputOutput<T> seekResult;
-          if (random.nextBoolean()) {
+          if (random.nextInt(3) == 2) {
+            if (VERBOSE) {
+              System.out.println("  do exists seekExact term=" + inputToString(inputMode, pair.input));
+            }
+            seekResult = fstEnum.seekExact(pair.input);
+          } else if (random.nextBoolean()) {
             if (VERBOSE) {
               System.out.println("  do exists seekFloor " + inputToString(inputMode, pair.input));
             }
@@ -703,12 +714,12 @@ public class TestFSTs extends LuceneTestCase {
 
             if (random.nextBoolean()) {
               if (VERBOSE) {
-                System.out.println("  do advanceCeil(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+                System.out.println("  do seekCeil(" + inputToString(inputMode, pairs.get(upto).input) + ")");
               }
               isDone = fstEnum.seekCeil(pairs.get(upto).input) == null;
             } else {
               if (VERBOSE) {
-                System.out.println("  do advanceFloor(" + inputToString(inputMode, pairs.get(upto).input) + ")");
+                System.out.println("  do seekFloor(" + inputToString(inputMode, pairs.get(upto).input) + ")");
               }
               isDone = fstEnum.seekFloor(pairs.get(upto).input) == null;
             }
@@ -963,7 +974,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(atLeast(50000), atLeast(1));
+    testRandomWords(_TestUtil.nextInt(random, 50000, 60000), atLeast(1));
   }
 
   private static String inputToString(int inputMode, IntsRef term) {
@@ -980,7 +991,8 @@ public class TestFSTs extends LuceneTestCase {
   // file, up until a time limit
   public void testRealTerms() throws Exception {
 
-    if (CodecProvider.getDefault().getDefaultFieldCodec().equals("SimpleText")) {
+    final String defaultCodec = CodecProvider.getDefault().getDefaultFieldCodec();
+    if (defaultCodec.equals("SimpleText") || defaultCodec.equals("Memory")) {
       // no
       CodecProvider.getDefault().setDefaultFieldCodec("Standard");
     }
@@ -1060,7 +1072,7 @@ public class TestFSTs extends LuceneTestCase {
             System.out.println("TEST: seek " + randomTerm.utf8ToString() + " " + randomTerm);
           }
 
-          final TermsEnum.SeekStatus seekResult = termsEnum.seek(randomTerm);
+          final TermsEnum.SeekStatus seekResult = termsEnum.seekCeil(randomTerm);
           final BytesRefFSTEnum.InputOutput fstSeekResult = fstEnum.seekCeil(randomTerm);
 
           if (seekResult == TermsEnum.SeekStatus.END) {

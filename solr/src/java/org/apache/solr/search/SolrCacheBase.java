@@ -36,7 +36,7 @@ public abstract class SolrCacheBase {
       try {
         String input = (null == configValue) ? "0" : configValue.trim();
 
-        // odd undocumented legacy behavior, -1 ment "all" (now "100%")
+        // odd undocumented legacy behavior, -1 meant "all" (now "100%")
         strVal = ("-1".equals(input)) ? "100%" : input;
 
         if (strVal.indexOf("%") == (strVal.length() - 1)) {

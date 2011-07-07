@@ -163,7 +163,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       BytesRef tr = new BytesRef(it.next());
       assertEquals("seek failed for term=" + termDesc(tr.utf8ToString()),
                    TermsEnum.SeekStatus.FOUND,
-                   terms.seek(tr));
+                   terms.seekCeil(tr));
     }
   }
 

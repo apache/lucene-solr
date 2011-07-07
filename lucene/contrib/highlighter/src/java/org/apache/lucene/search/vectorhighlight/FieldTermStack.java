@@ -115,8 +115,7 @@ public class FieldTermStack {
    * @param termInfo the TermInfo object to be put on the top of the stack
    */
   public void push( TermInfo termInfo ){
-    // termList.push( termInfo );  // avoid Java 1.6 feature
-    termList.addFirst( termInfo );
+    termList.push( termInfo );
   }
 
   /**

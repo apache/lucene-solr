@@ -52,6 +52,15 @@ public class QueryUtils {
    * @return
    */
   static Query getAbs(Query q) {
+    if (q instanceof WrappedQuery) {
+      Query subQ = ((WrappedQuery)q).getWrappedQuery();
+      Query absSubQ = getAbs(subQ);
+      if (absSubQ == subQ) return q;
+      WrappedQuery newQ = (WrappedQuery)q.clone();
+      newQ.setWrappedQuery(absSubQ);
+      return newQ;
+    }
+
     if (!(q instanceof BooleanQuery)) return q;
     BooleanQuery bq = (BooleanQuery)q;
 
@@ -87,6 +96,9 @@ public class QueryUtils {
    * lucene.
    */
   static Query makeQueryable(Query q) {
+    if (q instanceof WrappedQuery) {
+      return makeQueryable(((WrappedQuery)q).getWrappedQuery());
+    }
     return isNegative(q) ? fixNegativeQuery(q) : q;
   }
 

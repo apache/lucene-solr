@@ -88,7 +88,7 @@ public abstract class Query implements Cloneable {
    * Only implemented by primitive queries, which re-write to themselves.
    */
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("Query " + this + " does not implement createWeight");
   }
 
   /** Expert: called to re-write queries into primitive queries. For example,

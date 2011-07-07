@@ -350,8 +350,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public Bits getDeletedDocs() {
-    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits deletedDocs");
+  public Bits getLiveDocs() {
+    throw new UnsupportedOperationException("please use MultiFields.getLiveDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits liveDocs");
   }
 
   @Override

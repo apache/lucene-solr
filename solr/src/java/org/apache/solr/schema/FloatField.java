@@ -17,12 +17,12 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.FloatValuesCreator;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -40,7 +40,7 @@ public class FloatField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.FLOAT, reverse);
+    return new SortField(field.name,SortField.Type.FLOAT, reverse);
   }
 
   @Override

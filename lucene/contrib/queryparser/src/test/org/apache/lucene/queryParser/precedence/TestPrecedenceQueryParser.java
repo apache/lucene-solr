@@ -38,7 +38,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryParser.TestQueryParser;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryNodeParseException;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.parser.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -128,7 +128,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
       a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(a);
-    qp.setDefaultOperator(Operator.OR);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.OR);
     return qp;
   }
 
@@ -174,7 +174,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
       a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(a);
-    qp.setDefaultOperator(Operator.AND);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     return qp.parse(query, "field");
   }
 
@@ -234,11 +234,11 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     PrecedenceQueryParser qp = new PrecedenceQueryParser();
     qp.setAnalyzer(new MockAnalyzer(random));
     // make sure OR is the default:
-    assertEquals(Operator.OR, qp.getDefaultOperator());
-    qp.setDefaultOperator(Operator.AND);
-    assertEquals(Operator.AND, qp.getDefaultOperator());
-    qp.setDefaultOperator(Operator.OR);
-    assertEquals(Operator.OR, qp.getDefaultOperator());
+    assertEquals(StandardQueryConfigHandler.Operator.OR, qp.getDefaultOperator());
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
+    assertEquals(StandardQueryConfigHandler.Operator.AND, qp.getDefaultOperator());
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.OR);
+    assertEquals(StandardQueryConfigHandler.Operator.OR, qp.getDefaultOperator());
 
     assertQueryEquals("a OR !b", null, "a -b");
     assertQueryEquals("a OR ! b", null, "a -b");
@@ -607,7 +607,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     query2 = parser.parse("A (-B +C)", "field");
     assertEquals(query1, query2);
     
-    parser.setDefaultOperator(Operator.AND);
+    parser.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     query1 = parser.parse("A AND B OR C AND D", "field");
     query2 = parser.parse("(A AND B) OR (C AND D)", "field");
     assertEquals(query1, query2);

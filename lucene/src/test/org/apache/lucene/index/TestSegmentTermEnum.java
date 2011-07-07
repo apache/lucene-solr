@@ -93,7 +93,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     assertEquals("bbb", terms.term().utf8ToString());
     assertNull(terms.next());
 
-    assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(ordB));
+    terms.seekExact(ordB);
     assertEquals("bbb", terms.term().utf8ToString());
     reader.close();
   }
@@ -119,7 +119,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
     // create enumeration of terms after term 'aaa',
     // including 'aaa'
-    termEnum.seek(new BytesRef("aaa"));
+    termEnum.seekCeil(new BytesRef("aaa"));
     // assert that term is 'aaa'
     assertEquals("aaa", termEnum.term().utf8ToString());
     assertEquals(200, termEnum.docFreq());

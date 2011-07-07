@@ -934,15 +934,6 @@
   <requestHandler name="/admin/"
     class="org.apache.solr.handler.admin.AdminHandlers" />
 
-  <!-- ping/healthcheck -->
-  <requestHandler name="/admin/ping" class="PingRequestHandler">
-    <lst name="defaults">
-      <str name="qt">standard</str>
-      <str name="q">solrpingquery</str>
-      <str name="echoParams">all</str>
-    </lst>
-  </requestHandler>
-
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler">
     <lst name="defaults">

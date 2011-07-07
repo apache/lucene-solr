@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;
@@ -31,12 +32,18 @@ public class TestRollingUpdates extends LuceneTestCase {
 
   @Test
   public void testRollingUpdates() throws Exception {
-    final Directory dir = newDirectory();
-
+    final MockDirectoryWrapper dir = newDirectory();
+    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     final LineFileDocs docs = new LineFileDocs(random);
 
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-    final int SIZE = atLeast(20);
+    CodecProvider provider = CodecProvider.getDefault();
+    //provider.register(new MemoryCodec());
+    if (random.nextBoolean()) {
+      provider.setFieldCodec("docid", "Memory");
+    }
+
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(provider));
+    final int SIZE = atLeast(TEST_NIGHTLY ? 100 : 20);
     int id = 0;
     IndexReader r = null;
     final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
@@ -71,6 +78,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     w.close();
     docs.close();
     
+    _TestUtil.checkIndex(dir);
     dir.close();
   }
   

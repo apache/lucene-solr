@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -410,7 +409,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    Query q = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer).parse( "giga~0.9" );
+    Query q = new FuzzyQuery(new Term("field", "giga"), 0.9f);
 
     // 3. search
     IndexSearcher searcher = newSearcher(r);
@@ -422,12 +421,6 @@ public class TestFuzzyQuery extends LuceneTestCase {
     index.close();
   }
   
-  public void testDistanceAsEditsParsing() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
-    FuzzyQuery q = (FuzzyQuery) qp.parse("foobar~2");
-    assertEquals(2f, q.getMinSimilarity(), 0.0001f);
-  }
-  
   public void testDistanceAsEditsSearching() throws Exception {
     Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, index);
@@ -437,19 +430,18 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
     w.close();
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(random));
     
-    FuzzyQuery q = (FuzzyQuery) qp.parse("fouba~2");
+    FuzzyQuery q = new FuzzyQuery(new Term("field", "fouba"), 2);
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
     
-    q = (FuzzyQuery) qp.parse("foubara~2");
+    q = new FuzzyQuery(new Term("field", "foubara"), 2);
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
     
-    q = (FuzzyQuery) qp.parse("t~3");
+    q = new FuzzyQuery(new Term("field", "t"), 3);
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("test", searcher.doc(hits[0].doc).get("field"));

@@ -28,7 +28,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.queryParser.QueryParser;
 
 import java.io.IOException;
 
@@ -268,32 +267,74 @@ public class TestWildcard
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new MockAnalyzer(random));
-    qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",
         "\\79 hijklmn1",
         "\\\\ opqrstu1",
     };
+
     // queries that should find all docs
-    String matchAll[] = {
-        "*", "*1", "**1", "*?", "*?1", "?*1", "**", "***", "\\\\*"
+    Query matchAll[] = {
+        new WildcardQuery(new Term(field, "*")),
+        new WildcardQuery(new Term(field, "*1")),
+        new WildcardQuery(new Term(field, "**1")),
+        new WildcardQuery(new Term(field, "*?")),
+        new WildcardQuery(new Term(field, "*?1")),
+        new WildcardQuery(new Term(field, "?*1")),
+        new WildcardQuery(new Term(field, "**")),
+        new WildcardQuery(new Term(field, "***")),
+        new WildcardQuery(new Term(field, "\\\\*"))
     };
+
     // queries that should find no docs
-    String matchNone[] = {
-        "a*h", "a?h", "*a*h", "?a", "a?",
+    Query matchNone[] = {
+        new WildcardQuery(new Term(field, "a*h")),
+        new WildcardQuery(new Term(field, "a?h")),
+        new WildcardQuery(new Term(field, "*a*h")),
+        new WildcardQuery(new Term(field, "?a")),
+        new WildcardQuery(new Term(field, "a?"))
     };
-    // queries that should be parsed to prefix queries
-    String matchOneDocPrefix[][] = {
-        {"a*", "ab*", "abc*", }, // these should find only doc 0 
-        {"h*", "hi*", "hij*", "\\\\7*"}, // these should find only doc 1
-        {"o*", "op*", "opq*", "\\\\\\\\*"}, // these should find only doc 2
+
+    PrefixQuery matchOneDocPrefix[][] = {
+        {new PrefixQuery(new Term(field, "a")),
+         new PrefixQuery(new Term(field, "ab")),
+         new PrefixQuery(new Term(field, "abc"))}, // these should find only doc 0
+
+        {new PrefixQuery(new Term(field, "h")),
+         new PrefixQuery(new Term(field, "hi")),
+         new PrefixQuery(new Term(field, "hij")),
+         new PrefixQuery(new Term(field, "\\7"))}, // these should find only doc 1
+
+        {new PrefixQuery(new Term(field, "o")),
+         new PrefixQuery(new Term(field, "op")),
+         new PrefixQuery(new Term(field, "opq")),
+         new PrefixQuery(new Term(field, "\\\\"))}, // these should find only doc 2
     };
-    // queries that should be parsed to wildcard queries
-    String matchOneDocWild[][] = {
-        {"*a*", "*ab*", "*abc**", "ab*e*", "*g?", "*f?1", "abc**"}, // these should find only doc 0
-        {"*h*", "*hi*", "*hij**", "hi*k*", "*n?", "*m?1", "hij**"}, // these should find only doc 1
-        {"*o*", "*op*", "*opq**", "op*q*", "*u?", "*t?1", "opq**"}, // these should find only doc 2
+
+    WildcardQuery matchOneDocWild[][] = {
+
+        {new WildcardQuery(new Term(field, "*a*")), // these should find only doc 0
+            new WildcardQuery(new Term(field, "*ab*")),
+            new WildcardQuery(new Term(field, "*abc**")),
+            new WildcardQuery(new Term(field, "ab*e*")),
+            new WildcardQuery(new Term(field, "*g?")),
+            new WildcardQuery(new Term(field, "*f?1"))},
+
+        {new WildcardQuery(new Term(field, "*h*")), // these should find only doc 1
+            new WildcardQuery(new Term(field, "*hi*")),
+            new WildcardQuery(new Term(field, "*hij**")),
+            new WildcardQuery(new Term(field, "hi*k*")),
+            new WildcardQuery(new Term(field, "*n?")),
+            new WildcardQuery(new Term(field, "*m?1")),
+            new WildcardQuery(new Term(field, "hij**"))},
+
+        {new WildcardQuery(new Term(field, "*o*")), // these should find only doc 2
+            new WildcardQuery(new Term(field, "*op*")),
+            new WildcardQuery(new Term(field, "*opq**")),
+            new WildcardQuery(new Term(field, "op*q*")),
+            new WildcardQuery(new Term(field, "*u?")),
+            new WildcardQuery(new Term(field, "*t?1")),
+            new WildcardQuery(new Term(field, "opq**"))}
     };
 
     // prepare the index
@@ -311,43 +352,35 @@ public class TestWildcard
     IndexSearcher searcher = new IndexSearcher(dir, true);
     
     // test queries that must find all
-    for (int i = 0; i < matchAll.length; i++) {
-      String qtxt = matchAll[i];
-      Query q = qp.parse(qtxt);
-      if (VERBOSE) System.out.println("matchAll: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+    for (Query q : matchAll) {
+      if (VERBOSE) System.out.println("matchAll: q=" + q + " " + q.getClass().getName());
       ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
-      assertEquals(docs.length,hits.length);
+      assertEquals(docs.length, hits.length);
     }
     
     // test queries that must find none
-    for (int i = 0; i < matchNone.length; i++) {
-      String qtxt = matchNone[i];
-      Query q = qp.parse(qtxt);
-      if (VERBOSE) System.out.println("matchNone: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+    for (Query q : matchNone) {
+      if (VERBOSE) System.out.println("matchNone: q=" + q + " " + q.getClass().getName());
       ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
-      assertEquals(0,hits.length);
+      assertEquals(0, hits.length);
     }
 
-    // test queries that must be prefix queries and must find only one doc
+    // thest the prefi queries find only one doc
     for (int i = 0; i < matchOneDocPrefix.length; i++) {
       for (int j = 0; j < matchOneDocPrefix[i].length; j++) {
-        String qtxt = matchOneDocPrefix[i][j];
-        Query q = qp.parse(qtxt);
-        if (VERBOSE) System.out.println("match 1 prefix: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
-        assertEquals(PrefixQuery.class, q.getClass());
+        Query q = matchOneDocPrefix[i][j];
+        if (VERBOSE) System.out.println("match 1 prefix: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
         ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
         assertEquals(1,hits.length);
         assertEquals(i,hits[0].doc);
       }
     }
 
-    // test queries that must be wildcard queries and must find only one doc
-    for (int i = 0; i < matchOneDocPrefix.length; i++) {
+    // test the wildcard queries find only one doc
+    for (int i = 0; i < matchOneDocWild.length; i++) {
       for (int j = 0; j < matchOneDocWild[i].length; j++) {
-        String qtxt = matchOneDocWild[i][j];
-        Query q = qp.parse(qtxt);
-        if (VERBOSE) System.out.println("match 1 wild: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
-        assertEquals(WildcardQuery.class, q.getClass());
+        Query q = matchOneDocWild[i][j];
+        if (VERBOSE) System.out.println("match 1 wild: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
         ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
         assertEquals(1,hits.length);
         assertEquals(i,hits[0].doc);

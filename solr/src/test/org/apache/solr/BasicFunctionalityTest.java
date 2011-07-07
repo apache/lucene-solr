@@ -28,9 +28,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -49,7 +49,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.update.DirectUpdateHandler2;
 
 
 import org.junit.BeforeClass;
@@ -120,9 +120,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // test merge factor picked up
     SolrCore core = h.getCore();
 
-    SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
-    assertEquals("Mergefactor was not picked up", ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
-    writer.close();
+    IndexWriter writer = ((DirectUpdateHandler2)core.getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
+    assertEquals("Mergefactor was not picked up", ((LogMergePolicy)writer.getConfig().getMergePolicy()).getMergeFactor(), 8);
 
     lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",

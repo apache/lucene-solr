@@ -35,6 +35,7 @@ public class FastVectorHighlighter {
   private final boolean fieldMatch;
   private final FragListBuilder fragListBuilder;
   private final FragmentsBuilder fragmentsBuilder;
+  private int phraseLimit = Integer.MAX_VALUE;
 
   /**
    * the default constructor.
@@ -173,7 +174,7 @@ public class FastVectorHighlighter {
       final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize ) throws IOException {
     FieldTermStack fieldTermStack = new FieldTermStack( reader, docId, fieldName, fieldQuery );
-    FieldPhraseList fieldPhraseList = new FieldPhraseList( fieldTermStack, fieldQuery );
+    FieldPhraseList fieldPhraseList = new FieldPhraseList( fieldTermStack, fieldQuery, phraseLimit );
     return fragListBuilder.createFieldFragList( fieldPhraseList, fragCharSize );
   }
 
@@ -190,4 +191,15 @@ public class FastVectorHighlighter {
    * @return whether fieldMatch or not
    */
   public boolean isFieldMatch(){ return fieldMatch; }
+  
+  /**
+   * @return the maximum number of phrases to analyze when searching for the highest-scoring phrase.
+   */
+  public int getPhraseLimit () { return phraseLimit; }
+  
+  /**
+   * set the maximum number of phrases to analyze when searching for the highest-scoring phrase.
+   * The default is unlimited (Integer.MAX_VALUE).
+   */
+  public void setPhraseLimit (int phraseLimit) { this.phraseLimit = phraseLimit; }
 }

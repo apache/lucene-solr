@@ -17,16 +17,10 @@ package org.apache.lucene.queryParser.core.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.AttributeSource;
-
 /**
- * This class represents a field configuration. Every configuration should be
- * set using the methods inherited from {@link AttributeSource}.
- * 
- * @see QueryConfigHandler
- * @see org.apache.lucene.util.Attribute
+ * This class represents a field configuration.
  */
-public class FieldConfig extends AttributeSource {
+public class FieldConfig extends AbstractQueryConfig {
 
   private String fieldName;
   
@@ -57,7 +51,7 @@ public class FieldConfig extends AttributeSource {
 
   @Override
   public String toString() {
-    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\""
+    return "<fieldconfig name=\"" + this.fieldName + "\" configurations=\""
         + super.toString() + "\"/>";
   }
 

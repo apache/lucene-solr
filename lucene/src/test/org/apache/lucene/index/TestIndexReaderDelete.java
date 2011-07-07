@@ -285,17 +285,17 @@ public class TestIndexReaderDelete extends LuceneTestCase {
     IndexReader r = new SlowMultiReaderWrapper(w.getReader());
     w.close();
 
-    assertNull(r.getDeletedDocs());
+    assertNull(r.getLiveDocs());
     r.close();
 
     r = new SlowMultiReaderWrapper(IndexReader.open(dir, false));
 
-    assertNull(r.getDeletedDocs());
+    assertNull(r.getLiveDocs());
     assertEquals(1, r.deleteDocuments(new Term("f", "doctor")));
-    assertNotNull(r.getDeletedDocs());
-    assertTrue(r.getDeletedDocs().get(0));
+    assertNotNull(r.getLiveDocs());
+    assertFalse(r.getLiveDocs().get(0));
     assertEquals(1, r.deleteDocuments(new Term("f", "who")));
-    assertTrue(r.getDeletedDocs().get(1));
+    assertFalse(r.getLiveDocs().get(1));
     r.close();
     dir.close();
   }

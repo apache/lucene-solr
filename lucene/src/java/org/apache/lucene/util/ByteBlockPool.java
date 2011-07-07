@@ -16,9 +16,12 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.lucene.store.DataOutput;
 
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
@@ -240,6 +243,43 @@ public final class ByteBlockPool {
     }
     assert term.length >= 0;
     return term;
+  }
+  
+  /**
+   * Copies the given {@link BytesRef} at the current positions (
+   * {@link #byteUpto} across buffer boundaries
+   */
+  public final void copy(final BytesRef bytes) {
+    int length = bytes.length;
+    int offset = bytes.offset;
+    int overflow = (length + byteUpto) - BYTE_BLOCK_SIZE;
+    do {
+      if (overflow <= 0) { 
+        System.arraycopy(bytes.bytes, offset, buffer, byteUpto, length);
+        byteUpto += length;
+        break;
+      } else {
+        final int bytesToCopy = length-overflow;
+        System.arraycopy(bytes.bytes, offset, buffer, byteUpto, bytesToCopy);
+        offset += bytesToCopy;
+        length -= bytesToCopy;
+        nextBuffer();
+        overflow = overflow - BYTE_BLOCK_SIZE;
+      }
+    }  while(true);
+  }
+  
+  /**
+   * Writes the pools content to the given {@link DataOutput}
+   */
+  public final void writePool(final DataOutput out) throws IOException {
+    int bytesOffset = byteOffset;
+    int block = 0;
+    while (bytesOffset > 0) {
+      out.writeBytes(buffers[block++], BYTE_BLOCK_SIZE);
+      bytesOffset -= BYTE_BLOCK_SIZE;
+    }
+    out.writeBytes(buffers[block], byteUpto);
   }
 }
 

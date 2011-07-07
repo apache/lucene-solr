@@ -98,7 +98,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 
     DocsEnum termDocs = MultiFields.getTermDocsEnum(mergedReader,
-                                                    MultiFields.getDeletedDocs(mergedReader),
+                                                    MultiFields.getLiveDocs(mergedReader),
                                                     DocHelper.TEXT_FIELD_2_KEY,
                                                     new BytesRef("field"));
     assertTrue(termDocs != null);

@@ -43,6 +43,7 @@ public final class MultiTermsEnum extends TermsEnum {
   private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
 
   private BytesRef lastSeek;
+  private boolean lastSeekExact;
   private final BytesRef lastSeekScratch = new BytesRef();
 
   private int numTop;
@@ -139,7 +140,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
     queue.clear();
     numTop = 0;
 
@@ -147,6 +148,59 @@ public final class MultiTermsEnum extends TermsEnum {
     if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
       seekOpt = true;
     }
+
+    lastSeek = null;
+    lastSeekExact = true;
+
+    for(int i=0;i<numSubs;i++) {
+      final boolean status;
+      // LUCENE-2130: if we had just seek'd already, prior
+      // to this seek, and the new seek term is after the
+      // previous one, don't try to re-seek this sub if its
+      // current term is already beyond this new seek term.
+      // Doing so is a waste because this sub will simply
+      // seek to the same spot.
+      if (seekOpt) {
+        final BytesRef curTerm = currentSubs[i].current;
+        if (curTerm != null) {
+          final int cmp = termComp.compare(term, curTerm);
+          if (cmp == 0) {
+            status = true;
+          } else if (cmp < 0) {
+            status = false;
+          } else {
+            status = currentSubs[i].terms.seekExact(term, useCache);
+          }
+        } else {
+          status = false;
+        }
+      } else {
+        status = currentSubs[i].terms.seekExact(term, useCache);
+      }
+
+      if (status) {
+        top[numTop++] = currentSubs[i];
+        current = currentSubs[i].current = currentSubs[i].terms.term();
+        assert term.equals(currentSubs[i].current);
+      }
+    }
+
+    // if at least one sub had exact match to the requested
+    // term then we found match
+    return numTop > 0;
+  }
+
+  @Override
+  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    queue.clear();
+    numTop = 0;
+    lastSeekExact = false;
+
+    boolean seekOpt = false;
+    if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
+      seekOpt = true;
+    }
+
     lastSeekScratch.copy(term);
     lastSeek = lastSeekScratch;
 
@@ -167,25 +221,27 @@ public final class MultiTermsEnum extends TermsEnum {
           } else if (cmp < 0) {
             status = SeekStatus.NOT_FOUND;
           } else {
-            status = currentSubs[i].terms.seek(term, useCache);
+            status = currentSubs[i].terms.seekCeil(term, useCache);
           }
         } else {
           status = SeekStatus.END;
         }
       } else {
-        status = currentSubs[i].terms.seek(term, useCache);
+        status = currentSubs[i].terms.seekCeil(term, useCache);
       }
 
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
-      } else if (status == SeekStatus.NOT_FOUND) {
-        currentSubs[i].current = currentSubs[i].terms.term();
-        assert currentSubs[i].current != null;
-        queue.add(currentSubs[i]);
       } else {
-        // enum exhausted
-        currentSubs[i].current = null;
+        if (status == SeekStatus.NOT_FOUND) {
+          currentSubs[i].current = currentSubs[i].terms.term();
+          assert currentSubs[i].current != null;
+          queue.add(currentSubs[i]);
+        } else {
+          // enum exhausted
+          currentSubs[i].current = null;
+        }
       }
     }
 
@@ -204,7 +260,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seek(long ord) throws IOException {
+  public void seekExact(long ord) throws IOException {
     throw new UnsupportedOperationException();
   }
 
@@ -241,6 +297,17 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public BytesRef next() throws IOException {
+    if (lastSeekExact) {
+      // Must seekCeil at this point, so those subs that
+      // didn't have the term can find the following term.
+      // NOTE: we could save some CPU by only seekCeil the
+      // subs that didn't match the last exact seek... but
+      // most impls short-circuit if you seekCeil to term
+      // they are already on.
+      final SeekStatus status = seekCeil(current);
+      assert status == SeekStatus.FOUND;
+      lastSeekExact = false;
+    }
     lastSeek = null;
 
     // restore queue
@@ -279,7 +346,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
     final MultiDocsEnum docsEnum;
     if (reuse != null) {
       docsEnum = (MultiDocsEnum) reuse;
@@ -287,11 +354,11 @@ public final class MultiTermsEnum extends TermsEnum {
       docsEnum = new MultiDocsEnum();
     }
     
-    final MultiBits multiSkipDocs;
-    if (skipDocs instanceof MultiBits) {
-      multiSkipDocs = (MultiBits) skipDocs;
+    final MultiBits multiLiveDocs;
+    if (liveDocs instanceof MultiBits) {
+      multiLiveDocs = (MultiBits) liveDocs;
     } else {
-      multiSkipDocs = null;
+      multiLiveDocs = null;
     }
 
     int upto = 0;
@@ -302,22 +369,22 @@ public final class MultiTermsEnum extends TermsEnum {
 
       final Bits b;
 
-      if (multiSkipDocs != null) {
+      if (multiLiveDocs != null) {
         // optimize for common case: requested skip docs is a
         // congruent sub-slice of MultiBits: in this case, we
-        // just pull the skipDocs from the sub reader, rather
+        // just pull the liveDocs from the sub reader, rather
         // than making the inefficient
         // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(entry.subSlice);
+        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(entry.subSlice);
         if (sub.matches) {
           b = sub.result;
         } else {
           // custom case: requested skip docs is foreign:
           // must slice it on every access
-          b = new BitsSlice(skipDocs, entry.subSlice);
+          b = new BitsSlice(liveDocs, entry.subSlice);
         }
-      } else if (skipDocs != null) {
-        b = new BitsSlice(skipDocs, entry.subSlice);
+      } else if (liveDocs != null) {
+        b = new BitsSlice(liveDocs, entry.subSlice);
       } else {
         // no deletions
         b = null;
@@ -340,7 +407,7 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     final MultiDocsAndPositionsEnum docsAndPositionsEnum;
     if (reuse != null) {
       docsAndPositionsEnum = (MultiDocsAndPositionsEnum) reuse;
@@ -348,11 +415,11 @@ public final class MultiTermsEnum extends TermsEnum {
       docsAndPositionsEnum = new MultiDocsAndPositionsEnum();
     }
     
-    final MultiBits multiSkipDocs;
-    if (skipDocs instanceof MultiBits) {
-      multiSkipDocs = (MultiBits) skipDocs;
+    final MultiBits multiLiveDocs;
+    if (liveDocs instanceof MultiBits) {
+      multiLiveDocs = (MultiBits) liveDocs;
     } else {
-      multiSkipDocs = null;
+      multiLiveDocs = null;
     }
 
     int upto = 0;
@@ -363,23 +430,23 @@ public final class MultiTermsEnum extends TermsEnum {
 
       final Bits b;
 
-      if (multiSkipDocs != null) {
+      if (multiLiveDocs != null) {
         // Optimize for common case: requested skip docs is a
         // congruent sub-slice of MultiBits: in this case, we
-        // just pull the skipDocs from the sub reader, rather
+        // just pull the liveDocs from the sub reader, rather
         // than making the inefficient
         // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(top[i].subSlice);
+        final MultiBits.SubResult sub = multiLiveDocs.getMatchingSub(top[i].subSlice);
         if (sub.matches) {
           b = sub.result;
         } else {
           // custom case: requested skip docs is foreign:
           // must slice it on every access (very
           // inefficient)
-          b = new BitsSlice(skipDocs, top[i].subSlice);
+          b = new BitsSlice(liveDocs, top[i].subSlice);
         }
-      } else if (skipDocs != null) {
-        b = new BitsSlice(skipDocs, top[i].subSlice);
+      } else if (liveDocs != null) {
+        b = new BitsSlice(liveDocs, top[i].subSlice);
       } else {
         // no deletions
         b = null;

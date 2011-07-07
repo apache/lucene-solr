@@ -52,6 +52,7 @@ import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -632,6 +633,11 @@ public abstract class LuceneTestCase extends Assert {
     for (Thread t : Thread.getAllStackTraces().keySet()) {
       rogueThreads.put(t, true);
     }
+    
+    if (TEST_ITER > 1) {
+      System.out.println("WARNING: you are using -Dtests.iter=n where n > 1, not all tests support this option.");
+      System.out.println("Some may crash or fail: this is not a bug.");
+    }
   }
 
   /**
@@ -712,8 +718,12 @@ public abstract class LuceneTestCase extends Assert {
         throw e;
       }
 
+      if (insanity.length != 0) {
+        reportAdditionalFailureInfo();
+      }
+
       assertEquals(msg + ": Insane FieldCache usage(s) found",
-              0, insanity.length);
+                   0, insanity.length);
       insanity = null;
     } finally {
 
@@ -947,6 +957,7 @@ public abstract class LuceneTestCase extends Assert {
     tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
     tmp.setUseCompoundFile(r.nextBoolean());
     tmp.setNoCFSRatio(0.1 + r.nextDouble()*0.8);
+    tmp.setReclaimDeletesWeight(r.nextDouble()*4);
     return tmp;
   }
 
@@ -1102,9 +1113,15 @@ public abstract class LuceneTestCase extends Assert {
   /** Returns a new field instance, using the specified random. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
+    
     if (usually(random)) {
       // most of the time, don't modify the params
       return new Field(name, value, store, index, tv);
+    }
+
+    if (random.nextBoolean()) {
+      // tickle any code still relying on field names being interned:
+      name = new String(name);
     }
 
     if (!index.isIndexed())
@@ -1451,6 +1468,7 @@ public abstract class LuceneTestCase extends Assert {
       register(new PreFlexCodec());
       register(new PulsingCodec(1));
       register(new SimpleTextCodec());
+      register(new MemoryCodec());
       Collections.shuffle(knownCodecs, random);
     }
 

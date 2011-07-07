@@ -23,13 +23,13 @@ import org.apache.lucene.util.BytesRef;
 public class InstantiatedDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int upto;
   private int posUpto;
-  private Bits skipDocs;
+  private Bits liveDocs;
   private InstantiatedTerm term;
   protected InstantiatedTermDocumentInformation currentDoc;
   private final BytesRef payload = new BytesRef();
 
-  public InstantiatedDocsAndPositionsEnum reset(Bits skipDocs, InstantiatedTerm term) {
-    this.skipDocs = skipDocs;
+  public InstantiatedDocsAndPositionsEnum reset(Bits liveDocs, InstantiatedTerm term) {
+    this.liveDocs = liveDocs;
     this.term = term;
     upto = -1;
     return this;
@@ -47,7 +47,7 @@ public class InstantiatedDocsAndPositionsEnum extends DocsAndPositionsEnum {
       return NO_MORE_DOCS;
     } else {
       currentDoc = term.getAssociatedDocuments()[upto];
-      if (skipDocs == null || !skipDocs.get(currentDoc.getDocument().getDocumentNumber())) {
+      if (liveDocs == null || liveDocs.get(currentDoc.getDocument().getDocumentNumber())) {
         posUpto = -1;
         return docID();
       } else {
@@ -69,7 +69,7 @@ public class InstantiatedDocsAndPositionsEnum extends DocsAndPositionsEnum {
     }
     currentDoc = term.getAssociatedDocuments()[upto];
 
-    if (skipDocs != null && skipDocs.get(currentDoc.getDocument().getDocumentNumber())) {
+    if (liveDocs != null && !liveDocs.get(currentDoc.getDocument().getDocumentNumber())) {
       return nextDoc();
     } else {
       posUpto = -1;

@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -84,13 +84,17 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     iw.close();
     searcher = newSearcher(reader);
 
-    String qtxt = "one";
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "one")), BooleanClause.Occur.SHOULD);
     // start from 1, so that the 0th doc never matches
     for (int i = 1; i < docText.length; i++) {
-      qtxt += ' ' + docText[i]; // large query so that search will be longer
+      String[] docTextParts = docText[i].split("\\s+");
+      for (String docTextPart : docTextParts) { // large query so that search will be longer
+        booleanQuery.add(new TermQuery(new Term(FIELD_NAME, docTextPart)), BooleanClause.Occur.SHOULD);
+      }
     }
-    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer(random));
-    query = queryParser.parse(qtxt);
+
+    query = booleanQuery;
     
     // warm the searcher
     searcher.search(query, null, 1000);

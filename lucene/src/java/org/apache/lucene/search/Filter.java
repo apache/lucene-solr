@@ -44,7 +44,7 @@ public abstract class Filter {
    *         represent the whole underlying index i.e. if the index has more than
    *         one segment the given reader only represents a single segment.
    *         The provided context is always an atomic context, so you can call 
-   *         {@link IndexReader#fields()} or  {@link IndexReader#getDeletedDocs()}
+   *         {@link IndexReader#fields()} or {@link IndexReader#getLiveDocs()}
    *         on the context's reader, for example.
    *          
    * @return a DocIdSet that provides the documents which should be permitted or

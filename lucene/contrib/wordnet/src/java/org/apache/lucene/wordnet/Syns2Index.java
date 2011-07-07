@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -90,9 +91,15 @@ public class Syns2Index
 	public static final String F_WORD = "word";
 
 	/**
-	 *
+	 * we don't actually analyze any text (only a NOT_ANALYZED field),
+	 * but analyzer can't be null, docinverter wants the offset gap!
 	 */
-    private static final Analyzer ana = new StandardAnalyzer(Version.LUCENE_CURRENT);
+    private static final Analyzer ana = new Analyzer() {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return null;
+      }
+    };
 
     /**
      * Takes arg of prolog file name and index directory.

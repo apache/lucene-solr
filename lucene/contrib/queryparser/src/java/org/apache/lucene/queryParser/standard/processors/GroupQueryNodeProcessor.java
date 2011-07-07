@@ -31,8 +31,9 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode.Modifier;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessor;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryParser.standard.nodes.BooleanModifierNode;
 
 /**
@@ -64,14 +65,14 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
   }
 
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
-
-    if (!getQueryConfigHandler().hasAttribute(DefaultOperatorAttribute.class)) {
+    Operator defaultOperator = getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
+    
+    if (defaultOperator == null) {
       throw new IllegalArgumentException(
-          "DefaultOperatorAttribute should be set on the QueryConfigHandler");
+          "DEFAULT_OPERATOR should be set on the QueryConfigHandler");
     }
 
-    this.usingAnd = Operator.AND == getQueryConfigHandler()
-        .getAttribute(DefaultOperatorAttribute.class).getOperator();
+    this.usingAnd = StandardQueryConfigHandler.Operator.AND == defaultOperator;
 
     if (queryTree instanceof GroupQueryNode) {
       queryTree = ((GroupQueryNode) queryTree).getChild();

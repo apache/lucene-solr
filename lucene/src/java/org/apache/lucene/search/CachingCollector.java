@@ -17,22 +17,22 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Caches all docs, and optionally also scores, coming from
  * a search, and is then able to replay them to another
  * collector.  You specify the max RAM this class may use.
- * Once the collection is done, call {@link #isCached}.  If
- * this returns true, you can use {@link #replay} against a
- * new collector.  If it returns false, this means too much
- * RAM was required and you must instead re-run the original
- * search.
+ * Once the collection is done, call {@link #isCached}. If
+ * this returns true, you can use {@link #replay(Collector)}
+ * against a new collector.  If it returns false, this means
+ * too much RAM was required and you must instead re-run the
+ * original search.
  *
  * <p><b>NOTE</b>: this class consumes 4 (or 8 bytes, if
  * scoring is cached) per collected document.  If the result
@@ -105,7 +105,16 @@ public abstract class CachingCollector extends Collector {
 
       cachedScorer = new CachedScorer();
       cachedScores = new ArrayList<float[]>();
-      curScores = new float[128];
+      curScores = new float[INITIAL_ARRAY_SIZE];
+      cachedScores.add(curScores);
+    }
+
+    ScoreCachingCollector(Collector other, int maxDocsToCache) {
+      super(other, maxDocsToCache);
+
+      cachedScorer = new CachedScorer();
+      cachedScores = new ArrayList<float[]>();
+      curScores = new float[INITIAL_ARRAY_SIZE];
       cachedScores.add(curScores);
     }
     
@@ -210,7 +219,11 @@ public abstract class CachingCollector extends Collector {
     NoScoreCachingCollector(Collector other, double maxRAMMB) {
      super(other, maxRAMMB, false);
     }
-    
+
+    NoScoreCachingCollector(Collector other, int maxDocsToCache) {
+     super(other, maxDocsToCache);
+    }
+
     @Override
     public void collect(int doc) throws IOException {
 
@@ -353,7 +366,25 @@ public abstract class CachingCollector extends Collector {
    */
   public static CachingCollector create(Collector other, boolean cacheScores, double maxRAMMB) {
     return cacheScores ? new ScoreCachingCollector(other, maxRAMMB) : new NoScoreCachingCollector(other, maxRAMMB);
-    }
+  }
+
+  /**
+   * Create a new {@link CachingCollector} that wraps the given collector and
+   * caches documents and scores up to the specified max docs threshold.
+   *
+   * @param other
+   *          the Collector to wrap and delegate calls to.
+   * @param cacheScores
+   *          whether to cache scores in addition to document IDs. Note that
+   *          this increases the RAM consumed per doc
+   * @param maxDocsToCache
+   *          the maximum number of documents for caching the documents and
+   *          possible the scores. If the collector exceeds the threshold,
+   *          no documents and scores are cached.
+   */
+  public static CachingCollector create(Collector other, boolean cacheScores, int maxDocsToCache) {
+    return cacheScores ? new ScoreCachingCollector(other, maxDocsToCache) : new NoScoreCachingCollector(other, maxDocsToCache);
+  }
   
   // Prevent extension from non-internal classes
   private CachingCollector(Collector other, double maxRAMMB, boolean cacheScores) {
@@ -368,6 +399,15 @@ public abstract class CachingCollector extends Collector {
       bytesPerDoc += RamUsageEstimator.NUM_BYTES_FLOAT;
     }
     maxDocsToCache = (int) ((maxRAMMB * 1024 * 1024) / bytesPerDoc);
+  }
+
+  private CachingCollector(Collector other, int maxDocsToCache) {
+    this.other = other;
+
+    cachedDocs = new ArrayList<int[]>();
+    curDocs = new int[INITIAL_ARRAY_SIZE];
+    cachedDocs.add(curDocs);
+    this.maxDocsToCache = maxDocsToCache;
   }
   
   @Override

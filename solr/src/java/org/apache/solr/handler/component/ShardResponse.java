@@ -56,12 +56,12 @@ public final class ShardResponse {
     return shard;
   }
 
-  void setShardRequest(ShardRequest rsp)
+  public void setShardRequest(ShardRequest rsp)
   {
     this.req = rsp;
   }
 
-  void setSolrResponse(SolrResponse rsp)
+  public void setSolrResponse(SolrResponse rsp)
   {
     this.rsp = rsp;
   }

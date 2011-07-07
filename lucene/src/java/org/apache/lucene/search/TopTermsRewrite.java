@@ -131,12 +131,11 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       }
     });
     
-    final Term placeholderTerm = new Term(query.field);
     final Q q = getTopLevelQuery();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
     for (final ScoreTerm st : scoreTerms) {
-      final Term term = placeholderTerm.createTerm(st.bytes);
+      final Term term = new Term(query.field, st.bytes);
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq();
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }

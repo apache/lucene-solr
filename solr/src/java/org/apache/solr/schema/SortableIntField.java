@@ -17,16 +17,16 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.queries.function.DocValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.solr.search.MutableValueInt;
-import org.apache.solr.search.MutableValue;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.FieldCacheSource;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.solr.util.NumberUtils;

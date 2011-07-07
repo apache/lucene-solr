@@ -133,6 +133,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
  
     public void testLazySkipping() throws IOException {
         assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefault().getFieldCodec(this.field).equals("SimpleText"));
+        assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec(this.field).equals("Memory"));
         // test whether only the minimum amount of seeks()
         // are performed
         performTest(5);
@@ -154,7 +155,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         IndexReader reader = IndexReader.open(directory, true);
 
         DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
-                                                                   MultiFields.getDeletedDocs(reader),
+                                                                   MultiFields.getLiveDocs(reader),
                                                                    this.field,
                                                                    new BytesRef("b"));
 
@@ -165,7 +166,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         }
 
         tp = MultiFields.getTermPositionsEnum(reader,
-                                              MultiFields.getDeletedDocs(reader),
+                                              MultiFields.getLiveDocs(reader),
                                               this.field,
                                               new BytesRef("a"));
 

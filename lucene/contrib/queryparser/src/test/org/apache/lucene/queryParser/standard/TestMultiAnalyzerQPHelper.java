@@ -28,7 +28,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.queryParser.core.QueryNodeException;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -102,7 +103,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     qp.setDefaultPhraseSlop(0);
 
     // non-default operator:
-    qp.setDefaultOperator(Operator.AND);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     assertEquals("+(multi multi2) +foo", qp.parse("multi foo", "").toString());
 
   }

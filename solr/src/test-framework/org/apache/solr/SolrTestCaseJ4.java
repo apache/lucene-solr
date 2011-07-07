@@ -41,6 +41,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,6 +65,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {
     startTrackingSearchers();
+    startTrackingWriters();
     ignoreException("ignore_exception");
   }
 
@@ -72,6 +74,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     deleteCore();
     resetExceptionIgnores();
     endTrackingSearchers();
+    endTrackingWriters();
   }
   
   // SOLR-2279: hack to shut these directories down
@@ -127,6 +130,24 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
+       log.error(msg);
+       fail(msg);
+     }
+  }
+  
+  static long numWriterOpens;
+  static long numWriterCloses;
+  public static void startTrackingWriters() {
+    numOpens = SolrIndexWriter.numOpens.get();
+    numCloses = SolrIndexWriter.numCloses.get();
+  }
+
+  public static void endTrackingWriters() {
+     long endNumOpens = SolrIndexWriter.numOpens.get();
+     long endNumCloses = SolrIndexWriter.numCloses.get();
+
+     if (endNumOpens-numOpens != endNumCloses-numCloses) {
+       String msg = "ERROR: SolrIndexWriter opens=" + (endNumOpens-numWriterOpens) + " closes=" + (endNumCloses-numWriterCloses);
        log.error(msg);
        fail(msg);
      }
@@ -430,6 +451,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
 
       for (String test : tests) {
+        if (test == null || test.length()==0) continue;
         String testJSON = test.replace('\'', '"');
 
         try {

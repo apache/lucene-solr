@@ -59,7 +59,6 @@ public abstract class AbstractUpdateRequest extends SolrRequest {
     else if( action == ACTION.COMMIT ) {
       params.set( UpdateParams.COMMIT, "true" );
     }
-    params.set( UpdateParams.WAIT_FLUSH, String.valueOf(waitFlush));
     params.set( UpdateParams.WAIT_SEARCHER, String.valueOf(waitSearcher));
     return this;
   }
@@ -107,10 +106,6 @@ public abstract class AbstractUpdateRequest extends SolrRequest {
     return res;
   }
 
-  public boolean isWaitFlush() {
-    return params != null && params.getBool(UpdateParams.WAIT_FLUSH, false);
-  }
-
   public boolean isWaitSearcher() {
     return params != null && params.getBool(UpdateParams.WAIT_SEARCHER, false);
   }
@@ -120,10 +115,6 @@ public abstract class AbstractUpdateRequest extends SolrRequest {
     if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT;
     if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
     return null;
-  }
-
-  public void setWaitFlush(boolean waitFlush) {
-    setParam( UpdateParams.WAIT_FLUSH, waitFlush+"" );
   }
 
   public void setWaitSearcher(boolean waitSearcher) {

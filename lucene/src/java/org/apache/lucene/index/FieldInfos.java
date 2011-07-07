@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.StringHelper;
 
 /** Access to the Fieldable Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
@@ -475,12 +474,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
-    name = StringHelper.intern(name);
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
     } 
     final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
-                                 storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
+                                       storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
     putInternal(fi);
     return fi;
   }
@@ -611,7 +609,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         b = 0;
       } else {
         switch(fi.docValues) {
-        case INTS:
+        case VAR_INTS:
           b = 1;
           break;
         case FLOAT_32:
@@ -638,6 +636,19 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         case BYTES_VAR_SORTED:
           b = 9;
           break;
+        case FIXED_INTS_16:
+          b = 10;
+          break;
+        case FIXED_INTS_32:
+          b = 11;
+          break;
+        case FIXED_INTS_64:
+          b = 12;
+          break;
+        case FIXED_INTS_8:
+          b = 13;
+          break;
+       
         default:
           throw new IllegalStateException("unhandled indexValues type " + fi.docValues);
         }
@@ -659,7 +670,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     final int size = input.readVInt(); //read in the size
 
     for (int i = 0; i < size; i++) {
-      String name = StringHelper.intern(input.readString());
+      String name = input.readString();
       // if this is a previous format codec 0 will be preflex!
       final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
       final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
@@ -688,7 +699,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           docValuesType = null;
           break;
         case 1:
-          docValuesType = ValueType.INTS;
+          docValuesType = ValueType.VAR_INTS;
           break;
         case 2:
           docValuesType = ValueType.FLOAT_32;
@@ -714,6 +725,19 @@ public final class FieldInfos implements Iterable<FieldInfo> {
         case 9:
           docValuesType = ValueType.BYTES_VAR_SORTED;
           break;
+        case 10:
+          docValuesType = ValueType.FIXED_INTS_16;
+          break;
+        case 11:
+          docValuesType = ValueType.FIXED_INTS_32;
+          break;
+        case 12:
+          docValuesType = ValueType.FIXED_INTS_64;
+          break;
+        case 13:
+          docValuesType = ValueType.FIXED_INTS_8;
+          break;  
+        
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);
         }

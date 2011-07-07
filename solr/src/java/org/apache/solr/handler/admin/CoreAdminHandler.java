@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -25,10 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.*;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -38,7 +37,8 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.lucene.store.Directory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +49,7 @@ import java.util.Date;
  * @since solr 1.3
  */
 public class CoreAdminHandler extends RequestHandlerBase {
+  protected static Logger log = LoggerFactory.getLogger(CoreAdminHandler.class);
   protected final CoreContainer coreContainer;
 
   public CoreAdminHandler() {
@@ -171,22 +172,53 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   protected boolean handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    boolean doPersist = false;
     SolrParams params = req.getParams();
-    SolrParams required = params.required();
-    String cname = required.get(CoreAdminParams.CORE);
+    String cname = params.required().get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.getCore(cname);
     SolrQueryRequest wrappedReq = null;
+
+    SolrCore[] sourceCores = null;
+    RefCounted<SolrIndexSearcher>[] searchers = null;
+    // stores readers created from indexDir param values
+    IndexReader[] readersToBeClosed = null;
     if (core != null) {
       try {
-        doPersist = coreContainer.isPersistent();
+        String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
+        if (dirNames == null || dirNames.length == 0) {
+          String[] sources = params.getParams("srcCore");
+          if (sources == null || sources.length == 0)
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                "At least one indexDir or srcCore must be specified");
 
-        String[] dirNames = required.getParams(CoreAdminParams.INDEX_DIR);
+          sourceCores = new SolrCore[sources.length];
+          for (int i = 0; i < sources.length; i++) {
+            String source = sources[i];
+            SolrCore srcCore = coreContainer.getCore(source);
+            if (srcCore == null)
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "Core: " + source + " does not exist");
+            sourceCores[i] = srcCore;
+          }
+        } else  {
+          readersToBeClosed = new IndexReader[dirNames.length];
+          DirectoryFactory dirFactory = core.getDirectoryFactory();
+          for (int i = 0; i < dirNames.length; i++) {
+            readersToBeClosed[i] = IndexReader.open(dirFactory.open(dirNames[i]), true);
+          }
+        }
 
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-        Directory[] dirs = new Directory[dirNames.length];
-        for (int i = 0; i < dirNames.length; i++) {
-          dirs[i] = dirFactory.open(dirNames[i]);
+        IndexReader[] readers = null;
+        if (readersToBeClosed != null)  {
+          readers = readersToBeClosed;
+        } else {
+          readers = new IndexReader[sourceCores.length];
+          searchers = new RefCounted[sourceCores.length];
+          for (int i = 0; i < sourceCores.length; i++) {
+            SolrCore solrCore = sourceCores[i];
+            // record the searchers so that we can decref
+            searchers[i] = solrCore.getSearcher();
+            readers[i] = searchers[i].get().getIndexReader();
+          }
         }
 
         UpdateRequestProcessorChain processorChain =
@@ -194,13 +226,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
         wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
-        processor.processMergeIndexes(new MergeIndexesCommand(dirs, req));
+        processor.processMergeIndexes(new MergeIndexesCommand(readers, req));
       } finally {
+        if (searchers != null) {
+          for (RefCounted<SolrIndexSearcher> searcher : searchers) {
+            if (searcher != null) searcher.decref();
+          }
+        }
+        if (sourceCores != null) {
+          for (SolrCore solrCore : sourceCores) {
+            if (solrCore != null) solrCore.close();
+          }
+        }
+        if (readersToBeClosed != null) IOUtils.closeSafely(true, readersToBeClosed);
+        if (wrappedReq != null) wrappedReq.close();
         core.close();
-        wrappedReq.close();
       }
     }
-    return doPersist;
+    return coreContainer.isPersistent();
   }
 
   /**
@@ -349,6 +392,23 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if(core == null){
        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "No such core exists '"+cname+"'");
+    }
+    if (params.getBool(CoreAdminParams.DELETE_INDEX, false)) {
+      core.addCloseHook(new CloseHook() {
+        @Override
+        public void preClose(SolrCore core) {}
+
+        @Override
+        public void postClose(SolrCore core) {
+          File dataDir = new File(core.getIndexDir());
+          for (File file : dataDir.listFiles()) {
+            if (!file.delete()) {
+              log.error(file.getAbsolutePath() + " could not be deleted on core unload");
+            }
+          }
+          if (!dataDir.delete()) log.error(dataDir.getAbsolutePath() + " could not be deleted on core unload");
+        }
+      });
     }
     core.close();
     return coreContainer.isPersistent();

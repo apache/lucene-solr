@@ -254,7 +254,7 @@ public class TestTermVectors extends LuceneTestCase {
       TermsEnum terms = fields.terms();
       while(terms.next() != null) {
         String text = terms.term().utf8ToString();
-        docs = terms.docs(MultiFields.getDeletedDocs(knownSearcher.reader), docs);
+        docs = terms.docs(MultiFields.getLiveDocs(knownSearcher.reader), docs);
         
         while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
           int docId = docs.docID();

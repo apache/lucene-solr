@@ -24,18 +24,20 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-/** Iterator to seek ({@link #seek}) or step through ({@link
- * #next} terms, obtain frequency information ({@link
- * #docFreq}), and obtain a {@link DocsEnum} or {@link
+/** Iterator to seek ({@link #seekCeil(BytesRef)}, {@link
+ * #seekExact(BytesRef,boolean)}) or step through ({@link
+ * #next} terms to obtain frequency information ({@link
+ * #docFreq}), {@link DocsEnum} or {@link
  * DocsAndPositionsEnum} for the current term ({@link
  * #docs}.
  * 
  * <p>Term enumerations are always ordered by
  * {@link #getComparator}.  Each term in the enumeration is
- * greater than all that precede it.</p>
+ * greater than the one before it.</p>
  *
- * <p>On obtaining a TermsEnum, you must first call
- * {@link #next} or {@link #seek}.
+ * <p>The TermsEnum is unpositioned when you first obtain it
+ * and you must first successfully call {@link #next} or one
+ * of the <code>seek</code> methods.
  *
  * @lucene.experimental */
 public abstract class TermsEnum {
@@ -48,31 +50,41 @@ public abstract class TermsEnum {
     return atts;
   }
   
-  /** Represents returned result from {@link #seek}.
+  /** Represents returned result from {@link #seekCeil}.
    *  If status is FOUND, then the precise term was found.
    *  If status is NOT_FOUND, then a different term was
    *  found.  If the status is END, the end of the iteration
    *  was hit. */
   public static enum SeekStatus {END, FOUND, NOT_FOUND};
 
-  /** Expert: just like {@link #seek(BytesRef)} but allows
+  /** Attemps to seek to the exact term, returning
+   *  true if the term is found.  If this returns false, the
+   *  enum is unpositioned.  For some codecs, seekExact may
+   *  be substantially faster than {@link #seekCeil}. */
+  public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    return seekCeil(text, useCache) == SeekStatus.FOUND;
+  }
+
+  /** Expert: just like {@link #seekCeil(BytesRef)} but allows
    *  you to control whether the implementation should
    *  attempt to use its term cache (if it uses one). */
-  public abstract SeekStatus seek(BytesRef text, boolean useCache) throws IOException;
+  public abstract SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException;
 
-  /** Seeks to the specified term.  Returns SeekStatus to
+  /** Seeks to the specified term, if it exists, or to the
+   *  next (ceiling) term.  Returns SeekStatus to
    *  indicate whether exact term was found, a different
    *  term was found, or EOF was hit.  The target term may
-   *  be before or after the current term. */
-  public final SeekStatus seek(BytesRef text) throws IOException {
-    return seek(text, true);
+   *  be before or after the current term.  If this returns
+   *  SeekStatus.END, the enum is unpositioned. */
+  public final SeekStatus seekCeil(BytesRef text) throws IOException {
+    return seekCeil(text, true);
   }
 
   /** Seeks to the specified term by ordinal (position) as
    *  previously returned by {@link #ord}.  The target ord
-   *  may be before or after the current ord.  See {@link
-   *  #seek(BytesRef)}. */
-  public abstract SeekStatus seek(long ord) throws IOException;
+   *  may be before or after the current ord, and must be
+   *  within bounds. */
+  public abstract void seekExact(long ord) throws IOException;
 
   /**
    * Expert: Seeks a specific position by {@link TermState} previously obtained
@@ -82,8 +94,7 @@ public abstract class TermsEnum {
    * <p>
    * Seeking by {@link TermState} should only be used iff the enum the state was
    * obtained from and the enum the state is used for seeking are obtained from
-   * the same {@link IndexReader}, otherwise a {@link #seek(BytesRef, TermState)} call can
-   * leave the enum in undefined state.
+   * the same {@link IndexReader}.
    * <p>
    * NOTE: Using this method with an incompatible {@link TermState} might leave
    * this {@link TermsEnum} in undefined state. On a segment level
@@ -97,32 +108,30 @@ public abstract class TermsEnum {
    * @param term the term the TermState corresponds to
    * @param state the {@link TermState}
    * */
-  public void seek(BytesRef term, TermState state) throws IOException {
-    seek(term);
+  public void seekExact(BytesRef term, TermState state) throws IOException {
+    if (!seekExact(term, true)) {
+      throw new IllegalArgumentException("term=" + term + " does not exist");
+    }
   }
 
-  /** Increments the enumeration to the next element.
+  /** Increments the enumeration to the next term.
    *  Returns the resulting term, or null if the end was
-   *  hit.  The returned BytesRef may be re-used across calls
-   *  to next. */
+   *  hit (which means the enum is unpositioned).  The
+   *  returned BytesRef may be re-used across calls to next. */
   public abstract BytesRef next() throws IOException;
 
-  /** Returns current term. Do not call this before calling
-   *  next() for the first time, after next() returns null
-   *  or after seek returns {@link SeekStatus#END}.*/
+  /** Returns current term. Do not call this when the enum
+   *  is unpositioned. */
   public abstract BytesRef term() throws IOException;
 
   /** Returns ordinal position for current term.  This is an
    *  optional method (the codec may throw {@link
    *  UnsupportedOperationException}).  Do not call this
-   *  before calling {@link #next} for the first time or after
-   *  {@link #next} returns null or {@link #seek} returns
-   *  END; */
+   *  when the enum is unpositioned. */
   public abstract long ord() throws IOException;
 
   /** Returns the number of documents containing the current
-   *  term.  Do not call this before calling next() for the
-   *  first time, after next() returns null or seek returns
+   *  term.  Do not call this when the enum is unpositioned.
    *  {@link SeekStatus#END}.*/
   public abstract int docFreq() throws IOException;
 
@@ -135,21 +144,19 @@ public abstract class TermsEnum {
   public abstract long totalTermFreq() throws IOException;
 
   /** Get {@link DocsEnum} for the current term.  Do not
-   *  call this before calling {@link #next} or {@link
-   *  #seek} for the first time.  This method will not
-   *  return null.
+   *  call this when the enum is unpositioned.  This method
+   *  will not return null.
    *  
-   * @param skipDocs set bits are documents that should not
+   * @param liveDocs set bits are documents that should not
    * be returned
    * @param reuse pass a prior DocsEnum for possible reuse */
-  public abstract DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException;
+  public abstract DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException;
 
   /** Get {@link DocsAndPositionsEnum} for the current term.
-   *  Do not call this before calling {@link #next} or
-   *  {@link #seek} for the first time.  This method will
-   *  only return null if positions were not indexed into
-   *  the postings by this codec. */
-  public abstract DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
+   *  Do not call this when the enum is unpositioned.
+   *  This method will only return null if positions were
+   *  not indexed into the postings by this codec. */
+  public abstract DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   /**
    * Expert: Returns the TermsEnums internal state to position the TermsEnum
@@ -160,7 +167,7 @@ public abstract class TermsEnum {
    * {@link AttributeSource} states separately
    * 
    * @see TermState
-   * @see #seek(BytesRef, TermState)
+   * @see #seekExact(BytesRef, TermState)
    */
   public TermState termState() throws IOException {
     return new TermState() {
@@ -186,10 +193,10 @@ public abstract class TermsEnum {
    */
   public static final TermsEnum EMPTY = new TermsEnum() {    
     @Override
-    public SeekStatus seek(BytesRef term, boolean useCache) { return SeekStatus.END; }
+    public SeekStatus seekCeil(BytesRef term, boolean useCache) { return SeekStatus.END; }
     
     @Override
-    public SeekStatus seek(long ord) { return SeekStatus.END; }
+    public void seekExact(long ord) {}
     
     @Override
     public BytesRef term() {
@@ -217,12 +224,12 @@ public abstract class TermsEnum {
     }
 
     @Override
-    public DocsEnum docs(Bits bits, DocsEnum reuse) {
+    public DocsEnum docs(Bits liveDocs, DocsEnum reuse) {
       throw new IllegalStateException("this method should never be called");
     }
       
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits bits, DocsAndPositionsEnum reuse) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) {
       throw new IllegalStateException("this method should never be called");
     }
       
@@ -242,7 +249,7 @@ public abstract class TermsEnum {
     }
 
     @Override
-    public void seek(BytesRef term, TermState state) throws IOException {
+    public void seekExact(BytesRef term, TermState state) throws IOException {
       throw new IllegalStateException("this method should never be called");
     }
   };

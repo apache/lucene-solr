@@ -86,7 +86,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     // log("Run testFieldSortCustomSearcher");
     // define the sort criteria
     Sort custSort = new Sort(
-        new SortField("publicationDate_", SortField.STRING),
+        new SortField("publicationDate_", SortField.Type.STRING),
         SortField.FIELD_SCORE);
     IndexSearcher searcher = new CustomSearcher(reader, 2);
     // search and check hits
@@ -100,7 +100,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     // log("Run testFieldSortSingleSearcher");
     // define the sort criteria
     Sort custSort = new Sort(
-        new SortField("publicationDate_", SortField.STRING),
+        new SortField("publicationDate_", SortField.Type.STRING),
         SortField.FIELD_SCORE);
     IndexSearcher searcher = new CustomSearcher(reader, 2);
     // search and check hits

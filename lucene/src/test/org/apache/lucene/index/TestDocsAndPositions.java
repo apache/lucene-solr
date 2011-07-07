@@ -89,17 +89,17 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   public DocsAndPositionsEnum getDocsAndPositions(IndexReader reader,
-      BytesRef bytes, Bits skipDocs) throws IOException {
+      BytesRef bytes, Bits liveDocs) throws IOException {
       return reader.termPositionsEnum(null, fieldName, bytes);
   }
 
   public DocsEnum getDocsEnum(IndexReader reader, BytesRef bytes,
-      boolean freqs, Bits skipDocs) throws IOException {
+      boolean freqs, Bits liveDocs) throws IOException {
     int randInt = random.nextInt(10);
     if (randInt == 0) { // once in a while throw in a positions enum
-      return getDocsAndPositions(reader, bytes, skipDocs);
+      return getDocsAndPositions(reader, bytes, liveDocs);
     } else {
-      return reader.termDocsEnum(skipDocs, fieldName, bytes);
+      return reader.termDocsEnum(liveDocs, fieldName, bytes);
     } 
   }
 

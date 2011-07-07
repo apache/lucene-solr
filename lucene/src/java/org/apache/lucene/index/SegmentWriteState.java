@@ -40,7 +40,7 @@ public class SegmentWriteState {
   public final BufferedDeletes segDeletes;
 
   // Lazily created:
-  public BitVector deletedDocs;
+  public BitVector liveDocs;
 
   final SegmentCodecs segmentCodecs;
   public final int codecId;

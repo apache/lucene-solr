@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,8 +41,6 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   protected IndexReader reader;
 
   public static final String FIELD = "field";
-  public static final QueryParser qp =
-    new QueryParser(TEST_VERSION_CURRENT, FIELD, new MockAnalyzer(random));
 
   @Override
   public void tearDown() throws Exception {

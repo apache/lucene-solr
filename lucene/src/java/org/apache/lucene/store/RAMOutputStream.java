@@ -67,6 +67,26 @@ public class RAMOutputStream extends IndexOutput {
     }
   }
 
+  /** Copy the current contents of this buffer to output
+   *  byte array */
+  public void writeTo(byte[] bytes, int offset) throws IOException {
+    flush();
+    final long end = file.length;
+    long pos = 0;
+    int buffer = 0;
+    int bytesUpto = offset;
+    while (pos < end) {
+      int length = BUFFER_SIZE;
+      long nextPos = pos + length;
+      if (nextPos > end) {                        // at the last buffer
+        length = (int)(end - pos);
+      }
+      System.arraycopy(file.getBuffer(buffer++), 0, bytes, bytesUpto, length);
+      bytesUpto += length;
+      pos = nextPos;
+    }
+  }
+
   /** Resets this to an empty file. */
   public void reset() {
     currentBuffer = null;

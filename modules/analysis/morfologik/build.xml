@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers-morfologik" default="default">
+
+  <description>
+    Morfologik Analyzer
+  </description>
+	
+  <property name="build.dir" location="../build/morfologik" />
+  <property name="dist.dir" location="../dist/morfologik" />
+
+  <path id="additional.dependencies">
+    <fileset dir="lib" includes="morfologik-fsa-*.jar"/>
+    <fileset dir="lib" includes="morfologik-polish-*.jar"/>
+    <fileset dir="lib" includes="morfologik-stemming-*.jar"/>
+  </path>
+
+  <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
+
+  <import file="../../../lucene/contrib/contrib-build.xml"/>
+
+  <module-uptodate name="analysis/common" jarfile="../build/common/lucene-analyzers-common-${version}.jar"
+    property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="classpath"/>
+    <pathelement location="../../../lucene/build/classes/test-framework/"/>
+    <pathelement location="../../../lucene/build/classes/test/"/>
+    <path refid="junit-path"/>
+    <pathelement location="${build.dir}/classes/java"/>
+  </path>
+
+  <target name="compile-core" depends="build-analyzers-common, common.compile-core" />
+
+  <target name="build-analyzers-common" unless="analyzers-common.uptodate">
+    <echo>Morfologik building dependency ${analyzers-common.jar}</echo>
+    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common" />
+  </target>
+</project>
