@@ -574,30 +574,36 @@ final class SegmentMerger {
     final List<Bits> perDocBits = new ArrayList<Bits>();
     final List<Integer> perDocBitsStarts = new ArrayList<Integer>();
     int docBase = 0;
-    for(IndexReader r : readers) {
-      final int maxDoc = r.maxDoc();
-      final PerDocValues producer = r.perDocValues();
-      if (producer != null) {
-        perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, perDocProducers.size()));
-        perDocProducers.add(producer);
-        perDocBits.add(r.getLiveDocs());
-        perDocBitsStarts.add(docBase);
+    try {
+      for(IndexReader r : readers) {
+        final int maxDoc = r.maxDoc();
+        final PerDocValues producer = r.perDocValues();
+        if (producer != null) {
+          perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, perDocProducers.size()));
+          perDocProducers.add(producer);
+          perDocBits.add(r.getLiveDocs());
+          perDocBitsStarts.add(docBase);
+        }
+        docBase += maxDoc;
       }
-      docBase += maxDoc;
-    }
-    perDocBitsStarts.add(docBase);
-    if (!perDocSlices.isEmpty()) {
-      mergeState.multiLiveDocs = new MultiBits(perDocBits, perDocBitsStarts, true);
-      final PerDocConsumer docsConsumer = codec
-          .docsConsumer(new PerDocWriteState(segmentWriteState));
-      try {
-        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(perDocProducers
-            .toArray(PerDocValues.EMPTY_ARRAY), perDocSlices
-            .toArray(ReaderUtil.Slice.EMPTY_ARRAY));
-        docsConsumer.merge(mergeState, multiPerDocValues);
-      } finally {
-        docsConsumer.close();
+      perDocBitsStarts.add(docBase);
+      if (!perDocSlices.isEmpty()) {
+        mergeState.multiLiveDocs = new MultiBits(perDocBits, perDocBitsStarts, true);
+        final PerDocConsumer docsConsumer = codec
+            .docsConsumer(new PerDocWriteState(segmentWriteState));
+        boolean success = false;
+        try {
+          final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(perDocProducers
+              .toArray(PerDocValues.EMPTY_ARRAY), perDocSlices
+              .toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+          docsConsumer.merge(mergeState, multiPerDocValues);
+          success = true;
+        } finally {
+          IOUtils.closeSafely(!success, docsConsumer);
+        }
       }
+    } finally {
+      IOUtils.closeSafely(false, perDocProducers);
     }
   }
 
