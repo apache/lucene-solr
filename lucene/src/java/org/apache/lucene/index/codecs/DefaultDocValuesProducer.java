@@ -185,8 +185,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
       list.add(cfs);
       toClose = list; 
     } else {
-      toClose = docValues.values();
-    
+      toClose = closeables;
     } 
     IOUtils.closeSafely(false, toClose);
   }
