@@ -44,7 +44,7 @@ public class CoreCodecProvider extends CodecProvider {
   public CoreCodecProvider() {
     register(new StandardCodec());
     register(new PreFlexCodec());
-    register(new PulsingCodec(1));
+    register(new PulsingCodec());
     register(new SimpleTextCodec());
     register(new MemoryCodec());
   }

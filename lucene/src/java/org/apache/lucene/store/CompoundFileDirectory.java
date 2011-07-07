@@ -60,7 +60,7 @@ public abstract class CompoundFileDirectory extends Directory {
    * NOTE: subclasses must call {@link #initForRead(Map)} before the directory can be used.
    */
   public CompoundFileDirectory(Directory directory, String fileName, int readBufferSize) throws IOException {
-    assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
+
     this.directory = directory;
     this.fileName = fileName;
     this.readBufferSize = readBufferSize;
@@ -75,6 +75,7 @@ public abstract class CompoundFileDirectory extends Directory {
   }
   
   protected final void initForWrite() {
+    assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
     this.entries = SENTINEL;
     this.openForWrite = true;
     this.isOpen = true;
@@ -174,7 +175,11 @@ public abstract class CompoundFileDirectory extends Directory {
   
   @Override
   public synchronized void close() throws IOException {
-    ensureOpen();
+    if (!isOpen) {
+      // allow double close - usually to be consistent with other closeables
+      assert entries == null; 
+      return; // already closed
+     }
     entries = null;
     isOpen = false;
     if (writer != null) {
@@ -285,12 +290,13 @@ public abstract class CompoundFileDirectory extends Directory {
     throw new UnsupportedOperationException();
   }
   
-  /** Not implemented
-   * @throws UnsupportedOperationException */
   @Override
-  public final CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    // NOTE: final to make nested compounding impossible.
-    throw new UnsupportedOperationException();
+  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+    FileEntry fileEntry = this.entries.get(IndexFileNames.stripSegmentName(name));
+    if (fileEntry == null) {
+      throw new FileNotFoundException("file " + name + " does not exists in this CFS");
+    }
+    return new NestedCompoundFileDirectory(name, bufferSize, fileEntry.offset, fileEntry.length);
   }
   
   /** Not implemented
@@ -298,8 +304,36 @@ public abstract class CompoundFileDirectory extends Directory {
   @Override
   public CompoundFileDirectory createCompoundOutput(String name)
       throws IOException {
-    // NOTE: final to make nested compounding impossible.
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("can not create nested CFS, create seperately and use Directory.copy instead");
+  }
+   
+  private class NestedCompoundFileDirectory extends CompoundFileDirectory {
+
+    private final long cfsOffset;
+    private final long cfsLength;
+
+    public NestedCompoundFileDirectory(String fileName, int readBufferSize, long offset, long length)
+        throws IOException {
+      super(directory, fileName, readBufferSize);
+      this.cfsOffset = offset;
+      this.cfsLength = length;
+      IndexInput input = null;
+      try {
+        input = CompoundFileDirectory.this.openInput(fileName, 128);
+        initForRead(CompoundFileDirectory.readEntries(input,
+            CompoundFileDirectory.this, fileName));
+      } finally {
+        IOUtils.closeSafely(false, input);
+      }
+    }
+
+    @Override
+    public IndexInput openInputSlice(String id, long offset, long length,
+        int readBufferSize) throws IOException {
+      assert offset + length <= cfsLength; 
+      return CompoundFileDirectory.this.openInputSlice(id, cfsOffset + offset, length, readBufferSize);
+    }
+    
   }
   
 }

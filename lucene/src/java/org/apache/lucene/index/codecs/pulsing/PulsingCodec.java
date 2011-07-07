@@ -43,7 +43,6 @@ import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** This codec "inlines" the postings for terms that have
@@ -58,10 +57,19 @@ public class PulsingCodec extends Codec {
 
   private final int freqCutoff;
 
+  /**
+   * Creates a {@link PulsingCodec} with <tt>freqCutoff = 1</tt>
+   * 
+   * @see PulsingCodec#PulsingCodec(int)
+   */
+  public PulsingCodec() {
+    this(1);
+  }
+  
   /** Terms with freq <= freqCutoff are inlined into terms
    *  dict. */
   public PulsingCodec(int freqCutoff) {
-    name = "Pulsing";
+    super("Pulsing");
     this.freqCutoff = freqCutoff;
   }
 
@@ -157,22 +165,22 @@ public class PulsingCodec extends Codec {
     StandardPostingsReader.files(dir, segmentInfo, id, files);
     BlockTermsReader.files(dir, segmentInfo, id, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     StandardCodec.getStandardExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
   }
 }

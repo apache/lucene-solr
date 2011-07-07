@@ -710,4 +710,62 @@ public class TestCompoundFile extends LuceneTestCase
 
     newDir.close();
   }
+  
+  public void testReadNestedCFP() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    CompoundFileDirectory nested = newDir.createCompoundOutput("b.cfs");
+    IndexOutput out = nested.createOutput("b.xyz");
+    IndexOutput out1 = nested.createOutput("b_1.xyz");
+    out.writeInt(0);
+    out1.writeInt(1);
+    out.close();
+    out1.close();
+    nested.close();
+    newDir.copy(csw, "b.cfs", "b.cfs");
+    newDir.copy(csw, "b.cfe", "b.cfe");
+    newDir.deleteFile("b.cfs");
+    newDir.deleteFile("b.cfe");
+    csw.close();
+    
+    assertEquals(2, newDir.listAll().length);
+    csw = newDir.openCompoundInput("d.cfs", 1024);
+    
+    assertEquals(2, csw.listAll().length);
+    nested = csw.openCompoundInput("b.cfs", 1024);
+    
+    assertEquals(2, nested.listAll().length);
+    IndexInput openInput = nested.openInput("b.xyz");
+    assertEquals(0, openInput.readInt());
+    openInput.close();
+    openInput = nested.openInput("b_1.xyz");
+    assertEquals(1, openInput.readInt());
+    openInput.close();
+    nested.close();
+    csw.close();
+    newDir.close();
+  }
+  
+  public void testDoubleClose() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    IndexOutput out = csw.createOutput("d.xyz");
+    out.writeInt(0);
+    out.close();
+    
+    csw.close();
+    // close a second time - must have no effect according to Closeable
+    csw.close();
+    
+    csw = newDir.openCompoundInput("d.cfs", 1024);
+    IndexInput openInput = csw.openInput("d.xyz");
+    assertEquals(0, openInput.readInt());
+    openInput.close();
+    csw.close();
+    // close a second time - must have no effect according to Closeable
+    csw.close();
+    
+    newDir.close();
+    
+  }
 }

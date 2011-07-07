@@ -18,6 +18,7 @@ package org.apache.lucene.index.codecs;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Set;
 
 import org.apache.lucene.index.PerDocWriteState;
@@ -25,13 +26,21 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 
 /** @lucene.experimental */
 public abstract class Codec {
   public static final Codec[] EMPTY = new Codec[0];
   /** Unique name that's used to retrieve this codec when
    *  reading the index */
-  public String name;
+  public final String name;
+  private boolean dvUseCompoundFile = true;
+  private Comparator<BytesRef> docValuesSortComparator = BytesRef
+      .getUTF8SortedAsUnicodeComparator();
+  
+  protected Codec(String name) {
+    this.name = name;
+  }
 
   /** Writes a new segment */
   public abstract FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
@@ -68,7 +77,48 @@ public abstract class Codec {
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);
+  
 
+  /**
+   * If set to <code>true</code> this codec will use a compound file for
+   * IndexDocValues, otherwise each IndexDocValues field will create up to 2
+   * files per segment.
+   * <p>
+   * NOTE: The default values is <code>true</code>.
+   */
+  public void setDocValuesUseCFS(boolean docValuesUseCFS) {
+    this.dvUseCompoundFile = docValuesUseCFS;
+  }
+
+  /**
+   * Returns <code>true</code> iff compound file should be used for
+   * IndexDocValues, otherwise <code>false</code>.
+   * 
+   * @see #setDocValuesUseCFS(boolean);
+   * @return <code>true</code> iff compound file should be used for
+   *         IndexDocValues, otherwise <code>false</code>.
+   */
+  public boolean getDocValuesUseCFS() {
+    return dvUseCompoundFile;
+  }
+  
+  /**
+   * Sets the {@link BytesRef} comparator for sorted IndexDocValue variants. The
+   * default is {@link BytesRef#getUTF8SortedAsUnicodeComparator()}. *
+   */
+  public void setDocValuesSortComparator(
+      Comparator<BytesRef> docValuesSortComparator) {
+    this.docValuesSortComparator = docValuesSortComparator;
+  }
+
+  /**
+   * Returns the {@link BytesRef} comparator for sorted IndexDocValue variants.
+   * The default is {@link BytesRef#getUTF8SortedAsUnicodeComparator()}.
+   */
+  public Comparator<BytesRef> getDocValuesSortComparator() {
+    return docValuesSortComparator;
+  }
+  
   @Override
   public String toString() {
     return name;
