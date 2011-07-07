@@ -94,7 +94,7 @@ public abstract class Codec {
    * Returns <code>true</code> iff compound file should be used for
    * IndexDocValues, otherwise <code>false</code>.
    * 
-   * @see #setDocValuesUseCFS(boolean);
+   * @see #setDocValuesUseCFS(boolean)
    * @return <code>true</code> iff compound file should be used for
    *         IndexDocValues, otherwise <code>false</code>.
    */
