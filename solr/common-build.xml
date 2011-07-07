@@ -162,8 +162,9 @@
        into your local repository).  If you wish to deploy to a remote
        repository, set this property to the URL of that repository.  In
        addition, if the repository requires authentication, you can set
-       properties "m2.repository.username" and "m2.repository.private.key"
-       to define your credentials.
+       properties "m2.repository.username" and either
+       "m2.repository.private.key" or "m2.repository.password" to define
+       your credentials.
   -->
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
@@ -423,7 +424,7 @@
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
@@ -443,7 +444,7 @@
       <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
       <artifact:deploy file="@{jar.file}">
         <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>

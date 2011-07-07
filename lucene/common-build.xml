@@ -331,7 +331,7 @@
       <artifact:deploy file="${build.dir}/${maven.project.build.finalName}.jar">
         <artifact-attachments/>
       	<remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
@@ -351,7 +351,7 @@
       <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
       <artifact:deploy file="@{jar.file}">
         <remoteRepository url="${m2.repository.url}">
-          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
