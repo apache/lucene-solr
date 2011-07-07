@@ -90,7 +90,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
   /**
    * Construct a new LowerCaseTokenizer.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(Reader)} instead. This will be
+   * @deprecated use {@link #LowerCaseTokenizer(Version, Reader)} instead. This will be
    *             removed in Lucene 4.0.
    */
   @Deprecated
@@ -101,7 +101,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
   /**
    * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource, Reader)}
+   * @deprecated use {@link #LowerCaseTokenizer(Version, AttributeSource, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
   @Deprecated
@@ -113,7 +113,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * Construct a new LowerCaseTokenizer using a given
    * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource.AttributeFactory, Reader)}
+   * @deprecated use {@link #LowerCaseTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
   @Deprecated
