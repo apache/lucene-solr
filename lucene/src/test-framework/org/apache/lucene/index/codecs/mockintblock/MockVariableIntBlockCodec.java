@@ -32,6 +32,7 @@ import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
+import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
@@ -46,7 +47,6 @@ import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -62,9 +62,9 @@ import org.apache.lucene.util.IOUtils;
 
 public class MockVariableIntBlockCodec extends Codec {
   private final int baseBlockSize;
-
+  
   public MockVariableIntBlockCodec(int baseBlockSize) {
-    name = "MockVariableIntBlock";
+    super("MockVariableIntBlock");
     this.baseBlockSize = baseBlockSize;
   }
 
@@ -229,7 +229,7 @@ public class MockVariableIntBlockCodec extends Codec {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
   }
 
   @Override
@@ -237,16 +237,16 @@ public class MockVariableIntBlockCodec extends Codec {
     SepPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
   }
 }

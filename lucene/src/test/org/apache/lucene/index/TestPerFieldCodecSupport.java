@@ -279,7 +279,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
       CodecProvider provider = new CodecProvider();
       Codec[] codecs = new Codec[] { new StandardCodec(),
           new SimpleTextCodec(), new MockSepCodec(),
-          new PulsingCodec(1 + random.nextInt(10)),
+          new PulsingCodec(1 + random.nextInt(20)),
           new MockVariableIntBlockCodec(1 + random.nextInt(10)),
           new MockFixedIntBlockCodec(1 + random.nextInt(10)) };
       for (Codec codec : codecs) {

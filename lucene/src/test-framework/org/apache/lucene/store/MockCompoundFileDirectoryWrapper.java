@@ -139,4 +139,9 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
     return delegate.createCompoundOutput(name);
   }
+  
+  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+    return delegate.openCompoundInput(name, bufferSize);
+  }
+
 }

@@ -42,7 +42,7 @@ public class MockCodecProviderFactory extends CodecProviderFactory {
   public CodecProvider create() {
     CodecProvider cp = new CodecProvider();
     cp.register(new StandardCodec());
-    cp.register(new PulsingCodec(1));
+    cp.register(new PulsingCodec());
     if (codecs != null) {
       for (Object codec : codecs.getAll("name")) {
         if (!cp.isCodecRegistered((String)codec)) {

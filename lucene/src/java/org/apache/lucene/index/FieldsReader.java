@@ -30,9 +30,12 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 
 /**
  * Class responsible for access to stored document fields.
@@ -41,7 +44,7 @@ import java.io.Reader;
  * 
  * @lucene.internal
  */
-public final class FieldsReader implements Cloneable {
+public final class FieldsReader implements Cloneable, Closeable {
   private final static int FORMAT_SIZE = 4;
 
   private final FieldInfos fieldInfos;
@@ -179,21 +182,11 @@ public final class FieldsReader implements Cloneable {
    */
   public final void close() throws IOException {
     if (!closed) {
-      if (fieldsStream != null) {
-        fieldsStream.close();
-      }
       if (isOriginal) {
-        if (cloneableFieldsStream != null) {
-          cloneableFieldsStream.close();
-        }
-        if (cloneableIndexStream != null) {
-          cloneableIndexStream.close();
-        }
+        IOUtils.closeSafely(false, fieldsStream, indexStream, fieldsStreamTL, cloneableFieldsStream, cloneableIndexStream);
+      } else {
+        IOUtils.closeSafely(false, fieldsStream, indexStream, fieldsStreamTL);
       }
-      if (indexStream != null) {
-        indexStream.close();
-      }
-      fieldsStreamTL.close();
       closed = true;
     }
   }
