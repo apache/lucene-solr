@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import org.apache.lucene.store.IOContext.Context;
+
 
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
@@ -87,8 +89,7 @@ public class SimpleFSDirectory extends FSDirectory {
     protected final int chunkSize;
     
     public SimpleFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
-      //nocommit Use IOContext to decide bufferSize instead of BufferedIndexInput.BUFFER_SIZE
-      super(BufferedIndexInput.BUFFER_SIZE);
+      super(context);
       file = new Descriptor(path, "r");
       this.chunkSize = chunkSize;
     }

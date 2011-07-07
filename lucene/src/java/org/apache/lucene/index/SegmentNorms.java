@@ -220,7 +220,6 @@ final class SegmentNorms implements Cloneable {
     // NOTE: norms are re-written in regular directory, not cfs
     si.advanceNormGen(this.number);
     final String normFileName = si.getNormFileName(this.number);
-    //nocommit not sure if this is the correct information provided to FlushInfo
     IndexOutput out = owner.directory().createOutput(normFileName, new IOContext(new FlushInfo(si.docCount, 0)));
     boolean success = false;
     try {

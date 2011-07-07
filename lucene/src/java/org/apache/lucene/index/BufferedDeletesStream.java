@@ -274,8 +274,7 @@ class BufferedDeletesStream {
         if (coalescedDeletes != null) {
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
-          //nocommit is IOContext.DEFAULT the right thing to do here?
-          SegmentReader reader = readerPool.get(info, false, IOContext.DEFAULT);
+          SegmentReader reader = readerPool.get(info, false, IOContext.READ);
           int delCount = 0;
           final boolean segAllDeletes;
           try {

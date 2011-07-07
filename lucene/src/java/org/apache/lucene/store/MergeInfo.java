@@ -23,13 +23,13 @@ package org.apache.lucene.store;
 
 public class MergeInfo {
   
-  public int totalDocCount;
+  public final int totalDocCount;
   
-  public long estimatedMergeBytes;  // used by IndexWriter
+  public final long estimatedMergeBytes;
   
-  boolean isExternal;               // used by IndexWriter
+  public final boolean isExternal;
   
-  boolean optimize;                 // used by IndexWriter
+  public final boolean optimize;
   
 
   /**
@@ -45,5 +45,45 @@ public class MergeInfo {
     this.estimatedMergeBytes = estimatedMergeBytes;
     this.isExternal = isExternal;
     this.optimize = optimize;
+  }
+
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result
+        + (int) (estimatedMergeBytes ^ (estimatedMergeBytes >>> 32));
+    result = prime * result + (isExternal ? 1231 : 1237);
+    result = prime * result + (optimize ? 1231 : 1237);
+    result = prime * result + totalDocCount;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MergeInfo other = (MergeInfo) obj;
+    if (estimatedMergeBytes != other.estimatedMergeBytes)
+      return false;
+    if (isExternal != other.isExternal)
+      return false;
+    if (optimize != other.optimize)
+      return false;
+    if (totalDocCount != other.totalDocCount)
+      return false;
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "MergeInfo [totalDocCount=" + totalDocCount
+        + ", estimatedMergeBytes=" + estimatedMergeBytes + ", isExternal="
+        + isExternal + ", optimize=" + optimize + "]";
   }
 }

@@ -70,7 +70,6 @@ public class WindowsDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    //nocommit - use buffer based on IOContext
     return new WindowsIndexInput(new File(getDirectory(), name), DEFAULT_BUFFERSIZE);
   }
   

@@ -321,14 +321,15 @@ public class TestCompoundFile extends LuceneTestCase
     private void demo_FSIndexInputBug(Directory fsdir, String file)
     throws IOException
     {
+        // IOContext triggers different buffer sizes so we use default here
         // Setup the test file - we need more than 1024 bytes
-        IndexOutput os = fsdir.createOutput(file, newIOContext(random));
+        IndexOutput os = fsdir.createOutput(file, IOContext.DEFAULT);
         for(int i=0; i<2000; i++) {
             os.writeByte((byte) i);
         }
         os.close();
 
-        IndexInput in = fsdir.openInput(file, newIOContext(random));
+        IndexInput in = fsdir.openInput(file, IOContext.DEFAULT);
 
         // This read primes the buffer in IndexInput
         in.readByte();

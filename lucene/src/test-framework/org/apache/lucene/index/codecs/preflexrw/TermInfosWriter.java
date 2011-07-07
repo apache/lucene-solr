@@ -124,7 +124,6 @@ final class TermInfosWriter implements Closeable {
     indexInterval = interval;
     fieldInfos = fis;
     isIndex = isi;
-    // nocommit pass IOContext in via ctor
     output = directory.createOutput(IndexFileNames.segmentFileName(segment, "",
         (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
             : PreFlexCodec.TERMS_EXTENSION)), IOContext.DEFAULT);

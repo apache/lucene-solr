@@ -86,4 +86,47 @@ public class IOContext {
     this.flushInfo = null;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((context == null) ? 0 : context.hashCode());
+    result = prime * result + ((flushInfo == null) ? 0 : flushInfo.hashCode());
+    result = prime * result + ((mergeInfo == null) ? 0 : mergeInfo.hashCode());
+    result = prime * result + (readOnce ? 1231 : 1237);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    IOContext other = (IOContext) obj;
+    if (context != other.context)
+      return false;
+    if (flushInfo == null) {
+      if (other.flushInfo != null)
+        return false;
+    } else if (!flushInfo.equals(other.flushInfo))
+      return false;
+    if (mergeInfo == null) {
+      if (other.mergeInfo != null)
+        return false;
+    } else if (!mergeInfo.equals(other.mergeInfo))
+      return false;
+    if (readOnce != other.readOnce)
+      return false;
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "IOContext [context=" + context + ", mergeInfo=" + mergeInfo
+        + ", flushInfo=" + flushInfo + ", readOnce=" + readOnce + "]";
+  }
+
 }

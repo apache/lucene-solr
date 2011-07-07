@@ -23,6 +23,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -57,8 +58,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
   @Override
   public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos, IOContext context)
           throws IOException {
-    //nocommit should this context always be flush?
-    IndexOutput out = createOutput(dir, segmentFileName, context);
+    IndexOutput out = createOutput(dir, segmentFileName, new IOContext(new FlushInfo(infos.size(), infos.totalDocCount())));
     boolean success = false;
     try {
       out.writeInt(FORMAT_CURRENT); // write FORMAT

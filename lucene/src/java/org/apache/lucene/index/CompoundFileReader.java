@@ -143,8 +143,7 @@ public class CompoundFileReader extends Directory {
     final FileEntry entry = entries.get(id);
     if (entry == null)
       throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
-    // nocommit set read buffer size based on IOContext
-    return new CSIndexInput(stream, entry.offset, entry.length, BufferedIndexInput.BUFFER_SIZE);
+    return new CSIndexInput(stream, entry.offset, entry.length, context);
   }
   
   /** Returns an array of strings, one for each file in the directory. */
@@ -221,13 +220,9 @@ public class CompoundFileReader extends Directory {
     IndexInput base;
     long fileOffset;
     long length;
-    
-    CSIndexInput(final IndexInput base, final long fileOffset, final long length) {
-      this(base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
-    }
-    
-    CSIndexInput(final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
-      super(readBufferSize);
+
+    CSIndexInput(final IndexInput base, final long fileOffset, final long length, IOContext context) {
+      super(context);
       this.base = (IndexInput)base.clone();
       this.fileOffset = fileOffset;
       this.length = length;

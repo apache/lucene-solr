@@ -634,7 +634,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       //        readBufferSize = BufferedIndexInput.BUFFER_SIZE;
       //      }
       
-      // nocommit context should be part of the key used to cache that reader in the pool.
+      // TODO: context should be part of the key used to cache that reader in the pool.
 
       SegmentReader sr = readerMap.get(info);
       if (sr == null) {
@@ -3580,8 +3580,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // keep deletes (it's costly to open entire reader
       // when we just need deletes)
 
-      // nocommit  should we use another flag "isMergedSegment" or a "READ" context here?
-      
       final SegmentReader mergedReader = readerPool.get(merge.info, loadDocStores, context, termsIndexDivisor);
       try {
         if (poolReaders && mergedSegmentWarmer != null) {
