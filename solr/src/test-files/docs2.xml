@@ -1,0 +1,77 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add>
+<doc>
+  <field name="id">TWINX2048-3200PRO</field>
+  <field name="name">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</field>
+  <field name="manu">Corsair Microsystems Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
+  <field name="cat">electronics</field>
+  <field name="cat">memory</field>
+  <field name="features">CAS latency 2,	2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>
+  <field name="price">185</field>
+  <field name="popularity">5</field>
+  <field name="inStock">true</field>
+  <!-- San Francisco store -->
+  <field name="store">37.7752,-122.4232</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+
+  <!-- a field for testing payload tagged text via DelimitedPayloadTokenFilter -->
+  <field name="payloads">electronics|6.0 memory|3.0</field>
+</doc>
+
+<doc>
+  <field name="id">VS1GB400C3</field>
+  <field name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</field>
+  <field name="manu">Corsair Microsystems Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
+  <field name="cat">electronics</field>
+  <field name="cat">memory</field>
+  <field name="price">74.99</field>
+  <field name="popularity">7</field>
+  <field name="inStock">true</field>
+  <!-- Dodge City store -->
+  <field name="store">37.7752,-100.0232</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+
+  <field name="payloads">electronics|4.0 memory|2.0</field>
+</doc>
+
+<doc>
+  <field name="id">VDBDB1A16</field>
+  <field name="name">A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM</field>
+  <field name="manu">A-DATA Technology Inc.</field>
+  <!-- Join -->
+  <field name="manu_id_s">corsair</field>
+  <field name="cat">electronics</field>
+  <field name="cat">memory</field>
+  <field name="features">CAS latency 3,	 2.7v</field>
+  <!-- note: price & popularity is missing on this one -->
+  <field name="popularity">0</field>
+  <field name="inStock">true</field>
+  <!-- Buffalo store -->
+  <field name="store">45.18414,-93.88141</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+
+  <field name="payloads">electronics|0.9 memory|0.1</field>
+</doc>
+
+</add>
+

@@ -306,6 +306,10 @@ Bug Fixes
   bigger then the max int/float were used.
   (Erbi Hanka, hossman)
 
+* SOLR-2230: CommonsHttpSolrServer.addFile could not be used to send 
+  multiple files in a single request.
+  (Stephan Günther, hossman)
+
 Other Changes
 ----------------------
 
