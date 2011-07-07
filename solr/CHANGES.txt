@@ -302,6 +302,10 @@ Bug Fixes
 
 * SOLR-2636: Fix explain functionality for negative queries. (Tom Hill via yonik)
 
+* SOLR-2538: Range Faceting on long/double fields could overflow if values 
+  bigger then the max int/float were used.
+  (Erbi Hanka, hossman)
+
 Other Changes
 ----------------------
 
