@@ -78,6 +78,7 @@ public abstract class CompoundFileDirectory extends Directory {
     this.entries = SENTINEL;
     this.openForWrite = true;
     this.isOpen = true;
+    writer = new CompoundFileWriter(directory, fileName);
   }
   
   /** Helper method that reads CFS entries from an input stream */
@@ -269,7 +270,6 @@ public abstract class CompoundFileDirectory extends Directory {
   @Override
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
-    initWriter();
     return writer.createOutput(name);
   }
   
@@ -302,12 +302,4 @@ public abstract class CompoundFileDirectory extends Directory {
     throw new UnsupportedOperationException();
   }
   
-  private final void initWriter() {
-    assert openForWrite;
-    assert entries == SENTINEL;
-    if (writer == null) {
-      writer = new CompoundFileWriter(directory, fileName);
-    }
-  }
- 
 }
