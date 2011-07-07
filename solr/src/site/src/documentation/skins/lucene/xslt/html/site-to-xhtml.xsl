@@ -215,15 +215,20 @@ footer, searchbar, css etc.  As input, it takes XML of the form:
                     </form>
                   </xsl:when>
                   <xsl:otherwise>
-                    <form class="roundtopsmall" method="get" action="http://search.lucidimagination.com/p:solr">
+                    <form class="roundtopsmall" method="get" action="http://search.lucidimagination.com/p:solr" id="searchform">
                       <input type="text" id="query" name="q" size="25" onFocus="getBlank (this, '{$search-prompt}');">
                         <xsl:attribute name="value">
                           <xsl:value-of select="$search-prompt"/>
                         </xsl:attribute>
                       </input>&#160; 
-                    <input type="submit" value="Search" name="Search" i18n:attr="value"/>
+                      <input type="submit" value="Search" name="Search" onclick="selectProvider(this.form)"/>
+                      @
+                      <select name="searchProvider" id="searchProvider">
+                        <option value="any">select provider</option>
+                        <option value="lucid">Lucid Find</option>
+                        <option value="sl">Search-Lucene</option>
+                      </select>
                     </form>
-		    <div style="position: relative; top: -5px; left: -10px">Powered by <a style="color: #033268" href="http://www.lucidimagination.com">Lucid Imagination</a></div>
                   </xsl:otherwise>
                 </xsl:choose>
 <!--div id="roundbottomsmall">
@@ -472,13 +477,19 @@ document.write("]]><i18n:text >Last Published:</i18n:text><![CDATA[ " + document
               </form>
             </xsl:when>
             <xsl:otherwise>
-	            <form class="roundtopsmall" method="get" action="http://search.lucidimagination.com/p:solr">
+                <form class="roundtopsmall" method="get" action="http://search.lucidimagination.com/p:solr" id="searchform">
                   <input type="text" id="query" name="q" size="25" onFocus="getBlank (this, '{$search-prompt}');">
                     <xsl:attribute name="value">
                       <xsl:value-of select="$search-prompt"/>
                     </xsl:attribute>
                   </input>&#160; 
-                <input type="submit" value="Search" name="Search" i18n:attr="value"/>
+                  <input type="submit" value="Search" name="Search" onclick="selectProvider(this.form)"/>
+                  @
+                  <select name="searchProvider" id="searchProvider">
+                    <option value="any">select provider</option>
+                    <option value="lucid">Lucid Find</option>
+                    <option value="sl">Search-Lucene</option>
+                  </select>
                 </form>
             </xsl:otherwise>
           </xsl:choose>
@@ -486,6 +497,51 @@ document.write("]]><i18n:text >Last Published:</i18n:text><![CDATA[ " + document
         <xsl:comment>+
     |end search
     +</xsl:comment>
+      </xsl:if>
+      <xsl:if test="$config/search">
+        <xsl:choose>
+          <xsl:when test="$config/search/@provider = 'lucene'">
+          </xsl:when>
+          <xsl:otherwise>
+            <script type="text/javascript">
+              function selectProvider(form) {
+                provider = form.elements['searchProvider'].value;
+                if (provider == "any") {
+                  if (Math.random() > 0.5) {
+                    provider = "lucid";
+                  } else {
+                    provider = "sl";
+                  }
+                }
+
+                if (provider == "lucid") {
+                  form.action = "http://search.lucidimagination.com/p:solr";
+                } else if (provider == "sl") {
+                  form.action = "http://search-lucene.com/solr";
+                }
+
+                days = 365; // cookie will be valid for a year
+                date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toGMTString();
+                document.cookie = "searchProvider=" + provider + expires + "; path=/";
+              }
+
+              if (document.cookie.length>0) {
+                cStart=document.cookie.indexOf("searchProvider=");
+                if (cStart!=-1) {
+                  cStart=cStart + "searchProvider=".length;
+                  cEnd=document.cookie.indexOf(";", cStart);
+                  if (cEnd==-1) {
+                    cEnd=document.cookie.length;
+                  }
+                  provider = unescape(document.cookie.substring(cStart,cEnd));
+                  document.forms['searchform'].elements['searchProvider'].value = provider;
+                }
+              }
+            </script>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:if>
 <!--credits in alternative location-->
       <div id="credit">
