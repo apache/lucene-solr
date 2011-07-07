@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store._TestHelper;
 import org.apache.lucene.util._TestUtil;
@@ -35,26 +35,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestCompoundFile extends LuceneTestCase
 {
-    /** Main for running test case by itself. */
-    public static void main(String args[]) {
-        TestRunner.run (new TestSuite(TestCompoundFile.class));
-//        TestRunner.run (new TestCompoundFile("testSingleFile"));
-//        TestRunner.run (new TestCompoundFile("testTwoFiles"));
-//        TestRunner.run (new TestCompoundFile("testRandomFiles"));
-//        TestRunner.run (new TestCompoundFile("testClonedStreamsClosing"));
-//        TestRunner.run (new TestCompoundFile("testReadAfterClose"));
-//        TestRunner.run (new TestCompoundFile("testRandomAccess"));
-//        TestRunner.run (new TestCompoundFile("testRandomAccessClones"));
-//        TestRunner.run (new TestCompoundFile("testFileNotFound"));
-//        TestRunner.run (new TestCompoundFile("testReadPastEOF"));
-
-//        TestRunner.run (new TestCompoundFile("testIWCreate"));
-
-    }
-
-
     private Directory dir;
-
 
     @Override
     public void setUp() throws Exception {
@@ -717,5 +698,16 @@ public class TestCompoundFile extends LuceneTestCase
     cfr.close();
     newDir.close();
   }
+  
+  public void testEmptyCFS() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    csw.close();
 
+    CompoundFileDirectory csr = newDir.openCompoundInput("d.cfs", 1024);
+    assertEquals(0, csr.listAll().length);
+    csr.close();
+
+    newDir.close();
+  }
 }

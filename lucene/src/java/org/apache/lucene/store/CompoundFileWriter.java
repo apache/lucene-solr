@@ -135,10 +135,7 @@ final class CompoundFileWriter {
     IOException priorException = null;
     IndexOutput entryTableOut = null;
     try {
-      if (entries.isEmpty()) {
-        throw new IllegalStateException("CFS has no entries");
-      }
-      
+      initDataOut();
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
       }
