@@ -28,25 +28,27 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 
 /**
  * Maintains a {@link IndexReader} {@link TermState} view over
  * {@link IndexReader} instances containing a single term. The
- * {@link PerReaderTermState} doesn't track if the given {@link TermState}
+ * {@link TermContext} doesn't track if the given {@link TermState}
  * objects are valid, neither if the {@link TermState} instances refer to the
  * same terms in the associated readers.
  * 
  * @lucene.experimental
  */
-public final class PerReaderTermState {
+public final class TermContext {
   public final ReaderContext topReaderContext; // for asserting!
   private final TermState[] states;
   private int docFreq;
+  private long totalTermFreq;
 
   /**
-   * Creates an empty {@link PerReaderTermState} from a {@link ReaderContext}
+   * Creates an empty {@link TermContext} from a {@link ReaderContext}
    */
-  public PerReaderTermState(ReaderContext context) {
+  public TermContext(ReaderContext context) {
     assert context != null && context.isTopLevel;
     topReaderContext = context;
     docFreq = 0;
@@ -60,28 +62,28 @@ public final class PerReaderTermState {
   }
   
   /**
-   * Creates a {@link PerReaderTermState} with an initial {@link TermState},
+   * Creates a {@link TermContext} with an initial {@link TermState},
    * {@link IndexReader} pair.
    */
-  public PerReaderTermState(ReaderContext context, TermState state, int ord, int docFreq) {
+  public TermContext(ReaderContext context, TermState state, int ord, int docFreq, long totalTermFreq) {
     this(context);
-    register(state, ord, docFreq);
+    register(state, ord, docFreq, totalTermFreq);
   }
 
   /**
-   * Creates a {@link PerReaderTermState} from a top-level {@link ReaderContext} and the
+   * Creates a {@link TermContext} from a top-level {@link ReaderContext} and the
    * given {@link Term}. This method will lookup the given term in all context's leaf readers 
-   * and register each of the readers containing the term in the returned {@link PerReaderTermState}
+   * and register each of the readers containing the term in the returned {@link TermContext}
    * using the leaf reader's ordinal.
    * <p>
    * Note: the given context must be a top-level context.
    */
-  public static PerReaderTermState build(ReaderContext context, Term term, boolean cache)
+  public static TermContext build(ReaderContext context, Term term, boolean cache)
       throws IOException {
     assert context != null && context.isTopLevel;
     final String field = term.field();
     final BytesRef bytes = term.bytes();
-    final PerReaderTermState perReaderTermState = new PerReaderTermState(context);
+    final TermContext perReaderTermState = new TermContext(context);
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
     for (int i = 0; i < leaves.length; i++) {
       final Fields fields = leaves[i].reader.fields();
@@ -91,7 +93,7 @@ public final class PerReaderTermState {
           final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
           if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
-            perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq());
+            perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           }
         }
       }
@@ -100,7 +102,7 @@ public final class PerReaderTermState {
   }
 
   /**
-   * Clears the {@link PerReaderTermState} internal state and removes all
+   * Clears the {@link TermContext} internal state and removes all
    * registered {@link TermState}s
    */
   public void clear() {
@@ -112,12 +114,16 @@ public final class PerReaderTermState {
    * Registers and associates a {@link TermState} with an leaf ordinal. The leaf ordinal
    * should be derived from a {@link ReaderContext}'s leaf ord.
    */
-  public void register(TermState state, final int ord, final int docFreq) {
+  public void register(TermState state, final int ord, final int docFreq, final long totalTermFreq) {
     assert state != null : "state must not be null";
     assert ord >= 0 && ord < states.length;
     assert states[ord] == null : "state for ord: " + ord
         + " already registered";
     this.docFreq += docFreq;
+    if (this.totalTermFreq >= 0 && totalTermFreq >= 0)
+      this.totalTermFreq += totalTermFreq;
+    else
+      this.totalTermFreq = -1;
     states[ord] = state;
   }
 
@@ -137,11 +143,27 @@ public final class PerReaderTermState {
 
   /**
    *  Returns the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int, int)}.
+   *         instances passed to {@link #register(TermState, int, int, long)}.
    * @return the accumulated document frequency of all {@link TermState}
-   *         instances passed to {@link #register(TermState, int, int)}.
+   *         instances passed to {@link #register(TermState, int, int, long)}.
    */
   public int docFreq() {
     return docFreq;
+  }
+  
+  /**
+   *  Returns the accumulated term frequency of all {@link TermState}
+   *         instances passed to {@link #register(TermState, int, int, long)}.
+   * @return the accumulated term frequency of all {@link TermState}
+   *         instances passed to {@link #register(TermState, int, int, long)}.
+   */
+  public long totalTermFreq() {
+    return totalTermFreq;
+  }
+  
+  /** expert: only available for queries that want to lie about docfreq
+   * @lucene.internal */
+  public void setDocFreq(int docFreq) {
+    this.docFreq = docFreq;
   }
 }

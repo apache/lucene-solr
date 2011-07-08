@@ -674,11 +674,11 @@ public class IndexSearcher {
   public Weight createNormalizedWeight(Query query) throws IOException {
     query = rewrite(query);
     Weight weight = query.createWeight(this);
-    float sum = weight.sumOfSquaredWeights();
-    float norm = getSimilarityProvider().queryNorm(sum);
+    float v = weight.getValueForNormalization();
+    float norm = getSimilarityProvider().queryNorm(v);
     if (Float.isInfinite(norm) || Float.isNaN(norm))
       norm = 1.0f;
-    weight.normalize(norm);
+    weight.normalize(norm, 1.0f);
     return weight;
   }
   

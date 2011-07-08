@@ -23,6 +23,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TFIDFSimilarity;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -49,7 +51,11 @@ public class NormValueSource extends ValueSource {
   @Override
   public DocValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    final Similarity similarity = searcher.getSimilarityProvider().get(field);
+    Similarity sim = searcher.getSimilarityProvider().get(field);
+    if (!(sim instanceof TFIDFSimilarity)) {
+      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
+    }
+    final TFIDFSimilarity similarity = (TFIDFSimilarity) sim;
     final byte[] norms = readerContext.reader.norms(field);
     if (norms == null) {
       return new ConstDoubleDocValues(0.0, this);

@@ -51,7 +51,11 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class FuzzyLikeThisQuery extends Query
 {
-    static Similarity sim=new DefaultSimilarity();
+    // TODO: generalize this query (at least it should not reuse this static sim!
+    // a better way might be to convert this into multitermquery rewrite methods.
+    // the rewrite method can 'average' the TermContext's term statistics (docfreq,totalTermFreq) 
+    // provided to TermQuery, so that the general idea is agnostic to any scoring system...
+    static TFIDFSimilarity sim=new DefaultSimilarity();
     Query rewrittenQuery=null;
     ArrayList<FieldVals> fieldVals=new ArrayList<FieldVals>();
     Analyzer analyzer;

@@ -71,7 +71,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Term searchTerm = new Term("id", "7");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("didn't delete the right number of documents", 1, delCount);
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     // Set one norm so we get a .s0 file:
     reader.setNorm(21, "content", sim.encodeNormValue(1.5f));
     reader.close();

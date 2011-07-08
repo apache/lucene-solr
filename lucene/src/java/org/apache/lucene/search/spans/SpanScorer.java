@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
@@ -29,22 +30,21 @@ import org.apache.lucene.search.Similarity;
  */
 public class SpanScorer extends Scorer {
   protected Spans spans;
-  protected byte[] norms;
-  protected float value;
 
   protected boolean more = true;
 
   protected int doc;
   protected float freq;
   protected final Similarity similarity;
+  protected final Similarity.SloppyDocScorer docScorer;
   
-  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
+  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, Similarity.SloppyDocScorer docScorer)
   throws IOException {
     super(weight);
     this.similarity = similarity;
+    this.docScorer = docScorer;
     this.spans = spans;
-    this.norms = norms;
-    this.value = weight.getValue();
+
     if (this.spans.next()) {
       doc = -1;
     } else {
@@ -94,27 +94,11 @@ public class SpanScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    float raw = similarity.tf(freq) * value; // raw score
-    return norms == null? raw : raw * similarity.decodeNormValue(norms[doc]); // normalize
+    return docScorer.score(doc, freq);
   }
   
   @Override
   public float freq() throws IOException {
     return freq;
   }
-
-  /** This method is no longer an official member of {@link Scorer},
-   * but it is needed by SpanWeight to build an explanation. */
-  protected Explanation explain(final int doc) throws IOException {
-    Explanation tfExplanation = new Explanation();
-
-    int expDoc = advance(doc);
-
-    float phraseFreq = (expDoc == doc) ? freq : 0.0f;
-    tfExplanation.setValue(similarity.tf(phraseFreq));
-    tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
-
-    return tfExplanation;
-  }
-
 }
