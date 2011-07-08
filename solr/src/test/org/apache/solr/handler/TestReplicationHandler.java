@@ -794,7 +794,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       dataDir.mkdirs();
       confDir.mkdirs();
 
-      File f = new File(confDir, "solrconfig.xml");
       copyConfigFile(getSolrConfigFile(), "solrconfig.xml");
       copyConfigFile(getSchemaFile(), "schema.xml");
     }
