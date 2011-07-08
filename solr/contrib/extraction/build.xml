@@ -23,10 +23,6 @@
     Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF.
   </description>
 
-  <property name="src.dir" location="src/java"/>
-  <property name="tests.src.dir" location="src/test"/>
-  <property name="tests.userdir" location="src/test-files"/>
-
   <import file="../contrib-build.xml"/>
 
 </project>

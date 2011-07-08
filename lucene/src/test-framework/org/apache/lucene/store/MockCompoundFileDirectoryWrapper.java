@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 
 public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   private final MockDirectoryWrapper parent;
@@ -31,11 +30,7 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
     this.name = name;
     this.parent = parent;
     this.delegate = delegate;
-    if (forWrite) {
-      super.initForWrite();
-    } else {
-      super.initForRead(Collections.<String,FileEntry>emptyMap());
-    }
+    // don't initialize here since we delegate everything - if not initialized a direct call will cause an assert to fail!
     parent.addFileHandle(this, name, !forWrite);
   }
   
@@ -51,12 +46,8 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
 
   @Override
   public synchronized void close() throws IOException {
-    try {
-      delegate.close();
-      parent.removeOpenFile(this, name);
-    } finally {
-      super.close();
-    }
+    delegate.close();
+    parent.removeOpenFile(this, name);
   }
 
   @Override
@@ -148,4 +139,9 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
     return delegate.createCompoundOutput(name);
   }
+  
+  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+    return delegate.openCompoundInput(name, bufferSize);
+  }
+
 }

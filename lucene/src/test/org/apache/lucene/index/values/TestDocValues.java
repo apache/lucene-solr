@@ -81,7 +81,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(maxDoc);
     assertEquals(0, trackBytes.get());
 
-    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc);
+    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc, comp);
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum bytesEnum = getEnum(r);
       assertNotNull("enum is null", bytesEnum);
@@ -105,7 +105,8 @@ public class TestDocValues extends LuceneTestCase {
       Source s;
       IndexDocValues.SortedSource ss;
       if (mode == Bytes.Mode.SORTED) {
-        s = ss = getSortedSource(r, comp);
+        // default is unicode so we can simply pass null here
+        s = ss = getSortedSource(r, random.nextBoolean() ? comp : null);  
       } else {
         s = getSource(r);
         ss = null;

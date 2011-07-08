@@ -40,7 +40,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
  * <p/>
  * The fieldname must be resolvable from {@link VariableResolver}
  * <p/>
- * This may be used with any {@link EntityProcessor} which uses a {@link DataSource}&lt;{@link InputStream}&gt; eg: {@link TikaEntityProcessor}
+ * This may be used with any {@link EntityProcessor} which uses a {@link DataSource}&lt;{@link InputStream}&gt; eg: TikaEntityProcessor
  * <p/>
  *
  * @since 3.1

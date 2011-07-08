@@ -42,7 +42,7 @@ public class StartSolrJetty
     WebAppContext bb = new WebAppContext();
     bb.setServer(server);
     bb.setContextPath("/");
-    bb.setWar("src/webapp/web");
+    bb.setWar("webapp/web");
 
 //    // START JMX SERVER
 //    if( true ) {

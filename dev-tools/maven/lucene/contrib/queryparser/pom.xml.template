@@ -27,7 +27,7 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-queryparser</artifactId>
+  <artifactId>lucene-queryparser-contrib</artifactId>
   <packaging>jar</packaging>
   <name>Lucene Query Parser</name>
   <description>

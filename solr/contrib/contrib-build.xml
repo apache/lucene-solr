@@ -18,21 +18,40 @@
  -->
 
 <project name="solr-contrib-build">
-  <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
-  <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
-  <property name="dist.dir" location="../../dist"/>
-  	
+  <dirname file="${ant.file.solr-contrib-build}" property="solr-contrib.dir"/>
+  <property name="build.dir" location="${solr-contrib.dir}/../build/contrib/${ant.project.name}"/>
+
   <import file="../common-build.xml"/>
 
   <target name="build-solr" unless="solr.core.compiled">
-    <ant dir="${common-solr.dir}" target="compile-test" inheritAll="false"/>
-    <!-- set the property for this ant execution to speed up later tasks depending on this -->
+    <ant dir="${common-solr.dir}/core" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <property name="solr.core.compiled" value="true"/>
   </target>
-  
+
   <target name="compile-core" depends="build-solr, common.compile-core"/>
 
-  <!-- redefine common-solr.test, and exclude 'validate-solr' dependency, since it should only run at solr/ level --> 
+  <!-- redefine common-solr.test, and exclude 'validate-solr' dependency, since it should only run at solr/ level -->
   <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
-  
+
+  <dirname file="${ant.file}" property="antfile.dir"/>
+
+  <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />
+  <target name="add-to-war" if="contrib.has.webapp">
+    <copy todir="${dest}/web" failonerror="false">
+      <fileset dir="${antfile.dir}/src/webapp"/>
+    </copy>
+  </target>
+
+  <available property="contrib.has.lucene-libs" type="dir" file="${build.dir}/lucene-libs"/>
+  <target name="add-lucene-libs-to-package" if="contrib.has.lucene-libs">
+    <pathconvert property="contrib.dir">
+      <path path="${antfile.dir}"/>
+      <flattenmapper/>
+    </pathconvert>
+    <copy todir="${dest}/contrib-lucene-libs-to-package/contrib/${contrib.dir}">
+      <fileset dir="${build.dir}" includes="lucene-libs/**"/>
+    </copy>
+  </target>
 </project>

@@ -110,16 +110,12 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     @Override
     public Query getQuery() { return DisjunctionMaxQuery.this; }
 
-    /** Return our boost */
-    @Override
-    public float getValue() { return getBoost(); }
-
     /** Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
     @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       float max = 0.0f, sum = 0.0f;
       for (Weight currentWeight : weights) {
-        float sub = currentWeight.sumOfSquaredWeights();
+        float sub = currentWeight.getValueForNormalization();
         sum += sub;
         max = Math.max(max, sub);
         
@@ -130,10 +126,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Apply the computed normalization factor to our subqueries */
     @Override
-    public void normalize(float norm) {
-      norm *= getBoost();  // Incorporate our boost
+    public void normalize(float norm, float topLevelBoost) {
+      topLevelBoost *= getBoost();  // Incorporate our boost
       for (Weight wt : weights) {
-        wt.normalize(norm);
+        wt.normalize(norm, topLevelBoost);
       }
     }
 

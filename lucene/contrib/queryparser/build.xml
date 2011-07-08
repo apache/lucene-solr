@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="queryparser" default="default">
+<project name="queryparser-contrib" default="default">
 
   <description>
     Flexible Query Parser

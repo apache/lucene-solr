@@ -28,7 +28,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
@@ -56,7 +56,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     
     @Override
     protected void addClause(BooleanQuery topLevel, Term term, int docCount,
-        float boost, PerReaderTermState states) {
+        float boost, TermContext states) {
       final TermQuery tq = new TermQuery(term, states);
       tq.setBoost(boost);
       topLevel.add(tq, BooleanClause.Occur.SHOULD);
@@ -117,7 +117,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     if (size > 0) {
       final int sort[] = col.terms.sort(col.termsEnum.getComparator());
       final float[] boost = col.array.boost;
-      final PerReaderTermState[] termStates = col.array.termState;
+      final TermContext[] termStates = col.array.termState;
       for (int i = 0; i < size; i++) {
         final int pos = sort[i];
         final Term term = new Term(query.getField(), col.terms.get(pos, new BytesRef()));
@@ -150,12 +150,12 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       if (e < 0 ) {
         // duplicate term: update docFreq
         final int pos = (-e)-1;
-        array.termState[pos].register(state, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos].register(state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         assert array.boost[pos] == boostAtt.getBoost() : "boost should be equal in all segment TermsEnums";
       } else {
         // new entry: we populate the entry initially
         array.boost[e] = boostAtt.getBoost();
-        array.termState[e] = new PerReaderTermState(topReaderContext, state, readerContext.ord, termsEnum.docFreq());
+        array.termState[e] = new TermContext(topReaderContext, state, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
         ScoringRewrite.this.checkMaxClauseCount(terms.size());
       }
       return true;
@@ -165,7 +165,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
   /** Special implementation of BytesStartArray that keeps parallel arrays for boost and docFreq */
   static final class TermFreqBoostByteStart extends DirectBytesStartArray  {
     float[] boost;
-    PerReaderTermState[] termState;
+    TermContext[] termState;
     
     public TermFreqBoostByteStart(int initSize) {
       super(initSize);
@@ -175,7 +175,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
     public int[] init() {
       final int[] ord = super.init();
       boost = new float[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_FLOAT)];
-      termState = new PerReaderTermState[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      termState = new TermContext[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       assert termState.length >= ord.length && boost.length >= ord.length;
       return ord;
     }
@@ -185,7 +185,7 @@ public abstract class ScoringRewrite<Q extends Query> extends TermCollectingRewr
       final int[] ord = super.grow();
       boost = ArrayUtil.grow(boost, ord.length);
       if (termState.length < ord.length) {
-        PerReaderTermState[] tmpTermState = new PerReaderTermState[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        TermContext[] tmpTermState = new TermContext[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(termState, 0, tmpTermState, 0, termState.length);
         termState = tmpTermState;
       }     

@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store._TestHelper;
 import org.apache.lucene.util._TestUtil;
@@ -35,26 +35,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestCompoundFile extends LuceneTestCase
 {
-    /** Main for running test case by itself. */
-    public static void main(String args[]) {
-        TestRunner.run (new TestSuite(TestCompoundFile.class));
-//        TestRunner.run (new TestCompoundFile("testSingleFile"));
-//        TestRunner.run (new TestCompoundFile("testTwoFiles"));
-//        TestRunner.run (new TestCompoundFile("testRandomFiles"));
-//        TestRunner.run (new TestCompoundFile("testClonedStreamsClosing"));
-//        TestRunner.run (new TestCompoundFile("testReadAfterClose"));
-//        TestRunner.run (new TestCompoundFile("testRandomAccess"));
-//        TestRunner.run (new TestCompoundFile("testRandomAccessClones"));
-//        TestRunner.run (new TestCompoundFile("testFileNotFound"));
-//        TestRunner.run (new TestCompoundFile("testReadPastEOF"));
-
-//        TestRunner.run (new TestCompoundFile("testIWCreate"));
-
-    }
-
-
     private Directory dir;
-
 
     @Override
     public void setUp() throws Exception {
@@ -717,5 +698,74 @@ public class TestCompoundFile extends LuceneTestCase
     cfr.close();
     newDir.close();
   }
+  
+  public void testEmptyCFS() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    csw.close();
 
+    CompoundFileDirectory csr = newDir.openCompoundInput("d.cfs", 1024);
+    assertEquals(0, csr.listAll().length);
+    csr.close();
+
+    newDir.close();
+  }
+  
+  public void testReadNestedCFP() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    CompoundFileDirectory nested = newDir.createCompoundOutput("b.cfs");
+    IndexOutput out = nested.createOutput("b.xyz");
+    IndexOutput out1 = nested.createOutput("b_1.xyz");
+    out.writeInt(0);
+    out1.writeInt(1);
+    out.close();
+    out1.close();
+    nested.close();
+    newDir.copy(csw, "b.cfs", "b.cfs");
+    newDir.copy(csw, "b.cfe", "b.cfe");
+    newDir.deleteFile("b.cfs");
+    newDir.deleteFile("b.cfe");
+    csw.close();
+    
+    assertEquals(2, newDir.listAll().length);
+    csw = newDir.openCompoundInput("d.cfs", 1024);
+    
+    assertEquals(2, csw.listAll().length);
+    nested = csw.openCompoundInput("b.cfs", 1024);
+    
+    assertEquals(2, nested.listAll().length);
+    IndexInput openInput = nested.openInput("b.xyz");
+    assertEquals(0, openInput.readInt());
+    openInput.close();
+    openInput = nested.openInput("b_1.xyz");
+    assertEquals(1, openInput.readInt());
+    openInput.close();
+    nested.close();
+    csw.close();
+    newDir.close();
+  }
+  
+  public void testDoubleClose() throws IOException {
+    Directory newDir = newDirectory();
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
+    IndexOutput out = csw.createOutput("d.xyz");
+    out.writeInt(0);
+    out.close();
+    
+    csw.close();
+    // close a second time - must have no effect according to Closeable
+    csw.close();
+    
+    csw = newDir.openCompoundInput("d.cfs", 1024);
+    IndexInput openInput = csw.openInput("d.xyz");
+    assertEquals(0, openInput.readInt());
+    openInput.close();
+    csw.close();
+    // close a second time - must have no effect according to Closeable
+    csw.close();
+    
+    newDir.close();
+    
+  }
 }

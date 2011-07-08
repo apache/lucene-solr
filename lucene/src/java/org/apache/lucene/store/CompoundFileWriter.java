@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
@@ -55,7 +56,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.internal
  */
-final class CompoundFileWriter {
+final class CompoundFileWriter implements Closeable{
 
   private static final class FileEntry {
     /** source file */
@@ -89,8 +90,8 @@ final class CompoundFileWriter {
   private boolean closed = false;
   private volatile IndexOutput dataOut;
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);
-  private final String entryTableName;
-  private final String dataFileName;
+  final String entryTableName;
+  final String dataFileName;
 
   /**
    * Create the compound stream in the specified file. The file name is the
@@ -128,17 +129,14 @@ final class CompoundFileWriter {
    *           if close() had been called before or if no file has been added to
    *           this object
    */
-  void close() throws IOException {
+  public void close() throws IOException {
     if (closed) {
       throw new IllegalStateException("already closed");
     }
     IOException priorException = null;
     IndexOutput entryTableOut = null;
     try {
-      if (entries.isEmpty()) {
-        throw new IllegalStateException("CFS has no entries");
-      }
-      
+      initDataOut();
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
       }
@@ -147,12 +145,18 @@ final class CompoundFileWriter {
       assert dataOut != null;
       long finalLength = dataOut.getFilePointer();
       assert assertFileLength(finalLength, dataOut);
+    } catch (IOException e) {
+      priorException = e;
+    } finally {
+      IOUtils.closeSafely(priorException, dataOut);
+    }
+    try {
       entryTableOut = directory.createOutput(entryTableName);
       writeEntryTable(entries.values(), entryTableOut);
     } catch (IOException e) {
       priorException = e;
     } finally {
-      IOUtils.closeSafely(priorException, dataOut, entryTableOut);
+      IOUtils.closeSafely(priorException, entryTableOut);
     }
   }
 
@@ -321,6 +325,7 @@ final class CompoundFileWriter {
         closed = true;
         entry.length = writtenBytes;
         if (isSeparate) {
+          delegate.close();
           // we are a separate file - push into the pending entries
           pendingEntries.add(entry);
         } else {

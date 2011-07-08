@@ -121,7 +121,7 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="queryparser contrib" type="JUnit" factoryName="JUnit">
-      <module name="queryparser" />
+      <module name="queryparser-contrib" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/queryparser" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />

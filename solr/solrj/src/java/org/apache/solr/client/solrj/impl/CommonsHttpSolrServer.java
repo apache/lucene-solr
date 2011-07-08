@@ -32,11 +32,11 @@ import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
+import org.apache.commons.httpclient.methods.multipart.FilePart;
 import org.apache.commons.httpclient.methods.multipart.Part;
-import org.apache.commons.httpclient.methods.multipart.PartBase;
+import org.apache.commons.httpclient.methods.multipart.PartSource;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.commons.httpclient.params.HttpMethodParams;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -324,25 +324,24 @@ public class CommonsHttpSolrServer extends SolrServer
                   final ContentStream c = content;
 
                   String charSet = null;
-                  String transferEncoding = null;
-                  parts.add(new PartBase(c.getName(), c.getContentType(),
-                      charSet, transferEncoding) {
+                  PartSource source = new PartSource() {
                     @Override
-                    protected long lengthOfData() throws IOException {
+                    public long getLength() {
                       return c.getSize();
+                    }
+                      
+                    public String getFileName() {
+                      return c.getName();
                     }
 
                     @Override
-                    protected void sendData(OutputStream out)
-                        throws IOException {
-                      InputStream in = c.getStream();
-                      try {
-                        IOUtils.copy(in, out);
-                      } finally {
-                        in.close();
-                      }
+                    public InputStream createInputStream() throws IOException {
+                      return c.getStream();
                     }
-                  });
+                  };
+                
+                  parts.add(new FilePart(c.getName(), source, 
+                                         c.getContentType(), charSet));
                 }
               }
               if (parts.size() > 0) {

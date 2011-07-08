@@ -30,9 +30,6 @@ import java.io.IOException;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  protected byte[] norms;
-  protected float value;
-
   private boolean firstTime = true;
   private boolean more = true;
   protected PhraseQueue pq;
@@ -40,14 +37,12 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
-  protected final Similarity similarity;
+  protected final Similarity.SloppyDocScorer docScorer;
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      Similarity similarity, byte[] norms) {
+      Similarity.SloppyDocScorer docScorer) throws IOException {
     super(weight);
-    this.similarity = similarity;
-    this.norms = norms;
-    this.value = weight.getValue();
+    this.docScorer = docScorer;
 
     // convert tps to a list of phrase positions.
     // note: phrase-position differs from term-position in that its position
@@ -107,9 +102,7 @@ abstract class PhraseScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    //System.out.println("scoring " + first.doc);
-    float raw = similarity.tf(freq) * value; // raw score
-    return norms == null ? raw : raw * similarity.decodeNormValue(norms[first.doc]); // normalize
+    return docScorer.score(first.doc, freq);
   }
 
   @Override

@@ -125,25 +125,4 @@ public class Explanation {
 
     return buffer.toString();
   }
-  
-  /**
-   * Small Util class used to pass both an idf factor as well as an
-   * explanation for that factor.
-   * 
-   * This class will likely be held on a {@link Weight}, so be aware 
-   * before storing any large or un-serializable fields.
-   *
-   */
-  public static abstract class IDFExplanation {
-    /**
-     * @return the idf factor
-     */
-    public abstract float getIdf();
-    /**
-     * This should be calculated lazily if possible.
-     * 
-     * @return the explanation for the idf factor.
-     */
-    public abstract String explain();
-  }
 }

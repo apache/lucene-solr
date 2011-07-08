@@ -1317,7 +1317,7 @@ public class SimpleFacets {
     }
     @Override
     public Double parseAndAddGap(Double value, String gap) {
-      return new Double(value.floatValue() + Double.valueOf(gap).floatValue());
+      return new Double(value.doubleValue() + Double.valueOf(gap).doubleValue());
     }
   }
   private static class IntegerRangeEndpointCalculator 
@@ -1343,7 +1343,7 @@ public class SimpleFacets {
     }
     @Override
     public Long parseAndAddGap(Long value, String gap) {
-      return new Long(value.intValue() + Long.valueOf(gap).intValue());
+      return new Long(value.longValue() + Long.valueOf(gap).longValue());
     }
   }
   private static class DateRangeEndpointCalculator 

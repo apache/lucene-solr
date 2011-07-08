@@ -1,5 +1,4 @@
-<!-- Solr build file -->
-
+<?xml version="1.0"?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -16,161 +15,472 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project name="solr-core" default="usage">
+<project name="solr" default="usage">
   <description>Solr</description>
-
-  <property name="src.dir" location="src/java"/>
-
-  <!-- solr uses this as the test working directory: nocommit classpath -->
-  <property name="tests.userdir" value="src/test-files"/>
-
-  <path id="additional.dependencies">
-  	<fileset dir="lib" includes="**/*.jar"/>
-  	<fileset dir="example/lib" includes="**/*.jar"/>
-  </path>
-
-  <import file="common-build.xml"/>
-
-  <!-- add some descriptions to some inherited targets -->
-  <target name="compile" description="Compile the source code."
-  	      depends="compile-core, build-contrib"/>
-  <target name="test" description="Validate, then run core and contrib unit tests."
-  	      depends="validate-solr, common-solr.test, test-contrib"/>
-  <target name="test-core" description="Runs the core unit tests."
-          depends="common.test"/>
-  <target name="compile-test" description="Compile unit tests."
-   	      depends="compile-test-framework, common.compile-test"/>
-  <target name="javadocs" description="Generate javadocs for core, client, test-framework, and contrib"
-          depends="contrib-build.javadocs, javadocs-solrj, javadocs-test-framework, javadocs-contrib"/>
-  <target name="javadocs-core" description="Generate javadocs for core."
-          depends="contrib-build.javadocs"/>
-
-  <!-- hackish we have to call init/clover here, but solr core depends upon solrj? -->
-  <target name="compile-core" depends="init, clover, compile-analyzers-common,
-        compile-analyzers-phonetic, compile-suggest, compile-highlighter, 
-        compile-memory, compile-misc, compile-queries-contrib, compile-spatial, 
-        compile-grouping, compile-queries, compile-solrj, common.compile-core, 
-        compile-webapp"
-  	  unless="solr-core.compiled">
-  </target>
-
-  <target name="compile-webapp" depends="compile-solrj">
-    <compile srcdir="src/webapp/src"
-             destdir="${build.dir}/classes/webapp">
-      <classpath refid="classpath"/>
-    </compile>
-  </target>
-
-  <!-- TODO: factor solrj into a separate dir so its a normal module?
-       we have to reinvent wheels the way it is now -->
-
-  <target name="compile-solrj" description="Compile the java client.">
-    <compile srcdir="src/common:src/solrj"
-             destdir="${build.dir}/classes/solrj">
-  	  <classpath refid="classpath"/>
-  	</compile>
-  </target>
-
-  <!-- hacky? -->
-  <target name="compile-test-framework" depends="compile-core">
-    <compile srcdir="src/test-framework" destdir="${build.dir}/classes/test-framework">
-  	  <classpath refid="test.base.classpath"/>
-  	</compile>
-  </target>
-
-  <target name="javadocs-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
-    <sequential>
-      <mkdir dir="${javadoc.dir}/solrj"/>
-      <invoke-javadoc
-        destdir="${javadoc.dir}/solrj"
-        title="${Name}-j ${version} API (${specversion})">
-        <sources>
-          <packageset dir="src/common"/>
-          <packageset dir="src/solrj"/>
-        </sources>
-      </invoke-javadoc>
-    </sequential>
-  </target>
-
-  <target name="javadocs-test-framework" depends="compile-test-framework"
-          description="Generates javadoc documentation for the Solr test-framework.">
-    <sequential>
-      <mkdir dir="${build.javadoc}/test-framework"/>
-      <path id="javadoc.classpath">
-        <path refid="test.classpath"/> <!-- nocommit switch to testframework.compile.classpath -->
-      </path>
-      <invoke-javadoc
-        destdir="${javadoc.dir}/test-framework"
-        title="${Name} ${version} Test Framework API (${specversion})">
-        <sources>
-          <packageset dir="src/test-framework" />
-        </sources>
-      </invoke-javadoc>
-    </sequential>
-  </target>
-
-  <!-- Default target: usage.  Prints out instructions. -->
-  <target name="usage"
-          description="Prints out instructions">
+  
+  <target name="usage" description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
     <echo message="Use 'ant example' to create a runnable example configuration." />
     <echo message="Use 'ant run-example' to create and run the example." />
-   	<echo message="And for developers:"/>
+    <echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
-    <echo message="Use 'ant javadoc' to build javadoc under build/docs/api" />
+    <echo message="Use 'ant javadocs' to build javadocs under build/docs/api" />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
     <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
-
-  <!-- TODO: lucene/solr could share these -->
-  <target name="build-contrib" depends="compile-test"
-          description="Builds all contrib modules and their tests">
-    <contrib-crawl target="build-artifacts-and-tests"/>
+  
+  <import file="common-build.xml"/>
+  
+  <!-- ========================================================================= -->
+  <!-- ============================== USER TASKS =============================== -->
+  <!-- ========================================================================= -->
+ 
+  <target name="example" description="Creates a runnable example configuration."
+          depends="prep-lucene-jars,dist-contrib,dist-war,build-contrib">
+    <copy file="${dist}/${fullnamever}.war"
+          tofile="${example}/webapps/${ant.project.name}.war"/>
+    <jar destfile="${example}/exampledocs/post.jar"
+         basedir="${dest}/solr-core/classes/java"
+         includes="org/apache/solr/util/SimplePostTool*.class">
+      <manifest>
+        <attribute name="Main-Class" value="org.apache.solr.util.SimplePostTool"/>
+      </manifest>
+    </jar>
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+    </delete>
+    <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
-
-  <target name="javadocs-contrib" description="Generate javadocs for contrib classes"
-  	      depends="build-contrib">
-    <contrib-crawl target="javadocs" failonerror="true"/>
+ 
+  <target name="run-example" depends="example"
+          description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
+    <property name="example.solr.home" location="example/solr"/>
+    <property name="example.data.dir" location="example/solr/data"/>
+    <property name="example.debug.suspend" value="n"/>
+    <property name="example.jetty.port" value="8983"/>
+    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
+      <isset property="example.debug"/>
+    </condition>
+    <property name="example.jvm.line" value=""/>
+    <property name="example.heap.size" value="512M"/>
+    <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
+      <jvmarg line="${example.jvm.line}"/>
+      <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
+      <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
+      <sysproperty key="jetty.port" value="${example.jetty.port}"/>
+    </java>
   </target>
-
+ 
+  <!-- setup proxy for download tasks -->
+  <condition property="proxy.specified">
+    <or>
+      <isset property="proxy.host"/>
+      <isset property="proxy.port"/>
+      <isset property="proxy.user"/>
+    </or>
+  </condition>
+ 
+  <target name="proxy.setup" if="proxy.specified">
+    <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
+  </target>
+ 
+  <property  name="luke.version" value="1.0.1"/>
+  <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
+  <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup,compile-xml-query-parser">
+    <mkdir dir="luke"/>
+    <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
+         dest="luke/luke-${luke.version}.jar"/>
+  </target>
+  <path id="luke.classpath">
+    <pathelement location="${common.dir}/build/classes/java" />
+    <pathelement location="${common.dir}/build/contrib/xml-query-parser/classes/java" />
+  </path>
+  <target name="luke" depends="luke-download">
+    <java fork="true"
+          classname="org.getopt.luke.Luke"
+          logError="true"
+          failonerror="true">
+      <classpath>
+        <fileset dir="luke">
+          <include name="luke-${luke.version}.jar"/>
+        </fileset>
+        <path refid="classpath"/>
+        <path refid="luke.classpath"/>
+        <path refid="test.classpath"/>
+      </classpath>
+    </java>
+  </target>
+  
+  <!-- ========================================================================= -->
+  <!-- ========================== BUILD/TEST TASKS ============================= -->
+  <!-- ========================================================================= -->
+  
+  <target name="compile" description="Compile the source code."
+          depends="compile-core, build-contrib"/>
+  <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
+          depends="validate-solr, test-core, test-jsp, test-contrib"/>
+  <target name="test-core" description="Runs the core and solrj unit tests."
+          depends="test-solr-core, test-solrj"/>
+  <target name="compile-test" description="Compile unit tests."
+          depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj"/>
+  <target name="javadocs" description="Calls javadocs-all" depends="javadocs-all"/>
+  <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
+  
+  <!-- Solr core targets -->
+  <target name="test-solr-core" description="Test solr core">
+    <ant dir="core" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <!-- Solrj targets -->
+  <target name="test-solrj" description="Test java client">
+    <ant dir="solrj" target="test" inheritAll="false"/>
+  </target>
+  
+  <!-- Solr contrib targets -->
   <target name="test-contrib" description="Run contrib unit tests."
-  	      depends="build-contrib">
+          depends="build-contrib">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
-
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/common" target="default" inheritAll="false"/>
+  
+  <!-- Webapp targets -->
+  <target name="test-jsp">
+    <ant dir="webapp" target="test" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
-  <target name="compile-analyzers-phonetic" unless="analyzers-phonetic.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/phonetic" target="default" inheritAll="false"/>
+  
+  <!-- Clean targets -->
+  <target name="clean" description="Cleans compiled files and other temporary artifacts.">
+    <delete dir="build" />
+    <delete dir="dist" />
+    <delete dir="package" />
+    <delete dir="example/solr/lib" />
   </target>
-  <target name="compile-suggest" unless="suggest.uptodate">
-  	<ant dir="${common.dir}/../modules/suggest" target="default" inheritAll="false"/>
+  
+  <target name="clean-dest"
+          description="Cleans out build/ but leaves build/docs/, dist/ and package/ alone.  This allows us to run nightly and clover together in Hudson">
+    <delete includeemptydirs="true" >
+      <fileset dir="build">
+        <exclude name="docs/"/>
+      </fileset>
+    </delete>
   </target>
-  <target name="compile-grouping" unless="grouping.uptodate">
-  	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false"/>
+  
+  <!-- ========================================================================= -->
+  <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
+  <!-- ========================================================================= -->
+ 
+  <target name="copy-to-stage">
+    <copy-to-stage-macro artifacts.dir="${package.dir}"/>
   </target>
-  <target name="compile-queries" unless="queries.uptodate">
-  	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false"/>
+  
+  <target name="dist"
+          description="Creates the Solr distribution files."
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, dist-war" />
+ 
+  <target name="dist-test-framework" depends="init-dist"
+          description="Creates the Solr test-framework JAR.">
+    <ant dir="test-framework" target="dist" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
-  <target name="compile-highlighter" unless="highlighter.uptodate">
-  	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false"/>
+  
+  <target name="dist-contrib" depends="init-dist"
+          description="Make the contribs ready for distribution">
+    <contrib-crawl target="dist" failonerror="true" />
   </target>
-  <target name="compile-memory" unless="memory.uptodate">
-  	<ant dir="${common.dir}/contrib/memory" target="default" inheritAll="false"/>
+  
+  <target name="dist-war"
+          description="Creates the Solr WAR Distribution file.">
+    <ant dir="webapp" target="dist" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
-  <target name="compile-misc" unless="misc.uptodate">
-  	<ant dir="${common.dir}/contrib/misc" target="default" inheritAll="false"/>
+  
+  <target name="prepare-release"
+          depends="clean, package, generate-maven-artifacts, sign-artifacts"/>
+ 
+  <!-- make a distribution -->
+  <target name="package" depends="package-src-tgz,create-package"/>
+ 
+  <!-- Makes a tarball from running "svn export" at the root level.    -->
+  <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
+  <target name="package-src-tgz" depends="init-dist"
+          description="Packages the Solr Source Distribution">
+    <property name="source.package.file"
+              value="${package.dir}/${fullnamever}-src.tgz"/>
+    <delete file="${source.package.file}" failonerror="false" />
+    <svn-export-source source.dir=".."/>
+    <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset dir="${svn.export.dir}"
+                  prefix="${fullnamever}"
+                  excludes="example/**/*.sh example/**/bin/"/>
+      <tarfileset dir="${svn.export.dir}"
+                  prefix="${fullnamever}"
+                  filemode="755"
+                  includes="example/**/*.sh example/**/bin/"/>
+      <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
+                  includes="NOTICE.txt,LICENSE.txt"/>
+    </tar>
+    <make-checksums file="${source.package.file}"/>
   </target>
-  <target name="compile-queries-contrib" unless="queries-contrib.uptodate">
-  	<ant dir="${common.dir}/contrib/queries" target="default" inheritAll="false"/>
+  
+  <target name="create-package"
+          description="Packages the Solr Binary Distribution"
+          depends="init-dist, dist, example, javadocs">
+    <mkdir dir="${dest}/${fullnamever}"/>
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+      <fileset dir="${dest}/${fullnamever}" includes="**/*"/>
+    </delete>
+ 
+    <delete file="${package.dir}/${fullnamever}.tgz" failonerror="false" />
+    <delete file="${package.dir}/${fullnamever}.zip" failonerror="false" />
+ 
+    <mkdir dir="${dest}/contrib-lucene-libs-to-package"/>
+    <delete dir="${dest}/contrib-lucene-libs-to-package" includes="**/*"/>
+    <contrib-crawl target="add-lucene-libs-to-package"/>
+ 
+    <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
+      <tarfileset dir="."
+                  prefix="${fullnamever}"
+                  includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
+                             client/README.txt client/ruby/solr-ruby/** contrib/**/lib/**
+                             contrib/**/README.txt contrib/**/CHANGES.txt"
+                  excludes="lib/README.committers.txt **/data/ **/logs/* **/classes/ **/*.sh
+                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml **/*pom.xml.template" />
+      <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
+                  prefix="${fullnamever}"
+                  includes="**" />
+      <tarfileset dir="."
+                  filemode="755"
+                  prefix="${fullnamever}"
+                  includes="example/**/*.sh example/**/bin/" />
+      <tarfileset dir="."
+                  prefix="${fullnamever}"
+                  includes="dist/*.jar dist/*.war dist/solrj-lib/*"
+                  excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar" />
+      <tarfileset dir="${dest}/docs"
+                  prefix="${fullnamever}/docs" />
+    </tar>
+    <make-checksums file="${package.dir}/${fullnamever}.tgz"/>
+ 
+    <untar compression="gzip" src="${package.dir}/${fullnamever}.tgz" dest="${dest}"/>
+ 
+    <!--
+        This is a list of text file patterns to convert to CRLF line-ending style.
+        Shell scripts and files included in shell scripts should not be converted.
+        NB: The line-ending conversion process will mangle non-UTF8-encoded files.
+       -->
+    <fixcrlf srcdir="${dest}/${fullnamever}"
+             encoding="UTF-8"
+             eol="crlf"
+             includes="**/*.alg **/*.cfg **/*.cgi **/*.cpp **/*.css **/*.csv **/*.dtd
+                        **/*.erb **/*.fcgi **/.htaccess **/*.htm **/*.html **/*.incl
+                        **/*.java **/*.javacc **/*.jflex **/*.jflex-macro **/*.jj
+                        **/*.js **/*.json **/*.jsp **/*LICENSE **/package-list **/*.pl
+                        **/*.pom **/*pom.xml.template **/*.properties **/*.py
+                        **/*.rake **/Rakefile **/*.rb **/*.rbbi **/README* **/*.rhtml
+                        **/*.rslp **/*.rxml **/*.script **/*.svg **/*.tsv **/*.txt
+                        **/UPGRADING **/USAGE **/*.uxf **/*.vm **/*.xcat **/*.xml
+                        **/*.xsl **/*.xslt **/*.yml"
+             excludes="**/stopwordsWrongEncoding.txt **/gb18030-example.xml"
+        />
+ 
+    <zip destfile="${package.dir}/${fullnamever}.zip">
+      <zipfileset dir="${dest}/${fullnamever}"
+                  prefix="${fullnamever}"
+                  excludes="**/*.sh **/bin/ src/scripts/" />
+      <zipfileset dir="${dest}/${fullnamever}"
+                  prefix="${fullnamever}"
+                  includes="**/*.sh **/bin/ src/scripts/"
+                  filemode="755" />
+    </zip>
+    <make-checksums file="${package.dir}/${fullnamever}.zip"/>
   </target>
-  <target name="compile-spatial" unless="spatial.uptodate">
-  	<ant dir="${common.dir}/contrib/spatial" target="default" inheritAll="false"/>
+ 
+  <target name="sign-artifacts">
+    <sign-artifacts-macro artifacts.dir="${package.dir}"/>
   </target>
-
+ 
+  <target name="javadocs-dep">
+    <copy failonerror="false" todir="${dest}/docs">
+      <fileset dir="${common-solr.dir}/site" />
+    </copy>
+  </target>
+ 
+  <target name="javadocs-all" depends="compile,javadocs-dep"
+          description="Generate javadoc for core, java client and contrib">
+    <sequential>
+      <mkdir dir="${dest}/docs/api"/>
+ 
+      <path id="javadoc.classpath">
+        <path refid="classpath"/>
+        <fileset dir="${dest}/contrib">
+          <include name="**/lucene-libs/**/*.jar"/>
+        </fileset>
+        <fileset dir="contrib">
+          <include name="**/lib/**/*.jar"/>
+          <exclude name="**/analysis-extras/lib/**/*icu4j*.jar"/> <!-- extraction/lib/ has this one -->
+        </fileset>
+        <pathelement location="${dest}/solr-solrj/classes/java"/>
+      </path>
+ 
+      <invoke-javadoc destdir="${dest}/docs/api"
+                      overview="core/src/java/overview.html">
+        <sources>
+          <packageset dir="core/src/java" />
+          <packageset dir="solrj/src/java" />
+          <packageset dir="contrib/analysis-extras/src/java"/>
+          <packageset dir="contrib/clustering/src/java"/>
+          <packageset dir="contrib/dataimporthandler/src/java"/>
+          <packageset dir="contrib/dataimporthandler-extras/src/java"/>
+          <packageset dir="contrib/extraction/src/java"/>
+          <packageset dir="contrib/uima/src/java"/>
+          <group title="Core" packages="org.apache.*" />
+          <group title="SolrJ" packages="org.apache.solr.common.*,org.apache.solr.client.solrj*" />
+          <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
+          <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
+          <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
+          <group title="contrib: Solr UIMA" packages="org.apache.solr.uima*" />
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+ 
+  <target name="generate-maven-artifacts">
+    <taskdef uri="antlib:org.apache.maven.artifact.ant"
+             resource="org/apache/maven/artifact/ant/antlib.xml"
+             classpathref="maven-ant-tasks.classpath" />
+    <sequential>
+      <ant target="get-maven-poms" dir=".." inheritall="false"/>
+      <m2-deploy pom.xml="pom.xml"/> <!-- Solr parent POM -->
+      <subant target="dist-maven" inheritall="false" >
+        <fileset dir="core" includes="build.xml"/>
+        <fileset dir="solrj" includes="build.xml"/>
+        <fileset dir="test-framework" includes="build.xml"/>
+        <fileset dir="webapp" includes="build.xml"/>
+      </subant>
+      <contrib-crawl target="dist-maven"/>
+    </sequential>
+  </target>
+ 
+ 
+  <!-- ========================================================================= -->
+  <!-- ========================= COMMITTERS' HELPERS =========================== -->
+  <!-- ========================================================================= -->
+ 
+  <target name="stub-factories" depends="dist-core,lucene-jars-to-solr"
+          description="Generates stub factories as needed">
+ 
+    <path id="stub.jars">
+      <!-- this needs to be a list of all jars that might contain
+            classes we want to build factories for
+         -->
+      <fileset dir="${lucene-libs}">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${dist}">
+        <include name="*.jar"/>
+        <exclude name="*solrj*.jar"/>
+      </fileset>
+    </path>
+    <pathconvert property="jar.list" pathsep=" " refid="stub.jars" />
+    <path id="missing.factories.classpath">
+      <pathelement path="${common.dir}/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
+      <path refid="test.classpath"/>
+    </path>
+    <property name="stub.list" value="${dest}/need-stub-factories.txt" />
+    <java fork="false"
+          classname="org.apache.solr.util.SuggestMissingFactories"
+          logError="true"
+          failonerror="true"
+          classpathref="missing.factories.classpath"
+          output="${stub.list}">
+      <arg line="${jar.list}" />
+    </java>
+    <fail unless="stub.src.path">...
+ 
+      This task requires that the property 'stub.src.path' be set.
+ 
+      It must contain a "path" listing directories containing source
+      files that this task should use when looking for classes that
+      need factories created, the format is platform specific --
+      typically it is  colon seperated in Unix, semi-colon seperated
+      on windows, ie:
+ 
+      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/src/java:../modules/analysis"
+ 
+      FYI: The file ${stub.list} contains a list of classes
+      that seem to need stub factories. (if java files can be found to
+      use as guides for creating them).
+    </fail>
+ 
+    <pathconvert pathsep=" " property="stub.src.dirs">
+      <path>
+        <pathelement path="${stub.src.path}"/>
+      </path>
+    </pathconvert>
+    <exec executable="perl"
+          dir="core/src/java/org/apache/solr/analysis/"
+          failonerror="true">
+      <arg value="${common-solr.dir}/dev-tools/stub-analysis-factory-maker.pl"/>
+      <redirector input="${stub.list}">
+        <!-- place to put special case classes we want to ignore -->
+        <inputfilterchain>
+          <linecontainsregexp negate="true">
+            <!-- only for internal Solr highlighting purposes -->
+            <regexp pattern="TokenOrderingFilter"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- no way to leverage this in Solr -->
+            <regexp pattern="CachingTokenFilter"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- no way to leverage this in Solr -->
+            <regexp pattern="HyphenationCompoundWordTokenFilter"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- no way to leverage these in Solr (yet) -->
+            <regexp pattern="Sink|Tee"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- Solr already has a different impl for this -->
+            <regexp pattern="SynonymTokenFilter"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- solr and lucene both have one? ? ? ? -->
+            <regexp pattern="LengthFilter"/>
+          </linecontainsregexp>
+          <linecontainsregexp negate="true">
+            <!-- solr provides it's own SnowballPorterFilter variant -->
+            <regexp pattern="SnowballFilter"/>
+          </linecontainsregexp>
+        </inputfilterchain>
+      </redirector>
+      <arg line="${stub.src.dirs}"/>
+    </exec>
+  </target>
+ 
+  <target name="build-site" depends="svn-up"
+          description="Committers' Helper: build the site and copy to site/.">
+    <delete dir="site-src/build"/>
+    <exec executable="forrest" dir="site-src"/>
+    <copy todir="site">
+      <fileset dir="site-src/build/site"/>
+    </copy>
+    <antcall target="svn-up"/>
+  </target>
+  
+  <target name="svn-up">
+    <exec executable="${svn.exe}">
+      <arg value="update"/>
+    </exec>
+  </target>
 </project>

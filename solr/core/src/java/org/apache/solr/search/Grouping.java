@@ -261,7 +261,7 @@ public class Grouping {
 
   public void execute() throws IOException {
     if (commands.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Specify at least on field, function or query to group by.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Specify at least one field, function or query to group by.");
     }
 
     DocListAndSet out = new DocListAndSet();

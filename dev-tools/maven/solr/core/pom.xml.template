@@ -33,7 +33,7 @@
   <description>Apache Solr Core</description>
   <properties>
     <module-directory>solr</module-directory>
-    <build-directory>../build</build-directory>
+    <build-directory>../build/solr-maven</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -184,34 +184,19 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/solr</outputDirectory>
-    <testOutputDirectory>${build-directory}/tests</testOutputDirectory>
-    <sourceDirectory>java</sourceDirectory>
-    <testSourceDirectory>test</testSourceDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>test-files</directory>
+        <directory>src/test-files</directory>
+      </testResource>
+      <testResource>
+        <directory>../solrj/src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>webapp/src</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -257,14 +242,15 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>add-test-source</id>
+            <id>add-sorlj-and-test-framework</id>
             <phase>generate-test-sources</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
             <configuration>
               <sources>
-                <source>test-framework</source>
+                <source>../test-framework/src/java</source>
+                <source>../solrj/src/test</source>  <!-- solrj tests are run from solr-core -->
               </sources>
             </configuration>
           </execution>

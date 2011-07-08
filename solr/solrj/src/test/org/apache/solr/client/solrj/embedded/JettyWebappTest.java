@@ -25,7 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.util.ExternalPaths;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;

@@ -25,18 +25,27 @@
   
   <property name="Name" value="Solr" />
   <property name="version" value="4.0-SNAPSHOT"/>
-  <property name="final.name" value="apache-${name}-${version}"/>
-
+  <property name="fullname" value="apache-${ant.project.name}"/>
+  <property name="fullnamever" value="${fullname}-${version}"/>
+  <property name="final.name" value="${fullnamever}"/>
+  
   <!-- solr uses 1.6 -->
   <property name="javac.source" value="1.6"/>
   <property name="javac.target" value="1.6"/>
-
-  <!-- solr uses its own build/dist directories -->
-  <property name="build.dir" location="${common-solr.dir}/build"/>
-  <property name="dist.dir" location="${common-solr.dir}/dist"/>
-  <property name="tests.userdir" value="${common-solr.dir}/src/test-files"/>
-  <property name="javadoc.dir" location="${common-solr.dir}/build/docs/api"/>
-  <property name="javadoc.link" value="http://download.oracle.com/javase/6/docs/api/"/>
+  
+  <property name="dest" value="${common-solr.dir}/build" />
+  <property name="build.dir" location="${dest}/${ant.project.name}"/>
+  <property name="dist" location="${common-solr.dir}/dist"/>
+  <property name="package.dir" location="${common-solr.dir}/package"/>
+  <property name="maven.dist.dir" location="${package.dir}/maven"/>
+  <property name="lucene-libs" location="${dest}/lucene-libs" />
+  <property name="manifest.file" location="${dest}/META-INF/MANIFEST.MF"/>
+  <property name="tests.userdir" value="src/test-files"/>
+  <property name="example" value="${common-solr.dir}/example" />
+  <property name="javadoc.dir" location="${build.dir}/docs/api"/>
+  <property name="javadoc.link" value="http://java.sun.com/javase/6/docs/api/"/>
+  <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
+  <property name="tests.threadspercpu" value="2"/>
 
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/lib" includes="**/*.jar"/>
@@ -46,12 +55,17 @@
 
   <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies"/>
 
-  <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
+  <import file="${common-solr.dir}/../lucene/contrib/contrib-build.xml"/>
 
-  <property name="tests.threadspercpu" value="2"/>
+  <!-- Solr Specification Version
 
-  <import file="../lucene/contrib/contrib-build.xml"/>
-  <property name="tests.directory" value="random" />
+       This will be used in the Manifest file, and therefore must
+       match the pattern "digit+{.digit+}*"
+
+       By default, this should be set to "X.Y.M.${dateversion}"
+       where X.Y.M is the last version released (on this branch).
+    -->
+  <property name="solr.spec.version" value="4.0.0.${dateversion}" />
 
   <!-- solr depends on the following modules/contribs -->	
   <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
@@ -70,6 +84,63 @@
   <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries-contrib.uptodate" classpath.property="queries-contrib.jar"/>
   <contrib-uptodate name="spatial" property="spatial.uptodate" classpath.property="spatial.jar"/>
 
+  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/common" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-analyzers-phonetic" unless="analyzers-phonetic.uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/phonetic" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-suggest" unless="suggest.uptodate">
+  	<ant dir="${common.dir}/../modules/suggest" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-grouping" unless="grouping.uptodate">
+  	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-queries" unless="queries.uptodate">
+  	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-highlighter" unless="highlighter.uptodate">
+  	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-memory" unless="memory.uptodate">
+  	<ant dir="${common.dir}/contrib/memory" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-misc" unless="misc.uptodate">
+  	<ant dir="${common.dir}/contrib/misc" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-queries-contrib" unless="queries-contrib.uptodate">
+  	<ant dir="${common.dir}/contrib/queries" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-spatial" unless="spatial.uptodate">
+  	<ant dir="${common.dir}/contrib/spatial" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <!-- xml-query-parser contrib is required by the "luke" target -->
+  <target name="compile-xml-query-parser" unless="xml-query-parser.uptodate">
+  	<ant dir="${common.dir}/contrib/xml-query-parser" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
@@ -81,35 +152,21 @@
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
     <pathelement path="${queries.jar}"/>
-  	<pathelement location="${common-solr.dir}/build/classes/solrj"/>
-  	<pathelement location="${common-solr.dir}/build/classes/webapp"/>
-  	<pathelement location="${common-solr.dir}/build/classes/java"/>
-  	<path refid="base.classpath"/>
+    <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java"/>
+    <pathelement location="${common-solr.dir}/build/solr-core/classes/java"/>
+    <path refid="base.classpath"/>
   </path>
 
   <path id="classpath" refid="solr.base.classpath"/>
 
   <path id="solr.test.base.classpath">
-  	<pathelement path="${common-solr.dir}/build/classes/test-framework"/>
-  	<pathelement path="${common-solr.dir}/build/classes/test"/>
+    <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
+    <pathelement path="${common-solr.dir}/build/solr-core/classes/test"/>
   	<pathelement path="${tests.userdir}"/>
   	<path refid="test.base.classpath"/>
   </path>
  
   <path id="test.classpath" refid="solr.test.base.classpath"/>
-
-  <!-- TODO: lucene and solr should share this macro -->
-  <macrodef name="contrib-crawl">
-    <attribute name="target" default=""/>
-    <attribute name="failonerror" default="true"/>
-    <sequential>
-      <subant target="@{target}" failonerror="@{failonerror}">
-        <property name="core.compiled" value="true"/>
-        <property name="solr.core.compiled" value="true"/>
-        <fileset dir="." includes="contrib/*/build.xml"/>
-      </subant>
-    </sequential>
-  </macrodef>
 
   <macrodef name="solr-contrib-uptodate">
     <attribute name="name"/>
@@ -139,40 +196,163 @@
        -->
       <!-- Solr -->
       <arg value="-c" />
-      <arg value="${basedir}/lib" />
+      <arg value="${common-solr.dir}/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/analysis-extras/lib" />
+      <arg value="${common-solr.dir}/contrib/analysis-extras/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/clustering/lib" />
+      <arg value="${common-solr.dir}/contrib/clustering/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/dataimporthandler/lib" />
+      <arg value="${common-solr.dir}/contrib/dataimporthandler/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/dataimporthandler-extras/lib" />
+      <arg value="${common-solr.dir}/contrib/dataimporthandler-extras/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/extraction/lib" />
+      <arg value="${common-solr.dir}/contrib/extraction/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/contrib/uima/lib" />
+      <arg value="${common-solr.dir}/contrib/uima/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/example/example-DIH/solr/db/lib" />
+      <arg value="${common-solr.dir}/example/example-DIH/solr/db/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/example/example-DIH/solr/mail/lib" />
+      <arg value="${common-solr.dir}/example/example-DIH/solr/mail/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/example/example/lib" />
+      <arg value="${common-solr.dir}/example/example/lib" />
       <arg value="-c" />
-      <arg value="${basedir}/src/test-files/solr/lib" />
+      <arg value="${common-solr.dir}/core/src/test-files/solr/lib" />
     </java>
+    <property name="validated-solr" value="true"/>
   </target>
   <path id="tools.runtime.classpath">
-    <pathelement location="${common-solr.dir}/../lucene/build/classes/tools"/>
+    <pathelement location="${common.dir}/build/classes/tools"/>
   </path>
-  <target name="compile-tools" description="Compile the Test Framework and Validation tools">
-    <sequential>
-      <subant target="compile-tools" inheritall="false" failonerror="true">
-        <fileset dir="${common-solr.dir}/../lucene" includes="build.xml" />
-      </subant>
-    </sequential>
+
+  <target name="init-dist" >
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${package.dir}"/>
+    <mkdir dir="${dist}"/>
+    <mkdir dir="${maven.dist.dir}"/>
   </target>
 
-  <target name="test" depends="compile-test,validate-solr,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
-  
+  <target name="prep-lucene-jars"
+          depends="compile-analyzers-common, compile-analyzers-phonetic, compile-suggest,
+                   compile-highlighter, compile-memory, compile-misc, compile-queries-contrib,
+                   compile-spatial, compile-grouping, compile-queries">
+    <ant dir="${common.dir}" target="default" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
+    <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset file="${common.dir}/build/lucene-core-${version}.jar" />
+      <fileset file="${analyzers-common.jar}" />
+      <fileset file="${analyzers-phonetic.jar}" />
+      <fileset file="${suggest.jar}" />
+      <fileset file="${grouping.jar}" />
+      <fileset file="${common-module.jar}" />
+      <fileset file="${queries.jar}" />
+      <fileset file="${highlighter.jar}" />
+      <fileset file="${memory.jar}" />
+      <fileset file="${misc.jar}" />
+      <fileset file="${queries-contrib.jar}" />
+      <fileset file="${spatial.jar}" />
+    </copy>
+  </target>
+
+  <!-- Shared core/solrj/test-framework/contrib targets -->
+  <target name="jar-core" depends="compile-core">
+    <mkdir dir="${dest}/META-INF/"/>
+    <jarify title="Apache Solr Search Server: ${ant.project.name}"
+            metainf.source.dir="${common-solr.dir}"
+            implementation.title="org.apache.solr"
+            spec.version="${solr.spec.version}"/>
+  </target>
+
+  <target name="dist" depends="jar-core">
+    <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
+  </target>
+
+  <target name="javadocs" depends="compile-core">
+   	<sequential>
+      <mkdir dir="${javadoc.dir}"/>
+      <invoke-javadoc destdir="${javadoc.dir}"
+                      title="${Name} ${version} ${name} API">
+        <sources>
+          <link href=""/>
+          <packageset dir="${src.dir}"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}"
+              destfile="${build.dir}/${final.name}-javadoc.jar"
+              title="Apache Solr Search Server: ${ant.project.name}"
+              metainf.source.dir="${common-solr.dir}"
+              implementation.title="org.apache.solr"
+              spec.version="${solr.spec.version}"/>
+     </sequential>
+  </target>
+
+  <target name="jar-src" depends="init">
+  	<jarify basedir="${src.dir}"
+            destfile="${build.dir}/${final.name}-src.jar"
+            implementation.title="org.apache.solr"
+            metainf.source.dir="${common-solr.dir}"
+            spec.version="${solr.spec.version}"/>
+  </target>
+
+  <!-- Solr core targets -->
+  <target name="compile-solr-core" description="Compile Solr core." unless="solr.core.compiled">
+    <ant dir="${common-solr.dir}/core" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solr.core.compiled" value="true"/>
+  </target>
+  <target name="compile-test-solr-core" description="Compile solr core tests">
+    <ant dir="${common-solr.dir}/core" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solr.core.compiled" value="true"/>
+  </target>
+  <target name="dist-core" depends="init-dist"
+          description="Creates the Solr JAR Distribution file.">
+    <ant dir="${common-solr.dir}/core" target="dist" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <!-- Solrj targets -->
+  <target name="compile-solrj" description="Compile the java client." unless="solrj.compiled">
+    <ant dir="${common-solr.dir}/solrj" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solrj.compiled" value="true"/>
+  </target>
+  <target name="compile-test-solrj" description="Compile java client tests">
+    <ant dir="${common-solr.dir}/solrj" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solrj.compiled" value="true"/>
+  </target>
+  <target name="dist-solrj" depends="init-dist"
+          description="Creates the Solr-J JAR Distribution file.">
+    <ant dir="${common-solr.dir}/solrj" target="dist" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <!-- Solr test-framework targets -->
+  <target name="compile-solr-test-framework" description="Compile the Solr test-framework" unless="solr.test.framework.compiled">
+    <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solr.test.framework.compiled" value="true"/>
+  </target>
+
+  <!-- Solr contrib targets -->
+  <target name="build-contrib" depends="compile-test"
+          description="Builds all contrib modules and their tests">
+    <contrib-crawl target="build-artifacts-and-tests"/>
+  </target>
+  <target name="contribs-add-to-war">
+    <mkdir dir="${dest}/web"/>
+    <delete dir="${dest}/web" includes="**/*" failonerror="false"/>
+    <contrib-crawl target="add-to-war"/>
+  </target>
 </project>

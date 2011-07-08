@@ -23,10 +23,6 @@
     Additional analysis components
   </description>
 
-  <property name="src.dir" location="src/java"/>
-  <property name="tests.src.dir" location="src/test"/>
-  <property name="tests.userdir" location="src/test-files"/>
-
   <import file="../contrib-build.xml"/>
 
   <module-uptodate name="analysis/icu" jarfile="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"
@@ -44,16 +40,32 @@
   </path>
 
   <target name="compile-analyzers-icu" unless="analyzers-icu.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/icu" target="default" inheritAll="false"/>
+  	<ant dir="${common.dir}/../modules/analysis/icu" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <target name="compile-analyzers-smartcn" unless="analyzers-smartcn.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/smartcn" target="default" inheritAll="false"/>
+  	<ant dir="${common.dir}/../modules/analysis/smartcn" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <target name="compile-analyzers-stempel" unless="analyzers-stempel.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/stempel" target="default" inheritAll="false"/>
+  	<ant dir="${common.dir}/../modules/analysis/stempel" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
-  <target name="compile-core" depends="compile-analyzers-icu, compile-analyzers-smartcn, compile-analyzers-stempel, solr-contrib-build.compile-core"/>
+  <target name="module-jars-to-solr"
+          depends="compile-analyzers-icu, compile-analyzers-smartcn, compile-analyzers-stempel">
+    <mkdir dir="${build.dir}/lucene-libs"/>
+    <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset file="${analyzers-icu.jar}"/>
+      <fileset file="${analyzers-smartcn.jar}"/>
+      <fileset file="${analyzers-stempel.jar}"/>
+    </copy>
+  </target>
+
+  <target name="compile-core" depends="module-jars-to-solr, solr-contrib-build.compile-core"/>
 </project>

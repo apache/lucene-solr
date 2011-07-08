@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;

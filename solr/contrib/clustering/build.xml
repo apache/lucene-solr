@@ -23,9 +23,5 @@
     Clustering Integraton
   </description>
 
-  <property name="src.dir" location="src/java"/>
-  <property name="tests.src.dir" location="src/test"/>
-  <property name="tests.userdir" location="src/test-files"/>
-
   <import file="../contrib-build.xml"/>
 </project>

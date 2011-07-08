@@ -17,9 +17,9 @@
 package org.apache.solr.common.util;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.TestDistributedSearch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
@@ -246,7 +246,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
       byte[] arr = baos.toByteArray();
       // System.out.println(arr.length);
       res = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
-      cmp = TestDistributedSearch.compare(nl,res, 0, null);
+      cmp = BaseDistributedSearchTestCase.compare(nl, res, 0, null);
 
       if (cmp != null) {
         System.out.println(nl);

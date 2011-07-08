@@ -51,13 +51,13 @@
 	<classpathentry kind="src" path="modules/queries/src/test"/>
 	<classpathentry kind="src" path="modules/suggest/src/java"/>
 	<classpathentry kind="src" path="modules/suggest/src/test"/>
-	<classpathentry kind="src" path="solr/src/java"/>
-	<classpathentry kind="src" path="solr/src/webapp/src"/>
-	<classpathentry kind="src" path="solr/src/common"/>
-	<classpathentry kind="src" path="solr/src/solrj"/>
-	<classpathentry kind="src" path="solr/src/test-framework"/>
-	<classpathentry kind="src" path="solr/src/test"/>
-	<classpathentry kind="src" path="solr/src/test-files"/>
+	<classpathentry kind="src" path="solr/core/src/java"/>
+	<classpathentry kind="src" path="solr/core/src/test"/>
+	<classpathentry kind="src" path="solr/core/src/test-files"/>
+	<classpathentry kind="src" path="solr/solrj/src/java"/>
+	<classpathentry kind="src" path="solr/solrj/src/test"/>
+	<classpathentry kind="src" path="solr/solrj/src/test-files"/>
+	<classpathentry kind="src" path="solr/test-framework/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>

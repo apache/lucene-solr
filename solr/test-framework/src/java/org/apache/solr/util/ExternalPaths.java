@@ -28,7 +28,7 @@ import org.apache.solr.SolrTestCaseJ4;
  */
 public class ExternalPaths {
   private static final String SOURCE_HOME = determineSourceHome();
-  public static String WEBAPP_HOME = new File(SOURCE_HOME, "src/webapp/web").getAbsolutePath();
+  public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
   public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
   public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
   public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/conf/schema.xml";

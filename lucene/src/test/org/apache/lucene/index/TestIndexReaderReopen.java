@@ -606,7 +606,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     IndexReader reader2 = reader1.reopen();
     modifier = IndexReader.open(dir1, false);
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     modifier.setNorm(1, "field1", sim.encodeNormValue(50f));
     modifier.setNorm(1, "field2", sim.encodeNormValue(50f));
     modifier.close();
@@ -702,7 +702,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       protected void modifyIndex(int i) throws IOException {
         if (i % 3 == 0) {
           IndexReader modifier = IndexReader.open(dir, false);
-          Similarity sim = new DefaultSimilarity();
+          DefaultSimilarity sim = new DefaultSimilarity();
           modifier.setNorm(i, "field1", sim.encodeNormValue(50f));
           modifier.close();
         } else if (i % 3 == 1) {
@@ -983,7 +983,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 1: {
         IndexReader reader = IndexReader.open(dir, false);
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         reader.setNorm(4, "field1", sim.encodeNormValue(123f));
         reader.setNorm(44, "field2", sim.encodeNormValue(222f));
         reader.setNorm(44, "field4", sim.encodeNormValue(22f));
@@ -1007,7 +1007,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       case 4: {
         IndexReader reader = IndexReader.open(dir, false);
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         reader.setNorm(5, "field1", sim.encodeNormValue(123f));
         reader.setNorm(55, "field2", sim.encodeNormValue(222f));
         reader.close();

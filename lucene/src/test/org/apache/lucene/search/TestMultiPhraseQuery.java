@@ -24,9 +24,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -312,21 +312,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         return new DefaultSimilarity() {
           
           @Override
-          public IDFExplanation idfExplain(Collection<Term> terms,
+          public Explanation idfExplain(TermContext stats[],
               IndexSearcher searcher) throws IOException {
-            return new IDFExplanation() {
-
-              @Override
-              public float getIdf() {
-                return 10f;
-              }
-
-              @Override
-              public String explain() {
-                return "just a test";
-              }
-              
-            };
+            return new Explanation(10f, "just a test");
           } 
         };
       }
@@ -336,7 +324,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
     query.add(new Term("body", "is"));
     Weight weight = query.createWeight(searcher);
-    assertEquals(10f * 10f, weight.sumOfSquaredWeights(), 0.001f);
+    assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
     writer.close();
     searcher.close();

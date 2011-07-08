@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+<project name="solr-webapp" default="default">
+  <description>Solr webapp</description>
+
+  <import file="../common-build.xml"/>
+
+  <!-- Checks that all JSP files in the webapp compile successfully using Jetty's Jasper -->
+  <target name="test" depends="compile-test-solr-core">
+    <property name="jsp.target" location="${dest}/jsp-temp" />
+    <taskdef classname="org.apache.jasper.JspC" name="jasper" >
+      <classpath>
+        <fileset dir="${common-solr.dir}/example/lib" includes="**/*.jar" />
+      </classpath>
+    </taskdef>
+    <delete dir="${jsp.target}" />
+    <mkdir dir="${jsp.target}" />
+    <jasper uriroot="${common-solr.dir}/webapp/web" outputDir="${jsp.target}" compile="false" verbose="1" package="j"/>
+    <javac srcdir="${jsp.target}" destdir="${jsp.target}" target="${javac.target}"
+           source="${javac.source}" debug="off" includeAntRuntime="${javac.includeAntRuntime}"
+           encoding="utf8" classpathref="test.classpath"/>
+  </target>
+
+  <target name="dist"
+          description="Creates the Solr WAR Distribution file."
+          depends="test, init-dist, dist-core, dist-solrj, lucene-jars-to-solr">
+    <exec dir="." executable="${svnversion.exe}"
+          outputproperty="svnversion" failifexecutionfails="false">
+      <arg line="."/>
+    </exec>
+    <build-manifest title="Apache Solr Search Server"
+                    implementation.title="org.apache.solr"
+                    spec.version="${solr.spec.version}"/>
+    <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
+    <war destfile="${dist}/apache-solr-${version}.war"
+         webxml="web/WEB-INF/web.xml"
+         manifest="${dest}/META-INF/MANIFEST.MF">
+      <lib dir="${common-solr.dir}/lib">
+        <exclude name="servlet-api*.jar" />
+        <exclude name="easymock-*.jar" />
+        <exclude name="junit-*.jar" />
+        <exclude name="*.txt" />
+        <exclude name="*.template" />
+      </lib>
+      <lib dir="${lucene-libs}"/>
+      <lib dir="${dist}">
+        <include name="apache-solr-solrj-${version}.jar" />
+        <include name="apache-solr-core-${version}.jar" />
+      </lib>
+      <fileset dir="${dest}/web"/> <!-- contribs' additions -->
+      <fileset dir="web" />
+      <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt"/>
+    </war>
+  </target>
+
+  <target name="dist-maven" depends="dist" if="pom.xml.present">
+    <m2-deploy jar.file="${dist}/apache-solr-${version}.war"/>
+  </target>
+</project>

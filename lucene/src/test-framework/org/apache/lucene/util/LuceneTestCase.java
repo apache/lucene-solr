@@ -239,7 +239,7 @@ public abstract class LuceneTestCase extends Assert {
     if (prior != null) {
       cp.unregister(prior);
     }
-    cp.register(c);
+    cp.register(randomizCodec(random, c));
   }
 
   // returns current default codec
@@ -277,13 +277,18 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     swapCodec(new MockSepCodec(), cp);
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 20)), cp);
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20)), cp);
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
     swapCodec(new MockRandomCodec(random), cp);
 
     return cp.lookup(codec);
+  }
+  
+  public static Codec randomizCodec(Random random, Codec codec) {
+    codec.setDocValuesUseCFS(random.nextBoolean());
+    return codec;
   }
 
   // returns current PreFlex codec
@@ -1464,11 +1469,11 @@ public abstract class LuceneTestCase extends Assert {
 
     RandomCodecProvider(Random random) {
       this.perFieldSeed = random.nextInt();
-      register(new StandardCodec());
-      register(new PreFlexCodec());
-      register(new PulsingCodec(1));
-      register(new SimpleTextCodec());
-      register(new MemoryCodec());
+      register(randomizCodec(random, new StandardCodec()));
+      register(randomizCodec(random, new PreFlexCodec()));
+      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20))));
+      register(randomizCodec(random, new SimpleTextCodec()));
+      register(randomizCodec(random, new MemoryCodec()));
       Collections.shuffle(knownCodecs, random);
     }
 

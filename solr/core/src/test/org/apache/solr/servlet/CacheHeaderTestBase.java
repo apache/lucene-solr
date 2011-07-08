@@ -22,7 +22,7 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.solr.client.solrj.SolrJettyTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.junit.Test;
 

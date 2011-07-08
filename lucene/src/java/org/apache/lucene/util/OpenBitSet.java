@@ -692,6 +692,39 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
     return -1;
   }
 
+  /** Returns the index of the first set bit starting downwards at
+   *  the index specified.
+   *  -1 is returned if there are no more set bits.
+   */
+  public long prevSetBit(long index) {
+    int i = (int) (index >> 6);
+    final int subIndex;
+    long word;
+    if (i >= wlen) {
+      i = wlen - 1;
+      if (i < 0) return -1;
+      subIndex = 63;  // last possible bit
+      word = bits[i];
+    } else {
+      if (i < 0) return -1;
+      subIndex = (int)index & 0x3f;  // index within the word
+      word = (bits[i] << (63-subIndex));  // skip all the bits to the left of index
+    }
+
+    if (word != 0) {
+      return (((long)i)<<6) + subIndex - Long.numberOfLeadingZeros(word); // See LUCENE-3197
+    }
+
+    while (--i >= 0) {
+      word = bits[i];
+      if (word !=0 ) {
+        return (((long)i)<<6) + 63 - Long.numberOfLeadingZeros(word);
+      }
+    }
+
+    return -1;
+  }
+
   @Override
   public Object clone() {
     try {

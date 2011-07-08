@@ -27,7 +27,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
@@ -77,7 +77,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
   }
   
   @Override
-  protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost /*ignored*/, PerReaderTermState states) {
+  protected void addClause(BooleanQuery topLevel, Term term, int docFreq, float boost /*ignored*/, TermContext states) {
     topLevel.add(new TermQuery(term, states), BooleanClause.Occur.SHOULD);
   }
 
@@ -140,9 +140,9 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
       assert termState != null;
       if (pos < 0) {
         pos = (-pos)-1;
-        array.termState[pos].register(termState, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos].register(termState, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
       } else {
-        array.termState[pos] = new PerReaderTermState(topReaderContext, termState, readerContext.ord, termsEnum.docFreq());
+        array.termState[pos] = new TermContext(topReaderContext, termState, readerContext.ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
       }
       return true;
     }
@@ -183,9 +183,9 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
     return true;
   }
   
-  /** Special implementation of BytesStartArray that keeps parallel arrays for {@link PerReaderTermState} */
+  /** Special implementation of BytesStartArray that keeps parallel arrays for {@link TermContext} */
   static final class TermStateByteStart extends DirectBytesStartArray  {
-    PerReaderTermState[] termState;
+    TermContext[] termState;
     
     public TermStateByteStart(int initSize) {
       super(initSize);
@@ -194,7 +194,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
     @Override
     public int[] init() {
       final int[] ord = super.init();
-      termState = new PerReaderTermState[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      termState = new TermContext[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       assert termState.length >= ord.length;
       return ord;
     }
@@ -203,7 +203,7 @@ class ConstantScoreAutoRewrite extends TermCollectingRewrite<BooleanQuery> {
     public int[] grow() {
       final int[] ord = super.grow();
       if (termState.length < ord.length) {
-        PerReaderTermState[] tmpTermState = new PerReaderTermState[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        TermContext[] tmpTermState = new TermContext[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(termState, 0, tmpTermState, 0, termState.length);
         termState = tmpTermState;
       }      

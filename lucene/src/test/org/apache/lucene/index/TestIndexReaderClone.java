@@ -273,7 +273,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
    * @throws Exception
    */
   private void performDefaultTests(IndexReader r1) throws Exception {
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     float norm1 = sim.decodeNormValue(MultiNorms.norms(r1, "field1")[4]);
 
     IndexReader pr1Clone = (IndexReader) r1.clone();
@@ -329,7 +329,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader origSegmentReader = getOnlySegmentReader(IndexReader.open(dir1, false));
     origSegmentReader.deleteDocument(1);
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     origSegmentReader.setNorm(4, "field1", sim.encodeNormValue(0.5f));
 
     SegmentReader clonedSegmentReader = (SegmentReader) origSegmentReader
@@ -429,7 +429,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader orig = IndexReader.open(dir1, false);
-    Similarity sim = new DefaultSimilarity();
+    DefaultSimilarity sim = new DefaultSimilarity();
     orig.setNorm(1, "field1", sim.encodeNormValue(17.0f));
     final byte encoded = sim.encodeNormValue(17.0f);
     assertEquals(encoded, MultiNorms.norms(orig, "field1")[1]);

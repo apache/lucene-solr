@@ -41,11 +41,11 @@ import org.apache.lucene.index.IndexReader.ReaderContext;
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query, given a
  * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher)}).
- * <li>The {@link #sumOfSquaredWeights()} method is called on the
+ * <li>The {@link #getValueForNormalization()} method is called on the
  * <code>Weight</code> to compute the query normalization factor
  * {@link SimilarityProvider#queryNorm(float)} of the query clauses contained in the
  * query.
- * <li>The query normalization factor is passed to {@link #normalize(float)}. At
+ * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
  * {@link #scorer(IndexReader.AtomicReaderContext, ScorerContext)}.
@@ -67,12 +67,12 @@ public abstract class Weight {
 
   /** The query that this concerns. */
   public abstract Query getQuery();
+  
+  /** The value for normalization of contained query clauses (e.g. sum of squared weights). */
+  public abstract float getValueForNormalization() throws IOException;
 
-  /** The weight for this query. */
-  public abstract float getValue();
-
-  /** Assigns the query normalization factor to this. */
-  public abstract void normalize(float norm);
+  /** Assigns the query normalization factor and boost from parent queries to this. */
+  public abstract void normalize(float norm, float topLevelBoost);
 
   /**
    * Returns a {@link Scorer} which scores documents in/out-of order according
@@ -93,9 +93,6 @@ public abstract class Weight {
    * @throws IOException
    */
   public abstract Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException;
-  
-  /** The sum of squared weights of contained query clauses. */
-  public abstract float sumOfSquaredWeights() throws IOException;
 
   /**
    * Returns true iff this implementation scores docs only out of order. This

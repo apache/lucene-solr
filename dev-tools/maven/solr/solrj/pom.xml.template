@@ -24,7 +24,7 @@
     <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-solrj</artifactId>
@@ -32,14 +32,20 @@
   <name>Apache Solr Solrj</name>
   <description>Apache Solr Solrj</description>
   <properties>
-    <module-directory>solr/src/solrj</module-directory>
-    <build-directory>../../build/solrj</build-directory>
+    <module-directory>solr/solrj</module-directory>
+    <build-directory>../build/solr-solrj</build-directory>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
@@ -80,37 +86,17 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes</outputDirectory>
-    <sourceDirectory>.</sourceDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory/>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory/>
     <testResources/>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>../common</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Solrj tests are run from the solr-core build; -->
-          <!-- otherwise there would be a cyclic dependency, -->
-          <!-- since Solrj's tests depend on solr-core, and  -->
-          <!-- solr-core depends on Solrj.                   -->
-          <skipTests>true</skipTests>
+          <skip>true</skip> <!-- Tests are run from solr-core module -->
         </configuration>
       </plugin>
     </plugins>

@@ -24,7 +24,7 @@
     <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-test-framework</artifactId>
@@ -32,8 +32,8 @@
   <name>Apache Solr Test Framework</name>
   <description>Apache Solr Test Framework</description>
   <properties>
-    <module-directory>solr/src/test-framework</module-directory>
-    <build-directory>../../build</build-directory>
+    <module-directory>solr/test-framework</module-directory>
+    <build-directory>../build/solr-test-framework</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -53,8 +53,10 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes/test-framework</outputDirectory>
-    <sourceDirectory>.</sourceDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory/>
     <resources>
       <resource>
         <directory>.</directory>

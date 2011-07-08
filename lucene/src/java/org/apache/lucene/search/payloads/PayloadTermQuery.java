@@ -26,6 +26,9 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.search.payloads.PayloadNearQuery.PayloadNearSpanScorer;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
@@ -76,7 +79,7 @@ public class PayloadTermQuery extends SpanTermQuery {
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
       return new PayloadTermSpanScorer((TermSpans) query.getSpans(context),
-          this, similarity, context.reader.norms(query.getField()));
+          this, similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
@@ -86,8 +89,8 @@ public class PayloadTermQuery extends SpanTermQuery {
       private final TermSpans termSpans;
 
       public PayloadTermSpanScorer(TermSpans spans, Weight weight,
-          Similarity similarity, byte[] norms) throws IOException {
-        super(spans, weight, similarity, norms);
+          Similarity similarity, Similarity.SloppyDocScorer docScorer) throws IOException {
+        super(spans, weight, similarity, docScorer);
         termSpans = spans;
       }
 
@@ -173,29 +176,40 @@ public class PayloadTermQuery extends SpanTermQuery {
       protected float getPayloadScore() {
         return function.docScore(doc, term.field(), payloadsSeen, payloadScore);
       }
-
-      @Override
-      protected Explanation explain(final int doc) throws IOException {
-        ComplexExplanation result = new ComplexExplanation();
-        Explanation nonPayloadExpl = super.explain(doc);
-        result.addDetail(nonPayloadExpl);
-        // QUESTION: Is there a way to avoid this skipTo call? We need to know
-        // whether to load the payload or not
-        Explanation payloadBoost = new Explanation();
-        result.addDetail(payloadBoost);
-
-        float payloadScore = getPayloadScore();
-        payloadBoost.setValue(payloadScore);
-        // GSI: I suppose we could toString the payload, but I don't think that
-        // would be a good idea
-        payloadBoost.setDescription("scorePayload(...)");
-        result.setValue(nonPayloadExpl.getValue() * payloadScore);
-        result.setDescription("btq, product of:");
-        result.setMatch(nonPayloadExpl.getValue() == 0 ? Boolean.FALSE
-            : Boolean.TRUE); // LUCENE-1303
-        return result;
+    }
+    
+    @Override
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
+      PayloadTermSpanScorer scorer = (PayloadTermSpanScorer) scorer(context, ScorerContext.def());
+      if (scorer != null) {
+        int newDoc = scorer.advance(doc);
+        if (newDoc == doc) {
+          float freq = scorer.freq();
+          SloppyDocScorer docScorer = similarity.sloppyDocScorer(stats, query.getField(), context);
+          Explanation expl = new Explanation();
+          expl.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
+          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
+          expl.addDetail(scoreExplanation);
+          expl.setValue(scoreExplanation.getValue());
+          // now the payloads part
+          // QUESTION: Is there a way to avoid this skipTo call? We need to know
+          // whether to load the payload or not
+          // GSI: I suppose we could toString the payload, but I don't think that
+          // would be a good idea
+          Explanation payloadExpl = new Explanation(scorer.getPayloadScore(), "scorePayload(...)");
+          payloadExpl.setValue(scorer.getPayloadScore());
+          // combined
+          ComplexExplanation result = new ComplexExplanation();
+          result.addDetail(expl);
+          result.addDetail(payloadExpl);
+          result.setValue(expl.getValue() * payloadExpl.getValue());
+          result.setDescription("btq, product of:");
+          result.setMatch(expl.getValue() == 0 ? Boolean.FALSE : Boolean.TRUE); // LUCENE-1303
+          return result;
+        }
       }
-
+      
+      return new ComplexExplanation(false, 0.0f, "no matching term");
     }
   }
 

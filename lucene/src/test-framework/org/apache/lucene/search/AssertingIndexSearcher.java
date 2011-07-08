@@ -62,12 +62,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public float getValue() {
-        return w.getValue();
-      }
-
-      @Override
-      public void normalize(float norm) {
+      public void normalize(float norm, float topLevelBoost) {
         throw new IllegalStateException("Weight already normalized.");
       }
 
@@ -77,7 +72,7 @@ public class AssertingIndexSearcher extends IndexSearcher {
       }
 
       @Override
-      public float sumOfSquaredWeights() throws IOException {
+      public float getValueForNormalization() throws IOException {
         throw new IllegalStateException("Weight already normalized.");
       }
 

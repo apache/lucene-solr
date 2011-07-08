@@ -23,10 +23,6 @@
     Data Import Handler Extras
   </description>
   
-  <property name="src.dir" location="src/java"/>
-  <property name="tests.src.dir" location="src/test"/>
-  <property name="tests.userdir" location="src/test-files"/>
-
   <import file="../contrib-build.xml"/>
 
   <solr-contrib-uptodate name="dataimporthandler" 
@@ -34,7 +30,9 @@
                          classpath.property="solr-dataimporthandler.jar"/>
 
   <target name="compile-solr-dataimporthandler" unless="solr-dataimporthandler.uptodate">
-  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="default" inheritAll="false"/>
+  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <!-- 
@@ -42,7 +40,9 @@
        we should probably fix this, the same issue exists in modules
    -->
   <target name="compile-solr-dataimporthandler-tests">
-  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-test" inheritAll="false"/>
+  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <path id="classpath">

@@ -133,18 +133,13 @@ public class BlockJoinQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return childWeight.getValue();
+    public float getValueForNormalization() throws IOException {
+      return childWeight.getValueForNormalization();
     }
 
     @Override
-    public float sumOfSquaredWeights() throws IOException {
-      return childWeight.sumOfSquaredWeights();
-    }
-
-    @Override
-    public void normalize(float norm) {
-      childWeight.normalize(norm);
+    public void normalize(float norm, float topLevelBoost) {
+      childWeight.normalize(norm, topLevelBoost);
     }
 
     @Override
