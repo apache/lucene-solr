@@ -47,13 +47,12 @@ public class TestSpanQueryFilter extends LuceneTestCase {
     writer.close();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(reader.getTopReaderContext());
     int subIndex = ReaderUtil.subIndex(number, leaves); // find the reader with this document in it
-    
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(number).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
     SpanFilterResult result = filter.bitSpans(leaves[subIndex]);
     DocIdSet docIdSet = result.getDocIdSet();
     assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
-    assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, number);
+    assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, number - leaves[subIndex].docBase);
     List<SpanFilterResult.PositionInfo> spans = result.getPositions();
     assertTrue("spans is null and it shouldn't be", spans != null);
     int size = getDocIdSetSize(docIdSet);
