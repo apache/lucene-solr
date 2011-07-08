@@ -104,5 +104,11 @@ public class PluginInfo {
     return result;
   }
   public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
-  private static final HashSet<String> NL_TAGS = new HashSet<String>(Arrays.asList("lst","str","int","bool","arr","float","double"));
+
+  private static final HashSet<String> NL_TAGS = new HashSet<String>
+    (Arrays.asList("lst", "arr",
+                   "bool",
+                   "str",
+                   "int","long",
+                   "float","double"));
 }
