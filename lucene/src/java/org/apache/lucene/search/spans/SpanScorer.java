@@ -44,7 +44,6 @@ public class SpanScorer extends Scorer {
     this.similarity = similarity;
     this.docScorer = docScorer;
     this.spans = spans;
-
     if (this.spans.next()) {
       doc = -1;
     } else {

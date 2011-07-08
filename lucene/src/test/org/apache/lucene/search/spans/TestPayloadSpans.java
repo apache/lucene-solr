@@ -419,7 +419,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       //See payload helper, for the PayloadHelper.FIELD field, there is a single byte payload at every token
       if (spans.isPayloadAvailable()) {
         Collection<byte[]> payload = spans.getPayload();
-        assertTrue("payload Size: " + payload.size() + " is not: " + expectedNumPayloads, payload.size() == expectedNumPayloads);
+        assertTrue("payload Size: " + payload.size() + " is not: " + expectedNumPayloads + " span: " + spans.doc() + " " + spans.start(), payload.size() == expectedNumPayloads);
         for (final byte [] thePayload : payload) {
           assertTrue("payload[0] Size: " + thePayload.length + " is not: " + expectedPayloadLength,
                   thePayload.length == expectedPayloadLength);

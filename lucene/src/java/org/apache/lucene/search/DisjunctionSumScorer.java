@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.DisjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ScorerDocQueue;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
@@ -59,6 +61,7 @@ class DisjunctionSumScorer extends Scorer {
   
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
+   * @param needsPositions 
    * @param subScorers A collection of at least two subscorers.
    * @param minimumNrMatchers The positive minimum number of subscorers that should
    * match to match this query.
@@ -233,5 +236,13 @@ class DisjunctionSumScorer extends Scorer {
         }
       }
     } while (true);
+  }
+  
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    if (minimumNrMatchers > 1) {
+      throw new IllegalStateException("positions not implemented for minimum matches > 1");
+    }
+    return new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
   }
 }

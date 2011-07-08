@@ -17,6 +17,8 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -27,7 +29,12 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.search.positions.OrderedConjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.WithinPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader.ReaderContext;
@@ -194,13 +201,19 @@ public class TestSpans extends LuceneTestCase {
   public void testSpanNearOrderedOverlap() throws Exception {
     boolean ordered = true;
     int slop = 1;
-    SpanNearQuery snq = new SpanNearQuery(
-                              new SpanQuery[] {
-                                makeSpanTermQuery("t1"),
-                                makeSpanTermQuery("t2"),
-                                makeSpanTermQuery("t3") },
-                              slop,
-                              ordered);
+    
+    BooleanQuery query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term(field, "t1")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(field, "t2")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(field, "t3")), Occur.MUST));
+    SpanQuery snq =  new MockSpanQuery(query, false, field, new Filter(3 + slop-1));
+//    SpanNearQuery snq = new SpanNearQuery(
+//                              new SpanQuery[] {
+//                                makeSpanTermQuery("t1"),
+//                                makeSpanTermQuery("t2"),
+//                                makeSpanTermQuery("t3") },
+//                              slop,
+//                              ordered);
     Spans spans = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), snq);
 
     assertTrue("first range", spans.next());
@@ -215,7 +228,19 @@ public class TestSpans extends LuceneTestCase {
 
     assertFalse("third range", spans.next());
   }
+  public static class Filter implements PositionIntervalFilter {
 
+    private int slop;
+    public Filter(int slop) {
+      this.slop = slop;
+    }
+    @Override
+    public PositionIntervalIterator filter(PositionIntervalIterator iter) {
+      return new WithinPositionIterator(slop, new OrderedConjunctionPositionIterator(iter));
+//      return new OrderedConjunctionPositionIterator(iter);
+    }
+    
+  }
 
   public void testSpanNearUnOrdered() throws Exception {
 

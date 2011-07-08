@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.positions.PositionFilterQuery;
+import org.apache.lucene.search.positions.RangePositionsIterator;
+import org.apache.lucene.search.positions.WithinPositionIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -165,6 +170,59 @@ public class TestBooleanQuery extends LuceneTestCase {
     reader2.close();
     dir1.close();
     dir2.close();
+  }
+  
+  public void testConjunctionPositions() throws IOException {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    {
+      Document doc = new Document();
+      doc.add(newField(
+          "field",
+          "Pease porridge hot! Pease porridge cold! Pease porridge in the pot nine days old! Some like it hot, some"
+              + " like it cold, Some like it in the pot nine days old! Pease porridge hot! Pease porridge cold!",
+          Field.Store.YES, Field.Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+    
+    {
+      Document doc = new Document();
+      doc.add(newField(
+          "field",
+          "Pease porridge cold! Pease porridge hot! Pease porridge in the pot nine days old! Some like it cold, some"
+              + " like it hot, Some like it in the pot nine days old! Pease porridge cold! Pease porridge hot!",
+          Field.Store.YES, Field.Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+    
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    writer.close();
+    BooleanQuery query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
+    
+    {
+      PositionFilterQuery filter = new PositionFilterQuery(query, new RangePositionsIterator(0,3));
+      TopDocs search = searcher.search(filter, 10);
+      ScoreDoc[] scoreDocs = search.scoreDocs;
+      assertEquals(1, search.totalHits);
+      assertEquals(0, scoreDocs[0].doc);
+    }
+    {
+      PositionFilterQuery filter = new PositionFilterQuery(query, new WithinPositionIterator(3));
+      TopDocs search = searcher.search(filter, 10);
+      ScoreDoc[] scoreDocs = search.scoreDocs;
+      assertEquals(2, search.totalHits);
+      assertEquals(0, scoreDocs[0].doc);
+      assertEquals(1, scoreDocs[1].doc);
+    }
+
+    searcher.close();
+    reader.close();
+    directory.close();
   }
 }
  

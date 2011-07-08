@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
@@ -80,9 +81,19 @@ public class TermQuery extends Query {
         assert termNotInReader(reader, field, term.bytes()) : "no termstate found but term exists in reader";
         return null;
       }
-      final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field, term.bytes(), state);
-      assert docs != null;
-      return new TermScorer(this, docs, similarity.exactDocScorer(stats, field, context));
+      if (scorerContext.needsPositions) {
+        final DocsAndPositionsEnum docs = reader.termPositionsEnum(
+            reader.getLiveDocs(), field, term.bytes(), state);
+        assert docs != null;
+        return new PositionTermScorer(this, docs, similarity.exactDocScorer(
+            stats, field, context), scorerContext.needsPayloads);
+      } else {
+        final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field,
+            term.bytes(), state);
+        assert docs != null;
+        return new TermScorer(this, docs, similarity.exactDocScorer(stats,
+            field, context));
+      }
     }
     
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {

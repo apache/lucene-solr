@@ -138,23 +138,39 @@ public abstract class Weight {
      */
     public final boolean topScorer;
     
+    /**
+     * if <code>true</code> Scorers / Queries supporting positional information will load
+     * positions.  
+     */
+    public final boolean needsPositions;
     
-    private static final ScorerContext DEFAULT_CONTEXT = new ScorerContext(true, false);
+    /**
+     * if <code>true</code> Scorers / Queries supporting payload information will load
+     * payloads.  
+     */
+    public final boolean needsPayloads;
+    
+    
+    private static final ScorerContext DEFAULT_CONTEXT = new ScorerContext(true, false, false, false);
 
     /**
      * Returns a default {@link ScorerContext} template initialized with:
      * <ul>
      * <li>{@link #scoreDocsInOrder} = <code>true</code></li>
      * <li>{@link #topScorer} = <code>false</code></li>
+     * <li>{@link #needsPositions} = <code>false</code></li>
+     * <li>{@link #needsPayloads} = <code>false</code></li>
      * </ul>
      */
     public static ScorerContext def() {
       return DEFAULT_CONTEXT;
     }
     
-    private ScorerContext(boolean scoreDocsInOrder, boolean topScorer) {
+    private ScorerContext(boolean scoreDocsInOrder, boolean topScorer, boolean needsPostions, boolean needsPayloads) {
       this.scoreDocsInOrder = scoreDocsInOrder;
       this.topScorer = topScorer;
+      this.needsPositions = needsPostions;
+      this.needsPayloads = needsPayloads;
     }
 
     /**
@@ -168,7 +184,7 @@ public abstract class Weight {
       if (this.scoreDocsInOrder == scoreDocsInOrder) {
         return this;
       }
-      return new ScorerContext(scoreDocsInOrder, topScorer);
+      return new ScorerContext(scoreDocsInOrder, topScorer, needsPositions, needsPayloads);
     }
     
     /**
@@ -182,7 +198,36 @@ public abstract class Weight {
       if (this.topScorer == topScorer) {
         return this;
       }
-      return new ScorerContext(scoreDocsInOrder, topScorer);
+      return new ScorerContext(scoreDocsInOrder, topScorer, needsPositions, needsPayloads);
+    }
+    
+    
+    /**
+     * Creates and returns a copy of this context with the given value for
+     * {@link #needsPositions} and returns a new instance of
+     * {@link ScorerContext} iff the given value differs from the
+     * {@link #needsPositions}. Otherwise, this method has no effect and
+     * returns this instance.
+     */
+    public ScorerContext needsPositions(boolean needsPositions) {
+      if (this.needsPositions == needsPositions) {
+        return this;
+      }
+      return new ScorerContext(scoreDocsInOrder, topScorer, needsPositions, needsPayloads);
+    }
+    
+    /**
+     * Creates and returns a copy of this context with the given value for
+     * {@link #needsPayloads} and returns a new instance of
+     * {@link ScorerContext} iff the given value differs from the
+     * {@link #needsPayloads}. Otherwise, this method has no effect and
+     * returns this instance.
+     */
+    public ScorerContext needsPayloads(boolean needsPayloads) {
+      if (this.needsPayloads == needsPayloads) {
+        return this;
+      }
+      return new ScorerContext(scoreDocsInOrder, topScorer, needsPositions, needsPayloads);
     }
   }
 }

@@ -17,7 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
@@ -25,16 +28,23 @@ import java.util.Comparator;
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
   
+  private final Scorer[] scorersOrdered;
   private final Scorer[] scorers;
   private final float coord;
   private int lastDoc = -1;
 
-  public ConjunctionScorer(Weight weight, float coord, Collection<Scorer> scorers) throws IOException {
-    this(weight, coord, scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Weight weight, float coord, boolean needsPositions, Collection<Scorer> scorers) throws IOException {
+    this(weight, coord, needsPositions, scorers.toArray(new Scorer[scorers.size()]));
   }
-
-  public ConjunctionScorer(Weight weight, float coord, Scorer... scorers) throws IOException {
+  
+  public ConjunctionScorer(Weight weight, float coord, boolean needsPositions, Scorer... scorers) throws IOException {
     super(weight);
+    if (needsPositions) {
+      scorersOrdered = new Scorer[scorers.length];
+      System.arraycopy(scorers, 0, scorersOrdered, 0, scorers.length);
+    } else {
+      scorersOrdered = null;
+    }
     this.scorers = scorers;
     this.coord = coord;
     
@@ -136,4 +146,13 @@ class ConjunctionScorer extends Scorer {
     }
     return sum * coord;
   }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    if (scorersOrdered == null)
+      throw new IllegalStateException("no positions requested for this scorer");
+    // only created if needed for this scorer - no penalty for non-positional queries
+    return new ConjunctionPositionIterator(this, scorersOrdered);
+  }
+
 }

@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.positions.RangePositionsIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -56,6 +58,39 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     
     // user queries on "starts-with the quick"
     SpanQuery include = new SpanFirstQuery(new SpanTermQuery(new Term("field", "quick")), 2);
+    sfq = new SpanNotQuery(include, sfq);
+    assertEquals(1, searcher.search(sfq, 10).totalHits);
+    
+    writer.close();
+    searcher.close();
+    reader.close();
+    dir.close();
+  }
+  
+  public void testStartPositionsAlt() throws Exception {
+    Directory dir = newDirectory();
+    
+    // mimic StopAnalyzer
+    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|a|of").toAutomaton());
+    Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, stopSet, true);
+    
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, analyzer);
+    Document doc = new Document();
+    doc.add(newField("field", "the quick brown fox", Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    Document doc2 = new Document();
+    doc2.add(newField("field", "quick brown fox", Field.Index.ANALYZED));
+    writer.addDocument(doc2);
+    
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    
+    // user queries on "starts-with quick"
+    SpanQuery sfq = new MockSpanQuery(new TermQuery(new Term("field", "quick")), false,"field", new RangePositionsIterator(0, 0));
+    assertEquals(1, searcher.search(sfq, 10).totalHits);
+    
+    // user queries on "starts-with the quick"
+    SpanQuery include =  new MockSpanQuery(new TermQuery(new Term("field", "quick")), false,"field", new RangePositionsIterator(0, 1));
     sfq = new SpanNotQuery(include, sfq);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
     

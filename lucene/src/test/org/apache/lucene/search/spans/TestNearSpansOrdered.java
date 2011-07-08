@@ -25,12 +25,21 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.ScorerContext;
+import org.apache.lucene.search.positions.OrderedConjunctionPositionIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
+import org.apache.lucene.search.positions.WithinPositionIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
@@ -72,22 +81,34 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 w3 xx w2 yy w3 zz"
   };
 
-  protected SpanNearQuery makeQuery(String s1, String s2, String s3,
+  protected SpanQuery makeQuery(String s1, String s2, String s3,
                                     int slop, boolean inOrder) {
-    return new SpanNearQuery
-      (new SpanQuery[] {
-        new SpanTermQuery(new Term(FIELD, s1)),
-        new SpanTermQuery(new Term(FIELD, s2)),
-        new SpanTermQuery(new Term(FIELD, s3)) },
-       slop,
-       inOrder);
+    
+    BooleanQuery query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term(FIELD, s1)), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(FIELD, s2)), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term(FIELD, s3)), Occur.MUST));
+    return new MockSpanQuery(query, false, FIELD, new Filter(3 + slop-1));
   }
-  protected SpanNearQuery makeQuery() {
+  
+  public static class Filter implements PositionIntervalFilter {
+
+    private int slop;
+    public Filter(int slop) {
+      this.slop = slop;
+    }
+    @Override
+    public PositionIntervalIterator filter(PositionIntervalIterator iter) {
+      return new WithinPositionIterator(slop, new OrderedConjunctionPositionIterator(iter));
+    }
+    
+  }
+  protected SpanQuery makeQuery() {
     return makeQuery("w1","w2","w3",1,true);
   }
   
   public void testSpanNearQuery() throws Exception {
-    SpanNearQuery q = makeQuery();
+    Query q = makeQuery();
     CheckHits.checkHits(random, q, FIELD, searcher, new int[] {0,1});
   }
 
@@ -99,7 +120,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   }
   
   public void testNearSpansNext() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.next());
     assertEquals(s(0,0,3), s(span));
@@ -114,7 +135,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    * does not contain more than one span
    */
   public void testNearSpansSkipToLikeNext() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.skipTo(0));
     assertEquals(s(0,0,3), s(span));
@@ -124,7 +145,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   }
   
   public void testNearSpansNextThenSkipTo() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.next());
     assertEquals(s(0,0,3), s(span));
@@ -134,7 +155,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   }
   
   public void testNearSpansNextThenSkipPast() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.next());
     assertEquals(s(0,0,3), s(span));
@@ -142,20 +163,20 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   }
   
   public void testNearSpansSkipPast() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(false, span.skipTo(2));
   }
   
   public void testNearSpansSkipTo0() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.skipTo(0));
     assertEquals(s(0,0,3), s(span));
   }
 
   public void testNearSpansSkipTo1() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Spans span =  MultiSpansWrapper.wrap(searcher.getTopReaderContext(), q);
     assertEquals(true, span.skipTo(1));
     assertEquals(s(1,0,4), s(span));
@@ -166,7 +187,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    * this causes problems
    */
   public void testSpanNearScorerSkipTo1() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Weight w = searcher.createNormalizedWeight(q);
     ReaderContext topReaderContext = searcher.getTopReaderContext();
     AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
@@ -179,7 +200,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    * this causes problems
    */
   public void testSpanNearScorerExplain() throws Exception {
-    SpanNearQuery q = makeQuery();
+    SpanQuery q = makeQuery();
     Explanation e = searcher.explain(q, 1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),

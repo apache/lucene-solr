@@ -537,7 +537,8 @@ public class IndexSearcher {
 
     // TODO: should we make this
     // threaded...?  the Collector could be sync'd?
-    ScorerContext scorerContext =  ScorerContext.def().scoreDocsInOrder(true).topScorer(true);
+    ScorerContext scorerContext =  ScorerContext.def().scoreDocsInOrder(true).topScorer(true)
+      .needsPositions(collector.needsPositions()).needsPayloads(collector.needsPayloads());
     // always use single thread:
     if (filter == null) {
       for (int i = 0; i < leaves.length; i++) { // search each subreader

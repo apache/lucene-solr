@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -100,6 +101,11 @@ public abstract class Scorer extends DocIdSetIterator {
    * @lucene.experimental */
   public float freq() throws IOException {
     throw new UnsupportedOperationException(this + " does not implement freq()");
+  }
+  
+  public PositionIntervalIterator positions() throws IOException {
+    // TODO make abstract?
+    throw new UnsupportedOperationException();
   }
 
   /**

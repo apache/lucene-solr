@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -373,6 +374,11 @@ final class BooleanScorer extends Scorer {
       sub.scorer.visitSubScorers(q, relationship, visitor);
       sub = sub.next;
     }
+  }
+
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    return super.positions();
   }
 
 }

@@ -296,7 +296,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        Scorer subScorer = w.scorer(context, ScorerContext.def());
+        Scorer subScorer = w.scorer(context, scorerContext.topScorer(false));
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -311,7 +311,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
+      if (!scorerContext.needsPositions && !scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       
@@ -326,7 +326,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Return a BooleanScorer2
-      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
+      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord, scorerContext.needsPositions);
     }
     
     @Override

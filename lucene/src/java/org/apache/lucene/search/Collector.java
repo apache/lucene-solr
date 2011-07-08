@@ -173,4 +173,8 @@ public abstract class Collector {
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
+  public boolean needsPositions() { return false; }
+  
+  public boolean needsPayloads() { return false; }
+  
 }
