@@ -47,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
     
-    IndexOutput output = dir.createOutput(filename);
+    IndexOutput output = dir.createOutput(filename, newIOContext(random));
     assertTrue(output != null);
     //Use a RAMOutputStream
   

@@ -48,6 +48,7 @@ import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -82,8 +83,8 @@ public class MockVariableIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-      final IndexInput in = dir.openInput(fileName, readBufferSize);
+    public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
+      final IndexInput in = dir.openInput(fileName, context);
       final int baseBlockSize = in.readInt();
       return new VariableIntBlockIndexInput(in) {
 
@@ -106,8 +107,8 @@ public class MockVariableIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      final IndexOutput out = dir.createOutput(fileName);
+    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+      final IndexOutput out = dir.createOutput(fileName, context);
       boolean success = false;
       try {
         out.writeInt(baseBlockSize);
@@ -182,7 +183,7 @@ public class MockVariableIntBlockCodec extends Codec {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
-                                                                      state.readBufferSize,
+                                                                      state.context,
                                                                       new MockIntFactory(baseBlockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
@@ -193,7 +194,7 @@ public class MockVariableIntBlockCodec extends Codec {
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       state.codecId);
+                                                       state.codecId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -208,7 +209,7 @@ public class MockVariableIntBlockCodec extends Codec {
                                                 state.fieldInfos,
                                                 state.segmentInfo.name,
                                                 postingsReader,
-                                                state.readBufferSize,
+                                                state.context,
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
@@ -247,6 +248,6 @@ public class MockVariableIntBlockCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

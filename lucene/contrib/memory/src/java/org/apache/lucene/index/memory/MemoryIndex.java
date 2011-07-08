@@ -1194,7 +1194,7 @@ public class MemoryIndex {
     public byte[] norms(String fieldName) {
       byte[] norms = cachedNorms;
       SimilarityProvider sim = getSimilarityProvider();
-      if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
+      if (!fieldName.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(fieldName);
         Similarity fieldSim = sim.get(fieldName);
         int numTokens = info != null ? info.numTokens : 0;

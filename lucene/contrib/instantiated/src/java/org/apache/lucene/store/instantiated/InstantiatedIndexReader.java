@@ -124,7 +124,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
   private Map<String,List<NormUpdate>> uncommittedNormsByFieldNameAndDocumentNumber = null;
 
-  private class NormUpdate {
+  private static class NormUpdate {
     private int doc;
     private byte value;
 
@@ -380,7 +380,7 @@ public class InstantiatedIndexReader extends IndexReader {
               if (upto >= orderedTerms.length) {
                 return null;
               }
-            } while(orderedTerms[upto].field() == currentField);
+            } while(orderedTerms[upto].field().equals(currentField));
             
             currentField = orderedTerms[upto].field();
             return currentField;
@@ -410,7 +410,7 @@ public class InstantiatedIndexReader extends IndexReader {
         // do it up front & cache
         long sum = 0;
         int upto = i;
-        while(upto < orderedTerms.length && orderedTerms[i].field() == field) {
+        while(upto < orderedTerms.length && orderedTerms[i].field().equals(field)) {
           sum += orderedTerms[i].getTotalTermFreq();
           upto++;
         }

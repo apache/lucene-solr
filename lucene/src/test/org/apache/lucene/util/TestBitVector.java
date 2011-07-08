@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -146,8 +147,8 @@ public class TestBitVector extends LuceneTestCase
             bv.set(i);
             assertTrue(bv.get(i));
             assertEquals(i+1,bv.count());
-            bv.write(d, "TESTBV");
-            BitVector compare = new BitVector(d, "TESTBV");
+            bv.write(d, "TESTBV", newIOContext(random));
+            BitVector compare = new BitVector(d, "TESTBV", newIOContext(random));
             // compare bit vectors with bits set incrementally
             assertTrue(doCompare(bv,compare));
         }
@@ -175,24 +176,24 @@ public class TestBitVector extends LuceneTestCase
         bv.clear(i);
         assertEquals(i+1,size-bv.count());
       }
-      bv.write(d, "TESTBV");
+      bv.write(d, "TESTBV", newIOContext(random));
       // gradually increase number of set bits
       for (int i=count1; i<count2; i++) {
-        BitVector bv2 = new BitVector(d, "TESTBV");
+        BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
         bv.clear(i);
         assertEquals(i+1,size-bv.count());
-        bv.write(d, "TESTBV");
+        bv.write(d, "TESTBV", newIOContext(random));
       }
       // now start decreasing number of set bits
       for (int i=count2-1; i>=count1; i--) {
-        BitVector bv2 = new BitVector(d, "TESTBV");
+        BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
         bv.set(i);
         assertEquals(i,size-bv.count());
-        bv.write(d, "TESTBV");
+        bv.write(d, "TESTBV", newIOContext(random));
       }
     }
     /**

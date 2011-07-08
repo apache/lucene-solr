@@ -26,7 +26,7 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   private final String name;
   
   public MockCompoundFileDirectoryWrapper(String name, MockDirectoryWrapper parent, CompoundFileDirectory delegate, boolean forWrite) throws IOException {
-    super(parent, name, 1024);
+    super(parent, name, IOContext.DEFAULT);
     this.name = name;
     this.parent = parent;
     this.delegate = delegate;
@@ -51,8 +51,8 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   }
 
   @Override
-  public synchronized IndexInput openInput(String id, int readBufferSize) throws IOException {
-    return delegate.openInput(id, readBufferSize);
+  public synchronized IndexInput openInput(String id, IOContext context) throws IOException {
+    return delegate.openInput(id, context);
   }
 
   @Override
@@ -86,8 +86,8 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
-    return delegate.createOutput(name);
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
+    return delegate.createOutput(name, context);
   }
 
   @Override
@@ -126,8 +126,8 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   }
 
   @Override
-  public void copy(Directory to, String src, String dest) throws IOException {
-    delegate.copy(to, src, dest);
+  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
+    delegate.copy(to, src, dest, context);
   }
 
   @Override
@@ -136,12 +136,14 @@ public class MockCompoundFileDirectoryWrapper extends CompoundFileDirectory {
   }
 
   @Override
-  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
-    return delegate.createCompoundOutput(name);
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return delegate.createCompoundOutput(name, context);
   }
-  
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return delegate.openCompoundInput(name, bufferSize);
+
+  @Override
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context)
+      throws IOException {
+    return delegate.openCompoundInput(name, context);
   }
 
 }

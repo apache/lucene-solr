@@ -97,16 +97,15 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 */
 	public void testPositionIncrements() throws Exception {
 	  assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
-
-    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้อง the แสดงว่างานดี", 
+	  final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
+    assertAnalyzesTo(analyzer, "การที่ได้ต้อง the แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 18, 22, 25, 28 },
         new int[] { 3, 6, 9, 13, 22, 25, 28, 30 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
 	 
 	  // case that a stopword is adjacent to thai text, with no whitespace
-    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องthe แสดงว่างานดี", 
+    assertAnalyzesTo(analyzer, "การที่ได้ต้องthe แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 17, 21, 24, 27 },
         new int[] { 3, 6, 9, 13, 21, 24, 27, 29 },

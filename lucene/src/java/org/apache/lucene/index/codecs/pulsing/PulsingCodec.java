@@ -118,7 +118,7 @@ public class PulsingCodec extends Codec {
 
     // We wrap StandardPostingsReader, but any StandardPostingsReader
     // will work:
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
     PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
 
     // Terms dict index reader
@@ -130,7 +130,7 @@ public class PulsingCodec extends Codec {
                                                     state.fieldInfos,
                                                     state.segmentInfo.name,
                                                     state.termsIndexDivisor,
-                                                    state.codecId);
+                                                    state.codecId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -144,7 +144,7 @@ public class PulsingCodec extends Codec {
       FieldsProducer ret = new BlockTermsReader(indexReader,
                                                 state.dir, state.fieldInfos, state.segmentInfo.name,
                                                 pulsingReader,
-                                                state.readBufferSize,
+                                                state.context,
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
@@ -181,6 +181,6 @@ public class PulsingCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

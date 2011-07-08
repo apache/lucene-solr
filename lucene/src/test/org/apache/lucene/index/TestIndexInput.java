@@ -99,10 +99,10 @@ public class TestIndexInput extends LuceneTestCase {
   // this test checks the raw IndexInput methods as it uses RAMIndexInput which extends IndexInput directly
   public void testRawIndexInputRead() throws IOException {
     final RAMDirectory dir = new RAMDirectory();
-    final IndexOutput os = dir.createOutput("foo");
+    final IndexOutput os = dir.createOutput("foo", newIOContext(random));
     os.writeBytes(READ_TEST_BYTES, READ_TEST_BYTES.length);
     os.close();
-    final IndexInput is = dir.openInput("foo");
+    final IndexInput is = dir.openInput("foo", newIOContext(random));
     checkReads(is);
     is.close();
     dir.close();

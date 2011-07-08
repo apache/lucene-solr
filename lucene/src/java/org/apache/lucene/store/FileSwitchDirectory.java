@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
+
 /**
  * Expert: A Directory instance that switches files between
  * two other Directory instances.
@@ -125,8 +126,8 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
-    return getDirectory(name).createOutput(name);
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
+    return getDirectory(name).createOutput(name, context);
   }
 
   @Override
@@ -145,17 +146,17 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public IndexInput openInput(String name) throws IOException {
-    return getDirectory(name).openInput(name);
+  public IndexInput openInput(String name, IOContext context) throws IOException {
+    return getDirectory(name).openInput(name, context);
   }
 
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return getDirectory(name).openCompoundInput(name, bufferSize);
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return getDirectory(name).openCompoundInput(name, context);
   }
   
   @Override
-  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
-    return getDirectory(name).createCompoundOutput(name);
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return getDirectory(name).createCompoundOutput(name, context);
   }
 }

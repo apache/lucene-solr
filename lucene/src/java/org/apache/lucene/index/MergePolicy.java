@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 
@@ -189,6 +190,10 @@ public abstract class MergePolicy implements java.io.Closeable {
       }
       return total;
     }
+    
+    public MergeInfo getMergeInfo() {
+      return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, optimize);
+    }    
   }
 
   /**

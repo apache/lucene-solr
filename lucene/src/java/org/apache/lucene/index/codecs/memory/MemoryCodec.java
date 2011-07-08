@@ -48,6 +48,7 @@ import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -242,7 +243,7 @@ public class MemoryCodec extends Codec {
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
     final String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, EXTENSION);
-    final IndexOutput out = state.directory.createOutput(fileName);
+    final IndexOutput out = state.directory.createOutput(fileName, state.context);
     
     return new FieldsConsumer() {
       @Override
@@ -690,7 +691,7 @@ public class MemoryCodec extends Codec {
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
       if (!field.omitTermFreqAndPositions) {
-        sumTotalTermFreq = in.readVInt();
+        sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = 0;
       }
@@ -717,7 +718,7 @@ public class MemoryCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.codecId, EXTENSION);
-    final IndexInput in = state.dir.openInput(fileName);
+    final IndexInput in = state.dir.openInput(fileName, IOContext.READONCE);
 
     final SortedMap<String,TermsReader> fields = new TreeMap<String,TermsReader>();
 
@@ -794,6 +795,6 @@ public class MemoryCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), IOContext.READONCE);
   }
 }

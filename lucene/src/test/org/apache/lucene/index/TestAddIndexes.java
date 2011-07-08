@@ -38,6 +38,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -395,7 +396,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux, newIOContext(random))));
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -430,7 +431,7 @@ public class TestAddIndexes extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(4))
     );
 
-    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux)));
+    writer.addIndexes(aux, new MockDirectoryWrapper(random, new RAMDirectory(aux, newIOContext(random))));
     assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -665,7 +666,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
                 final Directory[] dirs = new Directory[NUM_COPY];
                 for(int k=0;k<NUM_COPY;k++)
-                  dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(dir));
+                  dirs[k] = new MockDirectoryWrapper(random, new RAMDirectory(dir, newIOContext(random)));
 
                 int j=0;
 

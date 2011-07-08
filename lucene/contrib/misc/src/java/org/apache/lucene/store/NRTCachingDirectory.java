@@ -21,13 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexWriter;       // javadocs
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.store.RAMDirectory;      // javadocs
 import org.apache.lucene.util.IOUtils;
 
@@ -38,11 +33,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Wraps a {@link RAMDirectory}
  * around any provided delegate directory, to
- * be used during NRT search.  Make sure you pull the merge
- * scheduler using {@link #getMergeScheduler} and pass that to your
- * {@link IndexWriter}; this class uses that to keep track of which
- * merges are being done by which threads, to decide when to
- * cache each written file.
+ * be used during NRT search.
  *
  * <p>This class is likely only useful in a near-real-time
  * context, where indexing rate is lowish but reopen
@@ -54,20 +45,12 @@ import org.apache.lucene.util.IOUtils;
  * <p>This is safe to use: when your app calls {IndexWriter#commit},
  * all cached files will be flushed from the cached and sync'd.</p>
  *
- * <p><b>NOTE</b>: this class is somewhat sneaky in its
- * approach for spying on merges to determine the size of a
- * merge: it records which threads are running which merges
- * by watching ConcurrentMergeScheduler's doMerge method.
- * While this works correctly, likely future versions of
- * this class will take a more general approach.
- *
  * <p>Here's a simple example usage:
  *
  * <pre>
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
  *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
- *   conf.setMergeScheduler(cachedFSDir.getMergeScheduler());
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
  * </pre>
  *
@@ -193,17 +176,17 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.createOutput name=" + name);
     }
-    if (doCacheWrite(name)) {
+    if (doCacheWrite(name, context)) {
       if (VERBOSE) {
         System.out.println("  to cache");
       }
-      return cache.createOutput(name);
+      return cache.createOutput(name, context);
     } else {
-      return delegate.createOutput(name);
+      return delegate.createOutput(name, context);
     }
   }
 
@@ -219,7 +202,7 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized IndexInput openInput(String name) throws IOException {
+  public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
@@ -227,39 +210,31 @@ public class NRTCachingDirectory extends Directory {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
-      return cache.openInput(name);
+      return cache.openInput(name, context);
     } else {
-      return delegate.openInput(name);
+      return delegate.openInput(name, context);
     }
   }
 
   @Override
-  public synchronized CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+  public synchronized CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
     if (cache.fileExists(name)) {
-      return cache.openCompoundInput(name, bufferSize);
+      return cache.openCompoundInput(name, context);
     } else {
-      return delegate.openCompoundInput(name, bufferSize);
+      return delegate.openCompoundInput(name, context);
     }
   }
   
   @Override
-  public synchronized CompoundFileDirectory createCompoundOutput(String name)
+  public synchronized CompoundFileDirectory createCompoundOutput(String name, IOContext context)
       throws IOException {
     if (cache.fileExists(name)) {
       throw new IOException("File " + name + "already exists");
     } else {
-      return delegate.createCompoundOutput(name);
+      return delegate.createCompoundOutput(name, context);
     }
   }
 
-  @Override
-  public synchronized IndexInput openInput(String name, int bufferSize) throws IOException {
-    if (cache.fileExists(name)) {
-      return cache.openInput(name, bufferSize);
-    } else {
-      return delegate.openInput(name, bufferSize);
-    }
-  }
 
   /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */
@@ -272,36 +247,21 @@ public class NRTCachingDirectory extends Directory {
     delegate.close();
   }
 
-  private final ConcurrentHashMap<Thread,MergePolicy.OneMerge> merges = new ConcurrentHashMap<Thread,MergePolicy.OneMerge>();
-
-  public MergeScheduler getMergeScheduler() {
-    return new ConcurrentMergeScheduler() {
-      @Override
-      protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
-        try {
-          merges.put(Thread.currentThread(), merge);
-          super.doMerge(merge);
-        } finally {
-          merges.remove(Thread.currentThread());
-        }
-      }
-    };
-  }
-
   /** Subclass can override this to customize logic; return
    *  true if this file should be written to the RAMDirectory. */
-  protected boolean doCacheWrite(String name) {
-    final MergePolicy.OneMerge merge = merges.get(Thread.currentThread());
+  protected boolean doCacheWrite(String name, IOContext context) {
+    final MergeInfo merge = context.mergeInfo;
     //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
     return !name.equals(IndexFileNames.SEGMENTS_GEN) && (merge == null || merge.estimatedMergeBytes <= maxMergeSizeBytes) && cache.sizeInBytes() <= maxCachedBytes;
   }
 
   private void unCache(String fileName) throws IOException {
     final IndexOutput out;
+    IOContext context = IOContext.DEFAULT;
     synchronized(this) {
       if (!delegate.fileExists(fileName)) {
         assert cache.fileExists(fileName);
-        out = delegate.createOutput(fileName);
+        out = delegate.createOutput(fileName, context);
       } else {
         out = null;
       }
@@ -310,7 +270,7 @@ public class NRTCachingDirectory extends Directory {
     if (out != null) {
       IndexInput in = null;
       try {
-        in = cache.openInput(fileName);
+        in = cache.openInput(fileName, context);
         in.copyBytes(out, in.length());
       } finally {
         IOUtils.closeSafely(false, in, out);

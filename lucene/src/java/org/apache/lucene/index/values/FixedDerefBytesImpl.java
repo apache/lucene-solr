@@ -24,6 +24,7 @@ import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -54,15 +55,15 @@ class FixedDerefBytesImpl {
     private int size = -1;
     private int[] docToID;
     private final BytesRefHash hash;
-    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
       this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
-          bytesUsed);
+          bytesUsed, context);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
-        AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+        AtomicLong bytesUsed, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       hash = new BytesRefHash(new ByteBlockPool(allocator),
           BytesRefHash.DEFAULT_CAPACITY, new TrackingDirectBytesStartArray(
               BytesRefHash.DEFAULT_CAPACITY, bytesUsed));
@@ -144,8 +145,8 @@ class FixedDerefBytesImpl {
   public static class Reader extends BytesReaderBase {
     private final int size;
 
-    Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context);
       size = datIn.readInt();
     }
 
@@ -220,8 +221,10 @@ class FixedDerefBytesImpl {
         idxIn.readInt();// read valueCount
         idx = PackedInts.getReaderIterator(idxIn);
         fp = datIn.getFilePointer();
-        bytesRef.grow(this.size);
-        bytesRef.length = this.size;
+        if (size > 0) {
+          bytesRef.grow(this.size);
+          bytesRef.length = this.size;
+        }
         bytesRef.offset = 0;
         valueCount = idx.size();
       }

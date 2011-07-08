@@ -462,6 +462,15 @@ New features
   IndexSearcher.  SortFields can have SortField.REWRITEABLE type which
   requires they are rewritten before they are used. (Chris Male)
 
+* LUCENE-3203: FSDirectory can now limit the max allowed write rate
+  (MB/sec) of all running merges, to reduce impact ongoing merging has
+  on searching, NRT reopen time, etc.  (Mike McCandless)
+
+* LUCENE-2793: Directory#createOutput & Directory#openInput now accept an
+  IOContext instead of a buffer size to allow low level optimizations for 
+  different usecases like merging, flushing and reading.
+  (Simon Willnauer, Mike McCandless, Varun Thacker)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

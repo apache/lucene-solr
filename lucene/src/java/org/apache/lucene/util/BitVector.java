@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
@@ -214,9 +215,9 @@ public final class BitVector implements Cloneable, Bits {
 
   /** Writes this vector to the file <code>name</code> in Directory
     <code>d</code>, in a format that can be read by the constructor {@link
-    #BitVector(Directory, String)}.  */
-  public final void write(Directory d, String name) throws IOException {
-    IndexOutput output = d.createOutput(name);
+    #BitVector(Directory, String, IOContext)}.  */
+  public final void write(Directory d, String name, IOContext context) throws IOException {
+    IndexOutput output = d.createOutput(name, context);
     try {
       output.writeInt(-2);
       CodecUtil.writeHeader(output, CODEC, VERSION_CURRENT);
@@ -328,8 +329,8 @@ public final class BitVector implements Cloneable, Bits {
   /** Constructs a bit vector from the file <code>name</code> in Directory
     <code>d</code>, as written by the {@link #write} method.
     */
-  public BitVector(Directory d, String name) throws IOException {
-    IndexInput input = d.openInput(name);
+  public BitVector(Directory d, String name, IOContext context) throws IOException {
+    IndexInput input = d.openInput(name, context);
 
     try {
       final int firstInt = input.readInt();

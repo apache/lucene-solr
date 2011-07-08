@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -65,14 +66,14 @@ final class FieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
-  FieldsWriter(Directory directory, String segment) throws IOException {
+  FieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
 
     boolean success = false;
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION));
-      indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), context);
+      indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION), context);
 
       fieldsStream.writeInt(FORMAT_CURRENT);
       indexStream.writeInt(FORMAT_CURRENT);

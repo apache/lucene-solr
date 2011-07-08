@@ -48,7 +48,7 @@ public abstract class CompoundFileDirectory extends Directory {
   
   private final Directory directory;
   private final String fileName;
-  private final int readBufferSize;  
+  protected final int readBufferSize;  
   private Map<String,FileEntry> entries;
   private boolean openForWrite;
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
@@ -59,11 +59,11 @@ public abstract class CompoundFileDirectory extends Directory {
    * <p>
    * NOTE: subclasses must call {@link #initForRead(Map)} before the directory can be used.
    */
-  public CompoundFileDirectory(Directory directory, String fileName, int readBufferSize) throws IOException {
+  public CompoundFileDirectory(Directory directory, String fileName, IOContext context) throws IOException {
 
     this.directory = directory;
     this.fileName = fileName;
-    this.readBufferSize = readBufferSize;
+    this.readBufferSize = BufferedIndexInput.bufferSize(context);
     this.isOpen = false;
   }
   
@@ -91,7 +91,7 @@ public abstract class CompoundFileDirectory extends Directory {
       IndexInput input = null;
       try {
         input = dir.openInput(IndexFileNames.segmentFileName(IndexFileNames.stripExtension(name), "",
-            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION), IOContext.READONCE);
         final int readInt = input.readInt(); // unused right now
         assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
         final int numEntries = input.readVInt();
@@ -189,13 +189,7 @@ public abstract class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public synchronized IndexInput openInput(String id) throws IOException {
-    // Default to readBufferSize passed in when we were opened
-    return openInput(id, readBufferSize);
-  }
-  
-  @Override
-  public synchronized IndexInput openInput(String id, int readBufferSize) throws IOException {
+  public synchronized IndexInput openInput(String id, IOContext context) throws IOException {
     ensureOpen();
     assert !openForWrite;
     id = IndexFileNames.stripSegmentName(id);
@@ -273,9 +267,9 @@ public abstract class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return writer.createOutput(name);
+    return writer.createOutput(name, context);
   }
   
   @Override
@@ -291,18 +285,18 @@ public abstract class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
     FileEntry fileEntry = this.entries.get(IndexFileNames.stripSegmentName(name));
     if (fileEntry == null) {
       throw new FileNotFoundException("file " + name + " does not exists in this CFS");
     }
-    return new NestedCompoundFileDirectory(name, bufferSize, fileEntry.offset, fileEntry.length);
+    return new NestedCompoundFileDirectory(name, context, fileEntry.offset, fileEntry.length);
   }
   
   /** Not implemented
   * @throws UnsupportedOperationException */
   @Override
-  public CompoundFileDirectory createCompoundOutput(String name)
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context)
       throws IOException {
     throw new UnsupportedOperationException("can not create nested CFS, create seperately and use Directory.copy instead");
   }
@@ -312,14 +306,14 @@ public abstract class CompoundFileDirectory extends Directory {
     private final long cfsOffset;
     private final long cfsLength;
 
-    public NestedCompoundFileDirectory(String fileName, int readBufferSize, long offset, long length)
+    public NestedCompoundFileDirectory(String fileName, IOContext context, long offset, long length)
         throws IOException {
-      super(directory, fileName, readBufferSize);
+      super(directory, fileName, context);
       this.cfsOffset = offset;
       this.cfsLength = length;
       IndexInput input = null;
       try {
-        input = CompoundFileDirectory.this.openInput(fileName, 128);
+        input = CompoundFileDirectory.this.openInput(fileName, IOContext.READONCE);
         initForRead(CompoundFileDirectory.readEntries(input,
             CompoundFileDirectory.this, fileName));
       } finally {

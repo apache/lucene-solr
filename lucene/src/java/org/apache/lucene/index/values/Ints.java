@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.values.IntsImpl.IntsReader;
 import org.apache.lucene.index.values.IntsImpl.IntsWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * @lucene.experimental
@@ -33,11 +34,13 @@ public class Ints {
   private Ints() {
   }
 
-  public static Writer getWriter(Directory dir, String id, AtomicLong bytesUsed, ValueType type) throws IOException {
-    return new IntsWriter(dir, id, bytesUsed, type);
+  public static Writer getWriter(Directory dir, String id,
+      AtomicLong bytesUsed, ValueType type, IOContext context) throws IOException {
+    return new IntsWriter(dir, id, bytesUsed, type, context);
   }
 
-  public static IndexDocValues getValues(Directory dir, String id, int numDocs) throws IOException {
-    return new IntsReader(dir, id, numDocs);
+  public static IndexDocValues getValues(Directory dir, String id,
+      int numDocs, IOContext context) throws IOException {
+    return new IntsReader(dir, id, numDocs, context);
   }
 }

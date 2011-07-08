@@ -93,7 +93,7 @@ public class MockSepCodec extends Codec {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-        state.readBufferSize, new MockSingleIntFactory(), state.codecId);
+        state.context, new MockSingleIntFactory(), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -103,7 +103,7 @@ public class MockSepCodec extends Codec {
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                       state.codecId);
+                                                       state.codecId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -118,7 +118,7 @@ public class MockSepCodec extends Codec {
                                                 state.fieldInfos,
                                                 state.segmentInfo.name,
                                                 postingsReader,
-                                                state.readBufferSize,
+                                                state.context,
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
@@ -161,6 +161,6 @@ public class MockSepCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

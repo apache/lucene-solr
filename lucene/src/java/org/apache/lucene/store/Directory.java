@@ -52,7 +52,7 @@ public abstract class Directory implements Closeable {
    * Returns an array of strings, one for each file in the directory.
    * 
    * @throws NoSuchDirectoryException if the directory is not prepared for any
-   *         write operations (such as {@link #createOutput(String)}).
+   *         write operations (such as {@link #createOutput(String, IOContext)}).
    * @throws IOException in case of other IO errors
    */
   public abstract String[] listAll() throws IOException;
@@ -87,7 +87,7 @@ public abstract class Directory implements Closeable {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract IndexOutput createOutput(String name)
+  public abstract IndexOutput createOutput(String name, IOContext context)
        throws IOException;
 
   /**
@@ -103,10 +103,6 @@ public abstract class Directory implements Closeable {
    */
   public abstract void sync(Collection<String> names) throws IOException;
 
-  /** Returns a stream reading an existing file. */
-  public abstract IndexInput openInput(String name)
-    throws IOException;
-
   /** Returns a stream reading an existing file, with the
    * specified read buffer size.  The particular Directory
    * implementation may ignore the buffer size.  Currently
@@ -114,9 +110,7 @@ public abstract class Directory implements Closeable {
    * parameter are {@link FSDirectory} and {@link
    * CompoundFileDirectory}.
   */
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    return openInput(name);
-  }
+  public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
   
   /** 
    * Returns a {@link CompoundFileDirectory} capable of
@@ -126,8 +120,8 @@ public abstract class Directory implements Closeable {
    * {@link DefaultCompoundFileDirectory}.
    * @lucene.experimental
    */
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return new DefaultCompoundFileDirectory(this, name, bufferSize, false);
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new DefaultCompoundFileDirectory(this, name, context, false);
   }
   
   /** 
@@ -138,8 +132,8 @@ public abstract class Directory implements Closeable {
    * {@link DefaultCompoundFileDirectory}.
    * @lucene.experimental
    */
-  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
-    return new DefaultCompoundFileDirectory(this, name, 1024, true);
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return new DefaultCompoundFileDirectory(this, name, context, true);
   }
 
   /** Construct a {@link Lock}.
@@ -223,13 +217,13 @@ public abstract class Directory implements Closeable {
    * <b>NOTE:</b> this method does not check whether <i>dest<i> exist and will
    * overwrite it if it does.
    */
-  public void copy(Directory to, String src, String dest) throws IOException {
+  public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     IndexOutput os = null;
     IndexInput is = null;
     IOException priorException = null;
     try {
-      os = to.createOutput(dest);
-      is = openInput(src);
+      os = to.createOutput(dest, context);
+      is = openInput(src, context);
       is.copyBytes(os, is.length());
     } catch (IOException ioe) {
       priorException = ioe;

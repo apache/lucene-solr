@@ -17,30 +17,9 @@
 
 package org.apache.solr.common.util;
 
-import java.io.StringReader;
+import org.apache.solr.util.DOMUtilTestBase;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
-
-import org.apache.lucene.util.LuceneTestCase;
-
-public class DOMUtilTest extends LuceneTestCase {
-  
-  private DocumentBuilder builder;
-  private static final XPathFactory xpathFactory = XPathFactory.newInstance();
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-  }
+public class DOMUtilTest extends DOMUtilTestBase {
   
   public void testAddToNamedListPrimitiveTypes() throws Exception {
     NamedList<Object> namedList = new SimpleOrderedMap<Object>();
@@ -74,18 +53,5 @@ public class DOMUtilTest extends LuceneTestCase {
     assertEquals( key, v.getClass().getSimpleName() );
     assertEquals( value, v );
     namedList.remove( key );
-  }
-  
-  public Node getNode( String xml, String path ) throws Exception {
-    return getNode( getDocument(xml), path );
-  }
-  
-  public Node getNode( Document doc, String path ) throws Exception {
-    XPath xpath = xpathFactory.newXPath();
-    return (Node)xpath.evaluate(path, doc, XPathConstants.NODE);
-  }
-  
-  public Document getDocument( String xml ) throws Exception {
-    return builder.parse(new InputSource(new StringReader(xml)));
   }
 }

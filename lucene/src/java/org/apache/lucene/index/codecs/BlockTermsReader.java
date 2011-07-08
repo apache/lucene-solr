@@ -34,9 +34,9 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -107,7 +107,7 @@ public class BlockTermsReader extends FieldsProducer {
   
   //private String segment;
   
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
+  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
     throws IOException {
     
@@ -116,7 +116,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     //this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
-                       readBufferSize);
+                       context);
 
     boolean success = false;
     try {
@@ -827,12 +827,12 @@ public class BlockTermsReader extends FieldsProducer {
         postingsReader.readTermsBlock(in, fieldInfo, state);
 
         blocksSinceSeek++;
-        indexIsCurrent &= (blocksSinceSeek < indexReader.getDivisor());
+        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
         //System.out.println("  indexIsCurrent=" + indexIsCurrent);
 
         return true;
       }
-
+     
       private void decodeMetaData() throws IOException {
         //System.out.println("BTR.decodeMetadata mdUpto=" + metaDataUpto + " vs termCount=" + state.termCount + " state=" + state);
         if (!seekPending) {

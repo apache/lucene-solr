@@ -61,7 +61,7 @@ public class TestDocValues extends LuceneTestCase {
 
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes);
+    Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes, newIOContext(random));
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
     final int fixedLength = 1 + atLeast(50);
@@ -81,7 +81,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(maxDoc);
     assertEquals(0, trackBytes.get());
 
-    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc, comp);
+    IndexDocValues r = Bytes.getValues(dir, "test", mode, fixedSize, maxDoc, comp, newIOContext(random));
     for (int iter = 0; iter < 2; iter++) {
       ValuesEnum bytesEnum = getEnum(r);
       assertNotNull("enum is null", bytesEnum);
@@ -183,12 +183,12 @@ public class TestDocValues extends LuceneTestCase {
     for (int i = 0; i < minMax.length; i++) {
       Directory dir = newDirectory();
       final AtomicLong trackBytes = new AtomicLong(0);
-      Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.VAR_INTS);
+      Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.VAR_INTS, newIOContext(random));
       w.add(0, minMax[i][0]);
       w.add(1, minMax[i][1]);
       w.finish(2);
       assertEquals(0, trackBytes.get());
-      IndexDocValues r = Ints.getValues(dir, "test", 2);
+      IndexDocValues r = Ints.getValues(dir, "test", 2, newIOContext(random));
       Source source = getSource(r);
       assertEquals(i + " with min: " + minMax[i][0] + " max: " + minMax[i][1],
           expectedTypes[i], source.type());
@@ -224,12 +224,12 @@ public class TestDocValues extends LuceneTestCase {
     byte[] sourceArray = new byte[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_8);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_8, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     byte[] loaded = ((byte[])source.getArray());
@@ -245,12 +245,12 @@ public class TestDocValues extends LuceneTestCase {
     short[] sourceArray = new short[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_16);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_16, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     short[] loaded = ((short[])source.getArray());
@@ -266,12 +266,12 @@ public class TestDocValues extends LuceneTestCase {
     long[] sourceArray = new long[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_64);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_64, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     long[] loaded = ((long[])source.getArray());
@@ -287,12 +287,12 @@ public class TestDocValues extends LuceneTestCase {
     int[] sourceArray = new int[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_32);
+    Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_32, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length);
+    IndexDocValues r = Ints.getValues(dir, "test", sourceArray.length, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     int[] loaded = ((int[])source.getArray());
@@ -308,12 +308,12 @@ public class TestDocValues extends LuceneTestCase {
     float[] sourceArray = new float[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Floats.getWriter(dir, "test", 4, trackBytes);
+    Writer w = Floats.getWriter(dir, "test", 4, trackBytes, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Floats.getValues(dir, "test", 3);
+    IndexDocValues r = Floats.getValues(dir, "test", 3, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     float[] loaded = ((float[])source.getArray());
@@ -329,12 +329,12 @@ public class TestDocValues extends LuceneTestCase {
     double[] sourceArray = new double[] {1,2,3};
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Floats.getWriter(dir, "test", 8, trackBytes);
+    Writer w = Floats.getWriter(dir, "test", 8, trackBytes, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
     }
     w.finish(sourceArray.length);
-    IndexDocValues r = Floats.getValues(dir, "test", 3);
+    IndexDocValues r = Floats.getValues(dir, "test", 3, newIOContext(random));
     Source source = r.getSource();
     assertTrue(source.hasArray());
     double[] loaded = ((double[])source.getArray());
@@ -353,7 +353,7 @@ public class TestDocValues extends LuceneTestCase {
     for (int rx = 1; rx < maxBit; rx++, maxV *= 2) {
       Directory dir = newDirectory();
       final AtomicLong trackBytes = new AtomicLong(0);
-      Writer w = Ints.getWriter(dir, "test", trackBytes, type);
+      Writer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random));
       for (int i = 0; i < NUM_VALUES; i++) {
         final long v = random.nextLong() % (1 + maxV);
         values[i] = v;
@@ -363,7 +363,7 @@ public class TestDocValues extends LuceneTestCase {
       w.finish(NUM_VALUES + additionalDocs);
       assertEquals(0, trackBytes.get());
 
-      IndexDocValues r = Ints.getValues(dir, "test", NUM_VALUES + additionalDocs);
+      IndexDocValues r = Ints.getValues(dir, "test", NUM_VALUES + additionalDocs, newIOContext(random));
       for (int iter = 0; iter < 2; iter++) {
         Source s = getSource(r);
         assertEquals(type, s.type());
@@ -416,7 +416,7 @@ public class TestDocValues extends LuceneTestCase {
   private void runTestFloats(int precision, double delta) throws IOException {
     Directory dir = newDirectory();
     final AtomicLong trackBytes = new AtomicLong(0);
-    Writer w = Floats.getWriter(dir, "test", precision, trackBytes);
+    Writer w = Floats.getWriter(dir, "test", precision, trackBytes, newIOContext(random));
     final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];
     for (int i = 0; i < NUM_VALUES; i++) {
@@ -429,7 +429,7 @@ public class TestDocValues extends LuceneTestCase {
     w.finish(NUM_VALUES + additionalValues);
     assertEquals(0, trackBytes.get());
 
-    IndexDocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
+    IndexDocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues, newIOContext(random));
     for (int iter = 0; iter < 2; iter++) {
       Source s = getSource(r);
       for (int i = 0; i < NUM_VALUES; i++) {

@@ -31,11 +31,11 @@ import org.apache.lucene.util.IOUtils;
 public class DefaultCompoundFileDirectory extends CompoundFileDirectory {
   protected IndexInput stream;
   
-  public DefaultCompoundFileDirectory(Directory directory, String fileName, int readBufferSize, boolean writeable) throws IOException {
-    super(directory, fileName, readBufferSize);
+  public DefaultCompoundFileDirectory(Directory directory, String fileName, IOContext context, boolean writeable) throws IOException {
+    super(directory, fileName, context);
     if (!writeable) {
       try {
-        stream = directory.openInput(fileName, readBufferSize);
+        stream = directory.openInput(fileName, context);
         initForRead(CompoundFileDirectory.readEntries(stream, directory, fileName));
       } catch (IOException e) {
         IOUtils.closeSafely(e, stream);

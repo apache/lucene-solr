@@ -93,7 +93,7 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize, state.codecId);
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -103,7 +103,7 @@ public class AppendingCodec extends Codec {
               state.segmentInfo.name,
               state.termsIndexDivisor,
               BytesRef.getUTF8SortedAsUnicodeComparator(),
-              state.codecId);
+              state.codecId, state.context);
       success = true;
     } finally {
       if (!success) {
@@ -115,7 +115,7 @@ public class AppendingCodec extends Codec {
       FieldsProducer ret = new AppendingTermsDictReader(indexReader,
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
-              state.readBufferSize,
+              state.context,
               StandardCodec.TERMS_CACHE_SIZE,
               state.codecId);
       success = true;
@@ -153,6 +153,6 @@ public class AppendingCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

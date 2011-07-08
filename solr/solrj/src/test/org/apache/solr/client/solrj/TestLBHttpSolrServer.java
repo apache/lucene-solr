@@ -131,7 +131,6 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(httpClient, solr[0].getUrl(), solr[1].getUrl());
     lbHttpSolrServer.setAliveCheckInterval(500);
     SolrQuery solrQuery = new SolrQuery("*:*");
-    Set<String> names = new HashSet<String>();
     QueryResponse resp = null;
     solr[0].jetty.stop();
     solr[0].jetty = null;

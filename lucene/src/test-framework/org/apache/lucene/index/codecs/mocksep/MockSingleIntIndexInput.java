@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
 
@@ -35,9 +36,9 @@ import org.apache.lucene.util.CodecUtil;
 public class MockSingleIntIndexInput extends IntIndexInput {
   private final IndexInput in;
 
-  public MockSingleIntIndexInput(Directory dir, String fileName, int readBufferSize)
+  public MockSingleIntIndexInput(Directory dir, String fileName, IOContext context)
     throws IOException {
-    in = dir.openInput(fileName, readBufferSize);
+    in = dir.openInput(fileName, context);
     CodecUtil.checkHeader(in, MockSingleIntIndexOutput.CODEC,
                           MockSingleIntIndexOutput.VERSION_START,
                           MockSingleIntIndexOutput.VERSION_START);

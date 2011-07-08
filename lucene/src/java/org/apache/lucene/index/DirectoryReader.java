@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -121,7 +122,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     for (int i = sis.size()-1; i >= 0; i--) {
       boolean success = false;
       try {
-        readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor);
+        readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor, IOContext.READ);
         readers[i].readerFinishedListeners = readerFinishedListeners;
         success = true;
       } finally {
@@ -170,7 +171,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
-        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
+        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor,
+                                                                        IOContext.READ);
         if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
           reader.readerFinishedListeners = readerFinishedListeners;
           readers.add(reader);
@@ -254,7 +256,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           assert !doClone;
 
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor);
+          newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor, IOContext.READ);
           newReader.readerFinishedListeners = readerFinishedListeners;
         } else {
           newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);

@@ -310,6 +310,10 @@ Bug Fixes
   multiple files in a single request.
   (Stephan Günther, hossman)
 
+* SOLR-2541: PluginInfos was not correctly parsing <long/> tags when 
+  initializing plugins
+  (Frank Wesemann, hossman)
+
 Other Changes
 ----------------------
 
