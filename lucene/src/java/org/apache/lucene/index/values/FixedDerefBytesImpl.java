@@ -221,8 +221,10 @@ class FixedDerefBytesImpl {
         idxIn.readInt();// read valueCount
         idx = PackedInts.getReaderIterator(idxIn);
         fp = datIn.getFilePointer();
-        bytesRef.grow(this.size);
-        bytesRef.length = this.size;
+        if (size > 0) {
+          bytesRef.grow(this.size);
+          bytesRef.length = this.size;
+        }
         bytesRef.offset = 0;
         valueCount = idx.size();
       }
