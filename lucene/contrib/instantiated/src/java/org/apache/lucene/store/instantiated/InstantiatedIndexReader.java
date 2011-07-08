@@ -410,7 +410,7 @@ public class InstantiatedIndexReader extends IndexReader {
         // do it up front & cache
         long sum = 0;
         int upto = i;
-        while(upto < orderedTerms.length && orderedTerms[i].equals(field)) {
+        while(upto < orderedTerms.length && orderedTerms[i].field().equals(field)) {
           sum += orderedTerms[i].getTotalTermFreq();
           upto++;
         }
