@@ -137,8 +137,9 @@ public class BlockTermsReader extends FieldsProducer {
         final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         final long sumTotalTermFreq = fieldInfo.omitTermFreqAndPositions ? -1 : in.readVLong();
+        final long sumDocFreq = in.readVLong();
         assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq));
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq));
       }
       success = true;
     } finally {
@@ -245,13 +246,15 @@ public class BlockTermsReader extends FieldsProducer {
     final FieldInfo fieldInfo;
     final long termsStartPointer;
     final long sumTotalTermFreq;
+    final long sumDocFreq;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
       this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
     }
 
     @Override
@@ -277,6 +280,11 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public long getSumTotalTermFreq() {
       return sumTotalTermFreq;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return sumDocFreq;
     }
 
     // Iterates through terms in this field

@@ -102,6 +102,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       final String field;
       final SortedMap<String,RAMTerm> termToDocs = new TreeMap<String,RAMTerm>();
       long sumTotalTermFreq;
+      long sumDocFreq;
 
       RAMField(String field) {
         this.field = field;
@@ -115,6 +116,11 @@ public class TestExternalCodecs extends LuceneTestCase {
       @Override
       public long getSumTotalTermFreq() {
         return sumTotalTermFreq;
+      }
+      
+      @Override
+      public long getSumDocFreq() throws IOException {
+        return sumDocFreq;
       }
 
       @Override
@@ -204,8 +210,9 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public void finish(long sumTotalTermFreq) {
+      public void finish(long sumTotalTermFreq, long sumDocFreq) {
         field.sumTotalTermFreq = sumTotalTermFreq;
+        field.sumDocFreq = sumDocFreq;
       }
     }
 

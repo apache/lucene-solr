@@ -426,6 +426,12 @@ public class InstantiatedIndexReader extends IndexReader {
           public long getSumTotalTermFreq() {
             return sumTotalTermFreq;
           }
+          
+          // TODO: support this?
+          @Override
+          public long getSumDocFreq() {
+            return -1;
+          }
 
           @Override
           public Comparator<BytesRef> getComparator() {

@@ -89,7 +89,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finish(long sumTotalTermFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
     }
 
     @Override

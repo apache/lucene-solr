@@ -421,6 +421,8 @@ New features
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
 
+* LUCENE-3290: Added Terms.getSumDocFreq()  (Mike McCandless, Robert Muir)
+
 * LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
   refactored from Solr's UnInvertedField, for accessing term ords for
   multi-valued fields, per document.  This is similar to FieldCache in
@@ -511,6 +513,11 @@ Bug fixes
 * LUCENE-3254: Fixed minor bug in deletes were written to disk,
   causing the file to sometimes be larger than it needed to be.  (Mike
   McCandless)
+
+New Features
+
+* LUCENE-3290: Added FieldInvertState.numUniqueTerms 
+  (Mike McCandless, Robert Muir)
 
 Optimizations
 

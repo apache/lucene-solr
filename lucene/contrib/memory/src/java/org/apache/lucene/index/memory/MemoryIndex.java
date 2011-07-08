@@ -842,6 +842,12 @@ public class MemoryIndex {
               public long getSumTotalTermFreq() {
                 return info.getSumTotalTermFreq();
               }
+
+              @Override
+              public long getSumDocFreq() throws IOException {
+                // each term has df=1
+                return info.sortedTerms.length;
+              }
             };
           }
         }

@@ -463,6 +463,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final long termsStart;
     private final boolean omitTF;
     private long sumTotalTermFreq;
+    private long sumDocFreq;
     private FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst;
     private int termCount;
     private final BytesRef scratch = new BytesRef(10);
@@ -500,6 +501,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           break;
         } else if (scratch.startsWith(DOC)) {
           docFreq++;
+          sumDocFreq++;
         } else if (scratch.startsWith(POS)) {
           totalTermFreq++;
         } else if (scratch.startsWith(TERM)) {
@@ -553,6 +555,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public long getSumTotalTermFreq() {
       return sumTotalTermFreq;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return sumDocFreq;
     }
   }
 

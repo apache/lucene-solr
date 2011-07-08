@@ -134,6 +134,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       writeProx(termID, fieldState.position);
     }
     fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
+    fieldState.uniqueTermCount++;
   }
 
   @Override
@@ -151,6 +152,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
         postings.lastDocCodes[termID] = docState.docID - postings.lastDocIDs[termID];
         postings.lastDocIDs[termID] = docState.docID;
+        fieldState.uniqueTermCount++;
       }
     } else {
       if (docState.docID != postings.lastDocIDs[termID]) {
@@ -171,6 +173,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
         postings.lastDocIDs[termID] = docState.docID;
         writeProx(termID, fieldState.position);
+        fieldState.uniqueTermCount++;
       } else {
         fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
@@ -251,6 +254,8 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final ByteSliceReader prox = new ByteSliceReader();
 
     long sumTotalTermFreq = 0;
+    long sumDocFreq = 0;
+
     for (int i = 0; i < numTerms; i++) {
       final int termID = termIDs[i];
       // Get BytesRef
@@ -389,9 +394,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       }
       termsConsumer.finishTerm(text, new TermStats(numDocs, totTF));
       sumTotalTermFreq += totTF;
+      sumDocFreq += numDocs;
     }
 
-    termsConsumer.finish(sumTotalTermFreq);
+    termsConsumer.finish(sumTotalTermFreq, sumDocFreq);
   }
 
 }
