@@ -52,7 +52,7 @@ public abstract class Directory implements Closeable {
    * Returns an array of strings, one for each file in the directory.
    * 
    * @throws NoSuchDirectoryException if the directory is not prepared for any
-   *         write operations (such as {@link #createOutput(String)}).
+   *         write operations (such as {@link #createOutput(String, IOContext)}).
    * @throws IOException in case of other IO errors
    */
   public abstract String[] listAll() throws IOException;

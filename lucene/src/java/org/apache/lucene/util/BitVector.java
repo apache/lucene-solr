@@ -20,12 +20,10 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IOContext.Context;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
  *  java.util.BitSet, but also includes the following:
@@ -217,7 +215,7 @@ public final class BitVector implements Cloneable, Bits {
 
   /** Writes this vector to the file <code>name</code> in Directory
     <code>d</code>, in a format that can be read by the constructor {@link
-    #BitVector(Directory, String)}.  */
+    #BitVector(Directory, String, IOContext)}.  */
   public final void write(Directory d, String name, IOContext context) throws IOException {
     IndexOutput output = d.createOutput(name, context);
     try {

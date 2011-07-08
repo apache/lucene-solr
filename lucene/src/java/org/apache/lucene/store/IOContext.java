@@ -20,8 +20,8 @@ package org.apache.lucene.store;
 /**
  * IOContext holds additional details on the merge/search context. A IOContext
  * object can never be initialized as null as passed as a parameter to either
- * {@link #org.apache.lucene.store.Directory.openInput()} or
- * {@link #org.apache.lucene.store.Directory.createInput()}
+ * {@link org.apache.lucene.store.Directory#openInput(String, IOContext)} or
+ * {@link org.apache.lucene.store.Directory#createOutput(String, IOContext)}
  */
 public class IOContext {
 

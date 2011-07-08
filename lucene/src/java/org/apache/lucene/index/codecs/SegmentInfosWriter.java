@@ -48,7 +48,7 @@ public abstract class SegmentInfosWriter {
    * First phase of the two-phase commit - ensure that all output can be
    * successfully written out.
    * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, SegmentInfos)}.
+   * call to {@link #writeInfos(Directory, String, SegmentInfos, IOContext)}.
    * @throws IOException
    */
   public abstract void prepareCommit(IndexOutput out) throws IOException;
@@ -57,7 +57,7 @@ public abstract class SegmentInfosWriter {
    * Second phase of the two-phase commit. In this step the output should be
    * finalized and closed.
    * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, SegmentInfos)}.
+   * call to {@link #writeInfos(Directory, String, SegmentInfos, IOContext)}.
    * @throws IOException
    */
   public abstract void finishCommit(IndexOutput out) throws IOException;
