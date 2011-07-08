@@ -52,7 +52,7 @@ final class PerFieldCodecWrapper extends Codec {
   private final SegmentCodecs segmentCodecs;
 
   PerFieldCodecWrapper(SegmentCodecs segmentCodecs) {
-    name = "PerField";
+    super("PerField");
     this.segmentCodecs = segmentCodecs;
   }
 

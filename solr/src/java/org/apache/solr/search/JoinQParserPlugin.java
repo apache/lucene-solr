@@ -168,19 +168,15 @@ class JoinQuery extends Query {
       return JoinQuery.this;
     }
 
-    public float getValue() {
-      return getBoost();
-    }
-
     @Override
-    public float sumOfSquaredWeights() throws IOException {
+    public float getValueForNormalization() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
 
     @Override
-    public void normalize(float norm) {
-      this.queryNorm = norm;
+    public void normalize(float norm, float topLevelBoost) {
+      this.queryNorm = norm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 
@@ -223,7 +219,7 @@ class JoinQuery extends Query {
 
       DocIdSet readerSet = filter.getDocIdSet(context);
       if (readerSet == null) readerSet=DocIdSet.EMPTY_DOCIDSET;
-      return new JoinScorer(this, readerSet.iterator());
+      return new JoinScorer(this, readerSet.iterator(), getBoost());
     }
 
 
@@ -514,9 +510,9 @@ class JoinQuery extends Query {
     final float score;
     int doc = -1;
 
-    public JoinScorer(Weight w, DocIdSetIterator iter) throws IOException {
+    public JoinScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
       super(w);
-      score = w.getValue();
+      this.score = score;
       this.iter = iter==null ? DocIdSet.EMPTY_DOCIDSET.iterator() : iter;
     }
 

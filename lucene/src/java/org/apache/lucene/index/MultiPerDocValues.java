@@ -28,6 +28,7 @@ import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.MultiIndexDocValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.index.values.MultiIndexDocValues.DocValuesIndex;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;
 
@@ -151,20 +152,7 @@ public class MultiPerDocValues extends PerDocValues {
   }
 
   public void close() throws IOException {
-    final PerDocValues[] perDocValues = this.subs;
-    IOException ex = null;
-    for (PerDocValues values : perDocValues) {
-      try {
-        values.close();
-      } catch (IOException e) {
-        if (ex == null) {
-          ex = e;
-        }
-      }
-    }
-    if (ex != null) {
-      throw ex;
-    }
+    IOUtils.closeSafely(false, this.subs);
   }
 
   @Override

@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.PerReaderTermState;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
 
 abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.RewriteMethod {
@@ -43,7 +43,7 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
     addClause(topLevel, term, docCount, boost, null);
   }
   
-  protected abstract void addClause(Q topLevel, Term term, int docCount, float boost, PerReaderTermState states) throws IOException;
+  protected abstract void addClause(Q topLevel, Term term, int docCount, float boost, TermContext states) throws IOException;
 
   
   protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {

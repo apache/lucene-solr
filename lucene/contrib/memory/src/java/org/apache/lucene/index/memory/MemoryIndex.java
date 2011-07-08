@@ -51,7 +51,6 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -1202,19 +1201,18 @@ public class MemoryIndex {
         int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
-        float n = fieldSim.computeNorm(invertState);
-        byte norm = fieldSim.encodeNormValue(n);
+        byte norm = fieldSim.computeNorm(invertState);
         norms = new byte[] {norm};
         
         // cache it for future reuse
         cachedNorms = norms;
         cachedFieldName = fieldName;
         cachedSimilarity = sim;
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + n + ":" + norm + ":" + numTokens);
+        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + norm + ":" + numTokens);
       }
       return norms;
     }
-  
+
     @Override
     protected void doSetNorm(int doc, String fieldName, byte value) {
       throw new UnsupportedOperationException();

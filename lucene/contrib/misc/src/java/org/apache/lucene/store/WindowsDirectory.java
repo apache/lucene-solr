@@ -70,7 +70,7 @@ public class WindowsDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new WindowsIndexInput(new File(getDirectory(), name), DEFAULT_BUFFERSIZE);
+    return new WindowsIndexInput(new File(getDirectory(), name), Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
   }
   
   protected static class WindowsIndexInput extends BufferedIndexInput {

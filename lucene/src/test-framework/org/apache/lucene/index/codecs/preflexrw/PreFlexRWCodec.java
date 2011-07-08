@@ -37,7 +37,6 @@ public class PreFlexRWCodec extends PreFlexCodec {
   public PreFlexRWCodec() {
     // NOTE: we impersonate the PreFlex codec so that it can
     // read the segments we write!
-    super();
   }
   
   @Override

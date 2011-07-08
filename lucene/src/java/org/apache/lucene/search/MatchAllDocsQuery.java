@@ -32,35 +32,17 @@ import java.io.IOException;
  */
 public class MatchAllDocsQuery extends Query {
 
-  public MatchAllDocsQuery() {
-    this(null);
-  }
-
-  private final String normsField;
-
-  /**
-   * @param normsField Field used for normalization factor (document boost). Null if nothing.
-   */
-  public MatchAllDocsQuery(String normsField) {
-    this.normsField = normsField;
-  }
-
   private class MatchAllScorer extends Scorer {
     final float score;
-    final byte[] norms;
     private int doc = -1;
     private final int maxDoc;
     private final Bits liveDocs;
-    private final Similarity similarity;
-    
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
-        byte[] norms) throws IOException {
+
+    MatchAllScorer(IndexReader reader, Weight w, float score) throws IOException {
       super(w);
-      this.similarity = similarity;
       liveDocs = reader.getLiveDocs();
-      score = w.getValue();
+      this.score = score;
       maxDoc = reader.maxDoc();
-      this.norms = norms;
     }
 
     @Override
@@ -82,7 +64,7 @@ public class MatchAllDocsQuery extends Query {
     
     @Override
     public float score() {
-      return norms == null ? score : score * similarity.decodeNormValue(norms[docID()]);
+      return score;
     }
 
     @Override
@@ -93,12 +75,10 @@ public class MatchAllDocsQuery extends Query {
   }
 
   private class MatchAllDocsWeight extends Weight {
-    private Similarity similarity;
     private float queryWeight;
     private float queryNorm;
 
     public MatchAllDocsWeight(IndexSearcher searcher) {
-      this.similarity = normsField == null ? null : searcher.getSimilarityProvider().get(normsField);
     }
 
     @Override
@@ -112,33 +92,27 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public float getValue() {
-      return queryWeight;
-    }
-
-    @Override
-    public float sumOfSquaredWeights() {
+    public float getValueForNormalization() {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
 
     @Override
-    public void normalize(float queryNorm) {
-      this.queryNorm = queryNorm;
+    public void normalize(float queryNorm, float topLevelBoost) {
+      this.queryNorm = queryNorm * topLevelBoost;
       queryWeight *= this.queryNorm;
     }
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      return new MatchAllScorer(context.reader, similarity, this,
-          normsField != null ? context.reader.norms(normsField) : null);
+      return new MatchAllScorer(context.reader, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
-        (true, getValue(), "MatchAllDocsQuery, product of:");
+        (true, queryWeight, "MatchAllDocsQuery, product of:");
       if (getBoost() != 1.0f) {
         queryExpl.addDetail(new Explanation(getBoost(),"boost"));
       }

@@ -55,7 +55,7 @@ public class PreFlexCodec extends Codec {
   public static final String PROX_EXTENSION = "prx";
 
   public PreFlexCodec() {
-    name = "PreFlex";
+    super("PreFlex");
   }
   
   @Override

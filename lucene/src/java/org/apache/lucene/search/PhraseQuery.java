@@ -22,10 +22,16 @@ import java.util.Set;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Explanation.IDFExplanation;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -171,18 +177,17 @@ public class PhraseQuery extends Query {
 
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
-    private float value;
-    private float idf;
-    private float queryNorm;
-    private float queryWeight;
-    private IDFExplanation idfExp;
+    private final Similarity.Stats stats;
+    private transient TermContext states[];
 
     public PhraseWeight(IndexSearcher searcher)
       throws IOException {
       this.similarity = searcher.getSimilarityProvider().get(field);
-
-      idfExp = similarity.idfExplain(terms, searcher);
-      idf = idfExp.getIdf();
+      final ReaderContext context = searcher.getTopReaderContext();
+      states = new TermContext[terms.size()];
+      for (int i = 0; i < terms.size(); i++)
+        states[i] = TermContext.build(context, terms.get(i), true);
+      stats = similarity.computeStats(searcher, field, getBoost(), states);
     }
 
     @Override
@@ -192,19 +197,13 @@ public class PhraseQuery extends Query {
     public Query getQuery() { return PhraseQuery.this; }
 
     @Override
-    public float getValue() { return value; }
-
-    @Override
-    public float sumOfSquaredWeights() {
-      queryWeight = idf * getBoost();             // compute query weight
-      return queryWeight * queryWeight;           // square it
+    public float getValueForNormalization() {
+      return stats.getValueForNormalization();
     }
 
     @Override
-    public void normalize(float queryNorm) {
-      this.queryNorm = queryNorm;
-      queryWeight *= queryNorm;                   // normalize query weight
-      value = queryWeight * idf;                  // idf for document 
+    public void normalize(float queryNorm, float topLevelBoost) {
+      stats.normalize(queryNorm, topLevelBoost);
     }
 
     @Override
@@ -216,21 +215,26 @@ public class PhraseQuery extends Query {
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
+        final TermState state = states[i].get(context.ord);
+        if (state == null) { /* term doesnt exist in this segment */
+          assert termNotInReader(reader, field, t.bytes()) : "no termstate found but term exists in reader";
+          return null;
+        }
         DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(liveDocs,
                                                                      t.field(),
-                                                                     t.bytes());
+                                                                     t.bytes(),
+                                                                     state);
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (reader.termDocsEnum(liveDocs, t.field(), t.bytes()) != null) {
-            // term does exist, but has no positions
-            throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
-          } else {
-            // term does not exist
-            return null;
-          }
+          assert (reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state) != null) : "termstate found but no term exists in reader";
+          // term does exist, but has no positions
+          throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), t.bytes()), positions.get(i).intValue(), t);
+        // get the docFreq without seeking
+        TermsEnum te = reader.fields().terms(field).getThreadTermsEnum();
+        te.seekExact(t.bytes(), state);
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, te.docFreq(), positions.get(i).intValue(), t);
       }
 
       // sort by increasing docFreq order
@@ -239,8 +243,7 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0) {				  // optimize exact case
-        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
-            reader.norms(field));
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactDocScorer(stats, field, context));
         if (s.noDocs) {
           return null;
         } else {
@@ -248,96 +251,35 @@ public class PhraseQuery extends Query {
         }
       } else {
         return
-          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop,
-              reader.norms(field));
+          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop, similarity.sloppyDocScorer(stats, field, context));
       }
+    }
+    
+    private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
+      // only called from assert
+      final Terms terms = reader.terms(field);
+      return terms == null || terms.docFreq(bytes) == 0;
     }
 
     @Override
-    public Explanation explain(AtomicReaderContext context, int doc)
-      throws IOException {
-
-      ComplexExplanation result = new ComplexExplanation();
-      result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
-
-      StringBuilder docFreqs = new StringBuilder();
-      StringBuilder query = new StringBuilder();
-      query.append('\"');
-      docFreqs.append(idfExp.explain());
-      for (int i = 0; i < terms.size(); i++) {
-        if (i != 0) {
-          query.append(" ");
-        }
-
-        Term term = terms.get(i);
-
-        query.append(term.text());
-      }
-      query.append('\"');
-
-      Explanation idfExpl =
-        new Explanation(idf, "idf(" + field + ":" + docFreqs + ")");
-
-      // explain query weight
-      Explanation queryExpl = new Explanation();
-      queryExpl.setDescription("queryWeight(" + getQuery() + "), product of:");
-
-      Explanation boostExpl = new Explanation(getBoost(), "boost");
-      if (getBoost() != 1.0f)
-        queryExpl.addDetail(boostExpl);
-      queryExpl.addDetail(idfExpl);
-
-      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
-      queryExpl.addDetail(queryNormExpl);
-
-      queryExpl.setValue(boostExpl.getValue() *
-                         idfExpl.getValue() *
-                         queryNormExpl.getValue());
-
-      result.addDetail(queryExpl);
-
-      // explain field weight
-      Explanation fieldExpl = new Explanation();
-      fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
-                               "), product of:");
-
+    public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context, ScorerContext.def());
-      if (scorer == null) {
-        return new Explanation(0.0f, "no matching docs");
+      if (scorer != null) {
+        int newDoc = scorer.advance(doc);
+        if (newDoc == doc) {
+          float freq = scorer.freq();
+          SloppyDocScorer docScorer = similarity.sloppyDocScorer(stats, field, context);
+          ComplexExplanation result = new ComplexExplanation();
+          result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
+          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
+          result.addDetail(scoreExplanation);
+          result.setValue(scoreExplanation.getValue());
+          result.setMatch(true);
+          return result;
+        }
       }
-      Explanation tfExplanation = new Explanation();
-      int d = scorer.advance(doc);
-      float phraseFreq;
-      if (d == doc) {
-        phraseFreq = scorer.freq();
-      } else {
-        phraseFreq = 0.0f;
-      }
-
-      tfExplanation.setValue(similarity.tf(phraseFreq));
-      tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
       
-      fieldExpl.addDetail(tfExplanation);
-      fieldExpl.addDetail(idfExpl);
-
-      Explanation fieldNormExpl = new Explanation();
-      byte[] fieldNorms = context.reader.norms(field);
-      float fieldNorm =
-        fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
-      fieldNormExpl.setValue(fieldNorm);
-      fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
-      fieldExpl.addDetail(fieldNormExpl);
-
-      fieldExpl.setValue(tfExplanation.getValue() *
-                         idfExpl.getValue() *
-                         fieldNormExpl.getValue());
-
-      result.addDetail(fieldExpl);
-
-      // combine them
-      result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-      result.setMatch(tfExplanation.isMatch());
-      return result;
+      return new ComplexExplanation(false, 0.0f, "no matching term");
     }
   }
 

@@ -89,7 +89,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       TokenStream tokenStream = null;
       try {
         tokenStream = analyzer.reusableTokenStream(context.getFieldName(), new StringReader(value));
-        tokenStream.reset();
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

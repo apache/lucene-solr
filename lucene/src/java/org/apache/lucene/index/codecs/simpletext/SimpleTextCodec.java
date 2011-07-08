@@ -33,7 +33,6 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 
 /** For debugging, curiosity, transparency only!!  Do not
  *  use this codec in production.
@@ -44,10 +43,11 @@ import org.apache.lucene.util.BytesRef;
  *
  *  @lucene.experimental */
 public class SimpleTextCodec extends Codec {
-
+  
   public SimpleTextCodec() {
-    name = "SimpleText";
+    super("SimpleText");
   }
+
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
@@ -69,23 +69,23 @@ public class SimpleTextCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(getPostingsFileName(segmentInfo.name, id));
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     extensions.add(POSTINGS_EXTENSION);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
   
   // TODO: would be great if these used a plain text impl
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

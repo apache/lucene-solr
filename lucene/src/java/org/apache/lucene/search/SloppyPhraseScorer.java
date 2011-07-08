@@ -25,11 +25,13 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private PhrasePositions repeats[];
     private PhrasePositions tmpPos[]; // for flipping repeating pps.
     private boolean checkedRepeats;
-
+    private final Similarity similarity;
+    
     SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings, Similarity similarity,
-                       int slop, byte[] norms) {
-        super(weight, postings, similarity, norms);
+                       int slop, Similarity.SloppyDocScorer docScorer) throws IOException {
+        super(weight, postings, docScorer);
         this.slop = slop;
+        this.similarity = similarity;
     }
 
     /**

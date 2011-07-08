@@ -153,12 +153,13 @@ public final class Bytes {
    *          otherwise <code>false</code>
    * @param maxDoc
    *          the number of document values stored for the given ID
+   * @param sortComparator byte comparator used by sorted variants
    * @return an initialized {@link IndexDocValues} instance.
    * @throws IOException
    *           if an {@link IOException} occurs
    */
   public static IndexDocValues getValues(Directory dir, String id, Mode mode,
-      boolean fixedSize, int maxDoc, IOContext context) throws IOException {
+      boolean fixedSize, int maxDoc, Comparator<BytesRef> sortComparator, IOContext context) throws IOException {
 
     // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
@@ -175,7 +176,7 @@ public final class Bytes {
       } else if (mode == Mode.DEREF) {
         return new VarDerefBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Reader(dir, id, maxDoc, context);
+        return new VarSortedBytesImpl.Reader(dir, id, maxDoc, sortComparator, context);
       }
     }
 

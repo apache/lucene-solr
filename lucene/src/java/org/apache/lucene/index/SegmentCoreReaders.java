@@ -26,6 +26,7 @@ import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.IOUtils;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -120,33 +121,9 @@ final class SegmentCoreReaders {
   }
   
   synchronized void decRef() throws IOException {
-    
     if (ref.decrementAndGet() == 0) {
-      
-      if (fields != null) {
-        fields.close();
-      }
-      
-      if (perDocProducer != null) {
-        perDocProducer.close();
-      }
-      
-      if (termVectorsReaderOrig != null) {
-        termVectorsReaderOrig.close();
-      }
-      
-      if (fieldsReaderOrig != null) {
-        fieldsReaderOrig.close();
-      }
-      
-      if (cfsReader != null) {
-        cfsReader.close();
-      }
-      
-      if (storeCFSReader != null) {
-        storeCFSReader.close();
-      }
-      
+      IOUtils.closeSafely(false, fields, perDocProducer, termVectorsReaderOrig,
+          fieldsReaderOrig, cfsReader, storeCFSReader);
       // Now, notify any ReaderFinished listeners:
       if (owner != null) {
         owner.notifyReaderFinishedListeners();

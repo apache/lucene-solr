@@ -168,14 +168,17 @@ class VarSortedBytesImpl {
 
   public static class Reader extends BytesReaderBase {
 
-    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+    private final Comparator<BytesRef> defaultComp;
+        
+    Reader(Directory dir, String id, int maxDoc, Comparator<BytesRef> comparator, IOContext context) throws IOException {
       super(dir, id, CODEC_NAME, VERSION_START, true, context);
+      this.defaultComp = comparator;
     }
 
     @Override
     public org.apache.lucene.index.values.IndexDocValues.Source load()
         throws IOException {
-      return loadSorted(null);
+      return loadSorted(defaultComp);
     }
 
     @Override

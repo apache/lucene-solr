@@ -32,79 +32,106 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * 
+ * @lucene.experimental
+ */
 public class DefaultDocValuesConsumer extends PerDocConsumer {
   private final String segmentName;
   private final int codecId;
   private final Directory directory;
   private final AtomicLong bytesUsed;
   private final Comparator<BytesRef> comparator;
-
-  public DefaultDocValuesConsumer(PerDocWriteState state, Comparator<BytesRef> comparator) {
+  private boolean useCompoundFile;
+  private final IOContext context;
+  
+  public DefaultDocValuesConsumer(PerDocWriteState state, Comparator<BytesRef> comparator, boolean useCompoundFile) throws IOException {
     this.segmentName = state.segmentName;
     this.codecId = state.codecId;
     this.bytesUsed = state.bytesUsed;
-    this.directory = state.directory;
+    this.context = state.context;
+    //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
+    this.directory = useCompoundFile ? state.directory.createCompoundOutput(
+        IndexFileNames.segmentFileName(segmentName, codecId,
+            IndexFileNames.COMPOUND_FILE_EXTENSION), context) : state.directory;
     this.comparator = comparator;
+    this.useCompoundFile = useCompoundFile;
   }
-  
+
   public void close() throws IOException {
+    if (useCompoundFile) {
+      this.directory.close();
+    }
   }
 
   @Override
   public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     return Writer.create(field.getDocValues(),
         docValuesId(segmentName, codecId, field.number),
-        // TODO can we have a compound file per segment and codec for
-        // docvalues?
-        directory, comparator, bytesUsed, IOContext.DEFAULT);
+        directory, comparator, bytesUsed, context);
   }
   
   @SuppressWarnings("fallthrough")
   public static void files(Directory dir, SegmentInfo segmentInfo, int codecId,
-      Set<String> files) throws IOException {
+      Set<String> files, boolean useCompoundFile) throws IOException {
     FieldInfos fieldInfos = segmentInfo.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       if (fieldInfo.getCodecId() == codecId && fieldInfo.hasDocValues()) {
         String filename = docValuesId(segmentInfo.name, codecId,
             fieldInfo.number);
-        switch (fieldInfo.getDocValues()) {
-        case BYTES_FIXED_DEREF:
-        case BYTES_VAR_DEREF:
-        case BYTES_VAR_SORTED:
-        case BYTES_FIXED_SORTED:
-        case BYTES_VAR_STRAIGHT:
-          files.add(IndexFileNames.segmentFileName(filename, "",
-              Writer.INDEX_EXTENSION));
-          assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-              Writer.INDEX_EXTENSION));
-          // until here all types use an index
-        case BYTES_FIXED_STRAIGHT:
-        case FLOAT_32:
-        case FLOAT_64:
-        case VAR_INTS:
-        case FIXED_INTS_16:
-        case FIXED_INTS_32:
-        case FIXED_INTS_64:
-        case FIXED_INTS_8:
-          files.add(IndexFileNames.segmentFileName(filename, "",
-              Writer.DATA_EXTENSION));
-          assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
-              Writer.DATA_EXTENSION));
-          break;
-      
-        default:
-          assert false;
+        if (useCompoundFile) {
+          files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION));
+          files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+          assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION)); 
+          assert dir.fileExists(IndexFileNames.segmentFileName(segmentInfo.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION)); 
+          return;
+        } else {
+          switch (fieldInfo.getDocValues()) {
+          case BYTES_FIXED_DEREF:
+          case BYTES_VAR_DEREF:
+          case BYTES_VAR_SORTED:
+          case BYTES_FIXED_SORTED:
+          case BYTES_VAR_STRAIGHT:
+            files.add(IndexFileNames.segmentFileName(filename, "",
+                Writer.INDEX_EXTENSION));
+            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+                Writer.INDEX_EXTENSION));
+            // until here all types use an index
+          case BYTES_FIXED_STRAIGHT:
+          case FLOAT_32:
+          case FLOAT_64:
+          case VAR_INTS:
+          case FIXED_INTS_16:
+          case FIXED_INTS_32:
+          case FIXED_INTS_64:
+          case FIXED_INTS_8:
+            files.add(IndexFileNames.segmentFileName(filename, "",
+                Writer.DATA_EXTENSION));
+            assert dir.fileExists(IndexFileNames.segmentFileName(filename, "",
+                Writer.DATA_EXTENSION));
+            break;
+        
+          default:
+            assert false;
+          }
         }
       }
     }
   }
   
+
   static String docValuesId(String segmentsName, int codecID, int fieldId) {
     return segmentsName + "_" + codecID + "-" + fieldId;
   }
-
-  public static void getDocValuesExtensions(Set<String> extensions) {
-    extensions.add(Writer.DATA_EXTENSION);
-    extensions.add(Writer.INDEX_EXTENSION);
+  
+  public static void getDocValuesExtensions(Set<String> extensions, boolean useCompoundFile) {
+    if (useCompoundFile) {
+      extensions.add(IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+      extensions.add(IndexFileNames.COMPOUND_FILE_EXTENSION);
+    } else {
+      extensions.add(Writer.DATA_EXTENSION);
+      extensions.add(Writer.INDEX_EXTENSION);
+    }
   }
+
 }

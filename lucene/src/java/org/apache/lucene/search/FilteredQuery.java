@@ -63,21 +63,15 @@ extends Query {
   public Weight createWeight(final IndexSearcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
     return new Weight() {
-      private float value;
-        
-      // pass these methods through to enclosed query's weight
-      @Override
-      public float getValue() { return value; }
       
       @Override
-      public float sumOfSquaredWeights() throws IOException { 
-        return weight.sumOfSquaredWeights() * getBoost() * getBoost(); 
+      public float getValueForNormalization() throws IOException { 
+        return weight.getValueForNormalization() * getBoost() * getBoost(); 
       }
 
       @Override
-      public void normalize (float v) { 
-        weight.normalize(v);
-        value = weight.getValue() * getBoost();
+      public void normalize (float norm, float topLevelBoost) { 
+        weight.normalize(norm, topLevelBoost);
       }
 
       @Override

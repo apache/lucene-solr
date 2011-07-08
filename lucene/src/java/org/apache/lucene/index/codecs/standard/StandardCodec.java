@@ -40,14 +40,13 @@ import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 
 /** Default codec. 
  *  @lucene.experimental */
 public class StandardCodec extends Codec {
 
   public StandardCodec() {
-    name = "Standard";
+    super("Standard");
   }
 
   @Override
@@ -140,13 +139,13 @@ public class StandardCodec extends Codec {
     StandardPostingsReader.files(dir, segmentInfo, id, files);
     BlockTermsReader.files(dir, segmentInfo, id, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     getStandardExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
 
   public static void getStandardExtensions(Set<String> extensions) {
@@ -158,11 +157,11 @@ public class StandardCodec extends Codec {
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

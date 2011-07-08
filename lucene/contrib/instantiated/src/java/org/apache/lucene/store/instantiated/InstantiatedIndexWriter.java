@@ -240,8 +240,7 @@ public class InstantiatedIndexWriter implements Closeable {
           final FieldInvertState invertState = new FieldInvertState();
           invertState.setBoost(eFieldTermDocInfoFactoriesByTermText.getKey().boost * document.getDocument().getBoost());
           invertState.setLength(eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
-          final float norm = similarityProvider.get(fieldName).computeNorm(invertState);
-          normsByFieldNameAndDocumentNumber.get(fieldName)[document.getDocumentNumber()] = similarityProvider.get(fieldName).encodeNormValue(norm);
+          normsByFieldNameAndDocumentNumber.get(fieldName)[document.getDocumentNumber()] = similarityProvider.get(fieldName).computeNorm(invertState);
         } else {
           System.currentTimeMillis();
         }

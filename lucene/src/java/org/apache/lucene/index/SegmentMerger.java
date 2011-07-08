@@ -119,6 +119,7 @@ final class SegmentMerger {
 
     mergedDocs = mergeFields();
     mergeTerms();
+    mergePerDoc();
     mergeNorms();
 
     if (fieldInfos.hasVectors())
@@ -482,18 +483,11 @@ final class SegmentMerger {
     // the new segment:
 
     int docBase = 0;
-
+    
     final List<Fields> fields = new ArrayList<Fields>();
-
     final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
     final List<Bits> bits = new ArrayList<Bits>();
     final List<Integer> bitsStarts = new ArrayList<Integer>();
-    
-    // TODO: move this into its own method - this merges currently only docvalues
-    final List<PerDocValues> perDocProducers = new ArrayList<PerDocValues>();    
-    final List<ReaderUtil.Slice> perDocSlices = new ArrayList<ReaderUtil.Slice>();
-    final List<Bits> perDocBits = new ArrayList<Bits>();
-    final List<Integer> perDocBitsStarts = new ArrayList<Integer>();
 
     for(IndexReader r : readers) {
       final Fields f = r.fields();
@@ -504,18 +498,10 @@ final class SegmentMerger {
         bits.add(r.getLiveDocs());
         bitsStarts.add(docBase);
       }
-      final PerDocValues producer = r.perDocValues();
-      if (producer != null) {
-        perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, fields.size()));
-        perDocProducers.add(producer);
-        perDocBits.add(r.getLiveDocs());
-        perDocBitsStarts.add(docBase);
-      }
       docBase += maxDoc;
     }
 
     bitsStarts.add(docBase);
-    perDocBitsStarts.add(docBase);
 
     // we may gather more readers than mergeState.readerCount
     mergeState = new MergeState();
@@ -581,19 +567,45 @@ final class SegmentMerger {
     } finally {
       consumer.close();
     }
+  }
+
+  private void mergePerDoc() throws IOException {
+    final List<PerDocValues> perDocProducers = new ArrayList<PerDocValues>();    
+    final List<ReaderUtil.Slice> perDocSlices = new ArrayList<ReaderUtil.Slice>();
+    final List<Bits> perDocBits = new ArrayList<Bits>();
+    final List<Integer> perDocBitsStarts = new ArrayList<Integer>();
+    int docBase = 0;
+    for (IndexReader r : readers) {
+      final int maxDoc = r.maxDoc();
+      final PerDocValues producer = r.perDocValues();
+      if (producer != null) {
+        perDocSlices.add(new ReaderUtil.Slice(docBase, maxDoc, perDocProducers
+            .size()));
+        perDocProducers.add(producer);
+        perDocBits.add(r.getLiveDocs());
+        perDocBitsStarts.add(docBase);
+      }
+      docBase += maxDoc;
+    }
+    perDocBitsStarts.add(docBase);
     if (!perDocSlices.isEmpty()) {
-      mergeState.multiLiveDocs = new MultiBits(perDocBits, perDocBitsStarts, true);
+      mergeState.multiLiveDocs = new MultiBits(perDocBits, perDocBitsStarts,
+          true);
       final PerDocConsumer docsConsumer = codec
           .docsConsumer(new PerDocWriteState(segmentWriteState));
+      boolean success = false;
       try {
-        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(perDocProducers
-            .toArray(PerDocValues.EMPTY_ARRAY), perDocSlices
-            .toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+        final MultiPerDocValues multiPerDocValues = new MultiPerDocValues(
+            perDocProducers.toArray(PerDocValues.EMPTY_ARRAY),
+            perDocSlices.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
         docsConsumer.merge(mergeState, multiPerDocValues);
+        success = true;
       } finally {
-        docsConsumer.close();
+        IOUtils.closeSafely(!success, docsConsumer);
       }
     }
+    /* don't close the perDocProducers here since they are private segment producers
+     * and will be closed once the SegmentReader goes out of scope */ 
   }
 
   private MergeState mergeState;

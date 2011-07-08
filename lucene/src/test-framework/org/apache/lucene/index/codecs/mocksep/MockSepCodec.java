@@ -54,7 +54,7 @@ import org.apache.lucene.util.BytesRef;
 public class MockSepCodec extends Codec {
 
   public MockSepCodec() {
-    name = "MockSep";
+    super("MockSep");
   }
 
   @Override
@@ -139,13 +139,13 @@ public class MockSepCodec extends Codec {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     getSepExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
 
   public static void getSepExtensions(Set<String> extensions) {
@@ -156,11 +156,11 @@ public class MockSepCodec extends Codec {
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

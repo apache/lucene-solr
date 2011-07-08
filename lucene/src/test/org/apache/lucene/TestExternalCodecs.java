@@ -24,8 +24,6 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.codecs.*;
-import org.apache.lucene.index.codecs.standard.*;
-import org.apache.lucene.index.codecs.pulsing.*;
 import org.apache.lucene.store.*;
 import java.util.*;
 import java.io.*;
@@ -75,7 +73,7 @@ public class TestExternalCodecs extends LuceneTestCase {
   public static class RAMOnlyCodec extends Codec {
     
     public RAMOnlyCodec() {
-      name = "RamOnly";
+      super("RamOnly");
     }
     // Postings state:
     static class RAMPostings extends FieldsProducer {

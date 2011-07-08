@@ -202,8 +202,15 @@ public class TestSolrProperties extends LuceneTestCase {
     assertTrue("should have more recent time: " + after + "," + before, after > before);
 
     mcr = CoreAdminRequest.persist("solr-persist.xml", coreadmin);
-    
-    System.out.println(IOUtils.toString(new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"))));
+
+    if (VERBOSE) {
+      FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
+      try {
+        System.out.println(IOUtils.toString(fis));
+      } finally {
+        fis.close();
+      }
+    }
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     FileInputStream fis = new FileInputStream(new File(solrXml.getParent(), "solr-persist.xml"));
     try {

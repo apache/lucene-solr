@@ -18,8 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TermContext;
+
 import java.io.IOException;
-import java.util.Collection;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -30,7 +31,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Explanation.IDFExplanation;
 
 /** Similarity unit test.
  *
@@ -42,22 +42,13 @@ public class TestSimilarity extends LuceneTestCase {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
     public Similarity get(String field) {
-      return new Similarity() {
-        @Override public float computeNorm(FieldInvertState state) { return state.getBoost(); }
+      return new DefaultSimilarity() {
+        @Override public byte computeNorm(FieldInvertState state) { return encodeNormValue(state.getBoost()); }
         @Override public float tf(float freq) { return freq; }
         @Override public float sloppyFreq(int distance) { return 2.0f; }
         @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
-        @Override public IDFExplanation idfExplain(Collection<Term> terms, IndexSearcher searcher) throws IOException {
-          return new IDFExplanation() {
-            @Override
-            public float getIdf() {
-              return 1.0f;
-            }
-            @Override
-            public String explain() {
-              return "Inexplicable";
-            }
-          };
+        @Override public Explanation idfExplain(TermContext[] stats, IndexSearcher searcher) throws IOException {
+          return new Explanation(1.0f, "Inexplicable"); 
         }
       };
     }

@@ -77,9 +77,9 @@ import org.apache.lucene.util.fst.FST;
  * @lucene.experimental */
 
 public class MemoryCodec extends Codec {
-
+  
   public MemoryCodec() {
-    name = "Memory";
+    super("Memory");
   }
 
   private static final boolean VERBOSE = false;
@@ -779,22 +779,22 @@ public class MemoryCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
     files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, EXTENSION));
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
   }
 
   @Override
   public void getExtensions(Set<String> extensions) {
     extensions.add(EXTENSION);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
 
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, IOContext.READONCE);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), IOContext.READONCE);
   }
 }

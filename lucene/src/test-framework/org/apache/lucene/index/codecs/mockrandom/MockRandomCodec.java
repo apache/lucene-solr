@@ -76,9 +76,9 @@ public class MockRandomCodec extends Codec {
 
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
-
+  
   public MockRandomCodec(Random random) {
-    name = "MockRandom";
+    super("MockRandom");
     this.seedRandom = new Random(random.nextLong());
   }
 
@@ -355,7 +355,7 @@ public class MockRandomCodec extends Codec {
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
     // hackish!
     Iterator<String> it = files.iterator();
     while(it.hasNext()) {
@@ -373,7 +373,7 @@ public class MockRandomCodec extends Codec {
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
-    DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+    DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
     extensions.add(SEED_EXT);
     //System.out.println("MockRandom.getExtensions return " + extensions);
   }
@@ -381,11 +381,11 @@ public class MockRandomCodec extends Codec {
   // can we make this more evil?
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-    return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+    return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

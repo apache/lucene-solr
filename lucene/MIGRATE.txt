@@ -382,3 +382,13 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
    - o.a.l.search.function.ShortFieldSource -> o.a.l.queries.function.valuesource.ShortFieldSource
    - o.a.l.search.function.ValueSource -> o.a.l.queries.function.ValueSource
    - o.a.l.search.function.ValueSourceQuery -> o.a.l.queries.function.FunctionQuery
+
+* LUCENE-2392: Enable flexible scoring:
+
+  The existing "Similarity" api is now TFIDFSimilarity, if you were extending
+  Similarity before, you should likely extend this instead.
+
+  Weight.normalize no longer takes a norm value that incorporates the top-level
+  boost from outer queries such as BooleanQuery, instead it takes 2 parameters,
+  the outer boost (topLevelBoost) and the norm. Weight.sumOfSquaredWeights has
+  been renamed to Weight.getValueForNormalization().

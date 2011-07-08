@@ -131,7 +131,7 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
 
         dir.setMaxSizeInBytes(thisDiskFree);
         dir.setRandomIOExceptionRate(rate);
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         try {
           if (0 == x) {
             int docId = 12;

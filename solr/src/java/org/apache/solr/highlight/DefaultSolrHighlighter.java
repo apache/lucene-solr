@@ -454,8 +454,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       
       Highlighter highlighter;
       if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))) {
-        // TODO: this is not always necessary - eventually we would like to avoid this wrap
-        //       when it is not needed.
         if (maxCharsToAnalyze < 0) {
           tstream = new CachingTokenFilter(tstream);
         } else {

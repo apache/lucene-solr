@@ -130,6 +130,18 @@ public abstract class IndexDocValues implements Closeable {
       throws IOException {
     return cache.loadSorted(this, comparator);
   }
+  
+  /**
+   * Returns a {@link SortedSource} instance using a default {@link BytesRef}
+   * comparator for this {@link IndexDocValues} field instance like
+   * {@link #getSource()}.
+   * <p>
+   * This method will return null iff this {@link IndexDocValues} represent a
+   * {@link Source} instead of a {@link SortedSource}.
+   */
+  public SortedSource getSortedSorted() throws IOException {
+    return getSortedSorted(null);
+  }
 
   /**
    * Loads and returns a {@link SortedSource} instance for this
@@ -142,7 +154,19 @@ public abstract class IndexDocValues implements Closeable {
       throws IOException {
     throw new UnsupportedOperationException();
   }
-
+  
+  /**
+   * Loads and returns a {@link SortedSource} instance using a default
+   * {@link BytesRef} comparator for this {@link IndexDocValues} field instance
+   * like {@link #load()}.
+   * <p>
+   * This method will return null iff this {@link IndexDocValues} represent a
+   * {@link Source} instead of a {@link SortedSource}.
+   */
+  public SortedSource loadSorted() throws IOException {
+    return loadSorted(null);
+  }
+  
   /**
    * Returns the {@link ValueType} of this {@link IndexDocValues} instance
    */

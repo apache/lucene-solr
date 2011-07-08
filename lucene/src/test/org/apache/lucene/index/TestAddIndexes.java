@@ -1161,7 +1161,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      provider.register(new PulsingCodec(1 + random.nextInt(20)));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       try {
@@ -1182,7 +1182,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(10)));
+      provider.register(new PulsingCodec(1 + random.nextInt(20)));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       IndexReader indexReader = IndexReader.open(toAdd);

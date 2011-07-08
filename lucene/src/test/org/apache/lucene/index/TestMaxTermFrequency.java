@@ -116,8 +116,8 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     }
 
     @Override
-    public float computeNorm(FieldInvertState state) {
-      return (float) state.getMaxTermFrequency();
+    public byte computeNorm(FieldInvertState state) {
+      return encodeNormValue((float) state.getMaxTermFrequency());
     }
   }
 }

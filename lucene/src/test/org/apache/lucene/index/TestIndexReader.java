@@ -421,7 +421,7 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         try {
           reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
           fail("setNorm after close failed to throw IOException");
@@ -462,7 +462,7 @@ public class TestIndexReader extends LuceneTestCase
           // expected
         }
 
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         try {
           reader.setNorm(5, "aaa", sim.encodeNormValue(2.0f));
           fail("setNorm should have hit LockObtainFailedException");
@@ -494,7 +494,7 @@ public class TestIndexReader extends LuceneTestCase
 
         //  now open reader & set norm for doc 0
         IndexReader reader = IndexReader.open(dir, false);
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         reader.setNorm(0, "content", sim.encodeNormValue(2.0f));
 
         // we should be holding the write lock now:
@@ -539,7 +539,7 @@ public class TestIndexReader extends LuceneTestCase
         addDoc(writer, searchTerm.text());
         writer.close();
 
-        Similarity sim = new DefaultSimilarity();
+        DefaultSimilarity sim = new DefaultSimilarity();
         //  now open reader & set norm for doc 0 (writes to
         //  _0_1.s0)
         reader = IndexReader.open(dir, false);
@@ -738,7 +738,7 @@ public class TestIndexReader extends LuceneTestCase
       }
 
       reader = IndexReader.open(dir, false);
-      Similarity sim = new DefaultSimilarity();
+      DefaultSimilarity sim = new DefaultSimilarity();
       try {
         reader.setNorm(1, "content", sim.encodeNormValue(2.0f));
         fail("did not hit exception when calling setNorm on an invalid doc number");

@@ -25,11 +25,13 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
-class TermVectorsReader implements Cloneable {
+class TermVectorsReader implements Cloneable, Closeable {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format
@@ -190,14 +192,8 @@ class TermVectorsReader implements Cloneable {
     return format;
   }
 
-  void close() throws IOException {
-    // make all effort to close up. Keep the first exception
-    // and throw it as a new one.
-    IOException keep = null;
-    if (tvx != null) try { tvx.close(); } catch (IOException e) { keep = e; }
-    if (tvd != null) try { tvd.close(); } catch (IOException e) { if (keep == null) keep = e; }
-    if (tvf  != null) try {  tvf.close(); } catch (IOException e) { if (keep == null) keep = e; }
-    if (keep != null) throw (IOException) keep.fillInStackTrace();
+  public void close() throws IOException {
+    IOUtils.closeSafely(false, tvx, tvd, tvf);
   }
 
   /**

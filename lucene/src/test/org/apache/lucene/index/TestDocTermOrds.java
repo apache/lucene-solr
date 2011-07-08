@@ -105,8 +105,9 @@ public class TestDocTermOrds extends LuceneTestCase {
   }
 
   private static class StandardCodecWithOrds extends Codec {
+    
     public StandardCodecWithOrds() {
-      name = "StandardOrds";
+      super("StandardOrds");
     }
 
     @Override
@@ -200,13 +201,13 @@ public class TestDocTermOrds extends LuceneTestCase {
       StandardPostingsReader.files(dir, segmentInfo, id, files);
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
-      DefaultDocValuesConsumer.files(dir, segmentInfo, id, files);
+      DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
     }
 
     @Override
     public void getExtensions(Set<String> extensions) {
       getStandardExtensions(extensions);
-      DefaultDocValuesConsumer.getDocValuesExtensions(extensions);
+      DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
     }
 
     public static void getStandardExtensions(Set<String> extensions) {
@@ -218,12 +219,12 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     @Override
     public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
-      return new DefaultDocValuesConsumer(state, BytesRef.getUTF8SortedAsUnicodeComparator());
+      return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
     }
 
     @Override
     public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-      return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, state.context);
+      return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
     }
   }
 

@@ -892,7 +892,48 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testNumericRangeFacetsSortableDouble() {
     helpTestFractionalNumberRangeFacets("range_facet_sd");
   }
-  private void helpTestFractionalNumberRangeFacets(final String fieldName) {
+
+  @Test
+  public void testNumericRangeFacetsOverflowTrieDouble() {
+    helpTestNumericRangeFacetsDoubleOverflow("range_facet_d");
+  }
+  @Test
+  public void testNumericRangeFacetsOverflowSortableDouble() {
+    helpTestNumericRangeFacetsDoubleOverflow("range_facet_sd");
+  }
+
+  private void helpTestNumericRangeFacetsDoubleOverflow(final String fieldName) {
+    final String f = fieldName;
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='"+f+"']/lst[@name='counts']";
+    final String meta = pre + "/../";
+
+    String start = "0.0";
+    String gap = (new Double( (double)Float.MAX_VALUE )).toString();
+    String end = (new Double( ((double)Float.MAX_VALUE) * 3D )).toString();
+    String mid = (new Double( ((double)Float.MAX_VALUE) * 2D )).toString();
+
+    assertQ(f+": checking counts for lower",
+            req( "q", "id:[30 TO 60]"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.range", f
+                ,"facet.range.start", start
+                ,"facet.range.end",   end
+                ,"facet.range.gap",   gap
+                ,"facet.range.other", "all"
+                ,"facet.range.include", "lower"
+                )
+            ,"*[count("+pre+"/int)=3]"
+            ,pre+"/int[@name='"+start+"'][.='6'  ]"
+            ,pre+"/int[@name='"+mid+"'][.='0'  ]"
+            //
+            ,meta+"/double[@name='end' ][.='"+end+"']"
+            ,meta+"/int[@name='before' ][.='0']"
+            ,meta+"/int[@name='after'  ][.='0']"
+            ,meta+"/int[@name='between'][.='6']"
+            );
+  }
+   private void helpTestFractionalNumberRangeFacets(final String fieldName) {
 
     final String f = fieldName;
     final String pre = "//lst[@name='facet_ranges']/lst[@name='"+f+"']/lst[@name='counts']";
@@ -1112,6 +1153,47 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     helpTestWholeNumberRangeFacets("range_facet_sl");
   }
 
+
+  @Test
+  public void testNumericRangeFacetsOverflowTrieLong() {
+    helpTestNumericRangeFacetsLongOverflow("range_facet_l");
+  }
+  @Test
+  public void testNumericRangeFacetsOverflowSortableLong() {
+    helpTestNumericRangeFacetsLongOverflow("range_facet_sl");
+  }
+
+  private void helpTestNumericRangeFacetsLongOverflow(final String fieldName) {
+    final String f = fieldName;
+    final String pre = "//lst[@name='facet_ranges']/lst[@name='"+f+"']/lst[@name='counts']";
+    final String meta = pre + "/../";
+
+    String start = "0";
+    String gap = (new Long( (long)Integer.MAX_VALUE )).toString();
+    String end = (new Long( ((long)Integer.MAX_VALUE) * 3L )).toString();
+    String mid = (new Long( ((long)Integer.MAX_VALUE) * 2L )).toString();
+
+    assertQ(f+": checking counts for lower",
+            req( "q", "id:[30 TO 60]"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.range", f
+                ,"facet.range.start", start
+                ,"facet.range.end",   end
+                ,"facet.range.gap",   gap
+                ,"facet.range.other", "all"
+                ,"facet.range.include", "lower"
+                )
+            ,"*[count("+pre+"/int)=3]"
+            ,pre+"/int[@name='"+start+"'][.='6'  ]"
+            ,pre+"/int[@name='"+mid+"'][.='0'  ]"
+            //
+            ,meta+"/long[@name='end'   ][.='"+end+"']"
+            ,meta+"/int[@name='before' ][.='0']"
+            ,meta+"/int[@name='after'  ][.='0']"
+            ,meta+"/int[@name='between'][.='6']"
+            );
+  }
   private void helpTestWholeNumberRangeFacets(final String fieldName) {
 
     // the float test covers a lot of the weird edge cases
