@@ -18,6 +18,11 @@ Bug fixes
   causing the file to sometimes be larger than it needed to be.  (Mike
   McCandless)
 
+New Features
+
+* LUCENE-3290: Added FieldInvertState.numUniqueTerms 
+  (Mike McCandless, Robert Muir)
+
 Optimizations
   
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
