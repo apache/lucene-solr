@@ -32,6 +32,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -87,6 +88,8 @@ final class DocFieldProcessor extends DocConsumer {
     for (DocValuesConsumer consumers : docValues.values()) {
       consumers.finish(state.numDocs);
     };
+    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
+    IOUtils.closeSafely(true, perDocConsumers.values());
   }
 
   @Override
@@ -106,13 +109,11 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    
-    for(PerDocConsumer consumer : perDocConsumers.values()) {
-      try {
-        consumer.close();  // TODO add abort to PerDocConsumer!
-      } catch (IOException e) {
-        // ignore on abort!
-      }
+    try {
+      IOUtils.closeSafely(true, perDocConsumers.values());
+      // TODO add abort to PerDocConsumer!
+    } catch (IOException e) {
+      // ignore on abort!
     }
     
     try {
@@ -165,13 +166,6 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
-    for(PerDocConsumer consumer : perDocConsumers.values()) {
-      try {
-        consumer.close();  
-      } catch (IOException e) {
-        // ignore and continue closing remaining consumers
-      }
-    }
     perDocConsumers.clear();
     docValues.clear();
   }
