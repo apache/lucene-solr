@@ -691,7 +691,7 @@ public class MemoryCodec extends Codec {
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
       if (!field.omitTermFreqAndPositions) {
-        sumTotalTermFreq = in.readVInt();
+        sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = 0;
       }
