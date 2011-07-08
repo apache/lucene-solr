@@ -29,6 +29,7 @@ import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -467,11 +468,13 @@ public class TestFSTs extends LuceneTestCase {
       }
       FST<T> fst = builder.finish();
 
-      if (random.nextBoolean() && fst != null) {
-        IndexOutput out = dir.createOutput("fst.bin");
+      if (random.nextBoolean() && fst != null) {        
+        TestFSTs t = new TestFSTs();
+        IOContext context = t.newIOContext(random);
+        IndexOutput out = dir.createOutput("fst.bin", context);
         fst.save(out);
         out.close();
-        IndexInput in = dir.openInput("fst.bin");
+        IndexInput in = dir.openInput("fst.bin", context);
         try {
           fst = new FST<T>(in, outputs);
         } finally {
@@ -1192,7 +1195,7 @@ public class TestFSTs extends LuceneTestCase {
         }
 
         Directory dir = FSDirectory.open(new File(dirOut));
-        IndexOutput out = dir.createOutput("fst.bin");
+        IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
         fst.save(out);
         out.close();
 
@@ -1521,11 +1524,11 @@ public class TestFSTs extends LuceneTestCase {
 
     // Make sure it still works after save/load:
     Directory dir = newDirectory();
-    IndexOutput out = dir.createOutput("fst");
+    IndexOutput out = dir.createOutput("fst", IOContext.DEFAULT);
     fst.save(out);
     out.close();
 
-    IndexInput in = dir.openInput("fst");
+    IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
     final FST<Long> fst2 = new FST<Long>(in, outputs);
     checkStopNodes(fst2, outputs);
     in.close();

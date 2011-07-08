@@ -538,7 +538,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", 1024);
+      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", newIOContext(random));
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {

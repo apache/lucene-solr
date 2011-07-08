@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -49,21 +50,21 @@ public class Floats {
   private static final byte[] DEFAULTS = new byte[] {0,0,0,0,0,0,0,0};
   
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
-      AtomicLong bytesUsed) throws IOException {
+      AtomicLong bytesUsed, IOContext context) throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
       throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
           + precisionBytes);
     }
     if (precisionBytes == 4) {
-      return new Float4Writer(dir, id, bytesUsed);
+      return new Float4Writer(dir, id, bytesUsed, context);
     } else {
-      return new Float8Writer(dir, id, bytesUsed);
+      return new Float8Writer(dir, id, bytesUsed, context);
     }
   }
 
-  public static IndexDocValues getValues(Directory dir, String id, int maxDoc)
+  public static IndexDocValues getValues(Directory dir, String id, int maxDoc, IOContext context)
       throws IOException {
-    return new FloatsReader(dir, id, maxDoc);
+    return new FloatsReader(dir, id, maxDoc, context);
   }
 
   abstract static class FloatsWriter extends Writer {
@@ -73,13 +74,15 @@ public class Floats {
     protected IndexOutput datOut;
     private final byte precision;
     private final Directory dir;
+    private final IOContext context; 
 
     protected FloatsWriter(Directory dir, String id, int precision,
-        AtomicLong bytesUsed) throws IOException {
+        AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.precision = (byte) precision;
       this.dir = dir;
+      this.context = context;
      
     }
 
@@ -90,7 +93,7 @@ public class Floats {
     final void initDataOut() throws IOException {
       assert datOut == null;
       datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
         CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
@@ -158,9 +161,9 @@ public class Floats {
   // Writes 4 bytes (float) per value
   static final class Float4Writer extends FloatsWriter {
     private int[] values;
-    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed)
+    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, 4, bytesUsed);
+      super(dir, id, 4, bytesUsed, context);
       values = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
     }
@@ -221,9 +224,9 @@ public class Floats {
   // Writes 8 bytes (double) per value
   static final class Float8Writer extends FloatsWriter {
     private long[] values;
-    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed)
+    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
-      super(dir, id, 8, bytesUsed);
+      super(dir, id, 8, bytesUsed, context);
       values = new long[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_LONG);
     }
@@ -288,10 +291,10 @@ public class Floats {
     // TODO(simonw) is ByteBuffer the way to go here?
     private final int maxDoc;
 
-    protected FloatsReader(Directory dir, String id, int maxDoc)
+    protected FloatsReader(Directory dir, String id, int maxDoc, IOContext context)
         throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       CodecUtil.checkHeader(datIn, CODEC_NAME, VERSION_START, VERSION_START);
       precisionBytes = datIn.readByte();
       assert precisionBytes == 4 || precisionBytes == 8;

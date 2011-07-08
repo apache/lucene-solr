@@ -27,6 +27,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -62,13 +63,13 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher = new IndexSearcher(directory, true);
 
     // Make big index
-    dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory));
+    dir2 = new MockDirectoryWrapper(random, new RAMDirectory(directory, IOContext.DEFAULT));
 
     // First multiply small test index:
     mulFactor = 1;
     int docCount = 0;
     do {
-      final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2));
+      final Directory copy = new MockDirectoryWrapper(random, new RAMDirectory(dir2, IOContext.DEFAULT));
       RandomIndexWriter w = new RandomIndexWriter(random, dir2);
       w.addIndexes(copy);
       docCount = w.maxDoc();

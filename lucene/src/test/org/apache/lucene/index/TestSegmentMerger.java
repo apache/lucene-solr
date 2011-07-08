@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -54,8 +55,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentInfo info1 = DocHelper.writeDoc(random, merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentInfo info2 = DocHelper.writeDoc(random, merge2Dir, doc2);
-    reader1 = SegmentReader.get(true, info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-    reader2 = SegmentReader.get(true, info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    reader1 = SegmentReader.get(true, info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
+    reader2 = SegmentReader.get(true, info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
   }
 
   @Override
@@ -77,7 +78,7 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testMerge() throws IOException {
-    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos());
+    SegmentMerger merger = new SegmentMerger(mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL, mergedSegment, null, null, new FieldInfos(), newIOContext(random));
     merger.add(reader1);
     merger.add(reader2);
     int docsMerged = merger.merge();
@@ -86,7 +87,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = SegmentReader.get(false, mergedDir, new SegmentInfo(mergedSegment, docsMerged, mergedDir, false,
                                                                                      merger.getSegmentCodecs(), fieldInfos),
-                                                   BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+                                                   true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);
@@ -148,9 +149,9 @@ public class TestSegmentMerger extends LuceneTestCase {
     w.close();
     
     // Assert that SM fails if .del exists
-    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null);
+    SegmentMerger sm = new SegmentMerger(dir, 1, "a", null, null, null, newIOContext(random));
     try {
-      sm.createCompoundFile("b1", w.segmentInfos.info(0));
+      sm.createCompoundFile("b1", w.segmentInfos.info(0), newIOContext(random));
       fail("should not have been able to create a .cfs with .del and .s* files");
     } catch (AssertionError e) {
       // expected
@@ -168,7 +169,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     
     // Assert that SM fails if .s* exists
     try {
-      sm.createCompoundFile("b2", w.segmentInfos.info(0));
+      sm.createCompoundFile("b2", w.segmentInfos.info(0), newIOContext(random));
       fail("should not have been able to create a .cfs with .del and .s* files");
     } catch (AssertionError e) {
       // expected

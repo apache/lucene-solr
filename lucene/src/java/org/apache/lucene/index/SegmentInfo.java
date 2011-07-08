@@ -30,8 +30,8 @@ import java.util.Set;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Constants;
@@ -247,7 +247,7 @@ public final class SegmentInfo implements Cloneable {
       }
       final Directory dirToTest;
       if (isCompoundFile) {
-        dirToTest = dir.openCompoundInput(IndexFileNames.segmentFileName(storesSegment, "", ext), BufferedIndexInput.BUFFER_SIZE);
+        dirToTest = dir.openCompoundInput(IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE);
       } else {
         dirToTest = dir;
       }
@@ -266,7 +266,7 @@ public final class SegmentInfo implements Cloneable {
       Directory dir0 = dir;
       if (isCompoundFile && checkCompoundFile) {
         dir0 = dir.openCompoundInput(IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.COMPOUND_FILE_EXTENSION), BufferedIndexInput.BUFFER_SIZE);
+            "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE);
       }
       try {
         fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,

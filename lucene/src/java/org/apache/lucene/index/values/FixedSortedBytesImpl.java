@@ -26,6 +26,7 @@ import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.index.values.FixedDerefBytesImpl.Reader.DerefBytesEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -61,14 +62,14 @@ class FixedSortedBytesImpl {
     private final BytesRefHash hash;
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        AtomicLong bytesUsed) throws IOException {
+        AtomicLong bytesUsed, IOContext context) throws IOException {
       this(dir, id, comp, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
-          bytesUsed);
+          bytesUsed, context);
     }
 
     public Writer(Directory dir, String id, Comparator<BytesRef> comp,
-        Allocator allocator, AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+        Allocator allocator, AtomicLong bytesUsed, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       ByteBlockPool pool = new ByteBlockPool(allocator);
       hash = new BytesRefHash(pool, BytesRefHash.DEFAULT_CAPACITY,
           new TrackingDirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY,
@@ -169,8 +170,8 @@ class FixedSortedBytesImpl {
   public static class Reader extends BytesReaderBase {
     private final int size;
 
-    public Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+    public Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context);
       size = datIn.readInt();
     }
 

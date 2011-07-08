@@ -32,6 +32,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
@@ -46,7 +47,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   protected boolean readOnly;
 
   private SegmentInfo si;
-  private int readBufferSize;
   private final ReaderContext readerContext = new AtomicReaderContext(this);
   CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
@@ -88,8 +88,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor);
+  public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
+    // TODO should we check if readOnly and context combination makes sense like asserting that if read only we don't get a default?
+    return get(readOnly, si.dir, si, true, termInfosIndexDivisor, context);
   }
 
   /**
@@ -99,25 +100,23 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public static SegmentReader get(boolean readOnly,
                                   Directory dir,
                                   SegmentInfo si,
-                                  int readBufferSize,
                                   boolean doOpenStores,
-                                  int termInfosIndexDivisor)
+                                  int termInfosIndexDivisor,
+                                  IOContext context)
     throws CorruptIndexException, IOException {
     
     SegmentReader instance = new SegmentReader();
     instance.readOnly = readOnly;
     instance.si = si;
-    instance.readBufferSize = readBufferSize;
-
     boolean success = false;
 
     try {
-      instance.core = new SegmentCoreReaders(instance, dir, si, readBufferSize, termInfosIndexDivisor);
+      instance.core = new SegmentCoreReaders(instance, dir, si, context, termInfosIndexDivisor);
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }
       instance.loadLiveDocs();
-      instance.openNorms(instance.core.cfsDir, readBufferSize);
+      instance.openNorms(instance.core.cfsDir, context);
       success = true;
     } finally {
 
@@ -161,7 +160,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private void loadLiveDocs() throws IOException {
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si)) {
-      liveDocs = new BitVector(directory(), si.getDelFileName());
+      liveDocs = new BitVector(directory(), si.getDelFileName(), IOContext.DEFAULT);
       if (liveDocs.getVersion() < BitVector.VERSION_DGAPS_CLEARED) {
         liveDocs.invertAll();
       }
@@ -253,7 +252,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.core = core;
       clone.readOnly = openReadOnly;
       clone.si = si;
-      clone.readBufferSize = readBufferSize;
       clone.pendingDeleteCount = pendingDeleteCount;
       clone.readerFinishedListeners = readerFinishedListeners;
 
@@ -298,7 +296,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
       // If we are not cloning, then this will open anew
       // any norms that have changed:
-      clone.openNorms(si.getUseCompoundFile() ? core.getCFSReader() : directory(), readBufferSize);
+      clone.openNorms(si.getUseCompoundFile() ? core.getCFSReader() : directory(), IOContext.DEFAULT);
 
       success = true;
     } finally {
@@ -340,7 +338,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       final String delFileName = si.getDelFileName();
       boolean success = false;
       try {
-        liveDocs.write(directory(), delFileName);
+        liveDocs.write(directory(), delFileName, IOContext.DEFAULT);
         success = true;
       } finally {
         if (!success) {
@@ -580,7 +578,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     norm.copyOnWrite()[doc] = value;                    // set the value
   }
 
-  private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
+  private void openNorms(Directory cfsDir, IOContext context) throws IOException {
     long nextNormSeek = SegmentNorms.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (FieldInfo fi : core.fieldInfos) {
@@ -604,7 +602,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         if (singleNormFile) {
           normSeek = nextNormSeek;
           if (singleNormStream == null) {
-            singleNormStream = d.openInput(fileName, readBufferSize);
+            singleNormStream = d.openInput(fileName, context);
             singleNormRef = new AtomicInteger(1);
           } else {
             singleNormRef.incrementAndGet();
@@ -614,7 +612,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           // If this were to change in the future, a clone could be done here.
           normInput = singleNormStream;
         } else {
-          normInput = d.openInput(fileName);
+          normInput = d.openInput(fileName, context);
           // if the segment was created in 3.2 or after, we wrote the header for sure,
           // and don't need to do the sketchy file size check. otherwise, we check 
           // if the size is exactly equal to maxDoc to detect a headerless file.

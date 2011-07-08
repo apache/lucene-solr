@@ -23,6 +23,7 @@ import java.io.RandomAccessFile;
 
 import org.apache.lucene.util.IOUtils;
 
+
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
  *  poor concurrent performance (multiple threads will
@@ -53,21 +54,21 @@ public class SimpleFSDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new SimpleFSIndexInput(new File(directory, name), bufferSize, getReadChunkSize());
+    return new SimpleFSIndexInput(new File(directory, name), context, getReadChunkSize());
   }
   
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return new SimpleFSCompoundFileDirectory(name, bufferSize);
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new SimpleFSCompoundFileDirectory(name, context);
   }
 
   private final class SimpleFSCompoundFileDirectory extends CompoundFileDirectory {
     private SimpleFSIndexInput.Descriptor fd;
 
-    public SimpleFSCompoundFileDirectory(String fileName, int readBufferSize) throws IOException {
-      super(SimpleFSDirectory.this, fileName, readBufferSize);
+    public SimpleFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
+      super(SimpleFSDirectory.this, fileName, context);
       IndexInput stream = null;
       try {
         final File f = new File(SimpleFSDirectory.this.getDirectory(), fileName);
@@ -128,8 +129,8 @@ public class SimpleFSDirectory extends FSDirectory {
     protected final long off;
     protected final long end;
     
-    public SimpleFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(bufferSize);
+    public SimpleFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
+      super(context);
       this.file = new Descriptor(path, "r"); 
       this.chunkSize = chunkSize;
       this.off = 0L;

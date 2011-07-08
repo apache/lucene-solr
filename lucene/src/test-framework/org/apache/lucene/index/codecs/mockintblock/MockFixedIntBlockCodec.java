@@ -84,8 +84,8 @@ public class MockFixedIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-      return new FixedIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+    public IntIndexInput openInput(Directory dir, String fileName, IOContext context) throws IOException {
+      return new FixedIntBlockIndexInput(dir.openInput(fileName, context)) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
@@ -102,8 +102,8 @@ public class MockFixedIntBlockCodec extends Codec {
     }
 
     @Override
-    public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      IndexOutput out = dir.createOutput(fileName);
+    public IntIndexOutput createOutput(Directory dir, String fileName, IOContext context) throws IOException {
+      IndexOutput out = dir.createOutput(fileName, context);
       boolean success = false;
       try {
         FixedIntBlockIndexOutput ret = new FixedIntBlockIndexOutput(out, blockSize) {
@@ -160,7 +160,7 @@ public class MockFixedIntBlockCodec extends Codec {
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
                                                                       state.segmentInfo,
-                                                                      state.readBufferSize,
+                                                                      state.context,
                                                                       new MockIntFactory(blockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
@@ -170,7 +170,8 @@ public class MockFixedIntBlockCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId);
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(), state.codecId,
+                                                       IOContext.DEFAULT);
       success = true;
     } finally {
       if (!success) {
@@ -185,7 +186,7 @@ public class MockFixedIntBlockCodec extends Codec {
                                                 state.fieldInfos,
                                                 state.segmentInfo.name,
                                                 postingsReader,
-                                                state.readBufferSize,
+                                                state.context,
                                                 StandardCodec.TERMS_CACHE_SIZE,
                                                 state.codecId);
       success = true;
@@ -224,6 +225,6 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public PerDocValues docsProducer(SegmentReadState state) throws IOException {
-    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator());
+    return new DefaultDocValuesProducer(state.segmentInfo, state.dir, state.fieldInfos, state.codecId, getDocValuesUseCFS(), getDocValuesSortComparator(), state.context);
   }
 }

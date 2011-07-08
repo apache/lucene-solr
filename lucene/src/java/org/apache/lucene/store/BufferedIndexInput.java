@@ -22,8 +22,19 @@ import java.io.IOException;
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput {
 
-  /** Default buffer size */
+  /** Default buffer size set to 1024*/
   public static final int BUFFER_SIZE = 1024;
+  
+  // The normal read buffer size defaults to 1024, but
+  // increasing this during merging seems to yield
+  // performance gains.  However we don't want to increase
+  // it too much because there are quite a few
+  // BufferedIndexInputs created during merging.  See
+  // LUCENE-888 for details.
+  /**
+   * A buffer size for merges set to 4096
+   */
+  public static final int MERGE_BUFFER_SIZE = 4096;
 
   private int bufferSize = BUFFER_SIZE;
   
@@ -41,6 +52,10 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   public BufferedIndexInput() {}
+  
+  public BufferedIndexInput(IOContext context) {
+    this(bufferSize(context));
+  }
 
   /** Inits BufferedIndexInput with a specific bufferSize */
   public BufferedIndexInput(int bufferSize) {
@@ -297,6 +312,23 @@ public abstract class BufferedIndexInput extends IndexInput {
         refill();
       }
       numBytes -= flushBuffer(out, numBytes);
+    }
+  }
+  
+  /**
+   * Returns default buffer sizes for the given {@link IOContext}
+   */
+  public static int bufferSize(IOContext context) {
+    switch (context.context) {
+    case DEFAULT:
+    case FLUSH:
+    case READ:
+      return BUFFER_SIZE;
+    case MERGE:
+      return MERGE_BUFFER_SIZE;
+    default:
+      assert false : "unknown IOContext " + context.context;
+      return BUFFER_SIZE;
     }
   }
   

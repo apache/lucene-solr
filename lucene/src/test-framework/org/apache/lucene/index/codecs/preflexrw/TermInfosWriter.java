@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -125,7 +126,7 @@ final class TermInfosWriter implements Closeable {
     isIndex = isi;
     output = directory.createOutput(IndexFileNames.segmentFileName(segment, "",
         (isIndex ? PreFlexCodec.TERMS_INDEX_EXTENSION
-            : PreFlexCodec.TERMS_EXTENSION)));
+            : PreFlexCodec.TERMS_EXTENSION)), IOContext.DEFAULT);
     boolean success = false;
     try {
     output.writeInt(FORMAT_CURRENT);              // write format

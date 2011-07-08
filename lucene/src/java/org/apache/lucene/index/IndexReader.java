@@ -1436,13 +1436,14 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
     Directory dir = null;
     CompoundFileDirectory cfr = null;
+    IOContext context = IOContext.READ;
 
     try {
       File file = new File(filename);
       String dirname = file.getAbsoluteFile().getParent();
       filename = file.getName();
       dir = FSDirectory.open(new File(dirname));
-      cfr = dir.openCompoundInput(filename, BufferedIndexInput.BUFFER_SIZE);
+      cfr = dir.openCompoundInput(filename, IOContext.DEFAULT);
 
       String [] files = cfr.listAll();
       ArrayUtil.mergeSort(files);   // sort the array of filename so that the output is more readable
@@ -1452,7 +1453,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
         if (extract) {
           System.out.println("extract " + files[i] + " with " + len + " bytes to local directory...");
-          IndexInput ii = cfr.openInput(files[i]);
+          IndexInput ii = cfr.openInput(files[i], context);
 
           FileOutputStream f = new FileOutputStream(files[i]);
 

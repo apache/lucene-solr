@@ -196,7 +196,7 @@ public class MockDirectoryWrapper extends Directory {
         long length = fileLength(name);
         byte[] zeroes = new byte[256];
         long upto = 0;
-        IndexOutput out = delegate.createOutput(name);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         while(upto < length) {
           final int limit = (int) Math.min(length-upto, zeroes.length);
           out.writeBytes(zeroes, 0, limit);
@@ -205,7 +205,7 @@ public class MockDirectoryWrapper extends Directory {
         out.close();
       } else if (count % 3 == 2) {
         // Truncate the file:
-        IndexOutput out = delegate.createOutput(name);
+        IndexOutput out = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState));
         out.setLength(fileLength(name)/2);
         out.close();
       }
@@ -337,7 +337,7 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized IndexOutput createOutput(String name) throws IOException {
+  public synchronized IndexOutput createOutput(String name, IOContext context) throws IOException {
     maybeYield();
     if (crashed)
       throw new IOException("cannot createOutput after crash");
@@ -372,7 +372,7 @@ public class MockDirectoryWrapper extends Directory {
     }
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState)), name);
     addFileHandle(io, name, false);
     openFilesForWrite.add(name);
     
@@ -401,7 +401,7 @@ public class MockDirectoryWrapper extends Directory {
   }
   
   @Override
-  public synchronized IndexInput openInput(String name) throws IOException {
+  public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     maybeYield();
     if (!delegate.fileExists(name))
       throw new FileNotFoundException(name);
@@ -412,21 +412,21 @@ public class MockDirectoryWrapper extends Directory {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name));
+    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState)));
     addFileHandle(ii, name, true);
     return ii;
   }
   
   @Override
-  public synchronized CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
+  public synchronized CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
     maybeYield();
-    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, bufferSize), false);
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, context), false);
   }
    
   @Override
-  public CompoundFileDirectory createCompoundOutput(String name) throws IOException {
+  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
     maybeYield();
-    return new MockCompoundFileDirectoryWrapper(name, this, delegate.createCompoundOutput(name), true);
+    return new MockCompoundFileDirectoryWrapper(name, this, delegate.createCompoundOutput(name, context), true);
   }
 
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
@@ -649,9 +649,10 @@ public class MockDirectoryWrapper extends Directory {
   }
 
   @Override
-  public synchronized void copy(Directory to, String src, String dest) throws IOException {
+  public synchronized void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     maybeYield();
-    delegate.copy(to, src, dest);
+    // randomize the IOContext here?
+    delegate.copy(to, src, dest, context);
   }
   
 }

@@ -136,7 +136,7 @@ final class CompoundFileWriter implements Closeable{
     IOException priorException = null;
     IndexOutput entryTableOut = null;
     try {
-      initDataOut();
+      initDataOut(IOContext.DEFAULT);
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
       }
@@ -151,7 +151,7 @@ final class CompoundFileWriter implements Closeable{
       IOUtils.closeSafely(priorException, dataOut);
     }
     try {
-      entryTableOut = directory.createOutput(entryTableName);
+      entryTableOut = directory.createOutput(entryTableName, IOContext.DEFAULT);
       writeEntryTable(entries.values(), entryTableOut);
     } catch (IOException e) {
       priorException = e;
@@ -180,7 +180,7 @@ final class CompoundFileWriter implements Closeable{
    */
   private final long copyFileEntry(IndexOutput dataOut, FileEntry fileEntry)
       throws IOException, MergeAbortedException {
-    final IndexInput is = fileEntry.dir.openInput(fileEntry.file);
+    final IndexInput is = fileEntry.dir.openInput(fileEntry.file, IOContext.READONCE);
     try {
       final long startPtr = dataOut.getFilePointer();
       final long length = fileEntry.length;
@@ -212,7 +212,7 @@ final class CompoundFileWriter implements Closeable{
     }
   }
 
-  IndexOutput createOutput(String name) throws IOException {
+  IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     boolean success = false;
     try {
@@ -225,7 +225,7 @@ final class CompoundFileWriter implements Closeable{
       entries.put(name, entry);
       final DirectCFSIndexOutput out;
       if (outputTaken.compareAndSet(false, true)) {
-        initDataOut();
+        initDataOut(context);
         success = true;
         out = new DirectCFSIndexOutput(dataOut, entry, false);
       } else {
@@ -233,7 +233,7 @@ final class CompoundFileWriter implements Closeable{
         if (directory.fileExists(name)) {
           throw new IOException("File already exists");
         }
-        out = new DirectCFSIndexOutput(directory.createOutput(name), entry,
+        out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
             true);
       }
       success = true;
@@ -249,11 +249,11 @@ final class CompoundFileWriter implements Closeable{
     outputTaken.compareAndSet(true, false);
   }
 
-  private synchronized final void initDataOut() throws IOException {
+  private synchronized final void initDataOut(IOContext context) throws IOException {
     if (dataOut == null) {
       boolean success = false;
       try {
-        dataOut = directory.createOutput(dataFileName);
+        dataOut = directory.createOutput(dataFileName, context);
         dataOut.writeVInt(FORMAT_CURRENT);
         success = true;
       } finally {

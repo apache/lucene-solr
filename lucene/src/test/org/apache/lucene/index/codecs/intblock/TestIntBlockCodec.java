@@ -29,13 +29,13 @@ public class TestIntBlockCodec extends LuceneTestCase {
 
     IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
 
-    IntIndexOutput out = f.createOutput(dir, "test");
+    IntIndexOutput out = f.createOutput(dir, "test", newIOContext(random));
     for(int i=0;i<11777;i++) {
       out.write(i);
     }
     out.close();
 
-    IntIndexInput in = f.openInput(dir, "test");
+    IntIndexInput in = f.openInput(dir, "test", newIOContext(random));
     IntIndexInput.Reader r = in.reader();
 
     for(int i=0;i<11777;i++) {
@@ -50,12 +50,12 @@ public class TestIntBlockCodec extends LuceneTestCase {
     Directory dir = newDirectory();
 
     IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
-    IntIndexOutput out = f.createOutput(dir, "test");
+    IntIndexOutput out = f.createOutput(dir, "test", newIOContext(random));
 
     // write no ints
     out.close();
 
-    IntIndexInput in = f.openInput(dir, "test");
+    IntIndexInput in = f.openInput(dir, "test", newIOContext(random));
     in.reader();
     // read no ints
     in.close();

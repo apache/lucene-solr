@@ -72,7 +72,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
-    out = state.directory.createOutput(termsFileName);
+    out = state.directory.createOutput(termsFileName, state.context);
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;

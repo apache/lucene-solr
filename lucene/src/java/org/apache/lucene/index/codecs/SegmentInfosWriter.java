@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 /**
@@ -41,7 +42,7 @@ public abstract class SegmentInfosWriter {
    * phase commit" operations as described above.
    * @throws IOException
    */
-  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, SegmentInfos infos) throws IOException;
+  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, SegmentInfos infos, IOContext context) throws IOException;
   
   /**
    * First phase of the two-phase commit - ensure that all output can be

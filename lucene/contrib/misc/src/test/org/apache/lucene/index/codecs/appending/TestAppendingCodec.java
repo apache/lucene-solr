@@ -40,6 +40,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -124,8 +125,8 @@ public class TestAppendingCodec extends LuceneTestCase {
     }
 
     @Override
-    public IndexOutput createOutput(String name) throws IOException {
-      return new AppendingIndexOutputWrapper(super.createOutput(name));
+    public IndexOutput createOutput(String name, IOContext context) throws IOException {
+      return new AppendingIndexOutputWrapper(super.createOutput(name, context));
     }
     
   }

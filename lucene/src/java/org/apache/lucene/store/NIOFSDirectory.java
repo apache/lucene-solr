@@ -76,22 +76,22 @@ public class NIOFSDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getDirectory(), name), bufferSize, getReadChunkSize());
+    return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
   }
   
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return new NIOFSCompoundFileDirectory(name, bufferSize);
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new NIOFSCompoundFileDirectory(name, context);
   }
 
   private final class NIOFSCompoundFileDirectory extends CompoundFileDirectory {
     private SimpleFSIndexInput.Descriptor fd;
     private FileChannel fc;
 
-    public NIOFSCompoundFileDirectory(String fileName, int readBufferSize) throws IOException {
-      super(NIOFSDirectory.this, fileName, readBufferSize);
+    public NIOFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
+      super(NIOFSDirectory.this, fileName, context);
       IndexInput stream = null;
       try {
         File f = new File(NIOFSDirectory.this.getDirectory(), fileName);
@@ -131,8 +131,8 @@ public class NIOFSDirectory extends FSDirectory {
 
     final FileChannel channel;
 
-    public NIOFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
-      super(path, bufferSize, chunkSize);
+    public NIOFSIndexInput(File path, IOContext context, int chunkSize) throws IOException {
+      super(path, context, chunkSize);
       channel = file.getChannel();
     }
     
@@ -229,4 +229,5 @@ public class NIOFSDirectory extends FSDirectory {
       }
     }
   }
+
 }
