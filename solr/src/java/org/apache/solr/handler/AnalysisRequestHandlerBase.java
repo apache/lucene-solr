@@ -170,7 +170,6 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     // for backwards compatibility, add all "common" attributes
     tokenStream.addAttribute(OffsetAttribute.class);
     tokenStream.addAttribute(TypeAttribute.class);
-    final BytesRef bytes = new BytesRef();
     try {
       tokenStream.reset();
       int position = 0;
