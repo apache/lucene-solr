@@ -25,7 +25,6 @@ import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.FuzzyConfig;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.search.FuzzyQuery;
 

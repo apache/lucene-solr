@@ -27,7 +27,6 @@ import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**

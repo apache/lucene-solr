@@ -33,17 +33,16 @@ import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
-import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.TermRangeQueryNode;
 
 /**
  * This processor converts {@link ParametricRangeQueryNode} objects to
- * {@link RangeQueryNode} objects. It reads the lower and upper bounds value
+ * {@link TermRangeQueryNode} objects. It reads the lower and upper bounds value
  * from the {@link ParametricRangeQueryNode} object and try to parse their
  * values using a {@link DateFormat}. If the values cannot be parsed to a date
- * value, it will only create the {@link RangeQueryNode} using the non-parsed
- * values. <br/>
+ * value, it will only create the {@link TermRangeQueryNode} using the
+ * non-parsed values. <br/>
  * <br/>
  * If a {@link ConfigurationKeys#LOCALE} is defined in the {@link QueryConfigHandler} it
  * will be used to parse the date, otherwise {@link Locale#getDefault()} will be
@@ -55,18 +54,18 @@ import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
  * 
  * @see ConfigurationKeys#DATE_RESOLUTION
  * @see ConfigurationKeys#LOCALE
- * @see RangeQueryNode
+ * @see TermRangeQueryNode
  * @see ParametricRangeQueryNode
  */
 public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
-
+  
   public ParametricRangeQueryNodeProcessor() {
-    // empty constructor
+  // empty constructor
   }
-
+  
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
-
+    
     if (node instanceof ParametricRangeQueryNode) {
       ParametricRangeQueryNode parametricRangeNode = (ParametricRangeQueryNode) node;
       ParametricQueryNode upper = parametricRangeNode.getUpperBound();
@@ -79,31 +78,31 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       if (locale == null) {
         locale = Locale.getDefault();
       }
-
+      
       CharSequence field = parametricRangeNode.getField();
       String fieldStr = null;
-
+      
       if (field != null) {
         fieldStr = field.toString();
       }
-
+      
       FieldConfig fieldConfig = getQueryConfigHandler()
           .getFieldConfig(fieldStr);
-
+      
       if (fieldConfig != null) {
         dateRes = fieldConfig.get(ConfigurationKeys.DATE_RESOLUTION);
       }
-
+      
       if (upper.getOperator() == CompareOperator.LE) {
         inclusive = true;
-
+        
       } else if (lower.getOperator() == CompareOperator.GE) {
         inclusive = true;
       }
-
+      
       String part1 = lower.getTextAsString();
       String part2 = upper.getTextAsString();
-
+      
       try {
         DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
         df.setLenient(true);
@@ -121,37 +120,39 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
           cal.set(Calendar.MILLISECOND, 999);
           d2 = cal.getTime();
         }
-
+        
         part1 = DateTools.dateToString(d1, dateRes);
         part2 = DateTools.dateToString(d2, dateRes);
       } catch (Exception e) {
         // do nothing
       }
-
+      
       lower.setText(part1);
       upper.setText(part2);
-
-      return new RangeQueryNode(lower, upper);
-
+      
+      return new TermRangeQueryNode(lower, upper,
+          lower.getOperator() == CompareOperator.GE,
+          upper.getOperator() == CompareOperator.LE);
+      
     }
-
+    
     return node;
-
+    
   }
-
+  
   @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
-
+    
     return node;
-
+    
   }
-
+  
   @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
-
+    
     return children;
-
+    
   }
-
+  
 }

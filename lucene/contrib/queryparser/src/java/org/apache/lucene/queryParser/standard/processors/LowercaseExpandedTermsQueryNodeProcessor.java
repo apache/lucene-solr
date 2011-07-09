@@ -27,7 +27,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;

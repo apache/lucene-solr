@@ -51,5 +51,8 @@ public class QueryParserMessages extends NLS {
   public static String WILDCARD_NOT_SUPPORTED;
   public static String TOO_MANY_BOOLEAN_CLAUSES;
   public static String LEADING_WILDCARD_NOT_ALLOWED;
+  public static String COULD_NOT_PARSE_NUMBER;
+  public static String NUMBER_CLASS_NOT_SUPPORTED_BY_NUMERIC_RANGE_QUERY;
+  public static String UNSUPPORTED_NUMERIC_DATA_TYPE;
 
 }

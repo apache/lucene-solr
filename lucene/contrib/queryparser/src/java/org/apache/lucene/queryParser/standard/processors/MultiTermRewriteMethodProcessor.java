@@ -19,10 +19,10 @@ package org.apache.lucene.queryParser.standard.processors;
 
 import java.util.List;
 
-import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryParser.standard.nodes.AbstractRangeQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.MultiTermQuery;
@@ -43,7 +43,7 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
     // set setMultiTermRewriteMethod for WildcardQueryNode and
     // PrefixWildcardQueryNode
     if (node instanceof WildcardQueryNode
-        || node instanceof ParametricRangeQueryNode || node instanceof RegexpQueryNode) {
+        || node instanceof AbstractRangeQueryNode || node instanceof RegexpQueryNode) {
       
       MultiTermQuery.RewriteMethod rewriteMethod = getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
 

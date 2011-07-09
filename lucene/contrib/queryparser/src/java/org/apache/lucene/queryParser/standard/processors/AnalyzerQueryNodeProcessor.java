@@ -40,7 +40,6 @@ import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
