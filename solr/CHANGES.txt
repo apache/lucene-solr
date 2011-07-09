@@ -260,6 +260,9 @@ Other Changes
 
 * SOLR-2027: FacetField.getValues() now returns an empty list if there are no
   values, instead of null (Chris Male)
+
+* SOLR-1825: SolrQuery.addFacetQuery now enables facets automatically, like
+  addFacetField (Chris Male)
   
 Documentation
 ----------------------

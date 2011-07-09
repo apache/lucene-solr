@@ -195,4 +195,10 @@ public class SolrQueryTest extends LuceneTestCase {
     q.setTermsRegexFlag("multiline");
     assertEquals(2, q.getTermsRegexFlags().length);
   }
+
+  public void testAddFacetQuery() {
+    SolrQuery solrQuery = new SolrQuery();
+    solrQuery.addFacetQuery("field:value");
+    assertTrue("Adding a Facet Query should enable facets", solrQuery.getBool(FacetParams.FACET));
+  }
 }
