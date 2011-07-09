@@ -16,7 +16,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-	
+
 <project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <description>
     This file is designed for importing into a main build file, and not intended
@@ -26,7 +26,7 @@
   <dirname file="${ant.file.common}" property="common.dir"/>
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" value="${common.dir}/src/tools/prettify"/>
-  <property name="maven.build.dir" value="${common.dir}/build/maven"/>
+  <property name="maven.build.dir" value="${build.dir}/maven"/>
 
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
@@ -39,6 +39,8 @@
     <format property="current.year" pattern="yyyy"/>
     <format property="DSTAMP" pattern="yyyy-MM-dd"/>
     <format property="TSTAMP" pattern="HH:mm:ss"/>
+    <!-- datetime format that is safe to treat as part of a dotted version -->
+    <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
   <property name="name" value="${ant.project.name}"/>
@@ -92,6 +94,7 @@
   <property name="tests.seed" value="random" />
   <property name="tests.loggingfile" value="/dev/null"/>
   <property name="tests.nightly" value="false" />
+  <property name="tests.cleanthreads.sysprop" value="perMethod"/>
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -200,6 +203,11 @@
            <isset property="clover.present"/>
        </and>
    </condition>
+
+  <propertyset id="uptodate.and.compiled.properties" dynamic="true">
+    <propertyref regex=".*\.uptodate$$"/>
+    <propertyref regex=".*\.compiled$$"/>
+  </propertyset>
 
   <target name="clean"
     description="Removes contents of build and dist directories">
@@ -325,10 +333,11 @@
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
     <attribute name="pom.xml" default="pom.xml"/>
+    <attribute name="jar.file" default="${build.dir}/${final.name}.jar"/>
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
-      <artifact:deploy file="${build.dir}/${maven.project.build.finalName}.jar">
+      <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
       	<remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
@@ -342,13 +351,13 @@
     <attribute name="pom.xml"/>
     <attribute name="jar.file"/>
     <sequential>
-      <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
+      <copy file="@{pom.xml}" tofile="${maven.build.dir}/pom.xml">
         <filterset begintoken="@" endtoken="@">
           <filter token="version" value="${version}"/>
         </filterset>
       </copy>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
-      <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
+      <artifact:pom id="maven.project" file="${maven.build.dir}/pom.xml" />
       <artifact:deploy file="@{jar.file}">
         <remoteRepository url="${m2.repository.url}">
           <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}" password="${m2.repository.password}"/>
@@ -359,35 +368,58 @@
   </macrodef>
 	
   <macrodef name="build-manifest" description="Builds a manifest file">
-  	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />
-  	<sequential>
+  	<attribute name="title"/>
+    <attribute name="implementation.title"/>
+    <attribute name="spec.version"/>
+    <sequential>
       <manifest file="${manifest.file}">
+        <!--
+        http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
+        http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+        http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
+        -->
+        <!-- Don't set 'Manifest-Version' it identifies the version of the
+             manifest file format, and should always be 1.0 (the default)
+
+             Don't set 'Created-by' attribute, its purpose is
+             to identify the version of java used to build the jar,
+             which ant will do by default.
+
+             Ant will happily override these with bogus strings if you
+             tell it to, so don't.
+
+             NOTE: we don't use section info because all of our manifest data
+             applies to the entire jar/war ... no package specific info.
+        -->
+        <attribute name="Extension-Name" value="@{implementation.title}"/>
         <attribute name="Specification-Title" value="@{title}"/>
-		<!-- spec version must match "digit+{.digit+}*" -->
-		<attribute name="Specification-Version" value="${spec.version}"/>
-		<attribute name="Specification-Vendor"
-		           value="The Apache Software Foundation"/>
-		<attribute name="Implementation-Title" value="org.apache.lucene"/>
-		<!-- impl version can be any string -->
-		<attribute name="Implementation-Version"
-		           value="${version} ${svnversion} - ${DSTAMP} ${TSTAMP}"/>
-		<attribute name="Implementation-Vendor"
-		           value="The Apache Software Foundation"/>
-		<attribute name="X-Compile-Source-JDK" 
-		           value="${javac.source}"/>
-		<attribute name="X-Compile-Target-JDK" 
-		           value="${javac.target}"/>
-	  </manifest>
-  	</sequential>
+        <!-- spec version must match "digit+{.digit+}*" -->
+        <attribute name="Specification-Version" value="@{spec.version}"/>
+        <attribute name="Specification-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="Implementation-Title" value="@{implementation.title}"/>
+        <!-- impl version can be any string -->
+        <attribute name="Implementation-Version"
+                   value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+        <attribute name="Implementation-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
+        <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
+      </manifest>
+    </sequential>
   </macrodef>
 	
   <macrodef name="jarify" description="Builds a JAR file">
   	<attribute name="basedir" default="${build.dir}/classes/java"/>
   	<attribute name="destfile" default="${build.dir}/${final.name}.jar"/>
   	<attribute name="title" default="Lucene Search Engine: ${ant.project.name}"/>
-    <attribute name="excludes" default="**/pom.xml"/>
-    <element name="manifest-attributes" optional="yes"/>
-  	<element name="metainf-includes" optional="yes"/>
+    <attribute name="excludes" default="**/pom.xml,**/*.iml"/>
+    <attribute name="metainf.source.dir" default="${common.dir}"/>
+    <attribute name="implementation.title" default="org.apache.lucene"/>
+    <attribute name="spec.version" default="${spec.version}"/>
+    <element name="nested" optional="true" implicit="true"/>
     <sequential>
       <!-- If possible, include the svnversion -->
       <exec dir="." executable="${svnversion.exe}"
@@ -395,21 +427,16 @@
         <arg line="."/>
       </exec>
       
-      <build-manifest title="@{title}"/>
+      <build-manifest title="@{title}"
+                      implementation.title="@{implementation.title}"
+                      spec.version="@{spec.version}"/>
     	
-      <jar
-        destfile="@{destfile}"
-        basedir="@{basedir}"
-      	manifest="${manifest.file}"
-        excludes="@{excludes}">
-        <manifest>
-        	<manifest-attributes/>
-        </manifest>
-        <metainf dir="${common.dir}">
-          <include name="LICENSE.txt"/>
-          <include name="NOTICE.txt"/>
-        </metainf>
-        <metainf-includes/>
+      <jar destfile="@{destfile}"
+           basedir="@{basedir}"
+           manifest="${manifest.file}"
+           excludes="@{excludes}">
+        <metainf dir="@{metainf.source.dir}" includes="LICENSE.txt,NOTICE.txt"/>
+        <nested />
       </jar>
     </sequential>
   </macrodef>
@@ -509,7 +536,7 @@
               <!-- set the Version that tests should run against -->
               <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
               <!-- for lucene we can be strict, and we don't want false fails even across methods -->
-              <sysproperty key="tests.cleanthreads" value="perMethod"/>
+              <sysproperty key="tests.cleanthreads" value="${tests.cleanthreads.sysprop}"/>
               <!-- logging config file -->
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
           <!-- set whether or not nightly tests should run -->
@@ -523,6 +550,8 @@
               
               <sysproperty key="testmethod" value="${testmethod}"/>
               <sysproperty key="jetty.testMode" value="1"/>
+              <sysproperty key="jetty.insecurerandom" value="1"/>
+    	      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>
@@ -770,7 +799,7 @@
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
-          packagenames="org.apache.lucene.*"
+          packagenames="org.apache.lucene.*,org.apache.solr.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
           encoding="${build.encoding}"
@@ -824,6 +853,16 @@
    </sequential>
   </macrodef>
 
+  <macrodef name="contrib-crawl">
+    <attribute name="target" default=""/>
+    <attribute name="failonerror" default="true"/>
+    <sequential>
+      <subant target="@{target}" failonerror="@{failonerror}" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="." includes="contrib/*/build.xml"/>
+      </subant>
+    </sequential>
+  </macrodef>
 
   <!-- VALIDATION work -->
 
@@ -845,10 +884,127 @@
 
   <target name="validate-lucene" depends="check-legal-lucene" unless="validated-lucene"/>
 
-
   <!-- Generic placeholder target for if we add other validation tasks -->
   <target name="validate" depends="validate-lucene"/>
 
+  <property name="svn.export.dir" location="${build.dir}/svn-export"/>
+  <macrodef name="svn-export-source"
+            description="Runs 'svn export' with the same URL and revision as the current working copy.">
+    <attribute name="source.dir"/>
+    <sequential>
+      <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
+      <get-svn-info directory="@{source.dir}"/>
+      <exec dir="@{source.dir}" executable="${svn.exe}" failonerror="true">
+        <arg value="export"/>
+        <arg value="--native-eol"/>
+        <arg value="LF"/>
+        <arg value="-r"/>
+        <arg value="${svn.Revision}"/>
+        <arg value="${svn.URL}"/>
+        <arg value="${svn.export.dir}"/>
+      </exec>
+    </sequential>
+  </macrodef>
 
+  <macrodef name="get-svn-info"
+            description="Populates properties svn.URL and svn.Revision using 'svn info'.">
+    <attribute name="directory"/>
+    <sequential>
+      <exec dir="." executable="${svnversion.exe}" outputproperty="svn.ver"/>
+      <fail message="A subversion checkout is required for this target">
+        <condition>
+          <equals arg1="${svn.ver}" arg2="exported"/>
+        </condition>
+      </fail>
+      <exec dir="@{directory}" executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
+        <arg value="info"/>
+      </exec>
+      <loadproperties>
+        <propertyresource name="svn.info"/>
+        <filterchain>
+          <linecontainsregexp>
+            <regexp pattern="(URL|Revision):"/>
+          </linecontainsregexp>
+          <replacestring from=": " to="="/>
+          <prefixlines prefix="svn."/>
+        </filterchain>
+      </loadproperties>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="make-checksums" description="Macro for building checksum files">
+    <attribute name="file"/>
+    <sequential>
+      <echo>Building checksums for '@{file}'</echo>
+      <checksum file="@{file}" algorithm="md5" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+      <checksum file="@{file}" algorithm="sha1" format="MD5SUM" forceoverwrite="yes" readbuffersize="65536"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="sign-artifacts-macro">
+    <attribute name="artifacts.dir"/>
+    <sequential>
+      <delete failonerror="false">
+        <fileset dir="@{artifacts.dir}">
+          <include name="**/*.asc"/>
+        </fileset>
+      </delete>
+
+      <available property="gpg.input.handler" classname="org.apache.tools.ant.input.SecureInputHandler"
+                 value="org.apache.tools.ant.input.SecureInputHandler"/>
+      <!--else:--><property name="gpg.input.handler" value="org.apache.tools.ant.input.DefaultInputHandler"/>
+      <input message="Enter GPG keystore password: >" addproperty="gpg.passphrase">
+        <handler classname="${gpg.input.handler}" />
+      </input>
+
+      <apply executable="${gpg.exe}" inputstring="${gpg.passphrase}"
+             dest="@{artifacts.dir}" type="file" maxparallel="1" verbose="yes">
+        <arg value="--passphrase-fd"/>
+        <arg value="0"/>
+        <arg value="--batch"/>
+        <arg value="--armor"/>
+        <arg value="--default-key"/>
+        <arg value="${gpg.key}"/>
+        <arg value="--output"/>
+        <targetfile/>
+        <arg value="--detach-sig"/>
+        <srcfile/>
+
+        <fileset dir="@{artifacts.dir}">
+          <include name="**/*.jar"/>
+          <include name="**/*.zip"/>
+          <include name="**/*.tgz"/>
+          <include name="**/*.pom"/>
+        </fileset>
+        <globmapper from="*" to="*.asc"/>
+      </apply>
+    </sequential>
+  </macrodef>
+
+  <property name="rc" value="rc0"/>
+  <property name="remote.staging.dir" value="public_html/staging_area/${rc}/${version}"/>
+  <property name="keyfile" value="${user.home}/.ssh/id_rsa"/>
+  <property name="scp.user" value="${user.name}"/>
+  <!--keys.dir is the location of the https://svn.apache.org/repos/asf/lucene/java/dist/ directory-->
+  <property name="keys.dir" value="${common.dir}/../../dist"/>
+  <macrodef name="copy-to-stage-macro">
+    <attribute name="artifacts.dir"/>
+    <sequential>
+      <sshexec host="people.apache.org"
+               username="${scp.user}"
+               keyfile="${keyfile}"
+               command="mkdir -p ${remote.staging.dir}"/>
+      <echo>Uploading artifacts to ${scp.user}@people.apache.org:${remote.staging.dir}</echo>
+      <scp todir="${scp.user}@people.apache.org:${remote.staging.dir}"
+           username="${scp.user}"
+           keyfile="${keyfile}"
+           verbose="true">
+        <fileset dir="${artifacts.dir}"/>
+        <fileset dir="${keys.dir}">
+          <include name="KEYS"/>
+        </fileset>
+      </scp>
+    </sequential>
+  </macrodef>
 
 </project>

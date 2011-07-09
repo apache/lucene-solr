@@ -37,7 +37,9 @@
     </uptodate>
   </target>
   <target name="jar-lucene" depends="build-lucene" unless="lucene.jar.uptodate">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
+    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   <target name="init" depends="contrib-build.init,lucene-jar-uptodate,jar-lucene"/>
   

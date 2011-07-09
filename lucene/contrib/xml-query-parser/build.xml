@@ -47,7 +47,10 @@
 
   <target name="build-queries" unless="queries.uptodate">
     <echo>XML Parser building dependency ${queries.jar}</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries" />
+    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries.uptodate" value="true"/>
   </target>
 
   <!-- override contrib-build.xml target to also build web demo -->
