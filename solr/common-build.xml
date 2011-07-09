@@ -218,6 +218,7 @@
         <fileset dir="../lucene/contrib/queries" includes="build.xml" />
         <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
         <fileset dir="../modules/grouping" includes="build.xml" />
+        <fileset dir="../modules/queries" includes="build.xml" />
       </subant>
     </sequential>
   </target>
