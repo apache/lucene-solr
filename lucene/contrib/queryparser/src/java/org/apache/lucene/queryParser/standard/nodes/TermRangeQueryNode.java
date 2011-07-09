@@ -22,7 +22,7 @@ import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 /**
  * This query node represents a range query.
  * 
- * @see ParametricRangeQueryNodeProcessor
+ * @see org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor
  * @see org.apache.lucene.search.TermRangeQuery
  */
 public class TermRangeQueryNode extends AbstractRangeQueryNode<FieldQueryNode> {
