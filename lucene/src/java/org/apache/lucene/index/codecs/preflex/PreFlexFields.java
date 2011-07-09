@@ -266,6 +266,11 @@ public class PreFlexFields extends FieldsProducer {
     public long getSumTotalTermFreq() {
       return -1;
     }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return -1;
+    }
   }
 
   private class PreTermsEnum extends TermsEnum {

@@ -22,19 +22,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.vectorhighlight.FieldQuery.QueryPhraseMap;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
+import org.apache.lucene.util.BytesRef;
 
 public class FieldQueryTest extends AbstractTestCase {
 
   public void testFlattenBoolean() throws Exception {
-    Query query = paW.parse( "A AND B OR C NOT (D AND E)" );
-    FieldQuery fq = new FieldQuery( query, true, true );
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(F, "A")), Occur.MUST);
+    booleanQuery.add(new TermQuery(new Term(F, "B")), Occur.MUST);
+    booleanQuery.add(new TermQuery(new Term(F, "C")), Occur.SHOULD);
+
+    BooleanQuery innerQuery = new BooleanQuery();
+    innerQuery.add(new TermQuery(new Term(F, "D")), Occur.MUST);
+    innerQuery.add(new TermQuery(new Term(F, "E")), Occur.MUST);
+    booleanQuery.add(innerQuery, Occur.MUST_NOT);
+
+    FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten( query, flatQueries );
+    fq.flatten(booleanQuery, flatQueries);
     assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), tq( "C" ) );
   }
 
@@ -47,15 +61,25 @@ public class FieldQueryTest extends AbstractTestCase {
   }
 
   public void testFlattenTermAndPhrase() throws Exception {
-    Query query = paW.parse( "A AND \"B C\"" );
-    FieldQuery fq = new FieldQuery( query, true, true );
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(F, "A")), Occur.MUST);
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term(F, "B"));
+    phraseQuery.add(new Term(F, "C"));
+    booleanQuery.add(phraseQuery, Occur.MUST);
+
+    FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
-    fq.flatten( query, flatQueries );
+    fq.flatten(booleanQuery, flatQueries);
     assertCollectionQueries( flatQueries, tq( "A" ), pqF( "B", "C" ) );
   }
 
   public void testFlattenTermAndPhrase2gram() throws Exception {
-    Query query = paB.parse( "AA AND \"BCD\" OR \"EFGH\"" );
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(F, "AA")), Occur.MUST);
+    query.add(toPhraseQuery(analyze("BCD", F, analyzerB), F), Occur.MUST);
+    query.add(toPhraseQuery(analyze("EFGH", F, analyzerB), F), Occur.SHOULD);
+
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten( query, flatQueries );
@@ -232,7 +256,16 @@ public class FieldQueryTest extends AbstractTestCase {
   }
 
   public void testGetTermSet() throws Exception {
-    Query query = paW.parse( "A AND B OR x:C NOT (D AND E)" );
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(F, "A")), Occur.MUST);
+    query.add(new TermQuery(new Term(F, "B")), Occur.MUST);
+    query.add(new TermQuery(new Term("x", "C")), Occur.SHOULD);
+
+    BooleanQuery innerQuery = new BooleanQuery();
+    innerQuery.add(new TermQuery(new Term(F, "D")), Occur.MUST);
+    innerQuery.add(new TermQuery(new Term(F, "E")), Occur.MUST);
+    query.add(innerQuery, Occur.MUST_NOT);
+
     FieldQuery fq = new FieldQuery( query, true, true );
     assertEquals( 2, fq.termSetMap.size() );
     Set<String> termSet = fq.getTermSet( F );
@@ -679,8 +712,10 @@ public class FieldQueryTest extends AbstractTestCase {
   }
   
   public void testQueryPhraseMapOverlap2gram() throws Exception {
-    Query query = paB.parse( "\"abc\" AND \"bcd\"" );
-    
+    BooleanQuery query = new BooleanQuery();
+    query.add(toPhraseQuery(analyze("abc", F, analyzerB), F), Occur.MUST);
+    query.add(toPhraseQuery(analyze("bcd", F, analyzerB), F), Occur.MUST);
+
     // phraseHighlight = true, fieldMatch = true
     FieldQuery fq = new FieldQuery( query, true, true );
     Map<String, QueryPhraseMap> map = fq.rootMaps;

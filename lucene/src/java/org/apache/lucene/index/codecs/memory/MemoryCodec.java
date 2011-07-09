@@ -219,13 +219,14 @@ public class MemoryCodec extends Codec {
     }
 
     @Override
-    public void finish(long sumTotalTermFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
       if (termCount > 0) {
         out.writeVInt(termCount);
         out.writeVInt(field.number);
         if (!field.omitTermFreqAndPositions) {
           out.writeVLong(sumTotalTermFreq);
         }
+        out.writeVLong(sumDocFreq);
         builder.finish().save(out);
         if (VERBOSE) System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
       }
@@ -683,6 +684,7 @@ public class MemoryCodec extends Codec {
   private final static class TermsReader extends Terms {
 
     private final long sumTotalTermFreq;
+    private final long sumDocFreq;
     private FST<BytesRef> fst;
     private final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
     private final FieldInfo field;
@@ -695,6 +697,7 @@ public class MemoryCodec extends Codec {
       } else {
         sumTotalTermFreq = 0;
       }
+      sumDocFreq = in.readVLong();
       
       fst = new FST<BytesRef>(in, outputs);
     }
@@ -702,6 +705,11 @@ public class MemoryCodec extends Codec {
     @Override
     public long getSumTotalTermFreq() {
       return sumTotalTermFreq;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return sumDocFreq;
     }
 
     @Override

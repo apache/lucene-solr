@@ -32,14 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -82,66 +75,11 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     return new IndexSearcher(dir, true);
   }
 
-  protected ScoreDoc[] queryParsingTest(Analyzer analyzer, String qs) throws Exception {
-    searcher = setUpSearcher(analyzer);
-
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "content", analyzer);
-
-    Query q = qp.parse(qs);
-
-    return searcher.search(q, null, 1000).scoreDocs;
-  }
-
   protected void compareRanks(ScoreDoc[] hits, int[] ranks) throws Exception {
     assertEquals(ranks.length, hits.length);
     for (int i = 0; i < ranks.length; i++) {
       assertEquals(ranks[i], hits[i].doc);
     }
-  }
-
-  /*
-   * Will not work on an index without unigrams, since QueryParser automatically
-   * tokenizes on whitespace.
-   */
-  public void testShingleAnalyzerWrapperQueryParsing() throws Exception {
-    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2),
-                                 "test sentence");
-    int[] ranks = new int[] { 1, 2, 0 };
-    compareRanks(hits, ranks);
-  }
-
-  /*
-   * This one fails with an exception.
-   */
-  public void testShingleAnalyzerWrapperPhraseQueryParsingFails() throws Exception {
-    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2),
-                                 "\"this sentence\"");
-    int[] ranks = new int[] { 0 };
-    compareRanks(hits, ranks);
-  }
-
-  /*
-   * This one works, actually.
-   */
-  public void testShingleAnalyzerWrapperPhraseQueryParsing() throws Exception {
-    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2),
-                                 "\"test sentence\"");
-    int[] ranks = new int[] { 1 };
-    compareRanks(hits, ranks);
-  }
-
-  /*
-   * Same as above, is tokenized without using the analyzer.
-   */
-  public void testShingleAnalyzerWrapperRequiredQueryParsing() throws Exception {
-    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), 2),
-                                 "+test +sentence");
-    int[] ranks = new int[] { 1, 2 };
-    compareRanks(hits, ranks);
   }
 
   /*
@@ -153,8 +91,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     PhraseQuery q = new PhraseQuery();
 
-    TokenStream ts = analyzer.tokenStream("content",
-                                          new StringReader("this sentence"));
+    TokenStream ts = analyzer.tokenStream("content", new StringReader("this sentence"));
     int j = -1;
     
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
@@ -183,8 +120,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     BooleanQuery q = new BooleanQuery();
 
-    TokenStream ts = analyzer.tokenStream("content",
-                                          new StringReader("test sentence"));
+    TokenStream ts = analyzer.tokenStream("content", new StringReader("test sentence"));
     
     CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     

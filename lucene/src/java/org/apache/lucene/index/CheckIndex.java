@@ -691,7 +691,7 @@ public class CheckIndex {
         Comparator<BytesRef> termComp = terms.getComparator();
 
         long sumTotalTermFreq = 0;
-
+        long sumDocFreq = 0;
         while(true) {
 
           final BytesRef term = terms.next();
@@ -712,6 +712,7 @@ public class CheckIndex {
 
           final int docFreq = terms.docFreq();
           status.totFreq += docFreq;
+          sumDocFreq += docFreq;
 
           docs = terms.docs(liveDocs, docs);
           postings = terms.docsAndPositions(liveDocs, postings);
@@ -877,6 +878,13 @@ public class CheckIndex {
           final long v = fields.terms(field).getSumTotalTermFreq();
           if (v != -1 && sumTotalTermFreq != v) {
             throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+          }
+        }
+        
+        if (sumDocFreq != 0) {
+          final long v = fields.terms(field).getSumDocFreq();
+          if (v != -1 && sumDocFreq != v) {
+            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
           }
         }
 

@@ -292,6 +292,7 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addFacetQuery(String f) {
     this.add(FacetParams.FACET_QUERY, f);
+    this.set(FacetParams.FACET, true);
     return this;
   }
 

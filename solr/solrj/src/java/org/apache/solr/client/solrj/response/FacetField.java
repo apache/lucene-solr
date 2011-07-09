@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -145,7 +146,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    }
 
    public List<Count> getValues() {
-     return _values;
+     return _values == null ? Collections.<Count>emptyList() : _values;
    }
    
    public int getValueCount()

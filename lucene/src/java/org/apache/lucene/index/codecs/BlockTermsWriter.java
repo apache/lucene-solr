@@ -132,6 +132,7 @@ public class BlockTermsWriter extends FieldsConsumer {
           if (!field.fieldInfo.omitTermFreqAndPositions) {
             out.writeVLong(field.sumTotalTermFreq);
           }
+          out.writeVLong(field.sumDocFreq);
         }
       }
       writeTrailer(dirStart);
@@ -157,6 +158,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
     long sumTotalTermFreq;
+    long sumDocFreq;
 
     private TermEntry[] pendingTerms;
 
@@ -231,7 +233,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
     // Finishes all terms in this field
     @Override
-    public void finish(long sumTotalTermFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
       if (pendingCount > 0) {
         flushBlock();
       }
@@ -239,6 +241,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       out.writeVInt(0);
 
       this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
       fieldIndexWriter.finish(out.getFilePointer());
     }
 

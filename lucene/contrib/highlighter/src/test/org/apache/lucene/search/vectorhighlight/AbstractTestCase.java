@@ -19,7 +19,10 @@ package org.apache.lucene.search.vectorhighlight;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -28,6 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -44,6 +48,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
@@ -56,9 +61,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   protected Analyzer analyzerB;
   protected Analyzer analyzerK;
   protected IndexReader reader;  
-  protected QueryParser paW;
-  protected QueryParser paB;
-  
+
   protected static final String[] shortMVValues = {
     "",
     "",
@@ -90,8 +93,6 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     analyzerW = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
     analyzerK = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
-    paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
-    paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
     dir = newDirectory();
   }
   
@@ -170,6 +171,33 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     for( Query query : expected ){
       assertTrue( actual.contains( query ) );
     }
+  }
+
+  protected List<BytesRef> analyze(String text, String field, Analyzer analyzer) throws IOException {
+    List<BytesRef> bytesRefs = new ArrayList<BytesRef>();
+
+    TokenStream tokenStream = analyzer.reusableTokenStream(field, new StringReader(text));
+    TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+
+    BytesRef bytesRef = termAttribute.getBytesRef();
+
+    while (tokenStream.incrementToken()) {
+      termAttribute.fillBytesRef();
+      bytesRefs.add(new BytesRef(bytesRef));
+    }
+
+    tokenStream.end();
+    tokenStream.close();
+
+    return bytesRefs;
+  }
+
+  protected PhraseQuery toPhraseQuery(List<BytesRef> bytesRefs, String field) {
+    PhraseQuery phraseQuery = new PhraseQuery();
+    for (BytesRef bytesRef : bytesRefs) {
+      phraseQuery.add(new Term(field, bytesRef));
+    }
+    return phraseQuery;
   }
 
   static final class BigramAnalyzer extends Analyzer {

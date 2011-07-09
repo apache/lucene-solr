@@ -26,13 +26,17 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
   public void test1TermIndex() throws Exception {
-    FieldFragList ffl = ffl( "a", "a" );
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     assertEquals( "<b>a</b> ", sfb.createFragment( reader, 0, F, ffl ) );
 
@@ -42,7 +46,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   public void test2Frags() throws Exception {
-    FieldFragList ffl = ffl( "a", "a b b b b b b b b b b b a b a b" );
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b a b a b" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
     // 3 snippets requested, but should be 2
@@ -52,7 +56,11 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   public void test3Frags() throws Exception {
-    FieldFragList ffl = ffl( "a c", "a b b b b b b b b b b b a b a b b b b b c a a b b" );
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(F, "a")), BooleanClause.Occur.SHOULD);
+    booleanQuery.add(new TermQuery(new Term(F, "c")), BooleanClause.Occur.SHOULD);
+    
+    FieldFragList ffl = ffl(booleanQuery, "a b b b b b b b b b b b a b a b b b b b c a a b b" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
     assertEquals( 3, f.length );
@@ -62,7 +70,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   public void testTagsAndEncoder() throws Exception {
-    FieldFragList ffl = ffl( "a", "<h1> a </h1>" );
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "<h1> a </h1>" );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     String[] preTags = { "[" };
     String[] postTags = { "]" };
@@ -70,9 +78,8 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
         sfb.createFragment( reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder() ) );
   }
 
-  private FieldFragList ffl( String queryValue, String indexValue ) throws Exception {
+  private FieldFragList ffl(Query query, String indexValue ) throws Exception {
     make1d1fIndex( indexValue );
-    Query query = paW.parse( queryValue );
     FieldQuery fq = new FieldQuery( query, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     FieldPhraseList fpl = new FieldPhraseList( stack, fq );

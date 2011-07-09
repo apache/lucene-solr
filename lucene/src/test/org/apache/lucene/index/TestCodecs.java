@@ -101,10 +101,12 @@ public class TestCodecs extends LuceneTestCase {
       Arrays.sort(terms);
       final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
       long sumTotalTermCount = 0;
+      long sumDF = 0;
       for (final TermData term : terms) {
+        sumDF += term.docs.length;
         sumTotalTermCount += term.write(termsConsumer);
       }
-      termsConsumer.finish(sumTotalTermCount);
+      termsConsumer.finish(sumTotalTermCount, sumDF);
     }
   }
 
