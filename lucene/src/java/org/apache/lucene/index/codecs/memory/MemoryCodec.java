@@ -372,7 +372,6 @@ public class MemoryCodec extends Codec {
   }
 
   private final static class FSTDocsAndPositionsEnum extends DocsAndPositionsEnum {
-    private final boolean omitTFAP;
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
@@ -389,13 +388,12 @@ public class MemoryCodec extends Codec {
     private int pos;
     private final BytesRef payload = new BytesRef();
 
-    public FSTDocsAndPositionsEnum(boolean omitTFAP, boolean storePayloads) {
-      this.omitTFAP = omitTFAP;
+    public FSTDocsAndPositionsEnum(boolean storePayloads) {
       this.storePayloads = storePayloads;
     }
 
-    public boolean canReuse(boolean omitTFAP, boolean storePayloads) {
-      return omitTFAP == this.omitTFAP && storePayloads == this.storePayloads;
+    public boolean canReuse(boolean storePayloads) {
+      return storePayloads == this.storePayloads;
     }
     
     public FSTDocsAndPositionsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
@@ -434,18 +432,14 @@ public class MemoryCodec extends Codec {
           return docID = NO_MORE_DOCS;
         }
         docUpto++;
-        if (omitTFAP) {
-          docID += in.readVInt();
+
+        final int code = in.readVInt();
+        docID += code >>> 1;
+        if ((code & 1) != 0) {
           freq = 1;
         } else {
-          final int code = in.readVInt();
-          docID += code >>> 1;
-          if ((code & 1) != 0) {
-            freq = 1;
-          } else {
-            freq = in.readVInt();
-            assert freq > 0;
-          }
+          freq = in.readVInt();
+          assert freq > 0;
         }
 
         if (liveDocs == null || liveDocs.get(docID)) {
@@ -460,8 +454,8 @@ public class MemoryCodec extends Codec {
           if (!storePayloads) {
             in.readVInt();
           } else {
-            final int code = in.readVInt();
-            if ((code & 1) != 0) {
+            final int codeSkip = in.readVInt();
+            if ((codeSkip & 1) != 0) {
               payloadLength = in.readVInt();
               if (VERBOSE) System.out.println("    new payloadLen=" + payloadLength);
             }
@@ -622,11 +616,11 @@ public class MemoryCodec extends Codec {
       decodeMetaData();
       FSTDocsAndPositionsEnum docsAndPositionsEnum;
       if (reuse == null || !(reuse instanceof FSTDocsAndPositionsEnum)) {
-        docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.omitTermFreqAndPositions, field.storePayloads);
+        docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.storePayloads);
       } else {
         docsAndPositionsEnum = (FSTDocsAndPositionsEnum) reuse;        
-        if (!docsAndPositionsEnum.canReuse(field.omitTermFreqAndPositions, field.storePayloads)) {
-          docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.omitTermFreqAndPositions, field.storePayloads);
+        if (!docsAndPositionsEnum.canReuse(field.storePayloads)) {
+          docsAndPositionsEnum = new FSTDocsAndPositionsEnum(field.storePayloads);
         }
       }
       if (VERBOSE) System.out.println("D&P reset this=" + this);
