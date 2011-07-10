@@ -179,7 +179,7 @@
   <target name="clover.setup" if="clover.enabled">
     <taskdef resource="cloverlib.xml"/>
     <mkdir dir="${clover.db.dir}"/>
-    <clover-setup initString="${clover.db.dir}/solr_coverage.db">
+    <clover-setup initString="${clover.db.dir}/lucene_coverage.db">
       <fileset dir="core/src/java"/>
       <fileset dir="solrj/src/java"/>
       <fileset dir="contrib/analysis-extras/src/java"/>
