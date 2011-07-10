@@ -213,7 +213,6 @@ public class MemoryCodec extends Codec {
           System.out.println("      " + Integer.toHexString(finalBuffer[i]&0xFF));
         }
       }
-      
       builder.add(text, new BytesRef(spare));
       termCount++;
     }
