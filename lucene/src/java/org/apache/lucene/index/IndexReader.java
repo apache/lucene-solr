@@ -144,41 +144,31 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * Constants describing field properties, for example used for
    * {@link IndexReader#getFieldNames(FieldOption)}.
    */
-  public static final class FieldOption {
-    private String option;
-    private FieldOption() { }
-    private FieldOption(String option) {
-      this.option = option;
-    }
-    @Override
-    public String toString() {
-      return this.option;
-    }
+  public static enum FieldOption {
     /** All fields */
-    public static final FieldOption ALL = new FieldOption ("ALL");
+    ALL,
     /** All indexed fields */
-    public static final FieldOption INDEXED = new FieldOption ("INDEXED");
+    INDEXED,
     /** All fields that store payloads */
-    public static final FieldOption STORES_PAYLOADS = new FieldOption ("STORES_PAYLOADS");
+    STORES_PAYLOADS,
     /** All fields that omit tf */
-    public static final FieldOption OMIT_TERM_FREQ_AND_POSITIONS = new FieldOption ("OMIT_TERM_FREQ_AND_POSITIONS");
+    OMIT_TERM_FREQ_AND_POSITIONS,
     /** All fields which are not indexed */
-    public static final FieldOption UNINDEXED = new FieldOption ("UNINDEXED");
+    UNINDEXED,
     /** All fields which are indexed with termvectors enabled */
-    public static final FieldOption INDEXED_WITH_TERMVECTOR = new FieldOption ("INDEXED_WITH_TERMVECTOR");
+    INDEXED_WITH_TERMVECTOR,
     /** All fields which are indexed but don't have termvectors enabled */
-    public static final FieldOption INDEXED_NO_TERMVECTOR = new FieldOption ("INDEXED_NO_TERMVECTOR");
+    INDEXED_NO_TERMVECTOR,
     /** All fields with termvectors enabled. Please note that only standard termvector fields are returned */
-    public static final FieldOption TERMVECTOR = new FieldOption ("TERMVECTOR");
+    TERMVECTOR,
     /** All fields with termvectors with position values enabled */
-    public static final FieldOption TERMVECTOR_WITH_POSITION = new FieldOption ("TERMVECTOR_WITH_POSITION");
+    TERMVECTOR_WITH_POSITION,
     /** All fields with termvectors with offset values enabled */
-    public static final FieldOption TERMVECTOR_WITH_OFFSET = new FieldOption ("TERMVECTOR_WITH_OFFSET");
+    TERMVECTOR_WITH_OFFSET,
     /** All fields with termvectors with offset values and position values enabled */
-    public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
+    TERMVECTOR_WITH_POSITION_OFFSET,
     /** All fields holding doc values */
-    public static final FieldOption DOC_VALUES = new FieldOption ("DOC_VALUES");
-
+    DOC_VALUES
   }
 
   private boolean closed;
