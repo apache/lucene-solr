@@ -100,7 +100,7 @@ final class CompoundFileWriter implements Closeable{
    * @throws NullPointerException
    *           if <code>dir</code> or <code>name</code> is null
    */
-  CompoundFileWriter(Directory dir, String name) {
+  CompoundFileWriter(Directory dir, String name) throws IOException {
     if (dir == null)
       throw new NullPointerException("directory cannot be null");
     if (name == null)
@@ -110,6 +110,16 @@ final class CompoundFileWriter implements Closeable{
         IndexFileNames.stripExtension(name), "",
         IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
     dataFileName = name;
+    boolean success = false;
+    try {
+      dataOut = directory.createOutput(dataFileName, IOContext.DEFAULT);
+      dataOut.writeVInt(FORMAT_CURRENT);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeSafely(true, dataOut);
+      }
+    }
   }
 
   /** Returns the directory of the compound file. */
@@ -136,7 +146,6 @@ final class CompoundFileWriter implements Closeable{
     IOException priorException = null;
     IndexOutput entryTableOut = null;
     try {
-      initDataOut(IOContext.DEFAULT);
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
       }
@@ -215,6 +224,7 @@ final class CompoundFileWriter implements Closeable{
   IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     boolean success = false;
+    boolean outputLocked = false;
     try {
       assert name != null : "name must not be null";
       if (entries.containsKey(name)) {
@@ -225,9 +235,9 @@ final class CompoundFileWriter implements Closeable{
       entries.put(name, entry);
       final DirectCFSIndexOutput out;
       if (outputTaken.compareAndSet(false, true)) {
-        initDataOut(context);
-        success = true;
         out = new DirectCFSIndexOutput(dataOut, entry, false);
+        outputLocked = true;
+        success = true;
       } else {
         entry.dir = this.directory;
         if (directory.fileExists(name)) {
@@ -241,27 +251,16 @@ final class CompoundFileWriter implements Closeable{
     } finally {
       if (!success) {
         entries.remove(name);
+        if (outputLocked) { // release the output lock if not successful
+          assert outputTaken.get();
+          releaseOutputLock();
+        }
       }
     }
   }
 
   final void releaseOutputLock() {
     outputTaken.compareAndSet(true, false);
-  }
-
-  private synchronized final void initDataOut(IOContext context) throws IOException {
-    if (dataOut == null) {
-      boolean success = false;
-      try {
-        dataOut = directory.createOutput(dataFileName, context);
-        dataOut.writeVInt(FORMAT_CURRENT);
-        success = true;
-      } finally {
-        if (!success) {
-          IOUtils.closeSafely(true, dataOut);
-        }
-      }
-    }
   }
 
   private final void prunePendingEntries() throws IOException {
