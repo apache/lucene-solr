@@ -285,6 +285,7 @@ Other Changes
     module-specific targets.  solr/build.xml delegates all build
     tasks (via <ant dir="internal-module-dir"> calls) to these
     modules' build.xml files.
+  (Steve Rowe, Robert Muir)
 
 Documentation
 ----------------------
