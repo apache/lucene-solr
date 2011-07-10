@@ -48,6 +48,16 @@
   <property name="tests.threadspercpu" value="2"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
+  <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
+  <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
+  <available property="clover.present" classname="com.cenqua.clover.tasks.CloverReportTask"/>
+  <condition property="clover.enabled">
+    <and>
+      <isset property="run.clover"/>
+      <isset property="clover.present"/>
+    </and>
+  </condition>
+
   <path id="additional.dependencies">
   	<fileset dir="${common-solr.dir}/lib" includes="**/*.jar"/>
   	<fileset dir="${common-solr.dir}/example/lib" includes="**/*.jar"/>
