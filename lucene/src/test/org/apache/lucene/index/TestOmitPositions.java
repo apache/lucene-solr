@@ -212,7 +212,15 @@ public class TestOmitPositions extends LuceneTestCase {
     writer.commit();
 
     assertNoPrx(ram);
-        
+    
+    // now add some documents with positions, and check there is no prox after optimization
+    d = new Document();
+    f1 = newField("f1", "This field has positions", Field.Store.NO, Field.Index.ANALYZED);
+    d.add(f1);
+    
+    for(int i=0;i<30;i++)
+      writer.addDocument(d);
+
     // force merge
     writer.optimize();
     // flush

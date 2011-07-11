@@ -216,7 +216,7 @@ public class TestOmitTf extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
         
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has no term freqs", Field.Store.NO, Field.Index.ANALYZED);
     f1.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f1);
 
@@ -226,7 +226,15 @@ public class TestOmitTf extends LuceneTestCase {
     writer.commit();
 
     assertNoPrx(ram);
-        
+    
+    // now add some documents with positions, and check there is no prox after optimization
+    d = new Document();
+    f1 = newField("f1", "This field has positions", Field.Store.NO, Field.Index.ANALYZED);
+    d.add(f1);
+    
+    for(int i=0;i<30;i++)
+      writer.addDocument(d);
+ 
     // force merge
     writer.optimize();
     // flush
