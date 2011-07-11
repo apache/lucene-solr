@@ -35,7 +35,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * This query requires that you index
@@ -45,7 +45,7 @@ import org.apache.lucene.util.OpenBitSet;
  * child documents must appear first, ending with the parent
  * document.  At search time you provide a Filter
  * identifying the parents, however this Filter must provide
- * an {@link OpenBitSet} per sub-reader.
+ * an {@link FixedBitSet} per sub-reader.
  *
  * <p>Once the block index is built, use this query to wrap
  * any sub-query matching only child docs and join matches in that
@@ -165,11 +165,11 @@ public class BlockJoinQuery extends Query {
         // No matches
         return null;
       }
-      if (!(parents instanceof OpenBitSet)) {
-        throw new IllegalStateException("parentFilter must return OpenBitSet; got " + parents);
+      if (!(parents instanceof FixedBitSet)) {
+        throw new IllegalStateException("parentFilter must return FixedBitSet; got " + parents);
       }
 
-      return new BlockJoinScorer(this, childScorer, (OpenBitSet) parents, firstChildDoc, scoreMode);
+      return new BlockJoinScorer(this, childScorer, (FixedBitSet) parents, firstChildDoc, scoreMode);
     }
 
     @Override
@@ -187,7 +187,7 @@ public class BlockJoinQuery extends Query {
 
   static class BlockJoinScorer extends Scorer {
     private final Scorer childScorer;
-    private final OpenBitSet parentBits;
+    private final FixedBitSet parentBits;
     private final ScoreMode scoreMode;
     private int parentDoc;
     private float parentScore;
@@ -197,7 +197,7 @@ public class BlockJoinQuery extends Query {
     private float[] pendingChildScores;
     private int childDocUpto;
 
-    public BlockJoinScorer(Weight weight, Scorer childScorer, OpenBitSet parentBits, int firstChildDoc, ScoreMode scoreMode) {
+    public BlockJoinScorer(Weight weight, Scorer childScorer, FixedBitSet parentBits, int firstChildDoc, ScoreMode scoreMode) {
       super(weight);
       //System.out.println("Q.init firstChildDoc=" + firstChildDoc);
       this.parentBits = parentBits;

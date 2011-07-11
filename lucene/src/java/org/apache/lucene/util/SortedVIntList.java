@@ -85,6 +85,7 @@ public class SortedVIntList extends DocIdSet {
    * Create a SortedVIntList from an OpenBitSet.
    * @param  bits  A bit set representing a set of integers.
    */
+  /*
   public SortedVIntList(OpenBitSet bits) {
     SortedVIntListBuilder builder = new SortedVIntListBuilder();
     int nextInt = bits.nextSetBit(0);
@@ -94,6 +95,7 @@ public class SortedVIntList extends DocIdSet {
     }
     builder.done();
   }
+  */
 
   /**
    * Create a SortedVIntList.

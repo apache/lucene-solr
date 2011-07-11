@@ -31,7 +31,7 @@ import org.apache.lucene.search.FieldCache.*;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 import static org.hamcrest.CoreMatchers.*;
 
@@ -220,7 +220,7 @@ public class TestEntryCreators extends LuceneTestCase {
     }
     assertEquals( "Cached numTerms does not match : "+tester, distinctTerms.size(), cachedVals.numTerms );
     assertEquals( "Cached numDocs does not match : "+tester, numDocs, cachedVals.numDocs );
-    assertEquals( "Ordinal should match numDocs : "+tester, numDocs, ((OpenBitSet)cachedVals.valid).cardinality() );
+    assertEquals( "Ordinal should match numDocs : "+tester, numDocs, ((FixedBitSet)cachedVals.valid).cardinality() );
   }
 
 }

@@ -27,7 +27,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
@@ -67,7 +67,7 @@ public class CartesianShapeFilter extends Filter {
         }
       };
     } else {
-      final OpenBitSet bits = new OpenBitSet(context.reader.maxDoc());
+      final FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
       for (int i =0; i< sz; i++) {
         double boxId = area.get(i).doubleValue();
         NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
@@ -77,7 +77,7 @@ public class CartesianShapeFilter extends Filter {
         // which have this boxId
         int doc;
         while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          bits.fastSet(doc);
+          bits.set(doc);
         }
       }
       return bits;

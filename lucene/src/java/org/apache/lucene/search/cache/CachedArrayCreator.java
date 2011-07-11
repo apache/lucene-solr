@@ -29,7 +29,7 @@ import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCreatorWithOptions<T>
 {
@@ -101,7 +101,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   /**
    * Utility function to help check what bits are valid
    */
-  protected Bits checkMatchAllBits( OpenBitSet valid, int numDocs, int maxDocs )
+  protected Bits checkMatchAllBits( FixedBitSet valid, int numDocs, int maxDocs )
   {
     if( numDocs != maxDocs ) {
       if( hasOption( OPTION_CACHE_BITS ) ) {
@@ -124,7 +124,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     Terms terms = MultiFields.getTerms(reader, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
-      OpenBitSet validBits = new OpenBitSet( reader.maxDoc() );
+      FixedBitSet validBits = new FixedBitSet( reader.maxDoc() );
       DocsEnum docs = null;
       while(true) {
         final BytesRef term = termsEnum.next();

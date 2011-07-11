@@ -30,7 +30,7 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util._TestUtil;
 
 public class TestLongPostings extends LuceneTestCase {
@@ -91,7 +91,7 @@ public class TestLongPostings extends LuceneTestCase {
       */
     }
 
-    final OpenBitSet isS1 = new OpenBitSet(NUM_DOCS);
+    final FixedBitSet isS1 = new FixedBitSet(NUM_DOCS);
     for(int idx=0;idx<NUM_DOCS;idx++) {
       if (random.nextBoolean()) {
         isS1.set(idx);

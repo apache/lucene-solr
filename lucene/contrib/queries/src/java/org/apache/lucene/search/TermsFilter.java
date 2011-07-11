@@ -29,7 +29,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
@@ -60,7 +60,7 @@ public class TermsFilter extends Filter
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
     IndexReader reader = context.reader;
-    OpenBitSet result=new OpenBitSet(reader.maxDoc());
+    FixedBitSet result=new FixedBitSet(reader.maxDoc());
     Fields fields = reader.fields();
     BytesRef br = new BytesRef();
     Bits liveDocs = reader.getLiveDocs();

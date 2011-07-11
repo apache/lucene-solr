@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -178,7 +178,7 @@ public class MultiPassIndexSplitter {
    * list of deletions.
    */
   public static final class FakeDeleteIndexReader extends FilterIndexReader {
-    OpenBitSet liveDocs;
+    FixedBitSet liveDocs;
 
     public FakeDeleteIndexReader(IndexReader in) {
       super(new SlowMultiReaderWrapper(in));
@@ -197,13 +197,13 @@ public class MultiPassIndexSplitter {
     @Override
     protected void doUndeleteAll()  {
       final int maxDoc = in.maxDoc();
-      liveDocs = new OpenBitSet(maxDoc);
+      liveDocs = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
         final Bits oldLiveDocs = in.getLiveDocs();
         assert oldLiveDocs != null;
         // this loop is a little bit ineffective, as Bits has no nextSetBit():
         for (int i = 0; i < maxDoc; i++) {
-          if (oldLiveDocs.get(i)) liveDocs.fastSet(i);
+          if (oldLiveDocs.get(i)) liveDocs.set(i);
         }
       } else {
         // mark all docs as valid

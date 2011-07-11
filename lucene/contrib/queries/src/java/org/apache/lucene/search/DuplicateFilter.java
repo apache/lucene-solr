@@ -24,7 +24,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 
 public class DuplicateFilter extends Filter
@@ -84,8 +84,8 @@ public class DuplicateFilter extends Filter
 		}
 	}
 	
-  private OpenBitSet correctBits(IndexReader reader) throws IOException {
-    OpenBitSet bits = new OpenBitSet(reader.maxDoc()); //assume all are INvalid
+  private FixedBitSet correctBits(IndexReader reader) throws IOException {
+    FixedBitSet bits = new FixedBitSet(reader.maxDoc()); //assume all are INvalid
     final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);
     if (terms != null) {
@@ -119,10 +119,10 @@ public class DuplicateFilter extends Filter
     return bits;
   }
 	
-  private OpenBitSet fastBits(IndexReader reader) throws IOException
+  private FixedBitSet fastBits(IndexReader reader) throws IOException
   {
 		
-    OpenBitSet bits=new OpenBitSet(reader.maxDoc());
+    FixedBitSet bits=new FixedBitSet(reader.maxDoc());
     bits.set(0,reader.maxDoc()); //assume all are valid
     final Bits liveDocs = MultiFields.getLiveDocs(reader);
     Terms terms = reader.fields().terms(fieldName);

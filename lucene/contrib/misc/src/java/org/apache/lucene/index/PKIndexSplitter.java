@@ -27,8 +27,8 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.Version;
 
 /**
@@ -94,12 +94,12 @@ public class PKIndexSplitter {
       super(new SlowMultiReaderWrapper(reader));
       
       final int maxDoc = in.maxDoc();
-      final OpenBitSetDISI bits = new OpenBitSetDISI(maxDoc);
+      final FixedBitSet bits = new FixedBitSet(maxDoc);
       final DocIdSet docs = preserveFilter.getDocIdSet((AtomicReaderContext) in.getTopReaderContext());
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {
-          bits.inPlaceOr(it);
+          bits.or(it);
         }
       }
       if (negateFilter) {
@@ -113,7 +113,7 @@ public class PKIndexSplitter {
         for (int i = it.nextDoc(); i < maxDoc; i = it.nextDoc()) {
           if (!oldLiveDocs.get(i)) {
             // we can safely modify the current bit, as the iterator already stepped over it:
-            bits.fastClear(i);
+            bits.clear(i);
           }
         }
       }
