@@ -12,7 +12,6 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries-contrib.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser-contrib.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/wordnet/wordnet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/icu/icu.iml" />
