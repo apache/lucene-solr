@@ -168,7 +168,7 @@ abstract class FSTEnum<T> {
         if (found) {
           // Match
           arc.arcIdx = mid-1;
-          fst.readNextRealArc(arc);
+          fst.readNextRealArc(arc, in);
           assert arc.arcIdx == mid;
           assert arc.label == targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel + " mid=" + mid;
           output[upto] = fst.outputs.add(output[upto-1], arc.output);
@@ -183,7 +183,7 @@ abstract class FSTEnum<T> {
         } else if (low == arc.numArcs) {
           // Dead end
           arc.arcIdx = arc.numArcs-2;
-          fst.readNextRealArc(arc);
+          fst.readNextRealArc(arc, in);
           assert arc.isLast();
           // Dead end (target is after the last arc);
           // rollback to last fork then push
@@ -203,7 +203,7 @@ abstract class FSTEnum<T> {
           }
         } else {
           arc.arcIdx = (low > high ? low : high)-1;
-          fst.readNextRealArc(arc);
+          fst.readNextRealArc(arc, in);
           assert arc.label > targetLabel;
           pushFirst();
           return;
@@ -307,7 +307,7 @@ abstract class FSTEnum<T> {
           // Match -- recurse
           //System.out.println("  match!  arcIdx=" + mid);
           arc.arcIdx = mid-1;
-          fst.readNextRealArc(arc);
+          fst.readNextRealArc(arc, in);
           assert arc.arcIdx == mid;
           assert arc.label == targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel + " mid=" + mid;
           output[upto] = fst.outputs.add(output[upto-1], arc.output);
@@ -350,7 +350,7 @@ abstract class FSTEnum<T> {
           // There is a floor arc:
           arc.arcIdx = (low > high ? high : low)-1;
           //System.out.println(" hasFloor arcIdx=" + (arc.arcIdx+1));
-          fst.readNextRealArc(arc);
+          fst.readNextRealArc(arc, in);
           assert arc.isLast() || fst.readNextArcLabel(arc) > targetLabel;
           assert arc.label < targetLabel;
           pushLast();

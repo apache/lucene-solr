@@ -48,6 +48,9 @@ New Features
 Optimizations
 ----------------------
 
+* LUCENE-3233: Improved memory usage, build time, and performance of 
+  SynonymFilterFactory.  (Mike McCandless, Robert Muir)
+
 Bug Fixes
 ----------------------
 

@@ -150,6 +150,61 @@ public final class UnicodeUtil {
   }
 
   /** Encode characters from a char[] source, starting at
+   *  offset for length chars.  Returns a hash of the resulting bytes.  After encoding, result.offset will always be 0. */
+  public static int UTF16toUTF8WithHash(final char[] source, final int offset, final int length, BytesRef result) {
+    int hash = 0;
+    int upto = 0;
+    int i = offset;
+    final int end = offset + length;
+    byte[] out = result.bytes;
+    // Pre-allocate for worst case 4-for-1
+    final int maxLen = length * 4;
+    if (out.length < maxLen)
+      out = result.bytes = new byte[ArrayUtil.oversize(maxLen, 1)];
+    result.offset = 0;
+
+    while(i < end) {
+      
+      final int code = (int) source[i++];
+
+      if (code < 0x80) {
+        hash = 31*hash + (out[upto++] = (byte) code);
+      } else if (code < 0x800) {
+        hash = 31*hash + (out[upto++] = (byte) (0xC0 | (code >> 6)));
+        hash = 31*hash + (out[upto++] = (byte)(0x80 | (code & 0x3F)));
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        hash = 31*hash + (out[upto++] = (byte)(0xE0 | (code >> 12)));
+        hash = 31*hash + (out[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F)));
+        hash = 31*hash + (out[upto++] = (byte)(0x80 | (code & 0x3F)));
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && i < end) {
+          int utf32 = (int) source[i];
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
+            utf32 = (code << 10) + utf32 + SURROGATE_OFFSET;
+            i++;
+            hash = 31*hash + (out[upto++] = (byte)(0xF0 | (utf32 >> 18)));
+            hash = 31*hash + (out[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F)));
+            hash = 31*hash + (out[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F)));
+            hash = 31*hash + (out[upto++] = (byte)(0x80 | (utf32 & 0x3F)));
+            continue;
+          }
+        }
+        // replace unpaired surrogate or out-of-order low surrogate
+        // with substitution character
+        hash = 31*hash + (out[upto++] = (byte) 0xEF);
+        hash = 31*hash + (out[upto++] = (byte) 0xBF);
+        hash = 31*hash + (out[upto++] = (byte) 0xBD);
+      }
+    }
+    //assert matches(source, offset, length, out, upto);
+    result.length = upto;
+    return hash;
+  }
+
+  /** Encode characters from a char[] source, starting at
    *  offset and stopping when the character 0xffff is seen.
    *  Returns the number of bytes written to bytesOut. */
   public static void UTF16toUTF8(final char[] source, final int offset, UTF8Result result) {
@@ -639,5 +694,51 @@ public final class UnicodeUtil {
           }
       }
       return new String(chars, 0, w);
+  }
+  
+  /**
+   * Interprets the given byte array as UTF-8 and converts to UTF-16. The {@link CharsRef} will be extended if 
+   * it doesn't provide enough space to hold the worst case of each byte becoming a UTF-16 codepoint.
+   * <p>
+   * NOTE: Full characters are read, even if this reads past the length passed (and
+   * can result in an ArrayOutOfBoundsException if invalid UTF-8 is passed).
+   * Explicit checks for valid UTF-8 are not performed. 
+   */
+  public static void UTF8toUTF16(byte[] utf8, int offset, int length, CharsRef chars) {
+    int out_offset = chars.offset = 0;
+    final char[] out = chars.chars =  ArrayUtil.grow(chars.chars, length);
+    final int limit = offset + length;
+    while (offset < limit) {
+      int b = utf8[offset++]&0xff;
+      if (b < 0xc0) {
+        assert b < 0x80;
+        out[out_offset++] = (char)b;
+      } else if (b < 0xe0) {
+        out[out_offset++] = (char)(((b&0x1f)<<6) + (utf8[offset++]&0x3f));
+      } else if (b < 0xf0) {
+        out[out_offset++] = (char)(((b&0xf)<<12) + ((utf8[offset]&0x3f)<<6) + (utf8[offset+1]&0x3f));
+        offset += 2;
+      } else {
+        assert b < 0xf8;
+        int ch = ((b&0x7)<<18) + ((utf8[offset]&0x3f)<<12) + ((utf8[offset+1]&0x3f)<<6) + (utf8[offset+2]&0x3f);
+        offset += 3;
+        if (ch < UNI_MAX_BMP) {
+          out[out_offset++] = (char)ch;
+        } else {
+          int chHalf = ch - 0x0010000;
+          out[out_offset++] = (char) ((chHalf >> 10) + 0xD800);
+          out[out_offset++] = (char) ((chHalf & HALF_MASK) + 0xDC00);          
+        }
+      }
+    }
+    chars.length = out_offset - chars.offset;
+  }
+
+  /**
+   * Utility method for {@link #UTF8toUTF16(byte[], int, int, CharsRef)}
+   * @see #UTF8toUTF16(byte[], int, int, CharsRef)
+   */
+  public static void UTF8toUTF16(BytesRef bytesRef, CharsRef chars) {
+    UTF8toUTF16(bytesRef.bytes, bytesRef.offset, bytesRef.length, chars);
   }
 }
