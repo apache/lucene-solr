@@ -271,7 +271,6 @@ public class TestSynonymMap extends LuceneTestCase {
     SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory();
     ff.init(args);
     ff.inform( new ResourceLoader() {
-      @Override
       public List<String> getLines(String resource) throws IOException {
         if( !"something.txt".equals(resource) ) {
           throw new RuntimeException( "should not get a differnt resource" );
@@ -281,12 +280,10 @@ public class TestSynonymMap extends LuceneTestCase {
         return rules;
       }
 
-      @Override
       public Object newInstance(String cname, String... subpackages) {
         throw new RuntimeException("stub");
       }
 
-      @Override
       public InputStream openResource(String resource) throws IOException {
         throw new RuntimeException("stub");
       }
