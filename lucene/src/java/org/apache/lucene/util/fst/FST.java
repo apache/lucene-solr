@@ -33,6 +33,9 @@ import org.apache.lucene.util.fst.Builder.UnCompiledNode;
  *  <p> The format is similar to what's used by Morfologik
  *  (http://sourceforge.net/projects/morfologik).
  *
+ *  <p><b>NOTE</b>: the FST cannot be larger than ~2.1 GB
+ *  because it uses int to address the byte[].
+ *
  * @lucene.experimental
  */
 public class FST<T> {
