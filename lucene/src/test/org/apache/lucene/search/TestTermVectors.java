@@ -52,25 +52,22 @@ public class TestTermVectors extends LuceneTestCase {
       FieldType ft = new FieldType(TextField.TYPE_STORED);
       int mod3 = i % 3;
       int mod2 = i % 2;
-      if (mod2 == 0 && mod3 == 0){
+      if (mod2 == 0 && mod3 == 0) {
         ft.setStoreTermVectors(true);
         ft.setStoreTermVectorOffsets(true);
         ft.setStoreTermVectorPositions(true);
-      }
-      else if (mod2 == 0){
+      } else if (mod2 == 0) {
         ft.setStoreTermVectors(true);
         ft.setStoreTermVectorPositions(true);
-      }
-      else if (mod3 == 0){
+      } else if (mod3 == 0) {
         ft.setStoreTermVectors(true);
         ft.setStoreTermVectorOffsets(true);
-      }
-      else {
+      } else {
         ft.setStoreTermVectors(true);
       }
-      doc.add(newField("field", English.intToEnglish(i), ft));
+      doc.add(new Field("field", ft, English.intToEnglish(i)));
       //test no term vectors too
-      doc.add(newField("noTV", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(new Field("noTV", TextField.TYPE_STORED, English.intToEnglish(i)));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -95,11 +92,10 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(100, hits.length);
       
-    for (int i = 0; i < hits.length; i++)
-    {
+    for (int i = 0; i < hits.length; i++) {
       TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
       assertTrue(vector != null);
-      assertTrue(vector.length == 1);
+      assertEquals("doc=" + hits[i].doc + " tv=" + vector, 1, vector.length);
     }
     TermFreqVector vector;
     vector = searcher.reader.getTermFreqVector(hits[0].doc, "noTV");

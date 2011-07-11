@@ -1079,15 +1079,37 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static org.apache.lucene.document2.Field newField(Random random, String name, String value, FieldType type) {
-    FieldType newType = new FieldType(type);
     if (usually(random)) {
       // most of the time, don't modify the params
-      return new org.apache.lucene.document2.Field(name, newType, value);
+      return new org.apache.lucene.document2.Field(name, type, value);
     }
 
+    FieldType newType = new FieldType(type);
     if (!newType.stored() && random.nextBoolean()) {
       newType.setStored(true); // randomly store it
     }
+
+    if (!newType.storeTermVectors()) {
+      newType.setStoreTermVectors(random.nextBoolean());
+    }
+
+    if (!newType.storeTermVectors()) {
+      if (!newType.storeTermVectorOffsets()) {
+        newType.setStoreTermVectorOffsets(random.nextBoolean());
+      }
+      if (!newType.storeTermVectorPositions()) {
+        newType.setStoreTermVectorPositions(random.nextBoolean());
+      }
+    }
+
+    // TODO: we need to do this, but smarter, ie, most of
+    // the time we set the same value for a given field but
+    // sometimes (rarely) we change it up:
+    /*
+    if (newType.omitNorms()) {
+      newType.setOmitNorms(random.nextBoolean());
+    }
+    */
     
     return new org.apache.lucene.document2.Field(name, newType, value);
   }
