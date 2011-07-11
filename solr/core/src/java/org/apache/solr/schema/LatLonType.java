@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
@@ -77,7 +78,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     if (field.stored()) {
       f[f.length - 1] = createField(field.getName(), externalVal,
               getFieldStore(field, externalVal), Field.Index.NO, Field.TermVector.NO,
-              false, false, boost);
+              false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, boost);
     }
     return f;
   }

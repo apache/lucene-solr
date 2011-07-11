@@ -417,6 +417,13 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
+  
+  <!-- omitPositions example -->
+  <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
  </types>
 
 
@@ -525,6 +532,8 @@
    <field name="sim1text" type="sim1" indexed="true" stored="true"/>
    <field name="sim2text" type="sim2" indexed="true" stored="true"/>
    <field name="sim3text" type="sim3" indexed="true" stored="true"/>
+   
+   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
    <field name="tlong" type="tlong" indexed="true" stored="true" />
 
