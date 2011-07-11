@@ -113,7 +113,7 @@ public class PKIndexSplitter {
       }
       
       this.readerDels = bits;
-      this.numDocs = in.maxDoc() - (int) bits.cardinality();
+      this.numDocs = in.maxDoc() - bits.cardinality();
     }
     
     @Override

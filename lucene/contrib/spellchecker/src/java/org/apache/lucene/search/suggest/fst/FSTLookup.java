@@ -447,7 +447,7 @@ public class FSTLookup extends Lookup {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Object empty = outputs.getNoOutput();
     final Builder<Object> builder = 
-      new Builder<Object>(FST.INPUT_TYPE.BYTE4, 0, 0, true, outputs);
+      new Builder<Object>(FST.INPUT_TYPE.BYTE4, outputs);
     final IntsRef scratchIntsRef = new IntsRef(10);
     for (Entry e : entries) {
       final int termLength = scratchIntsRef.length = e.term.length;

@@ -195,7 +195,7 @@ public class MultiPassIndexSplitter {
 
     @Override
     public int numDocs() {
-      return in.maxDoc() - (int)dels.cardinality();
+      return in.maxDoc() - dels.cardinality();
     }
 
     /**

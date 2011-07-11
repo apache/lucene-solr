@@ -25,8 +25,12 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.fst.Builder.UnCompiledNode;
 
+// TODO: if FST is pure prefix trie we can do a more compact
+// job, ie, once we are at a 'suffix only', just store the
+// completion labels as a string not as a series of arcs.
+
 // NOTE: while the FST is able to represent a non-final
-// dead-end state (NON_FINAL_END_NODE=0), the layres above
+// dead-end state (NON_FINAL_END_NODE=0), the layers above
 // (FSTEnum, Util) have problems with this!!
 
 /** Represents an FST using a compact byte[] format.

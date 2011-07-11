@@ -164,4 +164,8 @@ final class NodeHash<T> {
       }
     }
   }
+
+  public int count() {
+    return count;
+  }
 }
