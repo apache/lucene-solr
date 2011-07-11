@@ -182,7 +182,22 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             );
   }
 
+  @Test
+  public void testGroupingSimpleFormatArrayIndexOutOfBoundsException() throws Exception {
+    assertU(add(doc("id", "1")));
+    assertU(add(doc("id", "2")));
+    assertU(add(doc("id", "3")));
+    assertU(commit());
 
+    assertJQ(
+        req("q", "*:*", "start", "1", "group", "true", "group.field", "id", "group.main", "true"),
+        "/response=={'numFound':3,'start':1,'docs':[{'id':'2'},{'id':'3'}]}"
+    );
+    assertJQ(
+        req("q", "*:*", "start", "1", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
+        "/response=={'numFound':3,'start':1,'docs':[{'id':'2'}]}"
+    );
+  }
 
   static String f = "foo_i";
   static String f2 = "foo2_i";

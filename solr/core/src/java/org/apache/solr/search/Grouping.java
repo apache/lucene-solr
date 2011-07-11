@@ -585,7 +585,7 @@ public class Grouping {
         }
       }
 
-      int len = Math.min(numGroups, docsGathered);
+      int len = docsGathered - offset;
       if (offset > len) {
         len = 0;
       }
