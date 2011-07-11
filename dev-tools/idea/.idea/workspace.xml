@@ -183,13 +183,6 @@
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=3.3 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="wordnet contrib" type="JUnit" factoryName="JUnit">
-      <module name="wordnet" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/wordnet" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
     <configuration default="false" name="xml-query-parser contrib" type="JUnit" factoryName="JUnit">
       <module name="xml-query-parser" />
       <option name="TEST_OBJECT" value="package" />
@@ -197,7 +190,7 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="28">
+    <list size="27">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.benchmark contrib" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
@@ -224,8 +217,7 @@
       <item index="23" class="java.lang.String" itemvalue="JUnit.spellchecker contrib" />
       <item index="24" class="java.lang.String" itemvalue="JUnit.stempel analyzer contrib" />
       <item index="25" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="26" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="26" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>
