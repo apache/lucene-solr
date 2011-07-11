@@ -230,7 +230,6 @@
           <packageset dir="contrib/misc/src/java"/>
           <packageset dir="contrib/queries/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
-          <packageset dir="contrib/wordnet/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
           <packageset dir="contrib/queryparser/src/java"/>
           <!-- end alpha sort -->
@@ -250,7 +249,6 @@
           <group title="contrib: Queries" packages="org.apache.lucene.search.similar*:org.apache.lucene.search.regex*:org.apache.regexp*"/>
           <group title="contrib: Query Parser" packages="org.apache.lucene.queryParser.*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
-          <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
           
         </sources>

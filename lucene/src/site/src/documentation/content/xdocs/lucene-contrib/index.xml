@@ -106,11 +106,6 @@
                 <p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a></p>
             </section>                     
             
-            <section id="wordnet"><title>wordnet</title>
-                <p>Tools to help utilize wordnet synonyms with Lucene</p>
-                <p>See <a href="../api/contrib-wordnet/index.html">wordnet javadoc</a></p>
-            </section>  
-            
             <section id="xml-query-parser"><title>xml-query-parser</title>
                 <p>A QueryParser that can read queries written in an XML format.</p>
                 <p>See <a href="../api/contrib-wordnet/index.html">xml-query-parser javadoc</a></p>

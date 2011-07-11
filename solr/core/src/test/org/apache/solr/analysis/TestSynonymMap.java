@@ -25,32 +25,35 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.ResourceLoader;
 
 
+/**
+ * @deprecated Remove this test in Lucene 5.0
+ */
+@Deprecated
 public class TestSynonymMap extends LuceneTestCase {
 
   public void testInvalidMappingRules() throws Exception {
-    SynonymMap synMap = new SynonymMap( true );
+    SlowSynonymMap synMap = new SlowSynonymMap( true );
     List<String> rules = new ArrayList<String>( 1 );
     rules.add( "a=>b=>c" );
     try{
-        SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+        SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
         fail( "RuntimeException must be thrown." );
     }
     catch( RuntimeException expected ){}
   }
   
   public void testReadMappingRules() throws Exception {
-	SynonymMap synMap;
+	SlowSynonymMap synMap;
 
     // (a)->[b]
     List<String> rules = new ArrayList<String>();
     rules.add( "a=>b" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 1, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "b" );
 
@@ -58,8 +61,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (b)->[c]
     rules.clear();
     rules.add( "a,b=>c" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "c" );
     assertTokIncludes( synMap, "b", "c" );
@@ -67,8 +70,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (a)->[b][c]
     rules.clear();
     rules.add( "a=>b,c" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 1, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "b" );
     assertTokIncludes( synMap, "a", "c" );
@@ -78,8 +81,8 @@ public class TestSynonymMap extends LuceneTestCase {
     rules.clear();
     rules.add( "a=>a1" );
     rules.add( "a b=>a2" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 1, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a1" );
     assertEquals( 1, getSubSynonymMap( synMap, "a" ).submap.size() );
@@ -92,8 +95,8 @@ public class TestSynonymMap extends LuceneTestCase {
     rules.add( "a=>a1" );
     rules.add( "a b=>a2" );
     rules.add( "a c=>a3" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 1, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a1" );
     assertEquals( 2, getSubSynonymMap( synMap, "a" ).submap.size() );
@@ -109,8 +112,8 @@ public class TestSynonymMap extends LuceneTestCase {
     rules.add( "a b=>a2" );
     rules.add( "b=>b1" );
     rules.add( "b c=>b2" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a1" );
     assertEquals( 1, getSubSynonymMap( synMap, "a" ).submap.size() );
@@ -121,14 +124,14 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   public void testRead1waySynonymRules() throws Exception {
-    SynonymMap synMap;
+    SlowSynonymMap synMap;
 
     // (a)->[a]
     // (b)->[a]
     List<String> rules = new ArrayList<String>();
     rules.add( "a,b" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "b", "a" );
@@ -138,8 +141,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (c)->[a]
     rules.clear();
     rules.add( "a,b,c" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
     assertEquals( 3, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "b", "a" );
@@ -149,8 +152,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (b1)->(b2)->[a]
     rules.clear();
     rules.add( "a,b1 b2" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertEquals( 1, getSubSynonymMap( synMap, "b1" ).submap.size() );
@@ -160,8 +163,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (b)->[a1][a2]
     rules.clear();
     rules.add( "a1 a2,b" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
     assertEquals( 2, synMap.submap.size() );
     assertEquals( 1, getSubSynonymMap( synMap, "a1" ).submap.size() );
     assertTokIncludes( getSubSynonymMap( synMap, "a1" ), "a2", "a1" );
@@ -171,14 +174,14 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   public void testRead2waySynonymRules() throws Exception {
-    SynonymMap synMap;
+    SlowSynonymMap synMap;
 
     // (a)->[a][b]
     // (b)->[a][b]
     List<String> rules = new ArrayList<String>();
     rules.add( "a,b" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "a", "b" );
@@ -190,8 +193,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (c)->[a][b][c]
     rules.clear();
     rules.add( "a,b,c" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 3, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "a", "b" );
@@ -209,8 +212,8 @@ public class TestSynonymMap extends LuceneTestCase {
     //             [b1][b2]
     rules.clear();
     rules.add( "a,b1 b2" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "a", "b1" );
@@ -226,8 +229,8 @@ public class TestSynonymMap extends LuceneTestCase {
     //      [b]
     rules.clear();
     rules.add( "a1 a2,b" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
     assertEquals( 2, synMap.submap.size() );
     assertEquals( 1, getSubSynonymMap( synMap, "a1" ).submap.size() );
     assertTokIncludes( getSubSynonymMap( synMap, "a1" ), "a2", "a1" );
@@ -239,7 +242,7 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   public void testBigramTokenizer() throws Exception {
-	SynonymMap synMap;
+	SlowSynonymMap synMap;
 	
 	// prepare bi-gram tokenizer factory
 	BaseTokenizerFactory tf = new NGramTokenizerFactory();
@@ -251,8 +254,8 @@ public class TestSynonymMap extends LuceneTestCase {
     // (ab)->(bc)->(cd)->[ef][fg][gh]
     List<String> rules = new ArrayList<String>();
     rules.add( "abcd=>efgh" );
-    synMap = new SynonymMap( true );
-    SynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, tf);
+    synMap = new SlowSynonymMap( true );
+    SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, tf);
     assertEquals( 1, synMap.submap.size() );
     assertEquals( 1, getSubSynonymMap( synMap, "ab" ).submap.size() );
     assertEquals( 1, getSubSynonymMap( getSubSynonymMap( synMap, "ab" ), "bc" ).submap.size() );
@@ -265,7 +268,7 @@ public class TestSynonymMap extends LuceneTestCase {
   public void testLoadRules() throws Exception {
     Map<String, String> args = new HashMap<String, String>();
     args.put( "synonyms", "something.txt" );
-    SynonymFilterFactory ff = new SynonymFilterFactory();
+    SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory();
     ff.init(args);
     ff.inform( new ResourceLoader() {
       @Override
@@ -289,7 +292,7 @@ public class TestSynonymMap extends LuceneTestCase {
       }
     });
     
-    SynonymMap synMap = ff.getSynonymMap();
+    SlowSynonymMap synMap = ff.getSynonymMap();
     assertEquals( 2, synMap.submap.size() );
     assertTokIncludes( synMap, "a", "a" );
     assertTokIncludes( synMap, "a", "b" );
@@ -298,7 +301,7 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   
-  private void assertTokIncludes( SynonymMap map, String src, String exp ) throws Exception {
+  private void assertTokIncludes( SlowSynonymMap map, String src, String exp ) throws Exception {
     Token[] tokens = map.submap.get( src ).synonyms;
     boolean inc = false;
     for( Token token : tokens ){
@@ -308,7 +311,7 @@ public class TestSynonymMap extends LuceneTestCase {
     assertTrue( inc );
   }
   
-  private SynonymMap getSubSynonymMap( SynonymMap map, String src ){
+  private SlowSynonymMap getSubSynonymMap( SlowSynonymMap map, String src ){
     return map.submap.get( src );
   }
 }

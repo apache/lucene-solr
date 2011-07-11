@@ -71,7 +71,11 @@ public class FST<T> {
   // Increment version to change it
   private final static String FILE_FORMAT_NAME = "FST";
   private final static int VERSION_START = 0;
-  private final static int VERSION_CURRENT = VERSION_START;
+
+  /** Changed numBytesPerArc for array'd case from byte to int. */
+  private final static int VERSION_INT_NUM_BYTES_PER_ARC = 1;
+
+  private final static int VERSION_CURRENT = VERSION_INT_NUM_BYTES_PER_ARC;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -106,6 +110,8 @@ public class FST<T> {
 
   private boolean allowArrayArcs = true;
 
+  private Arc<T> cachedRootArcs[];
+
   public final static class Arc<T> {
     public int label;
     public T output;
@@ -113,7 +119,7 @@ public class FST<T> {
     int target;
 
     byte flags;
-    T nextFinalOutput;
+    public T nextFinalOutput;
     int nextArc;
 
     // This is non-zero if current arcs are fixed array:
@@ -176,7 +182,7 @@ public class FST<T> {
   public FST(DataInput in, Outputs<T> outputs) throws IOException {
     this.outputs = outputs;
     writer = null;
-    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_START, VERSION_START);
+    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_INT_NUM_BYTES_PER_ARC, VERSION_INT_NUM_BYTES_PER_ARC);
     if (in.readByte() == 1) {
       // accepts empty string
       int numBytes = in.readVInt();
@@ -209,6 +215,8 @@ public class FST<T> {
     bytes = new byte[in.readVInt()];
     in.readBytes(bytes, 0, bytes.length);
     NO_OUTPUT = outputs.getNoOutput();
+
+    cacheRootArcs();
   }
 
   public INPUT_TYPE getInputType() {
@@ -220,7 +228,7 @@ public class FST<T> {
     return bytes.length;
   }
 
-  void finish(int startNode) {
+  void finish(int startNode) throws IOException {
     if (startNode == FINAL_END_NODE && emptyOutput != null) {
       startNode = 0;
     }
@@ -231,6 +239,32 @@ public class FST<T> {
     System.arraycopy(bytes, 0, finalBytes, 0, writer.posWrite);
     bytes = finalBytes;
     this.startNode = startNode;
+
+    cacheRootArcs();
+  }
+
+  // Caches first 128 labels
+  @SuppressWarnings("unchecked")
+  private void cacheRootArcs() throws IOException {
+    cachedRootArcs = (FST.Arc<T>[]) new FST.Arc[0x80];
+    final FST.Arc<T> arc = new FST.Arc<T>();
+    getFirstArc(arc);
+    final BytesReader in = getBytesReader(0);
+    if (targetHasArcs(arc)) {
+      readFirstRealArc(arc.target, arc);
+      while(true) {
+        assert arc.label != END_LABEL;
+        if (arc.label < cachedRootArcs.length) {
+          cachedRootArcs[arc.label] = new Arc<T>().copyFrom(arc);
+        } else {
+          break;
+        }
+        if (arc.isLast()) {
+          break;
+        }
+        readNextRealArc(arc, in);
+      }
+    }
   }
 
   void setEmptyOutput(T v) throws IOException {
@@ -345,8 +379,9 @@ public class FST<T> {
       writer.writeByte((byte) BIT_ARCS_AS_FIXED_ARRAY);
       writer.writeVInt(node.numArcs);
       // placeholder -- we'll come back and write the number
-      // of bytes per arc here:
-      writer.writeByte((byte) 0);
+      // of bytes per arc (int) here:
+      // TODO: we could make this a vInt instead
+      writer.writeInt(0);
       fixedArrayStart = writer.posWrite;
       //System.out.println("  do fixed arcs array arcsStart=" + fixedArrayStart);
     } else {
@@ -421,15 +456,21 @@ public class FST<T> {
       }
     }
 
+    // TODO: if arc'd arrays will be "too wasteful" by some
+    // measure, eg if arcs have vastly different sized
+    // outputs, then we should selectively disable array for
+    // such cases
+
     if (doFixedArray) {
       assert maxBytesPerArc > 0;
       // 2nd pass just "expands" all arcs to take up a fixed
       // byte size
       final int sizeNeeded = fixedArrayStart + node.numArcs * maxBytesPerArc;
       bytes = ArrayUtil.grow(bytes, sizeNeeded);
-      if (maxBytesPerArc > 255) {
-        throw new IllegalStateException("max arc size is too large (" + maxBytesPerArc + "); disable array arcs by calling Builder.setAllowArrayArcs(false)");
-      }
+      // TODO: we could make this a vInt instead
+      bytes[fixedArrayStart-4] = (byte) (maxBytesPerArc >> 24);
+      bytes[fixedArrayStart-3] = (byte) (maxBytesPerArc >> 16);
+      bytes[fixedArrayStart-2] = (byte) (maxBytesPerArc >> 8);
       bytes[fixedArrayStart-1] = (byte) maxBytesPerArc;
 
       // expand the arcs in place, backwards
@@ -502,7 +543,7 @@ public class FST<T> {
       if (arc.flag(BIT_ARCS_AS_FIXED_ARRAY)) {
         // array: jump straight to end
         arc.numArcs = in.readVInt();
-        arc.bytesPerArc = in.readByte() & 0xFF;
+        arc.bytesPerArc = in.readInt();
         //System.out.println("  array numArcs=" + arc.numArcs + " bpa=" + arc.bytesPerArc);
         arc.posArcsStart = in.pos;
         arc.arcIdx = arc.numArcs - 2;
@@ -528,7 +569,7 @@ public class FST<T> {
         }
         arc.nextArc = in.pos+1;
       }
-      readNextRealArc(arc);
+      readNextRealArc(arc, in);
       assert arc.isLast();
       return arc;
     }
@@ -572,7 +613,7 @@ public class FST<T> {
       //System.out.println("  fixedArray");
       // this is first arc in a fixed-array
       arc.numArcs = in.readVInt();
-      arc.bytesPerArc = in.readByte() & 0xFF;
+      arc.bytesPerArc = in.readInt();
       arc.arcIdx = -1;
       arc.nextArc = arc.posArcsStart = in.pos;
       //System.out.println("  bytesPer=" + arc.bytesPerArc + " numArcs=" + arc.numArcs + " arcsStart=" + pos);
@@ -580,7 +621,7 @@ public class FST<T> {
       arc.nextArc = address;
       arc.bytesPerArc = 0;
     }
-    return readNextRealArc(arc);
+    return readNextRealArc(arc, in);
   }
 
   /**
@@ -609,7 +650,7 @@ public class FST<T> {
       }
       return readFirstRealArc(arc.nextArc, arc);
     } else {
-      return readNextRealArc(arc);
+      return readNextRealArc(arc, getBytesReader(0));
     }
   }
 
@@ -627,7 +668,7 @@ public class FST<T> {
         //System.out.println("    nextArc fake array");
         in.pos--;
         in.readVInt();
-        in.readByte();
+        in.readInt();
       }
     } else {
       if (arc.bytesPerArc != 0) {
@@ -645,17 +686,16 @@ public class FST<T> {
     return readLabel(in);
   }
 
-  Arc<T> readNextRealArc(Arc<T> arc) throws IOException {
+  Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
     // this is a continuing arc in a fixed array
-    final BytesReader in;
     if (arc.bytesPerArc != 0) {
       // arcs are at fixed entries
       arc.arcIdx++;
       assert arc.arcIdx < arc.numArcs;
-      in = getBytesReader(arc.posArcsStart - arc.arcIdx*arc.bytesPerArc);
+      in.pos = arc.posArcsStart - arc.arcIdx*arc.bytesPerArc;
     } else {
       // arcs are packed
-      in = getBytesReader(arc.nextArc);
+      in.pos = arc.nextArc;
     }
     arc.flags = in.readByte();
     arc.label = readLabel(in);
@@ -701,7 +741,18 @@ public class FST<T> {
   /** Finds an arc leaving the incoming arc, replacing the arc in place.
    *  This returns null if the arc was not found, else the incoming arc. */
   public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc) throws IOException {
-
+    assert cachedRootArcs != null;
+    // Short-circuit if this arc is in the root arc cache:
+    if (follow.target == startNode && labelToMatch != END_LABEL && labelToMatch < cachedRootArcs.length) {
+      final Arc<T> result = cachedRootArcs[labelToMatch];
+      if (result == null) {
+        return result;
+      } else {
+        arc.copyFrom(result);
+        return arc;
+      }
+    }
+ 
     if (labelToMatch == END_LABEL) {
       if (follow.isFinal()) {
         if (follow.target <= 0) {
@@ -726,14 +777,18 @@ public class FST<T> {
     // reusable stuff eg BytesReader:
     final BytesReader in = getBytesReader(follow.target);
 
+    // System.out.println("fta label=" + (char) labelToMatch);
+
     if ((in.readByte() & BIT_ARCS_AS_FIXED_ARRAY) != 0) {
       // Arcs are full array; do binary search:
       arc.numArcs = in.readVInt();
-      arc.bytesPerArc = in.readByte() & 0xFF;
+      //System.out.println("  bs " + arc.numArcs);
+      arc.bytesPerArc = in.readInt();
       arc.posArcsStart = in.pos;
       int low = 0;
       int high = arc.numArcs-1;
       while (low <= high) {
+        //System.out.println("    cycle");
         int mid = (low + high) >>> 1;
         in.pos = arc.posArcsStart - arc.bytesPerArc*mid - 1;
         int midLabel = readLabel(in);
@@ -744,7 +799,8 @@ public class FST<T> {
           high = mid - 1;
         else {
           arc.arcIdx = mid-1;
-          return readNextRealArc(arc);
+          //System.out.println("    found!");
+          return readNextRealArc(arc, in);
         }
       }
 
@@ -754,7 +810,12 @@ public class FST<T> {
     // Linear scan
     readFirstTargetArc(follow, arc);
     while(true) {
+      //System.out.println("  non-bs cycle");
+      // TODO: we should fix this code to not have to create
+      // object for the output of every arc we scan... only
+      // for the matching arc, if found
       if (arc.label == labelToMatch) {
+        //System.out.println("    found!");
         return arc;
       } else if (arc.label > labelToMatch) {
         return null;
@@ -863,7 +924,7 @@ public class FST<T> {
   }
 
   // Non-static: reads byte[] from FST
-  class BytesReader extends DataInput {
+  final class BytesReader extends DataInput {
     int pos;
 
     public BytesReader(int pos) {

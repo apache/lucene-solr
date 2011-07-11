@@ -95,9 +95,6 @@ public class MemoryCodec extends Codec {
       this.out = out;
       this.field = field;
       builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, outputs);
-
-      // The byte[] output we create can easily be > 255 bytes:
-      builder.setAllowArrayArcs(false);
     }
 
     private class PostingsWriter extends PostingsConsumer {

@@ -35,6 +35,7 @@ final class NodeHash<T> {
   }
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, int address) throws IOException {
+    final FST<T>.BytesReader in = fst.getBytesReader(0);
     fst.readFirstRealArc(address, scratchArc);
     if (scratchArc.bytesPerArc != 0 && node.numArcs != scratchArc.numArcs) {
       return false;
@@ -56,7 +57,7 @@ final class NodeHash<T> {
           return false;
         }
       }
-      fst.readNextRealArc(scratchArc);
+      fst.readNextRealArc(scratchArc, in);
     }
 
     return false;
@@ -87,6 +88,7 @@ final class NodeHash<T> {
   // hash code for a frozen node
   private int hash(int node) throws IOException {
     final int PRIME = 31;
+    final FST<T>.BytesReader in = fst.getBytesReader(0);
     //System.out.println("hash frozen");
     int h = 0;
     fst.readFirstRealArc(node, scratchArc);
@@ -102,7 +104,7 @@ final class NodeHash<T> {
       if (scratchArc.isLast()) {
         break;
       }
-      fst.readNextRealArc(scratchArc);
+      fst.readNextRealArc(scratchArc, in);
     }
     //System.out.println("  ret " + (h&Integer.MAX_VALUE));
     return h & Integer.MAX_VALUE;

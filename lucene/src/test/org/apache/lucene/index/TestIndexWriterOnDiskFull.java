@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -142,6 +143,14 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
    */
   public void testAddIndexOnDiskFull() throws IOException
   {
+    // MemoryCodec, since it uses FST, is not necessarily
+    // "additive", ie if you add up N small FSTs, then merge
+    // them, the merged result can easily be larger than the
+    // sum because the merged FST may use array encoding for
+    // some arcs (which uses more space):
+    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("id").equals("Memory"));
+    assumeFalse("This test cannot run with Memory codec", CodecProvider.getDefault().getFieldCodec("content").equals("Memory"));
+
     int START_COUNT = 57;
     int NUM_DIR = TEST_NIGHTLY ? 50 : 5;
     int END_COUNT = START_COUNT + NUM_DIR* (TEST_NIGHTLY ? 25 : 5);

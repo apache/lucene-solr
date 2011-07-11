@@ -90,6 +90,10 @@ import org.apache.lucene.store.OutputStreamDataOutput;
  * 
  * <p>"alphabetically" in any of the documentation above indicates utf16 codepoint order, 
  * nothing else.
+ *
+ * <b>NOTE</b>: the FST file format is experimental and
+ * subject to suddenly change, requiring you to rebuild the
+ * FST suggest index.
  */
 public class FSTLookup extends Lookup {
 

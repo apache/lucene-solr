@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.synonym;
+package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -29,51 +29,52 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
+ * @deprecated Remove this test in Lucene 5.0
  */
-public class TestSynonymFilter extends BaseTokenStreamTestCase {
+@Deprecated
+public class TestSlowSynonymFilter extends BaseTokenStreamTestCase {
 
   static List<String> strings(String str) {
     String[] arr = str.split(" ");
     return Arrays.asList(arr);
   }
 
-  static void assertTokenizesTo(SynonymMap dict, String input,
+  static void assertTokenizesTo(SlowSynonymMap dict, String input,
       String expected[]) throws IOException {
     Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    SlowSynonymFilter stream = new SlowSynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected);
   }
   
-  static void assertTokenizesTo(SynonymMap dict, String input,
+  static void assertTokenizesTo(SlowSynonymMap dict, String input,
       String expected[], int posIncs[]) throws IOException {
     Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
-    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    SlowSynonymFilter stream = new SlowSynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, posIncs);
   }
   
-  static void assertTokenizesTo(SynonymMap dict, List<Token> input,
+  static void assertTokenizesTo(SlowSynonymMap dict, List<Token> input,
       String expected[], int posIncs[])
       throws IOException {
     TokenStream tokenizer = new IterTokenStream(input);
-    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    SlowSynonymFilter stream = new SlowSynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, posIncs);
   }
   
-  static void assertTokenizesTo(SynonymMap dict, List<Token> input,
+  static void assertTokenizesTo(SlowSynonymMap dict, List<Token> input,
       String expected[], int startOffsets[], int endOffsets[], int posIncs[])
       throws IOException {
     TokenStream tokenizer = new IterTokenStream(input);
-    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    SlowSynonymFilter stream = new SlowSynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, startOffsets, endOffsets,
         posIncs);
   }
   
   public void testMatching() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = false;
     boolean merge = true;
@@ -110,7 +111,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
   }
 
   public void testIncludeOrig() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = true;
     boolean merge = true;
@@ -167,7 +168,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
 
 
   public void testMapMerge() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = false;
     boolean merge = true;
@@ -206,7 +207,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
 
 
   public void testOverlap() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = false;
     boolean merge = true;
@@ -229,7 +230,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
   }
 
   public void testPositionIncrements() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = false;
     boolean merge = true;
@@ -264,7 +265,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
 
 
   public void testPositionIncrementsWithOrig() throws IOException {
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = true;
     boolean merge = true;
@@ -304,7 +305,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
     // x=>y
     // analysing "a x" causes "y" to have a bad offset (end less than start)
     // SOLR-167
-    SynonymMap map = new SynonymMap();
+    SlowSynonymMap map = new SlowSynonymMap();
 
     boolean orig = false;
     boolean merge = true;
