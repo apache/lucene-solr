@@ -22,6 +22,9 @@
   <property name="solr-path" value="../.." />
   <property name="tikalibs-path" value="../extraction/lib" />
 
+  <!-- the tests have some parallel problems: writability to single copy of dataimport.properties -->
+  <property name="tests.threadspercpu" value="0"/>
+
   <import file="../../common-build.xml"/>
   
   <description>
