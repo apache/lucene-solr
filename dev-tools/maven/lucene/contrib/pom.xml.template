@@ -47,7 +47,6 @@
     <module>remote</module>
     <module>spatial</module>
     <module>spellchecker</module>
-    <module>wordnet</module>
     <module>xml-query-parser</module>
   </modules>
   <build>
