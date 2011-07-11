@@ -27,7 +27,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
 import org.junit.Ignore;
 
 /**
@@ -35,8 +34,10 @@ import org.junit.Ignore;
  * @lucene.experimental
  */
 public class Test2BPostings extends LuceneTestCase {
-  @Ignore("Must run with large (14 GB) java heap, and not Memory nor SimpleText codec!")
+
+  @Nightly
   public void test() throws Exception {
+
     MockDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BPostings"));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setCheckIndexOnClose(false); // don't double-checkindex
