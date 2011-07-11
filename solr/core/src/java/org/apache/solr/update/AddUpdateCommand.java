@@ -90,15 +90,15 @@ public class AddUpdateCommand extends UpdateCommand {
 
    public String getPrintableId(IndexSchema schema) {
      SchemaField sf = schema.getUniqueKeyField();
-     if (indexedId != null) {
-       return schema.getUniqueKeyField().getType().indexedToReadable(indexedId);
+     if (indexedId != null && sf != null) {
+       return sf.getType().indexedToReadable(indexedId);
      }
 
      if (doc != null) {
        return schema.printableUniqueKey(doc);
      }
 
-     if (solrDoc != null) {
+     if (solrDoc != null && sf != null) {
        SolrInputField field = solrDoc.getField(sf.getName());
        if (field != null) {
          return field.getFirstValue().toString();

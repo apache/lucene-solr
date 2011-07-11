@@ -317,6 +317,11 @@ New Features
   handler, as long as you also provide a XSL to transform them to a valid
   Solr input document.  (Upayavira, Uwe Schindler)
 
+* SOLR-2615: Log individual updates (adds and deletes) at the FINE level
+  before adding to the index.  Fix a null pointer exception in logging
+  when there was no unique key. (David Smiley via yonik)
+
+
 Optimizations
 ----------------------
 

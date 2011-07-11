@@ -659,8 +659,8 @@ public final class SolrCore implements SolrInfoMBean {
     if (def == null) {
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
-              new RunUpdateProcessorFactory(),
-              new LogUpdateProcessorFactory()
+              new LogUpdateProcessorFactory(),
+              new RunUpdateProcessorFactory()
       };
       def = new UpdateRequestProcessorChain(factories, this);
     }
