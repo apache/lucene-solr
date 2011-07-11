@@ -40,13 +40,11 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     delegator.init(args);
   }
 
-  @Override
   public TokenStream create(TokenStream input) {
     assert delegator != null : "init() was not called!";
     return delegator.create(input);
   }
 
-  @Override
   public void inform(ResourceLoader loader) {
     assert delegator != null : "init() was not called!";
     ((ResourceLoaderAware) delegator).inform(loader);

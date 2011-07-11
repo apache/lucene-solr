@@ -54,12 +54,10 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
   private SynonymMap map;
   private boolean ignoreCase;
   
-  @Override
   public TokenStream create(TokenStream input) {
     return new SynonymFilter(input, map, ignoreCase);
   }
 
-  @Override
   public void inform(ResourceLoader loader) {
     final boolean ignoreCase = getBoolean("ignoreCase", false); 
     this.ignoreCase = ignoreCase;
