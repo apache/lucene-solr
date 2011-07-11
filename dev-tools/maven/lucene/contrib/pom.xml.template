@@ -39,7 +39,6 @@
     <module>queries</module>
     <module>queryparser</module>
     <module>spatial</module>
-    <module>wordnet</module>
     <module>xml-query-parser</module>
   </modules>
   <build>
