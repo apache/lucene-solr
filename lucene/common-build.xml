@@ -351,7 +351,7 @@
     <attribute name="pom.xml"/>
     <attribute name="jar.file"/>
     <sequential>
-      <copy file="@{pom.xml}" tofile="${maven.build.dir}/pom.xml">
+      <copy file="@{pom.xml}" tofile="${maven.build.dir}/pom.xml" overwrite="true">
         <filterset begintoken="@" endtoken="@">
           <filter token="version" value="${version}"/>
         </filterset>
