@@ -25,7 +25,7 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
@@ -44,7 +44,7 @@ public class CartesianShapeFilter extends Filter {
   
   @Override
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+    final FixedBitSet bits = new FixedBitSet(reader.maxDoc());
     final TermDocs termDocs = reader.termDocs();
     final List<Double> area = shape.getArea();
     int sz = area.size();
@@ -57,7 +57,7 @@ public class CartesianShapeFilter extends Filter {
       // iterate through all documents
       // which have this boxId
       while (termDocs.next()) {
-        bits.fastSet(termDocs.doc());
+        bits.set(termDocs.doc());
       }
     }
     return bits;

@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -178,14 +178,14 @@ public class MultiPassIndexSplitter {
    * list of deletions.
    */
   public static class FakeDeleteIndexReader extends FilterIndexReader {
-    OpenBitSet dels;
-    OpenBitSet oldDels = null;
+    FixedBitSet dels;
+    FixedBitSet oldDels;
 
     public FakeDeleteIndexReader(IndexReader in) {
       super(in);
-      dels = new OpenBitSet(in.maxDoc());
+      dels = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
-        oldDels = new OpenBitSet(in.maxDoc());
+        oldDels = new FixedBitSet(in.maxDoc());
         for (int i = 0; i < in.maxDoc(); i++) {
           if (in.isDeleted(i)) oldDels.set(i);
         }
@@ -204,7 +204,7 @@ public class MultiPassIndexSplitter {
      */
     @Override
     protected void doUndeleteAll() throws CorruptIndexException, IOException {
-      dels = new OpenBitSet(in.maxDoc());
+      dels = new FixedBitSet(in.maxDoc());
       if (oldDels != null) {
         dels.or(oldDels);
       }
@@ -217,7 +217,7 @@ public class MultiPassIndexSplitter {
 
     @Override
     public boolean hasDeletions() {
-      return !dels.isEmpty();
+      return in.maxDoc() != this.numDocs();
     }
 
     @Override

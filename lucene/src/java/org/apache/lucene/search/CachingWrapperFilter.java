@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Wraps another filter's result and caches it.  The purpose is to allow
@@ -165,7 +165,7 @@ public class CachingWrapperFilter extends Filter {
    *  by the wrapped Filter.
    *  <p>This implementation returns the given {@link DocIdSet}, if {@link DocIdSet#isCacheable}
    *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
-   *  an {@link OpenBitSetDISI}.
+   *  an {@link FixedBitSet}.
    */
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) throws IOException {
     if (docIdSet == null) {
@@ -178,7 +178,13 @@ public class CachingWrapperFilter extends Filter {
       // null is allowed to be returned by iterator(),
       // in this case we wrap with the empty set,
       // which is cacheable.
-      return (it == null) ? DocIdSet.EMPTY_DOCIDSET : new OpenBitSetDISI(it, reader.maxDoc());
+      if (it == null) {
+        return DocIdSet.EMPTY_DOCIDSET;
+      } else {
+        final FixedBitSet bits = new FixedBitSet(reader.maxDoc());
+        bits.or(it);
+        return bits;
+      }
     }
   }
 

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.index.TermDocs;  // for javadocs
 
 /**
@@ -52,11 +52,11 @@ import org.apache.lucene.index.TermDocs;  // for javadocs
  * <p/>
  * 
  * With each search, this filter translates the specified
- * set of Terms into a private {@link OpenBitSet} keyed by
+ * set of Terms into a private {@link FixedBitSet} keyed by
  * term number per unique {@link IndexReader} (normally one
  * reader per segment).  Then, during matching, the term
  * number for each docID is retrieved from the cache and
- * then checked for inclusion using the {@link OpenBitSet}.
+ * then checked for inclusion using the {@link FixedBitSet}.
  * Since all testing is done using RAM resident data
  * structures, performance should be very fast, most likely
  * fast enough to not require further caching of the
@@ -67,12 +67,12 @@ import org.apache.lucene.index.TermDocs;  // for javadocs
  * 
  * <p/>
  * 
- * In contrast, TermsFilter builds up an {@link OpenBitSet},
+ * In contrast, TermsFilter builds up an {@link FixedBitSet},
  * keyed by docID, every time it's created, by enumerating
  * through all matching docs using {@link TermDocs} to seek
  * and scan through each term's docID list.  While there is
  * no linear scan of all docIDs, besides the allocation of
- * the underlying array in the {@link OpenBitSet}, this
+ * the underlying array in the {@link FixedBitSet}, this
  * approach requires a number of "disk seeks" in proportion
  * to the number of terms, which can be exceptionally costly
  * when there are cache misses in the OS's IO cache.
@@ -114,15 +114,15 @@ public class FieldCacheTermsFilter extends Filter {
   protected class FieldCacheTermsFilterDocIdSet extends DocIdSet {
     private FieldCache.StringIndex fcsi;
 
-    private OpenBitSet openBitSet;
+    private FixedBitSet bits;
 
     public FieldCacheTermsFilterDocIdSet(FieldCache.StringIndex fcsi) {
       this.fcsi = fcsi;
-      openBitSet = new OpenBitSet(this.fcsi.lookup.length);
+      bits = new FixedBitSet(this.fcsi.lookup.length);
       for (int i=0;i<terms.length;i++) {
         int termNumber = this.fcsi.binarySearchLookup(terms[i]);
         if (termNumber > 0) {
-          openBitSet.fastSet(termNumber);
+          bits.set(termNumber);
         }
       }
     }
@@ -149,7 +149,7 @@ public class FieldCacheTermsFilter extends Filter {
       @Override
       public int nextDoc() {
         try {
-          while (!openBitSet.fastGet(fcsi.order[++doc])) {}
+          while (!bits.get(fcsi.order[++doc])) {}
         } catch (ArrayIndexOutOfBoundsException e) {
           doc = NO_MORE_DOCS;
         }
@@ -160,7 +160,7 @@ public class FieldCacheTermsFilter extends Filter {
       public int advance(int target) {
         try {
           doc = target;
-          while (!openBitSet.fastGet(fcsi.order[doc])) {
+          while (!bits.get(fcsi.order[doc])) {
             doc++;
           }
         } catch (ArrayIndexOutOfBoundsException e) {

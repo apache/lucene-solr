@@ -32,7 +32,10 @@ import org.apache.lucene.search.DocIdSetIterator;
  * <b>NOTE:</b> this class assumes the stored integers are doc Ids (hence why it
  * extends {@link DocIdSet}). Therefore its {@link #iterator()} assumes {@link
  * DocIdSetIterator#NO_MORE_DOCS} can be used as sentinel. If you intent to use
- * this value, then make sure it's not used during search flow.
+ * this value, then make sure it's not used during search
+ * flow.
+ *
+ * @lucene.internal
  */
 public class SortedVIntList extends DocIdSet {
   /** When a BitSet has fewer than 1 in BITS2VINTLIST_SIZE bits set,
@@ -72,20 +75,6 @@ public class SortedVIntList extends DocIdSet {
    * @param  bits  A bit set representing a set of integers.
    */
   public SortedVIntList(BitSet bits) {
-    SortedVIntListBuilder builder = new SortedVIntListBuilder();
-    int nextInt = bits.nextSetBit(0);
-    while (nextInt != -1) {
-      builder.addInt(nextInt);
-      nextInt = bits.nextSetBit(nextInt + 1);
-    }
-    builder.done();
-  }
-
-  /**
-   * Create a SortedVIntList from an OpenBitSet.
-   * @param  bits  A bit set representing a set of integers.
-   */
-  public SortedVIntList(OpenBitSet bits) {
     SortedVIntListBuilder builder = new SortedVIntListBuilder();
     int nextInt = bits.nextSetBit(0);
     while (nextInt != -1) {

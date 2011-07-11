@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * A wrapper for {@link MultiTermQuery}, that exposes its
@@ -105,8 +105,8 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       // if current term in enum is null, the enum is empty -> shortcut
       if (enumerator.term() == null)
         return DocIdSet.EMPTY_DOCIDSET;
-      // else fill into a OpenBitSet
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+      // else fill into a FixedBitSet
+      final FixedBitSet bitSet = new FixedBitSet(reader.maxDoc());
       final int[] docs = new int[32];
       final int[] freqs = new int[32];
       TermDocs termDocs = reader.termDocs();

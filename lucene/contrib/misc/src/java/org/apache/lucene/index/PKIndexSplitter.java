@@ -25,7 +25,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
@@ -85,18 +85,18 @@ public class PKIndexSplitter {
   }
     
   public static class DocumentFilteredIndexReader extends FilterIndexReader {
-    final OpenBitSetDISI readerDels;
+    final FixedBitSet readerDels;
     final int numDocs;
     
     public DocumentFilteredIndexReader(IndexReader reader, Filter preserveFilter, boolean negateFilter) throws IOException {
       super(reader);
       
-      final OpenBitSetDISI bits = new OpenBitSetDISI(in.maxDoc());
+      final FixedBitSet bits = new FixedBitSet(in.maxDoc());
       final DocIdSet docs = preserveFilter.getDocIdSet(in);
       if (docs != null) {
         final DocIdSetIterator it = docs.iterator();
         if (it != null) {
-          bits.inPlaceOr(it);
+          bits.or(it);
         }
       }
       // this is somehow inverse, if we negate the filter, we delete all documents it matches!

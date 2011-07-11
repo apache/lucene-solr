@@ -174,6 +174,7 @@ public class TestNumericUtils extends LuceneTestCase {
   private void assertLongRangeSplit(final long lower, final long upper, int precisionStep,
     final boolean useBitSet, final Iterable<Long> expectedBounds, final Iterable<Integer> expectedShifts
   ) throws Exception {
+    // Cannot use FixedBitSet since the range could be long:
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     final Iterator<Long> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
@@ -202,7 +203,7 @@ public class TestNumericUtils extends LuceneTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0,upper-lower+1);
-      assertTrue("The sub-range concenated should match the whole range", bits.isEmpty());
+      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
     }
   }
   
@@ -414,7 +415,7 @@ public class TestNumericUtils extends LuceneTestCase {
   private void assertIntRangeSplit(final int lower, final int upper, int precisionStep,
     final boolean useBitSet, final Iterable<Integer> expectedBounds, final Iterable<Integer> expectedShifts
   ) throws Exception {
-    final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
+    final FixedBitSet bits=useBitSet ? new FixedBitSet(upper-lower+1) : null;
     final Iterator<Integer> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
     final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
     
@@ -441,8 +442,8 @@ public class TestNumericUtils extends LuceneTestCase {
     
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
-      bits.flip(0,upper-lower+1);
-      assertTrue("The sub-range concenated should match the whole range", bits.isEmpty());
+      bits.flip(0, upper-lower+1);
+      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
     }
   }
   

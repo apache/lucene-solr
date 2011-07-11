@@ -25,7 +25,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 public class TermsFilterTest extends LuceneTestCase {
   
@@ -62,19 +62,19 @@ public class TermsFilterTest extends LuceneTestCase {
 		
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(fieldName,"19"));
-		OpenBitSet bits = (OpenBitSet)tf.getDocIdSet(reader);
+		FixedBitSet bits = (FixedBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match nothing", 0, bits.cardinality());
 
 		tf.addTerm(new Term(fieldName,"20"));
-		bits = (OpenBitSet)tf.getDocIdSet(reader);
+		bits = (FixedBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 1", 1, bits.cardinality());
 		
 		tf.addTerm(new Term(fieldName,"10"));
-		bits = (OpenBitSet)tf.getDocIdSet(reader);
+		bits = (FixedBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 		
 		tf.addTerm(new Term(fieldName,"00"));
-		bits = (OpenBitSet)tf.getDocIdSet(reader);
+		bits = (FixedBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 		
 		reader.close();

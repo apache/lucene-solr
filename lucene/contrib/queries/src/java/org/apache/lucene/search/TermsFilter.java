@@ -25,7 +25,7 @@ import java.util.TreeSet;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Constructs a filter for docs matching any of the terms added to this class. 
@@ -54,7 +54,7 @@ public class TermsFilter extends Filter
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException
 	{
-    OpenBitSet result=new OpenBitSet(reader.maxDoc());
+    FixedBitSet result=new FixedBitSet(reader.maxDoc());
         TermDocs td = reader.termDocs();
         try
         {

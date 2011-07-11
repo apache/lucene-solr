@@ -21,7 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 public class DuplicateFilter extends Filter
 {
@@ -79,10 +79,10 @@ public class DuplicateFilter extends Filter
 		}
 	}
 	
-  private OpenBitSet correctBits(IndexReader reader) throws IOException
+  private FixedBitSet correctBits(IndexReader reader) throws IOException
 	{
 		
-    OpenBitSet bits=new OpenBitSet(reader.maxDoc()); //assume all are INvalid
+    FixedBitSet bits=new FixedBitSet(reader.maxDoc()); //assume all are INvalid
 		Term startTerm=new Term(fieldName);
 		TermEnum te = reader.terms(startTerm);
 		if(te!=null)
@@ -118,10 +118,10 @@ public class DuplicateFilter extends Filter
 		return bits;
 	}
 	
-  private OpenBitSet fastBits(IndexReader reader) throws IOException
+  private FixedBitSet fastBits(IndexReader reader) throws IOException
 	{
 		
-    OpenBitSet bits=new OpenBitSet(reader.maxDoc());
+    FixedBitSet bits=new FixedBitSet(reader.maxDoc());
 		bits.set(0,reader.maxDoc()); //assume all are valid
 		Term startTerm=new Term(fieldName);
 		TermEnum te = reader.terms(startTerm);
