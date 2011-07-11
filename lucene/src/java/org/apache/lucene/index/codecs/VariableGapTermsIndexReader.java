@@ -190,7 +190,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         if (indexDivisor > 1) {
           // subsample
           final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
-          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
           final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
           BytesRefFSTEnum.InputOutput<Long> result;
           int count = indexDivisor;

@@ -532,6 +532,11 @@ Optimizations
   directly if possible and merges separately written files on the fly instead
   of during close. (Simon Willnauer, Robert Muir)
 
+* LUCENE-3289: When building an FST you can now tune how aggressively
+  the FST should try to share common suffixes.  Typically you can
+  greatly reduce RAM required during building, and CPU consumed, at
+  the cost of a somewhat larger FST.  (Mike McCandless)
+
 ======================= Lucene 3.3.0 =======================
 
 Changes in backwards compatibility policy

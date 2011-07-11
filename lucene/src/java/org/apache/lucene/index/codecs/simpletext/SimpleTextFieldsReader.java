@@ -478,9 +478,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton(false);
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
       b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1,
-                                                                          0,
-                                                                          0,
-                                                                          true,
                                                                           new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
                                                                                                                             new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs)));
       IndexInput in = (IndexInput) SimpleTextFieldsReader.this.in.clone();

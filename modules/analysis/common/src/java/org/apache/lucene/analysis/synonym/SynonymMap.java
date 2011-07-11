@@ -244,7 +244,7 @@ public class SynonymMap {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       // TODO: are we using the best sharing options?
       org.apache.lucene.util.fst.Builder<BytesRef> builder = 
-        new org.apache.lucene.util.fst.Builder<BytesRef>(FST.INPUT_TYPE.BYTE4, 0, 0, true, outputs);
+        new org.apache.lucene.util.fst.Builder<BytesRef>(FST.INPUT_TYPE.BYTE4, outputs);
       
       BytesRef scratch = new BytesRef(64);
       ByteArrayDataOutput scratchOutput = new ByteArrayDataOutput();
