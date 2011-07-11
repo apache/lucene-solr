@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
@@ -276,7 +277,9 @@ public abstract class FieldType extends FieldProperties {
                         index,
                         vec);
     f.setOmitNorms(omitNorms);
-    f.setOmitTermFreqAndPositions(omitTFPos);
+    if (omitTFPos) {
+      f.setIndexOptions(IndexOptions.DOCS_ONLY);
+    }
     f.setBoost(boost);
     return f;
   }

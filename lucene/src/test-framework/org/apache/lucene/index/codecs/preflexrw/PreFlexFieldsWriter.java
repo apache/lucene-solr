@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -89,8 +90,11 @@ class PreFlexFieldsWriter extends FieldsConsumer {
     private final PostingsWriter postingsWriter = new PostingsWriter();
 
     public PreFlexTermsWriter(FieldInfo fieldInfo) {
+      if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
+        throw new UnsupportedOperationException("PreFlex codec does not support omitting positions only!");
+      }
       this.fieldInfo = fieldInfo;
-      omitTF = fieldInfo.omitTermFreqAndPositions;
+      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;
     }
 

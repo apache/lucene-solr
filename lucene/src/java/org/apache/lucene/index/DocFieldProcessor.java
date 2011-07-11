@@ -233,7 +233,7 @@ final class DocFieldProcessor extends DocConsumer {
         // easily add it
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+                                      field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -245,7 +245,7 @@ final class DocFieldProcessor extends DocConsumer {
       } else {
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
                             field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+                            field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {

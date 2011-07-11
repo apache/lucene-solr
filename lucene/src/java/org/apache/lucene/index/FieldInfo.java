@@ -35,14 +35,27 @@ public final class FieldInfo {
   boolean storePositionWithTermVector;
 
   public boolean omitNorms; // omit norms associated with indexed fields  
-  public boolean omitTermFreqAndPositions;
+  public IndexOptions indexOptions;
 
   public boolean storePayloads; // whether this field stores payloads together with term positions
   private int codecId = UNASSIGNED_CODEC_ID; // set inside SegmentCodecs#build() during segment flush - this is used to identify the codec used to write this field
 
+  /**
+   * Controls how much information is stored in the postings lists.
+   * @lucene.experimental
+   */
+  public static enum IndexOptions { 
+    /** only documents are indexed: term frequencies and positions are omitted */
+    DOCS_ONLY,
+    /** only documents and term frequencies are indexed: positions are omitted */  
+    DOCS_AND_FREQS,
+    /** full postings: documents, frequencies, and positions */
+    DOCS_AND_FREQS_AND_POSITIONS 
+  };
+
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
     name = na;
     isIndexed = tk;
     number = nu;
@@ -53,16 +66,16 @@ public final class FieldInfo {
       this.storePositionWithTermVector = storePositionWithTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
-      this.omitTermFreqAndPositions = omitTermFreqAndPositions;
+      this.indexOptions = indexOptions;
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storeOffsetWithTermVector = false;
       this.storePositionWithTermVector = false;
       this.storePayloads = false;
       this.omitNorms = false;
-      this.omitTermFreqAndPositions = false;
+      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     }
-    assert !omitTermFreqAndPositions || !storePayloads;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !storePayloads;
   }
 
   void setCodecId(int codecId) {
@@ -77,14 +90,14 @@ public final class FieldInfo {
   @Override
   public Object clone() {
     FieldInfo clone = new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
+                         storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
     clone.codecId = this.codecId;
     return clone;
   }
 
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
-              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
 
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
@@ -105,12 +118,13 @@ public final class FieldInfo {
       if (this.omitNorms != omitNorms) {
         this.omitNorms = true;                // if one require omitNorms at least once, it remains off for life
       }
-      if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
-        this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
+      if (this.indexOptions != indexOptions) {
+        // downgrade
+        this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
         this.storePayloads = false;
       }
     }
-    assert !this.omitTermFreqAndPositions || !this.storePayloads;
+    assert this.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !this.storePayloads;
   }
   void setDocValues(ValueType v) {
     if (docValues == null) {

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -57,7 +58,7 @@ public class Test2BPostings extends LuceneTestCase {
 
     Document doc = new Document();
     Field field = new Field("field", new MyTokenStream());
-    field.setOmitTermFreqAndPositions(true);
+    field.setIndexOptions(IndexOptions.DOCS_ONLY);
     field.setOmitNorms(true);
     doc.add(field);
     

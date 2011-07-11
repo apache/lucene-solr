@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 
 /**
@@ -389,7 +390,8 @@ public final class Field extends AbstractField implements Fieldable {
     this.isTokenized = index.isAnalyzed();
     this.omitNorms = index.omitNorms();
     if (index == Index.NO) {
-      this.omitTermFreqAndPositions = false;
+      // note: now this reads even wierder than before
+      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     }    
 
     this.isBinary = false;
@@ -520,7 +522,7 @@ public final class Field extends AbstractField implements Fieldable {
     isStored = true;
     isIndexed   = false;
     isTokenized = false;
-    omitTermFreqAndPositions = false;
+    indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     omitNorms = true;
     
     isBinary    = true;

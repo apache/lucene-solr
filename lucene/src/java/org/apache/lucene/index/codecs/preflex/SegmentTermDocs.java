@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.preflex;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.standard.DefaultSkipListReader;
@@ -89,7 +90,7 @@ public class SegmentTermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = fieldInfos.fieldInfo(term.field());
-    currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.omitTermFreqAndPositions : false;
+    currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.indexOptions == IndexOptions.DOCS_ONLY : false;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
