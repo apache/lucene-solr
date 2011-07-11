@@ -30,7 +30,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-public class DOMUtilTestBase extends LuceneTestCase {
+public abstract class DOMUtilTestBase extends LuceneTestCase {
   
   private DocumentBuilder builder;
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
