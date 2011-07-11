@@ -24,8 +24,15 @@
   </description>
 
   <import file="../contrib-build.xml"/>
- 
-  <target name="compile-core" depends="javacc-notice, common.compile-core"/>
+
+  <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
+
+  <path id="classpath">
+    <pathelement path="${queryparser.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="javacc-notice,build-queryparser,common.compile-core"/>
 
   <!--
     NOTE: see the README.javacc for details on how to fully regenerate the parser
@@ -99,5 +106,12 @@ import org.apache.lucene.queryParser.core.messages.*;"
   	<invoke-javacc target="src/java/org/apache/lucene/queryParser/surround/parser/QueryParser.jj"
                    outputDir="src/java/org/apache/lucene/queryParser/surround/parser"
     />
+  </target>
+
+  <target name="build-queryparser" unless="queryparser.uptodate">
+    <echo>QueryParser Contrib building dependency modules/queryparser</echo>
+    <subant target="default">
+      <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+    </subant>
   </target>
 </project>

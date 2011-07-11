@@ -16,10 +16,11 @@ package org.apache.lucene.queryParser.ext;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.apache.lucene.queryparser.classic.QueryParser;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.queryParser.QueryParser;
 
 /**
  * The {@link Extensions} class represents an extension mapping to associate

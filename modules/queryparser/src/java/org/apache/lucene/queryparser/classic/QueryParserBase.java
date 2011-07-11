@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.queryParser;
+package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
@@ -459,14 +459,14 @@ public abstract class QueryParserBase {
   }
 
   /**
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     return newFieldQuery(analyzer, field, queryText, quoted);
   }
   
   /**
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
@@ -644,7 +644,7 @@ public abstract class QueryParserBase {
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
@@ -662,7 +662,7 @@ public abstract class QueryParserBase {
 
   /**
    *
-   * @exception org.apache.lucene.queryParser.ParseException
+   * @exception org.apache.lucene.queryparser.classic.ParseException
    */
   protected Query getRangeQuery(String field,
                                 String part1,
@@ -874,7 +874,7 @@ public abstract class QueryParserBase {
    *    to join.
    *
    * @return Resulting {@link org.apache.lucene.search.Query} object.
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getBooleanQuery(List<BooleanClause> clauses) throws ParseException {
     return getBooleanQuery(clauses, false);
@@ -892,7 +892,7 @@ public abstract class QueryParserBase {
    * @param disableCoord true if coord scoring should be disabled.
    *
    * @return Resulting {@link org.apache.lucene.search.Query} object.
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
     throws ParseException
@@ -926,7 +926,7 @@ public abstract class QueryParserBase {
    *   characters (? or *), but is not simple prefix term
    *
    * @return Resulting {@link org.apache.lucene.search.Query} built for the term
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
@@ -960,7 +960,7 @@ public abstract class QueryParserBase {
    * @param termStr Term token that contains a regular expression
    *
    * @return Resulting {@link org.apache.lucene.search.Query} built for the term
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getRegexpQuery(String field, String termStr) throws ParseException
   {
@@ -992,7 +992,7 @@ public abstract class QueryParserBase {
    *    (<b>without</b> trailing '*' character!)
    *
    * @return Resulting {@link org.apache.lucene.search.Query} built for the term
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
@@ -1014,7 +1014,7 @@ public abstract class QueryParserBase {
    * @param termStr Term token to use for building term for the query
    *
    * @return Resulting {@link org.apache.lucene.search.Query} built for the term
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   * @exception org.apache.lucene.queryparser.classic.ParseException throw in overridden method to disallow
    */
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {

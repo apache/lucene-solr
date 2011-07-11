@@ -1,7 +1,7 @@
 package org.apache.lucene.queryParser.ext;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 

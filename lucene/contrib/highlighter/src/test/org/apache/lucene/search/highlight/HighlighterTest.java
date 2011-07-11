@@ -52,7 +52,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
@@ -1630,7 +1629,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private Directory dir;
   private Analyzer a = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
   
-  public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
+  public void testWeightedTermsWithDeletes() throws IOException, InvalidTokenOffsetsException {
     makeIndex();
     deleteDocument();
     searchIndex();
@@ -1660,7 +1659,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.close();
   }
   
-  private void searchIndex() throws IOException, ParseException, InvalidTokenOffsetsException {
+  private void searchIndex() throws IOException, InvalidTokenOffsetsException {
     Query query = new TermQuery(new Term("t_text1", "random"));
     IndexSearcher searcher = new IndexSearcher( dir, true );
     // This scorer can return negative idf -> null fragment

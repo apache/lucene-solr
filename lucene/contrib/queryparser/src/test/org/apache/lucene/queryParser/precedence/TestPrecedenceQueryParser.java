@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.queryParser.TestQueryParser;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryNodeParseException;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
@@ -57,11 +56,11 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * This test case tests {@link PrecedenceQueryParser}.
  * </p>
  * <p>
- * It contains all tests from {@link TestQueryParser} with some adjusted to 
- * fit the precedence requirement, plus some precedence test cases. 
+ * It contains all tests from {@link org.apache.lucene.queryparser.classic.TestQueryParser}
+ * with some adjusted to fit the precedence requirement, plus some precedence test cases.
  * </p>
  * 
- * @see TestQueryParser
+ * @see org.apache.lucene.queryparser.classic.TestQueryParser
  */
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 

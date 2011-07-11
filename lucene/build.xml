@@ -206,6 +206,7 @@
           <include name="**/lib/*.jar"/>
         </fileset>
         <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
+        <pathelement location="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
       </path>
 
       <invoke-javadoc
@@ -417,9 +418,6 @@
   <!-- ================================================================== -->
   <target name="clean-javacc">
     <delete>
-      <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/surround/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
@@ -429,25 +427,7 @@
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser,javacc-contrib-demo"/>
-
-  <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
-    <sequential>
-      <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
-                     outputDir="src/java/org/apache/lucene/queryParser"/>
-
-      <!-- Change the inccorrect public ctors for QueryParser to be protected instead -->
-      <replaceregexp file="src/java/org/apache/lucene/queryParser/QueryParser.java"
-		     byline="true"
-		     match="public QueryParser\(CharStream "
-		     replace="protected QueryParser(CharStream "/>
-      <replaceregexp file="src/java/org/apache/lucene/queryParser/QueryParser.java"
-		     byline="true"
-		     match="public QueryParser\(QueryParserTokenManager "
-		     replace="protected QueryParser(QueryParserTokenManager "/>
-
-    </sequential>
-  </target>	
+  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-contrib-queryparser,javacc-contrib-demo"/>
 	
   <target name="javacc-contrib-queryparser" depends="init,javacc-check" if="javacc.present">
     <ant target="javacc"

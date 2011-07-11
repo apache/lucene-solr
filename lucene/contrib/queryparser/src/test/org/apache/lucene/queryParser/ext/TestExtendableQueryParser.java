@@ -20,25 +20,20 @@ package org.apache.lucene.queryParser.ext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.TestQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Testcase for the class {@link ExtendableQueryParser}
  */
-public class TestExtendableQueryParser extends TestQueryParser {
+public class TestExtendableQueryParser extends LuceneTestCase {
   private static char[] DELIMITERS = new char[] {
       Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, '-', '|' };
-
-  @Override
-  public QueryParser getParser(Analyzer a) throws Exception {
-    return getParser(a, null);
-  }
 
   public QueryParser getParser(Analyzer a, Extensions extensions)
       throws Exception {

@@ -17,12 +17,12 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.index.Term;
 
 

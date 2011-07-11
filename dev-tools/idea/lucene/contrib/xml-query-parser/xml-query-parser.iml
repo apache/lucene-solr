@@ -18,5 +18,6 @@
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene" />
+    <orderEntry type="module" module-name="queryparser" />
   </component>
 </module>

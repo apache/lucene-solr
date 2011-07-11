@@ -1,5 +1,5 @@
 // FastCharStream.java
-package org.apache.lucene.queryParser;
+package org.apache.lucene.queryparser.classic;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

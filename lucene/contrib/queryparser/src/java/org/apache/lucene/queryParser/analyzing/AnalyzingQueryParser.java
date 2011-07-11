@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
 
@@ -41,7 +41,7 @@ import org.apache.lucene.util.Version;
  * using this parser will be no improvement over QueryParser in such cases). 
  *
  */
-public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryParser {
+public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.QueryParser {
 
   /**
    * Constructs a query parser.

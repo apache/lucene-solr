@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.Version;
 
 /**

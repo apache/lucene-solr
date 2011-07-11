@@ -24,4 +24,20 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+
+  <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
+
+  <path id="test.classpath">
+    <pathelement path="${queryparser.jar}"/>
+    <path refid="test.base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="build-queryparser,common.compile-core" />
+
+  <target name="build-queryparser" unless="queryparser.uptodate">
+    <echo>Memory building dependency modules/queryparser</echo>
+    <subant target="default">
+      <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+    </subant>
+  </target>
 </project>

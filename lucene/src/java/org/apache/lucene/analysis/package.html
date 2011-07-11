@@ -123,10 +123,8 @@ There are many post tokenization steps that can be done, including (but not limi
         {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document) addDocument(doc)},
         the Analyzer in effect for indexing is invoked for each indexed field of the added document.
     </li>
-    <li>At search, as a consequence of
-        {@link org.apache.lucene.queryParser.QueryParser#parse(java.lang.String) QueryParser.parse(queryText)},
-        the QueryParser may invoke the Analyzer in effect.
-        Note that for some queries analysis does not take place, e.g. wildcard queries.
+    <li>At search, a QueryParser may invoke the Analyzer during parsing.  Note that for some queries, analysis does not
+        take place, e.g. wildcard queries.
     </li>
   </ul>
   However an application might invoke Analysis of any text for testing or for any other purpose, something like:

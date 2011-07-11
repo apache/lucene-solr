@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;

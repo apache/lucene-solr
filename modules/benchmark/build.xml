@@ -41,6 +41,8 @@
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
     <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
 
+    <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
+
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 
@@ -160,6 +162,7 @@
       <pathelement path="${memory.jar}"/>
       <pathelement path="${highlighter.jar}"/>
       <pathelement path="${analyzers-common.jar}"/>
+      <pathelement path="${queryparser.jar}"/>
       <path refid="base.classpath"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
@@ -268,8 +271,13 @@
          <fileset dir="${common.dir}/contrib/memory" includes="build.xml"/>
       </subant>
     </target>
+    <target name="compile-queryparser" unless="queryparser.uptodate">
+      <subant target="default">
+         <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+      </subant>
+    </target>
 
-    <target name="init" depends="contrib-build.init,compile-memory,compile-highlighter,compile-analyzers-common"/>
+    <target name="init" depends="contrib-build.init,compile-memory,compile-highlighter,compile-analyzers-common,compile-queryparser"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">

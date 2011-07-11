@@ -18,7 +18,7 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;

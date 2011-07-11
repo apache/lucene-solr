@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;

@@ -20,8 +20,8 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -79,11 +79,11 @@ public class QueryParsing {
    * @see IndexSchema#getQueryParserDefaultOperator()
    * @see #OP
    */
-  public static Operator getQueryParserDefaultOperator(final IndexSchema sch, 
+  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema sch,
                                                        final String override) {
     String val = override;
     if (null == val) val = sch.getQueryParserDefaultOperator();
-    return "AND".equals(val) ? Operator.AND : Operator.OR;
+    return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
   }
 
 

@@ -23,7 +23,7 @@ options {
 
 PARSER_BEGIN(QueryParser)
 
-package org.apache.lucene.queryParser;
+package org.apache.lucene.queryparser.classic;
 
 import java.io.StringReader;
 import java.util.ArrayList;

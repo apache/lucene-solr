@@ -89,6 +89,8 @@
         property="grouping.uptodate" classpath.property="grouping.jar"/>
   <module-uptodate name="queries" jarfile="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"
         property="queries.uptodate" classpath.property="queries.jar"/>
+  <module-uptodate name="queryparser" jarfile="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"
+        property="queryparser.uptodate" classpath.property="queryparser.jar"/>
   <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
   <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
   <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
@@ -117,6 +119,11 @@
   </target>
   <target name="compile-queries" unless="queries.uptodate">
   	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="compile-queryparser" unless="queryparser.uptodate">
+  	<ant dir="${common.dir}/../modules/queryparser" target="default" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -163,6 +170,7 @@
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
     <pathelement path="${queries.jar}"/>
+    <pathelement path="${queryparser.jar}"/>
     <pathelement location="${common-solr.dir}/build/solr-solrj/classes/java"/>
     <pathelement location="${common-solr.dir}/build/solr-core/classes/java"/>
     <path refid="base.classpath"/>
@@ -245,7 +253,7 @@
   <target name="prep-lucene-jars"
           depends="compile-analyzers-common, compile-analyzers-phonetic, compile-suggest,
                    compile-highlighter, compile-memory, compile-misc, compile-queries-contrib,
-                   compile-spatial, compile-grouping, compile-queries">
+                   compile-spatial, compile-grouping, compile-queries, compile-queryparser">
     <ant dir="${common.dir}" target="default" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
@@ -260,6 +268,7 @@
       <fileset file="${grouping.jar}" />
       <fileset file="${common-module.jar}" />
       <fileset file="${queries.jar}" />
+      <fileset file="${queryparser.jar}" />
       <fileset file="${highlighter.jar}" />
       <fileset file="${memory.jar}" />
       <fileset file="${misc.jar}" />

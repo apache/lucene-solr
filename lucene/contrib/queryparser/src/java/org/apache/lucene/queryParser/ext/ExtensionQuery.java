@@ -1,6 +1,6 @@
 package org.apache.lucene.queryParser.ext;
 
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

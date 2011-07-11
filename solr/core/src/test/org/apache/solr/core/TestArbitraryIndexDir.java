@@ -28,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
@@ -77,7 +77,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   }
 
   @Test
-  public void testLoadNewIndexDir() throws IOException, ParserConfigurationException, SAXException, ParseException{
+  public void testLoadNewIndexDir() throws IOException, ParserConfigurationException, SAXException, ParseException {
     //add a doc in original index dir
     assertU(adoc("id", String.valueOf(1),
         "name", "name"+String.valueOf(1)));

@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -27,7 +28,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.lucene.queryParser.ParseException;
 
 import java.net.URL;
 

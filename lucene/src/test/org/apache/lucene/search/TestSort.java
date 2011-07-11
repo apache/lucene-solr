@@ -38,7 +38,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.ValueType;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.cache.ByteValuesCreator;
@@ -365,7 +364,7 @@ public class TestSort extends LuceneTestCase {
   /**
    * Test String sorting: small queue to many matches, multi field sort, reverse sort
    */
-  public void testStringSort() throws IOException, ParseException {
+  public void testStringSort() throws IOException {
     ScoreDoc[] result = null;
     IndexSearcher searcher = getFullStrings();
     sort.setSort(
