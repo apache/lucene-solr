@@ -519,6 +519,10 @@ New Features
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
   (Mike McCandless, Robert Muir)
 
+* LUCENE-3280: Add FixedBitSet, like OpenBitSet but is not elastic
+  (grow on demand if you set/get/clear too-large indices).  (Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
