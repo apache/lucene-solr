@@ -74,6 +74,10 @@ import org.apache.lucene.util.fst.FST;
  * queries that rely on advance will (AND BooleanQuery,
  * PhraseQuery) will be relatively slow!
  *
+ * <p><b>NOTE</b>: this codec cannot adress more than ~2.1 GB
+ * of postings, because the underlying FST uses an int
+ * to address the underlying byte[].
+ *
  * @lucene.experimental */
 
 public class MemoryCodec extends Codec {
