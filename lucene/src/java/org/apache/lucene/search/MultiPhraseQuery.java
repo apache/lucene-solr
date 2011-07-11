@@ -195,7 +195,7 @@ public class MultiPhraseQuery extends Query {
           if (postingsEnum == null) {
             if (reader.termDocsEnum(liveDocs, term.field(), term.bytes()) != null) {
               // term does exist, but has no positions
-              throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + term.text() + ")");
+              throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
             } else {
               // term does not exist
               return null;
@@ -443,7 +443,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       } else {
         if (indexReader.termDocsEnum(liveDocs, terms[i].field(), terms[i].bytes()) != null) {
           // term does exist, but has no positions
-          throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
+          throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + terms[i].text() + ")");
         }
       }
     }

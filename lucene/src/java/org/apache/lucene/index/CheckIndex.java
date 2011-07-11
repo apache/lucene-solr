@@ -186,8 +186,8 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
-       *  does not omitTermFreqAndPositions.
-       *  @see AbstractField#setOmitTermFreqAndPositions */
+       *  has position data
+       *  @see AbstractField#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
       public boolean hasProx;
 
       /** Map that includes certain

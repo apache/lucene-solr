@@ -130,7 +130,7 @@ field fall into a single group.</p>
   List&lt;Document&gt; oneGroup = ...;
   
   Field groupEndField = new Field("groupEnd", "x", Field.Store.NO, Field.Index.NOT_ANALYZED);
-  groupEndField.setOmitTermFreqAndPositions(true);
+  groupEndField.setIndexOptions(IndexOptions.DOCS_ONLY);
   groupEndField.setOmitNorms(true);
   oneGroup.get(oneGroup.size()-1).add(groupEndField);
 

@@ -367,8 +367,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         // format.
 
         if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-          // omitTermFreqAndPositions == false so we do write positions &
-          // payload
+          // we do write positions & payload
           int position = 0;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
