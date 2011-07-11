@@ -41,7 +41,7 @@ import org.apache.solr.update.RollbackUpdateCommand;
  * @since solr 1.3
  */
 public abstract class UpdateRequestProcessor {
-  protected static Logger log = LoggerFactory.getLogger(UpdateRequestProcessor.class);
+  protected final Logger log = LoggerFactory.getLogger(getClass());
 
   protected final UpdateRequestProcessor next;
 

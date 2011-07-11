@@ -31,12 +31,15 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A logging processor.  This keeps track of all commands that have passed through
- * the chain and prints them on finish();
+ * the chain and prints them on finish().  At the Debug (FINE) level, a message
+ * will be logged for each command prior to the next stage in the chain.
  * 
- * If the Log level is not INFO the processor will not be created or added to the chain
+ * If the Log level is not >= INFO the processor will not be created or added to the chain.
  * 
  * @since solr 1.3
  */
@@ -54,11 +57,14 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    boolean doLog = LogUpdateProcessor.log.isInfoEnabled();
+    final Logger logger = LoggerFactory.getLogger(LogUpdateProcessor.class);
+    boolean doLog = logger.isInfoEnabled();
     // LogUpdateProcessor.log.error("Will Log=" + doLog);
     if( doLog ) {
       // only create the log processor if we will use it
-      return new LogUpdateProcessor(req, rsp, this, next);
+      final LogUpdateProcessor processor = new LogUpdateProcessor(req, rsp, this, next);
+      assert processor.log == logger;
+      return processor;
     }
     return null;
   }
@@ -78,6 +84,8 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   private final int maxNumToLog;
 
+  private final boolean logDebug = log.isDebugEnabled();//cache to avoid volatile-read
+
   public LogUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, LogUpdateProcessorFactory factory, UpdateRequestProcessor next) {
     super( next );
     this.req = req;
@@ -91,8 +99,6 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    if (next != null) next.processAdd(cmd);
-
     // Add a list of added id's to the response
     if (adds == null) {
       adds = new ArrayList<String>();
@@ -102,14 +108,15 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     if (adds.size() < maxNumToLog) {
       adds.add(cmd.getPrintableId(req.getSchema()));
     }
+    if (logDebug) { log.debug("add {}", cmd.getPrintableId(req.getSchema())); }
 
     numAdds++;
+
+    if (next != null) next.processAdd(cmd);
   }
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
-    if (next != null) next.processDelete(cmd);
-
     if (cmd.id != null) {
       if (deletes == null) {
         deletes = new ArrayList<String>();
@@ -118,26 +125,33 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
       if (deletes.size() < maxNumToLog) {
         deletes.add(cmd.id);
       }
+      if (logDebug) { log.debug("delete {}", cmd.id); }
     } else {
       if (toLog.size() < maxNumToLog) {
         toLog.add("deleteByQuery", cmd.query);
       }
+      if (logDebug) { log.debug("deleteByQuery {}", cmd.query); }
     }
     numDeletes++;
+
+    if (next != null) next.processDelete(cmd);
   }
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    if (next != null) next.processMergeIndexes(cmd);
-
     toLog.add("mergeIndexes", cmd.toString());
+    if (logDebug) { log.debug("mergeIndexes {}",cmd.toString()); }
+
+    if (next != null) next.processMergeIndexes(cmd);
   }
 
   @Override
   public void processCommit( CommitUpdateCommand cmd ) throws IOException {
+    final String msg = cmd.optimize ? "optimize" : "commit";
+    toLog.add(msg, "");
+    if (logDebug) { log.debug(msg); }
+
     if (next != null) next.processCommit(cmd);
-    
-    toLog.add(cmd.optimize ? "optimize" : "commit", "");
   }
 
   /**
@@ -145,15 +159,18 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-    if (next != null) next.processRollback(cmd);
-    
     toLog.add("rollback", "");
+    if (logDebug) { log.debug("rollback"); }
+
+    if (next != null) next.processRollback(cmd);
   }
 
 
   @Override
   public void finish() throws IOException {
     if (next != null) next.finish();
+
+    // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
     
     // TODO: right now, update requests are logged twice...
     // this will slow down things compared to Solr 1.2
