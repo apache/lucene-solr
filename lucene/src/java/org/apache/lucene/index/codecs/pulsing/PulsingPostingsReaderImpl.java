@@ -135,8 +135,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     //System.out.println("PR nextTerm");
     PulsingTermState termState = (PulsingTermState) _termState;
 
-    // total TF, but in the omitTFAP case its computed based on docFreq.
-    long count = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? termState.docFreq : termState.totalTermFreq;
+    // if we have positions, its total TF, otherwise its computed based on docFreq.
+    long count = fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
