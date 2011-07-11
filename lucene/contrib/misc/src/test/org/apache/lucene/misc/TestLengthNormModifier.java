@@ -20,8 +20,10 @@ package org.apache.lucene.misc;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.FieldNormModifier;
 import org.apache.lucene.index.IndexReader;
@@ -70,16 +72,17 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();
-	    d.add(newField("field", "word",
-			    Field.Store.YES, Field.Index.ANALYZED));
-	    d.add(newField("nonorm", "word",
-			    Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+	    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+	    customType.setStored(true);
+	    d.add(newField("field", "word", customType));
+      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+      customType2.setStored(true);
+      customType2.setOmitNorms(true);
+	    d.add(newField("nonorm", "word", customType2));
 		
 	    for (int j = 1; j <= i; j++) {
-		d.add(newField("field", "crap",
-				Field.Store.YES, Field.Index.ANALYZED));
-		d.add(newField("nonorm", "more words",
-				Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+		d.add(newField("field", "crap", customType));
+		d.add(newField("nonorm", "more words", customType2));
 	    }
 	    writer.addDocument(d);
 	}

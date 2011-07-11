@@ -21,8 +21,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -46,7 +47,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
   
   protected static Field field(String name, String value) {
-    return newField(name, value, Field.Store.NO, Field.Index.ANALYZED);
+    return newField(name, value, TextField.TYPE_UNSTORED);
   }
 
   protected static IndexSearcher searcher;

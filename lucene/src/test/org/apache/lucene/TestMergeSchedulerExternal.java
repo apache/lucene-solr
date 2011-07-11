@@ -31,8 +31,9 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 
 /**
  * Holds tests cases to verify external APIs are accessible
@@ -90,7 +91,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
-    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", StringField.TYPE_STORED);
     doc.add(idField);
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(

@@ -19,9 +19,11 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -47,11 +49,13 @@ public class TestDateFilter extends LuceneTestCase {
     
     Document doc = new Document();
     // add time that is in the past
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setTokenized(false);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("datefield", DateTools.timeToString(now - 1000,
-        DateTools.Resolution.MILLISECOND), Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
+        DateTools.Resolution.MILLISECOND), customType));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        Field.Store.YES, Field.Index.ANALYZED));
+        customType2));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -114,11 +118,13 @@ public class TestDateFilter extends LuceneTestCase {
     
     Document doc = new Document();
     // add time that is in the future
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setTokenized(false);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("datefield", DateTools.timeToString(now + 888888,
-        DateTools.Resolution.MILLISECOND), Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
+        DateTools.Resolution.MILLISECOND), customType));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        Field.Store.YES, Field.Index.ANALYZED));
+        customType2));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();

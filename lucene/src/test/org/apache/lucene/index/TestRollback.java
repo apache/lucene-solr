@@ -18,9 +18,9 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -30,9 +30,12 @@ public class TestRollback extends LuceneTestCase {
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter rw = new RandomIndexWriter(random, dir);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setOmitNorms(true);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      doc.add(newField("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", Integer.toString(i), customType));
       rw.addDocument(doc);
     }
     rw.close();
@@ -44,8 +47,8 @@ public class TestRollback extends LuceneTestCase {
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       String value = Integer.toString(i);
-      doc.add(newField("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
-      doc.add(newField("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", value, customType));
+      doc.add(newField("text", "foo", customType));
       w.updateDocument(pkTerm.createTerm(value), doc);
     }
     w.rollback();

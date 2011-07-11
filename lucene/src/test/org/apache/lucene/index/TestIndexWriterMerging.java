@@ -17,11 +17,11 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -84,7 +84,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
     {
-      Document temp = reader.document(i);
+      org.apache.lucene.document.Document temp = reader.document(i);
       //System.out.println("doc "+i+"="+temp.getField("count").stringValue());
       //compare the index doc number to the value that it should be
       if (!temp.getField("count").stringValue().equals((i + startAt) + ""))
@@ -107,10 +107,12 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(2))
     );
 
+    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
+    custom.setStored(true);
     for (int i = start; i < (start + numDocs); i++)
     {
       Document temp = new Document();
-      temp.add(newField("count", (""+i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      temp.add(newField("count", (""+i), custom));
 
       writer.addDocument(temp);
     }
@@ -129,12 +131,19 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Document document = new Document();
 
     document = new Document();
-    Field storedField = newField("stored", "stored", Field.Store.YES,
-                                  Field.Index.NO);
+
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+
+    FieldType customType1 = new FieldType(TextField.TYPE_UNSTORED);
+    customType1.setTokenized(false);
+    customType1.setStoreTermVectors(true);
+    customType1.setStoreTermVectorPositions(true);
+    customType1.setStoreTermVectorOffsets(true);
+    
+    Field storedField = newField("stored", "stored", customType);
     document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
-                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
     for(int i=0;i<10;i++)
       writer.addDocument(document);
@@ -175,12 +184,19 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Document document = new Document();
 
     document = new Document();
-    Field storedField = newField("stored", "stored", Store.YES,
-                                  Index.NO);
+
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+
+    FieldType customType1 = new FieldType(TextField.TYPE_UNSTORED);
+    customType1.setTokenized(false);
+    customType1.setStoreTermVectors(true);
+    customType1.setStoreTermVectorPositions(true);
+    customType1.setStoreTermVectorOffsets(true);
+    
+    Field storedField = newField("stored", "stored", customType);
     document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector",
-                                      Store.NO, Index.NOT_ANALYZED,
-                                      TermVector.WITH_POSITIONS_OFFSETS);
+    Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
     for(int i=0;i<98;i++)
       writer.addDocument(document);
@@ -223,13 +239,19 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Document document = new Document();
 
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+
+    FieldType customType1 = new FieldType(TextField.TYPE_UNSTORED);
+    customType1.setTokenized(false);
+    customType1.setStoreTermVectors(true);
+    customType1.setStoreTermVectorPositions(true);
+    customType1.setStoreTermVectorOffsets(true);
+    
     document = new Document();
-    Field storedField = newField("stored", "stored", Field.Store.YES,
-                                  Field.Index.NO);
+    Field storedField = newField("stored", "stored", customType);
     document.add(storedField);
-    Field termVectorField = newField("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
-                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field termVectorField = newField("termVector", "termVector", customType1);
     document.add(termVectorField);
     for(int i=0;i<98;i++)
       writer.addDocument(document);
@@ -292,8 +314,11 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter iw = new IndexWriter(dir, conf);
     iw.setInfoStream(VERBOSE ? System.out : null);
     Document document = new Document();
-    document.add(newField("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
-                           Field.TermVector.YES));
+
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStoreTermVectors(true);
+    
+    document.add(newField("tvtest", "a b c", customType));
     for(int i=0;i<177;i++)
       iw.addDocument(document);
     iw.close();

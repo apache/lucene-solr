@@ -23,7 +23,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 
 public class TestValueSource extends LuceneTestCase {
 
@@ -32,7 +32,9 @@ public class TestValueSource extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setMergeFactor(10);
     Document doc = new Document();
-    Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setTokenized(false);
+    Field f = newField("field", "", customType);
     doc.add(f);
 
     for(int i=0;i<17;i++) {

@@ -18,8 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.util.HashSet;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -56,7 +57,10 @@ public class TermsFilterTest extends LuceneTestCase {
 		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();
 			int term=i*10; //terms are units of 10;
-			doc.add(newField(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
+	    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+	    customType.setStored(true);
+	    customType.setTokenized(false);
+			doc.add(newField(fieldName,""+term,customType));
 			w.addDocument(doc);			
 		}
 		IndexReader reader = new SlowMultiReaderWrapper(w.getReader());

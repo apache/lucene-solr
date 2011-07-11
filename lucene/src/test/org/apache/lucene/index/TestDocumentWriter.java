@@ -28,12 +28,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -70,7 +69,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     //After adding the document, we should be able to read it back in
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(reader != null);
-    Document doc = reader.document(0);
+    org.apache.lucene.document.Document doc = reader.document(0);
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
@@ -122,8 +121,10 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(newField("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField("repeated", "repeated two", Field.Store.YES, Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("repeated", "repeated one", customType));
+    doc.add(newField("repeated", "repeated two", customType));
 
     writer.addDocument(doc);
     writer.commit();
@@ -187,7 +188,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(newField("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("f1", "a 5 a a", customType));
 
     writer.addDocument(doc);
     writer.commit();
@@ -213,8 +216,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    
-    doc.add(new Field("preanalyzed", new TokenStream() {
+
+    doc.add(new TextField("preanalyzed", new TokenStream() {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
       private int index = 0;
       
@@ -231,7 +234,7 @@ public class TestDocumentWriter extends LuceneTestCase {
         }        
       }
       
-    }, TermVector.NO));
+    }));
     
     writer.addDocument(doc);
     writer.commit();
@@ -264,11 +267,20 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testMixedTermVectorSettingsSameField() throws Exception {
     Document doc = new Document();
     // f1 first without tv then with tv
-    doc.add(newField("f1", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
-    doc.add(newField("f1", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setTokenized(false);
+    doc.add(newField("f1", "v1", customType));
+    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    customType2.setTokenized(false);
+    customType2.setStoreTermVectors(true);
+    customType2.setStoreTermVectorOffsets(true);
+    customType2.setStoreTermVectorPositions(true);
+    doc.add(newField("f1", "v2", customType2));
     // f2 first with tv then without tv
-    doc.add(newField("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(newField("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
+    doc.add(newField("f2", "v1", customType2));
+    doc.add(newField("f2", "v2", customType));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
@@ -297,13 +309,19 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testLUCENE_1590() throws Exception {
     Document doc = new Document();
     // f1 has no norms
-    doc.add(newField("f1", "v1", Store.NO, Index.ANALYZED_NO_NORMS));
-    doc.add(newField("f1", "v2", Store.YES, Index.NO));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
+    FieldType customType2 = new FieldType();
+    customType2.setStored(true);
+    doc.add(newField("f1", "v1", customType));
+    doc.add(newField("f1", "v2", customType2));
     // f2 has no TF
-    Field f = newField("f2", "v1", Store.NO, Index.ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
+    customType3.setStored(true);
+    customType3.setOmitTermFreqAndPositions(true);
+    Field f = newField("f2", "v1", customType3);
     doc.add(f);
-    doc.add(newField("f2", "v2", Store.YES, Index.NO));
+    doc.add(newField("f2", "v2", customType2));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));

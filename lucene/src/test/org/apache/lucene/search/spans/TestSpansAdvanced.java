@@ -24,8 +24,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -90,10 +92,12 @@ public class TestSpansAdvanced extends LuceneTestCase {
       final String text) throws IOException {
     
     final Document document = new Document();
-    document.add(newField(FIELD_ID, id, Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
-    document.add(newField(FIELD_TEXT, text, Field.Store.YES,
-        Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    FieldType customType2 = new FieldType(StringField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    document.add(newField(FIELD_ID, id, customType2));
+    document.add(newField(FIELD_TEXT, text, customType));
     writer.addDocument(document);
   }
   
@@ -161,7 +165,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
       
       int id = topdocs.scoreDocs[i].doc;
       float score = topdocs.scoreDocs[i].score;
-      Document doc = s.doc(id);
+      org.apache.lucene.document.Document doc = s.doc(id);
       assertEquals(expectedIds[i], doc.get(FIELD_ID));
       boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
       if (!scoreEq) {

@@ -17,6 +17,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -29,9 +30,11 @@ import org.apache.lucene.util.*;
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -131,9 +134,14 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
   static Comparator<Fieldable> fieldNameComparator = new Comparator<Fieldable>() {
-        public int compare(Fieldable o1, Fieldable o2) {
-          return o1.name().compareTo(o2.name());
-        }
+    public int compare(Fieldable o1, Fieldable o2) {
+      return o1.name().compareTo(o2.name());
+    }
+  };
+  static Comparator<IndexableField> fieldNameComparator2 = new Comparator<IndexableField>() {
+    public int compare(IndexableField o1, IndexableField o2) {
+      return o1.name().compareTo(o2.name());
+    }
   };
 
   // This test avoids using any extra synchronization in the multiple
@@ -249,13 +257,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Iterator<Document> iter = docs.values().iterator();
     while (iter.hasNext()) {
       Document d = iter.next();
-      ArrayList<Fieldable> fields = new ArrayList<Fieldable>();
+      ArrayList<IndexableField> fields = new ArrayList<IndexableField>();
       fields.addAll(d.getFields());
       // put fields in same order each time
-      Collections.sort(fields, fieldNameComparator);
+      Collections.sort(fields, fieldNameComparator2);
       
       Document d1 = new Document();
-      d1.setBoost(d.getBoost());
+      //d1.setBoost(d.getBoost());
       for (int i=0; i<fields.size(); i++) {
         d1.add(fields.get(i));
       }
@@ -286,7 +294,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits delDocs = sub.getDeletedDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
-        Document doc = sub.document(docID);
+        org.apache.lucene.document.Document doc = sub.document(docID);
         if (delDocs == null || !delDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.get("id"));
         } else {
@@ -508,7 +516,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  public static void verifyEquals(Document d1, Document d2) {
+  public static void verifyEquals(org.apache.lucene.document.Document d1, org.apache.lucene.document.Document d2) {
     List<Fieldable> ff1 = d1.getFields();
     List<Fieldable> ff2 = d2.getFields();
 
@@ -520,8 +528,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     for (int i=0; i<ff1.size(); i++) {
       Fieldable f1 = ff1.get(i);
       Fieldable f2 = ff2.get(i);
-      if (f1.isBinary()) {
-        assert(f2.isBinary());
+      if (f1.binaryValue(null) != null) {
+        assert(f2.binaryValue(null) != null);
       } else {
         String s1 = f1.stringValue();
         String s2 = f2.stringValue();
@@ -667,48 +675,63 @@ public class TestStressIndexing2 extends LuceneTestCase {
     public void indexDoc() throws IOException {
       Document d = new Document();
 
+      FieldType customType1 = new FieldType(TextField.TYPE_UNSTORED);
+      customType1.setStored(true);
+      customType1.setTokenized(false);
+      customType1.setOmitNorms(true);
+      
       ArrayList<Field> fields = new ArrayList<Field>();      
       String idString = getIdString();
-      Field idField =  newField(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field idField =  newField(idTerm.field(), idString, customType1);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
       for (int i=0; i<nFields; i++) {
 
-        Field.TermVector tvVal = Field.TermVector.NO;
+        FieldType customType = new FieldType();
         switch (nextInt(4)) {
         case 0:
-          tvVal = Field.TermVector.NO;
           break;
         case 1:
-          tvVal = Field.TermVector.YES;
+          customType.setStoreTermVectors(true);
           break;
         case 2:
-          tvVal = Field.TermVector.WITH_POSITIONS;
+          customType.setStoreTermVectors(true);
+          customType.setStoreTermVectorPositions(true);
           break;
         case 3:
-          tvVal = Field.TermVector.WITH_POSITIONS_OFFSETS;
+          customType.setStoreTermVectors(true);
+          customType.setStoreTermVectorOffsets(true);
           break;
         }
         
         switch (nextInt(4)) {
           case 0:
-            fields.add(newField("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, tvVal));
+            customType.setStored(true);
+            customType.setOmitNorms(true);
+            fields.add(newField("f" + nextInt(100), getString(1), customType));
             break;
           case 1:
-            fields.add(newField("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.ANALYZED, tvVal));
+            customType.setTokenized(true);
+            fields.add(newField("f" + nextInt(100), getString(0), customType));
             break;
           case 2:
-            fields.add(newField("f" + nextInt(100), getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
+            customType.setStored(true);
+            customType.setStoreTermVectors(false);
+            customType.setStoreTermVectorOffsets(false);
+            customType.setStoreTermVectorPositions(false);
+            fields.add(newField("f" + nextInt(100), getString(0), customType));
             break;
           case 3:
-            fields.add(newField("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.ANALYZED, tvVal));
+            customType.setStored(true);
+            customType.setTokenized(true);
+            fields.add(newField("f" + nextInt(100), getString(bigFieldSize), customType));
             break;          
         }
       }
 
       if (sameFieldOrder) {
-        Collections.sort(fields, fieldNameComparator);
+        Collections.sort(fields, fieldNameComparator2);
       } else {
         // random placement of id field also
         Collections.swap(fields,nextInt(fields.size()), 0);

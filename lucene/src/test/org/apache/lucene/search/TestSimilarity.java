@@ -28,8 +28,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
 /** Similarity unit test.
@@ -70,10 +70,10 @@ public class TestSimilarity extends LuceneTestCase {
         .setSimilarityProvider(new SimpleSimilarityProvider()));
     
     Document d1 = new Document();
-    d1.add(newField("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("field", "a c", TextField.TYPE_STORED));
 
     Document d2 = new Document();
-    d2.add(newField("field", "a b c", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("field", "a b c", TextField.TYPE_STORED));
     
     writer.addDocument(d1);
     writer.addDocument(d2);

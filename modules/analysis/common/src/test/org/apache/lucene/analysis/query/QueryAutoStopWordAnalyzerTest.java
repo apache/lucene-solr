@@ -28,8 +28,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -59,8 +60,8 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       Document doc = new Document();
       String variedFieldValue = variedFieldValues[i % variedFieldValues.length];
       String repetitiveFieldValue = repetitiveFieldValues[i % repetitiveFieldValues.length];
-      doc.add(new Field("variedField", variedFieldValue, Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("repetitiveField", repetitiveFieldValue, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field("variedField", TextField.TYPE_STORED, variedFieldValue));
+      doc.add(new Field("repetitiveField", TextField.TYPE_STORED, repetitiveFieldValue));
       writer.addDocument(doc);
     }
     writer.close();

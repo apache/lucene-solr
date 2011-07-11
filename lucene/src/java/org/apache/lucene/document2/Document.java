@@ -163,6 +163,18 @@ public final class Document implements Iterable<IndexableField> {
     return fields.size();
   }
   
+  public final List<IndexableField> getFields() {
+    return fields;
+  }
+  
+  public final String get(String name) {
+   for (IndexableField field : fields) {
+      if (field.name().equals(name) && (field.binaryValue(null) == null))
+        return field.stringValue();
+    }
+    return null;
+  }
+  
   /** Prints the fields of a document for human consumption. */
   @Override
   public final String toString() {

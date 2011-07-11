@@ -27,10 +27,12 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -285,12 +287,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     for(int i=0;i<35;i++) {
       if (!delDocs.get(i)) {
-        Document d = reader.document(i);
+        org.apache.lucene.document.Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
         if (d.getField("content3") == null) {
           final int numFields = 5;
           assertEquals(numFields, fields.size());
-          Field f =  d.getField("id");
+          org.apache.lucene.document.Field f =  d.getField("id");
           assertEquals(""+i, f.stringValue());
 
           f = d.getField("utf8");
@@ -318,7 +320,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // First document should be #21 since it's norm was
     // increased:
-    Document d = searcher.getIndexReader().document(hits[0].doc);
+    org.apache.lucene.document.Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
@@ -364,7 +366,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir, true);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    Document d = searcher.getIndexReader().document(hits[0].doc);
+    org.apache.lucene.document.Document d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
     searcher.close();
@@ -412,7 +414,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(dir, true);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
-    Document d = searcher.doc(hits[0].doc);
+    org.apache.lucene.document.Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     searcher.close();
 
@@ -582,12 +584,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void addDoc(IndexWriter writer, int id) throws IOException
   {
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("id", Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED));
-    doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new TextField("content", "aaa"));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setTokenized(false);
+    doc.add(new Field("id", customType, Integer.toString(id)));
+    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    customType2.setStoreTermVectors(true);
+    customType2.setStoreTermVectorPositions(true);
+    customType2.setStoreTermVectorOffsets(true);
+    doc.add(new Field("autf8", customType2, "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd"));
+    doc.add(new Field("utf8", customType2, "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd"));
+    doc.add(new Field("content2", customType2, "here is more content with aaa aaa aaa"));
+    doc.add(new Field("fie\u2C77ld", customType2, "field with non-ascii name"));
     // add numeric fields, to test if flex preserves encoding
     doc.add(new NumericField("trieInt", 4).setIntValue(id));
     doc.add(new NumericField("trieLong", 4).setLongValue(id));
@@ -596,11 +606,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
-    Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setOmitTermFreqAndPositions(true);
+    Field f = new Field("content3", customType, "aaa");
     doc.add(f);
-    f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
-    f.setOmitTermFreqAndPositions(true);
+    FieldType customType2 = new FieldType();
+    customType2.setStored(true);
+    customType2.setOmitTermFreqAndPositions(true);
+    f = new Field("content4", customType2, "aaa");
     doc.add(f);
     writer.addDocument(doc);
   }
@@ -670,7 +684,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
-        Document d = searcher.doc(hits[0].doc);
+        org.apache.lucene.document.Document d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
         
         hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;

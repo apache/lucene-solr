@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -97,26 +99,30 @@ public class TestCartesian extends LuceneTestCase {
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
     Document doc = new Document();
-    
-    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
+
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("name", name, customType));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lng));
+    FieldType customType2 = new FieldType(NumericField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, customType2).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, customType2).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc", customType));
     
     int ctpsize = ctps.size();
+    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
+    customType3.setStored(true);
+    customType3.setTokenized(false);
+    customType3.setOmitNorms(true);
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, 
-          Field.Store.YES, 
-          true).setDoubleValue(ctp.getTierBoxId(lat,lng)));
+      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, customType).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
-      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
-    		  Field.Store.YES, 
-    		  Field.Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), customType3));
     }
     writer.addDocument(doc);
     
@@ -278,7 +284,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(2, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = searcher.doc(scoreDocs[i].doc);
+      org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
 
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
@@ -374,7 +380,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(18, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = searcher.doc(scoreDocs[i].doc);
+      org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
       double rsLng = Double.parseDouble(d.get(lngField));
@@ -469,7 +475,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
       double lastDistance = 0;
       for(int i =0 ; i < results; i++){
-        Document d = searcher.doc(scoreDocs[i].doc);
+        org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
       
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));
@@ -564,7 +570,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
 	    
       for(int i =0 ; i < results; i++){
-        Document d = searcher.doc(scoreDocs[i].doc);
+        org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
 	      
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));

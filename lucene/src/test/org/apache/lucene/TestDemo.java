@@ -55,7 +55,7 @@ public class TestDemo extends LuceneTestCase {
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
-    FieldType textType = new FieldType(TextField.DEFAULT_TYPE);
+    FieldType textType = new FieldType(TextField.TYPE_UNSTORED);
     textType.setStored(true);
     doc.add(newField("fieldname", text, textType));
     iwriter.addDocument(doc);

@@ -26,7 +26,7 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -92,8 +92,8 @@ public class TestSearch extends LuceneTestCase {
       };
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(newField("contents", docs[j], Field.Store.YES, Field.Index.ANALYZED));
-        d.add(newField("id", ""+j, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("contents", docs[j], TextField.TYPE_STORED));
+        d.add(newField("id", ""+j, StringField.TYPE_UNSTORED));
         writer.addDocument(d);
       }
       writer.close();
@@ -127,7 +127,7 @@ public class TestSearch extends LuceneTestCase {
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {
-          Document d = searcher.doc(hits[i].doc);
+          org.apache.lucene.document.Document d = searcher.doc(hits[i].doc);
           out.println(i + " " + hits[i].score + " " + d.get("contents"));
         }
       }

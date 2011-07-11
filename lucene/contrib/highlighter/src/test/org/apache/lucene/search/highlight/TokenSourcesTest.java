@@ -108,7 +108,7 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
@@ -156,7 +156,7 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
@@ -205,7 +205,7 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
@@ -254,7 +254,7 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorOffsets(true);
       document.add(new Field(FIELD, customType, new TokenStreamOverlap()));

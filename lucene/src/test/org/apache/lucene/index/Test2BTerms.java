@@ -22,7 +22,7 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 import org.apache.lucene.index.codecs.CodecProvider;
 import java.io.File;
 import java.io.IOException;
@@ -176,9 +176,12 @@ public class Test2BTerms extends LuceneTestCase {
 
       Document doc = new Document();
       final MyTokenStream ts = new MyTokenStream(random, TERMS_PER_DOC);
-      Field field = new Field("field", ts);
-      field.setOmitTermFreqAndPositions(true);
-      field.setOmitNorms(true);
+
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      customType.setOmitTermFreqAndPositions(true);
+      customType.setOmitNorms(true);
+      Field field = new Field("field", customType, ts);
       doc.add(field);
       //w.setInfoStream(System.out);
       final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);

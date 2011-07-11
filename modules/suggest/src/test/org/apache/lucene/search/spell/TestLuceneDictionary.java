@@ -22,8 +22,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
@@ -51,23 +51,23 @@ public class TestLuceneDictionary extends LuceneTestCase {
     Document doc;
 
     doc = new  Document();
-    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new  Field("contents", "Tom", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "Tom", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new  Field("contents", "Jerry", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "Jerry", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("zzz", "bar", TextField.TYPE_STORED));
     writer.addDocument(doc);
 
     writer.optimize();

@@ -23,23 +23,29 @@ import org.apache.lucene.analysis.TokenStream;
 
 public final class TextField extends Field {
 
-  public static final FieldType DEFAULT_TYPE = new FieldType();
+  public static final FieldType TYPE_UNSTORED = new FieldType();
+  public static final FieldType TYPE_STORED = new FieldType();
   static {
-    DEFAULT_TYPE.setIndexed(true);
-    DEFAULT_TYPE.setTokenized(true);
-    DEFAULT_TYPE.freeze();
+    TYPE_UNSTORED.setIndexed(true);
+    TYPE_UNSTORED.setTokenized(true);
+    TYPE_UNSTORED.freeze();
+
+    TYPE_STORED.setIndexed(true);
+    TYPE_STORED.setStored(true);
+    TYPE_STORED.setTokenized(true);
+    TYPE_STORED.freeze();
   }
   
   public TextField(String name, Reader reader) {
-    super(name, TextField.DEFAULT_TYPE, reader);
+    super(name, TextField.TYPE_UNSTORED, reader);
   }
 
   public TextField(String name, String value) {
-    super(name, TextField.DEFAULT_TYPE, value);
+    super(name, TextField.TYPE_UNSTORED, value);
   }
   
   public TextField(String name, TokenStream stream) {
-    super(name, TextField.DEFAULT_TYPE, stream);
+    super(name, TextField.TYPE_UNSTORED, stream);
   }
 
   public boolean isNumeric() {

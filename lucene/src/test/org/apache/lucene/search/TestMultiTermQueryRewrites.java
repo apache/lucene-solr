@@ -18,8 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -53,7 +54,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(newField("data", Integer.toString(i), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("data", Integer.toString(i), StringField.TYPE_UNSTORED));
       writer.addDocument(doc);
       ((i % 2 == 0) ? swriter1 : swriter2).addDocument(doc);
     }

@@ -27,8 +27,9 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -63,18 +64,15 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     Document doc;
     doc = new Document();
-    doc.add(new Field("content", "please divide this sentence into shingles",
-            Field.Store.YES,Field.Index.ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "please divide this sentence into shingles"));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "just another test sentence",
-                      Field.Store.YES,Field.Index.ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "just another test sentence"));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("content", "a sentence which contains no test",
-                      Field.Store.YES,Field.Index.ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "a sentence which contains no test"));
     writer.addDocument(doc);
 
     writer.close();

@@ -25,9 +25,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.DocTermOrds.TermOrdsIterator;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
@@ -62,7 +64,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    Field field = newField("field", "", Field.Index.ANALYZED);
+    Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
     field.setValue("a b c");
     w.addDocument(doc);
@@ -264,7 +266,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
+        Field field = newField("field", termsArray[ord].utf8ToString(), StringField.TYPE_UNSTORED);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -367,7 +369,7 @@ public class TestDocTermOrds extends LuceneTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newField("field", termsArray[ord].utf8ToString(), Field.Index.NOT_ANALYZED_NO_NORMS);
+        Field field = newField("field", termsArray[ord].utf8ToString(), StringField.TYPE_UNSTORED);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }

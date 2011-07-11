@@ -27,8 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -58,9 +58,9 @@ public class TestSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
-      doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
+      doc.add(newField("field1", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newField("field2", English.intToEnglish(i + 1), TextField.TYPE_STORED)); // + word thousand
+      doc.add(newField("field3", "fvei" + (i % 2 == 0 ? " five" : ""), TextField.TYPE_STORED)); // + word thousand
       writer.addDocument(doc);
     }
     writer.close();

@@ -44,7 +44,7 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static Document testDoc = new Document();
+  private static org.apache.lucene.document2.Document testDoc = new org.apache.lucene.document2.Document();
   private static FieldInfos fieldInfos = null;
   private final static String TEST_SEGMENT_NAME = "_0";
 

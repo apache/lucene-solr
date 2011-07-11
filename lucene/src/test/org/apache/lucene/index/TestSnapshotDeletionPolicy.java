@@ -22,8 +22,9 @@ import java.util.Map;
 import java.util.Random;
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -114,7 +115,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
         @Override
         public void run() {
           Document doc = new Document();
-          doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+          FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+          customType.setStored(true);
+          customType.setStoreTermVectors(true);
+          customType.setStoreTermVectorPositions(true);
+          customType.setStoreTermVectorOffsets(true);
+          doc.add(newField("content", "aaa", customType));
           do {
             for(int i=0;i<27;i++) {
               try {
@@ -155,7 +161,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // final segment, so deletion policy has a chance to
     // delete again:
     Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("content", "aaa", customType));
     writer.addDocument(doc);
 
     // Make sure we don't have any leftover files in the

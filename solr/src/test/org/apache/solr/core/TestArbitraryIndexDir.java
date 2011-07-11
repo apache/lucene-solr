@@ -24,8 +24,9 @@ import java.util.Properties;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
@@ -105,8 +106,8 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
         new IndexWriterConfig(Version.LUCENE_40, new StandardAnalyzer(Version.LUCENE_40))
     );
     Document doc = new Document();
-    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("name", "name2", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("id", TextField.TYPE_STORED, "2"));
+    doc.add(new Field("name", TextField.TYPE_STORED, "name2"));
     iw.addDocument(doc);
     iw.commit();
     iw.close();

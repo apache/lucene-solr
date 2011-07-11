@@ -20,8 +20,10 @@ package org.apache.lucene.search.regex;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,12 +64,10 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // Field.Store.NO, Field.Index.ANALYZED));
     // writer.addDocument(doc);
     // doc = new Document();
-    doc.add(newField("field", "auto update", Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("field", "auto update", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "first auto update", Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("field", "first auto update", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
@@ -87,13 +87,13 @@ public class TestSpanRegexQuery extends LuceneTestCase {
       LockObtainFailedException, IOException {
     // creating a document to store
     Document lDoc = new Document();
-    lDoc.add(newField("field", "a1 b1", Field.Store.NO,
-        Field.Index.ANALYZED_NO_NORMS));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
+    lDoc.add(newField("field", "a1 b1", customType));
 
     // creating a document to store
     Document lDoc2 = new Document();
-    lDoc2.add(newField("field", "a2 b2", Field.Store.NO,
-        Field.Index.ANALYZED_NO_NORMS));
+    lDoc2.add(newField("field", "a2 b2", customType));
 
     // creating first index writer
     IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(

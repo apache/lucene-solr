@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -59,13 +59,13 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy()));
     
     NumericField
-      field8 = new NumericField("field8", 8, Field.Store.YES, true),
-      field4 = new NumericField("field4", 4, Field.Store.YES, true),
-      field2 = new NumericField("field2", 2, Field.Store.YES, true),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
-      ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
-      ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
-      ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
+      field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
+      field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
+      field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, NumericField.TYPE_STORED),
+      ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
+      ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
+      ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
@@ -150,7 +150,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
-      Document doc=searcher.doc(sd[0].doc);
+      org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
       assertEquals("First doc"+type, 2*distance+startOffset, Integer.parseInt(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Integer.parseInt(doc.get(field)) );
@@ -211,7 +211,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
-    Document doc=searcher.doc(sd[0].doc);
+    org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, Integer.parseInt(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
@@ -252,7 +252,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
-    Document doc=searcher.doc(sd[0].doc);
+    org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", count*distance+startOffset, Integer.parseInt(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );

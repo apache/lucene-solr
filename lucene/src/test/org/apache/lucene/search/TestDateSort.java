@@ -22,9 +22,11 @@ import java.util.Arrays;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
@@ -88,7 +90,7 @@ public class TestDateSort extends LuceneTestCase {
     String[] actualOrder = new String[5];
     ScoreDoc[] hits = searcher.search(query, null, 1000, sort).scoreDocs;
     for (int i = 0; i < hits.length; i++) {
-      Document document = searcher.doc(hits[i].doc);
+      org.apache.lucene.document.Document document = searcher.doc(hits[i].doc);
       String text = document.get(TEXT_FIELD);
       actualOrder[i] = text;
     }
@@ -109,13 +111,12 @@ public class TestDateSort extends LuceneTestCase {
     Document document = new Document();
 
     // Add the text field.
-    Field textField = newField(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
+    Field textField = newField(TEXT_FIELD, text, TextField.TYPE_STORED);
     document.add(textField);
 
     // Add the date/time field.
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
-    Field dateTimeField = newField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
-        Field.Index.NOT_ANALYZED);
+    Field dateTimeField = newField(DATE_TIME_FIELD, dateTimeString, StringField.TYPE_STORED);
     document.add(dateTimeField);
 
     return document;

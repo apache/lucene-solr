@@ -19,9 +19,11 @@ package org.apache.lucene.spatial.tier;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,15 +64,19 @@ public class TestDistance extends LuceneTestCase {
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
     Document doc = new Document();
-    
-    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
+
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("name", name, customType));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE,Field.Store.YES, true).setDoubleValue(lng));
+    FieldType customType2 = new FieldType(NumericField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, customType2).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, customType2).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc", customType));
     writer.addDocument(doc);
     
   }

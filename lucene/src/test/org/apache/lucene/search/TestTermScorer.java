@@ -22,8 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -51,8 +52,7 @@ public class TestTermScorer extends LuceneTestCase {
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc
-          .add(newField(FIELD, values[i], Field.Store.YES,
-              Field.Index.ANALYZED));
+          .add(newField(FIELD, values[i], TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     indexReader = new SlowMultiReaderWrapper(writer.getReader());

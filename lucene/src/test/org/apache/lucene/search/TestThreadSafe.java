@@ -23,7 +23,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.*;
 
 import java.util.Random;
 import java.util.List;
@@ -70,14 +71,14 @@ public class TestThreadSafe extends LuceneTestCase {
 
     void loadDoc(IndexReader ir) throws IOException {
       // beware of deleted docs in the future
-      Document doc = ir.document(rand.nextInt(ir.maxDoc()),
-                new FieldSelector() {
-                  public FieldSelectorResult accept(String fieldName) {
+      org.apache.lucene.document.Document doc = ir.document(rand.nextInt(ir.maxDoc()),
+                new org.apache.lucene.document.FieldSelector() {
+                  public org.apache.lucene.document.FieldSelectorResult accept(String fieldName) {
                     switch(rand.nextInt(2)) {
-                      case 0: return FieldSelectorResult.LAZY_LOAD;
-                      case 1: return FieldSelectorResult.LOAD;
+                      case 0: return org.apache.lucene.document.FieldSelectorResult.LAZY_LOAD;
+                      case 1: return org.apache.lucene.document.FieldSelectorResult.LOAD;
                       // TODO: add other options
-                      default: return FieldSelectorResult.LOAD;
+                      default: return org.apache.lucene.document.FieldSelectorResult.LOAD;
                     }
                   }
                 }
@@ -113,9 +114,7 @@ public class TestThreadSafe extends LuceneTestCase {
         StringBuilder sb = new StringBuilder("^ ");
         while (sb.length() < flen) sb.append(' ').append(words[random.nextInt(words.length)]);
         sb.append(" $");
-        Field.Store store = Field.Store.YES;  // make random later
-        Field.Index index = Field.Index.ANALYZED;  // make random later
-        d.add(newField("f"+i, sb.toString(), store, index));
+        d.add(newField("f"+i, sb.toString(), TextField.TYPE_STORED));
       }
       iw.addDocument(d);
     }

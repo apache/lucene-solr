@@ -24,10 +24,11 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -329,8 +330,11 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private Document newDoc() {
     Document d = new Document();
     float boost = nextNorm("anyfield"); // in this test the same similarity is used for all fields so it does not matter what field is passed
+
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setTokenized(false);
     for (int i = 0; i < 10; i++) {
-      Field f = newField("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
+      Field f = newField("f" + i, "v" + i, customType);
       f.setBoost(boost);
       d.add(f);
     }

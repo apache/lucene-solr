@@ -1531,7 +1531,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setStored(true);
     doc.add( new Field( f, customType, v));
     return doc;
@@ -1658,7 +1658,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    FieldType storedNumericType = new FieldType(NumericField.DEFAULT_TYPE);
+    FieldType storedNumericType = new FieldType(NumericField.TYPE_UNSTORED);
     storedNumericType.setStored(true);
     NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(1);
@@ -1696,7 +1696,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
 
-    FieldType storedType = new FieldType(TextField.DEFAULT_TYPE);
+    FieldType storedType = new FieldType(TextField.TYPE_UNSTORED);
     storedType.setStored(true);
     Field f = new Field(FIELD_NAME, storedType, text);
     d.add(f);

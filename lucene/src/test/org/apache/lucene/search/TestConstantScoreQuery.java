@@ -17,8 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -89,7 +90,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       RandomIndexWriter writer = new RandomIndexWriter (random, directory);
 
       Document doc = new Document();
-      doc.add(newField("field", "term", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("field", "term", StringField.TYPE_UNSTORED));
       writer.addDocument(doc);
 
       reader = writer.getReader();

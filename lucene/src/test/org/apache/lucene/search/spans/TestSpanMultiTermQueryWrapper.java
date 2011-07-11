@@ -17,8 +17,9 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document2.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -42,7 +43,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
     
     field.setValue("quick brown fox");

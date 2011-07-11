@@ -21,8 +21,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -47,26 +49,28 @@ public class TestTermVectors extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field.TermVector termVector;
+      FieldType ft = new FieldType(TextField.TYPE_STORED);
       int mod3 = i % 3;
       int mod2 = i % 2;
       if (mod2 == 0 && mod3 == 0){
-        termVector = Field.TermVector.WITH_POSITIONS_OFFSETS;
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorOffsets(true);
+        ft.setStoreTermVectorPositions(true);
       }
       else if (mod2 == 0){
-        termVector = Field.TermVector.WITH_POSITIONS;
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorPositions(true);
       }
       else if (mod3 == 0){
-        termVector = Field.TermVector.WITH_OFFSETS;
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorOffsets(true);
       }
       else {
-        termVector = Field.TermVector.YES;
+        ft.setStoreTermVectors(true);
       }
-      doc.add(new Field("field", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.ANALYZED, termVector));
+      doc.add(newField("field", English.intToEnglish(i), ft));
       //test no term vectors too
-      doc.add(new Field("noTV", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("noTV", English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -109,11 +113,15 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
-    Document doc = new Document();
-    doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    Document doc = new Document();;
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    doc.add(newField("c", "some content here", ft));
+    doc.add(newField("a", "some content here", ft));
+    doc.add(newField("b", "some content here", ft));
+    doc.add(newField("x", "some content here", ft));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -341,10 +349,14 @@ public class TestTermVectors extends LuceneTestCase {
   
   private void setupDoc(Document doc, String text)
   {
-    doc.add(new Field("field2", text, Field.Store.YES,
-        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("field", text, Field.Store.YES,
-        Field.Index.ANALYZED, Field.TermVector.YES));
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    FieldType ft2 = new FieldType(TextField.TYPE_STORED);
+    ft2.setStoreTermVectors(true);
+    doc.add(newField("field2", text, ft));
+    doc.add(newField("field", text, ft2));
     //System.out.println("Document: " + doc);
   }
 
@@ -359,17 +371,19 @@ public class TestTermVectors extends LuceneTestCase {
     }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(i),
-                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     if (VERBOSE) {
       System.out.println("TEST: now add vectors");
     }
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
     for(int i=0;i<10;i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(100+i),
-                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("field", English.intToEnglish(100+i), ft));
       writer.addDocument(doc);
     }
 
@@ -400,16 +414,28 @@ public class TestTermVectors extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    
+    FieldType ft2 = new FieldType(TextField.TYPE_STORED);
+    ft2.setStoreTermVectors(true);
+    
+    FieldType ft3 = new FieldType(TextField.TYPE_STORED);
+    ft3.setStoreTermVectors(true);
+    ft3.setStoreTermVectorPositions(true);
+    
+    FieldType ft4 = new FieldType(TextField.TYPE_STORED);
+    ft4.setStoreTermVectors(true);
+    ft4.setStoreTermVectorOffsets(true);
+    
+    FieldType ft5 = new FieldType(TextField.TYPE_STORED);
+    ft5.setStoreTermVectors(true);
+    ft5.setStoreTermVectorOffsets(true);
+    ft5.setStoreTermVectorPositions(true);
+    
+    doc.add(newField("field", "one", TextField.TYPE_STORED));
+    doc.add(newField("field", "one", ft2));
+    doc.add(newField("field", "one", ft3));
+    doc.add(newField("field", "one", ft4));
+    doc.add(newField("field", "one", ft5));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

@@ -21,10 +21,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.BytesRef;
 
@@ -89,13 +87,13 @@ public class TestSegmentMerger extends LuceneTestCase {
                                                    BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
-    Document newDoc1 = mergedReader.document(0);
+    org.apache.lucene.document.Document newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
     //There are 2 unstored fields on the document
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    Document newDoc2 = mergedReader.document(1);
+    assertTrue(DocHelper.numFields2(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
+    org.apache.lucene.document.Document newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
+    assertTrue(DocHelper.numFields2(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 
     DocsEnum termDocs = MultiFields.getTermDocsEnum(mergedReader,
                                                     MultiFields.getDeletedDocs(mergedReader),
@@ -141,7 +139,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     // Create an index w/ .del file
     w.addDocument(new Document());
     Document doc = new Document();
-    doc.add(new Field("c", "test", Store.NO, Index.ANALYZED));
+    doc.add(new TextField("c", "test"));
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("c", "test"));
@@ -159,7 +157,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     // Create an index w/ .s*
     w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE));
     doc = new Document();
-    doc.add(new Field("c", "test", Store.NO, Index.ANALYZED));
+    doc.add(new TextField("c", "test"));
     w.addDocument(doc);
     w.close();
     IndexReader r = IndexReader.open(dir, false);

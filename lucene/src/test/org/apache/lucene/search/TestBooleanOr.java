@@ -19,8 +19,10 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -138,16 +140,16 @@ public class TestBooleanOr extends LuceneTestCase {
 
     //
     Document d = new Document();
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     d.add(newField(
         FIELD_T,
         "Optimize not deleting all files",
-        Field.Store.YES,
-        Field.Index.ANALYZED));
+        customType));
     d.add(newField(
         FIELD_C,
         "Deleted When I run an optimize in our production environment.",
-        Field.Store.YES,
-        Field.Index.ANALYZED));
+        customType));
 
     //
     writer.addDocument(d);

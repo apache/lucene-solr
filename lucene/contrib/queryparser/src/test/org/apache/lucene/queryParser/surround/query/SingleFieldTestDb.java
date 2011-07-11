@@ -24,8 +24,9 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
@@ -44,7 +45,7 @@ public class SingleFieldTestDb {
           new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.ANALYZED));
+        d.add(new Field(fieldName, TextField.TYPE_UNSTORED, docs[j]));
         writer.addDocument(d);
       }
       writer.close();

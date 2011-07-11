@@ -24,8 +24,11 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -234,10 +237,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(newField("field", "a a\uffffb", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a a\uffffb", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newField("field", "a", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
@@ -252,14 +255,17 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new TestIndexWriter.StringSplitAnalyzer()));
     Document doc = new Document();
 
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++)
-      doc.add(newField("f" + i, utf8Data[2*i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("f" + i, utf8Data[2*i], customType));
     w.addDocument(doc);
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    Document doc2 = ir.document(0);
+    org.apache.lucene.document.Document doc2 = ir.document(0);
     for(int i=0;i<count;i++) {
       assertEquals("field " + i + " was not indexed correctly", 1, ir.docFreq(new Term("f"+i, utf8Data[2*i+1])));
       assertEquals("field " + i + " is incorrect", utf8Data[2*i+1], doc2.getField("f"+i).stringValue());
@@ -276,7 +282,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
-    Field f = newField("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field f = newField("f", "", StringField.TYPE_UNSTORED);
     d.add(f);
     char[] chars = new char[2];
     final Set<String> allTerms = new HashSet<String>();

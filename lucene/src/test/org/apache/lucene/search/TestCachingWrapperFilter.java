@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -176,7 +178,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
-    doc.add(newField("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setTokenized(false);
+    doc.add(newField("id", "1", customType));
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

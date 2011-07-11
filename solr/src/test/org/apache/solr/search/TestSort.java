@@ -18,8 +18,10 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -59,8 +61,11 @@ public class TestSort extends AbstractSolrTestCase {
 
   public void testSort() throws Exception {
     Directory dir = new RAMDirectory();
-    Field f = new Field("f","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
-    Field f2 = new Field("f2","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setTokenized(false);
+    customType.setOmitNorms(false);
+    Field f = new Field("f",customType,"0");
+    Field f2 = new Field("f2",customType,"0");
 
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(

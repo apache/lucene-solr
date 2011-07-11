@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 
 public class TestStressAdvance extends LuceneTestCase {
 
@@ -36,9 +36,11 @@ public class TestStressAdvance extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random, dir);
       final Set<Integer> aDocs = new HashSet<Integer>();
       final Document doc = new Document();
-      final Field f = newField("field", "", Field.Index.NOT_ANALYZED_NO_NORMS);
+      FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+      customType.setStored(true);
+      final Field f = newField("field", "", StringField.TYPE_UNSTORED);
       doc.add(f);
-      final Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      final Field idField = newField("id", "", customType);
       doc.add(idField);
       int num = atLeast(5000);
       for(int id=0;id<num;id++) {

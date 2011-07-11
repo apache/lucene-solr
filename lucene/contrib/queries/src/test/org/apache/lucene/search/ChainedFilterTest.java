@@ -20,8 +20,9 @@ package org.apache.lucene.search;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,9 +63,12 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(newField("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(newField("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      customType.setTokenized(false);
+      doc.add(newField("key", "" + (i + 1), customType));
+      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", customType));
+      doc.add(newField("date", cal.getTime().toString(), customType));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);

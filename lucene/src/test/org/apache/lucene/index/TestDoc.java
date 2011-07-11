@@ -30,8 +30,9 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -184,7 +185,7 @@ public class TestDoc extends LuceneTestCase {
    {
       File file = new File(workDir, fileName);
       Document doc = new Document();
-      doc.add(new Field("contents", new FileReader(file)));
+      doc.add(new TextField("contents", new FileReader(file)));
       writer.addDocument(doc);
       writer.commit();
       return writer.newestSegment();

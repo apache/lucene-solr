@@ -23,8 +23,9 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -51,7 +52,7 @@ public class TestWildcardRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS);
+    Field field = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(field);
     
     NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));

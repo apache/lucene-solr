@@ -20,8 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -276,11 +277,13 @@ public class TestIndexReaderDelete extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w= new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    doc.add(newField("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setTokenized(false);
+    doc.add(newField("f", "doctor", customType));
     w.addDocument(doc);
     doc = new Document();
     w.commit();
-    doc.add(newField("f", "who", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("f", "who", customType));
     w.addDocument(doc);
     IndexReader r = new SlowMultiReaderWrapper(w.getReader());
     w.close();

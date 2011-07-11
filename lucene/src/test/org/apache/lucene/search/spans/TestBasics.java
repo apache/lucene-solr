@@ -31,8 +31,9 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -120,7 +121,9 @@ public class TestBasics extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      doc.add(newField("field", English.intToEnglish(i), customType));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

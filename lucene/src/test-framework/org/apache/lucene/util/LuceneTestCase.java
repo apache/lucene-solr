@@ -1079,16 +1079,17 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   public static org.apache.lucene.document2.Field newField(Random random, String name, String value, FieldType type) {
+    FieldType newType = new FieldType(type);
     if (usually(random)) {
       // most of the time, don't modify the params
-      return new org.apache.lucene.document2.Field(name, type, value);
+      return new org.apache.lucene.document2.Field(name, newType, value);
     }
 
-    if (!type.stored() && random.nextBoolean()) {
-      type.setStored(true); // randomly store it
+    if (!newType.stored() && random.nextBoolean()) {
+      newType.setStored(true); // randomly store it
     }
     
-    return new org.apache.lucene.document2.Field(name, type, value);
+    return new org.apache.lucene.document2.Field(name, newType, value);
   }
   
   /**

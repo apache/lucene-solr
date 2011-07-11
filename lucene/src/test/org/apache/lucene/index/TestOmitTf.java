@@ -24,8 +24,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -61,6 +63,13 @@ public class TestOmitTf extends LuceneTestCase {
     }
   }
 
+  private static final FieldType omitType = new FieldType(TextField.TYPE_UNSTORED);
+  private static final FieldType normalType = new FieldType(TextField.TYPE_UNSTORED);
+  
+  static {
+    omitType.setOmitTermFreqAndPositions(true);
+  }
+
   // Tests whether the DocumentWriter correctly enable the
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
@@ -70,12 +79,11 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", normalType);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTermFreqAndPositions(true);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
     d.add(f2);
         
     writer.addDocument(d);
@@ -85,10 +93,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverse
-    f1.setOmitTermFreqAndPositions(true);
+    f1 = newField("f1", "This field has term freqs", omitType);
     d.add(f1);
         
-    f2.setOmitTermFreqAndPositions(false);        
+    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
     d.add(f2);
         
     writer.addDocument(d);
@@ -122,12 +130,11 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", normalType);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTermFreqAndPositions(true);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
     d.add(f2);
 
     for(int i=0;i<30;i++)
@@ -138,10 +145,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-    f1.setOmitTermFreqAndPositions(true);
+    f1 = newField("f1", "This field has term freqs", omitType);
     d.add(f1);
         
-    f2.setOmitTermFreqAndPositions(false);        
+    f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
     d.add(f2);
         
     for(int i=0;i<30;i++)
@@ -176,18 +183,16 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f1 = newField("f1", "This field has term freqs", normalType);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
+    Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
     d.add(f2);
 
     for(int i=0;i<5;i++)
       writer.addDocument(d);
 
-    f2.setOmitTermFreqAndPositions(true);
-        
     for(int i=0;i<20;i++)
       writer.addDocument(d);
 
@@ -223,8 +228,7 @@ public class TestOmitTf extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
         
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setOmitTermFreqAndPositions(true);
+    Field f1 = newField("f1", "This field has term freqs", omitType);
     d.add(f1);
 
     for(int i=0;i<30;i++)
@@ -262,11 +266,10 @@ public class TestOmitTf extends LuceneTestCase {
       Document d = new Document();
       sb.append(term).append(" ");
       String content  = sb.toString();
-      Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
-      noTf.setOmitTermFreqAndPositions(true);
+      Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), omitType);
       d.add(noTf);
           
-      Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);
+      Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), normalType);
       d.add(tf);
           
       writer.addDocument(d);

@@ -19,8 +19,6 @@ package org.apache.lucene.document2;
 
 import java.io.Reader;
 
-import org.apache.lucene.document.NumericField.DataType;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.util.NumericUtils;
@@ -147,13 +145,24 @@ public final class NumericField extends Field {
   }
   */
 
-  public static final FieldType DEFAULT_TYPE = new FieldType();
+  public static final FieldType TYPE_UNSTORED = new FieldType();
+  public static final FieldType TYPE_STORED = new FieldType();
   static {
-    DEFAULT_TYPE.setIndexed(true);
-    DEFAULT_TYPE.setOmitNorms(true);
-    DEFAULT_TYPE.setOmitTermFreqAndPositions(true);
-    DEFAULT_TYPE.freeze();
+    TYPE_UNSTORED.setIndexed(true);
+    TYPE_UNSTORED.setTokenized(true);
+    TYPE_UNSTORED.setOmitNorms(true);
+    TYPE_UNSTORED.setOmitTermFreqAndPositions(true);
+    TYPE_UNSTORED.freeze();
+
+    TYPE_STORED.setIndexed(true);
+    TYPE_STORED.setStored(true);
+    TYPE_STORED.setTokenized(true);
+    TYPE_STORED.setOmitNorms(true);
+    TYPE_STORED.setOmitTermFreqAndPositions(true);
+    TYPE_STORED.freeze();
   }
+
+  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
   
   private DataType dataType;
   private transient NumericTokenStream numericTS;
@@ -171,7 +180,7 @@ public final class NumericField extends Field {
    *          the field name
    */
   public NumericField(String name) {
-    this(name, NumericUtils.PRECISION_STEP_DEFAULT, NumericField.DEFAULT_TYPE);
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, NumericField.TYPE_UNSTORED);
   }
   
   /**
@@ -208,7 +217,7 @@ public final class NumericField extends Field {
    *          >precision step</a>
    */
   public NumericField(String name, int precisionStep) {
-    this(name, precisionStep, NumericField.DEFAULT_TYPE);
+    this(name, precisionStep, NumericField.TYPE_UNSTORED);
   }
   
   /**

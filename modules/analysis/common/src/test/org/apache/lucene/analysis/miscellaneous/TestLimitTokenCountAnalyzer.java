@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -58,7 +58,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");
-    doc.add(newField("field", b.toString(), Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", b.toString(), TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
     writer.close();
 

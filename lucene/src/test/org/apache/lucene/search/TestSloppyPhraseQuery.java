@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -137,8 +139,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static Document makeDocument(String docText) {
     Document doc = new Document();
-    Field f = new Field("f", docText, Field.Store.NO, Field.Index.ANALYZED);
-    f.setOmitNorms(true);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
+    Field f = new Field("f", customType, docText);
     doc.add(f);
     return doc;
   }

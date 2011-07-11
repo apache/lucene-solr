@@ -20,8 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -54,7 +55,13 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     public void run() {
 
       final Document doc = new Document();
-      doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorPositions(true);
+      customType.setStoreTermVectorOffsets(true);
+      
+      doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
 
       int idUpto = 0;
       int fullCount = 0;
@@ -288,7 +295,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random))
       .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     final Document doc = new Document();
-    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
 
     for(int i=0;i<6;i++)
       writer.addDocument(doc);

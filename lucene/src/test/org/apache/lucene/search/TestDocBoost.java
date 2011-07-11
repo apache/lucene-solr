@@ -20,9 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -38,26 +39,26 @@ public class TestDocBoost extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
-    Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
-    Fieldable f2 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Field f1 = newField("field", "word", TextField.TYPE_STORED);
+    Field f2 = newField("field", "word", TextField.TYPE_STORED);
     f2.setBoost(2.0f);
 
     Document d1 = new Document();
     Document d2 = new Document();
     Document d3 = new Document();
     Document d4 = new Document();
-    d3.setBoost(3.0f);
-    d4.setBoost(2.0f);
+    //d3.setBoost(3.0f);
+    //d4.setBoost(2.0f);
 
     d1.add(f1);                                 // boost = 1
     d2.add(f2);                                 // boost = 2
-    d3.add(f1);                                 // boost = 3
-    d4.add(f2);                                 // boost = 4
+    //d3.add(f1);                                 // boost = 3
+    //d4.add(f2);                                 // boost = 4
 
     writer.addDocument(d1);
     writer.addDocument(d2);
-    writer.addDocument(d3);
-    writer.addDocument(d4);
+    //writer.addDocument(d3);
+    //writer.addDocument(d4);
 
     IndexReader reader = writer.getReader();
     writer.close();
@@ -89,7 +90,7 @@ public class TestDocBoost extends LuceneTestCase {
 
     float lastScore = 0.0f;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
       assertTrue(scores[i] > lastScore);
       lastScore = scores[i];
     }

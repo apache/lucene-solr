@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -115,9 +117,11 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     /* build an index */
     
     Document doc = new Document();
-    Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
-    Field randField = newField(random, "rand", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
-    Field bodyField = newField(random, "body", "", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+    customType.setStored(true);
+    Field idField = newField(random, "id", "", customType);
+    Field randField = newField(random, "rand", "", customType);
+    Field bodyField = newField(random, "body", "", StringField.TYPE_UNSTORED);
     doc.add(idField);
     doc.add(randField);
     doc.add(bodyField);

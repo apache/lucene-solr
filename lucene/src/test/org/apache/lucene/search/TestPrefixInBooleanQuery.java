@@ -18,8 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -50,8 +51,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
-    Field field = newField(FIELD, "meaninglessnames", Field.Store.NO,
-        Field.Index.NOT_ANALYZED_NO_NORMS);
+    Field field = newField(FIELD, "meaninglessnames", StringField.TYPE_UNSTORED);
     doc.add(field);
     
     for (int i = 0; i < 5137; ++i) {

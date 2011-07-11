@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -65,13 +67,21 @@ public class TestFieldNormModifier extends LuceneTestCase {
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();
-      d.add(newField("field", "word", Field.Store.YES, Field.Index.ANALYZED));
-      d.add(newField("nonorm", "word", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-      d.add(newField("untokfield", "20061212 20071212", Field.Store.YES, Field.Index.ANALYZED));
+      
+      FieldType storedTextType = new FieldType(TextField.TYPE_UNSTORED);
+      storedTextType.setStored(true);
+      d.add(newField("field", "word", storedTextType));
+
+      FieldType storedTextType2 = new FieldType(TextField.TYPE_UNSTORED);
+      storedTextType2.setStored(true);
+      storedTextType2.setTokenized(false);
+      storedTextType2.setOmitNorms(true);
+      d.add(newField("nonorm", "word", storedTextType2));
+      d.add(newField("untokfield", "20061212 20071212", storedTextType));
       
       for (int j = 1; j <= i; j++) {
-        d.add(newField("field", "crap", Field.Store.YES, Field.Index.ANALYZED));
-        d.add(newField("nonorm", "more words", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("field", "crap", storedTextType));
+        d.add(newField("nonorm", "more words", storedTextType2));
       }
       writer.addDocument(d);
     }

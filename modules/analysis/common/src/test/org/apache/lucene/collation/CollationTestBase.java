@@ -36,8 +36,11 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
@@ -81,10 +84,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", 
-                      Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("body", "body",
-                      Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "\u0633\u0627\u0628"));
+    doc.add(new Field("body", StringField.TYPE_STORED, "body"));
     writer.addDocument(doc);
     writer.close();
     IndexSearcher searcher = new IndexSearcher(ramDir, true);
@@ -118,8 +119,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // orders the U+0698 character before the U+0633 character, so the single
     // index Term below should NOT be returned by a TermRangeQuery with a Farsi
     // Collator (or an Arabic one for the case when Farsi is not supported).
-    doc.add(new Field("content", "\u0633\u0627\u0628", 
-                      Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "\u0633\u0627\u0628"));
     writer.addDocument(doc);
     writer.close();
     IndexSearcher searcher = new IndexSearcher(ramDir, true);
@@ -141,10 +141,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", 
-                      Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("body", "body",
-                      Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("content", TextField.TYPE_STORED, "\u0633\u0627\u0628"));
+    doc.add(new Field("body", StringField.TYPE_STORED, "body"));
     writer.addDocument(doc);
     writer.close();
 
@@ -204,20 +202,21 @@ public abstract class CollationTestBase extends LuceneTestCase {
       {  "J",   "y",     "HOT",             "HOT",             "HOT",             "HOT"             },
     };
 
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+    
     for (int i = 0 ; i < sortData.length ; ++i) {
       Document doc = new Document();
-      doc.add(new Field("tracer", sortData[i][0], 
-                        Field.Store.YES, Field.Index.NO));
-      doc.add(new Field("contents", sortData[i][1], 
-                        Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(new Field("tracer", customType, sortData[i][0]));
+      doc.add(new TextField("contents", sortData[i][1]));
       if (sortData[i][2] != null) 
-        doc.add(new Field("US", usAnalyzer.reusableTokenStream("US", new StringReader(sortData[i][2]))));
+        doc.add(new TextField("US", usAnalyzer.reusableTokenStream("US", new StringReader(sortData[i][2]))));
       if (sortData[i][3] != null) 
-        doc.add(new Field("France", franceAnalyzer.reusableTokenStream("France", new StringReader(sortData[i][3]))));
+        doc.add(new TextField("France", franceAnalyzer.reusableTokenStream("France", new StringReader(sortData[i][3]))));
       if (sortData[i][4] != null)
-        doc.add(new Field("Sweden", swedenAnalyzer.reusableTokenStream("Sweden", new StringReader(sortData[i][4]))));
+        doc.add(new TextField("Sweden", swedenAnalyzer.reusableTokenStream("Sweden", new StringReader(sortData[i][4]))));
       if (sortData[i][5] != null) 
-        doc.add(new Field("Denmark", denmarkAnalyzer.reusableTokenStream("Denmark", new StringReader(sortData[i][5]))));
+        doc.add(new TextField("Denmark", denmarkAnalyzer.reusableTokenStream("Denmark", new StringReader(sortData[i][5]))));
       writer.addDocument(doc);
     }
     writer.optimize();
@@ -249,7 +248,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      Document doc = searcher.doc(result[i].doc);
+      org.apache.lucene.document.Document doc = searcher.doc(result[i].doc);
       String[] v = doc.getValues("tracer");
       for (int j = 0 ; j < v.length ; ++j) {
         buff.append(v[j]);

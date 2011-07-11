@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -39,7 +39,7 @@ public class TestSetNorm extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
     // add the same document four times
-    Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Field f1 = newField("field", "word", TextField.TYPE_STORED);
     Document d1 = new Document();
     d1.add(f1);
     writer.addDocument(d1);

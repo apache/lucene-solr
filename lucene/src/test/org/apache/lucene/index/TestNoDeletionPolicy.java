@@ -22,9 +22,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -72,9 +72,11 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(newField("c", "a" + i, Store.YES, Index.ANALYZED));
+      doc.add(newField("c", "a" + i, customType));
       writer.addDocument(doc);
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());

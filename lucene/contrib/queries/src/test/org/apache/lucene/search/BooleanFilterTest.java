@@ -21,8 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -61,10 +62,12 @@ public class BooleanFilterTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(newField("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(newField("price",price,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(newField("inStock",inStock,Field.Store.YES,Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+		doc.add(newField("accessRights",accessRights,customType));
+		doc.add(newField("price",price,customType));
+		doc.add(newField("date",date,customType));
+		doc.add(newField("inStock",inStock,customType));
 		writer.addDocument(doc);
 	}
 	

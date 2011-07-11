@@ -206,7 +206,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   private void assembleDocument(Document document, int i) {
-    FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
     customType.setStored(true);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
@@ -218,19 +218,19 @@ public class TestIndicesEquals extends LuceneTestCase {
       document.add(new Field("b0", customType, i + " All work and no play makes Jack a dull boy"));
 
       //document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO));
-      FieldType customType2 = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
       customType2.setStored(true);
       customType2.setTokenized(false);
       customType2.setOmitNorms(true);
       document.add(new Field("b1", customType2, i + " All work and no play makes Jack a dull boy"));
       
       //document.add(new Field("b2", i + " All work and no play makes Jack a dull boy", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.NO));
-      FieldType customType3 = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
       customType3.setTokenized(false);
       document.add(new Field("b1", customType3, i + " All work and no play makes Jack a dull boy"));
       
       //document.add(new Field("b3", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
-      FieldType customType4 = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
       customType4.setStored(true);
       customType4.setIndexed(false);
       customType4.setTokenized(false);
@@ -244,7 +244,7 @@ public class TestIndicesEquals extends LuceneTestCase {
           if (i > 3) {
             //Field f = new Field("e", i + " Heres Johnny!", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
             //f.setOmitNorms(true);
-            FieldType customType5 = new FieldType(TextField.DEFAULT_TYPE);
+            FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
             customType5.setOmitNorms(true);
             Field f = new Field("e", customType5, i + " Heres Johnny!");
             document.add(f);

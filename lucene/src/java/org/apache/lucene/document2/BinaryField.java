@@ -18,15 +18,20 @@ package org.apache.lucene.document2;
  */
 
 public final class BinaryField extends Field {
-    
-  public static final FieldType DEFAULT_TYPE = new FieldType();
+
+  public static final FieldType TYPE_STORED = new FieldType();
   static {
-    DEFAULT_TYPE.setStored(true);
-    DEFAULT_TYPE.freeze();
+    TYPE_STORED.setStored(true);
+    TYPE_STORED.freeze();
+  }
+
+  public BinaryField(String name, byte[] value) {
+    super(name, BinaryField.TYPE_STORED, value);
+    this.isBinary = true;
   }
   
-  public BinaryField(String name, byte[] value) {
-    super(name, BinaryField.DEFAULT_TYPE, value);
+  public BinaryField(String name, byte[] value, int offset, int length) {
+    super(name, BinaryField.TYPE_STORED, value, offset, length);
     this.isBinary = true;
   }
     

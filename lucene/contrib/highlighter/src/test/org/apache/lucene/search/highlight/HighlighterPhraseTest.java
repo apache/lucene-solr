@@ -60,7 +60,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -108,7 +108,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -182,7 +182,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);
@@ -229,7 +229,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStored(true);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectors(true);
@@ -273,7 +273,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
-      FieldType customType = new FieldType(TextField.DEFAULT_TYPE);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectors(true);

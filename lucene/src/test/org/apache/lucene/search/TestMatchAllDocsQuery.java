@@ -20,8 +20,9 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -124,7 +125,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   
   private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
     Document doc = new Document();
-    Field f = newField("key", text, Field.Store.YES, Field.Index.ANALYZED);
+    Field f = newField("key", text, TextField.TYPE_STORED);
     f.setBoost(boost);
     doc.add(f);
     iw.addDocument(doc);

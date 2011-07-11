@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -63,7 +64,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
   }
@@ -71,16 +72,18 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "bbb", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "bbb", TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
   }
 
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newField("content", "ccc", Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(newField("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("content", "ccc", TextField.TYPE_UNSTORED));
+      doc.add(newField("id", "" + i, customType));
       writer.addDocument(doc);
     }
   }
@@ -271,8 +274,6 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   @Test
   public void testStressPerFieldCodec() throws IOException {
     Directory dir = newDirectory(random);
-    Index[] indexValue = new Index[] { Index.ANALYZED, Index.ANALYZED_NO_NORMS,
-        Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS };
     final int docsPerRound = 97;
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
@@ -298,9 +299,11 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
         final Document doc = new Document();
         num = atLeast(30);
         for (int k = 0; k < num; k++) {
+          FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+          customType.setTokenized(random.nextBoolean());
+          customType.setOmitNorms(random.nextBoolean());
           Field field = newField("" + k, _TestUtil
-              .randomRealisticUnicodeString(random, 128), indexValue[random
-              .nextInt(indexValue.length)]);
+              .randomRealisticUnicodeString(random, 128), customType);
           doc.add(field);
         }
         writer.addDocument(doc);

@@ -20,10 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -245,7 +243,7 @@ public class TestWildcard
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
-      doc.add(newField(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, contents[i], TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -303,7 +301,7 @@ public class TestWildcard
         .setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));
+      doc.add(newField(field,docs[i],TextField.TYPE_UNSTORED));
       iw.addDocument(doc);
     }
     iw.close();

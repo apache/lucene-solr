@@ -23,7 +23,7 @@ import java.io.StringWriter;
 import java.util.Random;
 
 import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document2.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -93,8 +93,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
-        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
-        d.add(newField(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, TextField.TYPE_STORED));
+        d.add(newField(ID_FIELD, Integer.toString(j), TextField.TYPE_STORED));
         writer.addDocument(d);
       }
       writer.close();
@@ -142,7 +142,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
     out.println(hits.length + " total results\n");
     for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-        Document d = searcher.doc(hits[i].doc);
+        org.apache.lucene.document.Document d = searcher.doc(hits[i].doc);
         out.println(i + " " + d.get(ID_FIELD));
       }
     }
@@ -152,7 +152,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
     assertEquals("total results", expectedCount, hits.length);
     for (int i = 0 ; i < hits.length; i++) {
       if (i < 10 || (i > 94 && i < 105) ) {
-        Document d = searcher.doc(hits[i].doc);
+        org.apache.lucene.document.Document d = searcher.doc(hits[i].doc);
         assertEquals("check " + i, String.valueOf(i), d.get(ID_FIELD));
       }
     }

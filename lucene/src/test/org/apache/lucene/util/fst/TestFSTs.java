@@ -28,7 +28,7 @@ import java.io.Writer;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -993,7 +993,7 @@ public class TestFSTs extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
-    Document doc;
+    org.apache.lucene.document.Document doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
       writer.addDocument(doc);

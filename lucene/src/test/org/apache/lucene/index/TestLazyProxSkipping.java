@@ -24,9 +24,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -84,6 +85,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 setMaxBufferedDocs(10).
                 setMergePolicy(newLogMergePolicy(false))
         );
+        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+        customType.setStored(true);
+        
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
             String content;
@@ -98,7 +102,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 content = this.term3 + " " + this.term2;
             }
 
-            doc.add(newField(this.field, content, Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(newField(this.field, content, customType));
             writer.addDocument(doc);
         }
         
@@ -144,9 +148,11 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     public void testSeek() throws IOException {
         Directory directory = newDirectory();
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+        customType.setStored(true);
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
-            doc.add(newField(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(newField(this.field, "a b", customType));
             writer.addDocument(doc);
         }
         

@@ -17,8 +17,10 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
@@ -36,8 +38,13 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
-      doc.add(newField("id", i + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(newField("f", i + " " + i, Field.Store.YES, Field.Index.ANALYZED));
+      FieldType storedTextType = new FieldType(TextField.TYPE_UNSTORED);
+      storedTextType.setStored(true);
+      storedTextType.setTokenized(false);
+      FieldType storedTextType2 = new FieldType(TextField.TYPE_UNSTORED);
+      storedTextType.setStored(true);
+      doc.add(newField("id", i + "", storedTextType));
+      doc.add(newField("f", i + " " + i, storedTextType2));
       w.addDocument(doc);
     }
     w.close();
@@ -70,7 +77,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = IndexReader.open(dirs[0], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
-    Document doc = ir.document(0);
+    org.apache.lucene.document.Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("1")));
@@ -115,7 +122,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = IndexReader.open(dirs[0], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    Document doc = ir.document(0);
+    org.apache.lucene.document.Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     int start = ir.numDocs();
     ir.close();

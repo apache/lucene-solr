@@ -27,11 +27,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document2.BinaryField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.store.Directory;
@@ -43,6 +43,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
   public void testGlobalFieldNumberFiles() throws IOException {
     int num = atLeast(3);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
@@ -50,10 +52,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
             new MockAnalyzer(random));
         IndexWriter writer = new IndexWriter(dir, config);
         Document d = new Document();
-        d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
+        d.add(new Field("f1", customType, "d1 first field"));
+        d.add(new Field("f2", customType, "d1 second field"));
         writer.addDocument(d);
         for (String string : writer.getIndexFileNames()) {
           assertFalse(string.endsWith(".fnx"));
@@ -67,9 +67,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
         assertFNXFiles(dir, "1.fnx");
         d = new Document();
-        d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+        d.add(new Field("f1", customType, "d2 first field"));
+        d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
         files = writer.getIndexFileNames();
@@ -86,11 +85,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         Document d = new Document();
-        d.add(new Field("f1", "d3 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f2", "d3 second field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        d.add(new Field("f1", customType, "d3 first field"));
+        d.add(new Field("f2", customType, "d3 second field"));
+        d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
         Collection<String> files = writer.getIndexFileNames();
@@ -115,6 +112,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
   public void testIndexReaderCommit() throws IOException {
     int num = atLeast(3);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
@@ -122,17 +121,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
             new MockAnalyzer(random));
         IndexWriter writer = new IndexWriter(dir, config);
         Document d = new Document();
-        d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
+        d.add(new Field("f1", customType, "d1 first field"));
+        d.add(new Field("f2", customType, "d1 second field"));
         writer.addDocument(d);
         writer.commit();
         assertFNXFiles(dir, "1.fnx");
         d = new Document();
-        d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+        d.add(new Field("f1", customType, "d2 first field"));
+        d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
         assertFNXFiles(dir, "2.fnx");
@@ -159,6 +155,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
   public void testGlobalFieldNumberFilesAcrossCommits() throws IOException {
     int num = atLeast(3);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       {
@@ -166,17 +164,14 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
             TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(
             new KeepAllDeletionPolicy()));
         Document d = new Document();
-        d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
+        d.add(new Field("f1", customType, "d1 first field"));
+        d.add(new Field("f2", customType, "d1 second field"));
         writer.addDocument(d);
         writer.commit();
         assertFNXFiles(dir, "1.fnx");
         d = new Document();
-        d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+        d.add(new Field("f1", customType, "d2 first field"));
+        d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.commit();
         writer.commit();
@@ -190,11 +185,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, new MockAnalyzer(random)));
         Document d = new Document();
-        d.add(new Field("f1", "d3 first field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f2", "d3 second field", Store.YES, Index.ANALYZED,
-            TermVector.NO));
-        d.add(new Field("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        d.add(new Field("f1", customType, "d3 first field"));
+        d.add(new Field("f2", customType, "d3 second field"));
+        d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
         assertFNXFiles(dir, "2.fnx");
@@ -211,23 +204,22 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
 
   public void testGlobalFieldNumberOnOldCommit() throws IOException {
     int num = atLeast(3);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < num; i++) {
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(
           new KeepAllDeletionPolicy()));
       Document d = new Document();
-      d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
-          TermVector.NO));
-      d.add(new Field("f2", "d1 second field", Store.YES, Index.ANALYZED,
-          TermVector.NO));
+      d.add(new Field("f1", customType, "d1 first field"));
+      d.add(new Field("f2", customType, "d1 second field"));
       writer.addDocument(d);
       writer.commit();
       assertFNXFiles(dir, "1.fnx");
       d = new Document();
-      d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
-          TermVector.NO));
-      d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+      d.add(new Field("f1", customType, "d2 first field"));
+      d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
       writer.addDocument(d);
       assertFNXFiles(dir, "1.fnx");
       writer.close();
@@ -240,9 +232,8 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
           new KeepAllDeletionPolicy()).setIndexCommit(listCommits.get(0)));
 
       d = new Document();
-      d.add(new Field("f1", "d2 first field", Store.YES, Index.ANALYZED,
-          TermVector.NO));
-      d.add(new Field("f3", new byte[] { 1, 2, 3 }));
+      d.add(new Field("f1", customType, "d2 first field"));
+      d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
       writer.addDocument(d);
       writer.commit();
       // now we have 3 files since f3 is not present in the first commit
@@ -271,9 +262,13 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       Document doc = new Document();
       final int numFields = 1 + random.nextInt(fieldNames.length);
       for (int j = 0; j < numFields; j++) {
+        FieldType customType = new FieldType();
+        customType.setIndexed(true);
+        customType.setTokenized(random.nextBoolean());
+        customType.setOmitNorms(random.nextBoolean());
         doc.add(newField(fieldNames[random.nextInt(fieldNames.length)],
             _TestUtil.randomRealisticUnicodeString(random),
-            Index.toIndex(true, random.nextBoolean(), random.nextBoolean())));
+            customType));
 
       }
       writer.addDocument(doc);
@@ -322,9 +317,13 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
       for (String string : fieldNames) {
+        FieldType customType = new FieldType();
+        customType.setIndexed(true);
+        customType.setTokenized(random.nextBoolean());
+        customType.setOmitNorms(random.nextBoolean());
         doc.add(newField(string,
             _TestUtil.randomRealisticUnicodeString(random),
-            Index.toIndex(true, random.nextBoolean(), random.nextBoolean())));
+            customType));
 
       }
       writer.addDocument(doc);
@@ -419,8 +418,12 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
         String name = copySortedMap.get(nextField);
         assertNotNull(name);
 
+        FieldType customType = new FieldType();
+        customType.setIndexed(true);
+        customType.setTokenized(random.nextBoolean());
+        customType.setOmitNorms(random.nextBoolean());
         doc.add(newField(name, _TestUtil.randomRealisticUnicodeString(random),
-            Index.toIndex(true, random.nextBoolean(), random.nextBoolean())));
+            customType));
         writer.addDocument(doc);
         if (random.nextInt(10) == 0) {
           writer.commit();
@@ -480,8 +483,9 @@ public class TestGlobalFieldNumbers extends LuceneTestCase {
       }
       
       Document d = new Document();
-      d.add(new Field("f1", "d1 first field", Store.YES, Index.ANALYZED,
-          TermVector.NO));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      d.add(new Field("f1", customType, "d1 first field"));
       writer.addDocument(d);
       writer.prepareCommit();
       // the fnx file should still be under control of the SIS
