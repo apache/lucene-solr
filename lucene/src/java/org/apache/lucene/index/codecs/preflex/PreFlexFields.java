@@ -101,10 +101,7 @@ public class PreFlexFields extends FieldsProducer {
         if (fi.isIndexed) {
           fields.put(fi.name, fi);
           preTerms.put(fi.name, new PreTerms(fi));
-          if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS) {
-            throw new CorruptIndexException("invalid field option DOCS_AND_FREQS");
-          }
-          if (fi.indexOptions != IndexOptions.DOCS_ONLY) {
+          if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
             anyProx = true;
           }
         }

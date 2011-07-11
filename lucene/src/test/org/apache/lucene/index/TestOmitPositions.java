@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -33,11 +32,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * @lucene.experimental
  */
 public class TestOmitPositions extends LuceneTestCase {
-  public void setUp() throws Exception {
-    super.setUp();
-    assumeFalse("PreFlex codec cannot omit only positions!", 
-        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
-  }
 
   public void testBasic() throws Exception {   
     Directory dir = newDirectory();

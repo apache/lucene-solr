@@ -202,13 +202,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
-  public static final int FORMAT_PER_FIELD_CODEC = -3;
-
-  // Records index values for this field
-  public static final int FORMAT_INDEX_VALUES = -3;
+  // First used in 3.4: omit only positional information
+  public static final int FORMAT_OMIT_POSITIONS = -3;
+  // per-field codec support, records index values for fields
+  public static final int FORMAT_FLEX = -4;
 
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_PER_FIELD_CODEC;
+  static final int FORMAT_CURRENT = FORMAT_FLEX;
   
   static final int FORMAT_MINIMUM = FORMAT_START;
   
@@ -694,8 +694,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     for (int i = 0; i < size; i++) {
       String name = input.readString();
       // if this is a previous format codec 0 will be preflex!
-      final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
-      final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
+      final int fieldNumber = format <= FORMAT_FLEX? input.readInt():i;
+      final int codecId = format <= FORMAT_FLEX? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
@@ -707,7 +707,11 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
         indexOptions = IndexOptions.DOCS_ONLY;
       } else if ((bits & OMIT_POSITIONS) != 0) {
-        indexOptions = IndexOptions.DOCS_AND_FREQS;
+        if (format <= FORMAT_OMIT_POSITIONS) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS;
+        } else {
+          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format);
+        }
       } else {
         indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       }
@@ -722,7 +726,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
       ValueType docValuesType = null;
-      if (format <= FORMAT_INDEX_VALUES) {
+      if (format <= FORMAT_FLEX) {
         final byte b = input.readByte();
         switch(b) {
         case 0:

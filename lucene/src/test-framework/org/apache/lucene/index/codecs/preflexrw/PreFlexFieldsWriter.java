@@ -90,9 +90,6 @@ class PreFlexFieldsWriter extends FieldsConsumer {
     private final PostingsWriter postingsWriter = new PostingsWriter();
 
     public PreFlexTermsWriter(FieldInfo fieldInfo) {
-      if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS) {
-        throw new UnsupportedOperationException("PreFlex codec does not support omitting positions only!");
-      }
       this.fieldInfo = fieldInfo;
       omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;

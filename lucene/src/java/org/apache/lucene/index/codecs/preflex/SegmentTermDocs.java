@@ -52,7 +52,7 @@ public class SegmentTermDocs {
   private boolean haveSkipped;
   
   protected boolean currentFieldStoresPayloads;
-  protected boolean currentFieldOmitTermFreqAndPositions;
+  protected IndexOptions indexOptions;
   
   public SegmentTermDocs(IndexInput freqStream, TermInfosReader tis, FieldInfos fieldInfos) {
     this.freqStream = (IndexInput) freqStream.clone();
@@ -90,7 +90,7 @@ public class SegmentTermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = fieldInfos.fieldInfo(term.field());
-    currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.indexOptions == IndexOptions.DOCS_ONLY : false;
+    this.indexOptions = (fi != null) ? fi.indexOptions : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
@@ -123,7 +123,7 @@ public class SegmentTermDocs {
         return false;
       final int docCode = freqStream.readVInt();
       
-      if (currentFieldOmitTermFreqAndPositions) {
+      if (indexOptions == IndexOptions.DOCS_ONLY) {
         doc += docCode;
         freq = 1;
       } else {
@@ -150,7 +150,7 @@ public class SegmentTermDocs {
   public int read(final int[] docs, final int[] freqs)
           throws IOException {
     final int length = docs.length;
-    if (currentFieldOmitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       return readNoTf(docs, freqs, length);
     } else {
       int i = 0;

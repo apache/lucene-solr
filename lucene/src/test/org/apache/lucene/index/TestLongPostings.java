@@ -261,8 +261,6 @@ public class TestLongPostings extends LuceneTestCase {
   public void doTestLongPostingsNoPositions(IndexOptions options) throws Exception {
     assumeFalse("Too slow with SimpleText codec at night", TEST_NIGHTLY && CodecProvider.getDefault().getFieldCodec("field").equals("SimpleText"));
     assumeFalse("Too slow with Memory codec at night", TEST_NIGHTLY && CodecProvider.getDefault().getFieldCodec("field").equals("Memory"));
-    assumeFalse("PreFlex codec cannot omit only positions!", 
-        options == IndexOptions.DOCS_AND_FREQS && "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
     // Don't use _TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(_TestUtil.getTempDir("longpostings" + "." + random.nextLong()));

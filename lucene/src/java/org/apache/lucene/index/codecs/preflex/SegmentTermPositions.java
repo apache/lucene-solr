@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 
 /**
@@ -77,8 +78,8 @@ extends SegmentTermDocs  {
   }
 
   public final int nextPosition() throws IOException {
-    if (currentFieldOmitTermFreqAndPositions)
-      // This field does not store term freq, positions, payloads
+    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
+      // This field does not store positions, payloads
       return 0;
     // perform lazy skips if necessary
     lazySkip();
@@ -140,7 +141,7 @@ extends SegmentTermDocs  {
   }
 
   private void skipPositions(int n) throws IOException {
-    assert !currentFieldOmitTermFreqAndPositions;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     for (int f = n; f > 0; f--) {        // skip unread positions
       readDeltaPosition();
       skipPayload();
