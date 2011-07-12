@@ -111,6 +111,28 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
             numDocs > oldNumDocs);
   }
 
+  @Test
+  public void testJmxOnCoreReload() throws Exception {
+    List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
+    MBeanServer mbeanServer = servers.get(0);
+    log.info("Servers in testJmxUpdate: " + servers);
+    log.info(h.getCore().getInfoRegistry().toString());
+
+    String coreName = h.getCore().getName();
+    if (coreName.length() == 0) {
+      coreName = h.getCoreContainer().getDefaultCoreName().length() > 0 ? h.getCoreContainer().getDefaultCoreName() : "";
+    }
+
+    Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
+    int oldNumberOfObjects = oldBeans.size();
+    h.getCoreContainer().reload(coreName);
+
+    Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
+    int newNumberOfObjects = newBeans.size();
+
+    assertEquals("Number of registered MBeans is not the same after Solr core reload", oldNumberOfObjects, newNumberOfObjects);
+  }
+
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
           throws MalformedObjectNameException {
     Hashtable<String, String> map = new Hashtable<String, String>();

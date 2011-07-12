@@ -53,7 +53,11 @@ public class JmxMonitoredMap<K, V> extends
 
   private String jmxRootName;
 
-  public JmxMonitoredMap(String coreName, JmxConfiguration jmxConfig) {
+  private String coreHashCode;
+
+  public JmxMonitoredMap(String coreName, String coreHashCode,
+                          final JmxConfiguration jmxConfig) {
+    this.coreHashCode = coreHashCode;
     jmxRootName = "solr" + (coreName == null ? "" : "/" + coreName);
 
     if (jmxConfig.agentId != null && jmxConfig.serviceUrl != null) {
@@ -133,7 +137,7 @@ public class JmxMonitoredMap<K, V> extends
         ObjectName name = getObjectName(key, infoBean);
         if (server.isRegistered(name))
           server.unregisterMBean(name);
-        SolrDynamicMBean mbean = new SolrDynamicMBean(infoBean);
+        SolrDynamicMBean mbean = new SolrDynamicMBean(coreHashCode, infoBean);
         server.registerMBean(mbean, name);
       } catch (Exception e) {
         LOG.warn( "Failed to register info bean: " + key, e);
@@ -199,7 +203,9 @@ public class JmxMonitoredMap<K, V> extends
 
     private HashSet<String> staticStats;
 
-    public SolrDynamicMBean(SolrInfoMBean managedResource) {
+    private String coreHashCode;
+
+    public SolrDynamicMBean(String coreHashCode, SolrInfoMBean managedResource) {
       this.infoBean = managedResource;
       staticStats = new HashSet<String>();
 
@@ -210,6 +216,7 @@ public class JmxMonitoredMap<K, V> extends
       staticStats.add("category");
       staticStats.add("sourceId");
       staticStats.add("source");
+      this.coreHashCode = coreHashCode;
     }
 
     public MBeanInfo getMBeanInfo() {
@@ -219,6 +226,10 @@ public class JmxMonitoredMap<K, V> extends
         attrInfoList.add(new MBeanAttributeInfo(stat, String.class.getName(),
                 null, true, false, false));
       }
+
+      // add core's hashcode
+      attrInfoList.add(new MBeanAttributeInfo("coreHashCode", String.class.getName(),
+                null, true, false, false));
 
       try {
         NamedList dynamicStats = infoBean.getStatistics();
