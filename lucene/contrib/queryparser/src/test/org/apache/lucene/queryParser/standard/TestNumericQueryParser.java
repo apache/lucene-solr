@@ -82,6 +82,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
   static void init() {
     try {
       LOCALE = randomLocale(random);
+      LOCALE = Locale.getDefault();
       TIMEZONE = randomTimeZone(random);
       DATE_STYLE = randomDateStyle(random);
       TIME_STYLE = randomDateStyle(random);
@@ -91,7 +92,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       NUMBER_FORMAT.setMaximumFractionDigits((random.nextInt() & 20) + 1);
       NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
       NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
-      NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 1);
+      NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 4); // the loop checks for < 1000, this is a must!
       
       // assumes localized date pattern will have at least year, month, day, hour, minute
       SimpleDateFormat dateFormat = (SimpleDateFormat) DateFormat.getDateTimeInstance(
