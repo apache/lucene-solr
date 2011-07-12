@@ -37,7 +37,7 @@
   <!--
     NOTE: see the README.javacc for details on how to fully regenerate the parser
   -->
-  <target name="javacc" depends="javacc-flexible,javacc-surround"/>
+  <target name="javacc" depends="javacc-flexible"/>
 
   <target name="javacc-flexible" depends="javacc-check">
     <delete>
@@ -100,12 +100,6 @@ import org.apache.lucene.queryParser.core.messages.*;"
                              replace="  static private String add_escapes(String str) {"
                              flags="g"
                              byline="true"/>
-  </target>
-
-  <target name="javacc-surround" depends="javacc-check" description="generate surround query parser from jj (requires javacc 4.1">
-  	<invoke-javacc target="src/java/org/apache/lucene/queryParser/surround/parser/QueryParser.jj"
-                   outputDir="src/java/org/apache/lucene/queryParser/surround/parser"
-    />
   </target>
 
   <target name="build-queryparser" unless="queryparser.uptodate">

@@ -416,9 +416,6 @@
   <!-- ================================================================== -->
   <target name="clean-javacc">
     <delete>
-      <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/surround/parser" includes="*.java">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>

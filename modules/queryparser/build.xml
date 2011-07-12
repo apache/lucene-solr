@@ -33,10 +33,13 @@
       <fileset dir="src/java/org/apache/lucene/queryparser/classic" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
+      <fileset dir="src/java/org/apache/lucene/queryparser/surround/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser"/>
+  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-surround"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <sequential>
@@ -54,6 +57,12 @@
 		     replace="protected QueryParser(QueryParserTokenManager "/>
 
     </sequential>
+  </target>
+
+  <target name="javacc-surround" depends="javacc-check" description="generate surround query parser from jj (requires javacc 4.1">
+  	<invoke-javacc target="src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryparser/surround/parser"
+    />
   </target>
 
 </project>
