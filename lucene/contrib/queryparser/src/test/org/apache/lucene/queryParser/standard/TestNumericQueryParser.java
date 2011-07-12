@@ -127,7 +127,10 @@ public class TestNumericQueryParser extends LuceneTestCase {
       while ((randomDate = normalizeNumber(Math.abs(random.nextLong()))
           .longValue()) < 1000)
         ;
-      
+
+      // prune date value so it doesn't pass in insane values to some calendars.
+      randomDate = randomDate % 3400000000000l;
+
       // truncate to second
       randomDate = (randomDate / 1000) * 1000;
       
