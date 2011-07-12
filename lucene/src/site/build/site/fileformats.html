@@ -412,10 +412,14 @@ document.write("Last Published: " + document.lastModified);
             to stored fields file, previously they were stored in
             text format only.
            </p>
+<p>
+            In version 3.4, fields can omit position data while
+            still indexing term frequencies.
+        </p>
 </div>
 
         
-<a name="N1003A"></a><a name="Definitions"></a>
+<a name="N1003D"></a><a name="Definitions"></a>
 <h2 class="boxed">Definitions</h2>
 <div class="section">
 <p>
@@ -456,7 +460,7 @@ document.write("Last Published: " + document.lastModified);
                 strings, the first naming the field, and the second naming text
                 within the field.
             </p>
-<a name="N1005A"></a><a name="Inverted Indexing"></a>
+<a name="N1005D"></a><a name="Inverted Indexing"></a>
 <h3 class="boxed">Inverted Indexing</h3>
 <p>
                     The index stores statistics about terms in order
@@ -466,7 +470,7 @@ document.write("Last Published: " + document.lastModified);
                     it.  This is the inverse of the natural relationship, in which
                     documents list terms.
                 </p>
-<a name="N10066"></a><a name="Types of Fields"></a>
+<a name="N10069"></a><a name="Types of Fields"></a>
 <h3 class="boxed">Types of Fields</h3>
 <p>
                     In Lucene, fields may be <i>stored</i>, in which
@@ -480,7 +484,7 @@ document.write("Last Published: " + document.lastModified);
                     to be indexed literally.
                 </p>
 <p>See the <a href="api/core/org/apache/lucene/document/Field.html">Field</a> java docs for more information on Fields.</p>
-<a name="N10083"></a><a name="Segments"></a>
+<a name="N10086"></a><a name="Segments"></a>
 <h3 class="boxed">Segments</h3>
 <p>
                     Lucene indexes may be composed of multiple sub-indexes, or
@@ -506,7 +510,7 @@ document.write("Last Published: " + document.lastModified);
                     Searches may involve multiple segments and/or multiple indexes, each
                     index potentially composed of a set of segments.
                 </p>
-<a name="N100A1"></a><a name="Document Numbers"></a>
+<a name="N100A4"></a><a name="Document Numbers"></a>
 <h3 class="boxed">Document Numbers</h3>
 <p>
                     Internally, Lucene refers to documents by an integer <i>document
@@ -561,7 +565,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N100C8"></a><a name="Overview"></a>
+<a name="N100CB"></a><a name="Overview"></a>
 <h2 class="boxed">Overview</h2>
 <div class="section">
 <p>
@@ -608,7 +612,7 @@ document.write("Last Published: " + document.lastModified);
 <p>Term Frequency
                         data. For each term in the dictionary, the numbers of all the
                         documents that contain that term, and the frequency of the term in
-                        that document if omitTf is false.
+                        that document, unless frequencies are omitted (IndexOptions.DOCS_ONLY)
                     </p>
                 
 </li>
@@ -619,8 +623,7 @@ document.write("Last Published: " + document.lastModified);
 <p>Term Proximity
                         data. For each term in the dictionary, the positions that the term
                         occurs in each document.  Note that this will
-                        not exist if all fields in all documents set
-                        omitTf to true.
+                        not exist if all fields in all documents omit position data.
                     </p>
                 
 </li>
@@ -660,7 +663,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1010B"></a><a name="File Naming"></a>
+<a name="N1010E"></a><a name="File Naming"></a>
 <h2 class="boxed">File Naming</h2>
 <div class="section">
 <p>
@@ -687,7 +690,7 @@ document.write("Last Published: " + document.lastModified);
             </p>
 </div>
       
-<a name="N1011A"></a><a name="file-names"></a>
+<a name="N1011D"></a><a name="file-names"></a>
 <h2 class="boxed">Summary of File Extensions</h2>
 <div class="section">
 <p>The following table summarizes the names and extensions of the files in Lucene:
@@ -837,10 +840,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10212"></a><a name="Primitive Types"></a>
+<a name="N10215"></a><a name="Primitive Types"></a>
 <h2 class="boxed">Primitive Types</h2>
 <div class="section">
-<a name="N10217"></a><a name="Byte"></a>
+<a name="N1021A"></a><a name="Byte"></a>
 <h3 class="boxed">Byte</h3>
 <p>
                     The most primitive type
@@ -848,7 +851,7 @@ document.write("Last Published: " + document.lastModified);
                     other data types are defined as sequences
                     of bytes, so file formats are byte-order independent.
                 </p>
-<a name="N10220"></a><a name="UInt32"></a>
+<a name="N10223"></a><a name="UInt32"></a>
 <h3 class="boxed">UInt32</h3>
 <p>
                     32-bit unsigned integers are written as four
@@ -858,7 +861,7 @@ document.write("Last Published: " + document.lastModified);
                     UInt32    --&gt; &lt;Byte&gt;<sup>4</sup>
                 
 </p>
-<a name="N1022F"></a><a name="Uint64"></a>
+<a name="N10232"></a><a name="Uint64"></a>
 <h3 class="boxed">Uint64</h3>
 <p>
                     64-bit unsigned integers are written as eight
@@ -867,7 +870,7 @@ document.write("Last Published: " + document.lastModified);
 <p>UInt64    --&gt; &lt;Byte&gt;<sup>8</sup>
                 
 </p>
-<a name="N1023E"></a><a name="VInt"></a>
+<a name="N10241"></a><a name="VInt"></a>
 <h3 class="boxed">VInt</h3>
 <p>
                     A variable-length format for positive integers is
@@ -1417,13 +1420,13 @@ document.write("Last Published: " + document.lastModified);
                     This provides compression while still being
                     efficient to decode.
                 </p>
-<a name="N10523"></a><a name="Chars"></a>
+<a name="N10526"></a><a name="Chars"></a>
 <h3 class="boxed">Chars</h3>
 <p>
                     Lucene writes unicode
                     character sequences as UTF-8 encoded bytes.
                 </p>
-<a name="N1052C"></a><a name="String"></a>
+<a name="N1052F"></a><a name="String"></a>
 <h3 class="boxed">String</h3>
 <p>
 		    Lucene writes strings as UTF-8 encoded bytes.
@@ -1436,10 +1439,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10539"></a><a name="Compound Types"></a>
+<a name="N1053C"></a><a name="Compound Types"></a>
 <h2 class="boxed">Compound Types</h2>
 <div class="section">
-<a name="N1053E"></a><a name="MapStringString"></a>
+<a name="N10541"></a><a name="MapStringString"></a>
 <h3 class="boxed">Map&lt;String,String&gt;</h3>
 <p>
 		    In a couple places Lucene stores a Map
@@ -1452,13 +1455,13 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1054E"></a><a name="Per-Index Files"></a>
+<a name="N10551"></a><a name="Per-Index Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>
                 The files in this section exist one-per-index.
             </p>
-<a name="N10556"></a><a name="Segments File"></a>
+<a name="N10559"></a><a name="Segments File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>
                     The active segments in the index are stored in the
@@ -1613,7 +1616,7 @@ document.write("Last Published: " + document.lastModified);
 		</p>
 <p>
 		    HasProx is 1 if any fields in this segment have
-		    omitTf set to false; else, it's 0.
+		    position data (IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); else, it's 0.
 		</p>
 <p>
 		    CommitUserData stores an optional user-supplied
@@ -1631,7 +1634,7 @@ document.write("Last Published: " + document.lastModified);
 <p> HasVectors is 1 if this segment stores term vectors,
             else it's 0.
                 </p>
-<a name="N105E1"></a><a name="Lock File"></a>
+<a name="N105E4"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1645,14 +1648,14 @@ document.write("Last Published: " + document.lastModified);
                     documents).  This lock file ensures that only one
                     writer is modifying the index at a time.
                 </p>
-<a name="N105EA"></a><a name="Deletable File"></a>
+<a name="N105ED"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     A writer dynamically computes
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N105F3"></a><a name="Compound Files"></a>
+<a name="N105F6"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1681,14 +1684,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10624"></a><a name="Per-Segment Files"></a>
+<a name="N10627"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N1062C"></a><a name="Fields"></a>
+<a name="N1062F"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1741,12 +1744,16 @@ document.write("Last Published: " + document.lastModified);
 <li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
                         
 <li>If the sixth lowest-order bit is set (0x20), payloads are stored for the indexed field.</li>
+                        
+<li>If the seventh lowest-order bit is set (0x40), term frequencies and positions omitted for the indexed field.</li>
+                        
+<li>If the eighth lowest-order bit is set (0x80), positions are omitted for the indexed field.</li>
                     
 </ul>
                 
 </p>
 <p>
-		   FNMVersion (added in 2.9) is always -2.
+		   FNMVersion (added in 2.9) is -2 for indexes from 2.9 - 3.3. It is -3 for indexes in Lucene 3.4+
 		</p>
 <p>
                     Fields are numbered by their order in this file. Thus field zero is
@@ -1898,7 +1905,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106E7"></a><a name="Term Dictionary"></a>
+<a name="N106F0"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -2002,7 +2009,7 @@ document.write("Last Published: " + document.lastModified);
                             file. In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
                             term's data (or zero, for the first term in the file.  For fields
-			    with omitTf true, this will be 0 since
+			                that omit position data, this will be 0 since
                             prox information is not stored.
                         </p>
                         
@@ -2090,12 +2097,12 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1076B"></a><a name="Frequencies"></a>
+<a name="N10774"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
                     which contain each term, along with the frequency of the term in that
-                    document (if omitTf is false).
+                    document (except when frequencies are omitted: IndexOptions.DOCS_ONLY).
                 </p>
 <p>FreqFile (.frq) --&gt;
                     &lt;TermFreqs, SkipData&gt;
@@ -2135,26 +2142,26 @@ document.write("Last Published: " + document.lastModified);
 <p>TermFreq
                     entries are ordered by increasing document number.
                 </p>
-<p>DocDelta: if omitTf is false, this determines both
+<p>DocDelta: if frequencies are indexed, this determines both
                     the document number and the frequency. In
                     particular, DocDelta/2 is the difference between
                     this document number and the previous document
                     number (or zero when this is the first document in
                     a TermFreqs). When DocDelta is odd, the frequency
                     is one. When DocDelta is even, the frequency is
-                    read as another VInt.  If omitTf is true, DocDelta
+                    read as another VInt.  If frequencies are omitted, DocDelta
                     contains the gap (not multiplied by 2) between
                     document numbers and no frequency information is
                     stored.
                 </p>
 <p>For example, the TermFreqs for a term which occurs
                     once in document seven and three times in document
-                    eleven, with omitTf false, would be the following
+                    eleven, with frequencies indexed, would be the following
                     sequence of VInts:
                 </p>
 <p>15, 8, 3
                 </p>
-<p> If omitTf were true it would be this sequence
+<p> If frequencies were omitted (IndexOptions.DOCS_ONLY) it would be this sequence
 		of VInts instead:
 		  </p>
 <p>
@@ -2218,14 +2225,14 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N107F3"></a><a name="Positions"></a>
+<a name="N107FC"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
                     each term occurs at within documents.  Note that
-                    fields with omitTf true do not store
+                    fields omitting positional data do not store
                     anything into this file, and if all fields in the
-                    index have omitTf true then the .prx file will not
+                    index omit positional data then the .prx file will not
                     exist.
                 </p>
 <p>ProxFile (.prx) --&gt;
@@ -2288,7 +2295,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N1082F"></a><a name="Normalization Factors"></a>
+<a name="N10838"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a single .nrm file containing all norms:
                 </p>
@@ -2368,7 +2375,7 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10880"></a><a name="Term Vectors"></a>
+<a name="N10889"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2504,7 +2511,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1091C"></a><a name="Deleted Documents"></a>
+<a name="N10925"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2568,7 +2575,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10956"></a><a name="Limitations"></a>
+<a name="N1095F"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>
