@@ -265,7 +265,7 @@ public abstract class FieldType extends FieldProperties {
    * @param index {@link org.apache.lucene.document.Field.Index}
    * @param vec {@link org.apache.lucene.document.Field.TermVector}
    * @param omitNorms true if norms should be omitted
-   * @param omitTFPos true if term freq and position should be omitted.
+   * @param options options for what should be indexed in the postings
    * @param boost The boost value
    * @return the {@link org.apache.lucene.document.Fieldable}.
    */
