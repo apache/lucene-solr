@@ -199,6 +199,21 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testGroupingSimpleFormatStartBiggerThanRows() throws Exception {
+    assertU(add(doc("id", "1")));
+    assertU(add(doc("id", "2")));
+    assertU(add(doc("id", "3")));
+    assertU(add(doc("id", "4")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    assertJQ(
+        req("q", "*:*", "start", "2", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
+        "/response=={'numFound':5,'start':2,'docs':[{'id':'3'}]}"
+    );
+  }
+
   static String f = "foo_i";
   static String f2 = "foo2_i";
 
