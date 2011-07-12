@@ -82,7 +82,6 @@ public class TestNumericQueryParser extends LuceneTestCase {
   static void init() {
     try {
       LOCALE = randomLocale(random);
-      LOCALE = Locale.getDefault();
       TIMEZONE = randomTimeZone(random);
       DATE_STYLE = randomDateStyle(random);
       TIME_STYLE = randomDateStyle(random);
