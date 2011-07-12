@@ -76,7 +76,7 @@ public class IOContext {
   public IOContext(MergeInfo mergeInfo) {
     this(Context.MERGE, mergeInfo);
   }
-
+  
   private IOContext(Context context, MergeInfo mergeInfo) {
     assert context != Context.MERGE || mergeInfo != null : "MergeInfo must not be null if context is MERGE";
     assert context != Context.FLUSH : "Use IOContext(FlushInfo) to create a FLUSH IOContext";
@@ -84,6 +84,18 @@ public class IOContext {
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
     this.flushInfo = null;
+  }
+  
+  /**
+   * This constructor is used to initialize a {@link IOContext} instance with a new value for the readOnce variable. 
+   * @param ctxt {@link IOContext} object whose information is used to create the new instance except the readOnce variable.
+   * @param readOnce The new {@link IOContext} object will use this value for readOnce. 
+   */
+  public IOContext(IOContext ctxt, boolean readOnce) {
+    this.context = ctxt.context;
+    this.mergeInfo = ctxt.mergeInfo;
+    this.flushInfo = ctxt.flushInfo;
+    this.readOnce = readOnce;
   }
 
   @Override
