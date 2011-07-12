@@ -210,7 +210,7 @@ public abstract class AbstractField implements Fieldable {
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }
 
-  /** @deprecated use {@link #getIndexOptions(IndexOptions)} instead. */
+  /** @deprecated use {@link #getIndexOptions()} instead. */
   @Deprecated
   public boolean getOmitTermFreqAndPositions() { return indexOptions == IndexOptions.DOCS_ONLY; }
   
@@ -224,7 +224,7 @@ public abstract class AbstractField implements Fieldable {
    */
   public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
 
-  /** @deprecated use {@link #setIndexOptions(IndexOptions)} instead. */
+  /** @deprecated use {@link #setIndexOptions(FieldInfo.IndexOptions)} instead. */
   @Deprecated
   public void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions) { 
     if (omitTermFreqAndPositions) {
