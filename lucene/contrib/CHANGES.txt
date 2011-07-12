@@ -78,7 +78,10 @@ New Features
    Removed contrib/wordnet.  (Robert Muir, Mike McCandless)
 
 API Changes
-   
+ * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
+   constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
+   the target indexes. (Simon Willnauer, Jason Rutherglen)
+      
 Bug Fixes
 
 
