@@ -53,6 +53,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.BeforeClass;
 
 /**
  * Unit tests for sorting code.
@@ -65,7 +66,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestSort extends LuceneTestCase {
   // true if our codec supports docvalues: true unless codec is preflex (3.x)
   boolean supportsDocValues = CodecProvider.getDefault().getDefaultFieldCodec().equals("PreFlex") == false;
-  private static final int NUM_STRINGS = atLeast(6000);
+  private static int NUM_STRINGS;
   private IndexSearcher full;
   private IndexSearcher searchX;
   private IndexSearcher searchY;
@@ -78,6 +79,10 @@ public class TestSort extends LuceneTestCase {
   private Query queryM;
   private Sort sort;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    NUM_STRINGS = atLeast(6000);
+  }
   // document data:
   // the tracer field is used to determine which document was hit
   // the contents field is used to search and sort by relevance

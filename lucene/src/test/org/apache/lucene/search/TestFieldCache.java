@@ -33,13 +33,14 @@ import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
-  private static final int NUM_DOCS = atLeast(1000);
+  private int NUM_DOCS;
   private String[] unicodeStrings;
   private Directory directory;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    NUM_DOCS = atLeast(1000);
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;

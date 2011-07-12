@@ -67,7 +67,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   static TestIndex unsignedIndexDir;
   
   static int minId = 0;
-  static int maxId = atLeast(500);
+  static int maxId;
   
   static final int intLength = Integer.toString(Integer.MAX_VALUE).length();
   
@@ -93,6 +93,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClassBaseTestRangeFilter() throws Exception {
+    maxId = atLeast(500);
     signedIndexDir = new TestIndex(random, Integer.MAX_VALUE, Integer.MIN_VALUE, true);
     unsignedIndexDir = new TestIndex(random, Integer.MAX_VALUE, 0, false);
     signedIndexReader = build(random, signedIndexDir);

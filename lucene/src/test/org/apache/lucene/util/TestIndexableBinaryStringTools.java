@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import org.junit.BeforeClass;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,8 +24,14 @@ package org.apache.lucene.util;
  */
 @Deprecated
 public class TestIndexableBinaryStringTools extends LuceneTestCase {
-  private static final int NUM_RANDOM_TESTS = atLeast(200);
-  private static final int MAX_RANDOM_BINARY_LENGTH = atLeast(300);
+  private static int NUM_RANDOM_TESTS;
+  private static int MAX_RANDOM_BINARY_LENGTH;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    NUM_RANDOM_TESTS = atLeast(200);
+    MAX_RANDOM_BINARY_LENGTH = atLeast(300);
+  }
   
   public void testSingleBinaryRoundTrip() {
     byte[] binary = new byte[] { (byte) 0x23, (byte) 0x98, (byte) 0x13,
