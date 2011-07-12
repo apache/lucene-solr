@@ -90,14 +90,14 @@ my @moves = (
     'solr/src/test-files/solr/shared'
  => 'solr/solrj/src/test-files/solr/shared',
 
-    'solr/src/solrj/org'
+    'solr/src/solrj'
  => 'solr/solrj/src/java',
 
-    'solr/src/common/org/apache/solr/common'
- => 'solr/solrj/src/java/org/apache/solr',
+    'solr/src/common'
+ => 'solr/solrj/src/java',
 
     'solr/src/test/org/apache/solr/common'
- => 'solr/solrj/src/test/org/apache/solr',
+ => 'solr/solrj/src/test/org/apache/solr/common',
 
     'solr/src/test/org/apache/solr/client/solrj/SolrJettyTestBase.java'
  => 'solr/test-framework/src/java/org/apache/solr/SolrJettyTestBase.java',
