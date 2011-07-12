@@ -68,7 +68,9 @@ public class TestPKIndexSplitter extends LuceneTestCase {
   private void checkSplitting(Directory dir, Term splitTerm, int leftCount, int rightCount) throws Exception {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
-    PKIndexSplitter splitter = new PKIndexSplitter(dir, dir1, dir2, splitTerm);
+    PKIndexSplitter splitter = new PKIndexSplitter(dir, dir1, dir2, splitTerm,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)),
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     splitter.split();
     
     IndexReader ir1 = IndexReader.open(dir1);

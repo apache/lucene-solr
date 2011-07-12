@@ -57,7 +57,7 @@ public class MultiPassIndexSplitter {
    * assigned in a deterministic round-robin fashion to one of the output splits.
    * @throws IOException
    */
-  public void split(IndexReader input, Directory[] outputs, boolean seq) throws IOException {
+  public void split(Version version, IndexReader input, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {
       throw new IOException("Invalid number of outputs.");
     }
@@ -96,7 +96,7 @@ public class MultiPassIndexSplitter {
         }
       }
       IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(
-          Version.LUCENE_CURRENT,
+          version,
           null)
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
@@ -106,6 +106,7 @@ public class MultiPassIndexSplitter {
     System.err.println("Done.");
   }
   
+  @SuppressWarnings("deprecation")
   public static void main(String[] args) throws Exception {
     if (args.length < 5) {
       System.err.println("Usage: MultiPassIndexSplitter -out <outputDir> -num <numParts> [-seq] <inputIndex1> [<inputIndex2 ...]");
@@ -169,7 +170,7 @@ public class MultiPassIndexSplitter {
     } else {
       input = new MultiReader(indexes.toArray(new IndexReader[indexes.size()]));
     }
-    splitter.split(input, dirs, seq);
+    splitter.split(Version.LUCENE_CURRENT, input, dirs, seq);
   }
   
   /**
