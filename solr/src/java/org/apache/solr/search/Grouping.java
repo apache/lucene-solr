@@ -541,10 +541,6 @@ public class Grouping {
       }
 
       int len = docsGathered - offset;
-      if (offset > len) {
-        len = 0;
-      }
-
       int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
       float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
       DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore);
