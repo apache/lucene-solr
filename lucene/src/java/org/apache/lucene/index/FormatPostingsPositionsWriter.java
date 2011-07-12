@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
@@ -71,7 +72,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   }
 
   void setField(FieldInfo fieldInfo) {
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    omitTermFreqAndPositions = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
     storePayloads = omitTermFreqAndPositions ? false : fieldInfo.storePayloads;
   }
 

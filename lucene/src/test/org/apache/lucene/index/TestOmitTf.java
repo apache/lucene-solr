@@ -26,13 +26,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -75,7 +70,7 @@ public class TestOmitTf extends LuceneTestCase {
        
     // this field will NOT have Tf
     Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTermFreqAndPositions(true);
+    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f2);
         
     writer.addDocument(d);
@@ -85,10 +80,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-    f1.setOmitTermFreqAndPositions(true);
+    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f1);
         
-    f2.setOmitTermFreqAndPositions(false);        
+    f2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);        
     d.add(f2);
         
     writer.addDocument(d);
@@ -99,8 +94,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
-    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
     reader.close();
     ram.close();
@@ -126,7 +121,7 @@ public class TestOmitTf extends LuceneTestCase {
        
     // this field will NOT have Tf
     Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTermFreqAndPositions(true);
+    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f2);
 
     for(int i=0;i<30;i++)
@@ -137,10 +132,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-    f1.setOmitTermFreqAndPositions(true);
+    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f1);
         
-    f2.setOmitTermFreqAndPositions(false);        
+    f2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);        
     d.add(f2);
         
     for(int i=0;i<30;i++)
@@ -153,8 +148,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
-    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f1").indexOptions);
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
     reader.close();
     ram.close();
@@ -185,7 +180,7 @@ public class TestOmitTf extends LuceneTestCase {
     for(int i=0;i<5;i++)
       writer.addDocument(d);
 
-    f2.setOmitTermFreqAndPositions(true);
+    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
         
     for(int i=0;i<20;i++)
       writer.addDocument(d);
@@ -198,8 +193,8 @@ public class TestOmitTf extends LuceneTestCase {
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTermFreqAndPositions field bit should not be set.", !fi.fieldInfo("f1").omitTermFreqAndPositions);
-    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
+    assertEquals("OmitTermFreqAndPositions field bit should not be set.", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);
+    assertEquals("OmitTermFreqAndPositions field bit should be set.", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
         
     reader.close();
     ram.close();
@@ -207,8 +202,10 @@ public class TestOmitTf extends LuceneTestCase {
 
   private void assertNoPrx(Directory dir) throws Throwable {
     final String[] files = dir.listAll();
-    for(int i=0;i<files.length;i++)
+    for(int i=0;i<files.length;i++) {
       assertFalse(files[i].endsWith(".prx"));
+      assertFalse(files[i].endsWith(".pos"));
+    }
   }
 
   // Verifies no *.prx exists when all fields omit term freq:
@@ -222,8 +219,8 @@ public class TestOmitTf extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
         
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setOmitTermFreqAndPositions(true);
+    Field f1 = newField("f1", "This field has no term freqs", Field.Store.NO, Field.Index.ANALYZED);
+    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
     d.add(f1);
 
     for(int i=0;i<30;i++)
@@ -232,7 +229,15 @@ public class TestOmitTf extends LuceneTestCase {
     writer.commit();
 
     assertNoPrx(ram);
-        
+    
+    // now add some documents with positions, and check there is no prox after optimization
+    d = new Document();
+    f1 = newField("f1", "This field has positions", Field.Store.NO, Field.Index.ANALYZED);
+    d.add(f1);
+    
+    for(int i=0;i<30;i++)
+      writer.addDocument(d);
+ 
     // force merge
     writer.optimize();
     // flush
@@ -262,7 +267,7 @@ public class TestOmitTf extends LuceneTestCase {
       sb.append(term).append(" ");
       String content  = sb.toString();
       Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
-      noTf.setOmitTermFreqAndPositions(true);
+      noTf.setIndexOptions(IndexOptions.DOCS_ONLY);
       d.add(noTf);
           
       Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);

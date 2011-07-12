@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 
 class SegmentTermDocs implements TermDocs {
@@ -41,7 +42,7 @@ class SegmentTermDocs implements TermDocs {
   private boolean haveSkipped;
   
   protected boolean currentFieldStoresPayloads;
-  protected boolean currentFieldOmitTermFreqAndPositions;
+  protected IndexOptions indexOptions;
   
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
@@ -78,7 +79,7 @@ class SegmentTermDocs implements TermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = parent.core.fieldInfos.fieldInfo(term.field);
-    currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.omitTermFreqAndPositions : false;
+    indexOptions = (fi != null) ? fi.indexOptions : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
@@ -111,7 +112,7 @@ class SegmentTermDocs implements TermDocs {
         return false;
       final int docCode = freqStream.readVInt();
       
-      if (currentFieldOmitTermFreqAndPositions) {
+      if (indexOptions == IndexOptions.DOCS_ONLY) {
         doc += docCode;
         freq = 1;
       } else {
@@ -135,7 +136,7 @@ class SegmentTermDocs implements TermDocs {
   public int read(final int[] docs, final int[] freqs)
           throws IOException {
     final int length = docs.length;
-    if (currentFieldOmitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       return readNoTf(docs, freqs, length);
     } else {
       int i = 0;

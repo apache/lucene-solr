@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
@@ -109,7 +110,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
           
           // Aggregate the storePayload as seen by the same
           // field across multiple threads
-          if (!fieldInfo.omitTermFreqAndPositions) {
+          if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
             fieldInfo.storePayloads |= fields[i-start].hasPayloads;
           }
         }
@@ -167,7 +168,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     FreqProxFieldMergeState[] termStates = new FreqProxFieldMergeState[numFields];
 
-    final boolean currentFieldOmitTermFreqAndPositions = fields[0].fieldInfo.omitTermFreqAndPositions;
+    final IndexOptions currentFieldIndexOptions = fields[0].fieldInfo.indexOptions;
 
     final Map<Term,Integer> segDeletes;
     if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
@@ -257,7 +258,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
             // Carefully copy over the prox + payload info,
             // changing the format to match Lucene's segment
             // format.
-            if (!currentFieldOmitTermFreqAndPositions) {
+            if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
               // omitTermFreqAndPositions == false so we do write positions &
               // payload  
               try {

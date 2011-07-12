@@ -175,8 +175,8 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
-       *  does not omitTermFreqAndPositions.
-       *  @see AbstractField#setOmitTermFreqAndPositions */
+       *  has position data
+       *  @see AbstractField#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
       public boolean hasProx;
 
       /** Map that includes certain
@@ -732,8 +732,12 @@ public class CheckIndex {
                 if (pos < 0) {
                   throw new RuntimeException("position " + pos + " is out of bounds");
                 }
-                if (pos <= lastPosition) {
-                  throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
+                // TODO: we should assert when all pos == 0 that positions are actually omitted
+                // previously CI relied upon the fact that freq = 1 always for omitTF
+                if (!(pos == 0 && lastPosition <= 0)) {
+                  if (pos <= lastPosition) {
+                    throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
+                  }
                 }
                 lastPosition = pos;
               } 

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
@@ -390,7 +391,7 @@ public class TrieField extends FieldType {
     }
 
     f.setOmitNorms(field.omitNorms());
-    f.setOmitTermFreqAndPositions(field.omitTf());
+    f.setIndexOptions(field.indexOptions());
     f.setBoost(boost);
     return f;
   }

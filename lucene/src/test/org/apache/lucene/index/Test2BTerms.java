@@ -23,6 +23,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -116,7 +117,7 @@ public class Test2BTerms extends LuceneTestCase {
 
       final MyTokenStream ts = new MyTokenStream(TERMS_PER_DOC);
       Field field = new Field("field", ts);
-      field.setOmitTermFreqAndPositions(true);
+      field.setIndexOptions(IndexOptions.DOCS_ONLY);
       field.setOmitNorms(true);
       doc.add(field);
       //w.setInfoStream(System.out);

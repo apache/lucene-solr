@@ -45,7 +45,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * <pre>
  *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
  *  field.setOmitNorms(true);
- *  field.setOmitTermFreqAndPositions(true);
+ *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
  *  document.add(field);
  * </pre>
  *
@@ -56,7 +56,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
  *  Field field = new Field(name, stream);
  *  field.setOmitNorms(true);
- *  field.setOmitTermFreqAndPositions(true);
+ *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
  *  Document document = new Document();
  *  document.add(field);
  *

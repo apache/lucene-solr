@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -68,7 +69,7 @@ class DocHelper {
   public static Field noTFField = new Field(NO_TF_KEY, NO_TF_TEXT,
       Field.Store.YES, Field.Index.ANALYZED);
   static {
-    noTFField.setOmitTermFreqAndPositions(true);
+    noTFField.setIndexOptions(IndexOptions.DOCS_ONLY);
   }
 
   public static final String UNINDEXED_FIELD_TEXT = "unindexed field text";
@@ -174,7 +175,7 @@ class DocHelper {
       if (f.isStored()) add(stored,f);
       else add(unstored,f);
       if (f.getOmitNorms()) add(noNorms,f);
-      if (f.getOmitTermFreqAndPositions()) add(noTf,f);
+      if (f.getIndexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
       if (f.isLazy()) add(lazy, f);
     }
   }

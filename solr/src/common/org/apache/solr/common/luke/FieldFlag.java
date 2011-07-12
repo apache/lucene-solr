@@ -31,6 +31,7 @@ public enum FieldFlag {
   TERM_VECTOR_POSITION('p', "Store Position With TermVector"),
   OMIT_NORMS('O', "Omit Norms"), 
   OMIT_TF('F', "Omit Tf"), 
+  OMIT_POSITIONS('P', "Omit Positions"),
   LAZY('L', "Lazy"), 
   BINARY('B', "Binary"), 
   SORT_MISSING_FIRST('f', "Sort Missing First"), 

@@ -20,6 +20,8 @@ import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.StringHelper; // for javadocs
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInvertState;  // for javadocs
 
 
 /**
@@ -38,7 +40,7 @@ public abstract class AbstractField implements Fieldable {
   protected boolean isTokenized = true;
   protected boolean isBinary = false;
   protected boolean lazy = false;
-  protected boolean omitTermFreqAndPositions = false;
+  protected IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
   protected float boost = 1.0f;
   // the data object for all different kind of field values
   protected Object fieldsData = null;
@@ -208,8 +210,12 @@ public abstract class AbstractField implements Fieldable {
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }
 
-  /** @see #setOmitTermFreqAndPositions */
-  public boolean getOmitTermFreqAndPositions() { return omitTermFreqAndPositions; }
+  /** @deprecated use {@link #getIndexOptions(IndexOptions)} instead. */
+  @Deprecated
+  public boolean getOmitTermFreqAndPositions() { return indexOptions == IndexOptions.DOCS_ONLY; }
+  
+  /** @see #setIndexOptions */
+  public IndexOptions getIndexOptions() { return indexOptions; }
   
   /** Expert:
    *
@@ -218,9 +224,19 @@ public abstract class AbstractField implements Fieldable {
    */
   public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
 
+  /** @deprecated use {@link #setIndexOptions(IndexOptions)} instead. */
+  @Deprecated
+  public void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions) { 
+    if (omitTermFreqAndPositions) {
+      indexOptions = IndexOptions.DOCS_ONLY;
+    } else {
+      indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    }
+  }
+
   /** Expert:
    *
-   * If set, omit term freq, positions and payloads from
+   * If set, omit term freq, and optionally also positions and payloads from
    * postings for this field.
    *
    * <p><b>NOTE</b>: While this option reduces storage space
@@ -229,7 +245,7 @@ public abstract class AbstractField implements Fieldable {
    * PhraseQuery} or {@link SpanQuery} subclasses will
    * silently fail to find results.
    */
-  public void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions) { this.omitTermFreqAndPositions=omitTermFreqAndPositions; }
+  public void setIndexOptions(IndexOptions indexOptions) { this.indexOptions=indexOptions; }
  
   public boolean isLazy() {
     return lazy;
@@ -275,8 +291,9 @@ public abstract class AbstractField implements Fieldable {
     if (omitNorms) {
       result.append(",omitNorms");
     }
-    if (omitTermFreqAndPositions) {
-      result.append(",omitTermFreqAndPositions");
+    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      result.append(",indexOptions=");
+      result.append(indexOptions);
     }
     if (lazy){
       result.append(",lazy");

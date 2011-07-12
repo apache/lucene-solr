@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
 
 // TODO FI: some of this is "generic" to TermsHash* so we
@@ -68,7 +69,7 @@ final class FreqProxFieldMergeState {
     textOffset = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
 
     field.termsHashPerField.initReader(freq, currentTermID, 0);
-    if (!field.fieldInfo.omitTermFreqAndPositions)
+    if (field.fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
       field.termsHashPerField.initReader(prox, currentTermID, 1);
 
     // Should always be true
@@ -91,7 +92,7 @@ final class FreqProxFieldMergeState {
       if (postings.lastDocCodes[currentTermID] != -1) {
         // Return last doc
         docID = postings.lastDocIDs[currentTermID];
-        if (!field.omitTermFreqAndPositions)
+        if (field.indexOptions != IndexOptions.DOCS_ONLY)
           termFreq = postings.docFreqs[currentTermID];
         postings.lastDocCodes[currentTermID] = -1;
         return true;
@@ -101,7 +102,7 @@ final class FreqProxFieldMergeState {
     }
 
     final int code = freq.readVInt();
-    if (field.omitTermFreqAndPositions)
+    if (field.indexOptions == IndexOptions.DOCS_ONLY)
       docID += code;
     else {
       docID += code >>> 1;

@@ -394,7 +394,7 @@ final class FieldsReader implements Cloneable {
     }
     
     f.setOmitNorms(fi.omitNorms);
-    f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    f.setIndexOptions(fi.indexOptions);
     doc.add(f);
   }
 
@@ -437,7 +437,7 @@ final class FieldsReader implements Cloneable {
       }
     }
     
-    f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    f.setIndexOptions(fi.indexOptions);
     f.setOmitNorms(fi.omitNorms);
     doc.add(f);
   }

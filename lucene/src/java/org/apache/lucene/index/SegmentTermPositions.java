@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
@@ -62,8 +63,8 @@ extends SegmentTermDocs implements TermPositions {
   }
 
   public final int nextPosition() throws IOException {
-    if (currentFieldOmitTermFreqAndPositions)
-      // This field does not store term freq, positions, payloads
+    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
+      // This field does not store positions, payloads
       return 0;
     // perform lazy skips if necessary
     lazySkip();
@@ -125,7 +126,7 @@ extends SegmentTermDocs implements TermPositions {
   }
 
   private void skipPositions(int n) throws IOException {
-    assert !currentFieldOmitTermFreqAndPositions;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     for (int f = n; f > 0; f--) {        // skip unread positions
       readDeltaPosition();
       skipPayload();

@@ -24,6 +24,8 @@ import org.apache.lucene.util.StringHelper;
 import java.io.Reader;
 import java.io.Serializable;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
   value.  Values may be free text, provided as a String or as a Reader, or they
@@ -416,7 +418,8 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     this.isTokenized = index.isAnalyzed();
     this.omitNorms = index.omitNorms();
     if (index == Index.NO) {
-      this.omitTermFreqAndPositions = false;
+      // note: now this reads even wierder than before
+      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     }    
 
     this.isBinary = false;
@@ -585,7 +588,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     isStored = true;
     isIndexed   = false;
     isTokenized = false;
-    omitTermFreqAndPositions = false;
+    indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     omitNorms = true;
     
     isBinary    = true;

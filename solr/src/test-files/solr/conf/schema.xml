@@ -390,6 +390,13 @@
 
   <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
 
+  
+  <!-- omitPositions example -->
+  <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
  </types>
 
 
@@ -495,6 +502,8 @@
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
 
+   
+   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
    <field name="tlong" type="tlong" indexed="true" stored="true" />
 

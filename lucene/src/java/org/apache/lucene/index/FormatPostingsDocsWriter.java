@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.IndexOutput;
 
 final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implements Closeable {
@@ -64,7 +65,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
 
   void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    omitTermFreqAndPositions = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
     storePayloads = fieldInfo.storePayloads;
     posWriter.setField(fieldInfo);
   }

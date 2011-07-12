@@ -32,6 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.search.FieldCache;
@@ -105,6 +106,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "30.nocfs",
                              "31.cfs",
                              "31.nocfs",
+                             "32.cfs",
+                             "32.nocfs",
   };
   
   final String[] oldOptimizedNames = {"31.optimized.cfs",
@@ -631,10 +634,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
     Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     doc.add(f);
     f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     doc.add(f);
     writer.addDocument(doc);
   }

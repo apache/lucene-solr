@@ -17,7 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-final class FieldInfo {
+/** @lucene.experimental */
+public final class FieldInfo {
   final String name;
   final int number;
 
@@ -28,14 +29,27 @@ final class FieldInfo {
   boolean storeOffsetWithTermVector;
   boolean storePositionWithTermVector;
 
-  boolean omitNorms; // omit norms associated with indexed fields  
-  boolean omitTermFreqAndPositions;
+  public boolean omitNorms; // omit norms associated with indexed fields  
+  public IndexOptions indexOptions;
   
   boolean storePayloads; // whether this field stores payloads together with term positions
 
+  /**
+   * Controls how much information is stored in the postings lists.
+   * @lucene.experimental
+   */
+  public static enum IndexOptions { 
+    /** only documents are indexed: term frequencies and positions are omitted */
+    DOCS_ONLY,
+    /** only documents and term frequencies are indexed: positions are omitted */  
+    DOCS_AND_FREQS,
+    /** full postings: documents, frequencies, and positions */
+    DOCS_AND_FREQS_AND_POSITIONS 
+  };
+
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     name = na;
     isIndexed = tk;
     number = nu;
@@ -45,26 +59,26 @@ final class FieldInfo {
       this.storePositionWithTermVector = storePositionWithTermVector;
       this.storePayloads = storePayloads;
       this.omitNorms = omitNorms;
-      this.omitTermFreqAndPositions = omitTermFreqAndPositions;
+      this.indexOptions = indexOptions;
     } else { // for non-indexed fields, leave defaults
       this.storeTermVector = false;
       this.storeOffsetWithTermVector = false;
       this.storePositionWithTermVector = false;
       this.storePayloads = false;
       this.omitNorms = true;
-      this.omitTermFreqAndPositions = false;
+      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     }
-    assert !omitTermFreqAndPositions || !storePayloads;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !storePayloads;
   }
 
   @Override
   public Object clone() {
     return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+                         storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
   }
 
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
-              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
 
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
@@ -85,11 +99,12 @@ final class FieldInfo {
       if (this.omitNorms != omitNorms) {
         this.omitNorms = false;                // once norms are stored, always store
       }
-      if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
-        this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
+      if (this.indexOptions != indexOptions) {
+        // downgrade
+        this.indexOptions = this.indexOptions.compareTo(indexOptions) < 0 ? this.indexOptions : indexOptions;
         this.storePayloads = false;
       }
     }
-    assert !this.omitTermFreqAndPositions || !this.storePayloads;
+    assert this.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !this.storePayloads;
   }
 }

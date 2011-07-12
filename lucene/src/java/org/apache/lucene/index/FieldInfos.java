@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -41,7 +42,11 @@ final class FieldInfos {
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
 
-  static final int CURRENT_FORMAT = FORMAT_START;
+  // First used in 3.4: omit only positional information
+  public static final int FORMAT_OMIT_POSITIONS = -3;
+
+  // whenever you add a new format, make it 1 smaller (negative version logic)!
+  static final int CURRENT_FORMAT = FORMAT_OMIT_POSITIONS;
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
@@ -50,7 +55,8 @@ final class FieldInfos {
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
-  
+  static final byte OMIT_POSITIONS = -128;
+
   private final ArrayList<FieldInfo> byNumber = new ArrayList<FieldInfo>();
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private int format;
@@ -115,7 +121,7 @@ final class FieldInfos {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getIndexOptions());
     }
   }
 
@@ -124,7 +130,7 @@ final class FieldInfos {
     final int numFields = byNumber.size();
     for(int i=0;i<numFields;i++) {
       final FieldInfo fi = fieldInfo(i);
-      if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
+      if (fi.isIndexed && fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return true;
       }
     }
@@ -214,7 +220,7 @@ final class FieldInfos {
   synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
     add(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false, false);
+        storeOffsetWithTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -229,18 +235,18 @@ final class FieldInfos {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
-   * @param omitTermFreqAndPositions true if term freqs should be omitted for this field
+   * @param indexOptions if term freqs should be omitted for this field
    */
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
     }
-    assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
+    assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
     return fi;
   }
 
@@ -248,15 +254,15 @@ final class FieldInfos {
     return add(fi.name, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
-               fi.omitTermFreqAndPositions);
+               fi.indexOptions);
   }
 
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
     name = StringHelper.intern(name);
     FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-                                 storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+                                 storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;
@@ -322,7 +328,7 @@ final class FieldInfos {
     output.writeVInt(size());
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);
-      assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
+      assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -330,7 +336,10 @@ final class FieldInfos {
       if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
-      if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+      if (fi.indexOptions == IndexOptions.DOCS_ONLY)
+        bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
+        bits |= OMIT_POSITIONS;
       
       output.writeString(fi.name);
       output.writeByte(bits);
@@ -347,7 +356,7 @@ final class FieldInfos {
       format = FORMAT_PRE;
     }
 
-    if (format != FORMAT_PRE & format != FORMAT_START) {
+    if (format != FORMAT_PRE && format != FORMAT_START && format != FORMAT_OMIT_POSITIONS) {
       throw new CorruptIndexException("unrecognized format " + format + " in file \"" + fileName + "\"");
     }
 
@@ -367,16 +376,27 @@ final class FieldInfos {
       boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-      boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
+      final IndexOptions indexOptions;
+      if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        indexOptions = IndexOptions.DOCS_ONLY;
+      } else if ((bits & OMIT_POSITIONS) != 0) {
+        if (format <= FORMAT_OMIT_POSITIONS) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS;
+        } else {
+          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format);
+        }
+      } else {
+        indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      }
       
       // LUCENE-3027: past indices were able to write
       // storePayloads=true when omitTFAP is also true,
       // which is invalid.  We correct that, here:
-      if (omitTermFreqAndPositions) {
+      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         storePayloads = false;
       }
 
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
     }
 
     if (input.getFilePointer() != input.length()) {

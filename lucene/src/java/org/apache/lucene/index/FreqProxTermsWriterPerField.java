@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: break into separate freq and prox writers as
@@ -33,7 +34,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
-  boolean omitTermFreqAndPositions;
+  IndexOptions indexOptions;
   PayloadAttribute payloadAttribute;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {
@@ -42,12 +43,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    indexOptions = fieldInfo.indexOptions;
   }
 
   @Override
   int getStreamCount() {
-    if (fieldInfo.omitTermFreqAndPositions)
+    if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
       return 1;
     else
       return 2;
@@ -68,7 +69,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void reset() {
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    indexOptions = fieldInfo.indexOptions;
     payloadAttribute = null;
   }
 
@@ -118,12 +119,14 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastDocIDs[termID] = docState.docID;
-    if (omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       postings.lastDocCodes[termID] = docState.docID;
     } else {
       postings.lastDocCodes[termID] = docState.docID << 1;
       postings.docFreqs[termID] = 1;
-      writeProx(termID, fieldState.position);
+      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        writeProx(termID, fieldState.position);
+      }
     }
     fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
     fieldState.uniqueTermCount++;
@@ -136,9 +139,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     
-    assert omitTermFreqAndPositions || postings.docFreqs[termID] > 0;
+    assert indexOptions == IndexOptions.DOCS_ONLY || postings.docFreqs[termID] > 0;
 
-    if (omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       if (docState.docID != postings.lastDocIDs[termID]) {
         assert docState.docID > postings.lastDocIDs[termID];
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
@@ -164,11 +167,15 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
         postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
         postings.lastDocIDs[termID] = docState.docID;
-        writeProx(termID, fieldState.position);
+        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          writeProx(termID, fieldState.position);
+        }
         fieldState.uniqueTermCount++;
       } else {
         fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
-        writeProx(termID, fieldState.position-postings.lastPositions[termID]);
+        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          writeProx(termID, fieldState.position-postings.lastPositions[termID]);
+        }
       }
     }
   }

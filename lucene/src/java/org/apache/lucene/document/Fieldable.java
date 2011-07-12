@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
@@ -194,12 +195,12 @@ public interface Fieldable extends Serializable {
    */
   abstract byte[] getBinaryValue(byte[] result);
   
-  /** @see #setOmitTermFreqAndPositions */
-  boolean getOmitTermFreqAndPositions();
+  /** @see #setIndexOptions */
+  IndexOptions getIndexOptions();
   
   /** Expert:
   *
-  * If set, omit term freq, positions and payloads from
+  * If set, omit term freq, and optionally positions and payloads from
   * postings for this field.
   *
   * <p><b>NOTE</b>: While this option reduces storage space
@@ -208,5 +209,5 @@ public interface Fieldable extends Serializable {
   * PhraseQuery} or {@link SpanQuery} subclasses will
   * silently fail to find results.
   */
-  void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
+  void setIndexOptions(IndexOptions indexOptions);
 }

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -90,7 +91,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
       String storedVal = externalVal;  // normalize or not?
       f[f.length - 1] = createField(field.getName(), storedVal,
                 getFieldStore(field, storedVal), Field.Index.NO, Field.TermVector.NO,
-                false, false, boost);
+                false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, boost);
     }
     
     return f;
