@@ -30,15 +30,6 @@ use strict;
 use warnings;
 
 my @moves = (
-    'solr/contrib/dataimporthandler/src/extras/test/java'
- => 'solr/contrib/dataimporthandler-extras/src/test',
-
-    'solr/contrib/dataimporthandler/src/extras/test/resources'
- => 'solr/contrib/dataimporthandler-extras/src/test-files',
-
-    'solr/contrib/dataimporthandler/src/extras/main/java'
- => 'solr/contrib/dataimporthandler-extras/src/java',
-
     'solr/contrib/clustering/src/test/java'
  => 'solr/contrib/clustering/src/test',
 
@@ -47,6 +38,27 @@ my @moves = (
 
     'solr/contrib/clustering/src/main/java'
  => 'solr/contrib/clustering/src/java',
+
+    'solr/contrib/dataimporthandler/src/test/java'
+ => 'solr/contrib/dataimporthandler/src/test',
+
+    'solr/contrib/dataimporthandler/src/test/resources'
+ => 'solr/contrib/dataimporthandler/src/test-files',
+
+    'solr/contrib/dataimporthandler/src/main/java'
+ => 'solr/contrib/dataimporthandler/src/java',
+
+    'solr/contrib/dataimporthandler/src/main/webapp'
+ => 'solr/contrib/dataimporthandler/src/webapp',
+
+    'solr/contrib/dataimporthandler/src/extras/test/java'
+ => 'solr/contrib/dataimporthandler-extras/src/test',
+
+    'solr/contrib/dataimporthandler/src/extras/test/resources'
+ => 'solr/contrib/dataimporthandler-extras/src/test-files',
+
+    'solr/contrib/dataimporthandler/src/extras/main/java'
+ => 'solr/contrib/dataimporthandler-extras/src/java',
 
     'solr/contrib/extraction/src/test/java'
  => 'solr/contrib/extraction/src/test',
