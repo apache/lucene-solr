@@ -295,6 +295,15 @@ Documentation
 
 ======================= 3.x (not yet released) ================
 
+Upgrading from Solr 3.3
+----------------------
+
+* The Lucene index format has changed and as a result, once you upgrade,
+  previous versions of Solr will no longer be able to read your indices.
+  In a master/slave configuration, all searchers/slaves should be upgraded
+  before the master.  If the master were to be updated first, the older
+  searchers would not be able to read the new index format.
+
 New Features
 ----------------------
 
