@@ -40,7 +40,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
   private IndexReader reader;
   private Query query = null;
   // reduced from 20000 to 2000 to speed up test...
-  private final static int INDEX_SIZE = atLeast(2000);
+  private int INDEX_SIZE;
   
   /**
    * Create index and query for test cases.
@@ -48,6 +48,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    INDEX_SIZE = atLeast(2000);
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index);
     RandomGen random = new RandomGen(this.random);
