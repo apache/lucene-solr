@@ -63,26 +63,31 @@ public class TestNumericQueryParser extends LuceneTestCase {
   
   final private static int PRECISION_STEP = 8;
   final private static String FIELD_NAME = "field";
-  final private static Locale LOCALE = randomLocale(random);
-  final private static TimeZone TIMEZONE = randomTimeZone(random);
-  final private static Map<String,Number> RANDOM_NUMBER_MAP;
+  private static Locale LOCALE;
+  private static TimeZone TIMEZONE;
+  private static Map<String,Number> RANDOM_NUMBER_MAP;
   final private static EscapeQuerySyntax ESCAPER = new EscapeQuerySyntaxImpl();
   final private static String DATE_FIELD_NAME = "date";
-  final private static int DATE_STYLE = randomDateStyle(random);
-  final private static int TIME_STYLE = randomDateStyle(random);
+  private static int DATE_STYLE;
+  private static int TIME_STYLE;
   
-  final private static Analyzer ANALYZER = new MockAnalyzer(random);
+  private static Analyzer ANALYZER;
   
-  final private static NumberFormat NUMBER_FORMAT = NumberFormat
-      .getNumberInstance(LOCALE);
+  private static NumberFormat NUMBER_FORMAT;
   
-  final private static StandardQueryParser qp = new StandardQueryParser(
-      ANALYZER);
+  private static StandardQueryParser qp;
   
-  final private static NumberDateFormat DATE_FORMAT;
+  private static NumberDateFormat DATE_FORMAT;
   
-  static {
+  static void init() {
     try {
+      LOCALE = randomLocale(random);
+      TIMEZONE = randomTimeZone(random);
+      DATE_STYLE = randomDateStyle(random);
+      TIME_STYLE = randomDateStyle(random);
+      ANALYZER = new MockAnalyzer(random);
+      qp = new StandardQueryParser(ANALYZER);
+      NUMBER_FORMAT = NumberFormat.getNumberInstance(LOCALE);
       NUMBER_FORMAT.setMaximumFractionDigits((random.nextInt() & 20) + 1);
       NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
       NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
@@ -145,6 +150,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    init();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
