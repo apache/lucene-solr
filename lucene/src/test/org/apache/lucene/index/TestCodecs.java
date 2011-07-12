@@ -46,6 +46,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
+import org.junit.BeforeClass;
 
 // TODO: test multiple codecs here?
 
@@ -67,12 +68,17 @@ import org.apache.lucene.util._TestUtil;
 public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
-  private final static int NUM_TEST_ITER = atLeast(20);
+  private static int NUM_TEST_ITER;
   private final static int NUM_TEST_THREADS = 3;
   private final static int NUM_FIELDS = 4;
   private final static int NUM_TERMS_RAND = 50; // must be > 16 to test skipping
   private final static int DOC_FREQ_RAND = 500; // must be > 16 to test skipping
   private final static int TERM_DOC_FREQ_RAND = 20;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    NUM_TEST_ITER = atLeast(20);
+  }
 
   class FieldData implements Comparable {
     final FieldInfo fieldInfo;
