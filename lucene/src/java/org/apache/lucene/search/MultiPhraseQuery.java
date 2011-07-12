@@ -221,8 +221,7 @@ public class MultiPhraseQuery extends Query {
           return s;
         }
       } else {
-        return new SloppyPhraseScorer(this, postingsFreqs, similarity,
-                                      slop, similarity.sloppyDocScorer(stats, field, context));
+        return new SloppyPhraseScorer(this, postingsFreqs, slop, similarity.sloppyDocScorer(stats, field, context));
       }
     }
 

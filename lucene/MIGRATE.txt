@@ -393,6 +393,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   the outer boost (topLevelBoost) and the norm. Weight.sumOfSquaredWeights has
   been renamed to Weight.getValueForNormalization().
 
+  The scorePayload method now takes a BytesRef. It is never null.
+
 * LUCENE-3283: Lucene's core o.a.l.queryParser QueryParsers have been consolidated into module/queryparser,
   where other QueryParsers from the codebase will also be placed.  The following classes were moved:
   - o.a.l.queryParser.CharStream -> o.a.l.queryparser.classic.CharStream

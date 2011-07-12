@@ -1,6 +1,7 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -51,7 +52,13 @@ public class DefaultSimilarity extends TFIDFSimilarity {
   public float sloppyFreq(int distance) {
     return 1.0f / (distance + 1);
   }
-    
+  
+  /** The default implementation returns <code>1</code> */
+  @Override
+  public float scorePayload(int doc, int start, int end, BytesRef payload) {
+    return 1;
+  }
+
   /** Implemented as <code>log(numDocs/(docFreq+1)) + 1</code>. */
   @Override
   public float idf(int docFreq, int numDocs) {

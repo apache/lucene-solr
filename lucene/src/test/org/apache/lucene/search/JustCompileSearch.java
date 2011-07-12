@@ -265,11 +265,6 @@ final class JustCompileSearch {
     public byte computeNorm(FieldInvertState state) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-    @Override
-    public float sloppyFreq(int distance) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
   }
   
   static final class JustCompileSimilarityProvider implements SimilarityProvider {

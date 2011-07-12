@@ -67,7 +67,7 @@ public class SpanWeight extends Weight {
 
   @Override
   public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-    return new SpanScorer(query.getSpans(context), this, similarity, similarity.sloppyDocScorer(stats, query.getField(), context));
+    return new SpanScorer(query.getSpans(context), this, similarity.sloppyDocScorer(stats, query.getField(), context));
   }
 
   @Override

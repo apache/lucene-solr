@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util._TestUtil;
@@ -48,6 +49,7 @@ public class TestOmitTf extends LuceneTestCase {
         @Override public Explanation idfExplain(TermContext[] terms, IndexSearcher searcher) throws IOException {
           return new Explanation(1.0f, "Inexplicable");
         }
+        @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
       };
     }
   }

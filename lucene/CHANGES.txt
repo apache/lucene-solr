@@ -156,7 +156,7 @@ Changes in backwards compatibility policy
   the queries module and can be found at o.a.l.queries.function.  See MIGRATE.txt
   for more information (Chris Male)
 
-* LUCENE-2392: Decoupled vector space scoring from Query/Weight/Scorer. If you
+* LUCENE-2392, LUCENE-3299: Decoupled vector space scoring from Query/Weight/Scorer. If you
   extended Similarity directly before, you should extend TFIDFSimilarity instead.
   Similarity is now a lower-level API to implement other scoring algorithms.
   See MIGRATE.txt for more details.

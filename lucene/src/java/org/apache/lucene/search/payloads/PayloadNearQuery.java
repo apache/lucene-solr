@@ -23,6 +23,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.DefaultSimilarity; // javadocs only
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Similarity.SloppyDocScorer;
 import org.apache.lucene.search.spans.NearSpansOrdered;
@@ -32,6 +33,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -44,13 +46,13 @@ import java.util.Iterator;
  * in the value of the payloads located at each of the positions where the
  * {@link org.apache.lucene.search.spans.TermSpans} occurs.
  * <p/>
- * In order to take advantage of this, you must override
- * {@link org.apache.lucene.search.Similarity#scorePayload}
+ * NOTE: In order to take advantage of this with the default scoring implementation
+ * ({@link DefaultSimilarity}), you must override {@link DefaultSimilarity#scorePayload(int, int, int, BytesRef)},
  * which returns 1 by default.
  * <p/>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * 
- * @see org.apache.lucene.search.Similarity#scorePayload
+ * @see org.apache.lucene.search.Similarity.SloppyDocScorer#computePayloadFactor(int, int, int, BytesRef)
  */
 public class PayloadNearQuery extends SpanNearQuery {
   protected String fieldName;
@@ -186,7 +188,7 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     protected PayloadNearSpanScorer(Spans spans, Weight weight,
         Similarity similarity, Similarity.SloppyDocScorer docScorer) throws IOException {
-      super(spans, weight, similarity, docScorer);
+      super(spans, weight, docScorer);
       this.spans = spans;
     }
 
@@ -209,6 +211,9 @@ public class PayloadNearQuery extends SpanNearQuery {
       }
     }
 
+    // TODO change the whole spans api to use bytesRef, or nuke spans
+    BytesRef scratch = new BytesRef();
+
     /**
      * By default, uses the {@link PayloadFunction} to score the payloads, but
      * can be overridden to do other things.
@@ -221,9 +226,12 @@ public class PayloadNearQuery extends SpanNearQuery {
      */
     protected void processPayloads(Collection<byte[]> payLoads, int start, int end) {
       for (final byte[] thePayload : payLoads) {
+        scratch.bytes = thePayload;
+        scratch.offset = 0;
+        scratch.length = thePayload.length;
         payloadScore = function.currentScore(doc, fieldName, start, end,
-            payloadsSeen, payloadScore, similarity.scorePayload(doc,
-                spans.start(), spans.end(), thePayload, 0, thePayload.length));
+            payloadsSeen, payloadScore, docScorer.computePayloadFactor(doc,
+                spans.start(), spans.end(), scratch));
         ++payloadsSeen;
       }
     }
@@ -240,7 +248,7 @@ public class PayloadNearQuery extends SpanNearQuery {
           payloadsSeen = 0;
           do {
             int matchLength = spans.end() - spans.start();
-            freq += similarity.sloppyFreq(matchLength);
+            freq += docScorer.computeSlopFactor(matchLength);
             Spans[] spansArr = new Spans[1];
             spansArr[0] = spans;
             getPayloads(spansArr);            
