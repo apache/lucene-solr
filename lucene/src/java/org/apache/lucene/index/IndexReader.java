@@ -153,6 +153,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
     STORES_PAYLOADS,
     /** All fields that omit tf */
     OMIT_TERM_FREQ_AND_POSITIONS,
+    /** All fields that omit positions */
+    OMIT_POSITIONS,
     /** All fields which are not indexed */
     UNINDEXED,
     /** All fields which are indexed with termvectors enabled */

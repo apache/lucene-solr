@@ -321,6 +321,8 @@ New Features
   before adding to the index.  Fix a null pointer exception in logging
   when there was no unique key. (David Smiley via yonik)
 
+* LUCENE-2048: Added omitPositions to the schema, so you can omit position
+  information while still indexing term frequencies.  (rmuir)
 
 Optimizations
 ----------------------

@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -90,7 +91,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
 
     public PreFlexTermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
-      omitTF = fieldInfo.omitTermFreqAndPositions;
+      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;
     }
 

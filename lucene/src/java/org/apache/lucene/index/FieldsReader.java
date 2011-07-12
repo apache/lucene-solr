@@ -340,7 +340,7 @@ public final class FieldsReader implements Cloneable, Closeable {
     }
     
     f.setOmitNorms(fi.omitNorms);
-    f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    f.setIndexOptions(fi.indexOptions);
     doc.add(f);
   }
 
@@ -364,7 +364,7 @@ public final class FieldsReader implements Cloneable, Closeable {
         termVector);
     }
     
-    f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    f.setIndexOptions(fi.indexOptions);
     f.setOmitNorms(fi.omitNorms);
     doc.add(f);
   }

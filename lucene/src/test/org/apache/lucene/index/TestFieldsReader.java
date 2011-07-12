@@ -30,6 +30,7 @@ import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.LoadFirstFieldSelector;
 import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -91,7 +92,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == true);
     assertTrue(field.isStorePositionWithTermVector() == true);
     assertTrue(field.getOmitNorms() == false);
-    assertTrue(field.getOmitTermFreqAndPositions() == false);
+    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
@@ -99,7 +100,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
     assertTrue(field.getOmitNorms() == true);
-    assertTrue(field.getOmitTermFreqAndPositions() == false);
+    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
@@ -107,7 +108,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
     assertTrue(field.getOmitNorms() == false);
-    assertTrue(field.getOmitTermFreqAndPositions() == true);
+    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_ONLY);
     reader.close();
   }
 

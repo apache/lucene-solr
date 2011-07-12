@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
@@ -251,7 +252,7 @@ public abstract class FieldType extends FieldProperties {
 
     return createField(field.getName(), val, getFieldStore(field, val),
             getFieldIndex(field, val), getFieldTermVec(field, val), field.omitNorms(),
-            field.omitTf(), boost);
+            field.indexOptions(), boost);
   }
 
 
@@ -269,14 +270,14 @@ public abstract class FieldType extends FieldProperties {
    * @return the {@link org.apache.lucene.document.Fieldable}.
    */
   protected Fieldable createField(String name, String val, Field.Store storage, Field.Index index,
-                                    Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
+                                    Field.TermVector vec, boolean omitNorms, IndexOptions options, float boost){
     Field f = new Field(name,
                         val,
                         storage,
                         index,
                         vec);
     f.setOmitNorms(omitNorms);
-    f.setOmitTermFreqAndPositions(omitTFPos);
+    f.setIndexOptions(options);
     f.setBoost(boost);
     return f;
   }

@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -118,7 +119,7 @@ public class MemoryCodec extends Codec {
         lastDocID = docID;
         docCount++;
 
-        if (field.omitTermFreqAndPositions) {
+        if (field.indexOptions == IndexOptions.DOCS_ONLY) {
           buffer.writeVInt(delta);
         } else if (termDocFreq == 1) {
           buffer.writeVInt((delta<<1) | 1);
@@ -192,7 +193,7 @@ public class MemoryCodec extends Codec {
       assert buffer2.getFilePointer() == 0;
 
       buffer2.writeVInt(stats.docFreq);
-      if (!field.omitTermFreqAndPositions) {
+      if (field.indexOptions != IndexOptions.DOCS_ONLY) {
         buffer2.writeVLong(stats.totalTermFreq-stats.docFreq);
       }
       int pos = (int) buffer2.getFilePointer();
@@ -223,7 +224,7 @@ public class MemoryCodec extends Codec {
       if (termCount > 0) {
         out.writeVInt(termCount);
         out.writeVInt(field.number);
-        if (!field.omitTermFreqAndPositions) {
+        if (field.indexOptions != IndexOptions.DOCS_ONLY) {
           out.writeVLong(sumTotalTermFreq);
         }
         out.writeVLong(sumDocFreq);
@@ -266,7 +267,7 @@ public class MemoryCodec extends Codec {
   }
 
   private final static class FSTDocsEnum extends DocsEnum {
-    private final boolean omitTFAP;
+    private final IndexOptions indexOptions;
     private final boolean storePayloads;
     private byte[] buffer = new byte[16];
     private final ByteArrayDataInput in = new ByteArrayDataInput(buffer);
@@ -278,13 +279,13 @@ public class MemoryCodec extends Codec {
     private int payloadLen;
     private int numDocs;
 
-    public FSTDocsEnum(boolean omitTFAP, boolean storePayloads) {
-      this.omitTFAP = omitTFAP;
+    public FSTDocsEnum(IndexOptions indexOptions, boolean storePayloads) {
+      this.indexOptions = indexOptions;
       this.storePayloads = storePayloads;
     }
 
-    public boolean canReuse(boolean omitTFAP, boolean storePayloads) {
-      return omitTFAP == this.omitTFAP && storePayloads == this.storePayloads;
+    public boolean canReuse(IndexOptions indexOptions, boolean storePayloads) {
+      return indexOptions == this.indexOptions && storePayloads == this.storePayloads;
     }
     
     public FSTDocsEnum reset(BytesRef bufferIn, Bits liveDocs, int numDocs) {
@@ -313,7 +314,7 @@ public class MemoryCodec extends Codec {
           return docID = NO_MORE_DOCS;
         }
         docUpto++;
-        if (omitTFAP) {
+        if (indexOptions == IndexOptions.DOCS_ONLY) {
           docID += in.readVInt();
           freq = 1;
         } else {
@@ -327,16 +328,18 @@ public class MemoryCodec extends Codec {
             assert freq > 0;
           }
 
-          // Skip positions
-          for(int posUpto=0;posUpto<freq;posUpto++) {
-            if (!storePayloads) {
-              in.readVInt();
-            } else {
-              final int posCode = in.readVInt();
-              if ((posCode & 1) != 0) {
-                payloadLen = in.readVInt();
+          if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+            // Skip positions
+            for(int posUpto=0;posUpto<freq;posUpto++) {
+              if (!storePayloads) {
+                in.readVInt();
+              } else {
+                final int posCode = in.readVInt();
+                if ((posCode & 1) != 0) {
+                  payloadLen = in.readVInt();
+                }
+                in.skipBytes(payloadLen);
               }
-              in.skipBytes(payloadLen);
             }
           }
         }
@@ -432,7 +435,7 @@ public class MemoryCodec extends Codec {
           return docID = NO_MORE_DOCS;
         }
         docUpto++;
-
+        
         final int code = in.readVInt();
         docID += code >>> 1;
         if ((code & 1) != 0) {
@@ -454,8 +457,8 @@ public class MemoryCodec extends Codec {
           if (!storePayloads) {
             in.readVInt();
           } else {
-            final int codeSkip = in.readVInt();
-            if ((codeSkip & 1) != 0) {
+            final int skipCode = in.readVInt();
+            if ((skipCode & 1) != 0) {
               payloadLength = in.readVInt();
               if (VERBOSE) System.out.println("    new payloadLen=" + payloadLength);
             }
@@ -548,7 +551,7 @@ public class MemoryCodec extends Codec {
       if (!didDecode) {
         buffer.reset(current.output.bytes, 0, current.output.length);
         docFreq = buffer.readVInt();
-        if (!field.omitTermFreqAndPositions) {
+        if (field.indexOptions != IndexOptions.DOCS_ONLY) {
           totalTermFreq = docFreq + buffer.readVLong();
         } else {
           totalTermFreq = 0;
@@ -598,11 +601,11 @@ public class MemoryCodec extends Codec {
       decodeMetaData();
       FSTDocsEnum docsEnum;
       if (reuse == null || !(reuse instanceof FSTDocsEnum)) {
-        docsEnum = new FSTDocsEnum(field.omitTermFreqAndPositions, field.storePayloads);
+        docsEnum = new FSTDocsEnum(field.indexOptions, field.storePayloads);
       } else {
         docsEnum = (FSTDocsEnum) reuse;        
-        if (!docsEnum.canReuse(field.omitTermFreqAndPositions, field.storePayloads)) {
-          docsEnum = new FSTDocsEnum(field.omitTermFreqAndPositions, field.storePayloads);
+        if (!docsEnum.canReuse(field.indexOptions, field.storePayloads)) {
+          docsEnum = new FSTDocsEnum(field.indexOptions, field.storePayloads);
         }
       }
       return docsEnum.reset(current.output, liveDocs, docFreq);
@@ -610,7 +613,7 @@ public class MemoryCodec extends Codec {
 
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      if (field.omitTermFreqAndPositions) {
+      if (field.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
       }
       decodeMetaData();
@@ -686,7 +689,7 @@ public class MemoryCodec extends Codec {
     public TermsReader(FieldInfos fieldInfos, IndexInput in) throws IOException {
       final int fieldNumber = in.readVInt();
       field = fieldInfos.fieldInfo(fieldNumber);
-      if (!field.omitTermFreqAndPositions) {
+      if (field.indexOptions != IndexOptions.DOCS_ONLY) {
         sumTotalTermFreq = in.readVLong();
       } else {
         sumTotalTermFreq = 0;

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Fields;
@@ -202,7 +203,10 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.storeTermOffsets() )   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
     flags.append( (f != null && f.storeTermPositions() ) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
     flags.append( (f != null && f.omitNorms())           ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
-    flags.append( (f != null && f.omitTf())              ? FieldFlag.OMIT_TF.getAbbreviation() : '-' );
+    flags.append( (f != null && 
+        f.indexOptions() == IndexOptions.DOCS_ONLY)      ? FieldFlag.OMIT_TF.getAbbreviation() : '-' );
+    flags.append( (f != null && 
+        f.indexOptions() == IndexOptions.DOCS_AND_FREQS) ? FieldFlag.OMIT_POSITIONS.getAbbreviation() : '-' );
     flags.append( (lazy)                                 ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (binary)                               ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (f != null && f.sortMissingFirst() )   ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' );

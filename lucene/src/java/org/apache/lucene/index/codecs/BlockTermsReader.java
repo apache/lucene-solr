@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -136,7 +137,7 @@ public class BlockTermsReader extends FieldsProducer {
         assert numTerms >= 0;
         final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        final long sumTotalTermFreq = fieldInfo.omitTermFreqAndPositions ? -1 : in.readVLong();
+        final long sumTotalTermFreq = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         assert !fields.containsKey(fieldInfo.name);
         fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq));
@@ -709,7 +710,7 @@ public class BlockTermsReader extends FieldsProducer {
       public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         //System.out.println("BTR.d&p this=" + this);
         decodeMetaData();
-        if (fieldInfo.omitTermFreqAndPositions) {
+        if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
           return null;
         } else {
           DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse);
@@ -867,7 +868,7 @@ public class BlockTermsReader extends FieldsProducer {
             // just skipN here:
             state.docFreq = freqReader.readVInt();
             //System.out.println("    dF=" + state.docFreq);
-            if (!fieldInfo.omitTermFreqAndPositions) {
+            if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
               state.totalTermFreq = state.docFreq + freqReader.readVLong();
               //System.out.println("    totTF=" + state.totalTermFreq);
             }

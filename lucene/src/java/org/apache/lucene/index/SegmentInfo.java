@@ -91,7 +91,7 @@ public final class SegmentInfo implements Cloneable {
   //TODO: remove when we don't have to support old indexes anymore that had this field
   private int hasVectors = CHECK_FIELDINFO;
   //TODO: remove when we don't have to support old indexes anymore that had this field
-  private int hasProx = CHECK_FIELDINFO;     // True if this segment has any fields with omitTermFreqAndPositions==false
+  private int hasProx = CHECK_FIELDINFO;     // True if this segment has any fields with positional information
 
   
   private FieldInfos fieldInfos;

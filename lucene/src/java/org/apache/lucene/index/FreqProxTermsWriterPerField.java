@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
@@ -41,7 +42,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
-  boolean omitTermFreqAndPositions;
+  IndexOptions indexOptions;
   PayloadAttribute payloadAttribute;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriter parent, FieldInfo fieldInfo) {
@@ -50,12 +51,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    indexOptions = fieldInfo.indexOptions;
   }
 
   @Override
   int getStreamCount() {
-    if (fieldInfo.omitTermFreqAndPositions)
+    if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
       return 1;
     else
       return 2;
@@ -76,7 +77,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void reset() {
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    indexOptions = fieldInfo.indexOptions;
     payloadAttribute = null;
   }
 
@@ -126,12 +127,14 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
     postings.lastDocIDs[termID] = docState.docID;
-    if (omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       postings.lastDocCodes[termID] = docState.docID;
     } else {
       postings.lastDocCodes[termID] = docState.docID << 1;
       postings.docFreqs[termID] = 1;
-      writeProx(termID, fieldState.position);
+      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        writeProx(termID, fieldState.position);
+      }
     }
     fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
     fieldState.uniqueTermCount++;
@@ -144,9 +147,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
 
-    assert omitTermFreqAndPositions || postings.docFreqs[termID] > 0;
+    assert indexOptions == IndexOptions.DOCS_ONLY || postings.docFreqs[termID] > 0;
 
-    if (omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       if (docState.docID != postings.lastDocIDs[termID]) {
         assert docState.docID > postings.lastDocIDs[termID];
         termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
@@ -172,11 +175,15 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
         postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
         postings.lastDocIDs[termID] = docState.docID;
-        writeProx(termID, fieldState.position);
+        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          writeProx(termID, fieldState.position);
+        }
         fieldState.uniqueTermCount++;
       } else {
         fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.docFreqs[termID]);
-        writeProx(termID, fieldState.position-postings.lastPositions[termID]);
+        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          writeProx(termID, fieldState.position-postings.lastPositions[termID]);
+        }
       }
     }
   }
@@ -237,7 +244,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
     final Comparator<BytesRef> termComp = termsConsumer.getComparator();
 
-    final boolean currentFieldOmitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    final IndexOptions currentFieldIndexOptions = fieldInfo.indexOptions;
 
     final Map<Term,Integer> segDeletes;
     if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
@@ -263,7 +270,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       termsHashPerField.bytePool.setBytesRef(text, textStart);
 
       termsHashPerField.initReader(freq, termID, 0);
-      if (!fieldInfo.omitTermFreqAndPositions) {
+      if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         termsHashPerField.initReader(prox, termID, 1);
       }
 
@@ -300,7 +307,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           if (postings.lastDocCodes[termID] != -1) {
             // Return last doc
             docID = postings.lastDocIDs[termID];
-            if (!omitTermFreqAndPositions) {
+            if (indexOptions != IndexOptions.DOCS_ONLY) {
               termFreq = postings.docFreqs[termID];
             }
             postings.lastDocCodes[termID] = -1;
@@ -310,7 +317,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           }
         } else {
           final int code = freq.readVInt();
-          if (omitTermFreqAndPositions) {
+          if (indexOptions == IndexOptions.DOCS_ONLY) {
             docID += code;
           } else {
             docID += code >>> 1;
@@ -351,14 +358,17 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
           state.liveDocs.clear(docID);
         }
 
+        if (currentFieldIndexOptions != IndexOptions.DOCS_ONLY) {
+          totTF += termDocFreq;
+        }
+        
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
         // format.
-        if (!currentFieldOmitTermFreqAndPositions) {
-          // omitTermFreqAndPositions == false so we do write positions &
-          // payload
+
+        if (currentFieldIndexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          // we do write positions & payload
           int position = 0;
-          totTF += termDocFreq;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
             position += code >> 1;

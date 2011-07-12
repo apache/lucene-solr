@@ -92,7 +92,7 @@ public class SpanTermQuery extends SpanQuery {
     } else {
       if (reader.termDocsEnum(reader.getLiveDocs(), term.field(), term.bytes()) != null) {
         // term does exist, but has no positions
-        throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run SpanTermQuery (term=" + term.text() + ")");
+        throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run SpanTermQuery (term=" + term.text() + ")");
       } else {
         // term does not exist
         return TermSpans.EMPTY_TERM_SPANS;

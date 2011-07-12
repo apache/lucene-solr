@@ -28,6 +28,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentCodecs; // Required for Java 1.5 javadocs
 import org.apache.lucene.index.SegmentCodecs.SegmentCodecsBuilder;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -201,13 +202,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
-  public static final int FORMAT_PER_FIELD_CODEC = -3;
-
-  // Records index values for this field
-  public static final int FORMAT_INDEX_VALUES = -3;
+  // First used in 3.4: omit only positional information
+  public static final int FORMAT_OMIT_POSITIONS = -3;
+  // per-field codec support, records index values for fields
+  public static final int FORMAT_FLEX = -4;
 
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_PER_FIELD_CODEC;
+  static final int FORMAT_CURRENT = FORMAT_FLEX;
   
   static final int FORMAT_MINIMUM = FORMAT_START;
   
@@ -218,8 +219,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
+  static final byte OMIT_POSITIONS = -128;
 
   private int format;
+  private boolean hasFreq; // only set if readonly
   private boolean hasProx; // only set if readonly
   private boolean hasVectors; // only set if readonly
   private long version; // internal use to track changes
@@ -308,6 +311,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   synchronized public Object clone() {
     FieldInfos fis = new FieldInfos(globalFieldNumbers, segmentCodecsBuilder);
     fis.format = format;
+    fis.hasFreq = hasFreq;
     fis.hasProx = hasProx;
     fis.hasVectors = hasVectors;
     for (FieldInfo fi : this) {
@@ -317,14 +321,28 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return fis;
   }
 
-  /** Returns true if any fields do not omitTermFreqAndPositions */
+  /** Returns true if any fields do not positions */
   public boolean hasProx() {
     if (isReadOnly()) {
       return hasProx;
     }
     // mutable FIs must check!
     for (FieldInfo fi : this) {
-      if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
+      if (fi.isIndexed && fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  /** Returns true if any fields have freqs */
+  public boolean hasFreq() {
+    if (isReadOnly()) {
+      return hasFreq;
+    }
+    // mutable FIs must check!
+    for (FieldInfo fi : this) {
+      if (fi.isIndexed && fi.indexOptions != IndexOptions.DOCS_ONLY) {
         return true;
       }
     }
@@ -414,7 +432,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
   synchronized public void addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
     addOrUpdate(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false, false, null);
+        storeOffsetWithTermVector, omitNorms, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -429,18 +447,18 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
-   * @param omitTermFreqAndPositions true if term freqs should be omitted for this field
+   * @param indexOptions if term freqs should be omitted for this field
    */
   synchronized public FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
+                       boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
     return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, storePositionWithTermVector,
-                               storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
+                               storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
   }
 
   synchronized private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
       boolean storeTermVector, boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValues) {
+      boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValues) {
     if (globalFieldNumbers == null) {
       throw new IllegalStateException("FieldInfos are read-only, create a new instance with a global field map to make modifications to FieldInfos");
     }
@@ -448,9 +466,9 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
       final int fieldNumber = nextFieldNumber(name, preferredFieldNumber);
-      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValues);
+      fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValues);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions);
       fi.setDocValues(docValues);
     }
     if ((fi.isIndexed || fi.hasDocValues()) && fi.getCodecId() == FieldInfo.UNASSIGNED_CODEC_ID) {
@@ -465,7 +483,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     return addOrUpdateInternal(fi.name, fi.number, fi.isIndexed, fi.storeTermVector,
                fi.storePositionWithTermVector, fi.storeOffsetWithTermVector,
                fi.omitNorms, fi.storePayloads,
-               fi.omitTermFreqAndPositions, fi.docValues);
+               fi.indexOptions, fi.docValues);
   }
   
   /*
@@ -473,13 +491,13 @@ public final class FieldInfos implements Iterable<FieldInfo> {
    */
   private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions, ValueType docValuesType) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, ValueType docValuesType) {
     // don't check modifiable here since we use that to initially build up FIs
     if (globalFieldNumbers != null) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name);
     } 
     final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, storePositionWithTermVector,
-                                       storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
+                                       storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
     putInternal(fi);
     return fi;
   }
@@ -590,7 +608,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
     for (FieldInfo fi : this) {
-      assert !fi.omitTermFreqAndPositions || !fi.storePayloads;
+      assert fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !fi.storePayloads;
       byte bits = 0x0;
       if (fi.isIndexed) bits |= IS_INDEXED;
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
@@ -598,7 +616,10 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
-      if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+      if (fi.indexOptions == IndexOptions.DOCS_ONLY)
+        bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS)
+        bits |= OMIT_POSITIONS;
       output.writeString(fi.name);
       output.writeInt(fi.number);
       output.writeInt(fi.getCodecId());
@@ -673,8 +694,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
     for (int i = 0; i < size; i++) {
       String name = input.readString();
       // if this is a previous format codec 0 will be preflex!
-      final int fieldNumber = format <= FORMAT_PER_FIELD_CODEC? input.readInt():i;
-      final int codecId = format <= FORMAT_PER_FIELD_CODEC? input.readInt():0;
+      final int fieldNumber = format <= FORMAT_FLEX? input.readInt():i;
+      final int codecId = format <= FORMAT_FLEX? input.readInt():0;
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
@@ -682,18 +703,30 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-      boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
+      final IndexOptions indexOptions;
+      if ((bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        indexOptions = IndexOptions.DOCS_ONLY;
+      } else if ((bits & OMIT_POSITIONS) != 0) {
+        if (format <= FORMAT_OMIT_POSITIONS) {
+          indexOptions = IndexOptions.DOCS_AND_FREQS;
+        } else {
+          throw new CorruptIndexException("Corrupt fieldinfos, OMIT_POSITIONS set but format=" + format);
+        }
+      } else {
+        indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      }
 
       // LUCENE-3027: past indices were able to write
       // storePayloads=true when omitTFAP is also true,
       // which is invalid.  We correct that, here:
-      if (omitTermFreqAndPositions) {
+      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         storePayloads = false;
       }
       hasVectors |= storeTermVector;
-      hasProx |= isIndexed && !omitTermFreqAndPositions;
+      hasProx |= isIndexed && indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      hasFreq |= isIndexed && indexOptions != IndexOptions.DOCS_ONLY;
       ValueType docValuesType = null;
-      if (format <= FORMAT_INDEX_VALUES) {
+      if (format <= FORMAT_FLEX) {
         final byte b = input.readByte();
         switch(b) {
         case 0:
@@ -743,7 +776,7 @@ public final class FieldInfos implements Iterable<FieldInfo> {
           throw new IllegalStateException("unhandled indexValues type " + b);
         }
       }
-      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions, docValuesType);
+      final FieldInfo addInternal = addInternal(name, fieldNumber, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, indexOptions, docValuesType);
       addInternal.setCodecId(codecId);
     }
 
@@ -771,7 +804,8 @@ public final class FieldInfos implements Iterable<FieldInfo> {
       FieldInfo clone = (FieldInfo) (fieldInfo).clone();
       roFis.putInternal(clone);
       roFis.hasVectors |= clone.storeTermVector;
-      roFis.hasProx |= clone.isIndexed && !clone.omitTermFreqAndPositions;
+      roFis.hasProx |= clone.isIndexed && clone.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+      roFis.hasFreq |= clone.isIndexed && clone.indexOptions != IndexOptions.DOCS_ONLY;
     }
     return roFis;
   }

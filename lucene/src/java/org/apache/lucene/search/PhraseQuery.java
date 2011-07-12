@@ -229,7 +229,7 @@ public class PhraseQuery extends Query {
         if (postingsEnum == null) {
           assert (reader.termDocsEnum(liveDocs, t.field(), t.bytes(), state) != null) : "termstate found but no term exists in reader";
           // term does exist, but has no positions
-          throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
+          throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
         // get the docFreq without seeking
         TermsEnum te = reader.fields().terms(field).getThreadTermsEnum();

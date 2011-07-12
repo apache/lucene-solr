@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
@@ -190,7 +191,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       // undefined
     }
 
-    if (!fieldInfo.omitTermFreqAndPositions) {
+    if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       if (isFirstTerm) {
         termState.proxOffset = termState.bytesReader.readVLong();
       } else {
@@ -219,7 +220,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    if (fieldInfo.omitTermFreqAndPositions) {
+    if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       return null;
     }
     
@@ -282,7 +283,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
 
     public SegmentDocsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      omitTF = fieldInfo.omitTermFreqAndPositions;
+      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       if (omitTF) {
         freq = 1;
       }
@@ -455,7 +456,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
 
     public SegmentDocsAndPositionsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      assert !fieldInfo.omitTermFreqAndPositions;
+      assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       assert !fieldInfo.storePayloads;
 
       this.liveDocs = liveDocs;
@@ -649,7 +650,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
 
     public SegmentDocsAndPositionsAndPayloadsEnum reset(FieldInfo fieldInfo, StandardTermState termState, Bits liveDocs) throws IOException {
-      assert !fieldInfo.omitTermFreqAndPositions;
+      assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       assert fieldInfo.storePayloads;
       if (payload == null) {
         payload = new BytesRef();

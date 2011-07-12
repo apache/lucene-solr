@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -60,16 +61,17 @@ public abstract class PostingsConsumer {
     int df = 0;
     long totTF = 0;
 
-    if (mergeState.fieldInfo.omitTermFreqAndPositions) {
+    if (mergeState.fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       while(true) {
         final int doc = postings.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) {
           break;
         }
-        this.startDoc(doc, postings.freq());
+        final int freq = postings.freq();
+        this.startDoc(doc, freq);
         this.finishDoc();
         df++;
-        totTF++;
+        totTF += freq;
       }
     } else {
       final DocsAndPositionsEnum postingsEnum = (DocsAndPositionsEnum) postings;

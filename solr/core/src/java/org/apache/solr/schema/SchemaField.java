@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 
@@ -81,7 +82,17 @@ public final class SchemaField extends FieldProperties {
   public boolean storeTermPositions() { return (properties & STORE_TERMPOSITIONS)!=0; }
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
   public boolean omitNorms() { return (properties & OMIT_NORMS)!=0; }
-  public boolean omitTf() { return (properties & OMIT_TF_POSITIONS)!=0; }
+
+  public IndexOptions indexOptions() { 
+    if ((properties & OMIT_TF_POSITIONS) != 0) {
+      return IndexOptions.DOCS_ONLY;
+    } else if ((properties & OMIT_POSITIONS) != 0) {
+      return IndexOptions.DOCS_AND_FREQS;
+    } else {
+      return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    }
+  }
+
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
@@ -215,7 +226,7 @@ public final class SchemaField extends FieldProperties {
     }
 
     if (on(falseProps,INDEXED)) {
-      int pp = (INDEXED | OMIT_NORMS | OMIT_TF_POSITIONS
+      int pp = (INDEXED | OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS
               | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS
               | SORT_MISSING_FIRST | SORT_MISSING_LAST);
       if (on(pp,trueProps)) {
@@ -223,6 +234,14 @@ public final class SchemaField extends FieldProperties {
       }
       p &= ~pp;
 
+    }
+
+    if (on(falseProps,OMIT_TF_POSITIONS)) {
+      int pp = (OMIT_POSITIONS | OMIT_TF_POSITIONS);
+      if (on(pp, trueProps)) {
+        throw new RuntimeException("SchemaField: " + name + " conflicting indexed field options:" + props);
+      }
+      p &= ~pp;
     }
 
     if (on(falseProps,STORE_TERMVECTORS)) {

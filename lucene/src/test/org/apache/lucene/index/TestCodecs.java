@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -84,7 +85,8 @@ public class TestCodecs extends LuceneTestCase {
       this.storePayloads = storePayloads;
       fieldInfos.addOrUpdate(name, true);
       fieldInfo = fieldInfos.fieldInfo(name);
-      fieldInfo.omitTermFreqAndPositions = omitTF;
+      // TODO: change this test to use all three
+      fieldInfo.indexOptions = omitTF ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
       fieldInfo.storePayloads = storePayloads;
       this.terms = terms;
       for(int i=0;i<terms.length;i++)

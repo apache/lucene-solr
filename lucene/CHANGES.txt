@@ -523,6 +523,15 @@ New Features
   (grow on demand if you set/get/clear too-large indices).  (Mike
   McCandless)
 
+* LUCENE-2048: Added the ability to omit positions but still index
+  term frequencies, you can now control what is indexed into
+  the postings via AbstractField.setIndexOptions:
+   DOCS_ONLY: only documents are indexed: term frequencies and positions are omitted
+   DOCS_AND_FREQS: only documents and term frequencies are indexed: positions are omitted
+   DOCS_AND_FREQS_AND_POSITIONS: full postings: documents, frequencies, and positions
+  AbstractField.setOmitTermFrequenciesAndPositions is deprecated,
+  you should use DOCS_ONLY instead.  (Robert Muir)
+
 Optimizations
 
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 

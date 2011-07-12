@@ -25,9 +25,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -99,7 +101,7 @@ public class PreFlexFields extends FieldsProducer {
         if (fi.isIndexed) {
           fields.put(fi.name, fi);
           preTerms.put(fi.name, new PreTerms(fi));
-          if (!fi.omitTermFreqAndPositions) {
+          if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
             anyProx = true;
           }
         }
@@ -973,7 +975,7 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       PreDocsAndPositionsEnum docsPosEnum;
-      if (fieldInfo.omitTermFreqAndPositions) {
+      if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
       } else if (reuse == null || !(reuse instanceof PreDocsAndPositionsEnum)) {
         docsPosEnum = new PreDocsAndPositionsEnum();

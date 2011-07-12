@@ -19,6 +19,7 @@ package org.apache.lucene.index.codecs.simpletext;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.Terms;
@@ -53,6 +54,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   final static BytesRef FIELD   = SimpleTextFieldsWriter.FIELD;
   final static BytesRef TERM    = SimpleTextFieldsWriter.TERM;
   final static BytesRef DOC     = SimpleTextFieldsWriter.DOC;
+  final static BytesRef FREQ    = SimpleTextFieldsWriter.FREQ;
   final static BytesRef POS     = SimpleTextFieldsWriter.POS;
   final static BytesRef PAYLOAD = SimpleTextFieldsWriter.PAYLOAD;
 
@@ -114,16 +116,16 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   private class SimpleTextTermsEnum extends TermsEnum {
     private final IndexInput in;
-    private final boolean omitTF;
+    private final IndexOptions indexOptions;
     private int docFreq;
     private long totalTermFreq;
     private long docsStart;
     private boolean ended;
     private final BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fstEnum;
 
-    public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, boolean omitTF) throws IOException {
+    public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, IndexOptions indexOptions) throws IOException {
       this.in = (IndexInput) SimpleTextFieldsReader.this.in.clone();
-      this.omitTF = omitTF;
+      this.indexOptions = indexOptions;
       fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(fst);
     }
 
@@ -218,12 +220,12 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         docsEnum = new SimpleTextDocsEnum();
       }
-      return docsEnum.reset(docsStart, liveDocs, omitTF);
+      return docsEnum.reset(docsStart, liveDocs, indexOptions == IndexOptions.DOCS_ONLY);
     }
 
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-      if (omitTF) {
+      if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
       }
 
@@ -303,8 +305,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
           docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           termFreq = 0;
           first = false;
+        } else if (scratch.startsWith(FREQ)) {
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
+          termFreq = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
         } else if (scratch.startsWith(POS)) {
-          termFreq++;
+          // skip termFreq++;
         } else if (scratch.startsWith(PAYLOAD)) {
           // skip
         } else {
@@ -384,10 +389,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
           UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+DOC.length, scratch.length-DOC.length, scratchUTF16);
           docID = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
           tf = 0;
-          posStart = in.getFilePointer();
           first = false;
+        } else if (scratch.startsWith(FREQ)) {
+          UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+FREQ.length, scratch.length-FREQ.length, scratchUTF16);
+          tf = ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
+          posStart = in.getFilePointer();
         } else if (scratch.startsWith(POS)) {
-          tf++;
+          // skip
         } else if (scratch.startsWith(PAYLOAD)) {
           // skip
         } else {
@@ -461,7 +469,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
   private class SimpleTextTerms extends Terms {
     private final long termsStart;
-    private final boolean omitTF;
+    private final IndexOptions indexOptions;
     private long sumTotalTermFreq;
     private long sumDocFreq;
     private FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst;
@@ -470,7 +478,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextTerms(String field, long termsStart) throws IOException {
       this.termsStart = termsStart;
-      omitTF = fieldInfos.fieldInfo(field).omitTermFreqAndPositions;
+      indexOptions = fieldInfos.fieldInfo(field).indexOptions;
       loadTerms();
     }
 
@@ -533,7 +541,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     @Override
     public TermsEnum iterator() throws IOException {
       if (fst != null) {
-        return new SimpleTextTermsEnum(fst, omitTF);
+        return new SimpleTextTermsEnum(fst, indexOptions);
       } else {
         return TermsEnum.EMPTY;
       }
