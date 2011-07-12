@@ -188,7 +188,7 @@ public class TestHarness {
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
       dcore.setConfigName(solrConfig.getResourceName());
       dcore.setSchemaName(indexSchema.getResourceName());
-      SolrCore core = new SolrCore("collection1", dataDirectory, solrConfig, indexSchema, dcore);
+      SolrCore core = new SolrCore(coreName, dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
 
       return container;

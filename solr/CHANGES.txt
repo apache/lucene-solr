@@ -351,6 +351,8 @@ Bug Fixes
   initializing plugins
   (Frank Wesemann, hossman)
 
+* SOLR-2623: Solr JMX MBeans do not survive core reloads (Alexey Serba, shalin)
+
 Other Changes
 ----------------------
 

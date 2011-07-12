@@ -53,9 +53,12 @@ public class JmxMonitoredMap<K, V> extends
 
   private String jmxRootName;
 
-  public JmxMonitoredMap(final String coreName, 
+  private String coreHashCode;
+
+  public JmxMonitoredMap(String coreName, String coreHashCode,
                          final JmxConfiguration jmxConfig) {
-    jmxRootName = (null != jmxConfig.rootName ? 
+    this.coreHashCode = coreHashCode;
+    jmxRootName = (null != jmxConfig.rootName ?
                    jmxConfig.rootName
                    : ("solr" + (null != coreName ? "/" + coreName : "")));
       
@@ -129,7 +132,7 @@ public class JmxMonitoredMap<K, V> extends
         ObjectName name = getObjectName(key, infoBean);
         if (server.isRegistered(name))
           server.unregisterMBean(name);
-        SolrDynamicMBean mbean = new SolrDynamicMBean(infoBean);
+        SolrDynamicMBean mbean = new SolrDynamicMBean(coreHashCode, infoBean);
         server.registerMBean(mbean, name);
       } catch (Exception e) {
         LOG.warn( "Failed to register info bean: " + key, e);
@@ -164,11 +167,8 @@ public class JmxMonitoredMap<K, V> extends
 
     try {
       ObjectName name = getObjectName(key, infoBean);
-      if (server.isRegistered(name)) {
+      if (server.isRegistered(name) && coreHashCode.equals(server.getAttribute(name, "coreHashCode"))) {
         server.unregisterMBean(name);
-      } else {
-        LOG.info("Failed to unregister mbean: " + key
-                + " because it was not registered");
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -195,7 +195,9 @@ public class JmxMonitoredMap<K, V> extends
 
     private HashSet<String> staticStats;
 
-    public SolrDynamicMBean(SolrInfoMBean managedResource) {
+    private String coreHashCode;
+
+    public SolrDynamicMBean(String coreHashCode, SolrInfoMBean managedResource) {
       this.infoBean = managedResource;
       staticStats = new HashSet<String>();
 
@@ -206,6 +208,7 @@ public class JmxMonitoredMap<K, V> extends
       staticStats.add("category");
       staticStats.add("sourceId");
       staticStats.add("source");
+      this.coreHashCode = coreHashCode;
     }
 
     public MBeanInfo getMBeanInfo() {
@@ -215,6 +218,10 @@ public class JmxMonitoredMap<K, V> extends
         attrInfoList.add(new MBeanAttributeInfo(stat, String.class.getName(),
                 null, true, false, false));
       }
+
+      // add core's hashcode
+      attrInfoList.add(new MBeanAttributeInfo("coreHashCode", String.class.getName(),
+                null, true, false, false));
 
       try {
         NamedList dynamicStats = infoBean.getStatistics();
@@ -240,7 +247,9 @@ public class JmxMonitoredMap<K, V> extends
     public Object getAttribute(String attribute)
             throws AttributeNotFoundException, MBeanException, ReflectionException {
       Object val;
-      if (staticStats.contains(attribute) && attribute != null
+      if ("coreHashCode".equals(attribute)) {
+        val = coreHashCode;
+      } else if (staticStats.contains(attribute) && attribute != null
               && attribute.length() > 0) {
         try {
           String getter = "get" + attribute.substring(0, 1).toUpperCase(Locale.ENGLISH)

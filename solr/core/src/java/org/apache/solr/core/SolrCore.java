@@ -541,7 +541,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     //Initialize JMX
     if (config.jmxConfig.enabled) {
-      infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, config.jmxConfig);
+      infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, String.valueOf(this.hashCode()), config.jmxConfig);
     } else  {
       log.info("JMX monitoring not detected for core: " + name);
       infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
