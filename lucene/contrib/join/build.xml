@@ -4,11 +4,7 @@
     Queries and collectors for performing joins
   </description>
 
-  <property name="build.dir" location="build/" />
   <import file="../contrib-build.xml"/>
-
-  <property name="build.dir" location="build/" />
-  <property name="dist.dir" location="dist/" />
 
   <contrib-uptodate name="grouping" property="grouping.uptodate" classpath.property="grouping.jar"/>
 
@@ -22,8 +18,6 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
-  <property name="build.dir" location="build/" />
-  <property name="dist.dir" location="dist/" />
   <property name="maven.dist.dir" location="../dist/maven" />
 
   <target name="compile-grouping" unless="grouping.uptodate">
