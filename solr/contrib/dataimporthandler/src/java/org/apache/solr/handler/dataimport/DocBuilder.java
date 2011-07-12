@@ -466,9 +466,13 @@ public class DocBuilder {
               }
             }
             if (entity.isDocRoot) {
-              LOG.info("a row on docroot" + docWrapper);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("a row on docroot" + docWrapper);
+              }
               if (!docWrapper.isEmpty()) {
-                LOG.info("adding a doc "+docWrapper);
+                if (LOG.isDebugEnabled()) {
+                  LOG.debug("adding a doc "+docWrapper);
+                }
                 boolean result = writer.upload(docWrapper);
                 docWrapper = null;
                 if (result){

@@ -91,7 +91,9 @@ public class ThreadedEntityProcessorWrapper extends EntityProcessorWrapper {
             return null;
           }
         }
-        LOG.info("arow : "+arow);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("arow : " + arow);
+        }
         if(arow == null) entityRunner.entityEnded.set(true);
       }
       if (arow == null) {

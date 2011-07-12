@@ -14,7 +14,7 @@ $Id$
 
 ==================  3.4.0-dev ==============
 
-(No changes)
+* SOLR-2644: When using threads=2 the default logging is set too high (Bill Bell via shalin)
 
 ==================  3.3.0 ==================
 
