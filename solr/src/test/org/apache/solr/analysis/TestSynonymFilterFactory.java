@@ -17,14 +17,19 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.util.Version;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
 public class TestSynonymFilterFactory extends BaseTokenTestCase {
@@ -58,5 +63,37 @@ public class TestSynonymFilterFactory extends BaseTokenTestCase {
     assertTokenStreamContents(ts, 
         new String[] { "GB", "gib", "gigabyte", "gigabytes" },
         new int[] { 1, 0, 0, 0 });
+  }
+  
+  /** if the synonyms are completely empty, test that we still analyze correctly */
+  public void testEmptySynonyms() throws Exception {
+    SynonymFilterFactory factory = new SynonymFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.putAll(DEFAULT_VERSION_PARAM);
+    args.put("synonyms", "synonyms.txt");
+    factory.init(args);
+    factory.inform(new StringMockSolrResourceLoader("")); // empty file!
+    TokenStream ts = factory.create(new MockTokenizer(new StringReader("GB"), MockTokenizer.WHITESPACE, false));
+    assertTokenStreamContents(ts, new String[] { "GB" });
+  }
+  
+  private class StringMockSolrResourceLoader implements ResourceLoader {
+    String text;
+
+    StringMockSolrResourceLoader(String text) {
+      this.text = text;
+    }
+
+    public List<String> getLines(String resource) throws IOException {
+      return null;
+    }
+
+    public Object newInstance(String cname, String... subpackages) {
+      return null;
+    }
+
+    public InputStream openResource(String resource) throws IOException {
+      return new ByteArrayInputStream(text.getBytes("UTF-8"));
+    }
   }
 }

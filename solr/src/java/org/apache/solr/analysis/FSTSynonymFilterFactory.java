@@ -55,7 +55,9 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
   private boolean ignoreCase;
   
   public TokenStream create(TokenStream input) {
-    return new SynonymFilter(input, map, ignoreCase);
+    // if the fst is null, it means there's actually no synonyms... just return the original stream
+    // as there is nothing to do here.
+    return map.fst == null ? input : new SynonymFilter(input, map, ignoreCase);
   }
 
   public void inform(ResourceLoader loader) {
@@ -88,6 +90,10 @@ final class FSTSynonymFilterFactory extends BaseTokenFilterFactory implements Re
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
+    }
+    
+    if (map.fst == null) {
+      log.warn("Synonyms loaded with " + args + " has empty rule set!");
     }
   }
   
