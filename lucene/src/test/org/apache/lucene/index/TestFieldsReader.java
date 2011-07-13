@@ -520,8 +520,8 @@ public class TestFieldsReader extends LuceneTestCase {
     final Number[] answers = new Number[numDocs];
     final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {
-      Document doc = new Document();
-      NumericField nf = new NumericField("nf", Field.Store.YES, false);
+      org.apache.lucene.document2.Document doc = new org.apache.lucene.document2.Document();
+      org.apache.lucene.document2.NumericField nf = new org.apache.lucene.document2.NumericField("nf", org.apache.lucene.document2.NumericField.TYPE_STORED);
       doc.add(nf);
       final Number answer;
       final NumericField.DataType typeAnswer;
@@ -554,8 +554,7 @@ public class TestFieldsReader extends LuceneTestCase {
       }
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      // nocommit need to cutover
-      doc.add(new NumericField("id", Integer.MAX_VALUE, Field.Store.NO, true).setIntValue(id));
+      doc.add(new org.apache.lucene.document2.NumericField("id", Integer.MAX_VALUE).setIntValue(id));
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
