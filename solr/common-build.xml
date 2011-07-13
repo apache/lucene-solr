@@ -29,10 +29,6 @@
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
   
-  <!-- solr uses 1.6 -->
-  <property name="javac.source" value="1.6"/>
-  <property name="javac.target" value="1.6"/>
-  
   <property name="dest" value="${common-solr.dir}/build" />
   <property name="build.dir" location="${dest}/${ant.project.name}"/>
   <property name="dist" location="${common-solr.dir}/dist"/>
