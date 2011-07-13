@@ -225,6 +225,16 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     assertTrue("Update request processor processDelete was not called", TestUpdateRequestProcessor.processDeleteCalled);
     assertTrue("Update request processor finish was not called", TestUpdateRequestProcessor.finishCalled);
     
+    MockDataSource.clearCache();
+    rows = new ArrayList();
+    rows.add(createMap("$deleteDocById", "3"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+    runFullImport(dataConfigForSkipTransform, createMap("clean","false"));
+    assertQ(req("id:3"), "//*[@numFound='0']");
+    
+    assertTrue("Update request processor processDelete was not called", TestUpdateRequestProcessor.processDeleteCalled);
+    assertTrue("Update request processor finish was not called", TestUpdateRequestProcessor.finishCalled);
+    
   }
 
   @Test
