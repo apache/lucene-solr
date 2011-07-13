@@ -364,7 +364,12 @@ Bug Fixes
 
 * SOLR-2623: Solr JMX MBeans do not survive core reloads (Alexey Serba, shalin)
 
-Other Changes
+* Fixed grouping bug when start is bigger than rows and format is simple that zero documents are returned even
+  if there are documents to display.
+
+* SOLR-2564: Fixed ArrayIndexOutOfBoundsException when using simple format and start > 0
+
+ Other Changes
 ----------------------
 
 Build
