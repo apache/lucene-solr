@@ -47,6 +47,9 @@ API Changes
    Instead, use SimilarityProvider to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
+
+ * LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
+   enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
    
 Bug Fixes
 

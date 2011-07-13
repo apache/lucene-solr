@@ -34,6 +34,7 @@ import java.io.IOException;
  */
 
 public class RegexTermsEnum extends FilteredTermsEnum {
+
   private RegexCapabilities.RegexMatcher regexImpl;
   private final BytesRef prefixRef;
 
@@ -43,7 +44,9 @@ public class RegexTermsEnum extends FilteredTermsEnum {
     this.regexImpl = regexCap.compile(text);
 
     String pre = regexImpl.prefix();
-    if (pre == null) pre = "";
+    if (pre == null) {
+      pre = "";
+    }
 
     setInitialSeekTerm(prefixRef = new BytesRef(pre));
   }

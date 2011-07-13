@@ -37,6 +37,7 @@ import java.io.IOException;
  * @see RegexTermsEnum
  */
 public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
+
   private RegexCapabilities regexImpl = new JavaUtilRegexCapabilities();
   private Term term;
 
@@ -46,7 +47,9 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
     this.term = term;
   }
   
-  public Term getTerm() { return term; }
+  public Term getTerm() {
+    return term;
+  }
 
   /**
    * Defines which {@link RegexCapabilities} implementation is used by this instance.
@@ -92,16 +95,33 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (!super.equals(obj)) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
     RegexQuery other = (RegexQuery) obj;
     if (regexImpl == null) {
-      if (other.regexImpl != null) return false;
-    } else if (!regexImpl.equals(other.regexImpl)) return false;
+      if (other.regexImpl != null) {
+        return false;
+      }
+    } else if (!regexImpl.equals(other.regexImpl)) {
+      return false;
+    }
+
     if (term == null) {
-      if (other.term != null) return false;
-    } else if (!term.equals(other.term)) return false;
+      if (other.term != null) {
+        return false;
+      }
+    } else if (!term.equals(other.term)) {
+      return false;
+    }
+    
     return true;
   }
 }
