@@ -50,8 +50,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Class has problems with DateFormat")
 public class TestNumericQueryParser extends LuceneTestCase {
   
   private static enum NumberType {
