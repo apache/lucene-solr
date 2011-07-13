@@ -45,6 +45,8 @@
  	<classpathentry kind="src" path="modules/facet/src/test"/>
 	<classpathentry kind="src" path="modules/grouping/src/java"/>
 	<classpathentry kind="src" path="modules/grouping/src/test"/>
+	<classpathentry kind="src" path="modules/join/src/java"/>
+	<classpathentry kind="src" path="modules/join/src/test"/>
   <classpathentry kind="src" path="modules/queries/src/java"/>
 	<classpathentry kind="src" path="modules/queries/src/test"/>
 	<classpathentry kind="src" path="modules/queryparser/src/java"/>
