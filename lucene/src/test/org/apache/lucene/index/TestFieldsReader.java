@@ -554,6 +554,7 @@ public class TestFieldsReader extends LuceneTestCase {
       }
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
+      // nocommit need to cutover
       doc.add(new NumericField("id", Integer.MAX_VALUE, Field.Store.NO, true).setIntValue(id));
       w.addDocument(doc);
     }

@@ -39,9 +39,6 @@ import org.apache.lucene.util.BytesRef;
 // Iterable<IndexableField> that is not a Document
 // instance...
 
-// nocommit -- rename all this stuff -- remove get/is?  --
-// this is all read only APIs
-
 /** @lucene.experimental */
 public interface IndexableField {
   // nocommit: attrs?
@@ -72,7 +69,7 @@ public interface IndexableField {
   public NumericField.DataType numericDataType();
   public Number numericValue();
 
-  // If this returns non-null then we index this field:
+  // If this returns true then we index this field:
   public boolean indexed();
 
   // nocommit maybe remove?  only needed because stored
