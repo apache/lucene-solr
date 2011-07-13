@@ -84,6 +84,12 @@ API Changes
  * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
    constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
    the target indexes. (Simon Willnauer, Jason Rutherglen)
+
+Optimizations
+
+ * LUCENE-3306: Disabled indexing of positions for spellchecker n-gram
+   fields: they are not needed because the spellchecker does not
+   use positional queries.  (Robert Muir)
       
 Bug Fixes
 

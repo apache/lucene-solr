@@ -633,7 +633,11 @@ public class SpellChecker implements java.io.Closeable {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        Field ngramField = new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
+        // spellchecker does not use positional queries, but we want freqs
+        // for scoring these multivalued n-gram fields.
+        ngramField.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        doc.add(ngramField);
         if (i == 0) {
           // only one term possible in the startXXField, TF/pos and norms aren't needed.
           Field startField = new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
