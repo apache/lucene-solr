@@ -21,8 +21,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
@@ -90,7 +91,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
+   * A "polyField" is a FieldType that can produce more than one IndexableField instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method.  This is useful
    * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
    * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, Object, float)} method may return more than one field
    */
@@ -234,7 +235,48 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public Fieldable createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
+    if (!field.indexed() && !field.stored()) {
+      if (log.isTraceEnabled())
+        log.trace("Ignoring unindexed/unstored field: " + field);
+      return null;
+    }
+    
+    String val;
+    try {
+      val = toInternal(value.toString());
+    } catch (RuntimeException e) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
+    }
+    if (val==null) return null;
+
+    org.apache.lucene.document2.FieldType newType = new org.apache.lucene.document2.FieldType();
+    newType.setIndexed(field.indexed());
+    newType.setTokenized(field.isTokenized());
+    newType.setStored(field.stored());
+    newType.setOmitNorms(field.omitNorms());
+    newType.setOmitTermFreqAndPositions(field.omitTf());
+    newType.setStoreTermVectors(field.storeTermVector());
+    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
+    newType.setStoreTermVectorPositions(field.storeTermPositions());
+    
+    return createField(field.getName(), val, newType, boost);
+  }
+
+  protected Fieldable createField(String name, String val, org.apache.lucene.document.Field.Store storage, org.apache.lucene.document.Field.Index index,
+      org.apache.lucene.document.Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
+    org.apache.lucene.document.Field f = new org.apache.lucene.document.Field(name,
+                        val,
+                        storage,
+                        index,
+                        vec);
+    f.setOmitNorms(omitNorms);
+    f.setOmitTermFreqAndPositions(omitTFPos);
+    f.setBoost(boost);
+    return f;
+  }
+
+  public Fieldable createField2(SchemaField field, Object value, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
@@ -260,66 +302,55 @@ public abstract class FieldType extends FieldProperties {
    * Fields per SchemaField
    * @param name The name of the field
    * @param val The _internal_ value to index
-   * @param storage {@link org.apache.lucene.document.Field.Store}
-   * @param index {@link org.apache.lucene.document.Field.Index}
-   * @param vec {@link org.apache.lucene.document.Field.TermVector}
-   * @param omitNorms true if norms should be omitted
-   * @param omitTFPos true if term freq and position should be omitted.
+   * @param type {@link org.apache.lucene.document2.FieldType}
    * @param boost The boost value
-   * @return the {@link org.apache.lucene.document.Fieldable}.
+   * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected Fieldable createField(String name, String val, Field.Store storage, Field.Index index,
-                                    Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
-    Field f = new Field(name,
-                        val,
-                        storage,
-                        index,
-                        vec);
-    f.setOmitNorms(omitNorms);
-    f.setOmitTermFreqAndPositions(omitTFPos);
+  protected IndexableField createField(String name, String val, org.apache.lucene.document2.FieldType type, float boost){
+    Field f = new Field(name, type, val);
     f.setBoost(boost);
     return f;
   }
 
   /**
-   * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
+   * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.index.IndexableField} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
    * @param value The value to add to the field
    * @param boost The boost to apply
-   * @return An array of {@link org.apache.lucene.document.Fieldable}
+   * @return An array of {@link org.apache.lucene.index.IndexableField}
    *
    * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
-    Fieldable f = createField( field, value, boost);
-    return f==null ? new Fieldable[]{} : new Fieldable[]{f};
+  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
+    IndexableField f = createField( field, value, boost);
+    return f==null ? new IndexableField[]{} : new IndexableField[]{f};
   }
 
   /* Helpers for field construction */
-  protected Field.TermVector getFieldTermVec(SchemaField field,
+  protected org.apache.lucene.document.Field.TermVector getFieldTermVec(SchemaField field,
                                              String internalVal) {
-    Field.TermVector ftv = Field.TermVector.NO;
+    org.apache.lucene.document.Field.TermVector ftv = org.apache.lucene.document.Field.TermVector.NO;
     if (field.storeTermPositions() && field.storeTermOffsets())
-      ftv = Field.TermVector.WITH_POSITIONS_OFFSETS;
+      ftv = org.apache.lucene.document.Field.TermVector.WITH_POSITIONS_OFFSETS;
     else if (field.storeTermPositions())
-      ftv = Field.TermVector.WITH_POSITIONS;
+      ftv = org.apache.lucene.document.Field.TermVector.WITH_POSITIONS;
     else if (field.storeTermOffsets())
-      ftv = Field.TermVector.WITH_OFFSETS;
+      ftv = org.apache.lucene.document.Field.TermVector.WITH_OFFSETS;
     else if (field.storeTermVector())
-      ftv = Field.TermVector.YES;
+      ftv = org.apache.lucene.document.Field.TermVector.YES;
     return ftv;
   }
-  protected Field.Store getFieldStore(SchemaField field,
+  protected org.apache.lucene.document.Field.Store getFieldStore(SchemaField field,
                                       String internalVal) {
-    return field.stored() ? Field.Store.YES : Field.Store.NO;
+    return field.stored() ? org.apache.lucene.document.Field.Store.YES : org.apache.lucene.document.Field.Store.NO;
   }
-  protected Field.Index getFieldIndex(SchemaField field,
+  protected org.apache.lucene.document.Field.Index getFieldIndex(SchemaField field,
                                       String internalVal) {
-    return field.indexed() ? (isTokenized() ? Field.Index.ANALYZED :
-                              Field.Index.NOT_ANALYZED) : Field.Index.NO;
+    return field.indexed() ? (isTokenized() ? org.apache.lucene.document.Field.Index.ANALYZED :
+      org.apache.lucene.document.Field.Index.NOT_ANALYZED) : org.apache.lucene.document.Field.Index.NO;
   }
-
+  
   /**
    * Convert an external value (from XML update command or from query string)
    * into the internal format for both storing and indexing (which can be modified by any analyzers).
@@ -338,8 +369,11 @@ public abstract class FieldType extends FieldProperties {
    */
   public String toExternal(Fieldable f) {
     // currently used in writing XML of the search result (but perhaps
-    // a more efficient toXML(Fieldable f, Writer w) should be used
+    // a more efficient toXML(IndexableField f, Writer w) should be used
     // in the future.
+    return f.stringValue();
+  }
+  public String toExternal(IndexableField f) {
     return f.stringValue();
   }
 
@@ -351,11 +385,14 @@ public abstract class FieldType extends FieldProperties {
   public Object toObject(Fieldable f) {
     return toExternal(f); // by default use the string
   }
+  public Object toObject(IndexableField f) {
+    return toExternal(f); // by default use the string
+  }
 
   public Object toObject(SchemaField sf, BytesRef term) {
     final CharsRef ref = new CharsRef(term.length);
     indexedToReadable(term, ref);
-    final Fieldable f = createField(sf, ref.toString(), 1.0f);
+    final IndexableField f = createField(sf, ref.toString(), 1.0f);
     return toObject(f);
   }
 
@@ -374,12 +411,20 @@ public abstract class FieldType extends FieldProperties {
   public String storedToReadable(Fieldable f) {
     return toExternal(f);
   }
+  /** Given the stored field, return the human readable representation */
+  public String storedToReadable(IndexableField f) {
+    return toExternal(f);
+  }
 
   /** Given the stored field, return the indexed form */
   public String storedToIndexed(Fieldable f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
     // that the indexed form is the same as the stored field form.
+    return f.stringValue();
+  }
+  /** Given the stored field, return the indexed form */
+  public String storedToIndexed(IndexableField f) {
     return f.stringValue();
   }
 

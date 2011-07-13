@@ -106,6 +106,10 @@ public class Field implements IndexableField {
     if (internName) // field names are optionally interned
       name = StringHelper.intern(name);
   }
+
+  public boolean isNumeric() {
+    return false;
+  }
   
   /**
    * The value of the field as a String, or null. If null, the Reader value or
@@ -131,10 +135,6 @@ public class Field implements IndexableField {
    */
   public TokenStream tokenStreamValue() {
     return tokenStream;
-  }
-  
-  public Number getNumericValue() {
-    return null;
   }
   
   /**

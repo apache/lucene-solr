@@ -29,6 +29,7 @@ import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -62,10 +63,18 @@ public class SortableFloatField extends FieldType {
   }
 
   @Override
+  public String toExternal(IndexableField f) {
+    return indexedToReadable(f.stringValue());
+  }
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Float toObject(IndexableField f) {
+    return NumberUtils.SortableStr2float(f.stringValue());
+  }
   @Override
   public Float toObject(Fieldable f) {
     return NumberUtils.SortableStr2float(f.stringValue());

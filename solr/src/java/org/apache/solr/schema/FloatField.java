@@ -24,6 +24,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -74,6 +75,10 @@ public class FloatField extends FieldType {
     }
   }
 
+  @Override
+  public Float toObject(IndexableField f) {
+    return Float.valueOf( toExternal(f) );
+  }
   @Override
   public Float toObject(Fieldable f) {
     return Float.valueOf( toExternal(f) );

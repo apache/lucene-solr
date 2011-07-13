@@ -20,8 +20,9 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Base64;
@@ -46,8 +47,18 @@ public class BinaryField extends FieldType  {
 
 
   @Override
+  public String toExternal(IndexableField f) {
+    return toBase64String(toObject(f));
+  }
+  @Override
   public String toExternal(Fieldable f) {
     return toBase64String(toObject(f));
+  }
+
+  @Override
+  public ByteBuffer toObject(IndexableField f) {
+    BytesRef bytes = f.binaryValue(null);
+    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
   
   @Override
@@ -57,7 +68,7 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public Fieldable createField(SchemaField field, Object val, float boost) {
+  public IndexableField createField(SchemaField field, Object val, float boost) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: " + field);
@@ -81,7 +92,7 @@ public class BinaryField extends FieldType  {
       len = buf.length;
     }
 
-    Field f = new Field(field.getName(), buf, offset, len);
+    Field f = new org.apache.lucene.document2.BinaryField(field.getName(), buf, offset, len);
     f.setBoost(boost);
     return f;
   }

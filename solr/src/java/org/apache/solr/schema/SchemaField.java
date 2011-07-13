@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 
@@ -92,11 +93,11 @@ public final class SchemaField extends FieldProperties {
   boolean isBinary() { return (properties & BINARY)!=0; }
 
 
-  public Fieldable createField(Object val, float boost) {
+  public IndexableField createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }
   
-  public Fieldable[] createFields(Object val, float boost) {
+  public IndexableField[] createFields(Object val, float boost) {
     return type.createFields(this,val,boost);
   }
 

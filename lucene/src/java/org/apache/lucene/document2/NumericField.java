@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
@@ -162,7 +163,7 @@ public final class NumericField extends Field {
     TYPE_STORED.freeze();
   }
 
-  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
+  //public static enum DataType { INT, LONG, FLOAT, DOUBLE }
   
   private DataType dataType;
   private transient NumericTokenStream numericTS;
@@ -288,6 +289,7 @@ public final class NumericField extends Field {
    * instances. You can then use {@link #getNumericValue} to return the stored
    * value.
    */
+  @Override
   public String stringValue() {
     return (fieldsData == null) ? null : fieldsData.toString();
   }
@@ -296,7 +298,8 @@ public final class NumericField extends Field {
    * Returns the current numeric value as a subclass of {@link Number},
    * <code>null</code> if not yet initialized.
    */
-  public Number getNumericValue() {
+  @Override
+  public Number numericValue() {
     return (Number) fieldsData;
   }
   
@@ -310,10 +313,21 @@ public final class NumericField extends Field {
    * 
    * @since 3.2
    */
-  public DataType getNumericDataType() {
+  @Override
+  public DataType numericDataType() {
     return dataType;
   }
-  
+
+  public DataType numericType() {
+    return dataType;
+  }
+
+  @Override
+  public boolean numeric() {
+    return true;
+  }
+
+  @Override
   public boolean isNumeric() {
     return true;
   }

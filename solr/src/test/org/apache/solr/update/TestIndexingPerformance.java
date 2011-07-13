@@ -17,9 +17,10 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -97,12 +98,12 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     for (int i=0; i<iter; i++) {
       if (includeDoc || add.doc==null) {
         add.doc = new Document();
-        idField = new Field("id","", Field.Store.YES, Field.Index.NOT_ANALYZED);
+        idField = new Field("id",StringField.TYPE_STORED,"");
         add.doc.add(idField);
         for (int j=0; j<fields.length; j+=2) {
           String field = fields[j];
           String val = fields[j+1];
-          Fieldable f = schema.getField(field).createField(val, 1.0f);
+          IndexableField f = schema.getField(field).createField(val, 1.0f);
           add.doc.add(f);
         }
       }

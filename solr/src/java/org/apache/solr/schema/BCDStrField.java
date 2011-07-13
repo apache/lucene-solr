@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 /**
  *
  */
@@ -26,6 +27,10 @@ public class BCDStrField extends BCDIntField {
    * This only works for strings that represent an interger.  If the string
    * is not an integer, it will not survive the base10k conversion!
    */
+  @Override
+  public String toObject(IndexableField f) {
+    return toExternal(f);
+  }
   @Override
   public String toObject(Fieldable f) {
     return toExternal(f);

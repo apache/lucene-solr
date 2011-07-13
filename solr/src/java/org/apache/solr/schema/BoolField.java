@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -114,10 +115,18 @@ public class BoolField extends FieldType {
   }
 
   @Override
+  public String toExternal(IndexableField f) {
+    return indexedToReadable(f.stringValue());
+  }
+  @Override
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Boolean toObject(IndexableField f) {
+    return Boolean.valueOf( toExternal(f) );
+  }
   @Override
   public Boolean toObject(Fieldable f) {
     return Boolean.valueOf( toExternal(f) );

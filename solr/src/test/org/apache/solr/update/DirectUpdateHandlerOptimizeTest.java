@@ -16,8 +16,10 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -56,8 +58,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     for (int i = 0; i < 99; i++) {
       // Add a valid document
       cmd.doc = new Document();
-      cmd.doc.add(new Field("id", "id_" + i, Field.Store.YES, Field.Index.NOT_ANALYZED));
-      cmd.doc.add(new Field("subject", "subject_" + i, Field.Store.NO, Field.Index.ANALYZED));
+      cmd.doc.add(new Field("id", StringField.TYPE_STORED, "id_" + i));
+      cmd.doc.add(new TextField("subject", "subject_" + i));
       updater.addDoc(cmd);
     }
 

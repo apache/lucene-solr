@@ -158,6 +158,30 @@ public final class Document implements Iterable<IndexableField> {
     }
     return null;
   }
+
+  public final IndexableField getField(String name) {
+    for (IndexableField field : fields) {
+      if (field.name().equals(name))
+        return field;
+    }
+    return null;
+  }
+
+  private final static IndexableField[] NO_FIELDS = new IndexableField[0];
+  
+  public IndexableField[] getFields(String name) {
+    List<IndexableField> result = new ArrayList<IndexableField>();
+    for (IndexableField field : fields) {
+      if (field.name().equals(name)) {
+        result.add(field);
+      }
+    }
+
+    if (result.size() == 0)
+      return NO_FIELDS;
+
+    return result.toArray(new IndexableField[result.size()]);
+  }
   
   public Integer size() {
     return fields.size();

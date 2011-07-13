@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
@@ -75,7 +76,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
 
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     double[] latLon = GeoHashUtils.decode(f.stringValue());
     return latLon[0] + "," + latLon[1];
   }

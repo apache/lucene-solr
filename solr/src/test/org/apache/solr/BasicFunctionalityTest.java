@@ -26,8 +26,8 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -358,32 +358,32 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
-    Fieldable luf; // Lucene field
+    IndexableField luf; // Lucene field
 
     f = ischema.getField("test_basictv");
     luf = f.createField("test", 0f);
     assertTrue(f.storeTermVector());
-    assertTrue(luf.isTermVectorStored());
+    assertTrue(luf.storeTermVectors());
 
     f = ischema.getField("test_notv");
     luf = f.createField("test", 0f);
     assertTrue(!f.storeTermVector());
-    assertTrue(!luf.isTermVectorStored());    
+    assertTrue(!luf.storeTermVectors());    
 
     f = ischema.getField("test_postv");
     luf = f.createField("test", 0f);
     assertTrue(f.storeTermVector() && f.storeTermPositions());
-    assertTrue(luf.isStorePositionWithTermVector());
+    assertTrue(luf.storeTermVectorPositions());
 
     f = ischema.getField("test_offtv");
     luf = f.createField("test", 0f);
     assertTrue(f.storeTermVector() && f.storeTermOffsets());
-    assertTrue(luf.isStoreOffsetWithTermVector());
+    assertTrue(luf.storeTermVectorOffsets());
 
     f = ischema.getField("test_posofftv");
     luf = f.createField("test", 0f);
     assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets());
-    assertTrue(luf.isStoreOffsetWithTermVector() && luf.isStorePositionWithTermVector());
+    assertTrue(luf.storeTermVectorOffsets() && luf.storeTermVectorPositions());
 
   }
 
@@ -555,15 +555,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
     SolrCore core = h.getCore();
    
-    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title,test_hlt");
+    SolrQueryRequest req = req("q", "title:keyword" , "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
-    assertTrue( d.getFieldable("test_hlt") instanceof Field );
-    assertTrue( d.getFieldable("title") instanceof Field );
+    assertTrue( d.getFieldable("test_hlt") instanceof org.apache.lucene.document.Field );
+    assertTrue( d.getFieldable("title") instanceof org.apache.lucene.document.Field );
     req.close();
   }
 
@@ -585,8 +585,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocIterator di = dl.iterator();    
     org.apache.lucene.document.Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
-    assertTrue( !( d.getFieldable("test_hlt") instanceof Field ) );
-    assertTrue( d.getFieldable("title") instanceof Field );
+    assertTrue( !( d.getFieldable("test_hlt") instanceof org.apache.lucene.document.Field ) );
+    assertTrue( d.getFieldable("title") instanceof org.apache.lucene.document.Field );
     req.close();
   } 
             

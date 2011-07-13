@@ -42,6 +42,7 @@ public final class StringField extends Field {
     this(name, true, value);
   }
   
+  @Override
   public String stringValue() {
     return (fieldsData == null) ? null : fieldsData.toString();
   }

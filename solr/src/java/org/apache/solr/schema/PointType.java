@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -68,7 +69,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   }
 
   @Override
-  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     String[] point = new String[0];
     try {
@@ -78,7 +79,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    Fieldable[] f = new Fieldable[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
+    IndexableField[] f = new IndexableField[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
@@ -88,9 +89,9 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      f[f.length - 1] = createField(field.getName(), storedVal,
-                getFieldStore(field, storedVal), Field.Index.NO, Field.TermVector.NO,
-                false, false, boost);
+      org.apache.lucene.document2.FieldType customType = new org.apache.lucene.document2.FieldType();
+      customType.setStored(true);
+      f[f.length - 1] = createField(field.getName(), storedVal, customType, boost);
     }
     
     return f;
@@ -113,7 +114,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
    *
    */
   @Override
-  public Fieldable createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
   }
 
