@@ -38,11 +38,15 @@
 
   <target name="build-memory" unless="memory.uptodate">
     <echo>Highlighter building dependency contrib/memory</echo>
-    <ant antfile="../memory/build.xml" target="default" inheritall="false" dir="../memory" />
+    <ant antfile="../memory/build.xml" target="default" inheritall="false" dir="../memory">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   
   <target name="build-queries" unless="queries.uptodate">
     <echo>Highlighter building dependency contrib/queries</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries" />
+    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 </project>

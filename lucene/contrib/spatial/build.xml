@@ -36,7 +36,10 @@
 
   <target name="build-queries" unless="queries.uptodate">
     <echo>Misc building dependency ${queries.jar}</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries" />
+    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries.uptodate" value="true"/>
   </target>
   
 </project>

@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- $Id$
+     $Source$
+     $Name$
+  -->
+
+<config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <indexDefaults>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <lockType>single</lockType>
+  </indexDefaults>
+
+  <mainIndex>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+
+    <unlockOnStartup>true</unlockOnStartup>
+  </mainIndex>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+  </updateHandler>
+
+  <requestHandler name="standard" class="solr.StandardRequestHandler">
+    <bool name="httpCaching">true</bool>
+  </requestHandler>
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="defaults" class="solr.StandardRequestHandler">
+
+  </requestHandler>
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
+  </requestHandler>
+
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
+
+
+  <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler"/>
+
+  <requestHandler name="/replication" class="solr.ReplicationHandler">
+
+  </requestHandler>
+
+
+  <!-- enable streaming for testing... -->
+  <requestDispatcher handleSelect="true">
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048"/>
+    <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
+      <cacheControl>max-age=30, public</cacheControl>
+    </httpCaching>
+  </requestDispatcher>
+
+</config>

@@ -33,7 +33,7 @@
   <description>Apache Solr Analysis Extras</description>
   <properties>
     <module-directory>solr/contrib/analysis-extras</module-directory>
-    <build-directory>build</build-directory>
+    <build-directory>../../build/contrib/analysis-extras</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -86,16 +86,16 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes</outputDirectory>
-    <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
     <sourceDirectory>src/java</sourceDirectory>
     <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>test-files</directory>
+        <directory>src/test-files</directory>
       </testResource>
       <testResource>
-        <directory>../../src/test-files</directory>
+        <directory>../../core/src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>
