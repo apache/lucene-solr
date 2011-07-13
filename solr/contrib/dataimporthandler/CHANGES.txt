@@ -14,7 +14,10 @@ $Id$
 
 ==================  3.4.0-dev ==============
 
+Bug Fixes
+----------------------
 * SOLR-2644: When using threads=2 the default logging is set too high (Bill Bell via shalin)
+* SOLR-2492: DIH does not commit if only deletes are processed (James Dyer via shalin)
 
 ==================  3.3.0 ==================
 

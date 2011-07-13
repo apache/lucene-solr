@@ -703,20 +703,24 @@ public class DocBuilder {
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteDoc(o.toString());
+          importStatistics.deletedDocCount.incrementAndGet();
         }
       } else {
         writer.deleteDoc(value);
+        importStatistics.deletedDocCount.incrementAndGet();
       }
-    }
+    }    
     value = arow.get("$deleteDocByQuery");
     if (value != null) {
       if (value instanceof Collection) {
         Collection collection = (Collection) value;
         for (Object o : collection) {
           writer.deleteByQuery(o.toString());
+          importStatistics.deletedDocCount.incrementAndGet();
         }
       } else {
         writer.deleteByQuery(value.toString());
+        importStatistics.deletedDocCount.incrementAndGet();
       }
     }
     value = arow.get("$docBoost");
