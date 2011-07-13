@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -597,7 +598,7 @@ public class SpellChecker implements java.io.Closeable {
     // the word field is never queried on... its indexed so it can be quickly
     // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
     Field f = new Field(F_WORD, text, Field.Store.YES, Field.Index.NOT_ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     f.setOmitNorms(true);
     doc.add(f); // orig term
     addGram(text, doc, ng1, ng2);
@@ -611,11 +612,15 @@ public class SpellChecker implements java.io.Closeable {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        Field ngramField = new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
+        // spellchecker does not use positional queries, but we want freqs
+        // for scoring these multivalued n-gram fields.
+        ngramField.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        doc.add(ngramField);
         if (i == 0) {
           // only one term possible in the startXXField, TF/pos and norms aren't needed.
           Field startField = new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
-          startField.setOmitTermFreqAndPositions(true);
+          startField.setIndexOptions(IndexOptions.DOCS_ONLY);
           startField.setOmitNorms(true);
           doc.add(startField);
         }
@@ -624,7 +629,7 @@ public class SpellChecker implements java.io.Closeable {
       if (end != null) { // may not be present if len==ng1
         // only one term possible in the endXXField, TF/pos and norms aren't needed.
         Field endField = new Field("end" + ng, end, Field.Store.NO, Field.Index.NOT_ANALYZED);
-        endField.setOmitTermFreqAndPositions(true);
+        endField.setIndexOptions(IndexOptions.DOCS_ONLY);
         endField.setOmitNorms(true);
         doc.add(endField);
       }
