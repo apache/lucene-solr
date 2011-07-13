@@ -148,6 +148,11 @@
     <contrib-crawl target="test" failonerror="true"/>
   </target>
   
+  <!-- test-framework targets -->
+  <target name="javadocs-test-framework">  <!-- Called from Jenkins build script --> 
+    <ant dir="test-framework" target="javadocs" inheritAll="false"/>
+  </target>
+  
   <!-- Webapp targets -->
   <target name="test-jsp">
     <ant dir="webapp" target="test" inheritall="false">
