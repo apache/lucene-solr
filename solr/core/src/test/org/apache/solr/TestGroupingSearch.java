@@ -214,6 +214,26 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testGroupingSortByFunction() throws Exception {
+    assertU(add(doc("id", "1", "value1_i", "1", "value2_i", "1", "store", "45.18014,-93.87742")));
+    assertU(add(doc("id", "2", "value1_i", "1", "value2_i", "2", "store", "45.18014,-93.87743")));
+    assertU(add(doc("id", "3", "value1_i", "1", "value2_i", "3", "store", "45.18014,-93.87744")));
+    assertU(add(doc("id", "4", "value1_i", "1", "value2_i", "4", "store", "45.18014,-93.87745")));
+    assertU(add(doc("id", "5", "value1_i", "1", "value2_i", "5", "store", "45.18014,-93.87746")));
+    assertU(commit());
+
+    assertJQ(
+        req("q", "*:*", "sort", "sum(value1_i, value2_i) desc", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
+        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'5','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}"
+    );
+
+    assertJQ(
+        req("q", "*:*", "sort", "geodist(45.18014,-93.87742,store) asc", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
+        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':1,'start':0,'docs':[{'id':'1'}]}}]}}"
+    );
+  }
+
   static String f = "foo_i";
   static String f2 = "foo2_i";
 

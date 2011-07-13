@@ -369,6 +369,8 @@ Bug Fixes
 
 * SOLR-2564: Fixed ArrayIndexOutOfBoundsException when using simple format and start > 0
 
+* SOLR-2642: Fixed sorting by function when using grouping. (Thomas Heigl, Martijn van Groningen)
+
  Other Changes
 ----------------------
 

@@ -331,9 +331,9 @@ public class QueryComponent extends SearchComponent
 
         boolean includeTotalGroupCount = params.getBool(GroupParams.GROUP_TOTAL_COUNT, false);
         Grouping.TotalCount defaultTotalCount = includeTotalGroupCount ? Grouping.TotalCount.grouped : Grouping.TotalCount.ungrouped;
-        Sort sort = cmd.getSort();
+        Sort sort = searcher.weightSort(cmd.getSort());
         // groupSort defaults to sort
-        Sort groupSort = groupSortStr == null ? cmd.getSort() : QueryParsing.parseSort(groupSortStr, req);
+        Sort groupSort = groupSortStr == null ?  sort : searcher.weightSort(QueryParsing.parseSort(groupSortStr, req));
 
         int limitDefault = cmd.getLen(); // this is normally from "rows"
         int groupOffsetDefault = params.getInt(GroupParams.GROUP_OFFSET, 0);
