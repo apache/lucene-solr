@@ -266,7 +266,6 @@
       <fileset file="${analyzers-phonetic.jar}" />
       <fileset file="${suggest.jar}" />
       <fileset file="${grouping.jar}" />
-      <fileset file="${common-module.jar}" />
       <fileset file="${queries.jar}" />
       <fileset file="${queryparser.jar}" />
       <fileset file="${highlighter.jar}" />
