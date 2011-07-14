@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
@@ -713,7 +712,42 @@ public class CoreContainer
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
-    SolrCore newCore = core.reload(libLoader);
+    CoreDescriptor cd = core.getCoreDescriptor();
+  
+    File instanceDir = new File(cd.getInstanceDir());
+    if (!instanceDir.isAbsolute()) {
+      instanceDir = new File(getSolrHome(), instanceDir.getName());
+    }
+    
+    SolrResourceLoader solrLoader;
+    if(zkController == null) {
+      solrLoader = new SolrResourceLoader(instanceDir.getAbsolutePath(), libLoader, getCoreProps(instanceDir.getAbsolutePath(), cd.getPropertiesName(),cd.getCoreProperties()));
+    } else {
+      try {
+        String collection = cd.getCloudDescriptor().getCollectionName();
+        zkController.createCollectionZkNode(cd.getCloudDescriptor());
+
+        String zkConfigName = zkController.readConfigName(collection);
+        if (zkConfigName == null) {
+          log.error("Could not find config name for collection:" + collection);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "Could not find config name for collection:" + collection);
+        }
+        solrLoader = new ZkSolrResourceLoader(instanceDir.getAbsolutePath(), zkConfigName, libLoader, getCoreProps(instanceDir.getAbsolutePath(), cd.getPropertiesName(),cd.getCoreProperties()), zkController);
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      }
+    }
+    
+    SolrCore newCore = core.reload(solrLoader);
     register(name, newCore, false);
   }
 

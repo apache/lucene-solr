@@ -25,6 +25,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.xml.sax.SAXParseException;
 
 /**
  *
@@ -94,13 +95,14 @@ public class BasicZkTest extends AbstractZkTestCase {
       assertU(a, a);
     }
     assertU(commit());
-    
+    int zkPort = zkServer.getPort();
+
     zkServer.shutdown();
     
     Thread.sleep(300);
     
     // try a reconnect from disconnect
-    zkServer = new ZkTestServer(zkDir);
+    zkServer = new ZkTestServer(zkDir, zkPort);
     zkServer.run();
     
     Thread.sleep(300);
@@ -129,6 +131,20 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU(delQ("id:[100 TO 110]"));
     assertU(commit());
     assertQ(req("id:[100 TO 110]"), "//*[@numFound='0']");
+    
+   
+    
+    // SOLR-2651: test that reload still gets config files from zookeeper 
+    zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0]);
+ 
+    // we set the solrconfig to nothing, so this reload should fail
+    try {
+      h.getCoreContainer().reload(h.getCore().getName());
+      fail("The reloaded SolrCore did not pick up configs from zookeeper");
+    } catch(SAXParseException e) {
+      
+    }
+    
   }
   
   @AfterClass

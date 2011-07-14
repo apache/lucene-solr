@@ -206,7 +206,7 @@ Bug Fixes
 * SOLR-2275: fix DisMax 'mm' parsing to be tolerant of whitespace
   (Erick Erickson via hossman)
   
-* SOLR-2193, SOLR-2565:  SolrCores now properly share IndexWriters across SolrCore reloads.
+* SOLR-2193, SOLR-2565, SOLR-2651: SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
   
 * SOLR-2535: REGRESSION: in Solr 3.x and trunk the admin/file handler 

@@ -123,7 +123,10 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
     int oldNumberOfObjects = oldBeans.size();
     h.getCoreContainer().reload(coreName);
-
+    
+    // chill for a moment, so our beans can get ready
+    Thread.sleep(1000);
+    
     Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
     int newNumberOfObjects = newBeans.size();
 

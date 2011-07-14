@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
@@ -297,20 +296,18 @@ public final class SolrCore implements SolrInfoMBean {
     responseWriters.put(name, responseWriter);
   }
   
-  public SolrCore reload(ClassLoader libLoader) throws IOException, ParserConfigurationException, SAXException {
-    // TODO - null descriptor and what if indexwriter settings have changed
-    SolrResourceLoader solrLoader = new SolrResourceLoader(getResourceLoader()
-        .getInstanceDir(), libLoader, CoreContainer.getCoreProps(
-        getResourceLoader().getInstanceDir(),
-        coreDescriptor.getPropertiesName(), coreDescriptor.getCoreProperties()));
-    SolrConfig config = new SolrConfig(solrLoader,
-        coreDescriptor.getConfigName(), null);
+  public SolrCore reload(SolrResourceLoader resourceLoader) throws IOException,
+      ParserConfigurationException, SAXException {
+    // TODO - what if indexwriter settings have changed
+    
+    SolrConfig config = new SolrConfig(resourceLoader,
+        getSolrConfig().getName(), null);
     
     IndexSchema schema = new IndexSchema(config,
-        coreDescriptor.getSchemaName(), null);
+        getSchema().getResourceName(), null);
     
     updateHandler.incref();
-    SolrCore core = new SolrCore(coreDescriptor.getName(), null, config,
+    SolrCore core = new SolrCore(getName(), null, config,
         schema, coreDescriptor, updateHandler);
     return core;
   }
