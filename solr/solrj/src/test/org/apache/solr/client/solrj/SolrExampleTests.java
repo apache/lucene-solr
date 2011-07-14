@@ -27,6 +27,7 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.apache.lucene.util._TestUtil;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;

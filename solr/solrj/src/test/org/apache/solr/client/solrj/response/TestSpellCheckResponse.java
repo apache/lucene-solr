@@ -17,7 +17,7 @@ package org.apache.solr.client.solrj.response;
  */
 
 import junit.framework.Assert;
-import org.apache.solr.client.solrj.SolrJettyTestBase;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;

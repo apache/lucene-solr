@@ -1,4 +1,4 @@
-package org.apache.solr.client.solrj;
+package org.apache.solr;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,10 +17,7 @@ package org.apache.solr.client.solrj;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
