@@ -1,4 +1,4 @@
-package org.apache.lucene.search.similar;
+package org.apache.lucene.queries.mlt;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -92,14 +92,13 @@ public class TestMoreLikeThis extends LuceneTestCase {
     
     assertEquals("Expected " + originalValues.size() + " clauses.",
         originalValues.size(), clauses.size());
-    
-    for (int i = 0; i < clauses.size(); i++) {
-      BooleanClause clause = clauses.get(i);
+
+    for (BooleanClause clause : clauses) {
       TermQuery tq = (TermQuery) clause.getQuery();
       Float termBoost = originalValues.get(tq.getTerm().text());
       assertNotNull("Expected term " + tq.getTerm().text(), termBoost);
-      
-      float totalBoost = termBoost.floatValue() * boostFactor;
+
+      float totalBoost = termBoost * boostFactor;
       assertEquals("Expected boost of " + totalBoost + " for term '"
           + tq.getTerm().text() + "' got " + tq.getBoost(), totalBoost, tq
           .getBoost(), 0.0001);
@@ -118,11 +117,10 @@ public class TestMoreLikeThis extends LuceneTestCase {
     BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
         "lucene release"));
     List<BooleanClause> clauses = query.clauses();
-    
-    for (int i = 0; i < clauses.size(); i++) {
-      BooleanClause clause = clauses.get(i);
+
+    for (BooleanClause clause : clauses) {
       TermQuery tq = (TermQuery) clause.getQuery();
-      originalValues.put(tq.getTerm().text(), Float.valueOf(tq.getBoost()));
+      originalValues.put(tq.getTerm().text(), tq.getBoost());
     }
     return originalValues;
   }

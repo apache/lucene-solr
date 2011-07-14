@@ -11,7 +11,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.search.similar.MoreLikeThisQuery;
+import org.apache.lucene.queries.mlt.MoreLikeThisQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;

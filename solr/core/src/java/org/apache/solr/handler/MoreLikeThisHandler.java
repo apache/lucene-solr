@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.similar.MoreLikeThis;
+import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;

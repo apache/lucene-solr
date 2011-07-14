@@ -25,35 +25,38 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
+  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries-contrib.uptodate" classpath.property="queries-contrib.jar"/>
   <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
   <property name="servlet.jar" location="${common.dir}/lib/servlet-api-2.4.jar"/>
   <available property="servlet.jar.present" type="file" file="${servlet.jar}"/>
   <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
+  <module-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
 
 
   <path id="classpath">
-    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queries-contrib.jar}"/>
     <pathelement path="${queryparser.jar}"/>
+    <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
   <path id="web-classpath">
-    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queries-contrib.jar}"/>
     <pathelement path="${queryparser.jar}"/>
+    <pathelement path="${queries.jar}"/>
     <pathelement path="${servlet.jar}"/>
     <pathelement path="${build.dir}/${final.name}.jar"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="build-queries,build-queryparser,common.compile-core" />
+  <target name="compile-core" depends="build-queries-contrib,build-queryparser,build-queries,common.compile-core" />
 
-  <target name="build-queries" unless="queries.uptodate">
+  <target name="build-queries-contrib" unless="queries-contrib.uptodate">
     <echo>XML Parser building dependency ${queries.jar}</echo>
     <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-    <property name="queries.uptodate" value="true"/>
+    <property name="queries-contrib.uptodate" value="true"/>
   </target>
 
   <!-- override contrib-build.xml target to also build web demo -->
@@ -86,9 +89,16 @@
   </target>
 
   <target name="build-queryparser" unless="queryparser.uptodate">
-    <echo>Demo building dependency modules/queryparser</echo>
+    <echo>XML QueryParser building dependency modules/queryparser</echo>
     <subant target="default">
       <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+    </subant>
+  </target>
+
+  <target name="build-queries" unless="queryparser.uptodate">
+    <echo>XML QueryParser building dependency modules/queries</echo>
+    <subant target="default">
+      <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>
     </subant>
   </target>
 

@@ -1,7 +1,7 @@
 /*
  * Created on 25-Jan-2006
  */
-package org.apache.lucene.search.similar;
+package org.apache.lucene.queries.mlt;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

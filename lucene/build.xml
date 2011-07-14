@@ -207,6 +207,7 @@
         </fileset>
         <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
         <pathelement location="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
+        <pathelement location="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"/>
       </path>
 
       <invoke-javadoc
