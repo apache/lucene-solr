@@ -72,7 +72,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="specversion" value="3.4.0.${dateversion}" />
+  <property name="solr.spec.version" value="3.4.0.${dateversion}" />
 
   <!-- solr depends on the following modules/contribs -->	
   <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
