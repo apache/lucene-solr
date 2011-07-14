@@ -95,7 +95,7 @@
     </subant>
   </target>
 
-  <target name="build-queries" unless="queryparser.uptodate">
+  <target name="build-queries" unless="queries.uptodate">
     <echo>XML QueryParser building dependency modules/queries</echo>
     <subant target="default">
       <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>

@@ -15,9 +15,6 @@
 	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/queries/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/queries/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/queryparser/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/queryparser/src/resources"/>
-	<classpathentry kind="src" path="lucene/contrib/queryparser/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>

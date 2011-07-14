@@ -11,6 +11,8 @@ Build
 
  * LUCENE-2995: Moved contrib/spellchecker into modules/suggest.
 
+ * LUCENE-3285: Moved contrib/queryparser into modules/queryparser
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
