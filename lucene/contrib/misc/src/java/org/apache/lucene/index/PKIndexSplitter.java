@@ -137,7 +137,7 @@ public class PKIndexSplitter {
       }
       
       this.liveDocs = bits;
-      this.numDocs = (int) bits.cardinality();
+      this.numDocs = bits.cardinality();
     }
     
     @Override

@@ -188,7 +188,7 @@ public class MultiPassIndexSplitter {
 
     @Override
     public int numDocs() {
-      return (int) liveDocs.cardinality();
+      return liveDocs.cardinality();
     }
 
     /**
