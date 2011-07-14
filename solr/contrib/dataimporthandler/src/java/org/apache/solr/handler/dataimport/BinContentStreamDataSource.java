@@ -30,7 +30,7 @@ import java.util.Properties;
  * <b>This API is experimental and may change in the future.</b>
  *
  * @version $Id$
- * @since solr 1.5
+ * @since solr 3.1
  */
 
 public class BinContentStreamDataSource extends DataSource<InputStream> {
