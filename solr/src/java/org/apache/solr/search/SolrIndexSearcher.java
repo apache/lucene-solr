@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.FieldSelectorVisitor;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
@@ -406,13 +407,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return doc(i, (Set<String>)null);
   }
 
-  /** Retrieve a {@link Document} using a {@link org.apache.lucene.document.FieldSelector}
-   * This method does not currently use the Solr document cache.
+  /** Visit a document's fields using a {@link StoredFieldVisitor}
+   *  This method does not currently use the Solr document cache.
    * 
-   * @see IndexReader#document(int, FieldSelector) */
+   * @see IndexReader#document(int, StoredFieldVisitor) */
   @Override
-  public Document doc(int n, FieldSelector fieldSelector) throws IOException {
-    return getIndexReader().document(n, fieldSelector);
+  public void doc(int n, StoredFieldVisitor visitor) throws IOException {
+    getIndexReader().document(n, visitor);
   }
 
   /**
@@ -433,8 +434,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if(!enableLazyFieldLoading || fields == null) {
       d = getIndexReader().document(i);
     } else {
-      d = getIndexReader().document(i, 
-             new SetNonLazyFieldSelector(fields));
+      final FieldSelectorVisitor visitor = new FieldSelectorVisitor(new SetNonLazyFieldSelector(fields));
+      getIndexReader().document(i, visitor);
+      d = visitor.getDocument();
     }
 
     if (documentCache != null) {

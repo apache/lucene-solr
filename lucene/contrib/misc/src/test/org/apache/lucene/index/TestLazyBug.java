@@ -22,9 +22,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.FieldSelectorVisitor;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.TextField;
 import org.apache.lucene.store.Directory;
@@ -105,7 +106,9 @@ public class TestLazyBug extends LuceneTestCase {
   public void doTest(int[] docs) throws Exception {
     IndexReader reader = IndexReader.open(directory, true);
     for (int i = 0; i < docs.length; i++) {
-      org.apache.lucene.document.Document d = reader.document(docs[i], SELECTOR);
+      final FieldSelectorVisitor visitor = new FieldSelectorVisitor(SELECTOR);
+      reader.document(docs[i], visitor);
+      org.apache.lucene.document.Document d = visitor.getDocument();
       d.get(MAGIC_FIELD);
 
       List<Fieldable> fields = d.getFields();

@@ -26,9 +26,9 @@ public final class FieldInfo {
   public boolean isIndexed;
 
   // true if term vector for this field should be stored
-  boolean storeTermVector;
-  boolean storeOffsetWithTermVector;
-  boolean storePositionWithTermVector;
+  public boolean storeTermVector;
+  public boolean storeOffsetWithTermVector;
+  public boolean storePositionWithTermVector;
 
   public boolean omitNorms; // omit norms associated with indexed fields  
   public boolean omitTermFreqAndPositions;

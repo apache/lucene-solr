@@ -17,18 +17,20 @@
 package org.apache.lucene.benchmark.quality.utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * Utility: extract doc names from an index
  */
 public class DocNameExtractor {
 
-  private FieldSelector fldSel;
-  private String docNameField;
+  private final String docNameField;
   
   /**
    * Constructor for DocNameExtractor.
@@ -36,13 +38,6 @@ public class DocNameExtractor {
    */
   public DocNameExtractor (final String docNameField) {
     this.docNameField = docNameField;
-    fldSel = new FieldSelector() {
-      public FieldSelectorResult accept(String fieldName) {
-        return fieldName.equals(docNameField) ? 
-            FieldSelectorResult.LOAD_AND_BREAK :
-              FieldSelectorResult.NO_LOAD;
-      }
-    };
   }
   
   /**
@@ -53,7 +48,25 @@ public class DocNameExtractor {
    * @throws IOException if cannot extract the doc name from the index.
    */
   public String docName(IndexSearcher searcher, int docid) throws IOException {
-    return searcher.doc(docid,fldSel).get(docNameField);
+    final List<String> name = new ArrayList<String>();
+    searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
+        @Override
+        public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
+          if (fieldInfo.name.equals(docNameField) && name.size() == 0) {
+            final byte[] b = new byte[numUTF8Bytes];
+            in.readBytes(b, 0, b.length);
+            name.add(new String(b, "UTF-8"));
+          } else {
+            in.seek(in.getFilePointer() + numUTF8Bytes);
+          }
+          return false;
+        }
+      });
+    if (name.size() != 0) {
+      return name.get(0);
+    } else {
+      return null;
+    }
   }
   
 }

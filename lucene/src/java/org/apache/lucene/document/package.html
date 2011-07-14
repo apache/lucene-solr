@@ -44,13 +44,13 @@ package also provides utilities for working with {@link org.apache.lucene.docume
 (remember, Lucene only searches text). {@link org.apache.lucene.document.NumericField} is a special helper class
 to simplify indexing of numeric values (and also dates) for fast range range queries with {@link org.apache.lucene.search.NumericRangeQuery}
 (using a special sortable string representation of numeric values).</p>
-<p>The {@link org.apache.lucene.document.FieldSelector} class provides a mechanism to tell Lucene how to load Documents from
-storage.  If no FieldSelector is used, all Fieldables on a Document will be loaded.  As an example of the FieldSelector usage, consider
+<p>The {@link org.apache.lucene.index.StoredFieldVisitor} class provides a mechanism to customize how the stored fields values are processed.
+If no StoredFieldVisitor is used, all Fields are loaded into a returned Document.  As an example of the StoredFieldVisitor usage, consider
   the common use case of
 displaying search results on a web page and then having users click through to see the full document.  In this scenario, it is often
-  the case that there are many small fields and one or two large fields (containing the contents of the original file). Before the FieldSelector,
-the full Document had to be loaded, including the large fields, in order to display the results.  Now, using the FieldSelector, one
-can {@link org.apache.lucene.document.FieldSelectorResult#LAZY_LOAD} the large fields, thus only loading the large fields
-when a user clicks on the actual link to view the original content.</p>
+  the case that there are many small fields and one or two large fields (containing the contents of the original file). Before StoredFieldVisitor,
+the full Document had to be loaded, including the large fields, in order to display the results.  Now, using the StoredFieldVisitor, one
+can choose which fields should be loaded and how their values should be recorded.  If you simply want to load only certain fields, consider using
+{@link org.apache.lucene.index.DocumentStoredFieldVisitor}.
 </body>
 </html>

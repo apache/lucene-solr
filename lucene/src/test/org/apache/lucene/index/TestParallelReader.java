@@ -18,16 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
 import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
@@ -86,30 +83,6 @@ public class TestParallelReader extends LuceneTestCase {
     assertTrue(fieldNames.contains("f2"));
     assertTrue(fieldNames.contains("f3"));
     assertTrue(fieldNames.contains("f4"));
-    pr.close();
-    dir1.close();
-    dir2.close();
-  }
-  
-  public void testDocument() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-
-    org.apache.lucene.document.Document doc11 = pr.document(0, new MapFieldSelector("f1"));
-    org.apache.lucene.document.Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList("f4")));
-    org.apache.lucene.document.Document doc223 = pr.document(1, new MapFieldSelector("f2", "f3"));
-    
-    assertEquals(1, doc11.getFields().size());
-    assertEquals(1, doc24.getFields().size());
-    assertEquals(2, doc223.getFields().size());
-    
-    assertEquals("v1", doc11.get("f1"));
-    assertEquals("v2", doc24.get("f4"));
-    assertEquals("v2", doc223.get("f2"));
-    assertEquals("v2", doc223.get("f3"));
     pr.close();
     dir1.close();
     dir2.close();

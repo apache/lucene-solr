@@ -106,7 +106,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * consumes more disk space in the index but may result in faster range search
  * performance. The default value, 4, was selected for a reasonable tradeoff of
  * disk space consumption versus performance. You can use the expert constructor
- * {@link #NumericField(String,int,Field.Store,boolean)} if you'd like to change
+ * {@link #NumericField(String,int,FieldType)} if you'd like to change
  * the value. Note that you must also specify a congruent value when creating
  * {@link NumericRangeQuery} or {@link NumericRangeFilter}. For low cardinality
  * fields larger precision steps are good. If the cardinality is &lt; 100, it is

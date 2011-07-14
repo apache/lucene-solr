@@ -37,9 +37,7 @@ import org.apache.lucene.document2.Field;
 import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.document2.StringField;
 import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -47,15 +45,10 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -402,21 +395,6 @@ public class TestIndexReader extends LuceneTestCase
         org.apache.lucene.document.Field b1 = fields[0];
         assertTrue(b1.isBinary());
         BytesRef bytesRef = b1.binaryValue(null);
-        assertEquals(bin.length, bytesRef.length);
-        for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-        }
-        Set<String> lazyFields = new HashSet<String>();
-        lazyFields.add("bin1");
-        FieldSelector sel = new SetBasedFieldSelector(new HashSet<String>(), lazyFields);
-        doc2 = reader.document(reader.maxDoc() - 1, sel);
-        Fieldable[] fieldables = doc2.getFieldables("bin1");
-        assertNotNull(fieldables);
-        assertEquals(1, fieldables.length);
-        Fieldable fb1 = fieldables[0];
-        assertTrue(fb1.isBinary());
-        bytesRef = fb1.binaryValue(null);
-        assertEquals(bin.length, bytesRef.bytes.length);
         assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
           assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);

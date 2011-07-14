@@ -25,7 +25,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 final class FieldsWriter {
-  static final int FIELD_IS_TOKENIZED = 1 << 0;
+  // NOTE: bit 0 is free here!
   static final int FIELD_IS_BINARY = 1 << 1;
 
   // the old bit 1 << 2 was compressed, is now left out
@@ -137,11 +137,6 @@ final class FieldsWriter {
   final void writeField(int fieldNumber, IndexableField field) throws IOException {
     fieldsStream.writeVInt(fieldNumber);
     int bits = 0;
-    // nocommit -- when we decouple analysis we should stop
-    // recording this:
-    if (field.indexed() && field.tokenized()) {
-      bits |= FIELD_IS_TOKENIZED;
-    }
     final BytesRef bytes;
     final String string;
     // nocommit -- maybe a field should serialize itself?

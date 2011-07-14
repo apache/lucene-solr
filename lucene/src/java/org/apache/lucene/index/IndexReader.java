@@ -17,26 +17,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.FieldCache; // javadocs
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.search.FieldCache; // javadocs
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;         // for javadocs
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.Closeable;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -949,34 +948,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return maxDoc() - numDocs();
   }
 
-  /**
-   * Returns the stored fields of the <code>n</code><sup>th</sup>
-   * <code>Document</code> in this index.
-   * <p>
-   * <b>NOTE:</b> for performance reasons, this method does not check if the
-   * requested document is deleted, and therefore asking for a deleted document
-   * may yield unspecified results. Usually this is not required, however you
-   * can test if the doc is deleted by checking the {@link
-   * Bits} returned from {@link MultiFields#getDeletedDocs}.
-   * 
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public Document document(int n) throws CorruptIndexException, IOException {
-    ensureOpen();
-    return document(n, null);
-  }
+  /** Expert: visits the fields of a stored document, for
+   *  custom processing/loading of each field.  If you
+   *  simply want to load all fields, use {@link
+   *  #document(int)}.  If you want to load a subset, use
+   *  {@link DocumentStoredFieldVisitor}.  */
+  public abstract void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
+
+  // nocommit -- the new document(int docID) API should
+  // clearly advertise that only field types/values are
+  // preserved -- index time metadata like boost, omitNorm,
+  // IndexOptions, tokenized are not preserved
 
   /**
-   * Get the {@link org.apache.lucene.document.Document} at the <code>n</code>
-   * <sup>th</sup> position. The {@link FieldSelector} may be used to determine
-   * what {@link org.apache.lucene.document.Field}s to load and how they should
-   * be loaded. <b>NOTE:</b> If this Reader (more specifically, the underlying
-   * <code>FieldsReader</code>) is closed before the lazy
-   * {@link org.apache.lucene.document.Field} is loaded an exception may be
-   * thrown. If you want the value of a lazy
-   * {@link org.apache.lucene.document.Field} to be available after closing you
-   * must explicitly load it or fetch the Document again with a new loader.
+   * Returns the stored fields of the <code>n</code><sup>th</sup>
+   * <code>Document</code> in this index.  This is just
+   * sugar for using {@link DocumentStoredFieldVisitor}.
    * <p>
    * <b>NOTE:</b> for performance reasons, this method does not check if the
    * requested document is deleted, and therefore asking for a deleted document
@@ -984,22 +971,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * can test if the doc is deleted by checking the {@link
    * Bits} returned from {@link MultiFields#getDeletedDocs}.
    * 
-   * @param n Get the document at the <code>n</code><sup>th</sup> position
-   * @param fieldSelector The {@link FieldSelector} to use to determine what
-   *        Fields should be loaded on the Document. May be null, in which case
-   *        all Fields will be loaded.
-   * @return The stored fields of the
-   *         {@link org.apache.lucene.document.Document} at the nth position
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @see org.apache.lucene.document.Fieldable
-   * @see org.apache.lucene.document.FieldSelector
-   * @see org.apache.lucene.document.SetBasedFieldSelector
-   * @see org.apache.lucene.document.LoadFirstFieldSelector
    */
-  // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
-  public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
-  
+  public Document document(int docID) throws CorruptIndexException, IOException {
+    ensureOpen();
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+    document(docID, visitor);
+    return visitor.getDocument();
+  }
+
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 

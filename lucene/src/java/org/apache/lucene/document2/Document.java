@@ -32,7 +32,7 @@ import org.apache.lucene.search.ScoreDoc; // for javadoc
  * should typically contain one or more stored fields which uniquely identify
  * it.
  *
- * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
+ * <p>Note that fields which are <i>not</i> {@link Fieldable#stored() stored} are
  * <i>not</i> available in documents retrieved from the index, e.g. with {@link
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */

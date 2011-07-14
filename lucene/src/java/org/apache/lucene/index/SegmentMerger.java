@@ -310,6 +310,10 @@ final class SegmentMerger {
           // skip deleted docs
           continue;
         }
+        // TODO: this could be more efficient using
+        // FieldVisitor instead of loading/writing entire
+        // doc; ie we just have to renumber the field number
+        // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
         Document doc = reader.document(j);
