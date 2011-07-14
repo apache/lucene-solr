@@ -192,8 +192,8 @@
     <attribute name="property" default="@{name}.uptodate"/>
     <attribute name="classpath.property" default="@{name}.jar"/>
     <!-- set jarfile only, if the target jar file has no generic name -->
-    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/@{name}/@{name}-${version}.jar"/>
-  	<sequential>
+    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/apache-solr-@{name}-${version}.jar"/>
+    <sequential>
       <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
       <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
