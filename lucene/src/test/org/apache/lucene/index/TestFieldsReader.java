@@ -89,6 +89,13 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isTermVectorStored() == false);
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
+
+    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
+    reader.document(0, visitor);
+    final List<Fieldable> fields = visitor.getDocument().getFields();
+    assertEquals(1, fields.size());
+    assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
+
     reader.close();
   }
 
