@@ -19,7 +19,7 @@ package org.apache.solr.handler.dataimport;
 
 /**Context implementation used when run multi threaded.
  *
- * @since Solr 1.5
+ * @since Solr 3.1
  * 
  */
 public class ThreadedContext extends ContextImpl{
