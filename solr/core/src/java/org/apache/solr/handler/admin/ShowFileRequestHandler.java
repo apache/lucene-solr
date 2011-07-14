@@ -17,15 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -40,6 +31,15 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * This handler uses the RawResponseWriter to give client access to
@@ -92,14 +92,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   @Override
   public void init(NamedList args) {
     super.init( args );
-    
-    // by default, use wt=raw
-    ModifiableSolrParams params = new ModifiableSolrParams( invariants );
-    if( params.get( CommonParams.WT ) == null ) {
-      params.set( CommonParams.WT, "raw" );
-    }
-    this.invariants = params;
-    
+
     // Build a list of hidden files
     hiddenFiles = new HashSet<String>();
     if( invariants != null ) {
@@ -187,10 +180,15 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
     else {
       // Include the file contents
+      //The file logic depends on RawResponseWriter, so force its use.
+      ModifiableSolrParams params = new ModifiableSolrParams( req.getParams() );
+      params.set( CommonParams.WT, "raw" );
+      req.setParams(params);
+
       ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
       content.setContentType( req.getParams().get( USE_CONTENT_TYPE ) );
-  
-      rsp.add( RawResponseWriter.CONTENT, content );
+
+      rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
   }

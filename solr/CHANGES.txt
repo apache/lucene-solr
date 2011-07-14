@@ -209,6 +209,9 @@ Bug Fixes
 * SOLR-2193, SOLR-2565:  SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
   
+* SOLR-2535: REGRESSION: in Solr 3.x and trunk the admin/file handler 
+  fails to show directory listings (David Smiley, Peter Wolanin via Erick Erickson)
+  
 Other Changes
 ----------------------
 
