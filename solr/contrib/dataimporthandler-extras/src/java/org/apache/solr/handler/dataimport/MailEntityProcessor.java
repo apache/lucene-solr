@@ -38,9 +38,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * An {@link EntityProcessor} instance which can index emails along with their attachments from POP3 or IMAP sources. Refer to
- * <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
- * details. <b>This API is experimental and subject to change</b>
+ * An {@link org.apache.solr.handler.dataimport.EntityProcessor} instance which can
+ * index emails along with their attachments from POP3 or IMAP sources. Refer to
+ * <a href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
+ * for more details. <b>This API is experimental and subject to change</b>
  *
  * @version $Id$
  * @since solr 1.4
