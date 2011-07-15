@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -146,13 +147,13 @@ public class TestBitVector extends LuceneTestCase
             bv.set(i);
             assertTrue(bv.get(i));
             assertEquals(i+1,bv.count());
-            bv.write(d, "TESTBV");
-            BitVector compare = new BitVector(d, "TESTBV");
+            bv.write(d, "TESTBV", newIOContext(random));
+            BitVector compare = new BitVector(d, "TESTBV", newIOContext(random));
             // compare bit vectors with bits set incrementally
             assertTrue(doCompare(bv,compare));
         }
     }
-
+    
     /**
      * Test r/w when size/count cause switching between bit-set and d-gaps file formats.  
      */
@@ -164,6 +165,26 @@ public class TestBitVector extends LuceneTestCase
       doTestDgaps(10000,40,43);
       doTestDgaps(100000,415,418);
       doTestDgaps(1000000,3123,3126);
+      // now exercise skipping of fully populated byte in the bitset (they are omitted if bitset is sparse)
+      MockDirectoryWrapper d = new  MockDirectoryWrapper(random, new RAMDirectory());
+      d.setPreventDoubleWrite(false);
+      BitVector bv = new BitVector(10000);
+      bv.set(0);
+      for (int i = 8; i < 16; i++) {
+        bv.set(i);
+      } // make sure we have once byte full of set bits
+      for (int i = 32; i < 40; i++) {
+        bv.set(i);
+      } // get a second byte full of set bits
+      // add some more bits here 
+      for (int i = 40; i < 10000; i++) {
+        if (random.nextInt(1000) == 0) {
+          bv.set(i);
+        }
+      }
+      bv.write(d, "TESTBV", newIOContext(random));
+      BitVector compare = new BitVector(d, "TESTBV", newIOContext(random));
+      assertTrue(doCompare(bv,compare));
     }
     
     private void doTestDgaps(int size, int count1, int count2) throws IOException {
@@ -175,26 +196,74 @@ public class TestBitVector extends LuceneTestCase
         bv.clear(i);
         assertEquals(i+1,size-bv.count());
       }
-      bv.write(d, "TESTBV");
+      bv.write(d, "TESTBV", newIOContext(random));
       // gradually increase number of set bits
       for (int i=count1; i<count2; i++) {
-        BitVector bv2 = new BitVector(d, "TESTBV");
+        BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
         bv.clear(i);
-        assertEquals(i+1,size-bv.count());
-        bv.write(d, "TESTBV");
+        assertEquals(i+1, size-bv.count());
+        bv.write(d, "TESTBV", newIOContext(random));
       }
       // now start decreasing number of set bits
       for (int i=count2-1; i>=count1; i--) {
-        BitVector bv2 = new BitVector(d, "TESTBV");
+        BitVector bv2 = new BitVector(d, "TESTBV", newIOContext(random));
         assertTrue(doCompare(bv,bv2));
         bv = bv2;
         bv.set(i);
         assertEquals(i,size-bv.count());
-        bv.write(d, "TESTBV");
+        bv.write(d, "TESTBV", newIOContext(random));
       }
     }
+
+    public void testSparseWrite() throws IOException {
+      Directory d = newDirectory();
+      final int numBits = 10240;
+      BitVector bv = new BitVector(numBits);
+      bv.invertAll();
+      int numToClear = random.nextInt(5);
+      for(int i=0;i<numToClear;i++) {
+        bv.clear(random.nextInt(numBits));
+      }
+      bv.write(d, "test", newIOContext(random));
+      final long size = d.fileLength("test");
+      assertTrue("size=" + size, size < 100);
+      d.close();
+    }
+
+    public void testClearedBitNearEnd() throws IOException {
+      Directory d = newDirectory();
+      final int numBits = _TestUtil.nextInt(random, 7, 1000);
+      BitVector bv = new BitVector(numBits);
+      bv.invertAll();
+      bv.clear(numBits-_TestUtil.nextInt(random, 1, 7));
+      bv.write(d, "test", newIOContext(random));
+      assertEquals(numBits-1, bv.count());
+      d.close();
+    }
+
+    public void testMostlySet() throws IOException {
+      Directory d = newDirectory();
+      final int numBits = _TestUtil.nextInt(random, 30, 1000);
+      for(int numClear=0;numClear<20;numClear++) {
+        BitVector bv = new BitVector(numBits);
+        bv.invertAll();
+        int count = 0;
+        while(count < numClear) {
+          final int bit = random.nextInt(numBits);
+          // Don't use getAndClear, so that count is recomputed
+          if (bv.get(bit)) {
+            bv.clear(bit);
+            count++;
+            assertEquals(numBits-count, bv.count());
+          }
+        }
+      }
+
+      d.close();
+    }
+
     /**
      * Compare two BitVectors.
      * This should really be an equals method on the BitVector itself.
@@ -210,6 +279,7 @@ public class TestBitVector extends LuceneTestCase
                 break;
             }
         }
+        assertEquals(bv.count(), compare.count());
         return equal;
     }
 }

@@ -33,7 +33,7 @@
   <description>Apache Solr Clustering</description>
   <properties>
     <module-directory>solr/contrib/clustering</module-directory>
-    <build-directory>build</build-directory>
+    <build-directory>../../build/contrib/clustering</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -116,14 +116,16 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes</outputDirectory>
-    <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>src/test-files</directory>
       </testResource>
       <testResource>
-        <directory>../../src/test-files</directory>
+        <directory>../../core/src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>

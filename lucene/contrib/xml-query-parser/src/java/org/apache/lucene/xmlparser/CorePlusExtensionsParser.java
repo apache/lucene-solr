@@ -1,7 +1,7 @@
 package org.apache.lucene.xmlparser;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.xmlparser.builders.BooleanFilterBuilder;
 import org.apache.lucene.xmlparser.builders.BoostingQueryBuilder;
 import org.apache.lucene.xmlparser.builders.DuplicateFilterBuilder;

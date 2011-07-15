@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -395,7 +396,7 @@ public class TestGrouping extends LuceneTestCase {
       }
       // So we can pull filter marking last doc in block:
       final Field groupEnd = newField("groupend", "x", Field.Index.NOT_ANALYZED);
-      groupEnd.setOmitTermFreqAndPositions(true);
+      groupEnd.setIndexOptions(IndexOptions.DOCS_ONLY);
       groupEnd.setOmitNorms(true);
       docs.get(docs.size()-1).add(groupEnd);
       // Add as a doc block:

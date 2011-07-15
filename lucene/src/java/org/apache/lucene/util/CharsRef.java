@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.util.Comparator;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -167,7 +169,11 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
    *          the {@link CharsRef} to copy
    */
   public void copy(CharsRef other) {
-    chars = ArrayUtil.grow(chars, other.length);
+    if (chars == null) {
+      chars = new char[other.length];
+    } else {
+      chars = ArrayUtil.grow(chars, other.length);
+    }
     System.arraycopy(other.chars, other.offset, chars, 0, other.length);
     length = other.length;
     offset = 0;
@@ -212,5 +218,57 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence {
 
   public CharSequence subSequence(int start, int end) {
     return new CharsRef(chars, offset + start, offset + end - 1);
+  }
+  
+  private final static Comparator<CharsRef> utf16SortedAsUTF8SortOrder = new UTF16SortedAsUTF8Comparator();
+  
+  public static Comparator<CharsRef> getUTF16SortedAsUTF8Comparator() {
+    return utf16SortedAsUTF8SortOrder;
+  }
+  
+  private static class UTF16SortedAsUTF8Comparator implements Comparator<CharsRef> {
+    // Only singleton
+    private UTF16SortedAsUTF8Comparator() {};
+
+    public int compare(CharsRef a, CharsRef b) {
+      if (a == b)
+        return 0;
+
+      final char[] aChars = a.chars;
+      int aUpto = a.offset;
+      final char[] bChars = b.chars;
+      int bUpto = b.offset;
+
+      final int aStop = aUpto + Math.min(a.length, b.length);
+
+      while (aUpto < aStop) {
+        char aChar = aChars[aUpto++];
+        char bChar = bChars[bUpto++];
+        if (aChar != bChar) {
+          // http://icu-project.org/docs/papers/utf16_code_point_order.html
+          
+          /* aChar != bChar, fix up each one if they're both in or above the surrogate range, then compare them */
+          if (aChar >= 0xd800 && bChar >= 0xd800) {
+            if (aChar >= 0xe000) {
+              aChar -= 0x800;
+            } else {
+              aChar += 0x2000;
+            }
+            
+            if (bChar >= 0xe000) {
+              bChar -= 0x800;
+            } else {
+              bChar += 0x2000;
+            }
+          }
+          
+          /* now aChar and bChar are in code point order */
+          return (int)aChar - (int)bChar; /* int must be 32 bits wide */
+        }
+      }
+
+      // One is a prefix of the other, or, they are equal:
+      return a.length - b.length;
+    }
   }
 }

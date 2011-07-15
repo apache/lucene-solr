@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.MultiLevelSkipListWriter;
 
 // TODO: -- skip data should somehow be more local to the
@@ -84,10 +85,10 @@ class SepSkipListWriter extends MultiLevelSkipListWriter {
     }
   }
 
-  boolean omitTF;
+  IndexOptions indexOptions;
 
-  void setOmitTF(boolean v) {
-    omitTF = v;
+  void setIndexOptions(IndexOptions v) {
+    indexOptions = v;
   }
 
   void setPosOutput(IntIndexOutput posOutput) throws IOException {
@@ -159,7 +160,7 @@ class SepSkipListWriter extends MultiLevelSkipListWriter {
     //         current payload length equals the length at the previous
     //         skip point
 
-    assert !omitTF || !curStorePayloads;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !curStorePayloads;
 
     if (curStorePayloads) {
       int delta = curDoc - lastSkipDoc[level];
@@ -179,13 +180,13 @@ class SepSkipListWriter extends MultiLevelSkipListWriter {
       skipBuffer.writeVInt(curDoc - lastSkipDoc[level]);
     }
 
-    if (!omitTF) {
+    if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndex[level].mark();
       freqIndex[level].write(skipBuffer, false);
     }
     docIndex[level].mark();
     docIndex[level].write(skipBuffer, false);
-    if (!omitTF) {
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       posIndex[level].mark();
       posIndex[level].write(skipBuffer, false);
       if (curStorePayloads) {

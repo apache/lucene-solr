@@ -88,6 +88,19 @@ public final class MultiTerms extends Terms {
     }
     return sum;
   }
+  
+  @Override
+  public long getSumDocFreq() throws IOException {
+    long sum = 0;
+    for(Terms terms : subs) {
+      final long v = terms.getSumDocFreq();
+      if (v == -1) {
+        return -1;
+      }
+      sum += v;
+    }
+    return sum;
+  }
 
   @Override
   public Comparator<BytesRef> getComparator() {

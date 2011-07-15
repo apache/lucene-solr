@@ -60,7 +60,10 @@ import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -349,6 +352,7 @@ public abstract class LuceneTestCase extends Assert {
     state = State.INITIAL;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
+    random.initialized = true;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     
@@ -491,6 +495,8 @@ public abstract class LuceneTestCase extends Assert {
         }
       }
     }
+    random.setSeed(0L);
+    random.initialized = false;
   }
 
   private static boolean testsFailed; /* true if any tests failed */
@@ -1070,7 +1076,7 @@ public abstract class LuceneTestCase extends Assert {
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-     d.copy(impl, file, file);
+     d.copy(impl, file, file, newIOContext(r));
     }
     MockDirectoryWrapper dir = new MockDirectoryWrapper(r, impl);
     stores.put(dir, Thread.currentThread().getStackTrace());
@@ -1331,13 +1337,58 @@ public abstract class LuceneTestCase extends Assert {
     return sb.toString();
   }
 
+  public static IOContext newIOContext(Random random) {
+    final int randomNumDocs = random.nextInt(4192);
+    final int size = random.nextInt(512) * randomNumDocs;
+    final IOContext context;
+    switch (random.nextInt(5)) {
+    case 0:
+      context = IOContext.DEFAULT;
+      break;
+    case 1:
+      context = IOContext.READ;
+      break;
+    case 2:
+      context = IOContext.READONCE;
+      break;
+    case 3:
+      context = new IOContext(new MergeInfo(randomNumDocs, size, true, false));
+      break;
+    case 4:
+      context = new IOContext(new FlushInfo(randomNumDocs, size));
+      break;
+     default:
+       context = IOContext.DEFAULT;
+    }
+    return context;
+  }
+  
   // recorded seed: for beforeClass
   private static long staticSeed;
   // seed for individual test methods, changed in @before
   private long seed;
 
   private static final Random seedRand = new Random();
-  protected static final Random random = new Random(0);
+  protected static final SmartRandom random = new SmartRandom(0);
+  
+  public static class SmartRandom extends Random {
+    boolean initialized;
+    
+    SmartRandom(long seed) {
+      super(seed);
+    }
+    
+    @Override
+    protected int next(int bits) {
+      if (!initialized) {
+        System.err.println("!!! WARNING: test is using random from static initializer !!!");
+        Thread.dumpStack();
+        // I wish, but it causes JRE crashes
+        // throw new IllegalStateException("you cannot use this random from a static initializer in your test");
+      }
+      return super.next(bits);
+    }
+  }
 
   private String name = "<unknown>";
 

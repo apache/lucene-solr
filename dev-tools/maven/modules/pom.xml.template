@@ -37,6 +37,7 @@
     <module>grouping</module>
     <module>join</module>
     <module>queries</module>
+    <module>queryparser</module>
     <module>suggest</module>
   </modules>
   <build>

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Encapsulates all necessary state to initiate a {@link PerDocConsumer} and
@@ -35,10 +36,11 @@ public class PerDocWriteState {
   public final AtomicLong bytesUsed;
   public final SegmentCodecs segmentCodecs;
   public final int codecId;
+  public final IOContext context;
 
   PerDocWriteState(PrintStream infoStream, Directory directory,
       String segmentName, FieldInfos fieldInfos, AtomicLong bytesUsed,
-      int codecId) {
+      int codecId, IOContext context) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
@@ -46,6 +48,7 @@ public class PerDocWriteState {
     this.segmentCodecs = fieldInfos.buildSegmentCodecs(false);
     this.codecId = codecId;
     this.bytesUsed = bytesUsed;
+    this.context = context;
   }
 
   PerDocWriteState(SegmentWriteState state) {
@@ -56,6 +59,7 @@ public class PerDocWriteState {
     fieldInfos = state.fieldInfos;
     codecId = state.codecId;
     bytesUsed = new AtomicLong(0);
+    context = state.context;
   }
 
   PerDocWriteState(PerDocWriteState state, int codecId) {
@@ -66,5 +70,6 @@ public class PerDocWriteState {
     this.segmentCodecs = state.segmentCodecs;
     this.codecId = codecId;
     this.bytesUsed = state.bytesUsed;
+    this.context = state.context;
   }
 }

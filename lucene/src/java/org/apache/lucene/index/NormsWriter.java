@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.IOUtils;
 
 // TODO FI: norms could actually be stored as doc store
@@ -49,7 +50,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
     }
 
     final String normsFileName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.NORMS_EXTENSION);
-    IndexOutput normsOut = state.directory.createOutput(normsFileName);
+    IndexOutput normsOut = state.directory.createOutput(normsFileName, state.context);
     boolean success = false;
     try {
       normsOut.writeBytes(SegmentNorms.NORMS_HEADER, 0, SegmentNorms.NORMS_HEADER.length);

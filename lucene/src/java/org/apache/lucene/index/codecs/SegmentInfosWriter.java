@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 /**
@@ -41,13 +42,13 @@ public abstract class SegmentInfosWriter {
    * phase commit" operations as described above.
    * @throws IOException
    */
-  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, SegmentInfos infos) throws IOException;
+  public abstract IndexOutput writeInfos(Directory dir, String segmentsFileName, SegmentInfos infos, IOContext context) throws IOException;
   
   /**
    * First phase of the two-phase commit - ensure that all output can be
    * successfully written out.
    * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, SegmentInfos)}.
+   * call to {@link #writeInfos(Directory, String, SegmentInfos, IOContext)}.
    * @throws IOException
    */
   public abstract void prepareCommit(IndexOutput out) throws IOException;
@@ -56,7 +57,7 @@ public abstract class SegmentInfosWriter {
    * Second phase of the two-phase commit. In this step the output should be
    * finalized and closed.
    * @param out an instance of {@link IndexOutput} returned from a previous
-   * call to {@link #writeInfos(Directory, String, SegmentInfos)}.
+   * call to {@link #writeInfos(Directory, String, SegmentInfos, IOContext)}.
    * @throws IOException
    */
   public abstract void finishCommit(IndexOutput out) throws IOException;

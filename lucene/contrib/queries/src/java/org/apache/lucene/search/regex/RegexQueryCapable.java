@@ -22,6 +22,7 @@ package org.apache.lucene.search.regex;
  * Defines methods for regular expression supporting Querys to use.
  */
 public interface RegexQueryCapable {
+  
   void setRegexImplementation(RegexCapabilities impl);
   RegexCapabilities getRegexImplementation();
 }

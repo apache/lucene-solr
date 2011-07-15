@@ -24,6 +24,7 @@ import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 
@@ -41,12 +42,13 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   final static BytesRef FIELD   = new BytesRef("field ");
   final static BytesRef TERM    = new BytesRef("  term ");
   final static BytesRef DOC     = new BytesRef("    doc ");
+  final static BytesRef FREQ    = new BytesRef("      freq ");
   final static BytesRef POS     = new BytesRef("      pos ");
   final static BytesRef PAYLOAD = new BytesRef("        payload ");
 
   public SimpleTextFieldsWriter(SegmentWriteState state) throws IOException {
     final String fileName = SimpleTextCodec.getPostingsFileName(state.segmentName, state.codecId);
-    out = state.directory.createOutput(fileName);
+    out = state.directory.createOutput(fileName, state.context);
   }
 
   private void write(String s) throws IOException {
@@ -73,11 +75,15 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     write(FIELD);
     write(field.name);
     out.writeByte(NEWLINE);
-    return new SimpleTextTermsWriter();
+    return new SimpleTextTermsWriter(field);
   }
 
   private class SimpleTextTermsWriter extends TermsConsumer {
-    private final SimpleTextPostingsWriter postingsWriter = new SimpleTextPostingsWriter();
+    private final SimpleTextPostingsWriter postingsWriter;
+    
+    public SimpleTextTermsWriter(FieldInfo field) {
+      postingsWriter = new SimpleTextPostingsWriter(field);
+    }
 
     @Override
     public PostingsConsumer startTerm(BytesRef term) throws IOException {
@@ -89,7 +95,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finish(long sumTotalTermFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
     }
 
     @Override
@@ -101,7 +107,12 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   private class SimpleTextPostingsWriter extends PostingsConsumer {
     private BytesRef term;
     private boolean wroteTerm;
-    
+    private IndexOptions indexOptions;
+
+    public SimpleTextPostingsWriter(FieldInfo field) {
+      this.indexOptions = field.indexOptions;
+    }
+
     @Override
     public void startDoc(int docID, int termDocFreq) throws IOException {
       if (!wroteTerm) {
@@ -115,7 +126,14 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
       write(DOC);
       write(Integer.toString(docID));
       newline();
+      if (indexOptions != IndexOptions.DOCS_ONLY) {
+        write(FREQ);
+        write(Integer.toString(termDocFreq));
+        newline();
+      }
     }
+    
+    
 
     public PostingsConsumer reset(BytesRef term) {
       this.term = term;

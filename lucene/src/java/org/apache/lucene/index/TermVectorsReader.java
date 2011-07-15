@@ -17,9 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -63,29 +66,24 @@ class TermVectorsReader implements Cloneable, Closeable {
   
   private final int format;
 
-  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
+  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context)
     throws CorruptIndexException, IOException {
-    this(d, segment, fieldInfos, BufferedIndexInput.BUFFER_SIZE);
-  }
-
-  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize)
-    throws CorruptIndexException, IOException {
-    this(d, segment, fieldInfos, readBufferSize, -1, 0);
+    this(d, segment, fieldInfos, context, -1, 0);
   }
     
-  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize, int docStoreOffset, int size)
+  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, IOContext context, int docStoreOffset, int size)
     throws CorruptIndexException, IOException {
     boolean success = false;
 
     try {
       String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      tvx = d.openInput(idxName, readBufferSize);
+      tvx = d.openInput(idxName, context);
       format = checkValidFormat(tvx, idxName);
       String fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-      tvd = d.openInput(fn, readBufferSize);
+      tvd = d.openInput(fn, context);
       final int tvdFormat = checkValidFormat(tvd, fn);
       fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
-      tvf = d.openInput(fn, readBufferSize);
+      tvf = d.openInput(fn, context);
       final int tvfFormat = checkValidFormat(tvf, fn);
 
       assert format == tvdFormat;

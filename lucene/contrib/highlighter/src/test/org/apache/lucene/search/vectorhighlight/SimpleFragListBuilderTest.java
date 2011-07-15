@@ -17,20 +17,21 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Query;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
 
 public class SimpleFragListBuilderTest extends AbstractTestCase {
   
   public void testNullFieldFragList() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "b c d" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), 100 );
     assertEquals( 0, ffl.getFragInfos().size() );
   }
   
   public void testTooSmallFragSize() throws Exception {
     try{
       SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-      sflb.createFieldFragList( fpl( "a", "b c d" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE - 1 );
+      sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE - 1 );
       fail( "IllegalArgumentException must be thrown" );
     }
     catch ( IllegalArgumentException expected ) {
@@ -39,14 +40,19 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   
   public void testSmallerFragSizeThanTermQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "abcdefghijklmnopqrs", "abcdefghijklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "abcdefghijklmnopqrs")), "abcdefghijklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,19)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testSmallerFragSizeThanPhraseQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "\"abcdefgh jklmnopqrs\"", "abcdefgh   jklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term(F, "abcdefgh"));
+    phraseQuery.add(new Term(F, "jklmnopqrs"));
+
+    FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
     assertEquals( 1, ffl.getFragInfos().size() );
     if (VERBOSE) System.out.println( ffl.getFragInfos().get( 0 ).toString() );
     assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.getFragInfos().get( 0 ).toString() );
@@ -54,39 +60,39 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   
   public void test1TermIndex() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a" ), 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,100)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test2TermsIndex1Frag() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a a" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a a" ), 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1))a((2,3)))/2.0(0,100)", ffl.getFragInfos().get( 0 ).toString() );
   
-    ffl = sflb.createFieldFragList( fpl( "a", "a b b b b b b b b a" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b a" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1))a((18,19)))/2.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
 
-    ffl = sflb.createFieldFragList( fpl( "a", "b b b b a b b b b a" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b b b b a b b b b a" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((8,9))a((18,19)))/2.0(2,22)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test2TermsIndex2Frags() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a b b b b b b b b b b b b b a" ), 20 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b b b a" ), 20 );
     assertEquals( 2, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
     assertEquals( "subInfos=(a((28,29)))/1.0(22,42)", ffl.getFragInfos().get( 1 ).toString() );
 
-    ffl = sflb.createFieldFragList( fpl( "a", "a b b b b b b b b b b b b a" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b b a" ), 20 );
     assertEquals( 2, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
     assertEquals( "subInfos=(a((26,27)))/1.0(20,40)", ffl.getFragInfos().get( 1 ).toString() );
 
-    ffl = sflb.createFieldFragList( fpl( "a", "a b b b b b b b b b a" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b a" ), 20 );
     assertEquals( 2, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
     assertEquals( "subInfos=(a((20,21)))/1.0(20,40)", ffl.getFragInfos().get( 1 ).toString() );
@@ -94,41 +100,56 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   
   public void test2TermsQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a b", "c d e" ), 20 );
+
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(new TermQuery(new Term(F, "a")), BooleanClause.Occur.SHOULD);
+    booleanQuery.add(new TermQuery(new Term(F, "b")), BooleanClause.Occur.SHOULD);
+
+    FieldFragList ffl = sflb.createFieldFragList( fpl(booleanQuery, "c d e" ), 20 );
     assertEquals( 0, ffl.getFragInfos().size() );
 
-    ffl = sflb.createFieldFragList( fpl( "a b", "d b c" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(booleanQuery, "d b c" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(b((2,3)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
 
-    ffl = sflb.createFieldFragList( fpl( "a b", "a b c" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(booleanQuery, "a b c" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1))b((2,3)))/2.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testPhraseQuery() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "\"a b\"", "c d e" ), 20 );
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term(F, "a"));
+    phraseQuery.add(new Term(F, "b"));
+
+    FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "c d e" ), 20 );
     assertEquals( 0, ffl.getFragInfos().size() );
 
-    ffl = sflb.createFieldFragList( fpl( "\"a b\"", "a c b" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(phraseQuery, "a c b" ), 20 );
     assertEquals( 0, ffl.getFragInfos().size() );
 
-    ffl = sflb.createFieldFragList( fpl( "\"a b\"", "a b c" ), 20 );
+    ffl = sflb.createFieldFragList( fpl(phraseQuery, "a b c" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(ab((0,3)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testPhraseQuerySlop() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "\"a b\"~1", "a c b" ), 20 );
+
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.setSlop(1);
+    phraseQuery.add(new Term(F, "a"));
+    phraseQuery.add(new Term(F, "b"));
+
+    FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "a c b" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(ab((0,1)(4,5)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
   }
 
-  private FieldPhraseList fpl( String queryValue, String indexValue ) throws Exception {
+  private FieldPhraseList fpl(Query query, String indexValue ) throws Exception {
     make1d1fIndex( indexValue );
-    Query query = paW.parse( queryValue );
     FieldQuery fq = new FieldQuery( query, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     return new FieldPhraseList( stack, fq );

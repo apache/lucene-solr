@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -55,7 +56,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testTermDocs(int indexDivisor) throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+    SegmentReader reader = SegmentReader.get(true, info, indexDivisor, newIOContext(random));
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
 
@@ -78,7 +79,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testBadSeek(int indexDivisor) throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor, newIOContext(random));
       assertTrue(reader != null);
       DocsEnum termDocs = reader.termDocsEnum(reader.getLiveDocs(),
                                               "textField2",
@@ -89,7 +90,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor, newIOContext(random));
       assertTrue(reader != null);
       DocsEnum termDocs = reader.termDocsEnum(reader.getLiveDocs(),
                                               "junk",

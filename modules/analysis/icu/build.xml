@@ -60,7 +60,9 @@
 
   <target name="build-analyzers-common" unless="analyzers-common.uptodate">
     <echo>ICU building dependency ${analyzers-common.jar}</echo>
-    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common" />
+    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
 
   <property name="gennorm2.src.dir" value="src/data/utr30"/>

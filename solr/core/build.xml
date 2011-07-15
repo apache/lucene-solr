@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+<project name="solr-core" default="default">
+  <description>Solr Core</description>
+
+  <import file="../common-build.xml"/>
+
+  <target name="compile-core" unless="solr.core.compiled"
+          depends="prep-lucene-jars, compile-solrj, common.compile-core">
+    <property name="solr.core.compiled" value="true"/>
+  </target>
+
+  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
+
+  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel"/>
+
+  <target name="dist-maven" depends="jar-core,javadocs,jar-src,contrib-build.dist-maven">
+    <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/solr-commons-csv-pom.xml.template"
+                                 jar.file="${common-solr.dir}/lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
+
+    <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/apache-solr-noggit-pom.xml.template"
+                                 jar.file="${common-solr.dir}/lib/apache-solr-noggit-r1099557.jar" />
+  </target>
+</project>

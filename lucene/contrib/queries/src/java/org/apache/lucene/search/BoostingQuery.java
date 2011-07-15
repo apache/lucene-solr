@@ -46,9 +46,8 @@ public class BoostingQuery extends Query {
 
     public BoostingQuery(Query match, Query context, float boost) {
       this.match = match;
-      this.context = (Query)context.clone();        // clone before boost
+      this.context = (Query) context.clone();        // clone before boost
       this.boost = boost;
-
       this.context.setBoost(0.0f);                      // ignore context-only matches
     }
 
@@ -96,25 +95,36 @@ public class BoostingQuery extends Query {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
+      if (this == obj) {
         return true;
-      if (obj == null)
+      }
+      if (obj == null) {
         return false;
-      if (getClass() != obj.getClass())
+      }
+      if (getClass() != obj.getClass()) {
         return false;
+      }
+
       BoostingQuery other = (BoostingQuery) obj;
-      if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost))
+      if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost)) {
         return false;
+      }
+      
       if (context == null) {
-        if (other.context != null)
+        if (other.context != null) {
           return false;
-      } else if (!context.equals(other.context))
+        }
+      } else if (!context.equals(other.context)) {
         return false;
+      }
+      
       if (match == null) {
-        if (other.match != null)
+        if (other.match != null) {
           return false;
-      } else if (!match.equals(other.match))
+        }
+      } else if (!match.equals(other.match)) {
         return false;
+      }
       return true;
     }
 

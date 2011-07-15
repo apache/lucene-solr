@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" "http://forrest.apache.org/dtd/document-v20.dtd">
+<document> 
+  <header> 
+    <title>Welcome to Solr</title> 
+  </header> 
+  <body> 
+    <section id="intro">
+      <title>What Is Solr?</title>
+
+<p>
+Solr is the popular, blazing fast open source enterprise search
+platform from the Apache Lucene project.  Its major features include
+powerful full-text search, hit highlighting, faceted search, dynamic
+clustering, database integration, rich document (e.g., Word, PDF)
+handling, and geospatial search.  Solr is highly scalable, providing distributed search and
+index replication, and it powers the search and navigation features of
+many of the world's largest internet sites.
+</p>
+<p>
+Solr is written in Java and runs as a standalone full-text search server
+within a servlet container such as <a href="http://tomcat.apache.org">Tomcat</a>.
+Solr uses the <a href="http://lucene.apache.org/java/">Lucene Java</a>
+search library at its core for full-text indexing and search, and has
+REST-like HTTP/XML and JSON APIs that make it easy to use from virtually
+any programming language.  Solr's powerful external configuration allows it to
+be tailored to almost any type of application without Java coding, and
+it has an extensive plugin architecture when more advanced
+customization is required.
+</p>
+
+      <p>
+        See the complete <a href="features.html">feature list</a> for more details.
+      </p>
+
+      <p>
+        For more information about Solr, please see the <a href="http://wiki.apache.org/solr/FrontPage">Solr wiki</a>.
+      </p>
+
+    </section>
+    <section id="getstarted">
+      <title>Get Started</title>
+      <ul>
+        <li>Download Solr <a href="ext:releases">here</a></li>
+        <li>Check out the <a href="tutorial.html">tutorial</a></li>
+        <li>Read the <a href="http://wiki.apache.org/solr/FrontPage">Solr wiki</a> to learn more</li>
+        <li>Join the <a href="mailing_lists.html">community</a></li>
+        <li><a href="http://wiki.apache.org/solr/HowToContribute">Give Back</a>! (Optional, but encouraged!)</li>
+      </ul>
+    </section>
+    <section id="news">
+      <title>News</title>
+<section>
+   <title>July 2011 - Solr 3.3 Released</title>
+  <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.3</a>!
+  </p> 
+   <p>
+    Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.3 contains Lucene 3.3.
+   </p>
+  <p>
+   Solr 3.3 release highlights include
+ </p>
+  <ul>
+    <li>Grouping / Field Collapsing</li>
+    <li>A new, automaton-based suggest/autocomplete implementation offering an
+        order of magnitude smaller RAM consumption.</li>
+    <li>KStemFilterFactory, an optimized implementation of a less aggressive
+        stemmer for English.</li>
+    <li>Solr defaults to a new, more efficient merge policy (TieredMergePolicy).
+        See <a href="http://s.apache.org/merging">http://s.apache.org/merging</a> for more information.</li>
+    <li>Important bugfixes, including extremely high RAM usage in spellchecking.</li>
+    <li>Bugfixes and improvements from Apache Lucene 3.3</li>
+  </ul>
+     
+  <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_3/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+ </p>
+
+</section>
+<section>
+   <title>May 2011 - Solr 3.2 Released</title>
+  <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.2</a>!
+  </p> 
+   <p>
+    Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.2 contains Lucene 3.2.
+    Solr 3.2 is the first release after Solr 3.1.
+   </p>
+  <p>
+   Solr 3.2 release highlights include
+ </p>
+  <ul>
+    <li>Ability to specify overwrite and commitWithin as request parameters when using the JSON update format</li>
+    <li>TermQParserPlugin, useful when generating filter queries from terms returned from field faceting or the terms component.</li>
+    <li>DebugComponent now supports using a NamedList to model Explanation objects in it's responses instead of Explanation.toString</li>
+    <li>Improvements to the UIMA and Carrot2 integrations</li>
+    <li>Bugfixes and improvements from Apache Lucene 3.2</li>
+  </ul>
+     
+  <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_2/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+ </p>
+
+</section>
+            <section>
+   <title>March 2011 - Solr 3.1 Released</title>
+  <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.1</a>!
+  </p> 
+   <p>
+    Solr's version number was synced with Lucene following the Lucene/Solr merge, so Solr 3.1 contains Lucene 3.1.
+    Solr 3.1 is the first release after Solr 1.4.1.
+   </p>
+  <p>
+   Solr 3.1 release highlights include
+ </p>
+  <ul>
+    <li><a href="http://wiki.apache.org/solr/SimpleFacetParameters#Facet_by_Range">Numeric range facets</a> (similar to date faceting).</li>
+    <li>New <a href="http://wiki.apache.org/solr/SpatialSearch">spatial search</a>, including spatial filtering, boosting and sorting capabilities.</li>
+    <li>Example Velocity driven search UI at <a href="http://localhost:8983/solr/browse">http://localhost:8983/solr/browse</a></li>
+    <li>A new faster <a href="http://wiki.apache.org/solr/HighlightingParameters">termvector-based highlighter</a>.</li>
+    <li>Extended dismax (edismax) query parser with support for fielded queries, enhanced relevancy, and full lucene syntax support.</li>
+    <li>Distributed search support for the <a href="http://wiki.apache.org/solr/SpellCheckComponent">Spell check</a>
+ and <a href="http://wiki.apache.org/solr/TermsComponent">Terms</a> components.</li>
+    <li><a href="http://wiki.apache.org/solr/Suggester">Suggester</a>, a fast trie-based autocomplete component.</li>
+    <li>Sort results by any <a href="http://wiki.apache.org/solr/FunctionQuery#Sort_By_Function any function">function query</a>.</li>
+    <li><a href="http://wiki.apache.org/solr/UpdateJSON">JSON document indexing</a>.</li>
+    <li><a href="http://wiki.apache.org/solr/CSVResponseWriter">CSV response format</a></li>
+    <li><a href="http://wiki.apache.org/solr/SolrUIMA">Apache UIMA integration</a> for metadata extraction.</li>
+    <li>Tons of optimizations, bugfixes, and new analysis capabilities via <a href="http://lucene.apache.org/java/docs/index.html">Apache Lucene 3.1</a>.</li>
+  </ul>
+     
+  <p>See the <a href="http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_1/solr/CHANGES.txt">release notes</a> for a more complete list of all the new features, improvements, and bugfixes.
+ </p>
+
+</section>
+        <section>
+          <title>25 June 2010 - Solr 1.4.1 Released</title>
+          <p>
+           Solr 1.4.1 has been released and is now available for public
+           <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+
+           Solr 1.4.1 is a bug fix release for Solr 1.4 that includes many
+           Solr bug fixes as well as Lucene bug fixes from Lucene 2.9.3.
+          </p>
+
+          <p>
+          See the <a
+          href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.1/CHANGES.txt">release notes</a>
+          for more details.
+          </p>
+
+        </section>
+      <section>
+	<title>7 May 2010 - Apache Lucene Eurocon 2010 Coming to Prague May 18-21</title>
+	<p>
+          On May 18th to the 21st Prague will play host to the first
+          ever dedicated Lucene and Solr User Conference in Europe: 
+          <a href="http://lucene-eurocon.org/">Apache Lucene
+            Eurocon 2010</a>.  
+          This is a a not-for-profit conference presented by Lucid
+          Imagination, with net proceeds being 
+          donated to The Apache Software Foundation.  
+          <a href="http://guest.cvent.com/i.aspx?4W%2cM3%2c4d21e59c-fd92-4a83-bc1f-175dc506905f">Registration
+            is now open</a>.  Schedule highlights include:
+        </p>
+          
+        <ul>
+          <li>
+            <a href="http://lucene-eurocon.org/training.html">Two
+              days of in depth training classes</a>:
+            <ul>
+              <li>Solr Application Development Workshop - Erik Hatcher</li>
+              <li>Lucene Bootcamp - Grant Ingersoll</li>
+            </ul>
+          </li>
+          <li><a href="http://lucene-eurocon.org/sessions-general.html">Four
+              general sessions</a>:
+            <ul>
+              <li>The Search Revolution: How Lucene &amp; Solr Are
+                Changing The World - Eric Gries</li>
+              <li>From Publisher To Platform: How The Guardian
+                Used Content, Search, and Open Source To Build a
+                Powerful New Business Model - Stephen Dunn</li>
+              <li>Software Disruption: How Using Open Source,
+                Search, Big Data and Cloud technology are
+                Disrupting IT - Zack Urlocker</li>
+              <li>Solr 1.5 and Beyond - Yonik Seeley</li>
+            </ul>
+          </li>
+          <li><a href="http://lucene-eurocon.org/agenda.html">24
+              technical sessions, spanning two days, divided into two
+              tracks</a>
+          </li>
+          <li><a href="http://lucene-eurocon.org/meetup.html">A
+              Thursday night MeetUp</a>
+          </li>
+          <li><a href="http://lucene-eurocon.org/beerfestival.html">An
+              event at the
+              Czech Beer Festival</a> 
+          </li>
+        </ul>
+      </section>
+      <section>
+   <title>10 November 2009 - Solr 1.4 Released</title>
+   <p>
+     Solr 1.4 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+     
+   New Solr 1.4 features include
+ </p>
+  <ul>
+    <li>Major performance enhancements in indexing, searching, and faceting</li>
+    <li>Revamped all-Java index replication that's simple to configure and
+        can replicate config files</li>
+    <li>Greatly improved database integration via the DataImportHandler</li>
+    <li>Rich document processing (Word, PDF, HTML) via Apache Tika</li>
+    <li>Dynamic search results clustering via Carrot2</li>
+    <li>Multi-select faceting (support for multiple items in a single
+        category to be selected)</li>
+    <li>Many powerful query enhancements, including ranges over arbitrary
+        functions, nested queries of different syntaxes</li>
+    <li>Many other plugins including Terms for auto-suggest, Statistics,
+        TermVectors, Deduplication</li>
+  </ul>
+     
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.0/CHANGES.txt">release notes</a> for more details.
+ </p>
+
+</section>
+<section>
+   <title>20 August 2009 - Solr's first book is published!</title>
+   <p>
+   <a title="PACKT:Solr 1.4 Enterprise Search Server" 
+href="http://www.packtpub.com/solr-1-4-enterprise-search-server?utm_source=http%3A%2F%2Flucene.apache.org%2Fsolr%2F&amp;utm_medium=spons&amp;utm_content=pod&amp;utm_campaign=mdb_000275"><img src="images/solr-book-image.jpg" class="float-right" alt="Solr book cover" /></a>
+   David Smiley and Eric Pugh are proud to introduce the first book on Solr, <strong><a
+href="http://www.packtpub.com/solr-1-4-enterprise-search-server?utm_source=http%3A%2F%2Flucene.apache.org%2Fsolr%2F&amp;utm_medium=spons&amp;utm_content=pod&amp;utm_campaign=mdb_000275">"Solr 1.4 Enterprise Search Server"</a></strong> from Packt Publishing.
+   </p>
+   <p>This book is a comprehensive reference guide for nearly every feature Solr has to offer. It serves the reader right from initiation to development to deployment. It also comes with complete running examples to demonstrate its use and show how to integrate it with other languages and frameworks.
+   </p><p>To keep this interesting and realistic, it uses a large open source set of metadata about artists, releases, and tracks courtesy of the MusicBrainz.org project. Using this data as a testing ground for Solr, you will learn how to import this data in various ways from CSV to XML to database access. You will then learn how to search this data in a myriad of ways, including Solr's rich query syntax, &quot;boosting&quot; match scores based on record data and other means, about searching across multiple fields with different boosts, getting facets on the results, auto-complete user queries, spell-correcting searches, highlighting queried text in search results, and so on.
+   </p><p>After this thorough tour, you'll see working examples of integrating a variety of technologies with Solr such as Java, JavaScript, Drupal, Ruby, PHP, and Python.
+   </p><p>Finally, this book covers various deployment considerations to include indexing strategies and performance-oriented configuration that will enable you to scale Solr to meet the needs of a high-volume site.
+   </p>
+</section>
+
+
+<section>
+ <title>18 August 2009 - Lucene at US ApacheCon</title>
+ <p>
+ <a title="ApacheCon US 2009" 
+    href="http://www.us.apachecon.com/c/acus2009/"><img
+    src="http://www.apache.org/events/current-event-125x125.png"
+    class="float-right" alt="ApacheCon Logo" /></a>
+
+<a href="http://www.us.apachecon.com/c/acus2009/">ApacheCon US</a> 
+is once again in the Bay Area and Lucene is coming along
+for the ride!  The Lucene community has planned two full days of
+talks, plus a meetup and the usual bevy of training.  With a
+well-balanced mix of first time and veteran ApacheCon speakers, the <a
+href="http://www.us.apachecon.com/c/acus2009/schedule#lucene">Lucene
+track</a> at ApacheCon US promises to have something for everyone.  
+Be sure not to miss:
+ </p>
+<p>Training:</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/437">Lucene Boot
+    Camp</a> - A two day training session, Nov. 2nd &amp; 3rd</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/375">Solr 
+    Day</a> - A one day training session, Nov. 2nd</li>
+</ul>
+<p>Thursday, Nov. 5th</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/428">Introduction 
+    to the Lucene Ecosystem</a> - Grant Ingersoll @ 9:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/461">Lucene 
+    Basics and New Features</a> - Michael Busch @ 10:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/331">Apache
+    Solr: Out of the Box</a> - Chris Hostetter @ 14:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/427">Introduction 
+    to Nutch</a> - Andrzej Bialecki @ 15:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/430">Lucene and
+    Solr Performance Tuning</a> - Mark Miller @ 16:30</li>
+</ul>
+<p>Friday, Nov. 6th</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/332">Implementing 
+    an Information Retrieval Framework for an Organizational
+    Repository</a> - Sithu D Sudarsan @ 9:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/333">Apache 
+    Mahout - Going from raw data to Information</a> - Isabel Drost @ 10:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/334">MIME 
+    Magic with Apache Tika</a> - Jukka Zitting @ 11:30</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/335">Building 
+    Intelligent Search Applications with the Lucene
+    Ecosystem</a> - Ted Dunning @ 14:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/462">Realtime 
+    Search</a> - Jason Rutherglen @ 15:00</li>
+</ul>
+</section>
+<section>
+    <title>09 February 2009 - Lucene at ApacheCon Europe 2009 in Amsterdam</title>
+    <p>
+               <a title="ApacheCon EU 2009" href="http://www.eu.apachecon.com/c/aceu2009/"><img src="http://www.eu.apachecon.com/page_attachments/0000/0115/125x125_basic.gif" class="float-right" alt="ApacheCon EU 2009 Logo" /></a>
+
+	                Lucene will be extremely well represented at 
+	                <a href="http://us.apachecon.com/c/acus2008/">ApacheCon US 2009</a> 
+			         in Amsterdam, Netherlands this March 23-27, 2009:  
+			        </p>
+            <ul>
+	               <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/197">Lucene Boot Camp</a> - A two day training session, March 23 &amp; 24th</li>
+		                <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/201">Solr Boot Camp</a> - A one day training session, March 24th</li>
+				         <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/136">Introducing Apache Mahout</a> - Grant Ingersoll. March 25th @ 10:30</li>
+					          <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/137">Lucene/Solr Case Studies</a> - Erik Hatcher. March 25th @ 11:30</li>
+						  <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/138">Advanced Indexing Techniques with Apache Lucene</a> - Michael Busch. March 25th @ 14:00</li>
+						      <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/251">Apache Solr - A Case Study</a> - Uri Boness. March 26th @ 17:30</li>
+						          <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/250">Best of breed - httpd, forrest, solr and droids</a> - Thorsten Scherler. March 27th @ 17:30</li>
+							      <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/165">Apache Droids - an intelligent standalone robot framework</a> - Thorsten Scherler. March 26th @ 15:00</li>
+
+							              </ul>
+	    
+	    </section>
+       <section><title>19 December 2008 - Solr Logo Contest Results</title>
+	<p>Many great logos were submitted, but only one could be chosen.  Congratulations Michiel,
+	the creator of the winning logo that is proudly displayed at the top of this page.  
+	</p>
+       </section>
+       <section><title>03 October 2008 - Solr Logo Contest</title>
+	<p>By popular demand, Solr is holding a contest to pick a new Solr logo.  Details about how to submit an entry can be found <a href="http://wiki.apache.org/solr/LogoContest">on the wiki</a>.  The Deadline for submissions is November 20th, 2008 @ 11:59PM GMT.
+	</p>
+       </section>
+       <section><title>15 September 2008 - Solr 1.3.0 Available</title>
+		<p>Solr 1.3.0 is available for public download.  This version contains many enhancements and bug fixes, including distributed search capabilities,
+			Lucene 2.3.x performance improvements and many others.
+		</p>
+		<p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.3.0/CHANGES.txt">release notes</a> for more details.  Download is
+    available from a <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Apache Mirror</a>.</p>
+
+    </section>
+	 <section>
+	        <title>28 August 2008 - Lucene/Solr at ApacheCon New Orleans</title>
+	        <p>
+	         <a title="ApacheCon US 2008" href="http://us.apachecon.com/c/acus2008/"><img src="http://us.apachecon.com/page_attachments/0000/0003/Basic_125x125.jpg" class="float-right" alt="ApacheCon US 2008 Logo" /></a>
+
+	         Lucene will be extremely well represented at
+	         <a href="http://us.apachecon.com/c/acus2008/">ApacheCon US 2008</a>
+	         in New Orleans this November 3-7, 2008:
+	        </p>
+	        <ul>
+	         <li><a href="http://us.apachecon.com/c/acus2008/sessions/69">Lucene Boot Camp</a> - A two day training session, November 3rd &amp; 4th</li>
+	         <li><a href="http://us.apachecon.com/c/acus2008/sessions/91">Solr Boot Camp</a> - A one day training session, November 4th</li>
+	         <!-- not listing all session explicitly since there is evidently still some flux in the schedule -->
+	         <li>An <a href="http://us.apachecon.com/c/acus2008/schedule/2008/11/05">entire day of Lucene sessions</a> on November 5th</li>
+	        </ul>
+	      </section>
+
+      <section>
+            <title>03 September 2007 - Lucene at ApacheCon Atlanta</title>
+            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png" class="float-right" alt="ApacheCon US logo" /></a>
+              Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
+            </p>
+            <p>The following talks and trainings are scheduled for this year's conference:</p>
+              <ul>
+                <li>November 12: <a href="http://us.apachecon.com/us2007/program/talk/1859">Lucene Boot Camp</a> by Grant Ingersoll.  An all-day training focusing on getting started with Lucene.</li>
+                <li>November 16, 9:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1992">Apache Solr out of the Box</a> by Chris Hostetter. Introduction to Solr.</li>
+                <li>November 16, 10:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1943">Building a Vertical Search Site using Apache Software</a> by Ken Krugler. Will cover many Lucene-based projects.</li>
+                <li>November 16, 3:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/1953">Apache Lucene Performance</a> by Grant Ingersoll. Tips and techniques for improving Lucene performance.</li>
+                <li>November 16, 4:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/2017"> Advanced Indexing Techniques with Apache Lucene</a> by Michael Busch. Information on payloads and advanced indexing techniques.</li>
+              </ul>
+            
+          </section>
+
+      <section>
+      <title>06 June 2007: Release 1.2 available</title>
+      <p>
+        This is the first release since Solr graduated from the Incubator,
+        bringing many new features, including CSV/delimited-text data
+        loading, time based autocommit, faster faceting, negative filters,
+        a spell-check handler, sounds-like word filters, regex text filters,
+        and more flexible plugins.
+      </p>
+      <p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.2.0/CHANGES.txt">release notes</a> for more details.</p>
+      </section>
+
+      <section>
+      <title>17 January 2007: Solr graduates from Incubator</title>
+      <p>
+        Solr has graduated from the Apache Incubator, and is now a sub-project of Lucene.
+      </p>
+      </section>
+
+      <section>
+      <title>22 December 2006: Release 1.1.0 available</title>
+      <p>
+        This is the first release since Solr joined the Incubator, and brings
+        many new features and performance optimizations including highlighting,
+        faceted search, and JSON/Python/Ruby response formats.
+      </p>
+      </section>
+      <section>
+      <title>15 August 2006: Solr at ApacheCon US</title>
+      <p>Chris Hostetter will be presenting
+        <strong><a href="http://www.apachecon.com/2006/US/html/sessions.html#FR26">"Faceted Searching With Apache Solr"</a></strong>  
+        at ApacheCon US 2006, on October 13th at 4:30pm.
+        See the <a href="http://www.us.apachecon.com/">ApacheCon</a> website for more details.
+      </p>
+      </section>
+ 
+      <section>
+      <title>21 April 2006: Solr at ApacheCon</title>
+      <p>Yonik Seeley will be presenting
+        <strong>"Apache Solr, a Full-Text Search Server based on Lucene"</strong>  
+        at ApacheCon Europe 2006, on June 29th at 5:30pm.
+        See the <a href="http://www.eu.apachecon.com/">ApacheCon</a> website for more details.
+      </p>
+      </section>
+ 
+  
+      <section>
+      <title>21 February 2006: nightly builds</title>
+      <p>Solr now has nightly builds.  This automatically creates a
+      <a href="ext:nightly">downloadable version of Solr every
+      night</a>.  All unit tests must pass, or a message is sent to
+      the developers mailing list and no new version is created.  This
+      also updates the <a href="api/index.html">javadoc</a>.</p>
+      </section>
+      
+
+        <section>
+          <title>17 January 2006: Solr Joins Apache Incubator</title>
+          <p>Solr, a search server based on Lucene, has been accepted into the Apache Incubator.
+            Solr was originally developed by CNET Networks, and is widely used within CNET
+            to provide high relevancy search and faceted browsing capabilities.
+            </p>
+        </section>
+
+    </section>
+
+  </body>
+</document>

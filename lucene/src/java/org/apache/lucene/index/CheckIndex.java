@@ -17,6 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -34,12 +41,6 @@ import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValuesEnum;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -185,8 +186,8 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
-       *  does not omitTermFreqAndPositions.
-       *  @see AbstractField#setOmitTermFreqAndPositions */
+       *  has position data
+       *  @see AbstractField#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
       public boolean hasProx;
 
       /** Map that includes certain
@@ -364,7 +365,7 @@ public class CheckIndex {
     final String segmentsFileName = sis.getCurrentSegmentFileName();
     IndexInput input = null;
     try {
-      input = dir.openInput(segmentsFileName);
+      input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
     } catch (Throwable t) {
       msg("ERROR: could not open segments file in directory");
       if (infoStream != null)
@@ -513,7 +514,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
 
@@ -690,7 +691,7 @@ public class CheckIndex {
         Comparator<BytesRef> termComp = terms.getComparator();
 
         long sumTotalTermFreq = 0;
-
+        long sumDocFreq = 0;
         while(true) {
 
           final BytesRef term = terms.next();
@@ -711,6 +712,7 @@ public class CheckIndex {
 
           final int docFreq = terms.docFreq();
           status.totFreq += docFreq;
+          sumDocFreq += docFreq;
 
           docs = terms.docs(liveDocs, docs);
           postings = terms.docsAndPositions(liveDocs, postings);
@@ -876,6 +878,13 @@ public class CheckIndex {
           final long v = fields.terms(field).getSumTotalTermFreq();
           if (v != -1 && sumTotalTermFreq != v) {
             throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+          }
+        }
+        
+        if (sumDocFreq != 0) {
+          final long v = fields.terms(field).getSumDocFreq();
+          if (v != -1 && sumDocFreq != v) {
+            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
           }
         }
 

@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -95,6 +96,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "31.nocfs",
                              "32.cfs",
                              "32.nocfs",
+                             "34.cfs",
+                             "34.nocfs",
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -455,9 +458,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     File indexDir = new File(LuceneTestCase.TEMP_DIR, dirName);
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
-    
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
-    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
+    LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
+    mp.setUseCompoundFile(doCFS);
+    mp.setNoCFSRatio(1.0);
+    // TODO: remove randomness
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+      .setMaxBufferedDocs(10).setMergePolicy(mp);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
@@ -471,8 +477,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     if (!optimized) {
       // open fresh writer so we get no prx file in the added segment
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10);
-      ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
+      mp = new LogByteSizeMergePolicy();
+      mp.setUseCompoundFile(doCFS);
+      mp.setNoCFSRatio(1.0);
+      // TODO: remove randomness
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+        .setMaxBufferedDocs(10).setMergePolicy(mp);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
       writer.close();
@@ -538,7 +548,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       // figure out which field number corresponds to
       // "content", and then set our expected file names below
       // accordingly:
-      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", 1024);
+      CompoundFileDirectory cfsReader = dir.openCompoundInput("_0.cfs", newIOContext(random));
       FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
       int contentFieldIndex = -1;
       for (FieldInfo fi : fieldInfos) {
@@ -599,10 +609,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
     Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     doc.add(f);
     f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     doc.add(f);
     writer.addDocument(doc);
   }

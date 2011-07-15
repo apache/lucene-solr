@@ -31,6 +31,7 @@ public final class FieldInvertState {
   int numOverlap;
   int offset;
   int maxTermFrequency;
+  int uniqueTermCount;
   float boost;
   AttributeSource attributeSource;
 
@@ -55,6 +56,7 @@ public final class FieldInvertState {
     numOverlap = 0;
     offset = 0;
     maxTermFrequency = 0;
+    uniqueTermCount = 0;
     boost = docBoost;
     attributeSource = null;
   }
@@ -120,6 +122,13 @@ public final class FieldInvertState {
    */
   public int getMaxTermFrequency() {
     return maxTermFrequency;
+  }
+  
+  /**
+   * Return the number of unique terms encountered in this field.
+   */
+  public int getUniqueTermCount() {
+    return uniqueTermCount;
   }
   
   public AttributeSource getAttributeSource() {

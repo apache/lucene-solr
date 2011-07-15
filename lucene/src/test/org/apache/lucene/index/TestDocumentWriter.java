@@ -34,7 +34,10 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,7 +71,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -129,7 +132,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
@@ -193,7 +196,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = reader.fields().terms("f1").docsAndPositions(reader.getLiveDocs(), new BytesRef("a"), null);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -237,7 +240,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random));
 
     DocsAndPositionsEnum termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getLiveDocs(), new BytesRef("term1"), null);
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
@@ -301,7 +304,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f1", "v2", Store.YES, Index.NO));
     // f2 has no TF
     Field f = newField("f2", "v1", Store.NO, Index.ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
+    f.setIndexOptions(IndexOptions.DOCS_ONLY);
     doc.add(f);
     doc.add(newField("f2", "v2", Store.YES, Index.NO));
 
@@ -317,10 +320,10 @@ public class TestDocumentWriter extends LuceneTestCase {
     FieldInfos fi = reader.fieldInfos();
     // f1
     assertFalse("f1 should have no norms", reader.hasNorms("f1"));
-    assertFalse("omitTermFreqAndPositions field bit should not be set for f1", fi.fieldInfo("f1").omitTermFreqAndPositions);
+    assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").indexOptions);
     // f2
     assertTrue("f2 should have norms", reader.hasNorms("f2"));
-    assertTrue("omitTermFreqAndPositions field bit should be set for f2", fi.fieldInfo("f2").omitTermFreqAndPositions);
+    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS_ONLY, fi.fieldInfo("f2").indexOptions);
     reader.close();
   }
 }

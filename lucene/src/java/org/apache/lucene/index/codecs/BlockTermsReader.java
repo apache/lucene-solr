@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -34,9 +35,9 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -107,7 +108,7 @@ public class BlockTermsReader extends FieldsProducer {
   
   //private String segment;
   
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
+  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
     throws IOException {
     
@@ -116,7 +117,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     //this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
-                       readBufferSize);
+                       context);
 
     boolean success = false;
     try {
@@ -136,9 +137,10 @@ public class BlockTermsReader extends FieldsProducer {
         assert numTerms >= 0;
         final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        final long sumTotalTermFreq = fieldInfo.omitTermFreqAndPositions ? -1 : in.readVLong();
+        final long sumTotalTermFreq = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
+        final long sumDocFreq = in.readVLong();
         assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq));
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq));
       }
       success = true;
     } finally {
@@ -245,13 +247,15 @@ public class BlockTermsReader extends FieldsProducer {
     final FieldInfo fieldInfo;
     final long termsStartPointer;
     final long sumTotalTermFreq;
+    final long sumDocFreq;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq) {
+    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
       this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
     }
 
     @Override
@@ -277,6 +281,11 @@ public class BlockTermsReader extends FieldsProducer {
     @Override
     public long getSumTotalTermFreq() {
       return sumTotalTermFreq;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
+      return sumDocFreq;
     }
 
     // Iterates through terms in this field
@@ -701,7 +710,7 @@ public class BlockTermsReader extends FieldsProducer {
       public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
         //System.out.println("BTR.d&p this=" + this);
         decodeMetaData();
-        if (fieldInfo.omitTermFreqAndPositions) {
+        if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
           return null;
         } else {
           DocsAndPositionsEnum dpe = postingsReader.docsAndPositions(fieldInfo, state, liveDocs, reuse);
@@ -827,12 +836,12 @@ public class BlockTermsReader extends FieldsProducer {
         postingsReader.readTermsBlock(in, fieldInfo, state);
 
         blocksSinceSeek++;
-        indexIsCurrent &= (blocksSinceSeek < indexReader.getDivisor());
+        indexIsCurrent = indexIsCurrent && (blocksSinceSeek < indexReader.getDivisor());
         //System.out.println("  indexIsCurrent=" + indexIsCurrent);
 
         return true;
       }
-
+     
       private void decodeMetaData() throws IOException {
         //System.out.println("BTR.decodeMetadata mdUpto=" + metaDataUpto + " vs termCount=" + state.termCount + " state=" + state);
         if (!seekPending) {
@@ -859,7 +868,7 @@ public class BlockTermsReader extends FieldsProducer {
             // just skipN here:
             state.docFreq = freqReader.readVInt();
             //System.out.println("    dF=" + state.docFreq);
-            if (!fieldInfo.omitTermFreqAndPositions) {
+            if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
               state.totalTermFreq = state.docFreq + freqReader.readVLong();
               //System.out.println("    totTF=" + state.totalTermFreq);
             }

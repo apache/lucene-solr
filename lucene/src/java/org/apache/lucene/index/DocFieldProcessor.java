@@ -32,6 +32,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IOUtils;
 
 
 /**
@@ -87,6 +88,8 @@ final class DocFieldProcessor extends DocConsumer {
     for (DocValuesConsumer consumers : docValues.values()) {
       consumers.finish(state.numDocs);
     };
+    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
+    IOUtils.closeSafely(true, perDocConsumers.values());
   }
 
   @Override
@@ -106,13 +109,11 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    
-    for(PerDocConsumer consumer : perDocConsumers.values()) {
-      try {
-        consumer.close();  // TODO add abort to PerDocConsumer!
-      } catch (IOException e) {
-        // ignore on abort!
-      }
+    try {
+      IOUtils.closeSafely(true, perDocConsumers.values());
+      // TODO add abort to PerDocConsumer!
+    } catch (IOException e) {
+      // ignore on abort!
     }
     
     try {
@@ -165,13 +166,6 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
-    for(PerDocConsumer consumer : perDocConsumers.values()) {
-      try {
-        consumer.close();  
-      } catch (IOException e) {
-        // ignore and continue closing remaining consumers
-      }
-    }
     perDocConsumers.clear();
     docValues.clear();
   }
@@ -239,7 +233,7 @@ final class DocFieldProcessor extends DocConsumer {
         // easily add it
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+                                      field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -251,7 +245,7 @@ final class DocFieldProcessor extends DocConsumer {
       } else {
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
                             field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+                            field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {

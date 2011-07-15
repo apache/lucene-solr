@@ -28,6 +28,7 @@ import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
@@ -100,12 +101,13 @@ public final class Bytes {
    *          {@link Writer}. A call to {@link Writer#finish(int)} will release
    *          all internally used resources and frees the memeory tracking
    *          reference.
+   * @param context 
    * @return a new {@link Writer} instance
    * @throws IOException
    *           if the files for the writer can not be created.
    */
   public static Writer getWriter(Directory dir, String id, Mode mode,
-      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed)
+      Comparator<BytesRef> comp, boolean fixedSize, AtomicLong bytesUsed, IOContext context)
       throws IOException {
     // TODO -- i shouldn't have to specify fixed? can
     // track itself & do the write thing at write time?
@@ -115,19 +117,19 @@ public final class Bytes {
 
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        return new FixedStraightBytesImpl.Writer(dir, id, bytesUsed);
+        return new FixedStraightBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.DEREF) {
-        return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed);
+        return new FixedDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
+        return new FixedSortedBytesImpl.Writer(dir, id, comp, bytesUsed, context);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
-        return new VarStraightBytesImpl.Writer(dir, id, bytesUsed);
+        return new VarStraightBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.DEREF) {
-        return new VarDerefBytesImpl.Writer(dir, id, bytesUsed);
+        return new VarDerefBytesImpl.Writer(dir, id, bytesUsed, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Writer(dir, id, comp, bytesUsed);
+        return new VarSortedBytesImpl.Writer(dir, id, comp, bytesUsed, context);
       }
     }
 
@@ -157,23 +159,24 @@ public final class Bytes {
    *           if an {@link IOException} occurs
    */
   public static IndexDocValues getValues(Directory dir, String id, Mode mode,
-      boolean fixedSize, int maxDoc, Comparator<BytesRef> sortComparator) throws IOException {
+      boolean fixedSize, int maxDoc, Comparator<BytesRef> sortComparator, IOContext context) throws IOException {
+
     // TODO -- I can peek @ header to determing fixed/mode?
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
-        return new FixedStraightBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedStraightBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.DEREF) {
-        return new FixedDerefBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedDerefBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc);
+        return new FixedSortedBytesImpl.Reader(dir, id, maxDoc, context);
       }
     } else {
       if (mode == Mode.STRAIGHT) {
-        return new VarStraightBytesImpl.Reader(dir, id, maxDoc);
+        return new VarStraightBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.DEREF) {
-        return new VarDerefBytesImpl.Reader(dir, id, maxDoc);
+        return new VarDerefBytesImpl.Reader(dir, id, maxDoc, context);
       } else if (mode == Mode.SORTED) {
-        return new VarSortedBytesImpl.Reader(dir, id, maxDoc, sortComparator);
+        return new VarSortedBytesImpl.Reader(dir, id, maxDoc, sortComparator, context);
       }
     }
 
@@ -343,15 +346,16 @@ public final class Bytes {
     private final Directory dir;
     private final String codecName;
     private final int version;
+    private final IOContext context;
 
     protected BytesWriterBase(Directory dir, String id, String codecName,
-        int version,
-        AtomicLong bytesUsed) throws IOException {
+        int version, AtomicLong bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.dir = dir;
       this.codecName = codecName;
       this.version = version;
+      this.context = context;
     }
     
     protected IndexOutput getDataOut() throws IOException {
@@ -359,7 +363,7 @@ public final class Bytes {
         boolean success = false;
         try {
           datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-              DATA_EXTENSION));
+              DATA_EXTENSION), context);
           CodecUtil.writeHeader(datOut, codecName, version);
           success = true;
         } finally {
@@ -376,7 +380,7 @@ public final class Bytes {
       try {
         if (idxOut == null) {
           idxOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-              INDEX_EXTENSION));
+              INDEX_EXTENSION), context);
           CodecUtil.writeHeader(idxOut, codecName, version);
         }
         success = true;
@@ -439,16 +443,16 @@ public final class Bytes {
     protected final String id;
 
     protected BytesReaderBase(Directory dir, String id, String codecName,
-        int maxVersion, boolean doIndex) throws IOException {
+        int maxVersion, boolean doIndex, IOContext context) throws IOException {
       this.id = id;
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       boolean success = false;
       try {
       version = CodecUtil.checkHeader(datIn, codecName, maxVersion, maxVersion);
       if (doIndex) {
         idxIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-            Writer.INDEX_EXTENSION));
+            Writer.INDEX_EXTENSION), context);
         final int version2 = CodecUtil.checkHeader(idxIn, codecName,
             maxVersion, maxVersion);
         assert version == version2;

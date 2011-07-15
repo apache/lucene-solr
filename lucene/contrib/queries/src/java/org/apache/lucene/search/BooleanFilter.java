@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -36,25 +37,18 @@ import org.apache.lucene.util.OpenBitSetDISI;
  * The resulting Filter is AND'd with the MUST Filters
  */
 
-public class BooleanFilter extends Filter
-{
-  ArrayList<Filter> shouldFilters = null;
-  ArrayList<Filter> notFilters = null;
-  ArrayList<Filter> mustFilters = null;
-  
-  private DocIdSetIterator getDISI(ArrayList<Filter> filters, int index, AtomicReaderContext context)
-  throws IOException
-  {
-    return filters.get(index).getDocIdSet(context).iterator();
-  }
+public class BooleanFilter extends Filter {
+
+  List<Filter> shouldFilters = null;
+  List<Filter> notFilters = null;
+  List<Filter> mustFilters = null;
 
   /**
    * Returns the a DocIdSetIterator representing the Boolean composition
    * of the filters that have been added.
    */
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException
-  {
+  public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
     OpenBitSetDISI res = null;
     final IndexReader reader = context.reader;
     if (shouldFilters != null) {
@@ -73,7 +67,7 @@ public class BooleanFilter extends Filter
       }
     }
     
-    if (notFilters!=null) {
+    if (notFilters != null) {
       for (int i = 0; i < notFilters.size(); i++) {
         if (res == null) {
           res = new OpenBitSetDISI(getDISI(notFilters, i, context), reader.maxDoc());
@@ -90,7 +84,7 @@ public class BooleanFilter extends Filter
       }
     }
     
-    if (mustFilters!=null) {
+    if (mustFilters != null) {
       for (int i = 0; i < mustFilters.size(); i++) {
         if (res == null) {
           res = new OpenBitSetDISI(getDISI(mustFilters, i, context), reader.maxDoc());
@@ -105,53 +99,47 @@ public class BooleanFilter extends Filter
         }
       }
     }
-    
-    if (res !=null)
-      return res;
 
-    return DocIdSet.EMPTY_DOCIDSET;
+    return res != null ? res : DocIdSet.EMPTY_DOCIDSET;
   }
 
   /**
   * Adds a new FilterClause to the Boolean Filter container
   * @param filterClause A FilterClause object containing a Filter and an Occur parameter
   */
-  public void add(FilterClause filterClause)
-  {
+  public void add(FilterClause filterClause) {
     if (filterClause.getOccur().equals(Occur.MUST)) {
-      if (mustFilters==null) {
-        mustFilters=new ArrayList<Filter>();
+      if (mustFilters == null) {
+        mustFilters = new ArrayList<Filter>();
       }
       mustFilters.add(filterClause.getFilter());
-    }
-    if (filterClause.getOccur().equals(Occur.SHOULD)) {
-      if (shouldFilters==null) {
-        shouldFilters=new ArrayList<Filter>();
+    } else if (filterClause.getOccur().equals(Occur.SHOULD)) {
+      if (shouldFilters == null) {
+        shouldFilters = new ArrayList<Filter>();
       }
       shouldFilters.add(filterClause.getFilter());
-    }
-    if (filterClause.getOccur().equals(Occur.MUST_NOT)) {
-      if (notFilters==null) {
-        notFilters=new ArrayList<Filter>();
+    } else if (filterClause.getOccur().equals(Occur.MUST_NOT)) {
+      if (notFilters == null) {
+        notFilters = new ArrayList<Filter>();
       }
       notFilters.add(filterClause.getFilter());
     }
   }
 
-  private boolean equalFilters(ArrayList<Filter> filters1, ArrayList<Filter> filters2)
-  {
-     return (filters1 == filters2) ||
-              ((filters1 != null) && filters1.equals(filters2));
+  private DocIdSetIterator getDISI(List<Filter> filters, int index, AtomicReaderContext context)
+      throws IOException {
+    return filters.get(index).getDocIdSet(context).iterator();
   }
   
   @Override
-  public boolean equals(Object obj)
-  {
-    if (this == obj)
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
+    }
 
-    if ((obj == null) || (obj.getClass() != this.getClass()))
+    if ((obj == null) || (obj.getClass() != this.getClass())) {
       return false;
+    }
 
     BooleanFilter other = (BooleanFilter)obj;
     return equalFilters(notFilters, other.notFilters)
@@ -159,10 +147,13 @@ public class BooleanFilter extends Filter
         && equalFilters(shouldFilters, other.shouldFilters);
   }
 
+  private boolean equalFilters(List<Filter> filters1, List<Filter> filters2) {
+    return (filters1 == filters2) || ((filters1 != null) && filters1.equals(filters2));
+  }
+
   @Override
-  public int hashCode()
-  {
-    int hash=7;
+  public int hashCode() {
+    int hash = 7;
     hash = 31 * hash + (null == mustFilters ? 0 : mustFilters.hashCode());
     hash = 31 * hash + (null == notFilters ? 0 : notFilters.hashCode());
     hash = 31 * hash + (null == shouldFilters ? 0 : shouldFilters.hashCode());
@@ -171,8 +162,7 @@ public class BooleanFilter extends Filter
   
   /** Prints a user-readable version of this query. */
   @Override
-  public String toString()
-  {
+  public String toString() {
     StringBuilder buffer = new StringBuilder();
     buffer.append("BooleanFilter(");
     appendFilters(shouldFilters, "", buffer);
@@ -182,13 +172,12 @@ public class BooleanFilter extends Filter
     return buffer.toString();
   }
   
-  private void appendFilters(ArrayList<Filter> filters, String occurString, StringBuilder buffer)
-  {
+  private void appendFilters(List<Filter> filters, String occurString, StringBuilder buffer) {
     if (filters != null) {
-      for (int i = 0; i < filters.size(); i++) {
+      for (Filter filter : filters) {
         buffer.append(' ');
         buffer.append(occurString);
-        buffer.append(filters.get(i).toString());
+        buffer.append(filter.toString());
       }
     }
   }    

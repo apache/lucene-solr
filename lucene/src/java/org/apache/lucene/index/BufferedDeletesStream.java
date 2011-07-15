@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.store.IOContext;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
@@ -224,7 +225,7 @@ class BufferedDeletesStream {
 
         // Lock order: IW -> BD -> RP
         assert readerPool.infoIsLive(info);
-        final SegmentReader reader = readerPool.get(info, false);
+        final SegmentReader reader = readerPool.get(info, false, IOContext.READ);
         int delCount = 0;
         final boolean segAllDeletes;
         try {
@@ -273,7 +274,7 @@ class BufferedDeletesStream {
         if (coalescedDeletes != null) {
           // Lock order: IW -> BD -> RP
           assert readerPool.infoIsLive(info);
-          SegmentReader reader = readerPool.get(info, false);
+          SegmentReader reader = readerPool.get(info, false, IOContext.READ);
           int delCount = 0;
           final boolean segAllDeletes;
           try {

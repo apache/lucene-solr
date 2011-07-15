@@ -29,6 +29,7 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -42,13 +43,17 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
   private final AtomicLong bytesUsed;
   private final Comparator<BytesRef> comparator;
   private boolean useCompoundFile;
+  private final IOContext context;
   
   public DefaultDocValuesConsumer(PerDocWriteState state, Comparator<BytesRef> comparator, boolean useCompoundFile) throws IOException {
     this.segmentName = state.segmentName;
     this.codecId = state.codecId;
     this.bytesUsed = state.bytesUsed;
+    this.context = state.context;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
-    this.directory = useCompoundFile ? state.directory.createCompoundOutput(IndexFileNames.segmentFileName(segmentName, state.codecId, IndexFileNames.COMPOUND_FILE_EXTENSION)) : state.directory;
+    this.directory = useCompoundFile ? state.directory.createCompoundOutput(
+        IndexFileNames.segmentFileName(segmentName, codecId,
+            IndexFileNames.COMPOUND_FILE_EXTENSION), context) : state.directory;
     this.comparator = comparator;
     this.useCompoundFile = useCompoundFile;
   }
@@ -63,7 +68,7 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
   public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
     return Writer.create(field.getDocValues(),
         docValuesId(segmentName, codecId, field.number),
-        directory, comparator, bytesUsed);
+        directory, comparator, bytesUsed, context);
   }
   
   @SuppressWarnings("fallthrough")

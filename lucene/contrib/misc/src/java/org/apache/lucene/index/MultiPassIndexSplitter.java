@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -57,7 +57,7 @@ public class MultiPassIndexSplitter {
    * assigned in a deterministic round-robin fashion to one of the output splits.
    * @throws IOException
    */
-  public void split(IndexReader input, Directory[] outputs, boolean seq) throws IOException {
+  public void split(Version version, IndexReader input, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {
       throw new IOException("Invalid number of outputs.");
     }
@@ -96,7 +96,7 @@ public class MultiPassIndexSplitter {
         }
       }
       IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(
-          Version.LUCENE_CURRENT,
+          version,
           null)
           .setOpenMode(OpenMode.CREATE));
       System.err.println("Writing part " + (i + 1) + " ...");
@@ -106,6 +106,7 @@ public class MultiPassIndexSplitter {
     System.err.println("Done.");
   }
   
+  @SuppressWarnings("deprecation")
   public static void main(String[] args) throws Exception {
     if (args.length < 5) {
       System.err.println("Usage: MultiPassIndexSplitter -out <outputDir> -num <numParts> [-seq] <inputIndex1> [<inputIndex2 ...]");
@@ -169,7 +170,7 @@ public class MultiPassIndexSplitter {
     } else {
       input = new MultiReader(indexes.toArray(new IndexReader[indexes.size()]));
     }
-    splitter.split(input, dirs, seq);
+    splitter.split(Version.LUCENE_CURRENT, input, dirs, seq);
   }
   
   /**
@@ -178,7 +179,7 @@ public class MultiPassIndexSplitter {
    * list of deletions.
    */
   public static final class FakeDeleteIndexReader extends FilterIndexReader {
-    OpenBitSet liveDocs;
+    FixedBitSet liveDocs;
 
     public FakeDeleteIndexReader(IndexReader in) {
       super(new SlowMultiReaderWrapper(in));
@@ -187,7 +188,7 @@ public class MultiPassIndexSplitter {
 
     @Override
     public int numDocs() {
-      return (int) liveDocs.cardinality();
+      return liveDocs.cardinality();
     }
 
     /**
@@ -197,13 +198,13 @@ public class MultiPassIndexSplitter {
     @Override
     protected void doUndeleteAll()  {
       final int maxDoc = in.maxDoc();
-      liveDocs = new OpenBitSet(maxDoc);
+      liveDocs = new FixedBitSet(in.maxDoc());
       if (in.hasDeletions()) {
         final Bits oldLiveDocs = in.getLiveDocs();
         assert oldLiveDocs != null;
         // this loop is a little bit ineffective, as Bits has no nextSetBit():
         for (int i = 0; i < maxDoc; i++) {
-          if (oldLiveDocs.get(i)) liveDocs.fastSet(i);
+          if (oldLiveDocs.get(i)) liveDocs.set(i);
         }
       } else {
         // mark all docs as valid

@@ -35,13 +35,11 @@ public class SpanScorer extends Scorer {
 
   protected int doc;
   protected float freq;
-  protected final Similarity similarity;
   protected final Similarity.SloppyDocScorer docScorer;
   
-  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, Similarity.SloppyDocScorer docScorer)
+  protected SpanScorer(Spans spans, Weight weight, Similarity.SloppyDocScorer docScorer)
   throws IOException {
     super(weight);
-    this.similarity = similarity;
     this.docScorer = docScorer;
     this.spans = spans;
 
@@ -83,7 +81,7 @@ public class SpanScorer extends Scorer {
     freq = 0.0f;
     do {
       int matchLength = spans.end() - spans.start();
-      freq += similarity.sloppyFreq(matchLength);
+      freq += docScorer.computeSlopFactor(matchLength);
       more = spans.next();
     } while (more && (doc == spans.doc()));
     return true;

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
@@ -68,8 +70,10 @@ final class SegmentMerger {
   private SegmentWriteState segmentWriteState;
 
   private PayloadProcessorProvider payloadProcessorProvider;
+  
+  private IOContext context;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, PayloadProcessorProvider payloadProcessorProvider, FieldInfos fieldInfos, IOContext context) {
     this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     segment = name;
@@ -85,6 +89,7 @@ final class SegmentMerger {
       };
     }
     this.termIndexInterval = termIndexInterval;
+    this.context = context;
   }
 
   public FieldInfos fieldInfos() {
@@ -129,19 +134,19 @@ final class SegmentMerger {
    * deletion files, this SegmentInfo must not reference such files when this
    * method is called, because they are not allowed within a compound file.
    */
-  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info)
+  final Collection<String> createCompoundFile(String fileName, final SegmentInfo info, IOContext context)
           throws IOException {
 
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = directory.createCompoundOutput(fileName);
+    CompoundFileDirectory cfsDir = directory.createCompoundOutput(fileName, context);
     try {
       for (String file : files) {
         assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 
                   : ".del file is not allowed in .cfs: " + file;
         assert !IndexFileNames.isSeparateNormsFile(file) 
                   : "separate norms file (.s[0-9]+) is not allowed in .cfs: " + file;
-        directory.copy(cfsDir, file, file);
+        directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
       }
     } finally {
@@ -154,12 +159,12 @@ final class SegmentMerger {
   private static void addIndexed(IndexReader reader, FieldInfos fInfos,
       Collection<String> names, boolean storeTermVectors,
       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-      boolean storePayloads, boolean omitTFAndPositions)
+      boolean storePayloads, IndexOptions indexOptions)
       throws IOException {
     for (String field : names) {
       fInfos.addOrUpdate(field, true, storeTermVectors,
           storePositionWithTermVector, storeOffsetWithTermVector, !reader
-              .hasNorms(field), storePayloads, omitTFAndPositions, null);
+              .hasNorms(field), storePayloads, indexOptions, null);
     }
   }
 
@@ -219,13 +224,14 @@ final class SegmentMerger {
           fieldInfos.add(fi);
         }
       } else {
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR), true, false, false, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_TERM_FREQ_AND_POSITIONS), false, false, false, false, true);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.TERMVECTOR), true, false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_POSITIONS), false, false, false, false, IndexOptions.DOCS_AND_FREQS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.OMIT_TERM_FREQ_AND_POSITIONS), false, false, false, false, IndexOptions.DOCS_ONLY);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.UNINDEXED), false);
         fieldInfos.addOrUpdate(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
@@ -236,9 +242,7 @@ final class SegmentMerger {
     int docCount = 0;
 
     setMatchingSegmentReaders();
-
-    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment);
-
+    final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, context);
     try {
       int idx = 0;
       for (IndexReader reader : readers) {
@@ -272,8 +276,7 @@ final class SegmentMerger {
       // entering the index.  See LUCENE-1282 for
       // details.
       throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
-
-    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null);
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, docCount, termIndexInterval, codecInfo, null, context);
 
     return docCount;
   }
@@ -360,7 +363,7 @@ final class SegmentMerger {
    */
   private final void mergeVectors() throws IOException {
     TermVectorsWriter termVectorsWriter =
-      new TermVectorsWriter(directory, segment, fieldInfos);
+      new TermVectorsWriter(directory, segment, fieldInfos, context);
 
     try {
       int idx = 0;
@@ -629,7 +632,7 @@ final class SegmentMerger {
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) {
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
+            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION), context);
             output.writeBytes(SegmentNorms.NORMS_HEADER, SegmentNorms.NORMS_HEADER.length);
           }
           for (IndexReader reader : readers) {

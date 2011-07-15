@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
 
@@ -145,11 +146,6 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
 
     @Override
-    public float sloppyFreq(int distance) {
-      return sim.sloppyFreq(distance);
-    }
-
-    @Override
     public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termContexts) throws IOException {
       return sim.computeStats(searcher, fieldName, queryBoost, termContexts);
     }
@@ -188,6 +184,16 @@ public class TestDocValuesScoring extends LuceneTestCase {
           return (float) values.getFloat(doc) * sub.score(doc, freq);
         }
         
+        @Override
+        public float computeSlopFactor(int distance) {
+          return sub.computeSlopFactor(distance);
+        }
+
+        @Override
+        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+          return sub.computePayloadFactor(doc, start, end, payload);
+        }
+
         @Override
         public Explanation explain(int doc, Explanation freq) {
           Explanation boostExplanation = new Explanation((float) values.getFloat(doc), "indexDocValue(" + boostField + ")");

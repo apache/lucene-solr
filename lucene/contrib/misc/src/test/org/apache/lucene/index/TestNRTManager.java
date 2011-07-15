@@ -87,9 +87,7 @@ public class TestNRTManager extends LuceneTestCase {
       if (field1.getOmitNorms()) {
         field2.setOmitNorms(true);
       }
-      if (field1.getOmitTermFreqAndPositions()) {
-        field2.setOmitTermFreqAndPositions(true);
-      }
+      field2.setIndexOptions(field1.getIndexOptions());
       doc2.add(field2);
     }
 
@@ -159,9 +157,7 @@ public class TestNRTManager extends LuceneTestCase {
         System.out.println("TEST: wrap NRTCachingDir");
       }
 
-      NRTCachingDirectory nrtDir = new NRTCachingDirectory(dir, 5.0, 60.0);
-      conf.setMergeScheduler(nrtDir.getMergeScheduler());
-      dir = nrtDir;
+      dir = new NRTCachingDirectory(dir, 5.0, 60.0);
     }
     
     final IndexWriter writer = new IndexWriter(dir, conf);

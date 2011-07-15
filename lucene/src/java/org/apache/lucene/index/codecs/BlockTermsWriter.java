@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -72,7 +73,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
-    out = state.directory.createOutput(termsFileName);
+    out = state.directory.createOutput(termsFileName, state.context);
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;
@@ -129,9 +130,10 @@ public class BlockTermsWriter extends FieldsConsumer {
           out.writeVInt(field.fieldInfo.number);
           out.writeVLong(field.numTerms);
           out.writeVLong(field.termsStartPointer);
-          if (!field.fieldInfo.omitTermFreqAndPositions) {
+          if (field.fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
             out.writeVLong(field.sumTotalTermFreq);
           }
+          out.writeVLong(field.sumDocFreq);
         }
       }
       writeTrailer(dirStart);
@@ -157,6 +159,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
     long sumTotalTermFreq;
+    long sumDocFreq;
 
     private TermEntry[] pendingTerms;
 
@@ -231,7 +234,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
     // Finishes all terms in this field
     @Override
-    public void finish(long sumTotalTermFreq) throws IOException {
+    public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
       if (pendingCount > 0) {
         flushBlock();
       }
@@ -239,6 +242,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       out.writeVInt(0);
 
       this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
       fieldIndexWriter.finish(out.getFilePointer());
     }
 
@@ -295,7 +299,7 @@ public class BlockTermsWriter extends FieldsConsumer {
         final TermStats stats = pendingTerms[termCount].stats;
         assert stats != null;
         bytesWriter.writeVInt(stats.docFreq);
-        if (!fieldInfo.omitTermFreqAndPositions) {
+        if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
           bytesWriter.writeVLong(stats.totalTermFreq-stats.docFreq);
         }
       }

@@ -99,6 +99,7 @@
       <fileset dir="." includes="*.iml,*.ipr,*.iws"/>
       <fileset dir="solr" includes="**/*.iml"/>
       <fileset dir="lucene" includes="**/*.iml"/>
+      <fileset dir="modules" includes="**/*.iml"/>
     </delete>
   </target>
 

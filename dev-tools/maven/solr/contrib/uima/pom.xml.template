@@ -33,7 +33,7 @@
   <description>Apache Solr - UIMA integration</description>
   <properties>
     <module-directory>solr/contrib/uima</module-directory>
-    <build-directory>build</build-directory>
+    <build-directory>../../build/contrib/uima</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -103,16 +103,18 @@
   </dependencies>
   <build>
     <directory>${build-directory}</directory>
-    <outputDirectory>${build-directory}/classes</outputDirectory>
-    <testOutputDirectory>${build-directory}/test-classes</testOutputDirectory>
+    <outputDirectory>${build-directory}/classes/java</outputDirectory>
+    <testOutputDirectory>${build-directory}/classes/test</testOutputDirectory>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <resources>
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>src/resources</directory>
       </resource>
     </resources>
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>src/test-files</directory>
       </testResource>
     </testResources>
     <plugins>

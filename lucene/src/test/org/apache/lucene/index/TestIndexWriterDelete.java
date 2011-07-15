@@ -453,7 +453,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: cycle");
       }
-      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir));
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory(startDir, newIOContext(random)));
       dir.setPreventDoubleWrite(false);
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(

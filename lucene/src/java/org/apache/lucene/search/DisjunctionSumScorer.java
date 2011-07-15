@@ -47,7 +47,7 @@ class DisjunctionSumScorer extends Scorer {
    * <code>nrMatchers</code> is the number of matching scorers,
    * and all scorers are after the matching doc, or are exhausted.
    */
-  private ScorerDocQueue scorerDocQueue;
+  private final ScorerDocQueue scorerDocQueue;
   
   /** The document number of the current match. */
   private int currentDoc = -1;
@@ -83,7 +83,7 @@ class DisjunctionSumScorer extends Scorer {
     this.minimumNrMatchers = minimumNrMatchers;
     this.subScorers = subScorers;
 
-    initScorerDocQueue();
+    scorerDocQueue  = initScorerDocQueue();
   }
   
   /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
@@ -95,14 +95,16 @@ class DisjunctionSumScorer extends Scorer {
 
   /** Called the first time nextDoc() or advance() is called to
    * initialize <code>scorerDocQueue</code>.
+   * @return 
    */
-  private void initScorerDocQueue() throws IOException {
-    scorerDocQueue = new ScorerDocQueue(nrScorers);
-    for (Scorer se : subScorers) {
+  private ScorerDocQueue initScorerDocQueue() throws IOException {
+    final ScorerDocQueue docQueue = new ScorerDocQueue(nrScorers);
+    for (final Scorer se : subScorers) {
       if (se.nextDoc() != NO_MORE_DOCS) {
-        scorerDocQueue.insert(se);
+        docQueue.insert(se);
       }
     }
+    return docQueue; 
   }
 
   /** Scores and collects all matching documents.
@@ -138,6 +140,7 @@ class DisjunctionSumScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
+    
     if (scorerDocQueue.size() < minimumNrMatchers || !advanceAfterCurrent()) {
       currentDoc = NO_MORE_DOCS;
     }

@@ -26,6 +26,7 @@ import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.index.values.FixedDerefBytesImpl.Reader.DerefBytesEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -117,15 +118,15 @@ class VarDerefBytesImpl {
         bytesUsed);
     private final BytesRefHash hash;
 
-    public Writer(Directory dir, String id, AtomicLong bytesUsed)
+    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
         throws IOException {
       this(dir, id, new DirectTrackingAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed),
-          bytesUsed);
+          bytesUsed, context);
     }
 
     public Writer(Directory dir, String id, Allocator allocator,
-        AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+        AtomicLong bytesUsed, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       hash = new BytesRefHash(new ByteBlockPool(allocator), 16, array);
       docToAddress = new int[1];
       bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT);
@@ -220,8 +221,8 @@ class VarDerefBytesImpl {
 
   public static class Reader extends BytesReaderBase {
 
-    Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, true);
+    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, true, context);
     }
 
     @Override

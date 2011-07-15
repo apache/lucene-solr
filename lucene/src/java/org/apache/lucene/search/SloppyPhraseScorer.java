@@ -25,13 +25,11 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private PhrasePositions repeats[];
     private PhrasePositions tmpPos[]; // for flipping repeating pps.
     private boolean checkedRepeats;
-    private final Similarity similarity;
     
-    SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings, Similarity similarity,
+    SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
                        int slop, Similarity.SloppyDocScorer docScorer) throws IOException {
         super(weight, postings, docScorer);
         this.slop = slop;
-        this.similarity = similarity;
     }
 
     /**
@@ -80,7 +78,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
             int matchLength = end - start;
             if (matchLength <= slop)
-                freq += similarity.sloppyFreq(matchLength); // score match
+                freq += docScorer.computeSlopFactor(matchLength); // score match
 
             if (pp.position > end)
                 end = pp.position;

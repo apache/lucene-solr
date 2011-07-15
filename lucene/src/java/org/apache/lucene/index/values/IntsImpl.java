@@ -29,6 +29,7 @@ import org.apache.lucene.index.values.IndexDocValuesArray.IntValues;
 import org.apache.lucene.index.values.IndexDocValuesArray.LongValues;
 import org.apache.lucene.index.values.IndexDocValuesArray.ShortValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
@@ -67,11 +68,13 @@ class IntsImpl {
     private final byte typeOrd;
     private IndexOutput datOut;
     private boolean merging;
+    private final IOContext context;
     
 
     protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed,
-        ValueType valueType) throws IOException {
+        ValueType valueType, IOContext context) throws IOException {
       super(bytesUsed);
+      this.context = context;
       this.dir = dir;
       this.id = id;
       switch (valueType) {
@@ -122,7 +125,7 @@ class IntsImpl {
         boolean success = false;
         try {
           datOut = dir.createOutput(IndexFileNames.segmentFileName(id, "",
-              DATA_EXTENSION));
+              DATA_EXTENSION), context);
           CodecUtil.writeHeader(datOut, CODEC_NAME, VERSION_CURRENT);
           datOut.writeByte(typeOrd);
           success = true;
@@ -273,9 +276,9 @@ class IntsImpl {
     private final byte type;
     private final int numDocs;
 
-    protected IntsReader(Directory dir, String id, int numDocs) throws IOException {
+    protected IntsReader(Directory dir, String id, int numDocs, IOContext context) throws IOException {
       datIn = dir.openInput(IndexFileNames.segmentFileName(id, "",
-          Writer.DATA_EXTENSION));
+          Writer.DATA_EXTENSION), context);
       this.numDocs = numDocs;
       boolean success = false;
       try {

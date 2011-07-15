@@ -16,7 +16,6 @@ package org.apache.lucene.analysis.query;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -25,19 +24,12 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LetterTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 
 public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
@@ -74,22 +66,14 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     super.tearDown();
   }
 
-  //Helper method to query
-  private int search(Analyzer a, String queryString) throws IOException, ParseException {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "repetitiveField", a);
-    Query q = qp.parse(queryString);
-    IndexSearcher searcher = newSearcher(reader);
-    int hits = searcher.search(q, null, 1000).totalHits;
-    searcher.close();
-    return hits;
-  }
-
   public void testUninitializedAnalyzer() throws Exception {
-    //Note: no calls to "addStopWord"
-    String query = "variedField:quick repetitiveField:boring";
-    int numHits1 = search(protectedAnalyzer, query);
-    int numHits2 = search(appAnalyzer, query);
-    assertEquals("No filtering test", numHits1, numHits2);
+    // Note: no calls to "addStopWord"
+    // query = "variedField:quick repetitiveField:boring";
+    TokenStream protectedTokenStream = protectedAnalyzer.reusableTokenStream("variedField", new StringReader("quick"));
+    assertTokenStreamContents(protectedTokenStream, new String[]{"quick"});
+
+    protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
   }
 
   /*
@@ -97,36 +81,41 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     */
   public void testDefaultAddStopWordsIndexReader() throws Exception {
     protectedAnalyzer.addStopWords(reader);
-    int numHits = search(protectedAnalyzer, "repetitiveField:boring");
-    assertEquals("Default filter should remove all docs", 0, numHits);
-  }
+    TokenStream protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
 
+    assertTokenStreamContents(protectedTokenStream, new String[0]); // Default stop word filtering will remove boring
+  }
 
   /*
     * Test method for 'org.apache.lucene.analysis.QueryAutoStopWordAnalyzer.addStopWords(IndexReader, int)'
     */
   public void testAddStopWordsIndexReaderInt() throws Exception {
     protectedAnalyzer.addStopWords(reader, 1f / 2f);
-    int numHits = search(protectedAnalyzer, "repetitiveField:boring");
-    assertEquals("A filter on terms in > one half of docs remove boring docs", 0, numHits);
 
-    numHits = search(protectedAnalyzer, "repetitiveField:vaguelyboring");
-    assertTrue("A filter on terms in > half of docs should not remove vaguelyBoring docs", numHits > 1);
+    TokenStream protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    // A filter on terms in > one half of docs remove boring
+    assertTokenStreamContents(protectedTokenStream, new String[0]);
+
+    protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("vaguelyboring"));
+     // A filter on terms in > half of docs should not remove vaguelyBoring
+    assertTokenStreamContents(protectedTokenStream, new String[]{"vaguelyboring"});
 
     protectedAnalyzer.addStopWords(reader, 1f / 4f);
-    numHits = search(protectedAnalyzer, "repetitiveField:vaguelyboring");
-    assertEquals("A filter on terms in > quarter of docs should remove vaguelyBoring docs", 0, numHits);
+    protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("vaguelyboring"));
+     // A filter on terms in > quarter of docs should remove vaguelyBoring
+    assertTokenStreamContents(protectedTokenStream, new String[0]);
   }
-
 
   public void testAddStopWordsIndexReaderStringFloat() throws Exception {
     protectedAnalyzer.addStopWords(reader, "variedField", 1f / 2f);
-    int numHits = search(protectedAnalyzer, "repetitiveField:boring");
-    assertTrue("A filter on one Field should not affect queris on another", numHits > 0);
+    TokenStream protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    // A filter on one Field should not affect queries on another
+    assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
 
     protectedAnalyzer.addStopWords(reader, "repetitiveField", 1f / 2f);
-    numHits = search(protectedAnalyzer, "repetitiveField:boring");
-    assertEquals("A filter on the right Field should affect queries on it", numHits, 0);
+    protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    // A filter on the right Field should affect queries on it
+    assertTokenStreamContents(protectedTokenStream, new String[0]);
   }
 
   public void testAddStopWordsIndexReaderStringInt() throws Exception {
@@ -144,12 +133,14 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
   public void testNoFieldNamePollution() throws Exception {
     protectedAnalyzer.addStopWords(reader, "repetitiveField", 10);
-    int numHits = search(protectedAnalyzer, "repetitiveField:boring");
-    assertEquals("Check filter set up OK", 0, numHits);
 
-    numHits = search(protectedAnalyzer, "variedField:boring");
-    assertTrue("Filter should not prevent stopwords in one field being used in another ", numHits > 0);
+    TokenStream protectedTokenStream = protectedAnalyzer.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    // Check filter set up OK
+    assertTokenStreamContents(protectedTokenStream, new String[0]);
 
+    protectedTokenStream = protectedAnalyzer.reusableTokenStream("variedField", new StringReader("boring"));
+    // Filter should not prevent stopwords in one field being used in another
+    assertTokenStreamContents(protectedTokenStream, new String[]{"boring"});
   }
   
   /*
@@ -170,10 +161,12 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   public void testWrappingNonReusableAnalyzer() throws Exception {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, new NonreusableAnalyzer());
     a.addStopWords(reader, 10);
-    int numHits = search(a, "repetitiveField:boring");
-    assertTrue(numHits == 0);
-    numHits = search(a, "repetitiveField:vaguelyboring");
-    assertTrue(numHits == 0);
+
+    TokenStream tokenStream = a.reusableTokenStream("repetitiveField", new StringReader("boring"));
+    assertTokenStreamContents(tokenStream, new String[0]);
+
+    tokenStream = a.reusableTokenStream("repetitiveField", new StringReader("vaguelyboring"));
+    assertTokenStreamContents(tokenStream, new String[0]);
   }
   
   public void testTokenStream() throws Exception {

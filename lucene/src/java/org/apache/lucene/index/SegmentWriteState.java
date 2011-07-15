@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
 
 /**
@@ -51,9 +52,11 @@ public class SegmentWriteState {
    * slower.  Searching is typically not dominated by dictionary lookup, so
    * tweaking this is rarely useful.*/
   public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
+  
+  public final IOContext context;
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes) {
+      int numDocs, int termIndexInterval, SegmentCodecs segmentCodecs, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
     this.directory = directory;
@@ -63,6 +66,7 @@ public class SegmentWriteState {
     this.termIndexInterval = termIndexInterval;
     this.segmentCodecs = segmentCodecs;
     codecId = -1;
+    this.context = context;
   }
   
   /**
@@ -76,6 +80,7 @@ public class SegmentWriteState {
     numDocs = state.numDocs;
     termIndexInterval = state.termIndexInterval;
     segmentCodecs = state.segmentCodecs;
+    context = state.context;
     this.codecId = codecId;
     segDeletes = state.segDeletes;
   }

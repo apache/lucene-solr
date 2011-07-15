@@ -842,6 +842,12 @@ public class MemoryIndex {
               public long getSumTotalTermFreq() {
                 return info.getSumTotalTermFreq();
               }
+
+              @Override
+              public long getSumDocFreq() throws IOException {
+                // each term has df=1
+                return info.sortedTerms.length;
+              }
             };
           }
         }
@@ -1194,7 +1200,7 @@ public class MemoryIndex {
     public byte[] norms(String fieldName) {
       byte[] norms = cachedNorms;
       SimilarityProvider sim = getSimilarityProvider();
-      if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
+      if (!fieldName.equals(cachedFieldName) || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(fieldName);
         Similarity fieldSim = sim.get(fieldName);
         int numTokens = info != null ? info.numTokens : 0;

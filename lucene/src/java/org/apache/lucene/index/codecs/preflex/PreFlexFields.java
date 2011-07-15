@@ -25,9 +25,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -38,6 +40,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -62,10 +65,10 @@ public class PreFlexFields extends FieldsProducer {
   final TreeMap<String,FieldInfo> fields = new TreeMap<String,FieldInfo>();
   final Map<String,Terms> preTerms = new HashMap<String,Terms>();
   private final Directory dir;
-  private final int readBufferSize;
+  private final IOContext context;
   private Directory cfsReader;
 
-  public PreFlexFields(Directory dir, FieldInfos fieldInfos, SegmentInfo info, int readBufferSize, int indexDivisor)
+  public PreFlexFields(Directory dir, FieldInfos fieldInfos, SegmentInfo info, IOContext context, int indexDivisor)
     throws IOException {
 
     si = info;
@@ -80,32 +83,32 @@ public class PreFlexFields extends FieldsProducer {
     
     boolean success = false;
     try {
-      TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, readBufferSize, indexDivisor);    
+      TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, context, indexDivisor);    
       if (indexDivisor == -1) {
         tisNoIndex = r;
       } else {
         tisNoIndex = null;
         tis = r;
       }
-      this.readBufferSize = readBufferSize;
+      this.context = context;
       this.fieldInfos = fieldInfos;
 
       // make sure that all index files have been read or are kept open
       // so that if an index update removes them we'll still have them
-      freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION), readBufferSize);
+      freqStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION), context);
       boolean anyProx = false;
       for (FieldInfo fi : fieldInfos) {
         if (fi.isIndexed) {
           fields.put(fi.name, fi);
           preTerms.put(fi.name, new PreTerms(fi));
-          if (!fi.omitTermFreqAndPositions) {
+          if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
             anyProx = true;
           }
         }
       }
 
       if (anyProx) {
-        proxStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION), readBufferSize);
+        proxStream = dir.openInput(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION), context);
       } else {
         proxStream = null;
       }
@@ -178,7 +181,7 @@ public class PreFlexFields extends FieldsProducer {
         // to CFS
 
         if (!(dir instanceof CompoundFileDirectory)) {
-          dir0 = cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          dir0 = cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
         } else {
           dir0 = dir;
         }
@@ -187,7 +190,7 @@ public class PreFlexFields extends FieldsProducer {
         dir0 = dir;
       }
 
-      tis = new TermInfosReader(dir0, si.name, fieldInfos, readBufferSize, indexDivisor);
+      tis = new TermInfosReader(dir0, si.name, fieldInfos, context, indexDivisor);
     }
   }
 
@@ -263,6 +266,11 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public long getSumTotalTermFreq() {
+      return -1;
+    }
+
+    @Override
+    public long getSumDocFreq() throws IOException {
       return -1;
     }
   }
@@ -967,7 +975,7 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
       PreDocsAndPositionsEnum docsPosEnum;
-      if (fieldInfo.omitTermFreqAndPositions) {
+      if (fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         return null;
       } else if (reuse == null || !(reuse instanceof PreDocsAndPositionsEnum)) {
         docsPosEnum = new PreDocsAndPositionsEnum();

@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.TermContext;
 
@@ -56,7 +55,7 @@ import org.apache.lucene.util.TermContext;
  * a priority queue to only collect competitive terms
  * and not hit this limitation.
  *
- * Note that {@link QueryParser} produces
+ * Note that org.apache.lucene.queryparser.classic.QueryParser produces
  * MultiTermQueries using {@link
  * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} by default.
  */

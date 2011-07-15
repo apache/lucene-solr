@@ -20,9 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-
 /**
  * Byte[] referencing is used because a new norm object needs 
  * to be created for each clone, and the byte array is all 
@@ -219,7 +220,7 @@ final class SegmentNorms implements Cloneable {
     // NOTE: norms are re-written in regular directory, not cfs
     si.advanceNormGen(this.number);
     final String normFileName = si.getNormFileName(this.number);
-    IndexOutput out = owner.directory().createOutput(normFileName);
+    IndexOutput out = owner.directory().createOutput(normFileName, new IOContext(new FlushInfo(si.docCount, 0)));
     boolean success = false;
     try {
       try {

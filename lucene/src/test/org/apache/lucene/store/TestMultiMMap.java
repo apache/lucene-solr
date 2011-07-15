@@ -51,9 +51,9 @@ public class TestMultiMMap extends LuceneTestCase {
     for (int i = 0; i < 31; i++) {
       MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekZero"));
       mmapDir.setMaxChunkSize(1<<i);
-      IndexOutput io = mmapDir.createOutput("zeroBytes");
+      IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random));
       io.close();
-      IndexInput ii = mmapDir.openInput("zeroBytes");
+      IndexInput ii = mmapDir.openInput("zeroBytes", newIOContext(random));
       ii.seek(0L);
       ii.close();
       mmapDir.close();
@@ -64,12 +64,12 @@ public class TestMultiMMap extends LuceneTestCase {
     for (int i = 0; i < 17; i++) {
       MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekEnd"));
       mmapDir.setMaxChunkSize(1<<i);
-      IndexOutput io = mmapDir.createOutput("bytes");
+      IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random));
       byte bytes[] = new byte[1<<i];
       random.nextBytes(bytes);
       io.writeBytes(bytes, bytes.length);
       io.close();
-      IndexInput ii = mmapDir.openInput("bytes");
+      IndexInput ii = mmapDir.openInput("bytes", newIOContext(random));
       byte actual[] = new byte[1<<i];
       ii.readBytes(actual, 0, actual.length);
       assertEquals(new BytesRef(bytes), new BytesRef(actual));
@@ -83,12 +83,12 @@ public class TestMultiMMap extends LuceneTestCase {
     for (int i = 0; i < 10; i++) {
       MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeeking"));
       mmapDir.setMaxChunkSize(1<<i);
-      IndexOutput io = mmapDir.createOutput("bytes");
+      IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random));
       byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
       random.nextBytes(bytes);
       io.writeBytes(bytes, bytes.length);
       io.close();
-      IndexInput ii = mmapDir.openInput("bytes");
+      IndexInput ii = mmapDir.openInput("bytes", newIOContext(random));
       byte actual[] = new byte[1<<(i+1)]; // first read all bytes
       ii.readBytes(actual, 0, actual.length);
       assertEquals(new BytesRef(bytes), new BytesRef(actual));

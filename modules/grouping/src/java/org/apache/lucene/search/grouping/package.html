@@ -61,12 +61,6 @@ field fall into a single group.</p>
   collectors that for example group on multiple fields.
 </p>
 
-<p>
-  This module abstracts away what defines group and how it is collected. All grouping collectors
-  are abstract and have currently term based implementations. One can implement
-  collectors that for example group on multiple fields.
-</p>
-
 <p>Known limitations:</p>
 <ul>
   <li> For the two-pass grouping collector, the group field must be a
@@ -90,7 +84,7 @@ field fall into a single group.</p>
   CachingCollector cachedCollector = CachingCollector.create(c1, cacheScores, maxCacheRAMMB);
   s.search(new TermQuery(new Term("content", searchTerm)), cachedCollector);
 
-  Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(groupOffset, fillFields);
+  Collection&lt;SearchGroup&lt;BytesRef&gt;&gt; topGroups = c1.getTopGroups(groupOffset, fillFields);
 
   if (topGroups == null) {
     // No groups matched
@@ -117,9 +111,9 @@ field fall into a single group.</p>
     s.search(new TermQuery(new Term("content", searchTerm)), c2);
   }
         
-  TopGroups<BytesRef> groupsResult = c2.getTopGroups(docOffset);
+  TopGroups&lt;BytesRef&gt; groupsResult = c2.getTopGroups(docOffset);
   if (requiredTotalGroupCount) {
-    groupResult = new TopGroups<BytesRef>(groupsResult, allGroupsCollector.getGroupCount());
+    groupsResult = new TopGroups&lt;BytesRef&gt;(groupsResult, allGroupsCollector.getGroupCount());
   }
 
   // Render groupsResult...

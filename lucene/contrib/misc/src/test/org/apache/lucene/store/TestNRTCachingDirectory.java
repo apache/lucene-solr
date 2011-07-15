@@ -44,7 +44,6 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     Directory dir = newDirectory();
     NRTCachingDirectory cachedDir = new NRTCachingDirectory(dir, 2.0, 25.0);
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
-    conf.setMergeScheduler(cachedDir.getMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random, cachedDir, conf);
     w.w.setInfoStream(VERBOSE ? System.out : null);
     final LineFileDocs docs = new LineFileDocs(random);    
@@ -108,13 +107,12 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     Directory fsDir = FSDirectory.open(new File("/path/to/index"));
     NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 2.0, 25.0);
     IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
-    conf.setMergeScheduler(cachedFSDir.getMergeScheduler());
     IndexWriter writer = new IndexWriter(cachedFSDir, conf);
   }
 
   public void testDeleteFile() throws Exception {
     Directory dir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
-    dir.createOutput("foo.txt").close();
+    dir.createOutput("foo.txt", IOContext.DEFAULT).close();
     dir.deleteFile("foo.txt");
     assertEquals(0, dir.listAll().length);
     dir.close();

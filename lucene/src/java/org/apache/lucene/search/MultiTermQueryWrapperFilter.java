@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
 
 /**
  * A wrapper for {@link MultiTermQuery}, that exposes its
@@ -122,8 +122,8 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
     final TermsEnum termsEnum = query.getTermsEnum(terms);
     assert termsEnum != null;
     if (termsEnum.next() != null) {
-      // fill into a OpenBitSet
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+      // fill into a FixedBitSet
+      final FixedBitSet bitSet = new FixedBitSet(context.reader.maxDoc());
       int termCount = 0;
       final Bits liveDocs = reader.getLiveDocs();
       DocsEnum docsEnum = null;

@@ -69,16 +69,22 @@ public class DirectIOLinuxDirectory extends FSDirectory {
   }
 
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new DirectIOLinuxIndexInput(new File(getDirectory(), name), forcedBufferSize == 0 ? bufferSize : forcedBufferSize);
+    return new DirectIOLinuxIndexInput(new File(getDirectory(), name),
+        bufferSize(context));
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     ensureCanWrite(name);
-    return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), forcedBufferSize == 0 ? BufferedIndexOutput.BUFFER_SIZE : forcedBufferSize);
+    return new DirectIOLinuxIndexOutput(new File(getDirectory(), name), bufferSize(context));
+  }
+  
+  private int bufferSize(IOContext context) {
+    return forcedBufferSize != 0 ? forcedBufferSize : BufferedIndexInput
+        .bufferSize(context);
   }
 
   private final static class DirectIOLinuxIndexOutput extends IndexOutput {
@@ -238,6 +244,7 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     private int bufferPos;
 
     public DirectIOLinuxIndexInput(File path, int bufferSize) throws IOException {
+      // TODO make use of IOContext
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
       fis = new FileInputStream(fd);
       channel = fis.getChannel();

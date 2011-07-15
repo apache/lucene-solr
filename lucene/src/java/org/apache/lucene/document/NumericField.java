@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
@@ -192,7 +193,7 @@ public final class NumericField extends AbstractField {
   public NumericField(String name, int precisionStep, Field.Store store, boolean index) {
     super(name, store, index ? Field.Index.ANALYZED_NO_NORMS : Field.Index.NO, Field.TermVector.NO);
     this.precisionStep = precisionStep;
-    setOmitTermFreqAndPositions(true);
+    setIndexOptions(IndexOptions.DOCS_ONLY);
   }
 
   /** Returns a {@link NumericTokenStream} for indexing the numeric value. */

@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
@@ -50,12 +51,12 @@ class PreFlexFieldsWriter extends FieldsConsumer {
                                    state.termIndexInterval);
 
     final String freqFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.FREQ_EXTENSION);
-    freqOut = state.directory.createOutput(freqFile);
+    freqOut = state.directory.createOutput(freqFile, state.context);
     totalNumDocs = state.numDocs;
 
     if (state.fieldInfos.hasProx()) {
       final String proxFile = IndexFileNames.segmentFileName(state.segmentName, "", PreFlexCodec.PROX_EXTENSION);
-      proxOut = state.directory.createOutput(proxFile);
+      proxOut = state.directory.createOutput(proxFile, state.context);
     } else {
       proxOut = null;
     }
@@ -90,7 +91,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
 
     public PreFlexTermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
-      omitTF = fieldInfo.omitTermFreqAndPositions;
+      omitTF = fieldInfo.indexOptions == IndexOptions.DOCS_ONLY;
       storePayloads = fieldInfo.storePayloads;
     }
 
@@ -195,7 +196,7 @@ class PreFlexFieldsWriter extends FieldsConsumer {
     }
 
     @Override
-    public void finish(long sumTotalTermCount) throws IOException {
+    public void finish(long sumTotalTermCount, long sumDocFreq) throws IOException {
     }
 
     @Override

@@ -10,9 +10,7 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries-contrib.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/queryparser/queryparser-contrib.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/wordnet/wordnet.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/icu/icu.iml" />
@@ -25,12 +23,13 @@
       <module filepath="$PROJECT_DIR$/modules/grouping/grouping.iml" />
       <module filepath="$PROJECT_DIR$/modules/join/join.iml" />
       <module filepath="$PROJECT_DIR$/modules/queries/queries.iml" />
+      <module filepath="$PROJECT_DIR$/modules/queryparser/queryparser.iml" />
       <module filepath="$PROJECT_DIR$/modules/suggest/suggest.iml" />
       <module filepath="$PROJECT_DIR$/solr/solr.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/clustering/clustering.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/dataimporthandler.iml" />
-      <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/src/extras/extras.iml" />
+      <module filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/dataimporthandler-extras.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
       <module filepath="$PROJECT_DIR$/solr/contrib/uima/uima.iml" />
     </modules>

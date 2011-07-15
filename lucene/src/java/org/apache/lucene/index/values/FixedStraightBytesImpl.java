@@ -26,6 +26,7 @@ import org.apache.lucene.index.values.Bytes.BytesBaseSource;
 import org.apache.lucene.index.values.Bytes.BytesReaderBase;
 import org.apache.lucene.index.values.Bytes.BytesWriterBase;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
@@ -55,8 +56,8 @@ class FixedStraightBytesImpl {
     private final int byteBlockSize;
     private IndexOutput datOut;
 
-    public Writer(Directory dir, String id, AtomicLong bytesUsed) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed);
+    public Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_CURRENT, bytesUsed, context);
       pool = new ByteBlockPool(new DirectTrackingAllocator(bytesUsed));
       byteBlockSize = BYTE_BLOCK_SIZE;
     }
@@ -204,8 +205,8 @@ class FixedStraightBytesImpl {
     private final int size;
     private final int maxDoc;
 
-    Reader(Directory dir, String id, int maxDoc) throws IOException {
-      super(dir, id, CODEC_NAME, VERSION_START, false);
+    Reader(Directory dir, String id, int maxDoc, IOContext context) throws IOException {
+      super(dir, id, CODEC_NAME, VERSION_START, false, context);
       size = datIn.readInt();
       this.maxDoc = maxDoc;
     }

@@ -159,7 +159,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
   public VariableGapTermsIndexWriter(SegmentWriteState state, IndexTermSelector policy) throws IOException {
     final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_INDEX_EXTENSION);
-    out = state.directory.createOutput(indexFileName);
+    out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;
@@ -222,9 +222,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     public FSTFieldWriter(FieldInfo fieldInfo, long termsFilePointer) throws IOException {
       this.fieldInfo = fieldInfo;
       fstOutputs = PositiveIntOutputs.getSingleton(true);
-      fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE1,
-                                     0, 0, true,
-                                     fstOutputs);
+      fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, fstOutputs);
       indexStart = out.getFilePointer();
       ////System.out.println("VGW: field=" + fieldInfo.name);
 

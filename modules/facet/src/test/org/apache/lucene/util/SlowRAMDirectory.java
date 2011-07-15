@@ -3,6 +3,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
@@ -46,28 +47,20 @@ public class SlowRAMDirectory extends RAMDirectory {
   }
 
   @Override
-  public IndexOutput createOutput(String name) throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     if (sleepMillis != -1) {
-      return new SlowIndexOutput(super.createOutput(name));
+      return new SlowIndexOutput(super.createOutput(name, context));
     } 
 
-    return super.createOutput(name);
+    return super.createOutput(name, context);
   }
 
   @Override
-  public IndexInput openInput(String name) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     if (sleepMillis != -1) {
-      return new SlowIndexInput(super.openInput(name));
+      return new SlowIndexInput(super.openInput(name, context));
     } 
-    return super.openInput(name);
-  }
-
-  @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    if (sleepMillis != -1) {
-      return new SlowIndexInput(super.openInput(name, bufferSize));
-    } 
-    return super.openInput(name, bufferSize);
+    return super.openInput(name, context);
   }
 
   void doSleep(int length) {

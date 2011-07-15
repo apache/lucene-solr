@@ -41,11 +41,11 @@ public class TestByteBlockPool extends LuceneTestCase {
       pool.copy(ref);
     }
     RAMDirectory dir = new RAMDirectory();
-    IndexOutput stream = dir.createOutput("foo.txt");
+    IndexOutput stream = dir.createOutput("foo.txt", newIOContext(random));
     pool.writePool(stream);
     stream.flush();
     stream.close();
-    IndexInput input = dir.openInput("foo.txt");
+    IndexInput input = dir.openInput("foo.txt", newIOContext(random));
     assertEquals(pool.byteOffset + pool.byteUpto, stream.length());
     BytesRef expected = new BytesRef();
     BytesRef actual = new BytesRef();

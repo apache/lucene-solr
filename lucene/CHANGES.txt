@@ -156,6 +156,12 @@ Changes in backwards compatibility policy
   the queries module and can be found at o.a.l.queries.function.  See MIGRATE.txt
   for more information (Chris Male)
 
+* LUCENE-2392, LUCENE-3299: Decoupled vector space scoring from Query/Weight/Scorer. If you
+  extended Similarity directly before, you should extend TFIDFSimilarity instead.
+  Similarity is now a lower-level API to implement other scoring algorithms.
+  See MIGRATE.txt for more details.
+  (David Nemeskey, Simon Willnauer, Mike Mccandless, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you
@@ -415,6 +421,8 @@ New features
 * LUCENE-2862: Added TermsEnum.totalTermFreq() and
   Terms.getSumTotalTermFreq().  (Mike McCandless, Robert Muir)
 
+* LUCENE-3290: Added Terms.getSumDocFreq()  (Mike McCandless, Robert Muir)
+
 * LUCENE-3003: Added new expert class oal.index.DocTermsOrd,
   refactored from Solr's UnInvertedField, for accessing term ords for
   multi-valued fields, per document.  This is similar to FieldCache in
@@ -455,6 +463,15 @@ New features
 * SOLR-2533: Added support for rewriting Sort and SortFields using an
   IndexSearcher.  SortFields can have SortField.REWRITEABLE type which
   requires they are rewritten before they are used. (Chris Male)
+
+* LUCENE-3203: FSDirectory can now limit the max allowed write rate
+  (MB/sec) of all running merges, to reduce impact ongoing merging has
+  on searching, NRT reopen time, etc.  (Mike McCandless)
+
+* LUCENE-2793: Directory#createOutput & Directory#openInput now accept an
+  IOContext instead of a buffer size to allow low level optimizations for 
+  different usecases like merging, flushing and reading.
+  (Simon Willnauer, Mike McCandless, Varun Thacker)
 
 Optimizations
 
@@ -497,6 +514,24 @@ Bug fixes
   causing the file to sometimes be larger than it needed to be.  (Mike
   McCandless)
 
+New Features
+
+* LUCENE-3290: Added FieldInvertState.numUniqueTerms 
+  (Mike McCandless, Robert Muir)
+
+* LUCENE-3280: Add FixedBitSet, like OpenBitSet but is not elastic
+  (grow on demand if you set/get/clear too-large indices).  (Mike
+  McCandless)
+
+* LUCENE-2048: Added the ability to omit positions but still index
+  term frequencies, you can now control what is indexed into
+  the postings via AbstractField.setIndexOptions:
+   DOCS_ONLY: only documents are indexed: term frequencies and positions are omitted
+   DOCS_AND_FREQS: only documents and term frequencies are indexed: positions are omitted
+   DOCS_AND_FREQS_AND_POSITIONS: full postings: documents, frequencies, and positions
+  AbstractField.setOmitTermFrequenciesAndPositions is deprecated,
+  you should use DOCS_ONLY instead.  (Robert Muir)
+
 Optimizations
 
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
@@ -505,6 +540,11 @@ Optimizations
   CFS into an IndexInput. Writing to a CFS now tries to append to the CF
   directly if possible and merges separately written files on the fly instead
   of during close. (Simon Willnauer, Robert Muir)
+
+* LUCENE-3289: When building an FST you can now tune how aggressively
+  the FST should try to share common suffixes.  Typically you can
+  greatly reduce RAM required during building, and CPU consumed, at
+  the cost of a somewhat larger FST.  (Mike McCandless)
 
 ======================= Lucene 3.3.0 =======================
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.MultiLevelSkipListReader;
 
 /**
@@ -87,10 +88,10 @@ class SepSkipListReader extends MultiLevelSkipListReader {
     }
   }
   
-  boolean omitTF;
+  IndexOptions indexOptions;
 
-  void setOmitTF(boolean v) {
-    omitTF = v;
+  void setIndexOptions(IndexOptions v) {
+    indexOptions = v;
   }
 
   void init(long skipPointer,
@@ -177,7 +178,7 @@ class SepSkipListReader extends MultiLevelSkipListReader {
   @Override
   protected int readSkipData(int level, IndexInput skipStream) throws IOException {
     int delta;
-    assert !omitTF || !currentFieldStoresPayloads;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS || !currentFieldStoresPayloads;
     if (currentFieldStoresPayloads) {
       // the current field stores payloads.
       // if the doc delta is odd then we have
@@ -192,11 +193,11 @@ class SepSkipListReader extends MultiLevelSkipListReader {
     } else {
       delta = skipStream.readVInt();
     }
-    if (!omitTF) {
+    if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndex[level].read(skipStream, false);
     }
     docIndex[level].read(skipStream, false);
-    if (!omitTF) {
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       posIndex[level].read(skipStream, false);
       if (currentFieldStoresPayloads) {
         payloadPointer[level] += skipStream.readVInt();

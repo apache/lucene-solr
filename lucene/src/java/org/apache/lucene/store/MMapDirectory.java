@@ -209,7 +209,7 @@ public class MMapDirectory extends FSDirectory {
 
   /** Creates an IndexInput for the file with the given name. */
   @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     File f = new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
@@ -221,15 +221,15 @@ public class MMapDirectory extends FSDirectory {
   }
   
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return new MMapCompoundFileDirectory(name, bufferSize);
+  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return new MMapCompoundFileDirectory(name, context);
   }
   
   private final class MMapCompoundFileDirectory extends CompoundFileDirectory {
     private RandomAccessFile raf = null;
 
-    public MMapCompoundFileDirectory(String fileName, int readBufferSize) throws IOException {
-      super(MMapDirectory.this, fileName, readBufferSize);
+    public MMapCompoundFileDirectory(String fileName, IOContext context) throws IOException {
+      super(MMapDirectory.this, fileName, context);
       IndexInput stream = null;
       try {
         File f = new File(MMapDirectory.this.getDirectory(), fileName);
@@ -438,4 +438,5 @@ public class MMapDirectory extends FSDirectory {
       }
     }
   }
+
 }

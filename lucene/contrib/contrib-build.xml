@@ -55,7 +55,9 @@
   </path>
 
   <target name="build-lucene" unless="core.compiled">
-    <ant dir="${common.dir}" target="compile-test" inheritAll="false"/>
+    <ant dir="${common.dir}" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
     <!-- set the property for this ant execution to speed up later tasks depending on this -->
     <property name="core.compiled" value="true"/>
   </target>
@@ -74,7 +76,7 @@
     file="pom.xml" 
     property="pom.xml.present">
   </available>
-			
+
   <target name="dist-maven" if="pom.xml.present" depends="jar-core, jar-src, javadocs">
     <taskdef resource="org/apache/maven/artifact/ant/antlib.xml" 
              uri="antlib:org.apache.maven.artifact.ant" 

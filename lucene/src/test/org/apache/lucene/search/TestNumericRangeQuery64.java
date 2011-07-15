@@ -41,7 +41,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   // shift the starting of the values to the left, to also have negative values:
   private static final long startOffset = - 1L << 31;
   // number of docs to generate for testing
-  private static final int noDocs = atLeast(4096);
+  private static int noDocs;
   
   private static Directory directory = null;
   private static IndexReader reader = null;
@@ -49,6 +49,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    noDocs = atLeast(4096);
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))

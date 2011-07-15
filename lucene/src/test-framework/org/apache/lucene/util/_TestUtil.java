@@ -422,7 +422,7 @@ public class _TestUtil {
     List<Fieldable> fields = doc.getFields();
     for (Fieldable field : fields) {
       fieldInfos.addOrUpdate(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions(), field.docValuesType());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
     }
   }
   
@@ -507,7 +507,7 @@ public class _TestUtil {
                                field1.isStored() ? Field.Store.YES : Field.Store.NO,
                                field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
       field2.setOmitNorms(field1.getOmitNorms());
-      field2.setOmitTermFreqAndPositions(field1.getOmitTermFreqAndPositions());
+      field2.setIndexOptions(field1.getIndexOptions());
       doc2.add(field2);
     }
 

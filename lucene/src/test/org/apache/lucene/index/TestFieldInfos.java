@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 
@@ -47,7 +48,7 @@ public class TestFieldInfos extends LuceneTestCase {
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     
     
-    IndexOutput output = dir.createOutput(filename);
+    IndexOutput output = dir.createOutput(filename, newIOContext(random));
     assertTrue(output != null);
     //Use a RAMOutputStream
   
@@ -137,7 +138,7 @@ public class TestFieldInfos extends LuceneTestCase {
     try {
       readOnly.addOrUpdate("bogus", random.nextBoolean(), random.nextBoolean(),
           random.nextBoolean(), random.nextBoolean(), random.nextBoolean(),
-          random.nextBoolean(), random.nextBoolean(), null);
+          random.nextBoolean(), random.nextBoolean() ? IndexOptions.DOCS_ONLY : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, null);
       fail("instance should be read only");
     } catch (IllegalStateException e) {
       // expected

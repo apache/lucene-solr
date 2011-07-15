@@ -382,3 +382,28 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
    - o.a.l.search.function.ShortFieldSource -> o.a.l.queries.function.valuesource.ShortFieldSource
    - o.a.l.search.function.ValueSource -> o.a.l.queries.function.ValueSource
    - o.a.l.search.function.ValueSourceQuery -> o.a.l.queries.function.FunctionQuery
+
+* LUCENE-2392: Enable flexible scoring:
+
+  The existing "Similarity" api is now TFIDFSimilarity, if you were extending
+  Similarity before, you should likely extend this instead.
+
+  Weight.normalize no longer takes a norm value that incorporates the top-level
+  boost from outer queries such as BooleanQuery, instead it takes 2 parameters,
+  the outer boost (topLevelBoost) and the norm. Weight.sumOfSquaredWeights has
+  been renamed to Weight.getValueForNormalization().
+
+  The scorePayload method now takes a BytesRef. It is never null.
+
+* LUCENE-3283: Lucene's core o.a.l.queryParser QueryParsers have been consolidated into module/queryparser,
+  where other QueryParsers from the codebase will also be placed.  The following classes were moved:
+  - o.a.l.queryParser.CharStream -> o.a.l.queryparser.classic.CharStream
+  - o.a.l.queryParser.FastCharStream -> o.a.l.queryparser.classic.FastCharStream
+  - o.a.l.queryParser.MultiFieldQueryParser -> o.a.l.queryparser.classic.MultiFieldQueryParser
+  - o.a.l.queryParser.ParseException -> o.a.l.queryparser.classic.ParseException
+  - o.a.l.queryParser.QueryParser -> o.a.l.queryparser.classic.QueryParser
+  - o.a.l.queryParser.QueryParserBase -> o.a.l.queryparser.classic.QueryParserBase
+  - o.a.l.queryParser.QueryParserConstants -> o.a.l.queryparser.classic.QueryParserConstants
+  - o.a.l.queryParser.QueryParserTokenManager -> o.a.l.queryparser.classic.QueryParserTokenManager
+  - o.a.l.queryParser.QueryParserToken -> o.a.l.queryparser.classic.Token
+  - o.a.l.queryParser.QueryParserTokenMgrError -> o.a.l.queryparser.classic.TokenMgrError

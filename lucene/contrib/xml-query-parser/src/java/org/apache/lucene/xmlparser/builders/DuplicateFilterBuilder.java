@@ -39,12 +39,12 @@ public class DuplicateFilterBuilder implements FilterBuilder {
 		String keepMode=DOMUtils.getAttribute(e,"keepMode","first");
 		if(keepMode.equalsIgnoreCase("first"))
 		{
-			df.setKeepMode(DuplicateFilter.KM_USE_FIRST_OCCURRENCE);
+			df.setKeepMode(DuplicateFilter.KeepMode.KM_USE_FIRST_OCCURRENCE);
 		}
 		else
 			if(keepMode.equalsIgnoreCase("last"))
 			{
-				df.setKeepMode(DuplicateFilter.KM_USE_LAST_OCCURRENCE);
+				df.setKeepMode(DuplicateFilter.KeepMode.KM_USE_LAST_OCCURRENCE);
 			}
 			else
 			{
@@ -53,12 +53,12 @@ public class DuplicateFilterBuilder implements FilterBuilder {
 		String processingMode=DOMUtils.getAttribute(e,"processingMode","full");
 		if(processingMode.equalsIgnoreCase("full"))
 		{
-			df.setProcessingMode(DuplicateFilter.PM_FULL_VALIDATION);
+			df.setProcessingMode(DuplicateFilter.ProcessingMode.PM_FULL_VALIDATION);
 		}
 		else
 			if(processingMode.equalsIgnoreCase("fast"))
 			{
-				df.setProcessingMode(DuplicateFilter.PM_FAST_INVALIDATION);
+				df.setProcessingMode(DuplicateFilter.ProcessingMode.PM_FAST_INVALIDATION);
 			}
 			else
 			{

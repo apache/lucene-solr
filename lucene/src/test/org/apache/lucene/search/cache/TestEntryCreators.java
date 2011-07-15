@@ -31,14 +31,20 @@ import org.apache.lucene.search.FieldCache.*;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
+import org.junit.BeforeClass;
 
 import static org.hamcrest.CoreMatchers.*;
 
 public class TestEntryCreators extends LuceneTestCase {
   protected IndexReader reader;
-  private static final int NUM_DOCS = atLeast(500);
+  private static int NUM_DOCS;
   private Directory directory;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    NUM_DOCS = atLeast(500);
+  }
 
   static class NumberTypeTester {
     String funcName;
@@ -220,7 +226,7 @@ public class TestEntryCreators extends LuceneTestCase {
     }
     assertEquals( "Cached numTerms does not match : "+tester, distinctTerms.size(), cachedVals.numTerms );
     assertEquals( "Cached numDocs does not match : "+tester, numDocs, cachedVals.numDocs );
-    assertEquals( "Ordinal should match numDocs : "+tester, numDocs, ((OpenBitSet)cachedVals.valid).cardinality() );
+    assertEquals( "Ordinal should match numDocs : "+tester, numDocs, ((FixedBitSet)cachedVals.valid).cardinality() );
   }
 
 }

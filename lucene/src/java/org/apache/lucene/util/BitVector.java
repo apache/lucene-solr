@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
@@ -161,6 +162,7 @@ public final class BitVector implements Cloneable, Bits {
       }
       count = c;
     }
+    assert count <= size: "count=" + count + " size=" + size;
     return count;
   }
 
@@ -214,9 +216,9 @@ public final class BitVector implements Cloneable, Bits {
 
   /** Writes this vector to the file <code>name</code> in Directory
     <code>d</code>, in a format that can be read by the constructor {@link
-    #BitVector(Directory, String)}.  */
-  public final void write(Directory d, String name) throws IOException {
-    IndexOutput output = d.createOutput(name);
+    #BitVector(Directory, String, IOContext)}.  */
+  public final void write(Directory d, String name, IOContext context) throws IOException {
+    IndexOutput output = d.createOutput(name, context);
     try {
       output.writeInt(-2);
       CodecUtil.writeHeader(output, CODEC, VERSION_CURRENT);
@@ -226,6 +228,7 @@ public final class BitVector implements Cloneable, Bits {
       } else {
         writeBits(output);
       }
+      assert verifyCount();
     } finally {
       output.close();
     }
@@ -277,14 +280,13 @@ public final class BitVector implements Cloneable, Bits {
     output.writeInt(count());       // write count
     int last=0;
     int numCleared = size()-count();
-    int m = bits.length;
-    for (int i=0; i<m && numCleared>0; i++) {
-      if (bits[i]!=0xff) {
+    for (int i=0; i<bits.length && numCleared>0; i++) {
+      if (bits[i] != (byte) 0xff) {
         output.writeVInt(i-last);
         output.writeByte(bits[i]);
         last = i;
         numCleared -= (8-BYTE_COUNTS[bits[i] & 0xFF]);
-        assert numCleared >= 0;
+        assert numCleared >= 0 || (i == (bits.length-1) && numCleared == -(8-(size&7)));
       }
     }
   }
@@ -318,7 +320,7 @@ public final class BitVector implements Cloneable, Bits {
     final int bytesPerSetBit = expectedDGapBytes + 1;
     
     // note: adding 32 because we start with ((int) -1) to indicate d-gaps format.
-    final long expectedBits = 32 + 8 * bytesPerSetBit * count();
+    final long expectedBits = 32 + 8 * bytesPerSetBit * clearedCount;
 
     // note: factor is for read/write of byte-arrays being faster than vints.  
     final long factor = 10;  
@@ -328,8 +330,8 @@ public final class BitVector implements Cloneable, Bits {
   /** Constructs a bit vector from the file <code>name</code> in Directory
     <code>d</code>, as written by the {@link #write} method.
     */
-  public BitVector(Directory d, String name) throws IOException {
-    IndexInput input = d.openInput(name);
+  public BitVector(Directory d, String name, IOContext context) throws IOException {
+    IndexInput input = d.openInput(name, context);
 
     try {
       final int firstInt = input.readInt();
@@ -351,9 +353,19 @@ public final class BitVector implements Cloneable, Bits {
       } else {
         readBits(input);
       }
+      assert verifyCount();
     } finally {
       input.close();
     }
+  }
+
+  // asserts only
+  private boolean verifyCount() {
+    assert count != -1;
+    final int countSav = count;
+    count = -1;
+    assert countSav == count(): "saved count was " + countSav + " but recomputed count is " + count;
+    return true;
   }
 
   /** Read as a bit set */
@@ -367,7 +379,7 @@ public final class BitVector implements Cloneable, Bits {
   private void readSetDgaps(IndexInput input) throws IOException {
     size = input.readInt();       // (re)read size
     count = input.readInt();        // read count
-    bits = new byte[(size >> 3) + 1];     // allocate bits
+    bits = new byte[getNumBytes(size)];     // allocate bits
     int last=0;
     int n = count();
     while (n>0) {
@@ -382,7 +394,7 @@ public final class BitVector implements Cloneable, Bits {
   private void readClearedDgaps(IndexInput input) throws IOException {
     size = input.readInt();       // (re)read size
     count = input.readInt();        // read count
-    bits = new byte[(size >> 3) + 1];     // allocate bits
+    bits = new byte[getNumBytes(size)];     // allocate bits
     Arrays.fill(bits, (byte) 0xff);
     clearUnusedBits();
     int last=0;
@@ -391,7 +403,7 @@ public final class BitVector implements Cloneable, Bits {
       last += input.readVInt();
       bits[last] = input.readByte();
       numCleared -= 8-BYTE_COUNTS[bits[last] & 0xFF];
-      assert numCleared >= 0;
+      assert numCleared >= 0 || (last == (bits.length-1) && numCleared == -(8-(size&7)));
     }
   }
 }
