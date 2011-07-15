@@ -100,9 +100,13 @@ Bug Fixes
 
 * SOLR-2642: Fixed sorting by function when using grouping. (Thomas Heigl, Martijn van Groningen)
 
-
 * SOLR-2535: REGRESSION: in Solr 3.x and trunk the admin/file handler
   fails to show directory listings (David Smiley, Peter Wolanin via Erick Erickson)
+
+* SOLR-2545: ExternalFileField file parsing would fail if any key
+  contained an "=" character.  It now only looks for the last "=" delimiter 
+  prior to the float value.
+  (Markus Jelsma, hossman)
 
  Other Changes
 ----------------------
