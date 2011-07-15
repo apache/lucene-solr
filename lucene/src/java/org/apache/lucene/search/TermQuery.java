@@ -81,15 +81,16 @@ public class TermQuery extends Query {
         assert termNotInReader(reader, field, term.bytes()) : "no termstate found but term exists in reader";
         return null;
       }
+      final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field,
+          term.bytes(), state);
       if (scorerContext.needsPositions) {
-        final DocsAndPositionsEnum docs = reader.termPositionsEnum(
+        final DocsAndPositionsEnum docsAndPos = reader.termPositionsEnum(
             reader.getLiveDocs(), field, term.bytes(), state);
         assert docs != null;
-        return new PositionTermScorer(this, docs, similarity.exactDocScorer(
-            stats, field, context), scorerContext.needsPayloads);
+        assert docsAndPos != null;
+        return new TermScorer(this, docs, docsAndPos,  scorerContext.needsPayloads, similarity.exactDocScorer(
+            stats, field, context));
       } else {
-        final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field,
-            term.bytes(), state);
         assert docs != null;
         return new TermScorer(this, docs, similarity.exactDocScorer(stats,
             field, context));

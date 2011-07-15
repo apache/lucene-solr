@@ -16,15 +16,18 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 
-
+/**
+ * 
+ * @lucene.experimental
+ */ // nocommit - javadoc
 public class RangePositionsIterator extends PositionIntervalIterator implements PositionIntervalFilter {
 
   private final PositionIntervalIterator iterator;
+  private PositionInterval interval;
   private int start;
   private int end;
   
@@ -45,7 +48,6 @@ public class RangePositionsIterator extends PositionIntervalIterator implements 
   
   @Override
   public PositionInterval next() throws IOException {
-    PositionInterval interval = null;
     while ((interval = iterator.next()) != null) {
       if(interval.end > end) {
         return null;
@@ -59,6 +61,17 @@ public class RangePositionsIterator extends PositionIntervalIterator implements 
   @Override
   public PositionIntervalIterator[] subs(boolean inOrder) {
     return new PositionIntervalIterator[] { iterator };
+  }
+
+  @Override
+  public void collect() {
+    collector.collectComposite(null, interval, iterator.docID());
+    iterator.collect();
+  }
+
+  @Override
+  public int advanceTo(int docId) throws IOException {
+    return currentDoc = iterator.advanceTo(docId);
   }
   
   

@@ -28,13 +28,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
 
 /**
  *
- *
- **/
+ * @lucene.experimental
+ */ // nocommit - javadoc
 public class PositionFilterQuery extends Query implements Cloneable {
 
   private Query inner;
@@ -115,12 +114,14 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     private final Scorer other;
     private PositionIntervalIterator filter;
+    private final FilteredPositions filtered;
 
     public PositionFilterScorer(Weight weight, Scorer other) throws IOException {
       super(weight);
       this.other = other;
       this.filter = PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter.filter(other.positions())
           : other.positions();
+      filtered = new FilteredPositions(this, filter);
     }
 
     @Override
@@ -130,7 +131,7 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public PositionIntervalIterator positions() throws IOException {
-      return filter;
+      return filtered;
     }
 
     @Override
@@ -140,8 +141,10 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public int nextDoc() throws IOException {
-      while (other.nextDoc() != Scorer.NO_MORE_DOCS) {
-        if (filter.next() != null) { // just check if there is a position that matches!
+      int docId = -1;
+      while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS) {
+        filter.advanceTo(docId);
+        if ((filtered.interval = filter.next()) != null) { // just check if there is a position that matches!
           return other.docID();
         }
       }
@@ -150,14 +153,16 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public int advance(int target) throws IOException {
-      int advance = other.advance(target);
-      if (advance == Scorer.NO_MORE_DOCS)
+      int docId = other.advance(target);
+      if (docId == Scorer.NO_MORE_DOCS) {
         return NO_MORE_DOCS;
+      }
       do {
-        if (filter.next() != null) {
+        filter.advanceTo(docId);
+        if ((filtered.interval = filter.next()) != null) {
           return other.docID();
         }
-      } while (other.nextDoc() != Scorer.NO_MORE_DOCS);
+      } while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS);
       return NO_MORE_DOCS;
     }
 
@@ -166,6 +171,42 @@ public class PositionFilterQuery extends Query implements Cloneable {
   @Override
   public String toString(String field) {
     return inner.toString();
+  }
+  
+  private final class FilteredPositions extends PositionIntervalIterator {
+    public FilteredPositions(Scorer scorer, PositionIntervalIterator other) {
+      super(scorer);
+      this.other = other;
+    }
+
+    private final PositionIntervalIterator other;
+    PositionInterval interval;
+    @Override
+    public int advanceTo(int docId) throws IOException {
+      return currentDoc = other.docID();
+    }
+
+    @Override
+    public PositionInterval next() throws IOException {
+      PositionInterval current = this.interval;
+      this.interval = null;
+      return current;
+    }
+
+    @Override
+    public void collect() {
+      other.collect();
+      
+    }
+    @Override
+    public PositionIntervalIterator[] subs(boolean inOrder) {
+      return EMPTY;
+    }
+
+    public void setPositionCollector(PositionCollector collector) {
+      other.setPositionCollector(collector);
+    }
+
   }
 
 }

@@ -1,17 +1,37 @@
 package org.apache.lucene.search.poshighlight;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Scorer.ScorerVisitor;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionCollector;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 
 /**
- * for testing only - collect the first maxDocs docs and throw the rest away
+ * Collects the first maxDocs docs and their positions matching the query
+ * 
+ * @lucene.experimental
  */
-public class PosCollector extends Collector {
+
+public class PosCollector extends Collector implements PositionCollector {
   
   int count;
   ScorePosDoc docs[];
@@ -21,21 +41,39 @@ public class PosCollector extends Collector {
   }
   
   protected Scorer scorer;
-  
+  private PositionIntervalIterator positions;
+
+  @Override
   public void collect(int doc) throws IOException {
     if (count >= docs.length)
       return;
-    assert (scorer != null);
-    ScorePosDoc spdoc = new ScorePosDoc (doc, scorer.score(), scorer.positions(), 32, false);
-    docs[count++] = spdoc;
+    addDoc (doc);
+    // consume any remaining positions the scorer didn't report
+    docs[count-1].score=scorer.score();
+    positions.advanceTo(doc);
+    while(positions.next() != null) {
+      positions.collect();
+    }    
   }
-
+  
+  private boolean addDoc (int doc) {
+    if (count <= 0 || docs[count-1].doc != doc) {
+      ScorePosDoc spdoc = new ScorePosDoc (doc);
+      docs[count++] = spdoc;
+      return true;
+    }
+    return false;
+  }
+  
   public boolean acceptsDocsOutOfOrder() {
     return false;
   }
 
-  public void setScorer(Scorer scorer) {
+  public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
+    positions = scorer.positions();
+    positions.setPositionCollector(this);
+    // If we want to visit the other scorers, we can, here...
   }
   
   public Scorer getScorer () {
@@ -54,21 +92,16 @@ public class PosCollector extends Collector {
   @Override
   public boolean needsPositions() { return true; }
 
-  /**
-   * For testing/investigation
-   * @author sokolov
-   *
-   */
-  class SpanScorerVisitor extends ScorerVisitor<Query, Query, Scorer> {
-    
-    @Override 
-    public void visitRequired (Query parent, Query child, Scorer scorer) {
-      System.out.println ("parent=" + parent + ", child=" + child);
-    }
-    
-    @Override 
-    public void visitOptional (Query parent, Query child, Scorer scorer) {
-      System.out.println ("parent=" + parent + ", child=" + child);
-    }
+  @Override
+  public void collectLeafPosition(Scorer scorer, PositionInterval interval,
+      int docID) {
+    addDoc(docID);      
+    docs[count - 1].storePosition(interval);
   }
+
+  @Override
+  public void collectComposite(Scorer scorer, PositionInterval interval,
+      int docID) {
+  }
+
 }

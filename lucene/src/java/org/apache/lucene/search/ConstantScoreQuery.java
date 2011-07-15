@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -202,6 +203,7 @@ public class ConstantScoreQuery extends Query {
       return docIdSetIterator.advance(target);
     }
     
+    
     private Collector wrapCollector(final Collector collector) {
       return new Collector() {
         @Override
@@ -224,6 +226,16 @@ public class ConstantScoreQuery extends Query {
         public boolean acceptsDocsOutOfOrder() {
           return collector.acceptsDocsOutOfOrder();
         }
+        
+        @Override
+        public boolean needsPositions() {
+          return collector.needsPositions();
+        }
+        
+        @Override
+        public boolean needsPayloads() {
+          return collector.needsPayloads();
+        }
       };
     }
 
@@ -244,6 +256,15 @@ public class ConstantScoreQuery extends Query {
         return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
       } else {
         return super.score(collector, max, firstDocID);
+      }
+    }
+        
+    @Override
+    public PositionIntervalIterator positions() throws IOException {
+      if (docIdSetIterator instanceof Scorer) {
+        return ((Scorer) docIdSetIterator).positions();
+      } else {
+        return super.positions();
       }
     }
   }

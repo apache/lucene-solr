@@ -17,44 +17,74 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * 
- * TODO add documentation
- */
-@SuppressWarnings("serial")
-public abstract class PositionIntervalIterator implements Serializable{
+ * @lucene.experimental
+ */ // nocommit - javadoc
+public abstract class PositionIntervalIterator {
 
   public static final PositionIntervalIterator[] EMPTY = new PositionIntervalIterator[0];
+  public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
+  public static final PositionCollector EMPTY_COLLECTOR = new PositionCollector() {
+
+    @Override
+    public void collectLeafPosition(Scorer scorer, PositionInterval interval,
+        int docID) {
+    }
+
+    @Override
+    public void collectComposite(Scorer scorer, PositionInterval interval,
+        int docID) {
+    }
+
+  };
+
+  protected int currentDoc = -1;
   protected final Scorer scorer;
-  
+  protected PositionCollector collector = EMPTY_COLLECTOR;
+
   public PositionIntervalIterator(Scorer scorer) {
     this.scorer = scorer;
   }
 
+  public abstract int advanceTo(int docId) throws IOException;
+
   public abstract PositionInterval next() throws IOException;
 
-  public abstract PositionIntervalIterator[] subs(boolean inOrder);
-
-  public int docID() {
-    return scorer.docID();
+  public void setPositionCollector(PositionCollector collector) {
+    if (collector == null) {
+      throw new IllegalArgumentException("PositionCollector must not be null");
+    }
+    this.collector = collector;
+    PositionIntervalIterator[] subs = subs(false);
+    for (PositionIntervalIterator positionIntervalIterator : subs) {
+      positionIntervalIterator.setPositionCollector(collector);
+    }
   }
 
+
+  public abstract void collect();
+
+  public abstract PositionIntervalIterator[] subs(boolean inOrder);
+  
+  public int docID() {
+    return currentDoc;
+  }
+  
   public Scorer getScorer() {
     return scorer;
   }
 
-  public static interface PositionIntervalFilter extends Serializable {
+  public static interface PositionIntervalFilter {
     public abstract PositionIntervalIterator filter(
         PositionIntervalIterator iter);
   }
 
   public static class PositionInterval implements Cloneable {
-    
 
     public int begin;
     public int end;
@@ -77,9 +107,9 @@ public abstract class PositionIntervalIterator implements Serializable{
     }
 
     public void reset() {
-      begin = end = 0;
+      begin = end = -1;
     }
-    
+
     @Override
     public Object clone() {
       try {
@@ -88,11 +118,18 @@ public abstract class PositionIntervalIterator implements Serializable{
         throw new RuntimeException(); // should not happen
       }
     }
-    
+
     @Override
     public String toString() {
       return "PositionInterval [begin=" + begin + ", end=" + end + "]";
     }
 
   }
+
+  public static interface PositionCollector {
+    public void collectLeafPosition(Scorer scorer, PositionInterval interval, int docID);
+    public void collectComposite(Scorer scorer, PositionInterval interval, int docID);
+
+  }
+
 }

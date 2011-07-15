@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.util.List;
 import java.io.IOException;
 
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
 import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.util.ScorerDocQueue;
@@ -49,7 +50,7 @@ class DisjunctionSumScorer extends Scorer {
    * <code>nrMatchers</code> is the number of matching scorers,
    * and all scorers are after the matching doc, or are exhausted.
    */
-  private ScorerDocQueue scorerDocQueue;
+  private final ScorerDocQueue scorerDocQueue;
   
   /** The document number of the current match. */
   private int currentDoc = -1;
@@ -58,6 +59,8 @@ class DisjunctionSumScorer extends Scorer {
   protected int nrMatchers = -1;
 
   private float currentScore = Float.NaN;
+  
+  private PositionIntervalIterator positions = null;
   
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
@@ -86,7 +89,7 @@ class DisjunctionSumScorer extends Scorer {
     this.minimumNrMatchers = minimumNrMatchers;
     this.subScorers = subScorers;
 
-    initScorerDocQueue();
+    scorerDocQueue = initScorerDocQueue();
   }
   
   /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
@@ -98,14 +101,16 @@ class DisjunctionSumScorer extends Scorer {
 
   /** Called the first time nextDoc() or advance() is called to
    * initialize <code>scorerDocQueue</code>.
+   * @return 
    */
-  private void initScorerDocQueue() throws IOException {
-    scorerDocQueue = new ScorerDocQueue(nrScorers);
+  private ScorerDocQueue initScorerDocQueue() throws IOException {
+    ScorerDocQueue queue = new ScorerDocQueue(nrScorers);
     for (Scorer se : subScorers) {
       if (se.nextDoc() != NO_MORE_DOCS) {
-        scorerDocQueue.insert(se);
+        queue.insert(se);
       }
     }
+    return queue;
   }
 
   /** Scores and collects all matching documents.
@@ -118,7 +123,7 @@ class DisjunctionSumScorer extends Scorer {
       collector.collect(currentDoc);
     }
   }
-
+  
   /** Expert: Collects matching documents in a range.  Hook for optimization.
    * Note that {@link #nextDoc()} must be called once before this method is called
    * for the first time.
@@ -240,9 +245,12 @@ class DisjunctionSumScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    if (minimumNrMatchers > 1) {
-      throw new IllegalStateException("positions not implemented for minimum matches > 1");
+    if (positions == null) {
+      if (minimumNrMatchers > 1) {
+        positions = new ConjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]), minimumNrMatchers);
+      }
+      positions = new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
     }
-    return new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
+    return positions;
   }
 }

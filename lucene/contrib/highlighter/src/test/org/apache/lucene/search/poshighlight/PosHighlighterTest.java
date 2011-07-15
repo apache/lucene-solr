@@ -1,14 +1,11 @@
 package org.apache.lucene.search.poshighlight;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -21,6 +18,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
@@ -28,28 +26,21 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.poshighlight.PosCollector;
-import org.apache.lucene.search.poshighlight.PosHighlighter;
-import org.apache.lucene.search.positions.OrderedConjunctionPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator;
-import org.apache.lucene.search.positions.WithinPositionIterator;
-import org.apache.lucene.search.positions.PositionIntervalIterator.PositionIntervalFilter;
-import org.apache.lucene.search.spans.MockSpanQuery;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.SimpleFragmenter;
+import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.positions.PositionFilterQuery;
+import org.apache.lucene.search.positions.TestBlockPositionsIterator.BlockPositionIteratorFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
+
 /**
- * Notes: to fully implement, we need:
- * 1) ability to walk the individual terms that matched, possibly in a hierarchical way
- * if we want to implement really clever highlighting?
- * 2) some Collector api like the one I made up, and support in Searcher
- * 3) All (or more) queries implemented
- * 
- * For hl perf testing we could test term queries only using the current impl
- * @author sokolov
- *
+ * TODO: 
+ * Phrase and Span Queries
+ * positions callback API
  */
 public class PosHighlighterTest extends LuceneTestCase {
   
@@ -57,7 +48,11 @@ public class PosHighlighterTest extends LuceneTestCase {
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected Directory dir;
-  protected IndexSearcher searcher; 
+  protected IndexSearcher searcher;
+  
+  private static final String PORRIDGE_VERSE = 
+    "Pease porridge hot! Pease porridge cold! Pease porridge in the pot nine days old! Some like it hot, some"
+    + " like it cold, Some like it in the pot nine days old! Pease porridge hot! Pease porridge cold!";
   
   @Override
   public void setUp() throws Exception {
@@ -99,28 +94,72 @@ public class PosHighlighterTest extends LuceneTestCase {
     searcher = new IndexSearcher( dir, true );
   }
   
-  private String[] doSearch(Query q) throws IOException {
+  private String[] doSearch(Query q) throws IOException, InvalidTokenOffsetsException {
     return doSearch(q, 100);
   }
   
-  private String[] doSearch(Query q, int maxFragSize) throws IOException {
-    PosHighlighter ph = new PosHighlighter();
-    PosCollector collector = new PosCollector (10);
+  private class ConstantScorer implements org.apache.lucene.search.highlight.Scorer {
+
+    @Override
+    public TokenStream init(TokenStream tokenStream) throws IOException {
+      return tokenStream;
+    }
+
+    @Override
+    public void startFragment(TextFragment newFragment) {
+    }
+
+    @Override
+    public float getTokenScore() {
+      return 1;
+    }
+
+    @Override
+    public float getFragmentScore() {
+      return 1;
+    }    
+  }
+  
+  private String[] doSearch(Query q, int maxFragSize) throws IOException, InvalidTokenOffsetsException {
+    return doSearch (q, maxFragSize, 0);
+  }
+  private String[] doSearch(Query q, int maxFragSize, int docIndex) throws IOException, InvalidTokenOffsetsException {
+    // ConstantScorer is a fragment Scorer, not a search result (document) Scorer
+    Highlighter highlighter = new Highlighter (new ConstantScorer());
+    highlighter.setTextFragmenter(new SimpleFragmenter(maxFragSize));
+    PosCollector collector = new PosCollector(10);
+    if (q instanceof MultiTermQuery) {
+      ((MultiTermQuery)q).setRewriteMethod (MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    }
     searcher.search(q, collector);
-    return ph.getFirstFragments(collector.docs[0], searcher.getIndexReader(), F, true, 10, maxFragSize);
+    ScorePosDoc doc = collector.docs[docIndex];
+    if (doc == null)
+      return null;
+    String text = searcher.getIndexReader().document(doc.doc).getFieldable(F).stringValue();
+    PositionOffsetMapper pom = new PositionOffsetMapper ();
+    // FIXME: test error cases: for non-stored fields, and fields w/no term vectors
+    searcher.getIndexReader().getTermFreqVector(doc.doc, F, pom);
+    
+    TextFragment[] fragTexts = highlighter.getBestTextFragments(new PosTokenStream
+        (text, new PositionIntervalArrayIterator(doc.sortedPositions(), doc.posCount), pom), 
+        text, false, 10);
+    String[] frags = new String[fragTexts.length];
+    for (int i = 0; i < frags.length; i++)
+      frags[i] = fragTexts[i].toString();
+    return frags;
   }
   
   public void testTerm () throws Exception {
-    insertDocs(analyzer, "This is a test");
+    insertDocs(analyzer, "This is a test test");
     String frags[] = doSearch (new TermQuery(new Term(F, "test")));
-    assertEquals ("This is a <em>test</em>", frags[0]);
+    assertEquals ("This is a <B>test</B> <B>test</B>", frags[0]);
   }
   
   public void testSeveralSnippets () throws Exception {
     String input = "this is some long text.  It has the word long in many places.  In fact, it has long on some different fragments.  " +
     "Let us see what happens to long in this case.";
-    String gold = "this is some <em>long</em> text.  It has the word <em>long</em> in many places.  In fact, it has <em>long</em> on some different fragments.  " +
-    "Let us see what happens to <em>long</em> in this case.";
+    String gold = "this is some <B>long</B> text.  It has the word <B>long</B> in many places.  In fact, it has <B>long</B> on some different fragments.  " +
+    "Let us see what happens to <B>long</B> in this case.";
     insertDocs(analyzer, input);
     String frags[] = doSearch (new TermQuery(new Term(F, "long")), input.length());
     assertEquals (gold, frags[0]);
@@ -132,7 +171,7 @@ public class PosHighlighterTest extends LuceneTestCase {
     bq.add(new BooleanClause (new TermQuery(new Term(F, "This")), Occur.MUST));
     bq.add(new BooleanClause (new TermQuery(new Term(F, "test")), Occur.MUST));
     String frags[] = doSearch (bq);
-    assertEquals ("<em>This</em> is a <em>test</em>", frags[0]);    
+    assertEquals ("<B>This</B> is a <B>test</B>", frags[0]);    
   }
   
   public void testBooleanAndOtherOrder () throws Exception {
@@ -141,86 +180,123 @@ public class PosHighlighterTest extends LuceneTestCase {
     bq.add(new BooleanClause (new TermQuery(new Term(F, "test")), Occur.MUST));
     bq.add(new BooleanClause (new TermQuery(new Term(F, "This")), Occur.MUST));
     String frags[] = doSearch (bq);
-    assertEquals ("<em>This</em> is a <em>test</em>", frags[0]);    
+    assertEquals ("<B>This</B> is a <B>test</B>", frags[0]);    
   }
-  
+
   public void testBooleanOr () throws Exception {
- // OR queries not implemented yet...
     insertDocs(analyzer, "This is a test");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause (new TermQuery(new Term(F, "test")), Occur.SHOULD));
     bq.add(new BooleanClause (new TermQuery(new Term(F, "This")), Occur.SHOULD));
     String frags[] = doSearch (bq);
-    assertEquals ("<em>This</em> is a <em>test</em>", frags[0]);    
+    assertEquals ("<B>This</B> is a <B>test</B>", frags[0]);    
   }
   
-  @Ignore("not supproted yet")
-  public void testPhrase() throws Exception {
+  public void testSingleMatchScorer () throws Exception {
     insertDocs(analyzer, "This is a test");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "test")), Occur.SHOULD));
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "notoccurringterm")), Occur.SHOULD));
+    String frags[] = doSearch (bq);
+    assertEquals ("This is a <B>test</B>", frags[0]);    
+  }
+  
+  public void testBooleanNrShouldMatch () throws Exception {
+    insertDocs(analyzer, "a b c d e f g h i");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "a")), Occur.SHOULD));
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "b")), Occur.SHOULD));
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "no")), Occur.SHOULD));
+    
+    // This generates a ConjunctionSumScorer
+    bq.setMinimumNumberShouldMatch(2);
+    String frags[] = doSearch (bq);
+    assertEquals ("<B>a</B> <B>b</B> c d e f g h i", frags[0]);
+    
+    // This generates no scorer
+    bq.setMinimumNumberShouldMatch(3);
+    frags = doSearch (bq);
+    assertNull (frags);
+    
+    // This generates a DisjunctionSumScorer
+    bq.setMinimumNumberShouldMatch(2);
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "c")), Occur.SHOULD));
+    frags = doSearch (bq);
+    assertEquals ("<B>a</B> <B>b</B> <B>c</B> d e f g h i", frags[0]);
+  }
+  
+  public void testPhrase() throws Exception {
+    insertDocs(analyzer, "is it that this is a test, is it");
     BooleanQuery bq = new BooleanQuery();
     bq.add(new BooleanClause (new TermQuery(new Term(F, "is")), Occur.MUST));
     bq.add(new BooleanClause (new TermQuery(new Term(F, "a")), Occur.MUST));
-    MockSpanQuery msq = new MockSpanQuery(bq, false, F, new Filter(1));
-    String frags[] = doSearch (msq);
-    assertEquals ("This <em>is a</em> test", frags[0]);
+    PositionFilterQuery pfq = new PositionFilterQuery(bq, new BlockPositionIteratorFilter());
+    String frags[] = doSearch (pfq);
+    // make sure we highlight the phrase, and not the terms outside the phrase
+    assertEquals ("is it that this <B>is</B> <B>a</B> test, is it", frags[0]);
   }
   
-  public static class Filter implements PositionIntervalFilter {
-    private int slop;
-    public Filter(int slop) {
-      this.slop = slop;
-    }
-    @Override
-    public PositionIntervalIterator filter(PositionIntervalIterator iter) {
-      return new WithinPositionIterator(slop, new OrderedConjunctionPositionIterator(iter));
-    }
-  }
-  @Ignore("not supproted yet")
+  /*
+   * Failing ... PhraseQuery scorer needs positions()?
+   */
+  @Ignore("PhraseQuery has no position support yet")
   public void testPhraseOriginal() throws Exception {
     insertDocs(analyzer, "This is a test");
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term(F, "a"));
     pq.add(new Term(F, "test"));
     String frags[] = doSearch (pq);
-    //searcher.search(new MockSpanQuery(pq, collector.needsPayloads(), F, null), collector);
-    assertEquals ("This is a <em>test</em>", frags[0]);
+    assertEquals ("This is a <B>test</B>", frags[0]);
+  }
+  
+  public void testNestedBoolean () throws Exception {
+    insertDocs(analyzer, "This is a test");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "test")), Occur.SHOULD));
+    BooleanQuery bq2 = new BooleanQuery();
+    bq2.add(new BooleanClause (new TermQuery(new Term(F, "This")), Occur.SHOULD));
+    bq2.add(new BooleanClause (new TermQuery(new Term(F, "is")), Occur.SHOULD));
+    bq.add(new BooleanClause(bq2, Occur.SHOULD));
+    String frags[] = doSearch (bq);
+    assertEquals ("<B>This</B> <B>is</B> a <B>test</B>", frags[0]);
   }
   
   public void testWildcard () throws Exception {
     insertDocs(analyzer, "This is a test");
-    WildcardQuery wildcardQuery = new WildcardQuery(new Term(F, "t*t"));
-    // TODO enable positions in constant scorer
-    wildcardQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    String frags[] = doSearch(wildcardQuery);
-    assertEquals ("This is a <em>test</em>", frags[0]);
+    String frags[] = doSearch (new WildcardQuery(new Term(F, "t*t")));
+    assertEquals ("This is a <B>test</B>", frags[0]);
   }
-//  
-//  @Ignore("file epistolary-novel.xml does not exist")
-//  public void testLargerDocument() throws Exception {
-//    InputStream in = new FileInputStream ("epistolary-novel.xml");
-//    insertDocs(analyzer, IOUtils.toString(in));
-//    in.close();
-//    BooleanQuery bq = new BooleanQuery();
-//    bq.add(new BooleanClause (new TermQuery(new Term(F, "unknown")), Occur.MUST));
-//    bq.add(new BooleanClause (new TermQuery(new Term(F, "artist")), Occur.MUST));
-//    String frags[] = doSearch (bq, 50);
-//    assertEquals ("is a narration by an <em>unknown</em> observer.\n*[[Jean Web", frags[0]);
-//    assertEquals ("fin and Sabine]]'' by <em>artist</em> [[Nick Bantock]] is a", frags[1]);
-//  }
-//  @Ignore("file epistolary-novel.xml does not exist")
-//  public void testMultipleDocuments() throws Exception {
-//    InputStream in = new FileInputStream ("epistolary-novel.xml");
-//    insertDocs(analyzer, 
-//        "This document has no matches", 
-//        IOUtils.toString(in),
-//        "This document has an unknown artist match");
-//    BooleanQuery bq = new BooleanQuery();
-//    bq.add(new BooleanClause (new TermQuery(new Term(F, "unknown")), Occur.MUST));
-//    bq.add(new BooleanClause (new TermQuery(new Term(F, "artist")), Occur.MUST));
-//    String frags[] = doSearch (bq, 50);
-//    assertEquals ("is a narration by an <em>unknown</em> observer.\n*[[Jean Web", frags[0]);
-//    assertEquals ("fin and Sabine]]'' by <em>artist</em> [[Nick Bantock]] is a", frags[1]);
-//  }
   
+  public void testMultipleDocumentsAnd() throws Exception {
+    insertDocs(analyzer, 
+        "This document has no matches", 
+        PORRIDGE_VERSE,
+        "This document has some Pease porridge in it");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "Pease")), Occur.MUST));
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "porridge")), Occur.MUST));
+    String frags[] = doSearch (bq, 50, 0);
+    assertEquals ("<B>Pease</B> <B>porridge</B> hot! <B>Pease</B> <B>porridge</B> cold! <B>Pease</B>", frags[0]);
+    frags = doSearch (bq, 50, 1);
+    assertEquals ("This document has some <B>Pease</B> <B>porridge</B> in it", frags[0]);
+  }
+  
+  /*
+   * Failing: need positions callback API since DisjunctionSumScorer consumes all of a doc's
+   * positions before passing the doc to the collector.
+   */
+  public void testMultipleDocumentsOr() throws Exception {
+    insertDocs(analyzer, 
+        "This document has no matches", 
+        PORRIDGE_VERSE,
+        "This document has some Pease porridge in it");
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "Pease")), Occur.SHOULD));
+    bq.add(new BooleanClause (new TermQuery(new Term(F, "porridge")), Occur.SHOULD));
+    String frags[] = doSearch (bq, 50, 0);
+    assertEquals ("<B>Pease</B> <B>porridge</B> hot! <B>Pease</B> <B>porridge</B> cold! <B>Pease</B>", frags[0]);
+    frags = doSearch (bq, 50, 1);
+    assertEquals ("This document has some <B>Pease</B> <B>porridge</B> in it", frags[0]);
+  }
 
 }

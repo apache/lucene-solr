@@ -142,8 +142,8 @@ public abstract class Scorer extends DocIdSetIterator {
      * @param scorer the current scorer
      */
     public void visitProhibited(P parent, C child, S scorer) {}
-  } 
-
+  }
+  
   /**
    * Expert: call this to gather details for all sub-scorers for this query.
    * This can be used, in conjunction with a custom {@link Collector} to gather

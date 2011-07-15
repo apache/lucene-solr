@@ -19,8 +19,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.TFIDFSimilarity;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;

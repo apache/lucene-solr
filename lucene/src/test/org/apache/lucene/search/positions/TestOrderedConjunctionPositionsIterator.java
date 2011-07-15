@@ -126,6 +126,7 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
         PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(scorer.positions());
+        assertEquals(0, positions.advanceTo(nextDoc));
         PositionInterval interval = null;
         int[] start = new int[] {0, 31};
         int[] end = new int[] {2, 33};
@@ -146,6 +147,7 @@ public class TestOrderedConjunctionPositionsIterator extends LuceneTestCase {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
         PositionIntervalIterator positions = new OrderedConjunctionPositionIterator(scorer.positions());
+        assertEquals(1, positions.advanceTo(nextDoc));
         PositionInterval interval = null;
         int[] start = new int[] {3, 34};
         int[] end = new int[] {5, 36};

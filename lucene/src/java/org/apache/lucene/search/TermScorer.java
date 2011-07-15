@@ -19,7 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
+import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
+import org.apache.lucene.util.BytesRef;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
@@ -35,6 +39,7 @@ final class TermScorer extends Scorer {
   private int[] freqs;
   private final DocsEnum.BulkReadResult bulkResult;
   private final Similarity.ExactDocScorer docScorer;
+  private final TermPositions positions;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -48,10 +53,15 @@ final class TermScorer extends Scorer {
    *          to be used for score computations.
    */
   TermScorer(Weight weight, DocsEnum td, Similarity.ExactDocScorer docScorer) throws IOException {
+    this(weight, td, null, false, docScorer);
+  }
+  
+  TermScorer(Weight weight, DocsEnum td, DocsAndPositionsEnum docsAndPos, boolean doPayloads, Similarity.ExactDocScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;
     bulkResult = td.getBulkResult();
+    positions = docsAndPos != null ? new TermPositions(docsAndPos, doPayloads) : null;
   }
 
   @Override
@@ -160,5 +170,103 @@ final class TermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+  
+  @Override
+  public PositionIntervalIterator positions() throws IOException {
+    assert positions != null;
+    return positions;
+  }
 
+  private final class TermPositions extends PositionIntervalIterator {
+    private final PositionInterval interval;
+    int positionsPending;
+    private final DocsAndPositionsEnum docsAndPos;
+    private int docID = -1;
+
+    public TermPositions(DocsAndPositionsEnum docsAndPos, boolean doPayloads) {
+      super(TermScorer.this);
+      this.docsAndPos = docsAndPos;
+      this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
+          : new PositionInterval();
+    }
+
+    @Override
+    public PositionInterval next() throws IOException {
+      if (--positionsPending >= 0) {
+        interval.begin = interval.end = docsAndPos.nextPosition();
+        return interval;
+      }
+      positionsPending = 0;
+      return null;
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public PositionIntervalIterator[] subs(boolean inOrder) {
+      return EMPTY;
+    }
+
+    @Override
+    public void collect() {
+      collector.collectLeafPosition(scorer, interval, docID);
+    }
+
+    @Override
+    public int advanceTo(int docId) throws IOException {
+      int advance = docsAndPos.advance(docId);
+      if (advance != NO_MORE_DOCS) {
+        positionsPending = freq = docsAndPos.freq();
+      }
+      interval.reset();
+      docID = docsAndPos.docID();
+      return advance;
+    }
+    
+    @Override
+    public String toString() {
+      return "TermPositions [interval=" + interval + ", positionsPending="
+          + positionsPending + ", docID=" + docID + "]";
+    }
+  }
+
+  private static final class PayloadPosInterval extends PositionInterval {
+    private int pos = -1;
+    private final DocsAndPositionsEnum payloads;
+    private final TermPositions termPos;
+
+    public PayloadPosInterval(DocsAndPositionsEnum payloads, TermPositions pos) {
+      this.payloads = payloads;
+      this.termPos = pos;
+    }
+
+    @Override
+    public boolean payloadAvailable() {
+      return payloads.hasPayload();
+    }
+
+    @Override
+    public boolean nextPayload(BytesRef ref) throws IOException {
+      if (pos == termPos.positionsPending) {
+        return false;
+      } else {
+        pos = termPos.positionsPending;
+        final BytesRef payload = payloads.getPayload();
+        ref.bytes = payload.bytes;
+        ref.length = payload.length;
+        ref.offset = payload.offset;
+        return true;
+      }
+    }
+
+    @Override
+    public void reset() {
+      super.reset();
+      pos = -1;
+    }
+
+  }
 }

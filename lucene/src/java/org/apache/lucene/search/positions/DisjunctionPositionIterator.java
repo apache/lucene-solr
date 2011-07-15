@@ -1,4 +1,5 @@
 package org.apache.lucene.search.positions;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,11 +29,13 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
  * 
+ * @lucene.experimental
  */
-@SuppressWarnings("serial")
+// nocommit - javadoc
 public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
-  public DisjunctionPositionIterator(Scorer scorer, Scorer[] subScorers) throws IOException {
+  public DisjunctionPositionIterator(Scorer scorer, Scorer[] subScorers)
+      throws IOException {
     super(scorer, subScorers, new IntervalQueueOr(subScorers.length));
   }
 
@@ -49,17 +52,6 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
 
   @Override
   public PositionInterval next() throws IOException {
-    if (docId != scorer.docID()) {
-      docId = scorer.docID();
-      queue.clear();
-      for (int i = 0; i < iterators.length; i++) {
-        final PositionInterval interval = iterators[i].next();
-        if (interval == null) {
-          return null;
-        }
-        queue.add(new IntervalRef(interval, i));
-      }
-    }
     while (queue.size() > 0 && queue.topContainsQueueInterval()) {
       advance();
     }
@@ -73,6 +65,34 @@ public final class DisjunctionPositionIterator extends BooleanPositionIterator {
   @Override
   public PositionIntervalIterator[] subs(boolean inOrder) {
     return iterators;
+  }
+
+  @Override
+  public void collect() {
+    collector.collectComposite(scorer, queue.queueInterval, currentDoc);
+    iterators[queue.top().index].collect();
+  }
+
+  @Override
+  public int advanceTo(int docId) throws IOException {
+    queue.clear();
+    int minAdvance = NO_MORE_DOCS;
+    for (int i = 0; i < iterators.length; i++) {
+      if (iterators[i].docID() < docId) {
+        minAdvance = Math.min(minAdvance, iterators[i].advanceTo(docId));
+      } else {
+        minAdvance = Math.min(minAdvance, iterators[i].docID());
+      }
+    }
+    if (minAdvance == NO_MORE_DOCS) {
+      return NO_MORE_DOCS;
+    }
+    for (int i = 0; i < iterators.length; i++) {
+      if (iterators[i].docID() == minAdvance) {
+        queue.add(new IntervalRef(iterators[i].next(), i));
+      }
+    }
+    return currentDoc = minAdvance;
   }
 
 }

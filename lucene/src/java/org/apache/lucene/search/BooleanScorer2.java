@@ -145,6 +145,11 @@ class BooleanScorer2 extends Scorer {
     public int advance(int target) throws IOException {
       return scorer.advance(target);
     }
+    
+    @Override
+    public PositionIntervalIterator positions() throws IOException {     
+      return scorer.positions();
+    }
   }
 
   private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,
@@ -276,7 +281,7 @@ class BooleanScorer2 extends Scorer {
    */
   @Override
   public void score(Collector collector) throws IOException {
-    collector.setScorer(this);
+    collector.setScorer(this);    
     while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
       collector.collect(doc);
     }
@@ -320,8 +325,6 @@ class BooleanScorer2 extends Scorer {
     return doc = countingSumScorer.advance(target);
   }
   
-  
-
   @Override
   public PositionIntervalIterator positions() throws IOException {
     return countingSumScorer.positions();

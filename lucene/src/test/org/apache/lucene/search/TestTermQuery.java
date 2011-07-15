@@ -22,20 +22,22 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator.PositionInterval;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -44,24 +46,18 @@ import org.apache.lucene.util.ReaderUtil;
  */
 public class TestTermQuery extends LuceneTestCase {
 
-  private String fieldName;
-  private boolean usePayload;
-
-  public void setUp() throws Exception {
-    super.setUp();
-    fieldName = "field" + random.nextInt();
-    usePayload = random.nextBoolean();
-  }
+  private String fieldName = "field";
 
   /**
    * Simple testcase for {@link TermScorer#positions()}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
-   
-    final Analyzer analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false, MockTokenFilter.EMPTY_STOPSET, true);
+
+    final Analyzer analyzer = new MockAnalyzer(random,
+        MockTokenizer.WHITESPACE, false, MockTokenFilter.EMPTY_STOPSET, true);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer ));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
       doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
@@ -70,6 +66,12 @@ public class TestTermQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
+    DocsAndPositionsEnum docsAndPositions = MultiFields.getTerms(reader,
+        fieldName).docsAndPositions(null, new BytesRef("1"), null);
+    docsAndPositions.nextDoc();
+    docsAndPositions.nextPosition();
+    boolean payloadsIndexed = docsAndPositions.hasPayload();
+
     IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
 
@@ -80,42 +82,43 @@ public class TestTermQuery extends LuceneTestCase {
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
         Scorer scorer = weight.scorer(atomicReaderContext, ScorerContext.def()
-            .needsPositions(true).needsPayloads(usePayload));
+            .needsPositions(true).needsPayloads(payloadsIndexed));
         assertNotNull(scorer);
         final int advance = scorer.advance(1 + random.nextInt(27));
         PositionIntervalIterator positions = scorer.positions();
 
         do {
+          assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
+
           PositionInterval interval = null;
           String msg = "Advanced to: " + advance + " current doc: "
-              + scorer.docID() + " usePayloads: " + usePayload;
+              + scorer.docID() + " usePayloads: " + payloadsIndexed;
           assertNotNull(msg, (interval = positions.next()));
           assertEquals(msg, 4.0f, positions.getScorer().freq(), 0.0f);
 
           assertEquals(msg, 0, interval.begin);
           assertEquals(msg, 0, interval.end);
-          checkPayload(0, interval);
+          checkPayload(0, interval, payloadsIndexed);
 
           assertNotNull(msg, (interval = positions.next()));
           assertEquals(msg, 4.0f, positions.getScorer().freq(), 0.0f);
           assertEquals(msg, 10, interval.begin);
           assertEquals(msg, 10, interval.end);
-          checkPayload(10, interval);
+          checkPayload(10, interval, payloadsIndexed);
 
           assertNotNull(msg, (interval = positions.next()));
           assertEquals(msg, 4.0f, positions.getScorer().freq(), 0.0f);
           assertEquals(msg, 20, interval.begin);
           assertEquals(msg, 20, interval.end);
-          checkPayload(20, interval);
+          checkPayload(20, interval, payloadsIndexed);
 
           assertNotNull(msg, (interval = positions.next()));
           assertEquals(msg, 4.0f, positions.getScorer().freq(), 0.0f);
           assertEquals(msg, 30, interval.begin);
           assertEquals(msg, 30, interval.end);
-          checkPayload(30, interval);
+          checkPayload(30, interval, payloadsIndexed);
 
           assertNull(msg, (interval = positions.next()));
-
         } while (scorer.nextDoc() != Scorer.NO_MORE_DOCS);
       }
     }
@@ -124,14 +127,19 @@ public class TestTermQuery extends LuceneTestCase {
     directory.close();
   }
 
-  public final void checkPayload(int pos, PositionInterval interval) throws IOException {
-    if (usePayload) {
-      // nocommit enable this with mockanalyzer
-//      assertTrue(interval.payloadAvailable());
-//      BytesRef bytes = new BytesRef();
-//      assertTrue(interval.nextPayload(bytes));
-//      assertFalse(interval.payloadAvailable());
-//      assertEquals("pos: " + pos, bytes.utf8ToString());
+  public final void checkPayload(int pos, PositionInterval interval,
+      boolean payloadsIndexed) throws IOException {
+    if (payloadsIndexed) {
+      boolean wasPayloadAvailable = interval.payloadAvailable();
+      BytesRef bytes = new BytesRef();
+      assertTrue(interval.nextPayload(bytes));
+      assertFalse(interval.payloadAvailable());
+      if (!wasPayloadAvailable) {
+        // if payload has 0 length interval or rather docs&pos enum will treat is as not existing
+        assertEquals(0, bytes.length);
+      } else {
+        assertTrue(bytes.length > 0);
+      }
     } else {
       assertFalse(interval.payloadAvailable());
     }
@@ -198,20 +206,20 @@ public class TestTermQuery extends LuceneTestCase {
           }
           PositionIntervalIterator positions = scorer.positions();
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
-          
-          assertEquals((float)pos.length, positions.getScorer().freq(), 0.0f);
+
+          assertEquals((float) pos.length, positions.getScorer().freq(), 0.0f);
           // number of positions read should be random - don't read all of them
           // allways
           final int howMany = random.nextInt(20) == 0 ? pos.length
               - random.nextInt(pos.length) : pos.length;
           PositionInterval interval = null;
-
+          assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
           for (int j = 0; j < howMany; j++) {
             assertNotNull((interval = positions.next()));
             assertEquals("iteration: " + i + " initDoc: " + initDoc + " doc: "
                 + docID + " base: " + atomicReaderContext.docBase
-                + " positions: " + Arrays.toString(pos) + " usePayloads: "
-                + usePayload, pos[j].intValue(), interval.begin);
+                + " positions: " + Arrays.toString(pos), pos[j].intValue(),
+                interval.begin);
             assertEquals(pos[j].intValue(), interval.end);
           }
           if (howMany == pos.length) {
@@ -278,22 +286,24 @@ public class TestTermQuery extends LuceneTestCase {
         } else {
           initDoc = scorer.advance(random.nextInt(maxDoc));
         }
-        String msg = "Iteration: " + i + " initDoc: " + initDoc + " payloads: "
-            + usePayload;
+        String msg = "Iteration: " + i + " initDoc: " + initDoc;
         PositionIntervalIterator positions = scorer.positions();
         assertEquals(howMany / 2.f, positions.getScorer().freq(), 0.0);
+        assertEquals(scorer.docID(), positions.advanceTo(scorer.docID()));
         for (int j = 0; j < howMany; j += 2) {
           assertNotNull("next returned nullat index: " + j + " with freq: "
-              + positions.getScorer().freq() + " -- " + msg,(interval = positions.next()));
+              + positions.getScorer().freq() + " -- " + msg,
+              (interval = positions.next()));
           assertEquals("position missmatch index: " + j + " with freq: "
               + positions.getScorer().freq() + " -- " + msg, j, interval.begin);
         }
-        assertNull("next returned nonNull -- " + msg,(interval = positions.next()));
+        assertNull("next returned nonNull -- " + msg,
+            (interval = positions.next()));
 
       }
     }
     reader.close();
     dir.close();
   }
-  
+
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.search.positions;
+package org.apache.lucene.search.poshighlight;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,35 +16,46 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /**
- * 
+ * Present an array of PositionIntervals as an Iterator.
  * @lucene.experimental
  */
-// nocommit - javadoc
-abstract class BooleanPositionIterator extends PositionIntervalIterator {
+public class PositionIntervalArrayIterator extends PositionIntervalIterator {
 
-  protected final PositionIntervalIterator[] iterators;
-  protected final IntervalQueue queue;
-
-  public BooleanPositionIterator(Scorer scorer, Scorer[] subScorers,
-      IntervalQueue queue) throws IOException {
-    super(scorer);
-    this.queue = queue;
-    iterators = new PositionIntervalIterator[subScorers.length];
-    for (int i = 0; i < subScorers.length; i++) {
-      iterators[i] = subScorers[i].positions();
-    }
+  private int next = 0;
+  private int count;
+  private PositionInterval[] positions;
+  
+  public PositionIntervalArrayIterator (PositionInterval[] positions, int count) {
+    super(null);
+    this.positions = positions;
+    this.count = count;
+  }
+  
+  @Override
+  public PositionInterval next() {
+    if (next >= count)
+      return null;
+    return positions[next++];
   }
 
   @Override
   public PositionIntervalIterator[] subs(boolean inOrder) {
-    return iterators;
+    return EMPTY;
   }
 
-  abstract void advance() throws IOException;
+  @Override
+  public void collect() {
+  }
 
+  @Override
+  public int advanceTo(int docId) throws IOException {
+    return 0;
+  }
+  
 }

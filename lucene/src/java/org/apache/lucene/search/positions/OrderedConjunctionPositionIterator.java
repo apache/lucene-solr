@@ -17,12 +17,13 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Arrays;
 
+/**
+ * @lucene.experimental
+ */ // nocommit - javadoc
 public final class OrderedConjunctionPositionIterator extends
     PositionIntervalIterator {
 
-  private int docId = -1;
   private final PositionIntervalIterator[] iterators;
   private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
       Integer.MIN_VALUE, Integer.MIN_VALUE);
@@ -43,14 +44,7 @@ public final class OrderedConjunctionPositionIterator extends
 
   @Override
   public PositionInterval next() throws IOException {
-    final int currentDocId = scorer.docID();
-    if (docId != currentDocId) {
-      docId = currentDocId;
-      // TODO maybe use null instead?
-      Arrays.fill(intervals, 1, intervals.length, INFINITE_INTERVAL);
-      intervals[0] = iterators[0].next();
-      index = 1;
-    }
+    
     
     if(intervals[0] == null) {
       return null;
@@ -93,6 +87,29 @@ public final class OrderedConjunctionPositionIterator extends
   @Override
   public PositionIntervalIterator[] subs(boolean inOrder) {
     return iterators;
+  }
+
+  @Override
+  public void collect() {
+    collector.collectComposite(scorer, interval, currentDoc);
+    for (PositionIntervalIterator iter : iterators) {
+      iter.collect();
+    }
+  }
+
+  @Override
+  public int advanceTo(int docId) throws IOException {
+    if (docId == currentDoc) {
+      return docId;
+    }
+    for (int i = 0; i < iterators.length; i++) {
+      int advanceTo = iterators[i].advanceTo(docId);
+      assert advanceTo == docId;
+      intervals[i] = INFINITE_INTERVAL;
+    }
+    intervals[0] = iterators[0].next();
+    index = 1;
+    return currentDoc = docId;
   }
 
 }
