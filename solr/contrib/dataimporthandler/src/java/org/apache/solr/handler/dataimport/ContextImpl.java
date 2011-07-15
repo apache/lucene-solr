@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since solr 1.3
  */
 public class ContextImpl extends Context {
-  private DataConfig.Entity entity;
+  protected DataConfig.Entity entity;
 
   private ContextImpl parent;
 

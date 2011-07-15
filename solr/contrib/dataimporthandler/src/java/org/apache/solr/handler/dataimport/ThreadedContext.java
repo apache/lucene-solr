@@ -28,7 +28,7 @@ public class ThreadedContext extends ContextImpl{
 
   public ThreadedContext(DocBuilder.EntityRunner entityRunner, DocBuilder docBuilder) {
     super(entityRunner.entity,
-            null,//to be fethed realtime
+            null,//to be fetched realtime
             null,
             null,
             docBuilder.session,
@@ -75,7 +75,7 @@ public class ThreadedContext extends ContextImpl{
   @Override
   public String getResolvedEntityAttribute(String name) {
     checkLimited();
-    return super.getResolvedEntityAttribute(name);
+    return entity == null ? null : getVariableResolver().replaceTokens(entity.allAttributes.get(name));
   }
 
   @Override

@@ -18,6 +18,7 @@ Bug Fixes
 ----------------------
 * SOLR-2644: When using threads=2 the default logging is set too high (Bill Bell via shalin)
 * SOLR-2492: DIH does not commit if only deletes are processed (James Dyer via shalin)
+* SOLR-2186: DataImportHandler's multi-threaded option throws NPE (Lance Norskog, Frank Wesemann, shalin)
 
 ==================  3.3.0 ==================
 

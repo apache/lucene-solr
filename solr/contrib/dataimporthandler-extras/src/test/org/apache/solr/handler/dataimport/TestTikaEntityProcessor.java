@@ -18,12 +18,44 @@ package org.apache.solr.handler.dataimport;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
 
 /**Testcase for TikaEntityProcessor
  *
- * @since solr 1.5 
+ * @since solr 3.1
  */
 public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
+  private String conf =
+  "<dataConfig>" +
+  "  <dataSource type=\"BinFileDataSource\"/>" +
+  "  <document>" +
+  "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("solr-word.pdf").getAbsolutePath() + "\" >" +
+  "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
+  "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
+  "      <field column=\"text\"/>" +
+  "     </entity>" +
+  "  </document>" +
+  "</dataConfig>";
+
+  private String[] tests = {
+      "//*[@numFound='1']"
+      ,"//str[@name='author'][.='Grant Ingersoll']"
+      ,"//str[@name='title'][.='solr-word']"
+      ,"//str[@name='text']"
+  };
+
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("solr-dihextras").getAbsolutePath());
@@ -31,23 +63,21 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testIndexingWithTikaEntityProcessor() throws Exception {
-    String conf =
-            "<dataConfig>" +
-                    "  <dataSource type=\"BinFileDataSource\"/>" +
-                    "  <document>" +
-                    "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("solr-word.pdf").getAbsolutePath() + "\" >" +
-                    "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
-                    "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
-                    "      <field column=\"text\"/>" +
-                    "     </entity>" +
-                    "  </document>" +
-                    "</dataConfig>";
     runFullImport(conf);
-    assertQ(req("*:*")
-            ,"//*[@numFound='1']"
-            ,"//str[@name='author'][.='Grant Ingersoll']"
-            ,"//str[@name='title'][.='solr-word']"
-            ,"//str[@name='text']"
-            );
+    assertQ(req("*:*"), tests );
   }
+
+  @Test
+  public void testIndexingWithTikaEntityProcessorThreaded() throws Exception {
+    DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    Document doc = builder.parse(new InputSource(new StringReader(conf)));
+    ((Element) doc.getElementsByTagName("entity").item(0)).setAttribute("threads", "1");
+    Transformer trans = TransformerFactory.newInstance().newTransformer();
+    StringWriter writer = new StringWriter();
+    trans.transform(new DOMSource(doc), new StreamResult(writer));
+
+    runFullImport(writer.toString());
+    assertQ(req("*:*"), tests );
+  }
+
 }
