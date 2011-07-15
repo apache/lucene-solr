@@ -298,7 +298,7 @@ public class DOMUtil {
    * This method borrowed from Ant's PropertyHelper.replaceProperties:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
    */
-  private static String substituteProperty(String value, Properties coreProperties) {
+  public static String substituteProperty(String value, Properties coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
     }
