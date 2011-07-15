@@ -50,10 +50,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("Class has problems with DateFormat")
 public class TestNumericQueryParser extends LuceneTestCase {
   
   private static enum NumberType {
@@ -81,81 +79,106 @@ public class TestNumericQueryParser extends LuceneTestCase {
   
   private static NumberDateFormat DATE_FORMAT;
   
-  static void init() {
-    try {
-      LOCALE = randomLocale(random);
-      TIMEZONE = randomTimeZone(random);
-      DATE_STYLE = randomDateStyle(random);
-      TIME_STYLE = randomDateStyle(random);
-      ANALYZER = new MockAnalyzer(random);
-      qp = new StandardQueryParser(ANALYZER);
-      NUMBER_FORMAT = NumberFormat.getNumberInstance(LOCALE);
-      NUMBER_FORMAT.setMaximumFractionDigits((random.nextInt() & 20) + 1);
-      NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
-      NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
-      NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 4); // the loop checks for < 1000, this is a must!
-      
-      // assumes localized date pattern will have at least year, month, day, hour, minute
-      SimpleDateFormat dateFormat = (SimpleDateFormat) DateFormat.getDateTimeInstance(
-          DATE_STYLE, TIME_STYLE, LOCALE);
-      
-      // not all date patterns includes era, full year, timezone and second, so we add them here
-      dateFormat.applyPattern(dateFormat.toPattern() + " G s Z yyyy");
-      dateFormat.setTimeZone(TIMEZONE);
-      DATE_FORMAT  = new NumberDateFormat(dateFormat);
-      
-      HashMap<String,Number> randomNumberMap = new HashMap<String,Number>();
-      
-      double randomDouble;
-      long randomLong;
-      int randomInt;
-      float randomFloat;
-      long randomDate;
-      
-      while ((randomLong = normalizeNumber(Math.abs(random.nextLong()))
-          .longValue()) == 0)
-        ;
-      while ((randomDouble = normalizeNumber(Math.abs(random.nextDouble()))
-          .doubleValue()) == 0)
-        ;
-      while ((randomFloat = normalizeNumber(Math.abs(random.nextFloat()))
-          .floatValue()) == 0)
-        ;
-      while ((randomInt = normalizeNumber(Math.abs(random.nextInt()))
-          .intValue()) == 0)
-        ;
-      
-      // make sure random date is at least one second from 0
-      while ((randomDate = normalizeNumber(Math.abs(random.nextLong()))
-          .longValue()) < 1000)
-        ;
-
-      // prune date value so it doesn't pass in insane values to some calendars.
-      randomDate = randomDate % 3400000000000l;
-
-      // truncate to second
-      randomDate = (randomDate / 1000) * 1000;
-      
-      randomNumberMap.put(NumericField.DataType.LONG.name(), randomLong);
-      randomNumberMap.put(NumericField.DataType.INT.name(), randomInt);
-      randomNumberMap.put(NumericField.DataType.FLOAT.name(), randomFloat);
-      randomNumberMap.put(NumericField.DataType.DOUBLE.name(), randomDouble);
-      randomNumberMap.put(DATE_FIELD_NAME, randomDate);
-      
-      RANDOM_NUMBER_MAP = Collections.unmodifiableMap(randomNumberMap);
-      
-    } catch (ParseException e) {
-      throw new RuntimeException(e);
-    }
-  }
-  
   private static Directory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   
+  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date) throws ParseException {
+    return date == dateFormat.parse(dateFormat.format(new Date(date))).getTime();
+  }
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
-    init();
+    ANALYZER = new MockAnalyzer(random);
+    
+    qp = new StandardQueryParser(ANALYZER);
+    
+    final HashMap<String,Number> randomNumberMap = new HashMap<String,Number>();
+    
+    SimpleDateFormat dateFormat;
+    long randomDate;
+    boolean dateFormatSanityCheckPass;
+    int count = 0;
+    do {
+      if (count > 100) {
+        fail("This test has problems to find a sane random DateFormat/NumberFormat. Stopped trying after 100 iterations.");
+      }
+      
+      dateFormatSanityCheckPass = true;
+      LOCALE = randomLocale(random);
+      TIMEZONE = randomTimeZone(random);
+      DATE_STYLE = randomDateStyle(random);
+      TIME_STYLE = randomDateStyle(random);
+      
+      // assumes localized date pattern will have at least year, month, day,
+      // hour, minute
+      dateFormat = (SimpleDateFormat) DateFormat
+          .getDateTimeInstance(DATE_STYLE, TIME_STYLE, LOCALE);
+      
+      // not all date patterns includes era, full year, timezone and second,
+      // so we add them here
+      dateFormat.applyPattern(dateFormat.toPattern() + " G s Z yyyy");
+      dateFormat.setTimeZone(TIMEZONE);
+      
+      DATE_FORMAT = new NumberDateFormat(dateFormat);
+      
+      do {
+        randomDate = random.nextLong();
+        
+        // prune date value so it doesn't pass in insane values to some
+        // calendars.
+        randomDate = randomDate % 3400000000000l;
+        
+        // truncate to second
+        randomDate = (randomDate / 1000L) * 1000L;
+        
+        // only positive values
+        randomDate = Math.abs(randomDate);
+      } while (randomDate == 0L);
+
+      dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat,
+          randomDate);
+      
+      dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat, 0);
+      
+      dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat,
+          -randomDate);
+      
+      count++;
+    } while (!dateFormatSanityCheckPass);
+    
+    NUMBER_FORMAT = NumberFormat.getNumberInstance(LOCALE);
+    NUMBER_FORMAT.setMaximumFractionDigits((random.nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
+    NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 1);
+
+    double randomDouble;
+    long randomLong;
+    int randomInt;
+    float randomFloat;
+    
+    while ((randomLong = normalizeNumber(Math.abs(random.nextLong()))
+        .longValue()) == 0L)
+      ;
+    while ((randomDouble = normalizeNumber(Math.abs(random.nextDouble()))
+        .doubleValue()) == 0.0)
+      ;
+    while ((randomFloat = normalizeNumber(Math.abs(random.nextFloat()))
+        .floatValue()) == 0.0f)
+      ;
+    while ((randomInt = normalizeNumber(Math.abs(random.nextInt()))
+        .intValue()) == 0)
+      ;
+    
+    randomNumberMap.put(NumericField.DataType.LONG.name(), randomLong);
+    randomNumberMap.put(NumericField.DataType.INT.name(), randomInt);
+    randomNumberMap.put(NumericField.DataType.FLOAT.name(), randomFloat);
+    randomNumberMap.put(NumericField.DataType.DOUBLE.name(), randomDouble);
+    randomNumberMap.put(DATE_FIELD_NAME, randomDate);
+    
+    RANDOM_NUMBER_MAP = Collections.unmodifiableMap(randomNumberMap);
+
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -195,31 +218,6 @@ public class TestNumericQueryParser extends LuceneTestCase {
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
-    
-
-//  SimpleDateFormat df = new SimpleDateFormat( 
-//      "yyyy.MM.dd G 'at' HH:mm:ss z", LOCALE.ENGLISH);
-// assumes localized date pattern will have at least year, month, day, hour, minute
-  SimpleDateFormat df = (SimpleDateFormat) DateFormat.getDateTimeInstance(
-      randomDateStyle(random), randomDateStyle(random), LOCALE.ENGLISH);
-  System.out.println(df.toPattern());
-  // most of date pattern do not include era, so we add it here. Also,
-  // sometimes second is not available, we make sure it's present too
-  df.applyPattern(df.toPattern() + " G s Z yyyy");
-  df.setTimeZone(TIMEZONE);
-  System.out.println(TIMEZONE);
-  System.out.println(TIMEZONE);
-  System.out.println(TIMEZONE);
-  long l1 = 0;
-  long l2 = -30000;
-  String d1 = df.format(new Date(l1));
-  String d2 = df.format(new Date(l2));
-  long newL1 = df.parse(d1).getTime();
-  long newL2 = df.parse(d2).getTime();
-  
-  System.out.println(l1 + " => " + d1 + " => " + newL1);
-  System.out.println(l2 + " => " + d2 + " => " + newL2);
-  
    
   }
   

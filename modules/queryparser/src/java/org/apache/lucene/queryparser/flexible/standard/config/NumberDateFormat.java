@@ -47,7 +47,8 @@ public class NumberDateFormat extends NumberFormat {
   
   @Override
   public Number parse(String source, ParsePosition parsePosition) {
-    return dateFormat.parse(source, parsePosition).getTime();
+    final Date date = dateFormat.parse(source, parsePosition);
+    return (date == null) ? null : date.getTime();
   }
   
   @Override
