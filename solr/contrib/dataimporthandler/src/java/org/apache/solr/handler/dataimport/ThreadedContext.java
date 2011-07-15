@@ -75,7 +75,7 @@ public class ThreadedContext extends ContextImpl{
   @Override
   public String getResolvedEntityAttribute(String name) {
     checkLimited();
-    return super.getResolvedEntityAttribute(name);
+    return entity == null ? null : getVariableResolver().replaceTokens(entity.allAttributes.get(name));
   }
 
   @Override
