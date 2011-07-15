@@ -716,7 +716,7 @@ public class CoreContainer
   
     File instanceDir = new File(cd.getInstanceDir());
     if (!instanceDir.isAbsolute()) {
-      instanceDir = new File(getSolrHome(), instanceDir.getName());
+      instanceDir = new File(getSolrHome(), cd.getInstanceDir());
     }
     
     SolrResourceLoader solrLoader;
