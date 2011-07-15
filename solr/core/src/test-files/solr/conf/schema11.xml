@@ -239,6 +239,8 @@
 
     <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
 
+    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+
 
     <fieldType name="tint" class="solr.TrieIntField"  omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="solr.TrieFloatField"  omitNorms="true" positionIncrementGap="0"/>
@@ -340,6 +342,7 @@ valued. -->
    <dynamicField name="*_ws" type="text_ws" indexed="true"  stored="true"/>
 
    <dynamicField name="*_extf" type="file"/>
+   <dynamicField name="*_extfs" type="sfile"/>
 
    <dynamicField name="*_random" type="random" />
 

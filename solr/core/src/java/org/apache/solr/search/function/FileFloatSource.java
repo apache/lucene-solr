@@ -248,7 +248,7 @@ public class FileFloatSource extends ValueSource {
       // final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
-        int delimIndex = line.indexOf(delimiter);
+        int delimIndex = line.lastIndexOf(delimiter);
         if (delimIndex < 0) continue;
 
         int endIndex = line.length();

@@ -375,6 +375,11 @@ Bug Fixes
 
 * SOLR-2642: Fixed sorting by function when using grouping. (Thomas Heigl, Martijn van Groningen)
 
+* SOLR-2545: ExternalFileField file parsing would fail if any key
+  contained an "=" character.  It now only looks for the last "=" delimiter 
+  prior to the float value.
+  (Markus Jelsma, hossman)
+
  Other Changes
 ----------------------
 
