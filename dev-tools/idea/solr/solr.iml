@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_6" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../build/solr-idea/classes/java" />
-    <output-test url="file://$MODULE_DIR$/../build/solr-idea/classes/test" />
+    <output url="file://$MODULE_DIR$/build/solr-idea/classes/java" />
+    <output-test url="file://$MODULE_DIR$/build/solr-idea/classes/test" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/solrj/src/java" isTestSource="false" />
