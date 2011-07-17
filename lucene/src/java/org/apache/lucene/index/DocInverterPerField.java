@@ -80,7 +80,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       if (field.isIndexed() && doInvert) {
         
         if (i > 0)
-          fieldState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
+          fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
@@ -193,7 +193,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
         }
 
-        fieldState.offset += docState.analyzer.getOffsetGap(field);
+        fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
         fieldState.boost *= field.getBoost();
       }
 
