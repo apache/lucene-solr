@@ -209,9 +209,6 @@ Bug Fixes
 * SOLR-2193, SOLR-2565, SOLR-2651: SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
   
-* SOLR-2535: REGRESSION: in Solr 3.x and trunk the admin/file handler 
-  fails to show directory listings (David Smiley, Peter Wolanin via Erick Erickson)
-  
 Other Changes
 ----------------------
 
@@ -266,29 +263,6 @@ Other Changes
 
 * SOLR-1825: SolrQuery.addFacetQuery now enables facets automatically, like
   addFacetField (Chris Male)
-
-* SOLR-2452: Rewrote the Solr build system:
-  - Integrated more fully with the Lucene build system: generalized the
-    Lucene build system and eliminated duplication.
-  - Converted all Solr contribs to the Lucene/Solr conventional src/ layout:
-    java/, resources/, test/, and test-files/.
-  - Created a new Solr-internal module named "core" by moving the java/,
-    test/, and test-files/ directories from solr/src/ to solr/core/src/.
-  - Merged solr/src/webapp/src/ into solr/core/src/java/.
-  - Eliminated solr/src/ by moving all its directories up one level;
-    renamed solr/src/site/ to solr/site-src/ because solr/site/ already
-    exists.
-  - Merged solr/src/common/ into solr/solrj/src/java/.
-  - Moved o.a.s.client.solrj.* and o.a.s.common.* tests from
-    solr/src/test/ to solr/solrj/src/test/.
-  - Made the solrj tests not depend on the solr core tests by moving
-    some classes from solr/src/test/ to solr/test-framework/src/java/.
-  - Each internal module (core/, solrj/, test-framework/, and webapp/)
-    now has its own build.xml, from which it is possible to run
-    module-specific targets.  solr/build.xml delegates all build
-    tasks (via <ant dir="internal-module-dir"> calls) to these
-    modules' build.xml files.
-  (Steve Rowe, Robert Muir)
 
 Documentation
 ----------------------
@@ -375,6 +349,9 @@ Bug Fixes
 
 * SOLR-2642: Fixed sorting by function when using grouping. (Thomas Heigl, Martijn van Groningen)
 
+* SOLR-2535: REGRESSION: in Solr 3.x and trunk the admin/file handler
+  fails to show directory listings (David Smiley, Peter Wolanin via Erick Erickson)
+
 * SOLR-2545: ExternalFileField file parsing would fail if any key
   contained an "=" character.  It now only looks for the last "=" delimiter 
   prior to the float value.
@@ -385,6 +362,29 @@ Bug Fixes
 
 Build
 ----------------------
+
+* SOLR-2452: Rewrote the Solr build system:
+  - Integrated more fully with the Lucene build system: generalized the
+    Lucene build system and eliminated duplication.
+  - Converted all Solr contribs to the Lucene/Solr conventional src/ layout:
+    java/, resources/, test/, and test-files/.
+  - Created a new Solr-internal module named "core" by moving the java/,
+    test/, and test-files/ directories from solr/src/ to solr/core/src/.
+  - Merged solr/src/webapp/src/ into solr/core/src/java/.
+  - Eliminated solr/src/ by moving all its directories up one level;
+    renamed solr/src/site/ to solr/site-src/ because solr/site/ already
+    exists.
+  - Merged solr/src/common/ into solr/solrj/src/java/.
+  - Moved o.a.s.client.solrj.* and o.a.s.common.* tests from
+    solr/src/test/ to solr/solrj/src/test/.
+  - Made the solrj tests not depend on the solr core tests by moving
+    some classes from solr/src/test/ to solr/test-framework/src/java/.
+  - Each internal module (core/, solrj/, test-framework/, and webapp/)
+    now has its own build.xml, from which it is possible to run
+    module-specific targets.  solr/build.xml delegates all build
+    tasks (via <ant dir="internal-module-dir"> calls) to these
+    modules' build.xml files.
+  (Steve Rowe, Robert Muir)
 
 Documentation
 ----------------------
