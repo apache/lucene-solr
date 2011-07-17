@@ -45,13 +45,13 @@
 	<classpathentry kind="src" path="lucene/contrib/spellchecker/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/test"/>
-	<classpathentry kind="src" path="solr/src/java"/>
-	<classpathentry kind="src" path="solr/src/webapp/src"/>
-	<classpathentry kind="src" path="solr/src/common"/>
-	<classpathentry kind="src" path="solr/src/solrj"/>
-	<classpathentry kind="src" path="solr/src/test-framework"/>
-	<classpathentry kind="src" path="solr/src/test"/>
-	<classpathentry kind="src" path="solr/src/test-files"/>
+	<classpathentry kind="src" path="solr/core/src/java"/>
+	<classpathentry kind="src" path="solr/core/src/test"/>
+	<classpathentry kind="src" path="solr/core/src/test-files"/>
+	<classpathentry kind="src" path="solr/solrj/src/java"/>
+	<classpathentry kind="src" path="solr/solrj/src/test"/>
+	<classpathentry kind="src" path="solr/solrj/src/test-files"/>
+	<classpathentry kind="src" path="solr/test-framework/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>
@@ -61,9 +61,9 @@
 	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/test"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/test-files"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/java"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test"/>
+	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test-files"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
 	<classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
