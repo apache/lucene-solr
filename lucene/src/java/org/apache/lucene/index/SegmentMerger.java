@@ -498,10 +498,8 @@ final class SegmentMerger {
       if (docMap != null) {
         if (docMaps == null) {
           docMaps = new int[readerCount][];
-          delCounts = new int[readerCount];
         }
         docMaps[i] = docMap;
-        delCounts[i] = smi.reader.maxDoc() - smi.reader.numDocs();
       }
       
       base += reader.numDocs();
@@ -554,13 +552,6 @@ final class SegmentMerger {
 
   private byte[] payloadBuffer;
   private int[][] docMaps;
-  int[][] getDocMaps() {
-    return docMaps;
-  }
-  private int[] delCounts;
-  int[] getDelCounts() {
-    return delCounts;
-  }
 
   /** Process postings from multiple segments all positioned on the
    *  same term. Writes out merged entries into freqOutput and
