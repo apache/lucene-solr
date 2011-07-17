@@ -197,7 +197,8 @@ public class TestFixedBitSet extends LuceneTestCase {
   */
 
   public void testEquals() {
-    final int numBits = random.nextInt(2000) + 1 /* numBits cannot be 0 */;
+    // This test can't handle numBits==0:
+    final int numBits = random.nextInt(2000) + 1;
     FixedBitSet b1 = new FixedBitSet(numBits);
     FixedBitSet b2 = new FixedBitSet(numBits);
     assertTrue(b1.equals(b2));
@@ -219,7 +220,8 @@ public class TestFixedBitSet extends LuceneTestCase {
   }
   
   public void testHashCodeEquals() {
-    final int numBits = random.nextInt(2000);
+    // This test can't handle numBits==0:
+    final int numBits = random.nextInt(2000) + 1;
     FixedBitSet b1 = new FixedBitSet(numBits);
     FixedBitSet b2 = new FixedBitSet(numBits);
     assertTrue(b1.equals(b2));
@@ -237,6 +239,22 @@ public class TestFixedBitSet extends LuceneTestCase {
     }
   } 
 
+  public void testSmallBitSets() {
+    // Make sure size 0-10 bit sets are OK:
+    for(int numBits=0;numBits<10;numBits++) {
+      FixedBitSet b1 = new FixedBitSet(numBits);
+      FixedBitSet b2 = new FixedBitSet(numBits);
+      assertTrue(b1.equals(b2));
+      assertEquals(b1.hashCode(), b2.hashCode());
+      assertEquals(0, b1.cardinality());
+      if (numBits > 0) {
+        b1.set(0, numBits);
+        assertEquals(numBits, b1.cardinality());
+        b1.flip(0, numBits);
+        assertEquals(0, b1.cardinality());
+      }
+    }
+  }
   
   private FixedBitSet makeFixedBitSet(int[] a, int numBits) {
     FixedBitSet bs = new FixedBitSet(numBits);
