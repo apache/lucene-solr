@@ -835,8 +835,8 @@ public class CheckIndex {
                     if (pos < 0) {
                       throw new RuntimeException("position " + pos + " is out of bounds");
                     }
-                    if (pos <= lastPosition) {
-                      throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
+                    if (pos < lastPosition) {
+                      throw new RuntimeException("position " + pos + " is < lastPosition " + lastPosition);
                     }
                     lastPosition = pos;
                   } 

@@ -47,6 +47,22 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     riw.close();
     dir.close();
   }
+  
+  /**
+   * Same as the above, but with more docs
+   */
+  public void testMoreDocs() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new BugReproAnalyzer()));
+    Document doc = new Document();
+    doc.add(new Field("eng", "Six drunken" /*This shouldn't matter. */, 
+                      Field.Store.YES, Field.Index.ANALYZED));
+    for (int i = 0; i < 100; i++) {
+      riw.addDocument(doc);
+    }
+    riw.close();
+    dir.close();
+  }
 }
 
 final class BugReproAnalyzer extends Analyzer{

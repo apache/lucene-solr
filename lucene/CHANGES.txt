@@ -514,6 +514,10 @@ Bug fixes
   causing the file to sometimes be larger than it needed to be.  (Mike
   McCandless)
 
+* LUCENE-3224: Fixed a big where CheckIndex would incorrectly report a
+  corrupt index if a term with docfreq >= 16 was indexed more than once
+  at the same position.  (Robert Muir)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
