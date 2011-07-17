@@ -115,17 +115,6 @@ public class SpellChecker implements java.io.Closeable {
 
   private StringDistance sd;
   private Comparator<SuggestWord> comparator;
-  
-  /** we don't need to actually analyze any content:
-   *  all fields are indexed NOT_ANALYZED, but docsinverter
-   *  needs this for the offset gap!
-   */
-  private static Analyzer noAnalyzer = new Analyzer() {
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return null;
-    }
-  };
 
   /**
    * Use the given directory as a spell checker index. The directory
@@ -182,7 +171,7 @@ public class SpellChecker implements java.io.Closeable {
       if (!IndexReader.indexExists(spellIndexDir)) {
           IndexWriter writer = new IndexWriter(spellIndexDir,
             new IndexWriterConfig(Version.LUCENE_CURRENT,
-                noAnalyzer));
+                null));
           writer.close();
       }
       swapSearcher(spellIndexDir);
@@ -480,7 +469,7 @@ public class SpellChecker implements java.io.Closeable {
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           Version.LUCENE_CURRENT,
-          noAnalyzer)
+          null)
           .setOpenMode(OpenMode.CREATE));
       writer.close();
       swapSearcher(dir);
@@ -517,7 +506,7 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, noAnalyzer).setRAMBufferSizeMB(ramMB));
+      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, null).setRAMBufferSizeMB(ramMB));
       ((TieredMergePolicy) writer.getConfig().getMergePolicy()).setMaxMergeAtOnce(mergeFactor);
       IndexSearcher indexSearcher = obtainSearcher();
       final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
