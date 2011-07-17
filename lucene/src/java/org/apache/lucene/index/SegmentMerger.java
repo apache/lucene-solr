@@ -39,7 +39,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.MultiBits;
 import org.apache.lucene.util.ReaderUtil;
 
 /**
@@ -513,7 +512,6 @@ final class SegmentMerger {
     mergeState.mergedDocCount = mergedDocs;
 
     // Remap docIDs
-    mergeState.delCounts = new int[mergeState.readerCount];
     mergeState.docMaps = new int[mergeState.readerCount][];
     mergeState.docBase = new int[mergeState.readerCount];
     mergeState.hasPayloadProcessorProvider = payloadProcessorProvider != null;
@@ -528,11 +526,10 @@ final class SegmentMerger {
 
       final IndexReader reader = readers.get(i);
 
-      mergeState.delCounts[i] = reader.numDeletedDocs();
       mergeState.docBase[i] = docBase;
       docBase += reader.numDocs();
       inputDocBase += reader.maxDoc();
-      if (mergeState.delCounts[i] != 0) {
+      if (reader.hasDeletions()) {
         int delCount = 0;
         final Bits liveDocs = reader.getLiveDocs();
         assert liveDocs != null;
@@ -547,7 +544,7 @@ final class SegmentMerger {
             docMap[j] = newDocID++;
           }
         }
-        assert delCount == mergeState.delCounts[i]: "reader delCount=" + mergeState.delCounts[i] + " vs recomputed delCount=" + delCount;
+        assert delCount == reader.numDeletedDocs(): "reader delCount=" + reader.numDeletedDocs() + " vs recomputed delCount=" + delCount;
       }
 
       if (payloadProcessorProvider != null) {
@@ -557,12 +554,6 @@ final class SegmentMerger {
     codec = segmentWriteState.segmentCodecs.codec();
     final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
     try {
-      // NOTE: this is silly, yet, necessary -- we create a
-      // MultiBits as our skip docs only to have it broken
-      // apart when we step through the docs enums in
-      // MultiDocsEnum.
-      mergeState.multiLiveDocs = new MultiBits(bits, bitsStarts, true);
-      
       consumer.merge(mergeState,
                      new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
@@ -591,8 +582,6 @@ final class SegmentMerger {
     }
     perDocBitsStarts.add(docBase);
     if (!perDocSlices.isEmpty()) {
-      mergeState.multiLiveDocs = new MultiBits(perDocBits, perDocBitsStarts,
-          true);
       final PerDocConsumer docsConsumer = codec
           .docsConsumer(new PerDocWriteState(segmentWriteState));
       boolean success = false;
@@ -611,14 +600,6 @@ final class SegmentMerger {
   }
 
   private MergeState mergeState;
-
-  int[][] getDocMaps() {
-    return mergeState.docMaps;
-  }
-
-  int[] getDelCounts() {
-    return mergeState.delCounts;
-  }
 
   public boolean getAnyNonBulkMerges() {
     assert matchedCount <= readers.size();
