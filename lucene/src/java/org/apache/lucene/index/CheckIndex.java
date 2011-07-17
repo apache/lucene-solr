@@ -733,11 +733,8 @@ public class CheckIndex {
                   throw new RuntimeException("position " + pos + " is out of bounds");
                 }
                 // TODO: we should assert when all pos == 0 that positions are actually omitted
-                // previously CI relied upon the fact that freq = 1 always for omitTF
-                if (!(pos == 0 && lastPosition <= 0)) {
-                  if (pos <= lastPosition) {
-                    throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
-                  }
+                if (pos < lastPosition) {
+                  throw new RuntimeException("position " + pos + " is < lastPosition " + lastPosition);
                 }
                 lastPosition = pos;
               } 
