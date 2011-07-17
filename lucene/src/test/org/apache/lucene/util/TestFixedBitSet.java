@@ -197,7 +197,7 @@ public class TestFixedBitSet extends LuceneTestCase {
   */
 
   public void testEquals() {
-    final int numBits = random.nextInt(2000);
+    final int numBits = random.nextInt(2000) + 1 /* numBits cannot be 0 */;
     FixedBitSet b1 = new FixedBitSet(numBits);
     FixedBitSet b2 = new FixedBitSet(numBits);
     assertTrue(b1.equals(b2));
