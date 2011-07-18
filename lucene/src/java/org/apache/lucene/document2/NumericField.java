@@ -77,8 +77,8 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * <p>
  * By default, a <code>NumericField</code>'s value is not stored but is indexed
  * for range filtering and sorting. You can use the
- * {@link #NumericField(String,Field.Store,boolean)} constructor if you need to
- * change these defaults.
+ * {@link #NumericField(String,FieldType)} constructor if you need to
+ * change these defaults, and alter the default field type (set it to stored).
  * </p>
  * 
  * <p>
@@ -193,11 +193,11 @@ public final class NumericField extends Field {
    * 
    * @param name
    *          the field name
-   * @param store
-   *          if the field should be stored, {@link Document#getFieldable} then
-   *          returns {@code NumericField} instances on search results.
-   * @param index
-   *          if the field should be indexed using {@link NumericTokenStream}
+   * @param type
+   *          if the defualt field should be altered, e.g. stored, 
+   *          {@link Document#getField} then returns {@code NumericField} 
+   *          instances on search results, or indexed using 
+   *          {@link NumericTokenStream}
    */
   public NumericField(String name, FieldType type) {
     this(name, NumericUtils.PRECISION_STEP_DEFAULT, type);
@@ -233,11 +233,11 @@ public final class NumericField extends Field {
    *          the used <a
    *          href="../search/NumericRangeQuery.html#precisionStepDesc"
    *          >precision step</a>
-   * @param store
-   *          if the field should be stored, {@link Document#getFieldable} then
-   *          returns {@code NumericField} instances on search results.
-   * @param index
-   *          if the field should be indexed using {@link NumericTokenStream}
+   * @param type
+   *          if the defualt field should be altered, e.g. stored, 
+   *          {@link Document#getField} then returns {@code NumericField} 
+   *          instances on search results, or indexed using 
+   *          {@link NumericTokenStream}
    */
   public NumericField(String name, int precisionStep, FieldType type) {
     super(name, type);
@@ -283,10 +283,9 @@ public final class NumericField extends Field {
   }
   
   /**
-   * Returns the numeric value as a string. This format is also returned if you
-   * call {@link Document#get(String)} on search results. It is recommended to
-   * use {@link Document#getFieldable} instead that returns {@code NumericField}
-   * instances. You can then use {@link #getNumericValue} to return the stored
+   * Returns the numeric value as a string. It is recommended to
+   * use {@link Document#getField} instead that returns {@code NumericField}
+   * instances. You can then use {@link #numericValue} to return the stored
    * value.
    */
   @Override
