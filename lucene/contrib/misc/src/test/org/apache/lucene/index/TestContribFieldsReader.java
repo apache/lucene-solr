@@ -39,7 +39,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 
-public class TestFieldsReader extends LuceneTestCase {
+public class TestContribFieldsReader extends LuceneTestCase {
   private static Directory dir;
   private static org.apache.lucene.document2.Document testDoc = new org.apache.lucene.document2.Document();
   private static FieldInfos fieldInfos = null;
@@ -190,36 +190,6 @@ public class TestFieldsReader extends LuceneTestCase {
 
     }
     reader.close();
-  }
-
-
-
-
-  public void testLazyFieldsAfterClose() throws Exception {
-    assertTrue(dir != null);
-    assertTrue(fieldInfos != null);
-    IndexReader reader = IndexReader.open(dir);
-    Set<String> loadFieldNames = new HashSet<String>();
-    loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
-    loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
-    Set<String> lazyFieldNames = new HashSet<String>();
-    lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
-    lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
-    lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
-    lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
-    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
-    Document doc = getDocument(reader, 0, fieldSelector);
-    assertTrue("doc is null and it shouldn't be", doc != null);
-    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
-    assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("field is not lazy and it should be", field.isLazy());
-    reader.close();
-    try {
-      field.stringValue();
-      fail("did not hit AlreadyClosedException as expected");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
   }
 
   public void testLoadFirst() throws Exception {

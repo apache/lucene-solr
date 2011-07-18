@@ -32,7 +32,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestParallelReader extends LuceneTestCase {
+public class TestContribParallelReader extends LuceneTestCase {
 
   private IndexSearcher parallel;
   private IndexSearcher single;

@@ -36,7 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestIndexReader extends LuceneTestCase {
+public class TestContribIndexReader extends LuceneTestCase {
   private org.apache.lucene.document.Document getDocument(IndexReader ir, int docID, FieldSelector selector)  throws IOException {
     final FieldSelectorVisitor visitor = new FieldSelectorVisitor(selector);
     ir.document(docID, visitor);
