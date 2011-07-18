@@ -28,6 +28,7 @@ import org.apache.lucene.search.Query;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Set;
 
 /**
@@ -40,6 +41,7 @@ public class MoreLikeThisQuery extends Query {
   private String likeText;
   private String[] moreLikeFields;
   private Analyzer analyzer;
+  private String fieldName;
   private float percentTermsToMatch = 0.3f;
   private int minTermFrequency = 1;
   private int maxQueryTerms = 5;
@@ -49,10 +51,11 @@ public class MoreLikeThisQuery extends Query {
   /**
    * @param moreLikeFields
    */
-  public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer) {
+  public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer, String fieldName) {
     this.likeText = likeText;
     this.moreLikeFields = moreLikeFields;
     this.analyzer = analyzer;
+    this.fieldName = fieldName;
   }
 
   @Override
@@ -67,7 +70,7 @@ public class MoreLikeThisQuery extends Query {
     }
     mlt.setMaxQueryTerms(maxQueryTerms);
     mlt.setStopWords(stopWords);
-    BooleanQuery bq = (BooleanQuery) mlt.like(new ByteArrayInputStream(likeText.getBytes()));
+    BooleanQuery bq = (BooleanQuery) mlt.like(new StringReader(likeText), fieldName);
     BooleanClause[] clauses = bq.getClauses();
     //make at least half the terms match
     bq.setMinimumNumberShouldMatch((int) (clauses.length * percentTermsToMatch));
