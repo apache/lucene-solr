@@ -70,8 +70,7 @@ import java.util.*;
  * <h3>Initial Usage</h3>
  * <p/>
  * This class has lots of options to try to make it efficient and flexible.
- * See the body of {@link #main main()} below in the source for real code, or
- * if you want pseudo code, the simplest possible usage is as follows. The bold
+ * The simplest possible usage is as follows. The bold
  * fragment is specific to this class.
  * <p/>
  * <pre class="prettyprint">
@@ -837,7 +836,7 @@ public final class MoreLikeThis {
   }
 
   /**
-   * @see #retrieveInterestingTerms(java.io.Reader)
+   * @see #retrieveInterestingTerms(java.io.Reader, String)
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
     ArrayList<Object> al = new ArrayList<Object>(maxQueryTerms);
@@ -860,7 +859,7 @@ public final class MoreLikeThis {
    * @param r the source document
    * @param fieldName field passed to analyzer to use when analyzing the content
    * @return the most interesting words in the document
-   * @see #retrieveTerms(java.io.Reader)
+   * @see #retrieveTerms(java.io.Reader, String)
    * @see #setMaxQueryTerms
    */
   public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
