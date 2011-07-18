@@ -20,7 +20,6 @@ package org.apache.lucene.search.similar;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Set;
 
@@ -30,6 +29,8 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similar.MoreLikeThis;
+
+import java.io.StringReader;
 
 /**
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object
@@ -42,20 +43,27 @@ public class MoreLikeThisQuery extends Query {
   private String likeText;
   private String[] moreLikeFields;
   private Analyzer analyzer;
-  float percentTermsToMatch = 0.3f;
-  int minTermFrequency = 1;
-  int maxQueryTerms = 5;
-  Set<?> stopWords = null;
-  int minDocFreq = -1;
-  
+  private String fieldName;
+  private float percentTermsToMatch = 0.3f;
+  private int minTermFrequency = 1;
+  private int maxQueryTerms = 5;
+  private Set<?> stopWords = null;
+  private int minDocFreq = -1;
+
+  /** @deprecated use {@link #MoreLikeThisQuery(String, String[], Analyzer, String)} instead. */
+  @Deprecated
+  public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer) {
+    this(likeText, moreLikeFields, analyzer, moreLikeFields[0]);
+  }
+
   /**
    * @param moreLikeFields
    */
-  public MoreLikeThisQuery(String likeText, String[] moreLikeFields,
-      Analyzer analyzer) {
+  public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer, String fieldName) {
     this.likeText = likeText;
     this.moreLikeFields = moreLikeFields;
     this.analyzer = analyzer;
+    this.fieldName = fieldName;
   }
   
   @Override
@@ -70,8 +78,7 @@ public class MoreLikeThisQuery extends Query {
     }
     mlt.setMaxQueryTerms(maxQueryTerms);
     mlt.setStopWords(stopWords);
-    BooleanQuery bq = (BooleanQuery) mlt.like(new ByteArrayInputStream(likeText
-        .getBytes()));
+    BooleanQuery bq = (BooleanQuery) mlt.like(new StringReader(likeText), fieldName);
     BooleanClause[] clauses = bq.getClauses();
     // make at least half the terms match
     bq.setMinimumNumberShouldMatch((int) (clauses.length * percentTermsToMatch));

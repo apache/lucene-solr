@@ -84,10 +84,9 @@ import org.apache.lucene.util.Version;
  * 
  * <p>
  * <h3>Initial Usage</h3>
- * 
- * This class has lots of options to try to make it efficient and flexible. See
- * the body of {@link #main main()} below in the source for real code, or if you
- * want pseudo code, the simplest possible usage is as follows. The bold
+ * <p/>
+ * This class has lots of options to try to make it efficient and flexible.
+ * The simplest possible usage is as follows. The bold
  * fragment is specific to this class.
  * 
  * <pre class="prettyprint">
@@ -634,7 +633,8 @@ public final class MoreLikeThis {
    * Return a query that will return docs like the passed file.
    * 
    * @return a query that will return docs like the passed file.
-   */
+   * @deprecated use {@link #like(Reader, String)} instead */
+  @Deprecated
   public Query like(File f) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
@@ -650,7 +650,8 @@ public final class MoreLikeThis {
    * Return a query that will return docs like the passed URL.
    * 
    * @return a query that will return docs like the passed URL.
-   */
+   * @deprecated use {@link #like(Reader, String)} instead */
+  @Deprecated
   public Query like(URL u) throws IOException {
     return like(new InputStreamReader(u.openConnection().getInputStream()));
   }
@@ -659,18 +660,25 @@ public final class MoreLikeThis {
    * Return a query that will return docs like the passed stream.
    * 
    * @return a query that will return docs like the passed stream.
-   */
+   * @deprecated use {@link #like(Reader, String)} instead */
+  @Deprecated
   public Query like(java.io.InputStream is) throws IOException {
     return like(new InputStreamReader(is));
   }
-  
+
+  /** @deprecated use {@link #like(Reader, String)} instead */
+  @Deprecated
+  public Query like(Reader r) throws IOException {
+    return createQuery(retrieveTerms(r, fieldNames[0]));
+  }
+
   /**
    * Return a query that will return docs like the passed Reader.
    * 
    * @return a query that will return docs like the passed Reader.
    */
-  public Query like(Reader r) throws IOException {
-    return createQuery(retrieveTerms(r));
+  public Query like(Reader r, String fieldName) throws IOException {
+    return createQuery(retrieveTerms(r, fieldName));
   }
   
   /**
@@ -789,63 +797,6 @@ public final class MoreLikeThis {
     sb.append("\t" + "minTermFreq    : " + minTermFreq + "\n");
     sb.append("\t" + "minDocFreq     : " + minDocFreq + "\n");
     return sb.toString();
-  }
-  
-  /**
-   * Test driver. Pass in "-i INDEX" and then either "-fn FILE" or "-url URL".
-   */
-  public static void main(String[] a) throws Throwable {
-    String indexName = "localhost_index";
-    String fn = "c:/Program Files/Apache Group/Apache/htdocs/manual/vhosts/index.html.en";
-    URL url = null;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i].equals("-i")) {
-        indexName = a[++i];
-      } else if (a[i].equals("-f")) {
-        fn = a[++i];
-      } else if (a[i].equals("-url")) {
-        url = new URL(a[++i]);
-      }
-    }
-    
-    PrintStream o = System.out;
-    FSDirectory dir = FSDirectory.open(new File(indexName));
-    IndexReader r = IndexReader.open(dir, true);
-    o.println("Open index " + indexName + " which has " + r.numDocs() + " docs");
-    
-    MoreLikeThis mlt = new MoreLikeThis(r);
-    
-    o.println("Query generation parameters:");
-    o.println(mlt.describeParams());
-    o.println();
-    
-    Query query = null;
-    if (url != null) {
-      o.println("Parsing URL: " + url);
-      query = mlt.like(url);
-    } else if (fn != null) {
-      o.println("Parsing file: " + fn);
-      query = mlt.like(new File(fn));
-    }
-    
-    o.println("q: " + query);
-    o.println();
-    IndexSearcher searcher = new IndexSearcher(dir, true);
-    
-    TopDocs hits = searcher.search(query, null, 25);
-    int len = hits.totalHits;
-    o.println("found: " + len + " documents matching");
-    o.println();
-    ScoreDoc[] scoreDocs = hits.scoreDocs;
-    for (int i = 0; i < Math.min(25, len); i++) {
-      Document d = searcher.doc(scoreDocs[i].doc);
-      String summary = d.get("summary");
-      o.println("score  : " + scoreDocs[i].score);
-      o.println("url    : " + d.get("url"));
-      o.println("\ttitle  : " + d.get("title"));
-      if (summary != null) o.println("\tsummary: " + d.get("summary"));
-      o.println();
-    }
   }
   
   /**
@@ -984,29 +935,29 @@ public final class MoreLikeThis {
    * <li>The frequency of this word in the index (Integer)
    * <li>The frequency of this word in the source document (Integer)
    * </ol>
-   * This is a somewhat "advanced" routine, and in general only the 1st entry in
-   * the array is of interest. This method is exposed so that you can identify
-   * the "interesting words" in a document. For an easier method to call see
-   * {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
-   * 
-   * @param r
-   *          the reader that has the content of the document
-   * @return the most interesting words in the document ordered by score, with
-   *         the highest scoring, or best entry, first
-   * 
+   * This is a somewhat "advanced" routine, and in general only the 1st entry in the array is of interest.
+   * This method is exposed so that you can identify the "interesting words" in a document.
+   * For an easier method to call see {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
+   *
+   * @param r the reader that has the content of the document
+   * @param fieldName field passed to the analyzer to use when analyzing the content
+   * @return the most interesting words in the document ordered by score, with the highest scoring, or best entry, first
    * @see #retrieveInterestingTerms
    */
-  public PriorityQueue<Object[]> retrieveTerms(Reader r) throws IOException {
-    Map<String,Int> words = new HashMap<String,Int>();
-    for (int i = 0; i < fieldNames.length; i++) {
-      String fieldName = fieldNames[i];
-      addTermFrequencies(r, words, fieldName);
-    }
+  public PriorityQueue<Object[]> retrieveTerms(Reader r, String fieldName) throws IOException {
+    Map<String, Int> words = new HashMap<String, Int>();
+    addTermFrequencies(r, words, fieldName);
     return createQueue(words);
   }
   
+  /** @deprecated use {@link #retrieveTerms(Reader, String)} instead */
+  @Deprecated
+  public PriorityQueue<Object[]> retrieveTerms(Reader r) throws IOException {
+    return retrieveTerms(r, fieldNames[0]);
+  }
+  
   /**
-   * @see #retrieveInterestingTerms(java.io.Reader)
+   * @see #retrieveInterestingTerms(java.io.Reader, String)
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
     ArrayList<Object> al = new ArrayList<Object>(maxQueryTerms);
@@ -1025,20 +976,18 @@ public final class MoreLikeThis {
   }
   
   /**
-   * Convenience routine to make it easy to return the most interesting words in
-   * a document. More advanced users will call
-   * {@link #retrieveTerms(java.io.Reader) retrieveTerms()} directly.
-   * 
-   * @param r
-   *          the source document
+   * Convenience routine to make it easy to return the most interesting words in a document.
+   * More advanced users will call {@link #retrieveTerms(Reader, String) retrieveTerms()} directly.
+   *
+   * @param r the source document
+   * @param fieldName field passed to analyzer to use when analyzing the content
    * @return the most interesting words in the document
-   * 
-   * @see #retrieveTerms(java.io.Reader)
+   * @see #retrieveTerms(java.io.Reader, String)
    * @see #setMaxQueryTerms
    */
-  public String[] retrieveInterestingTerms(Reader r) throws IOException {
+  public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
     ArrayList<Object> al = new ArrayList<Object>(maxQueryTerms);
-    PriorityQueue<Object[]> pq = retrieveTerms(r);
+    PriorityQueue<Object[]> pq = retrieveTerms(r, fieldName);
     Object cur;
     int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all
                              // words but that's probably not useful to our
@@ -1050,6 +999,12 @@ public final class MoreLikeThis {
     }
     String[] res = new String[al.size()];
     return al.toArray(res);
+  }
+  
+  /** @deprecated use {@link #retrieveInterestingTerms(Reader, String)} instead. */
+  @Deprecated
+  public String[] retrieveInterestingTerms(Reader r) throws IOException {
+    return retrieveInterestingTerms(r, fieldNames[0]);
   }
   
   /**
