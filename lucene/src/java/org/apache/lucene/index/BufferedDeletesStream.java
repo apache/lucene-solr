@@ -143,11 +143,6 @@ class BufferedDeletesStream {
         return 0;
       }
     }
-
-    @Override
-    public boolean equals(Object other) {
-      return sortByDelGen == other;
-    }
   };
 
   /** Resolves the buffered deleted Term/Query/docIDs, into
