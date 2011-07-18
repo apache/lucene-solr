@@ -17,176 +17,28 @@
     limitations under the License.
  -->
 
-<project name="solr-uima" default="build">
+<project name="solr-uima" default="default">
 
-  <property name="solr-path" value="../.." />
-
-  <import file="../../common-build.xml"/>
-  
   <description>
     Solr Integration with UIMA for extracting metadata from arbitrary (text) fields and enrich document with features extracted from UIMA types (language, sentences, concepts, named entities, etc.)
   </description>
 
-  <path id="common.classpath">
-    <pathelement location="${solr-path}/build/solr" />
-    <pathelement location="${solr-path}/build/solrj" />
-    <fileset dir="lib" includes="*.jar"/>
-    <fileset dir="${solr-path}/lib" includes="*.jar"/>
-    <path refid="lucene.classpath"/>
-    <pathelement location="${basedir}/src/main/resources" />    
-  </path>
+  <import file="../contrib-build.xml"/>
 
-  <path id="test.classpath">
-    <path refid="common.classpath" />
-    <pathelement path="${dest}/classes" />
-    <pathelement path="${dest}/test-classes" />
-    <pathelement location="${solr-path}/build/test-framework"/> <!-- include solr test code -->
-    <pathelement location="${solr-path}/../lucene/build/classes/test-framework" />  <!-- include some lucene test code -->
-    <pathelement path="${java.class.path}"/>
-  </path>
+  <dirname file="${ant.file}" property="antfile.dir"/>
 
-  <target name="clean">
-    <delete failonerror="false" dir="${dest}"/>
+  <target name="dist-maven" depends="contrib-build.dist-maven">
+    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-alchemy-pom.xml.template"
+                                 jar.file="${antfile.dir}/lib/uima-an-alchemy-2.3.1-SNAPSHOT-r1062868.jar" />
+
+    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-calais-pom.xml.template"
+                                 jar.file="${antfile.dir}/lib/uima-an-calais-2.3.1-SNAPSHOT-r1062868.jar" />
+
+    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-tagger-pom.xml.template"
+                                 jar.file="${antfile.dir}/lib/uima-an-tagger-2.3.1-SNAPSHOT-r1062868.jar" />
+
+    <m2-deploy-with-pom-template pom.xml="${antfile.dir}/lib/solr-uima-an-wst-pom.xml.template"
+                                 jar.file="${antfile.dir}/lib/uima-an-wst-2.3.1-SNAPSHOT-r1076132.jar" />
+
   </target>
-
-  <target name="init">
-    <mkdir dir="${dest}/classes"/>
-    <mkdir dir="${build.javadoc}" />
-    <subant target="compileTestFramework">
-      <fileset dir="${solr-path}" includes="build.xml"/>
-    </subant>
-    <subant target="make-manifest">
-      <fileset dir="${solr-path}" includes="build.xml"/>
-    </subant>
-  </target>
-
-  <target name="compile" depends="init">
-    <solr-javac destdir="${dest}/classes"
-    classpathref="common.classpath">
-      <src path="src/main/java" />
-    </solr-javac>
-  </target>
-
-  <target name="build" depends="compile">
-    <solr-jar destfile="${dest}/${fullnamever}.jar" basedir="${dest}/classes"
-              manifest="../../${dest}/META-INF/MANIFEST.MF">
-      <fileset dir="src/main/resources" />
-    </solr-jar>
-  </target>
-
-  <target name="compileTests" depends="compile">
-  	<solr-javac destdir="${dest}/test-classes"
-  	                classpathref="test.classpath">
-  	  <src path="src/test/java" />
-  	</solr-javac>
-        <copy todir="${dest}/test-classes">
-          <fileset dir="src/test/resources" excludes="**/*.java"/>
-        </copy>
-  </target>
-
-  <property name="tempDir" value="${junit.output.dir}/temp" />
-
-  <target name="test" depends="compileTests">
-  	<mkdir dir="${junit.output.dir}"/>
-    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
-       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
-    -->
-  	<touch file="${tempDir}/quiet.ant" verbose="false" mkdirs="true"/>
-
-    <condition property="runall">
-      <not>
-        <or>
-          <isset property="testcase"/>
-          <isset property="testpackage"/>
-          <isset property="testpackageroot"/>
-        </or>
-      </not>
-    </condition>    
-    
-  	<junit printsummary="no"
-           haltonfailure="no"
-           maxmemory="512M"
-           errorProperty="tests.failed"
-           failureProperty="tests.failed"
-           dir="${tempDir}"
-           tempdir="${tempDir}"
-           forkmode="perBatch"
-           >
-      <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
-      <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
-      <sysproperty key="tests.codecprovider" value="${tests.codecprovider}"/>
-      <sysproperty key="tests.codec" value="${tests.codec}"/>
-      <sysproperty key="tests.locale" value="${tests.locale}"/>
-      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
-      <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
-      <sysproperty key="tests.iter" value="${tests.iter}"/>
-      <sysproperty key="tests.seed" value="${tests.seed}"/>
-      <sysproperty key="jetty.insecurerandom" value="1"/>
-      <sysproperty key="tempDir" file="${tempDir}"/>
-      <sysproperty key="testmethod" value="${testmethod}"/>
-      <sysproperty key="tests.directory" value="${tests.directory}"/>
-      <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
-      <jvmarg line="${args}"/>
-      <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
-      <classpath refid="test.classpath"/>
-      <assertions>
-        <enable package="org.apache.lucene"/>
-        <enable package="org.apache.solr"/>
-      </assertions>
-      <formatter type="${junit.formatter}"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
-        <fileset dir="src/test/java" includes="${junit.includes}"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-        <fileset dir="src/test/java" includes="**/${testcase}.java"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
-        <fileset dir="src/test/java" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
-        <fileset dir="src/test/java" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java"/>
-      </batchtest>
-    </junit>
-
-    <fail if="tests.failed">Tests failed!</fail>
-  </target>
-
-  <target name="test-reports"
-          description="Generates HTML test reports.">
-    <mkdir dir="${junit.reports}"/>
-    <junitreport todir="${junit.output.dir}">
-      <fileset dir="${junit.output.dir}">
-        <include name="TEST-*.xml"/>
-      </fileset>
-      <report format="frames" todir="${junit.reports}"/>
-    </junitreport>
-  </target>
-
-  <target name="dist" depends="build">
-    <copy file="build/${fullnamever}.jar" todir="${solr-path}/dist"/>
-  </target>
-
-  <target name="example" depends="build">
-    <!-- :NOOP: this use to copy libs but now we can refer to them by path -->
-  </target>
-
-  <target name="javadoc">
-   	<sequential>
-      <mkdir dir="${build.javadoc}/contrib-${name}"/>
-
-      <path id="javadoc.classpath">
-        <path refid="common.classpath"/>
-      </path>
-
-      <invoke-javadoc
-        destdir="${build.javadoc}/contrib-${name}"
-      	title="${Name} ${version} contrib-${fullnamever} API">
-        <sources>
-          <packageset dir="src/main/java"/>
-        </sources>
-      </invoke-javadoc>
-    </sequential>
-  </target>
-
-
 </project>

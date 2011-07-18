@@ -132,6 +132,13 @@ public abstract class Terms {
    *  into account. */
   public abstract long getSumTotalTermFreq() throws IOException;
 
+  /** Returns the sum of {@link #docFreq(BytesRef)} for
+   *  all terms in this field, or -1 if this measure isn't
+   *  stored by the codec.  Note that, just like other term
+   *  measures, this measure does not take deleted documents
+   *  into account. */
+  public abstract long getSumDocFreq() throws IOException;
+
   /**
    * Returns a thread-private {@link TermsEnum} instance. Obtaining
    * {@link TermsEnum} from this method might be more efficient than using

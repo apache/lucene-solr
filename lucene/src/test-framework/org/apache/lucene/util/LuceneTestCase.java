@@ -352,6 +352,7 @@ public abstract class LuceneTestCase extends Assert {
     state = State.INITIAL;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
+    random.initialized = true;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     
@@ -494,6 +495,8 @@ public abstract class LuceneTestCase extends Assert {
         }
       }
     }
+    random.setSeed(0L);
+    random.initialized = false;
   }
 
   private static boolean testsFailed; /* true if any tests failed */
@@ -1366,7 +1369,26 @@ public abstract class LuceneTestCase extends Assert {
   private long seed;
 
   private static final Random seedRand = new Random();
-  protected static final Random random = new Random(0);
+  protected static final SmartRandom random = new SmartRandom(0);
+  
+  public static class SmartRandom extends Random {
+    boolean initialized;
+    
+    SmartRandom(long seed) {
+      super(seed);
+    }
+    
+    @Override
+    protected int next(int bits) {
+      if (!initialized) {
+        System.err.println("!!! WARNING: test is using random from static initializer !!!");
+        Thread.dumpStack();
+        // I wish, but it causes JRE crashes
+        // throw new IllegalStateException("you cannot use this random from a static initializer in your test");
+      }
+      return super.next(bits);
+    }
+  }
 
   private String name = "<unknown>";
 

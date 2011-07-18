@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiDocsEnum;
 import org.apache.lucene.index.MultiDocsAndPositionsEnum;
@@ -41,7 +42,7 @@ public abstract class TermsConsumer {
   public abstract void finishTerm(BytesRef text, TermStats stats) throws IOException;
 
   /** Called when we are done adding terms to this field */
-  public abstract void finish(long sumTotalTermFreq) throws IOException;
+  public abstract void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException;
 
   /** Return the BytesRef Comparator used to sort terms
    *  before feeding to this API. */
@@ -56,9 +57,10 @@ public abstract class TermsConsumer {
     BytesRef term;
     assert termsEnum != null;
     long sumTotalTermFreq = 0;
-    long sumDF = 0;
+    long sumDocFreq = 0;
+    long sumDFsinceLastAbortCheck = 0;
 
-    if (mergeState.fieldInfo.omitTermFreqAndPositions) {
+    if (mergeState.fieldInfo.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       if (docsEnum == null) {
         docsEnum = new MappingMultiDocsEnum();
       }
@@ -67,17 +69,21 @@ public abstract class TermsConsumer {
       MultiDocsEnum docsEnumIn = null;
 
       while((term = termsEnum.next()) != null) {
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(mergeState.multiLiveDocs, docsEnumIn);
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
           final TermStats stats = postingsConsumer.merge(mergeState, docsEnum);
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
-            sumDF += stats.docFreq;
-            if (sumDF > 60000) {
-              mergeState.checkAbort.work(sumDF/5.0);
-              sumDF = 0;
+            sumTotalTermFreq += stats.totalTermFreq;
+            sumDFsinceLastAbortCheck += stats.docFreq;
+            sumDocFreq += stats.docFreq;
+            if (sumDFsinceLastAbortCheck > 60000) {
+              mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
+              sumDFsinceLastAbortCheck = 0;
             }
           }
         }
@@ -89,7 +95,9 @@ public abstract class TermsConsumer {
       postingsEnum.setMergeState(mergeState);
       MultiDocsAndPositionsEnum postingsEnumIn = null;
       while((term = termsEnum.next()) != null) {
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(mergeState.multiLiveDocs, postingsEnumIn);
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
           // set PayloadProcessor
@@ -105,16 +113,17 @@ public abstract class TermsConsumer {
           if (stats.docFreq > 0) {
             finishTerm(term, stats);
             sumTotalTermFreq += stats.totalTermFreq;
-            sumDF += stats.docFreq;
-            if (sumDF > 60000) {
-              mergeState.checkAbort.work(sumDF/5.0);
-              sumDF = 0;
+            sumDFsinceLastAbortCheck += stats.docFreq;
+            sumDocFreq += stats.docFreq;
+            if (sumDFsinceLastAbortCheck > 60000) {
+              mergeState.checkAbort.work(sumDFsinceLastAbortCheck/5.0);
+              sumDFsinceLastAbortCheck = 0;
             }
           }
         }
       }
     }
 
-    finish(sumTotalTermFreq);
+    finish(sumTotalTermFreq, sumDocFreq);
   }
 }

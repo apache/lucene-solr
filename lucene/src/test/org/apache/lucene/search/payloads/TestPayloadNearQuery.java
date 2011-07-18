@@ -42,6 +42,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
@@ -315,9 +316,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       return new DefaultSimilarity() {
     
         @Override 
-        public float scorePayload(int docId, int start, int end, byte[] payload, int offset, int length) {
+        public float scorePayload(int docId, int start, int end, BytesRef payload) {
           //we know it is size 4 here, so ignore the offset/length
-          return payload[offset];
+          return payload.bytes[payload.offset];
         }
     
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

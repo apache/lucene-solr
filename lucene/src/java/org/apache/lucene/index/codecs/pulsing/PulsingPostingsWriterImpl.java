@@ -20,6 +20,7 @@ package org.apache.lucene.index.codecs.pulsing;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.store.IndexOutput;
@@ -46,7 +47,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   private IndexOutput termsOut;
 
-  private boolean omitTF;
+  private IndexOptions indexOptions;
   private boolean storePayloads;
 
   // one entry per position
@@ -102,7 +103,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   // our parent calls setField whenever the field changes
   @Override
   public void setField(FieldInfo fieldInfo) {
-    omitTF = fieldInfo.omitTermFreqAndPositions;
+    this.indexOptions = fieldInfo.indexOptions;
     //System.out.println("PW field=" + fieldInfo.name + " omitTF=" + omitTF);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
@@ -123,8 +124,11 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       assert pendingCount < pending.length;
       currentDoc = pending[pendingCount];
       currentDoc.docID = docID;
-      if (omitTF) {
+      if (indexOptions == IndexOptions.DOCS_ONLY) {
         pendingCount++;
+      } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) { 
+        pendingCount++;
+        currentDoc.termFreq = termDocFreq;
       } else {
         currentDoc.termFreq = termDocFreq;
       }
@@ -196,7 +200,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       // given codec wants to store other interesting
       // stuff, it could use this pulsing codec to do so
 
-      if (!omitTF) {
+      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         int lastDocID = 0;
         int pendingIDX = 0;
         int lastPayloadLength = -1;
@@ -239,7 +243,20 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
             }
           }
         }
-      } else {
+      } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
+        int lastDocID = 0;
+        for(int posIDX=0;posIDX<pendingCount;posIDX++) {
+          final Position doc = pending[posIDX];
+          final int delta = doc.docID - lastDocID;
+          if (doc.termFreq == 1) {
+            buffer.writeVInt((delta<<1)|1);
+          } else {
+            buffer.writeVInt(delta<<1);
+            buffer.writeVInt(doc.termFreq);
+          }
+          lastDocID = doc.docID;
+        }
+      } else if (indexOptions == IndexOptions.DOCS_ONLY) {
         int lastDocID = 0;
         for(int posIDX=0;posIDX<pendingCount;posIDX++) {
           final Position doc = pending[posIDX];
@@ -282,7 +299,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     wrappedPostingsWriter.startTerm();
       
     // Flush all buffered docs
-    if (!omitTF) {
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       Position doc = null;
       for(Position pos : pending) {
         if (doc == null) {
@@ -303,7 +320,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       //wrappedPostingsWriter.finishDoc();
     } else {
       for(Position doc : pending) {
-        wrappedPostingsWriter.startDoc(doc.docID, 0);
+        wrappedPostingsWriter.startDoc(doc.docID, indexOptions == IndexOptions.DOCS_ONLY ? 0 : doc.termFreq);
       }
     }
     pendingCount = -1;

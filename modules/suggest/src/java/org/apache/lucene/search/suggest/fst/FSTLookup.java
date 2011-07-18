@@ -90,6 +90,10 @@ import org.apache.lucene.store.OutputStreamDataOutput;
  * 
  * <p>"alphabetically" in any of the documentation above indicates utf16 codepoint order, 
  * nothing else.
+ *
+ * <b>NOTE</b>: the FST file format is experimental and
+ * subject to suddenly change, requiring you to rebuild the
+ * FST suggest index.
  */
 public class FSTLookup extends Lookup {
 
@@ -446,8 +450,7 @@ public class FSTLookup extends Lookup {
     // Build the automaton.
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Object empty = outputs.getNoOutput();
-    final Builder<Object> builder = 
-      new Builder<Object>(FST.INPUT_TYPE.BYTE4, 0, 0, true, outputs);
+    final Builder<Object> builder = new Builder<Object>(FST.INPUT_TYPE.BYTE4, outputs);
     final IntsRef scratchIntsRef = new IntsRef(10);
     for (Entry e : entries) {
       final int termLength = scratchIntsRef.length = e.term.length;

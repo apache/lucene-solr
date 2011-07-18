@@ -17,15 +17,10 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.ToStringUtils;
-
-import java.io.IOException;
 import java.util.Set;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
 
 /** Matches spans containing a term. */
 public class SpanTermQuery extends MockSpanQuery {

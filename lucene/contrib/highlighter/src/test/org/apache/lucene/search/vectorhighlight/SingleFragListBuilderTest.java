@@ -1,6 +1,8 @@
 package org.apache.lucene.search.vectorhighlight;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,27 +25,26 @@ public class SingleFragListBuilderTest extends AbstractTestCase {
   
   public void testNullFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "b c d" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), 100 );
     assertEquals( 0, ffl.getFragInfos().size() );
   }
   
   public void testShortFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a b c d" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b c d" ), 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,2147483647)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testLongFieldFragList() throws Exception {
     SingleFragListBuilder sflb = new SingleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a b c d", "a b c d e f g h i", "j k l m n o p q r s t u v w x y z a b c", "d e f g" ), 100 );
+    FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b c d", "a b c d e f g h i", "j k l m n o p q r s t u v w x y z a b c", "d e f g" ), 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1))a((8,9))a((60,61)))/3.0(0,2147483647)", ffl.getFragInfos().get( 0 ).toString() );
   }
 
-  private FieldPhraseList fpl( String queryValue, String... indexValues ) throws Exception {
+  private FieldPhraseList fpl(Query query, String... indexValues ) throws Exception {
     make1dmfIndex( indexValues );
-    Query query = paW.parse( queryValue );
     FieldQuery fq = new FieldQuery( query, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     return new FieldPhraseList( stack, fq );

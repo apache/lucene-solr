@@ -26,7 +26,6 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 
 /** Holds common state used during segment merging
  *
@@ -36,10 +35,8 @@ public class MergeState {
   public List<IndexReader> readers;               // Readers being merged
   public int readerCount;                         // Number of readers being merged
   public int[][] docMaps;                         // Maps docIDs around deletions
-  public int[] delCounts;                         // Deletion count per reader
   public int[] docBase;                           // New docID base per reader
   public int mergedDocCount;                      // Total # merged docs
-  public Bits multiLiveDocs;
   public CheckAbort checkAbort;
 
   // Updated per field;

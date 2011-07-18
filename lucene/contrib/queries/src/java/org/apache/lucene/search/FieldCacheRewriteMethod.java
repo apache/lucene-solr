@@ -111,6 +111,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
       final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader, query.field);
+      // Cannot use FixedBitSet because we require long index (ord):
       final OpenBitSet termSet = new OpenBitSet(fcsi.numOrd());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
         
@@ -128,6 +129,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         public long getSumTotalTermFreq() {
           return -1;
         }
+
+        @Override
+        public long getSumDocFreq() throws IOException {
+          return -1;
+        }
       });
       
       assert termsEnum != null;
@@ -137,7 +143,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         do {
           long ord = termsEnum.ord();
           if (ord > 0) {
-            termSet.fastSet(ord);
+            termSet.set(ord);
             termCount++;
           }
         } while (termsEnum.next() != null);
@@ -150,7 +156,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       return new FieldCacheRangeFilter.FieldCacheDocIdSet(context.reader, true) {
         @Override
         boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
-          return termSet.fastGet(fcsi.getOrd(doc));
+          return termSet.get(fcsi.getOrd(doc));
         }
       };
     }

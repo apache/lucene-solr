@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.BlockTermState;
@@ -134,8 +135,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     //System.out.println("PR nextTerm");
     PulsingTermState termState = (PulsingTermState) _termState;
 
-    // total TF, but in the omitTFAP case its computed based on docFreq.
-    long count = fieldInfo.omitTermFreqAndPositions ? termState.docFreq : termState.totalTermFreq;
+    // if we have positions, its total TF, otherwise its computed based on docFreq.
+    long count = fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
@@ -193,7 +194,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   // TODO: -- not great that we can't always reuse
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo field, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
-    if (field.omitTermFreqAndPositions) {
+    if (field.indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       return null;
     }
     //System.out.println("D&P: field=" + field.name);
@@ -223,7 +224,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
   private static class PulsingDocsEnum extends DocsEnum {
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
-    private final boolean omitTF;
+    private final IndexOptions indexOptions;
     private final boolean storePayloads;
     private Bits liveDocs;
     private int docID;
@@ -231,7 +232,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     private int payloadLength;
 
     public PulsingDocsEnum(FieldInfo fieldInfo) {
-      omitTF = fieldInfo.omitTermFreqAndPositions;
+      indexOptions = fieldInfo.indexOptions;
       storePayloads = fieldInfo.storePayloads;
     }
 
@@ -249,7 +250,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     }
 
     boolean canReuse(FieldInfo fieldInfo) {
-      return omitTF == fieldInfo.omitTermFreqAndPositions && storePayloads == fieldInfo.storePayloads;
+      return indexOptions == fieldInfo.indexOptions && storePayloads == fieldInfo.storePayloads;
     }
 
     @Override
@@ -262,7 +263,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         }
 
         final int code = postings.readVInt();
-        if (omitTF) {
+        if (indexOptions == IndexOptions.DOCS_ONLY) {
           docID += code;
         } else {
           docID += code >>> 1;              // shift off low bit
@@ -272,21 +273,23 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
             freq = postings.readVInt();     // else read freq
           }
 
-          // Skip positions
-          if (storePayloads) {
-            for(int pos=0;pos<freq;pos++) {
-              final int posCode = postings.readVInt();
-              if ((posCode & 1) != 0) {
-                payloadLength = postings.readVInt();
+          if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+            // Skip positions
+            if (storePayloads) {
+              for(int pos=0;pos<freq;pos++) {
+                final int posCode = postings.readVInt();
+                if ((posCode & 1) != 0) {
+                  payloadLength = postings.readVInt();
+                }
+                if (payloadLength != 0) {
+                  postings.skipBytes(payloadLength);
+                }
               }
-              if (payloadLength != 0) {
-                postings.skipBytes(payloadLength);
+            } else {
+              for(int pos=0;pos<freq;pos++) {
+                // TODO: skipVInt
+                postings.readVInt();
               }
-            }
-          } else {
-            for(int pos=0;pos<freq;pos++) {
-              // TODO: skipVInt
-              postings.readVInt();
             }
           }
         }

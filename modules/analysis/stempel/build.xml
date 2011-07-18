@@ -48,6 +48,9 @@
 
   <target name="build-analyzers-common" unless="analyzers-common.uptodate">
     <echo>Stempel building dependency ${analyzers-common.jar}</echo>
-    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common" />
+    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common.uptodate" value="true"/>
   </target>
 </project>

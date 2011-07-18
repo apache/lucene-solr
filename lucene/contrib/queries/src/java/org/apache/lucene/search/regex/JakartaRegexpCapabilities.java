@@ -36,6 +36,7 @@ import java.lang.reflect.Method;
 public class JakartaRegexpCapabilities implements RegexCapabilities {
   private static Field prefixField;
   private static Method getPrefixMethod;
+
   static {
     try {
       getPrefixMethod = REProgram.class.getMethod("getPrefix");
@@ -76,8 +77,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
    * 
    * @param flags The matching style
    */
-  public JakartaRegexpCapabilities(int flags)
-  {
+  public JakartaRegexpCapabilities(int flags) {
     this.flags = flags;
   }
   
@@ -95,15 +95,22 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    
     JakartaRegexpCapabilities other = (JakartaRegexpCapabilities) obj;
-    if (flags != other.flags) return false;
-    return true;
+    return flags == other.flags;
   }
 
   class JakartaRegexMatcher implements RegexCapabilities.RegexMatcher {
+    
     private RE regexp;
     private final CharsRef utf16 = new CharsRef(10);
     private final CharacterIterator utf16wrapper = new CharacterIterator() {

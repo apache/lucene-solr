@@ -49,7 +49,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 public class HighlighterPhraseTest extends LuceneTestCase {
   private static final String FIELD = "text";
@@ -119,7 +119,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
             new SpanTermQuery(new Term(FIELD, "fox")),
             new SpanTermQuery(new Term(FIELD, "jumped")) }, 0, true);
-        final OpenBitSet bitset = new OpenBitSet();
+        final FixedBitSet bitset = new FixedBitSet(indexReader.maxDoc());
         indexSearcher.search(phraseQuery, new Collector() {
           private int baseDoc;
 
@@ -146,10 +146,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           }
         });
         assertEquals(1, bitset.cardinality());
+        final int maxDoc = indexReader.maxDoc();
         final Highlighter highlighter = new Highlighter(
             new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
             new QueryScorer(phraseQuery));
-        for (int position = bitset.nextSetBit(0); position >= 0; position = bitset
+        for (int position = bitset.nextSetBit(0); position >= 0 && position < maxDoc-1; position = bitset
             .nextSetBit(position + 1)) {
           assertEquals(0, position);
           final TokenStream tokenStream = TokenSources.getTokenStream(

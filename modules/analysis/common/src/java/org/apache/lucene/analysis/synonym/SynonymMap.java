@@ -1,3 +1,5 @@
+package org.apache.lucene.analysis.synonym;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,146 +17,301 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.synonym;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.util.CharArrayMap;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.fst.ByteSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
 
-import java.util.*;
-
-/** Mapping rules for use with {@link SynonymFilter}
+/**
+ * A map of synonyms, keys and values are phrases.
+ * @lucene.experimental
  */
 public class SynonymMap {
-  /** @lucene.internal */
-  public CharArrayMap<SynonymMap> submap; // recursive: Map<String, SynonymMap>
-  /** @lucene.internal */
-  public Token[] synonyms;
-  int flags;
+  /** for multiword support, you must separate words with this separator */
+  public static final char WORD_SEPARATOR = 0;
+  /** map<input word, list<ord>> */
+  public final FST<BytesRef> fst;
+  /** map<ord, outputword> */
+  public final BytesRefHash words;
+  /** maxHorizontalContext: maximum context we need on the tokenstream */
+  public final int maxHorizontalContext;
 
-  static final int INCLUDE_ORIG=0x01;
-  static final int IGNORE_CASE=0x02;
-
-  public SynonymMap() {}
-  public SynonymMap(boolean ignoreCase) {
-    if (ignoreCase) flags |= IGNORE_CASE;
+  public SynonymMap(FST<BytesRef> fst, BytesRefHash words, int maxHorizontalContext) {
+    this.fst = fst;
+    this.words = words;
+    this.maxHorizontalContext = maxHorizontalContext;
   }
-
-  public boolean includeOrig() { return (flags & INCLUDE_ORIG) != 0; }
-  public boolean ignoreCase() { return (flags & IGNORE_CASE) != 0; }
-
+  
   /**
-   * @param singleMatch  List<String>, the sequence of strings to match
-   * @param replacement  List<Token> the list of tokens to use on a match
-   * @param includeOrig  sets a flag on this mapping signaling the generation of matched tokens in addition to the replacement tokens
-   * @param mergeExisting merge the replacement tokens with any other mappings that exist
+   * Builds an FSTSynonymMap.
+   * <p>
+   * Call add() until you have added all the mappings, then call build() to get an FSTSynonymMap
+   * @lucene.experimental
    */
-  public void add(List<String> singleMatch, List<Token> replacement, boolean includeOrig, boolean mergeExisting) {
-    SynonymMap currMap = this;
-    for (String str : singleMatch) {
-      if (currMap.submap==null) {
-        // for now hardcode at 4.0, as its what the old code did.
-        // would be nice to fix, but shouldn't store a version in each submap!!!
-        currMap.submap = new CharArrayMap<SynonymMap>(Version.LUCENE_40, 1, ignoreCase());
-      }
+  public static class Builder {
+    private final HashMap<CharsRef,MapEntry> workingSet = new HashMap<CharsRef,MapEntry>();
+    private final BytesRefHash words = new BytesRefHash();
+    private final BytesRef utf8Scratch = new BytesRef(8);
+    private int maxHorizontalContext;
+    private final boolean dedup;
 
-      SynonymMap map = currMap.submap.get(str);
-      if (map==null) {
-        map = new SynonymMap();
-        map.flags |= flags & IGNORE_CASE;
-        currMap.submap.put(str, map);
-      }
-
-      currMap = map;
+    /** If dedup is true then identical rules (same input,
+     *  same output) will be added only once. */
+    public Builder(boolean dedup) {
+      this.dedup = dedup;
     }
 
-    if (currMap.synonyms != null && !mergeExisting) {
-      throw new RuntimeException("SynonymFilter: there is already a mapping for " + singleMatch);
+    private static class MapEntry {
+      boolean includeOrig;
+      // we could sort for better sharing ultimately, but it could confuse people
+      ArrayList<Integer> ords = new ArrayList<Integer>();
     }
-    List<Token> superset = currMap.synonyms==null ? replacement :
-          mergeTokens(Arrays.asList(currMap.synonyms), replacement);
-    currMap.synonyms = superset.toArray(new Token[superset.size()]);
-    if (includeOrig) currMap.flags |= INCLUDE_ORIG;
+
+    /** Sugar: just joins the provided terms with {@link
+     *  SynonymMap#WORD_SEPARATOR}.  reuse and its chars
+     *  must not be null. */
+    public static CharsRef join(String[] words, CharsRef reuse) {
+      int upto = 0;
+      char[] buffer = reuse.chars;
+      for(String word : words) {
+        if (upto > 0) {
+          if (upto >= buffer.length) {
+            reuse.grow(upto);
+            buffer = reuse.chars;
+          }
+          buffer[upto++] = SynonymMap.WORD_SEPARATOR;
+        }
+
+        final int wordLen =  word.length();
+        final int needed = upto + wordLen;
+        if (needed > buffer.length) {
+          reuse.grow(needed);
+          buffer = reuse.chars;
+        }
+
+        word.getChars(0, wordLen, buffer, upto);
+        upto += wordLen;
+      }
+
+      return reuse;
+    }
+    
+    /** Sugar: analyzes the text with the analyzer and
+     *  separates by {@link SynonymMap#WORD_SEPARATOR}.
+     *  reuse and its chars must not be null. */
+    public static CharsRef analyze(Analyzer analyzer, String text, CharsRef reuse) throws IOException {
+      TokenStream ts = analyzer.reusableTokenStream("", new StringReader(text));
+      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
+      ts.reset();
+      reuse.length = 0;
+      while (ts.incrementToken()) {
+        int length = termAtt.length();
+        if (length == 0) {
+          throw new IllegalArgumentException("term: " + text + " analyzed to a zero-length token");
+        }
+        if (posIncAtt.getPositionIncrement() != 1) {
+          throw new IllegalArgumentException("term: " + text + " analyzed to a token with posinc != 1");
+        }
+        reuse.grow(reuse.length + length + 1); /* current + word + separator */
+        int end = reuse.offset + reuse.length;
+        if (reuse.length > 0) {
+          reuse.chars[end++] = SynonymMap.WORD_SEPARATOR;
+          reuse.length++;
+        }
+        System.arraycopy(termAtt.buffer(), 0, reuse.chars, end, length);
+        reuse.length += length;
+      }
+      ts.end();
+      ts.close();
+      if (reuse.length == 0) {
+        throw new IllegalArgumentException("term: " + text + " was completely eliminated by analyzer");
+      }
+      return reuse;
+    }
+
+    /** only used for asserting! */
+    private boolean hasHoles(CharsRef chars) {
+      final int end = chars.offset + chars.length;
+      for(int idx=chars.offset+1;idx<end;idx++) {
+        if (chars.chars[idx] == SynonymMap.WORD_SEPARATOR && chars.chars[idx-1] == SynonymMap.WORD_SEPARATOR) {
+          return true;
+        }
+      }
+      if (chars.chars[chars.offset] == '\u0000') {
+        return true;
+      }
+      if (chars.chars[chars.offset + chars.length - 1] == '\u0000') {
+        return true;
+      }
+
+      return false;
+    }
+
+    // NOTE: while it's tempting to make this public, since
+    // caller's parser likely knows the
+    // numInput/numOutputWords, sneaky exceptions, much later
+    // on, will result if these values are wrong; so we always
+    // recompute ourselves to be safe:
+    private void add(CharsRef input, int numInputWords, CharsRef output, int numOutputWords, boolean includeOrig) {
+      // first convert to UTF-8
+      if (numInputWords <= 0) {
+        throw new IllegalArgumentException("numInputWords must be > 0 (got " + numInputWords + ")");
+      }
+      if (input.length <= 0) {
+        throw new IllegalArgumentException("input.length must be > 0 (got " + input.length + ")");
+      }
+      if (numOutputWords <= 0) {
+        throw new IllegalArgumentException("numOutputWords must be > 0 (got " + numOutputWords + ")");
+      }
+      if (output.length <= 0) {
+        throw new IllegalArgumentException("output.length must be > 0 (got " + output.length + ")");
+      }
+
+      assert !hasHoles(input): "input has holes: " + input;
+      assert !hasHoles(output): "output has holes: " + output;
+
+      //System.out.println("fmap.add input=" + input + " numInputWords=" + numInputWords + " output=" + output + " numOutputWords=" + numOutputWords);
+      final int hashCode = UnicodeUtil.UTF16toUTF8WithHash(output.chars, output.offset, output.length, utf8Scratch);
+      // lookup in hash
+      int ord = words.add(utf8Scratch, hashCode);
+      if (ord < 0) {
+        // already exists in our hash
+        ord = (-ord)-1;
+        //System.out.println("  output=" + output + " old ord=" + ord);
+      } else {
+        //System.out.println("  output=" + output + " new ord=" + ord);
+      }
+      
+      MapEntry e = workingSet.get(input);
+      if (e == null) {
+        e = new MapEntry();
+        workingSet.put(new CharsRef(input), e); // make a copy, since we will keep around in our map    
+      }
+      
+      e.ords.add(ord);
+      e.includeOrig |= includeOrig;
+      maxHorizontalContext = Math.max(maxHorizontalContext, numInputWords);
+      maxHorizontalContext = Math.max(maxHorizontalContext, numOutputWords);
+    }
+
+    private int countWords(CharsRef chars) {
+      int wordCount = 1;
+      int upto = chars.offset;
+      final int limit = chars.offset + chars.length;
+      while(upto < limit) {
+        if (chars.chars[upto++] == SynonymMap.WORD_SEPARATOR) {
+          wordCount++;
+        }
+      }
+      return wordCount;
+    }
+    
+    /**
+     * Add a phrase->phrase synonym mapping.
+     * Phrases are character sequences where words are
+     * separated with character zero (\u0000).  Empty words
+     * (two \u0000s in a row) are not allowed in the input nor
+     * the output!
+     * 
+     * @param input input phrase
+     * @param output output phrase
+     * @param includeOrig true if the original should be included
+     */
+    public void add(CharsRef input, CharsRef output, boolean includeOrig) {
+      add(input, countWords(input), output, countWords(output), includeOrig);
+    }
+    
+    /**
+     * Builds an {@link SynonymMap} and returns it.
+     */
+    public SynonymMap build() throws IOException {
+      ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+      // TODO: are we using the best sharing options?
+      org.apache.lucene.util.fst.Builder<BytesRef> builder = 
+        new org.apache.lucene.util.fst.Builder<BytesRef>(FST.INPUT_TYPE.BYTE4, outputs);
+      
+      BytesRef scratch = new BytesRef(64);
+      ByteArrayDataOutput scratchOutput = new ByteArrayDataOutput();
+
+      final Set<Integer> dedupSet;
+
+      if (dedup) {
+        dedupSet = new HashSet<Integer>();
+      } else {
+        dedupSet = null;
+      }
+
+      final byte[] spare = new byte[5];
+      
+      Set<CharsRef> keys = workingSet.keySet();
+      CharsRef sortedKeys[] = keys.toArray(new CharsRef[keys.size()]);
+      Arrays.sort(sortedKeys, CharsRef.getUTF16SortedAsUTF8Comparator());
+      
+      //System.out.println("fmap.build");
+      for (int keyIdx = 0; keyIdx < sortedKeys.length; keyIdx++) {
+        CharsRef input = sortedKeys[keyIdx];
+        MapEntry output = workingSet.get(input);
+
+        int numEntries = output.ords.size();
+        // output size, assume the worst case
+        int estimatedSize = 5 + numEntries * 5; // numEntries + one ord for each entry
+        
+        scratch.grow(estimatedSize);
+        scratchOutput.reset(scratch.bytes, scratch.offset, scratch.bytes.length);
+        assert scratch.offset == 0;
+
+        // now write our output data:
+        int count = 0;
+        for (int i = 0; i < numEntries; i++) {
+          if (dedupSet != null) {
+            // box once
+            final Integer ent = output.ords.get(i);
+            if (dedupSet.contains(ent)) {
+              continue;
+            }
+            dedupSet.add(ent);
+          }
+          scratchOutput.writeVInt(output.ords.get(i));   
+          count++;
+        }
+
+        final int pos = scratchOutput.getPosition();
+        scratchOutput.writeVInt(count << 1 | (output.includeOrig ? 0 : 1));
+        final int pos2 = scratchOutput.getPosition();
+        final int vIntLen = pos2-pos;
+
+        // Move the count + includeOrig to the front of the byte[]:
+        System.arraycopy(scratch.bytes, pos, spare, 0, vIntLen);
+        System.arraycopy(scratch.bytes, 0, scratch.bytes, vIntLen, pos);
+        System.arraycopy(spare, 0, scratch.bytes, 0, vIntLen);
+
+        if (dedupSet != null) {
+          dedupSet.clear();
+        }
+        
+        scratch.length = scratchOutput.getPosition() - scratch.offset;
+        //System.out.println("  add input=" + input + " output=" + scratch + " offset=" + scratch.offset + " length=" + scratch.length + " count=" + count);
+        builder.add(input, new BytesRef(scratch));
+      }
+      
+      FST<BytesRef> fst = builder.finish();
+      return new SynonymMap(fst, words, maxHorizontalContext);
+    }
   }
-
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder("<");
-    if (synonyms!=null) {
-      sb.append("[");
-      for (int i=0; i<synonyms.length; i++) {
-        if (i!=0) sb.append(',');
-        sb.append(synonyms[i]);
-      }
-      if ((flags & INCLUDE_ORIG)!=0) {
-        sb.append(",ORIG");
-      }
-      sb.append("],");
-    }
-    sb.append(submap);
-    sb.append(">");
-    return sb.toString();
-  }
-
-
-
-  /** Produces a List<Token> from a List<String> */
-  public static List<Token> makeTokens(List<String> strings) {
-    List<Token> ret = new ArrayList<Token>(strings.size());
-    for (String str : strings) {
-      //Token newTok = new Token(str,0,0,"SYNONYM");
-      Token newTok = new Token(str, 0,0,"SYNONYM");
-      ret.add(newTok);
-    }
-    return ret;
-  }
-
-
-  /**
-   * Merge two lists of tokens, producing a single list with manipulated positionIncrements so that
-   * the tokens end up at the same position.
-   *
-   * Example:  [a b] merged with [c d] produces [a/b c/d]  ('/' denotes tokens in the same position)
-   * Example:  [a,5 b,2] merged with [c d,4 e,4] produces [c a,5/d b,2 e,2]  (a,n means a has posInc=n)
-   *
-   */
-  public static List<Token> mergeTokens(List<Token> lst1, List<Token> lst2) {
-    ArrayList<Token> result = new ArrayList<Token>();
-    if (lst1 ==null || lst2 ==null) {
-      if (lst2 != null) result.addAll(lst2);
-      if (lst1 != null) result.addAll(lst1);
-      return result;
-    }
-
-    int pos=0;
-    Iterator<Token> iter1=lst1.iterator();
-    Iterator<Token> iter2=lst2.iterator();
-    Token tok1 = iter1.hasNext() ? iter1.next() : null;
-    Token tok2 = iter2.hasNext() ? iter2.next() : null;
-    int pos1 = tok1!=null ? tok1.getPositionIncrement() : 0;
-    int pos2 = tok2!=null ? tok2.getPositionIncrement() : 0;
-    while(tok1!=null || tok2!=null) {
-      while (tok1 != null && (pos1 <= pos2 || tok2==null)) {
-        Token tok = new Token(tok1.startOffset(), tok1.endOffset(), tok1.type());
-        tok.copyBuffer(tok1.buffer(), 0, tok1.length());
-        tok.setPositionIncrement(pos1-pos);
-        result.add(tok);
-        pos=pos1;
-        tok1 = iter1.hasNext() ? iter1.next() : null;
-        pos1 += tok1!=null ? tok1.getPositionIncrement() : 0;
-      }
-      while (tok2 != null && (pos2 <= pos1 || tok1==null)) {
-        Token tok = new Token(tok2.startOffset(), tok2.endOffset(), tok2.type());
-        tok.copyBuffer(tok2.buffer(), 0, tok2.length());
-        tok.setPositionIncrement(pos2-pos);
-        result.add(tok);
-        pos=pos2;
-        tok2 = iter2.hasNext() ? iter2.next() : null;
-        pos2 += tok2!=null ? tok2.getPositionIncrement() : 0;
-      }
-    }
-    return result;
-  }
-
 }

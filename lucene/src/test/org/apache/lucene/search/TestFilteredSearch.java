@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 
 
@@ -97,7 +97,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context) {
       assert context.isAtomic;
-      final OpenBitSet set = new OpenBitSet();
+      final FixedBitSet set = new FixedBitSet(context.reader.maxDoc());
       int docBase = context.docBase;
       final int limit = docBase+context.reader.maxDoc();
       for (;index < docs.length; index++) {
@@ -108,7 +108,7 @@ public class TestFilteredSearch extends LuceneTestCase {
           set.set(docId-docBase);
         }
       }
-      return set.isEmpty()?null:set;
+      return set.cardinality() == 0 ? null:set;
     }
     
     public void reset(){

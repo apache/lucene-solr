@@ -5,16 +5,13 @@ http://s.apache.org/luceneversions
 
 ======================= Trunk (not yet released) =======================
 
-Changes in runtime behavior
-
- * LUCENE-3250: Wordnet's SynExpand requires a non-null Analyzer (it no longer
-   treats null as StandardAnalyzer).  (Robert Muir)
-  
 Build
 
  * LUCENE-2845: Moved contrib/benchmark to modules.
 
  * LUCENE-2995: Moved contrib/spellchecker into modules/suggest.
+
+ * LUCENE-3285: Moved contrib/queryparser into modules/queryparser
 
 New Features
 
@@ -52,6 +49,9 @@ API Changes
    Instead, use SimilarityProvider to return different SweetSpotSimilaritys
    for different fields, this way all parameters (such as TF factors) can be 
    customized on a per-field basis.  (Robert Muir)
+
+ * LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
+   enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
    
 Bug Fixes
 
@@ -78,8 +78,21 @@ New Features
    documents must be indexed as a document block, using
    IndexWriter.add/UpdateDocuments (Mark Harwood, Mike McCandless)
 
+ * LUCENE-3233: Added SynonymFilter for applying multi-word synonyms
+   during indexing or querying (with parsers for wordnet and solr formats).
+   Removed contrib/wordnet.  (Robert Muir, Mike McCandless)
+
 API Changes
-   
+ * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
+   constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
+   the target indexes. (Simon Willnauer, Jason Rutherglen)
+
+Optimizations
+
+ * LUCENE-3306: Disabled indexing of positions for spellchecker n-gram
+   fields: they are not needed because the spellchecker does not
+   use positional queries.  (Robert Muir)
+      
 Bug Fixes
 
 

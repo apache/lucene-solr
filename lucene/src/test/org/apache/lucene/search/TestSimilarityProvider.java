@@ -27,6 +27,7 @@ import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSimilarityProvider extends LuceneTestCase {
@@ -125,6 +126,11 @@ public class TestSimilarityProvider extends LuceneTestCase {
     public float idf(int docFreq, int numDocs) {
       return 1f;
     }
+
+    @Override
+    public float scorePayload(int doc, int start, int end, BytesRef payload) {
+      return 1f;
+    }
   }
   
   private class Sim2 extends TFIDFSimilarity {
@@ -146,6 +152,11 @@ public class TestSimilarityProvider extends LuceneTestCase {
     @Override
     public float idf(int docFreq, int numDocs) {
       return 10f;
+    }
+
+    @Override
+    public float scorePayload(int doc, int start, int end, BytesRef payload) {
+      return 1f;
     }
   }
 }

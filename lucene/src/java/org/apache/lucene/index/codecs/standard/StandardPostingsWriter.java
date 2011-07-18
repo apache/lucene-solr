@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -66,7 +67,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   final int totalNumDocs;
   IndexOutput termsOut;
 
-  boolean omitTermFreqAndPositions;
+  IndexOptions indexOptions;
   boolean storePayloads;
   // Starts a new term
   long lastFreqStart;
@@ -144,7 +145,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   public void setField(FieldInfo fieldInfo) {
     //System.out.println("SPW: setField");
     this.fieldInfo = fieldInfo;
-    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    indexOptions = fieldInfo.indexOptions;
     storePayloads = fieldInfo.storePayloads;
     //System.out.println("  set init blockFreqStart=" + freqStart);
     //System.out.println("  set init blockProxStart=" + proxStart);
@@ -173,7 +174,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
 
     lastDocID = docID;
-    if (omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_ONLY) {
       freqOut.writeVInt(delta);
     } else if (1 == termDocFreq) {
       freqOut.writeVInt((delta<<1) | 1);
@@ -189,7 +190,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
     //System.out.println("StandardW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
-    assert !omitTermFreqAndPositions: "omitTermFreqAndPositions is true";
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
 
     final int delta = position - lastPosition;
@@ -246,7 +247,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
       bytesWriter.writeVInt((int) (skipListWriter.writeSkip(freqOut)-freqStart));
     }
 
-    if (!omitTermFreqAndPositions) {
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       //System.out.println("  proxFP=" + proxStart);
       if (isFirstTerm) {
         bytesWriter.writeVLong(proxStart);

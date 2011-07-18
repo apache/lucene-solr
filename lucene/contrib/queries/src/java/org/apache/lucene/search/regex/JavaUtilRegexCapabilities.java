@@ -33,6 +33,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * term for the specified field in the index.
  */
 public class JavaUtilRegexCapabilities implements RegexCapabilities {
+
   private int flags = 0;
 
   // Define the optional flags from Pattern that can be used.
@@ -85,12 +86,18 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
     JavaUtilRegexCapabilities other = (JavaUtilRegexCapabilities) obj;
-    if (flags != other.flags) return false;
-    return true;
+    return flags == other.flags;
   }
 
   class JavaUtilRegexMatcher implements RegexCapabilities.RegexMatcher {

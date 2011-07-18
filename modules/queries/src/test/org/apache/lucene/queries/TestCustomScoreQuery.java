@@ -20,11 +20,7 @@ package org.apache.lucene.queries;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionTestSetup;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.cache.*;
 import org.junit.BeforeClass;
@@ -198,9 +194,10 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
   @Test
   public void testCustomExternalQuery() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD,anlzr); 
-    String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
-    Query q1 = qp.parse(qtxt); 
+    BooleanQuery q1 = new BooleanQuery();
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "aid")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD);
     
     final Query q = new CustomExternalQuery(q1);
     log(q);
@@ -243,11 +240,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     float boost = (float) dboost;
     IndexSearcher s = new IndexSearcher(dir, true);
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, anlzr);
-    String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
 
     // regular (boolean) query.
-    Query q1 = qp.parse(qtxt);
+    BooleanQuery q1 = new BooleanQuery();
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "aid")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term(TEXT_FIELD, "text")), BooleanClause.Occur.SHOULD);
     log(q1);
 
     // custom query, that should score the same as q1.

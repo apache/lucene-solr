@@ -32,7 +32,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -61,8 +60,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   final String segment;
   public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, int codecId, IOContext context)
     throws IOException {
-
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
 
@@ -190,7 +188,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         if (indexDivisor > 1) {
           // subsample
           final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
-          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, outputs);
+          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
           final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
           BytesRefFSTEnum.InputOutput<Long> result;
           int count = indexDivisor;

@@ -68,6 +68,7 @@ public class TestTermQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     DocsAndPositionsEnum docsAndPositions = MultiFields.getTerms(reader,
         fieldName).docsAndPositions(null, new BytesRef("1"), null);
+    assertEquals(39, reader.docFreq(new Term(fieldName, "1")));
     docsAndPositions.nextDoc();
     docsAndPositions.nextPosition();
     boolean payloadsIndexed = docsAndPositions.hasPayload();
@@ -84,7 +85,8 @@ public class TestTermQuery extends LuceneTestCase {
         Scorer scorer = weight.scorer(atomicReaderContext, ScorerContext.def()
             .needsPositions(true).needsPayloads(payloadsIndexed));
         assertNotNull(scorer);
-        final int advance = scorer.advance(1 + random.nextInt(27));
+        int toDoc = 1 + random.nextInt(atomicReaderContext.reader.docFreq(new Term(fieldName, "1")) - 1 );
+        final int advance = scorer.advance(toDoc);
         PositionIntervalIterator positions = scorer.positions();
 
         do {

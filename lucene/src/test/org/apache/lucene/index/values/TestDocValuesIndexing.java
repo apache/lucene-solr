@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Before;
 
@@ -233,11 +233,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(numVariantList, random);
     for (ValueType val : numVariantList) {
-      OpenBitSet deleted = indexValues(w, numValues, val, numVariantList,
+      FixedBitSet deleted = indexValues(w, numValues, val, numVariantList,
           withDeletions, 7);
       List<Closeable> closeables = new ArrayList<Closeable>();
       IndexReader r = IndexReader.open(w, true);
-      final int numRemainingValues = (int) (numValues - deleted.cardinality());
+      final int numRemainingValues = numValues - deleted.cardinality();
       final int base = r.numDocs() - numRemainingValues;
       // for FIXED_INTS_8 we use value mod 128 - to enable testing in 
       // one go we simply use numValues as the mod for all other INT types
@@ -331,11 +331,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     for (ValueType byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
       final int bytesSize = 1 + atLeast(50);
-      OpenBitSet deleted = indexValues(w, numValues, byteIndexValue,
+      FixedBitSet deleted = indexValues(w, numValues, byteIndexValue,
           byteVariantList, withDeletions, bytesSize);
       final IndexReader r = IndexReader.open(w, withDeletions);
       assertEquals(0, r.numDeletedDocs());
-      final int numRemainingValues = (int) (numValues - deleted.cardinality());
+      final int numRemainingValues = numValues - deleted.cardinality();
       final int base = r.numDocs() - numRemainingValues;
       IndexDocValues bytesReader = getDocValues(r, byteIndexValue.name());
       assertNotNull("field " + byteIndexValue.name()
@@ -484,11 +484,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
       Index.NO };
 
-  private OpenBitSet indexValues(IndexWriter w, int numValues, ValueType value,
+  private FixedBitSet indexValues(IndexWriter w, int numValues, ValueType value,
       List<ValueType> valueVarList, boolean withDeletions, int bytesSize)
       throws CorruptIndexException, IOException {
     final boolean isNumeric = NUMERICS.contains(value);
-    OpenBitSet deleted = new OpenBitSet(numValues);
+    FixedBitSet deleted = new FixedBitSet(numValues);
     Document doc = new Document();
     Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
     AbstractField field = random.nextBoolean() ? new IndexDocValuesField(value.name())

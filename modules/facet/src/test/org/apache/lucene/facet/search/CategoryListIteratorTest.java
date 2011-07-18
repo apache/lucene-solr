@@ -100,7 +100,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
         new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)));
+        new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
       dts.setIdx(i);
       Document doc = new Document();

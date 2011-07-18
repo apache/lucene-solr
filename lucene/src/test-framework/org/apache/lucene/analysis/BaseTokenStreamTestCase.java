@@ -260,7 +260,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         default:
           text = _TestUtil.randomUnicodeString(random, maxWordLength);
       }
-      
+
+      if (VERBOSE) {
+        System.out.println("NOTE: BaseTokenStreamTestCase: get first token stream now text=" + text);
+      }
+
       TokenStream ts = a.reusableTokenStream("dummy", new StringReader(text));
       assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
       CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
@@ -286,6 +290,9 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       ts.close();
       // verify reusing is "reproducable" and also get the normal tokenstream sanity checks
       if (!tokens.isEmpty()) {
+        if (VERBOSE) {
+          System.out.println("NOTE: BaseTokenStreamTestCase: re-run analysis");
+        }
         if (typeAtt != null && posIncAtt != null && offsetAtt != null) {
           // offset + pos + type
           assertAnalyzesToReuse(a, text, 

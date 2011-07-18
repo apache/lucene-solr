@@ -87,9 +87,7 @@ public class TestNRTManager extends LuceneTestCase {
       if (field1.getOmitNorms()) {
         field2.setOmitNorms(true);
       }
-      if (field1.getOmitTermFreqAndPositions()) {
-        field2.setOmitTermFreqAndPositions(true);
-      }
+      field2.setIndexOptions(field1.getIndexOptions());
       doc2.add(field2);
     }
 

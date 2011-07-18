@@ -62,6 +62,9 @@ public class Builder<T> {
   // terms go through it:
   private final int minSuffixCount2;
 
+  private final boolean doShareNonSingletonNodes;
+  private final int shareMaxTailLength;
+
   private final IntsRef lastInput = new IntsRef();
 
   // NOTE: cutting this over to ArrayList instead loses ~6%
@@ -72,12 +75,11 @@ public class Builder<T> {
 
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, Outputs)} with 
+   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs)} with 
    * pruning options turned off.
    */
-  public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs)
-  {
-      this(inputType, 0, 0, true, outputs);
+  public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs);
   }
 
   /**
@@ -97,20 +99,34 @@ public class Builder<T> {
    * @param minSuffixCount2
    *    (Note: only Mike McCandless knows what this one is really doing...) 
    * 
-   * @param doMinSuffix 
+   * @param doShareSuffix 
    *    If <code>true</code>, the shared suffixes will be compacted into unique paths.
    *    This requires an additional hash map for lookups in memory. Setting this parameter to
    *    <code>false</code> creates a single path for all input sequences. This will result in a larger
    *    graph, but may require less memory and will speed up construction.  
+   *
+   * @param doShareNonSingletonNodes
+   *    Only used if doShareSuffix is true.  Set this to
+   *    true to ensure FST is fully minimal, at cost of more
+   *    CPU and more RAM during building.
+   *
+   * @param shareMaxTailLength
+   *    Only used if doShareSuffix is true.  Set this to
+   *    Integer.MAX_VALUE to ensure FST is fully minimal, at cost of more
+   *    CPU and more RAM during building.
+   *
    * @param outputs The output type for each input sequence. Applies only if building an FST. For
    *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
    *    singleton output object.
    */
-  public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doMinSuffix, Outputs<T> outputs) {
+  public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
+                 boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
+    this.doShareNonSingletonNodes = doShareNonSingletonNodes;
+    this.shareMaxTailLength = shareMaxTailLength;
     fst = new FST<T>(inputType, outputs);
-    if (doMinSuffix) {
+    if (doShareSuffix) {
       dedupHash = new NodeHash<T>(fst);
     } else {
       dedupHash = null;
@@ -143,10 +159,9 @@ public class Builder<T> {
     fst.setAllowArrayArcs(b);
   }
 
-  private CompiledNode compileNode(UnCompiledNode<T> n) throws IOException {
-
+  private CompiledNode compileNode(UnCompiledNode<T> n, int tailLength) throws IOException {
     final int address;
-    if (dedupHash != null) {
+    if (dedupHash != null && (doShareNonSingletonNodes || n.numArcs <= 1) && tailLength <= shareMaxTailLength) {
       if (n.numArcs == 0) {
         address = fst.addNode(n);
       } else {
@@ -221,7 +236,7 @@ public class Builder<T> {
       } else {
 
         if (minSuffixCount2 != 0) {
-          compileAllTargets(node);
+          compileAllTargets(node, lastInput.length-idx);
         }
         final T nextFinalOutput = node.output;
 
@@ -237,7 +252,7 @@ public class Builder<T> {
           // compile any targets that were previously
           // undecided:
           parent.replaceLast(lastInput.ints[lastInput.offset + idx-1],
-                             compileNode(node),
+                             compileNode(node, 1+lastInput.length-idx),
                              nextFinalOutput,
                              isFinal);
         } else {
@@ -428,22 +443,28 @@ public class Builder<T> {
         // empty string got pruned
         return null;
       } else {
-        fst.finish(compileNode(frontier[0]).address);
+        fst.finish(compileNode(frontier[0], lastInput.length).address);
         //System.out.println("compile addr = " + fst.getStartNode());
         return fst;
       }
     } else {
       if (minSuffixCount2 != 0) {
-        compileAllTargets(frontier[0]);
+        compileAllTargets(frontier[0], lastInput.length);
       }
       //System.out.println("NOW: " + frontier[0].numArcs);
-      fst.finish(compileNode(frontier[0]).address);
+      fst.finish(compileNode(frontier[0], lastInput.length).address);
     }
+
+    /*
+    if (dedupHash != null) {
+      System.out.println("NH: " + dedupHash.count()); 
+    }
+    */
     
     return fst;
   }
 
-  private void compileAllTargets(UnCompiledNode<T> node) throws IOException {
+  private void compileAllTargets(UnCompiledNode<T> node, int tailLength) throws IOException {
     for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
       final Arc<T> arc = node.arcs[arcIdx];
       if (!arc.target.isCompiled()) {
@@ -453,7 +474,7 @@ public class Builder<T> {
           //System.out.println("seg=" + segment + "        FORCE final arc=" + (char) arc.label);
           arc.isFinal = n.isFinal = true;
         }
-        arc.target = compileNode(n);
+        arc.target = compileNode(n, tailLength-1);
       }
     }
   }

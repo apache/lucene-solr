@@ -32,7 +32,7 @@ import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.search.cache.CachedArray.ByteValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
 {
@@ -110,7 +110,7 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
     vals.values = new byte[maxDoc];
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator();
-      OpenBitSet validBits = (hasOption(OPTION_CACHE_BITS)) ? new OpenBitSet( maxDoc ) : null;
+      FixedBitSet validBits = (hasOption(OPTION_CACHE_BITS)) ? new FixedBitSet( maxDoc ) : null;
       DocsEnum docs = null;
       try {
         while(true) {

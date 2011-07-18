@@ -25,11 +25,10 @@ import org.apache.lucene.search.BooleanClause.Occur;
  * (Follows the boolean logic in BooleanClause for composition 
  * of queries.)
  */
+public class FilterClause {
 
-public class FilterClause
-{
-	Occur occur = null;
-	Filter filter = null;
+	private final Occur occur;
+	private final Filter filter;
 
 	/**
 	 * Create a new FilterClause
@@ -37,8 +36,7 @@ public class FilterClause
 	 * @param occur A parameter implementation indicating SHOULD, MUST or MUST NOT
 	 */
 	
-	public FilterClause( Filter filter,Occur occur)
-	{
+	public FilterClause(Filter filter, Occur occur) {
 		this.occur = occur;
 		this.filter = filter;
 	}
@@ -47,9 +45,7 @@ public class FilterClause
 	 * Returns this FilterClause's filter
 	 * @return A Filter object
 	 */
-	
-	public Filter getFilter()
-	{
+	public Filter getFilter() {
 		return filter;
 	}
 
@@ -57,9 +53,7 @@ public class FilterClause
 	 * Returns this FilterClause's occur parameter
 	 * @return An Occur object
 	 */
-	
-	public Occur getOccur()
-	{
+	public Occur getOccur() {
 		return occur;
 	}
 

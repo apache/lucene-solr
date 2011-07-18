@@ -23,7 +23,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
@@ -465,7 +464,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    * using query parser, MPQ will be created, and will not be strict about having all query terms 
    * in each position - one of each position is sufficient (OR logic)
    */
-  public void testZeroPosIncrSloppyParsedAnd() throws IOException, ParseException {
+  public void testZeroPosIncrSloppyParsedAnd() throws IOException {
     MultiPhraseQuery q = new MultiPhraseQuery();
     q.add(new Term[]{ new Term("field", "a"), new Term("field", "1") }, -1);
     q.add(new Term[]{ new Term("field", "b"), new Term("field", "1") }, 0);
@@ -509,7 +508,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   /**
    * PQ AND Mode - Manually creating a phrase query
    */
-  public void testZeroPosIncrSloppyPqAnd() throws IOException, ParseException {
+  public void testZeroPosIncrSloppyPqAnd() throws IOException {
     final PhraseQuery pq = new PhraseQuery();
     for (TokenAndPos tap : INCR_0_QUERY_TOKENS_AND) {
       pq.add(new Term("field",tap.token), tap.pos);
@@ -524,7 +523,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   /**
    * MPQ AND Mode - Manually creating a multiple phrase query
    */
-  public void testZeroPosIncrSloppyMpqAnd() throws IOException, ParseException {
+  public void testZeroPosIncrSloppyMpqAnd() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
     for (TokenAndPos tap : INCR_0_QUERY_TOKENS_AND) {
       mpq.add(new Term[]{new Term("field",tap.token)}, tap.pos); //AND logic
@@ -539,7 +538,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   /**
    * MPQ Combined AND OR Mode - Manually creating a multiple phrase query
    */
-  public void testZeroPosIncrSloppyMpqAndOrMatch() throws IOException, ParseException {
+  public void testZeroPosIncrSloppyMpqAndOrMatch() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
     for (TokenAndPos tap[] : INCR_0_QUERY_TOKENS_AND_OR_MATCH) {
       Term[] terms = tapTerms(tap);
@@ -556,7 +555,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   /**
    * MPQ Combined AND OR Mode - Manually creating a multiple phrase query - with no match
    */
-  public void testZeroPosIncrSloppyMpqAndOrNoMatch() throws IOException, ParseException {
+  public void testZeroPosIncrSloppyMpqAndOrNoMatch() throws IOException {
     final MultiPhraseQuery mpq = new MultiPhraseQuery();
     for (TokenAndPos tap[] : INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN) {
       Term[] terms = tapTerms(tap);

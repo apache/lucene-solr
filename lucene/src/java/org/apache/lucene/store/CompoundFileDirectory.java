@@ -74,7 +74,7 @@ public abstract class CompoundFileDirectory extends Directory {
     this.openForWrite = false;
   }
   
-  protected final void initForWrite() {
+  protected final void initForWrite() throws IOException {
     assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
     this.entries = SENTINEL;
     this.openForWrite = true;

@@ -4,7 +4,7 @@
     <configuration default="false" name="analysis-extras contrib" type="JUnit" factoryName="JUnit">
       <module name="analysis-extras" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-analysis-extras" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -18,7 +18,7 @@
     <configuration default="false" name="clustering contrib" type="JUnit" factoryName="JUnit">
       <module name="clustering" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/clustering/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-clustering" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -32,21 +32,21 @@
     <configuration default="false" name="dataimporthandler contrib" type="JUnit" factoryName="JUnit">
       <module name="dataimporthandler" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-dataimporthandler" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="dataimporthandler-extras contrib" type="JUnit" factoryName="JUnit">
+      <module name="dataimporthandler-extras" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-dataimporthandler-extras" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="extraction contrib" type="JUnit" factoryName="JUnit">
       <module name="extraction" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/extraction/build" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
-    <configuration default="false" name="extras from dataimporthandler contrib" type="JUnit" factoryName="JUnit">
-      <module name="extras" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/target/extras" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-cell" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -141,10 +141,10 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="queryparser contrib" type="JUnit" factoryName="JUnit">
-      <module name="queryparser-contrib" />
+    <configuration default="false" name="queryparser module" type="JUnit" factoryName="JUnit">
+      <module name="queryparser" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/queryparser" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/queries/build" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -158,7 +158,7 @@
     <configuration default="false" name="solr" type="JUnit" factoryName="JUnit">
       <module name="solr" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/tests/solr" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/solr-idea" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -186,15 +186,8 @@
     <configuration default="false" name="uima contrib" type="JUnit" factoryName="JUnit">
       <module name="uima" />
       <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/contrib/uima/build" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/build/contrib/solr-uima" />
       <option name="VM_PARAMETERS" value="-ea -Dtests.luceneMatchVersion=4.0 -DtempDir=temp -Djetty.testMode=1 -Djetty.insecurerandom=1 -Dsolr.directoryFactory=org.apache.solr.core.MockDirectoryFactory" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
-    <configuration default="false" name="wordnet contrib" type="JUnit" factoryName="JUnit">
-      <module name="wordnet" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/wordnet" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="xml-query-parser contrib" type="JUnit" factoryName="JUnit">
@@ -204,14 +197,14 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <list size="29">
+    <list size="28">
       <item index="0" class="java.lang.String" itemvalue="JUnit.analysis-extras contrib" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.benchmark module" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.clustering contrib" />
       <item index="3" class="java.lang.String" itemvalue="JUnit.common analysis module" />
       <item index="4" class="java.lang.String" itemvalue="JUnit.dataimporthandler contrib" />
-      <item index="5" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
-      <item index="6" class="java.lang.String" itemvalue="JUnit.extras from dataimporthandler contrib" />
+      <item index="5" class="java.lang.String" itemvalue="JUnit.dataimporthandler-extras contrib" />
+      <item index="6" class="java.lang.String" itemvalue="JUnit.extraction contrib" />
       <item index="7" class="java.lang.String" itemvalue="JUnit.facet module" />
       <item index="8" class="java.lang.String" itemvalue="JUnit.grouping module" />
       <item index="9" class="java.lang.String" itemvalue="JUnit.highlighter contrib" />
@@ -225,15 +218,14 @@
       <item index="17" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
       <item index="18" class="java.lang.String" itemvalue="JUnit.queries contrib" />
       <item index="19" class="java.lang.String" itemvalue="JUnit.queries module" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.queryparser contrib" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.queryparser module" />
       <item index="21" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
       <item index="22" class="java.lang.String" itemvalue="JUnit.solr" />
       <item index="23" class="java.lang.String" itemvalue="JUnit.spatial contrib" />
       <item index="24" class="java.lang.String" itemvalue="JUnit.stempel analysis module" />
       <item index="25" class="java.lang.String" itemvalue="JUnit.suggest module" />
       <item index="26" class="java.lang.String" itemvalue="JUnit.uima contrib" />
-      <item index="27" class="java.lang.String" itemvalue="JUnit.wordnet contrib" />
-      <item index="28" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
+      <item index="27" class="java.lang.String" itemvalue="JUnit.xml-query-parser contrib" />
     </list>
   </component>
 </project>

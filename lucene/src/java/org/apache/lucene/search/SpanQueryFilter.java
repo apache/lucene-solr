@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,7 +60,7 @@ public class SpanQueryFilter extends SpanFilter {
   @Override
   public SpanFilterResult bitSpans(AtomicReaderContext context) throws IOException {
 
-    final OpenBitSet bits = new OpenBitSet(context.reader.maxDoc());
+    final FixedBitSet bits = new FixedBitSet(context.reader.maxDoc());
     Spans spans = query.getSpans(context);
     List<SpanFilterResult.PositionInfo> tmp = new ArrayList<SpanFilterResult.PositionInfo>(20);
     int currentDoc = -1;

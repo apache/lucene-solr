@@ -16,7 +16,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CoreCodecProvider;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -46,7 +45,6 @@ public class PosHighlighterTest extends LuceneTestCase {
   
   protected final static String F="f";
   protected Analyzer analyzer;
-  protected QueryParser parser;
   protected Directory dir;
   protected IndexSearcher searcher;
   
@@ -58,7 +56,6 @@ public class PosHighlighterTest extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
-    parser = new QueryParser(TEST_VERSION_CURRENT,  F, analyzer );
     dir = new SimpleFSDirectory(TEMP_DIR);
   }
   

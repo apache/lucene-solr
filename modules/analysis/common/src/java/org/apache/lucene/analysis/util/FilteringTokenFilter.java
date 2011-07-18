@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.queryParser.QueryParser; // for javadoc
 
 /**
  * Abstract base class for TokenFilters that may remove tokens.
@@ -87,7 +86,7 @@ public abstract class FilteringTokenFilter extends TokenFilter {
    * token is incremented.
    *
    * <p> <b>NOTE</b>: be sure to also
-   * set {@link QueryParser#setEnablePositionIncrements} if
+   * set org.apache.lucene.queryparser.classic.QueryParser#setEnablePositionIncrements if
    * you use QueryParser to create queries.
    */
   public void setEnablePositionIncrements(boolean enable) {

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -89,7 +90,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor, IOContext context) throws CorruptIndexException, IOException {
-    // TODO should we check if readOnly and context combination makes sense like asserting that if read only we don't get a default?
     return get(readOnly, si.dir, si, true, termInfosIndexDivisor, context);
   }
 
@@ -115,7 +115,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }
-      instance.loadLiveDocs();
+      instance.loadLiveDocs(context);
       instance.openNorms(instance.core.cfsDir, context);
       success = true;
     } finally {
@@ -157,10 +157,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return true;
   }
 
-  private void loadLiveDocs() throws IOException {
+  private void loadLiveDocs(IOContext context) throws IOException {
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si)) {
-      liveDocs = new BitVector(directory(), si.getDelFileName(), IOContext.DEFAULT);
+      liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(context, true));
       if (liveDocs.getVersion() < BitVector.VERSION_DGAPS_CLEARED) {
         liveDocs.invertAll();
       }
@@ -273,7 +273,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         if (!deletionsUpToDate) {
           // load deleted docs
           assert clone.liveDocs == null;
-          clone.loadLiveDocs();
+          clone.loadLiveDocs(IOContext.READ);
         } else if (liveDocs != null) {
           liveDocsRef.incrementAndGet();
           clone.liveDocs = liveDocs;
@@ -513,7 +513,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
       else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
         fieldSet.add(fi.name);
       }
-      else if (fi.omitTermFreqAndPositions && fieldOption == IndexReader.FieldOption.OMIT_TERM_FREQ_AND_POSITIONS) {
+      else if (fi.indexOptions == IndexOptions.DOCS_ONLY && fieldOption == IndexReader.FieldOption.OMIT_TERM_FREQ_AND_POSITIONS) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.indexOptions == IndexOptions.DOCS_AND_FREQS && fieldOption == IndexReader.FieldOption.OMIT_POSITIONS) {
         fieldSet.add(fi.name);
       }
       else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {

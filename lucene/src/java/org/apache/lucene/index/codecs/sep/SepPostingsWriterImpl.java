@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
@@ -86,7 +87,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   final int totalNumDocs;
 
   boolean storePayloads;
-  boolean omitTF;
+  IndexOptions indexOptions;
 
   long lastSkipFP;
 
@@ -121,11 +122,13 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       docOut = factory.createOutput(state.directory, docFileName, state.context);
       docIndex = docOut.index();
       
-      if (state.fieldInfos.hasProx()) {
+      if (state.fieldInfos.hasFreq()) {
         final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, FREQ_EXTENSION);
         freqOut = factory.createOutput(state.directory, frqFileName, state.context);
         freqIndex = freqOut.index();
-        
+      }
+
+      if (state.fieldInfos.hasProx()) {      
         final String posFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, POS_EXTENSION);
         posOut = factory.createOutput(state.directory, posFileName, state.context);
         posIndex = posOut.index();
@@ -168,12 +171,17 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void startTerm() throws IOException {
     docIndex.mark();
-    if (!omitTF) {
+
+    if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndex.mark();
+    }
+    
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       posIndex.mark();
       payloadStart = payloadOut.getFilePointer();
       lastPayloadLength = -1;
     }
+
     skipListWriter.resetSkip(docIndex, freqIndex, posIndex);
   }
 
@@ -182,9 +190,9 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    omitTF = fieldInfo.omitTermFreqAndPositions;
-    skipListWriter.setOmitTF(omitTF);
-    storePayloads = !omitTF && fieldInfo.storePayloads;
+    this.indexOptions = fieldInfo.indexOptions;
+    skipListWriter.setIndexOptions(indexOptions);
+    storePayloads = indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS && fieldInfo.storePayloads;
   }
 
   /** Adds a new doc in this term.  If this returns null
@@ -209,7 +217,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
 
     lastDocID = docID;
     docOut.write(delta);
-    if (!omitTF) {
+    if (indexOptions != IndexOptions.DOCS_ONLY) {
       //System.out.println("    sepw startDoc: write freq=" + termDocFreq);
       freqOut.write(termDocFreq);
     }
@@ -227,7 +235,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
-    assert !omitTF;
+    assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
 
     final int delta = position - lastPosition;
     assert delta >= 0: "position=" + position + " lastPosition=" + lastPosition;            // not quite right (if pos=0 is repeated twice we don't catch it)
@@ -274,10 +282,12 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     docIndex.write(indexBytesWriter, isFirstTerm);
     //System.out.println("  docIndex=" + docIndex);
 
-    if (!omitTF) {
+    if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndex.write(indexBytesWriter, isFirstTerm);
       //System.out.println("  freqIndex=" + freqIndex);
+    }
 
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       posIndex.write(indexBytesWriter, isFirstTerm);
       //System.out.println("  posIndex=" + posIndex);
       if (storePayloads) {

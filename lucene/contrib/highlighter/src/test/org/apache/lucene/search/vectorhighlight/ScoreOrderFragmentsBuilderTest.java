@@ -17,12 +17,20 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 public class ScoreOrderFragmentsBuilderTest extends AbstractTestCase {
   
   public void test3Frags() throws Exception {
-    FieldFragList ffl = ffl( "a c", "a b b b b b b b b b b b a b a b b b b b c a a b b" );
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term(F, "a")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(F, "c")), BooleanClause.Occur.SHOULD);
+
+    FieldFragList ffl = ffl(query, "a b b b b b b b b b b b a b a b b b b b c a a b b" );
     ScoreOrderFragmentsBuilder sofb = new ScoreOrderFragmentsBuilder();
     String[] f = sofb.createFragments( reader, 0, F, ffl, 3 );
     assertEquals( 3, f.length );
@@ -32,9 +40,8 @@ public class ScoreOrderFragmentsBuilderTest extends AbstractTestCase {
     assertEquals( "<b>a</b> b b b b b b b b b ", f[2] );
   }
 
-  private FieldFragList ffl( String queryValue, String indexValue ) throws Exception {
+  private FieldFragList ffl(Query query, String indexValue ) throws Exception {
     make1d1fIndex( indexValue );
-    Query query = paW.parse( queryValue );
     FieldQuery fq = new FieldQuery( query, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     FieldPhraseList fpl = new FieldPhraseList( stack, fq );

@@ -103,15 +103,15 @@ class DisjunctionSumScorer extends Scorer {
    * initialize <code>scorerDocQueue</code>.
    * @return 
    */
-  private ScorerDocQueue initScorerDocQueue() throws IOException {
-    ScorerDocQueue queue = new ScorerDocQueue(nrScorers);
-    for (Scorer se : subScorers) {
+ private ScorerDocQueue initScorerDocQueue() throws IOException {
+    final ScorerDocQueue docQueue = new ScorerDocQueue(nrScorers);
+    for (final Scorer se : subScorers) {
       if (se.nextDoc() != NO_MORE_DOCS) {
-        queue.insert(se);
+        docQueue.insert(se);
       }
     }
-    return queue;
-  }
+    return docQueue; 
+ }
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed through.
@@ -146,6 +146,7 @@ class DisjunctionSumScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
+    
     if (scorerDocQueue.size() < minimumNrMatchers || !advanceAfterCurrent()) {
       currentDoc = NO_MORE_DOCS;
     }

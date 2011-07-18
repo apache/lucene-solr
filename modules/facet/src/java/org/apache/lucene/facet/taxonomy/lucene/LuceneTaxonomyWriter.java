@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -181,7 +182,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream);
     parentStreamField.setOmitNorms(true);
     fullPathField = new Field(Consts.FULL, "", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
-    fullPathField.setOmitTermFreqAndPositions(true);
+    fullPathField.setIndexOptions(IndexOptions.DOCS_ONLY);
 
     this.nextID = indexWriter.maxDoc();
 
