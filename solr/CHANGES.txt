@@ -264,6 +264,9 @@ Other Changes
 * SOLR-1825: SolrQuery.addFacetQuery now enables facets automatically, like
   addFacetField (Chris Male)
 
+* SOLR-2663: FieldTypePluginLoader has been refactored out of IndexSchema 
+  and made public. (hossman)
+
 Documentation
 ----------------------
 
