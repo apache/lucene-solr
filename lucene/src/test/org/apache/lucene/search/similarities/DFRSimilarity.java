@@ -1,5 +1,22 @@
 package org.apache.lucene.search.similarities;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import org.apache.lucene.search.Explanation;
 
 /**
@@ -33,11 +50,31 @@ public class DFRSimilarity extends EasySimilarity {
   public DFRSimilarity(BasicModel basicModel,
                        AfterEffect afterEffect,
                        Normalization normalization) {
+    if (basicModel == null || afterEffect == null || normalization == null) {
+      throw new NullPointerException("null parameters not allowed.");
+    }
     this.basicModel = basicModel;
-    this.afterEffect = afterEffect != null
-                     ? afterEffect : new AfterEffect.NoAfterEffect();
-    this.normalization = normalization != null
-                       ? normalization : new Normalization.NoNormalization();
+    this.afterEffect = afterEffect;
+    this.normalization = normalization;
+  }
+
+  /** Creates a DFR model with no normalization. */
+  public DFRSimilarity(BasicModel basicModel,
+                       AfterEffect afterEffect) {
+    this(basicModel, afterEffect, new Normalization.NoNormalization());
+  }
+  
+  /** Creates a DFR model with no aftereffect. */
+  public DFRSimilarity(BasicModel basicModel,
+                       Normalization normalization) {
+    this(basicModel, new AfterEffect.NoAfterEffect(), normalization);
+  }
+  
+  /** Creates a DFR model with only a basic model. */
+  public DFRSimilarity(BasicModel basicModel) {
+    this(basicModel,
+         new AfterEffect.NoAfterEffect(),
+         new Normalization.NoNormalization());
   }
   
   @Override
