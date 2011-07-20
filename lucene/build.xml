@@ -75,15 +75,15 @@
 	
   <path id="backwards.junit.classpath">
     <path refid="junit-path"/>
+    <path refid="classpath"/>
     <pathelement location="${build.dir.backwards}/classes/test"/>
-    <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement path="${java.class.path}"/>
   </path>
 
   <!-- remove this -->
   <target name="test-tag" depends="test-backwards" description="deprecated"/>
   
-  <target name="compile-backwards" depends="compile-core, jar-core"
+  <target name="compile-backwards" depends="compile-core"
   	description="Runs tests of a previous Lucene version.">
 	<sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
