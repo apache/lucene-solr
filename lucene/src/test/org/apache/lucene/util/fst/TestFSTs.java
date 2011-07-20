@@ -980,7 +980,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(_TestUtil.nextInt(random, 50000, 60000), atLeast(1));
+    testRandomWords(_TestUtil.nextInt(random, 50000, 60000), 1);
   }
 
   private static String inputToString(int inputMode, IntsRef term) {
@@ -1007,7 +1007,7 @@ public class TestFSTs extends LuceneTestCase {
     final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = _TestUtil.getTempDir("fstlines");
-    final MockDirectoryWrapper dir = new MockDirectoryWrapper(random, FSDirectory.open(tempDir));
+    final MockDirectoryWrapper dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
