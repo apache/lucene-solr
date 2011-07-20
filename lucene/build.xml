@@ -96,22 +96,42 @@
   	</sequential>
   </target>	
 
-  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
+  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, backwards-test-warning, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
 
   <target name="junit-backwards-mkdir">
     <mkdir dir="${build.dir.backwards}/test"/>
+  </target>
+
+  <target name="check-backwards-params">
+    <condition property="backwards.ignoring.params">
+      <or>
+        <istrue value="${tests.nightly}"/>
+        <not><equals arg1="${tests.multiplier}" arg2="1"/></not>
+      </or>
+    </condition>
+  </target>
+
+  <target name="backwards-test-warning" depends="check-backwards-params" if="backwards.ignoring.params">
+    <echo>
+       Warning: Ignoring your multiplier and nightly settings for backwards tests.
+       These tests are for API compatibility only!
+    </echo>
   </target>
 
   <macrodef name="backwards-test-macro">
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
   	<sequential>
-  	  <!-- run branch tests against trunk jar -->
+  	  <!-- run branch tests against trunk jar:
+          Note: we disable multiplier/nightly because the purpose is to find API breaks
+          -->
       <test-macro 
     	dataDir="${backwards.dir}/src/test" 
     	tempDir="${build.dir.backwards}/test" 
     	junit.classpath="backwards.junit.classpath" 
     	junit.output.dir="${junit.output.dir.backwards}" 
+        tests.nightly="false"
+        tests.multiplier="1"
         threadNum="@{threadNum}" 
         threadTotal="@{threadTotal}"/>
   	</sequential>
