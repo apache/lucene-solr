@@ -1057,7 +1057,7 @@ public class TestFSTs extends LuceneTestCase {
         }
         builder.add(term, outputs.get(output));
         ord++;
-        if (ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
+        if (VERBOSE && ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
           System.out.println(ord + " terms...");
         }
       }
