@@ -55,7 +55,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     doc.add(bogus1);
     doc.add(bogus2);
     
-    int num = atLeast(2000);
+    int num = atLeast(1000);
 
     for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
@@ -128,7 +128,7 @@ public class TestPrefixRandom extends LuceneTestCase {
   
   /** test a bunch of random prefixes */
   public void testPrefixes() throws Exception {
-      int num = atLeast(1000);
+      int num = atLeast(100);
       for (int i = 0; i < num; i++)
         assertSame(_TestUtil.randomUnicodeString(random, 5));
   }

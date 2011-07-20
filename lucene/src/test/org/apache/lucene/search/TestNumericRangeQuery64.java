@@ -51,7 +51,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
     
     NumericField
@@ -351,7 +351,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
-    int num = atLeast(10);
+    int num = _TestUtil.nextInt(random, 10, 20);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;
@@ -430,7 +430,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   private void testRangeSplit(int precisionStep) throws Exception {
     String field="ascfield"+precisionStep;
     // 10 random tests
-    int num = atLeast(10);
+    int num = _TestUtil.nextInt(random, 10, 20);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random.nextDouble()*noDocs - noDocs/2);
       long upper=(long)(random.nextDouble()*noDocs - noDocs/2);
@@ -516,7 +516,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    int num = atLeast(10);
+    int num = _TestUtil.nextInt(random, 10, 20);
     for (int i = 0; i < num; i++) {
       long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;

@@ -40,7 +40,7 @@ public class TestStressAdvance extends LuceneTestCase {
       doc.add(f);
       final Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       doc.add(idField);
-      int num = atLeast(5000);
+      int num = atLeast(4097);
       for(int id=0;id<num;id++) {
         if (random.nextInt(4) == 3) {
           f.setValue("a");
