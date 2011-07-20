@@ -1068,7 +1068,7 @@ public class TestFSTs extends LuceneTestCase {
       //System.out.println("ADD: " + term.text() + " ch[0]=" + (term.text().length() == 0 ? -1 : term.text().charAt(0)));
       builder.add(toIntsRef(term.text()), outputs.get(output));
       ord++;
-      if (ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
+      if (VERBOSE && ord % 100000 == 0 && LuceneTestCase.TEST_NIGHTLY) {
         System.out.println(ord + " terms...");
       }
       termEnum.next();
