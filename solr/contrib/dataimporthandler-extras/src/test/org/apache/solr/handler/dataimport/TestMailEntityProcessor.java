@@ -188,7 +188,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
     Boolean commitCalled;
 
     public SolrWriterImpl() {
-      super(null, ".", null);
+      super(null, null);
     }
 
     @Override

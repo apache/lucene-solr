@@ -198,7 +198,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     Boolean finishCalled = Boolean.FALSE;
 
     public SolrWriterImpl() {
-      super(null, ".",null);
+      super(null, null);
     }
 
     @Override

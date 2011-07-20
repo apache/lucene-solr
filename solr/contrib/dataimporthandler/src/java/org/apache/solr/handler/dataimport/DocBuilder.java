@@ -67,16 +67,19 @@ public class DocBuilder {
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
   Map<String, Object> functionsNamespace;
   private Properties persistedProperties;
+  
+  private DIHPropertiesWriter propWriter;
 
-  public DocBuilder(DataImporter dataImporter, SolrWriter writer, DataImporter.RequestParams reqParams) {
+  public DocBuilder(DataImporter dataImporter, SolrWriter writer, DIHPropertiesWriter propWriter, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
     this.dataImporter = dataImporter;
     this.writer = writer;
+    this.propWriter = propWriter;
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     requestParameters = reqParams;
     verboseDebug = requestParameters.debug && requestParameters.verbose;
     functionsNamespace = EvaluatorBag.getFunctionsNamespace(this.dataImporter.getConfig().functions, this);
-    persistedProperties = writer.readIndexerProperties();
+    persistedProperties = propWriter.readIndexerProperties();
   }
 
   public VariableResolverImpl getVariableResolver() {
@@ -238,7 +241,7 @@ public class DocBuilder {
         addStatusMessage("Optimized");
     }
     try {
-      writer.persist(lastIndexTimeProps);
+      propWriter.persist(lastIndexTimeProps);
     } catch (Exception e) {
       LOG.error("Could not write property file", e);
       statusMessages.put("error", "Could not write property file. Delta imports will not work. " +

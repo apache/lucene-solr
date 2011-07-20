@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.Properties;
 
 /**
  * <p> Writes documents to SOLR as well as provides methods for loading and persisting last index time. </p>
@@ -39,33 +38,19 @@ import java.util.Properties;
 public class SolrWriter {
   private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
 
-  static final String IMPORTER_PROPERTIES = "dataimport.properties";
-
   static final String LAST_INDEX_KEY = "last_index_time";
 
   private final UpdateRequestProcessor processor;
-
-  private final String configDir;
-
-  private String persistFilename = IMPORTER_PROPERTIES;
 
   DebugLogger debugLogger;
 
   SolrQueryRequest req;
 
-  public SolrWriter(UpdateRequestProcessor processor, String confDir, SolrQueryRequest req) {
+  public SolrWriter(UpdateRequestProcessor processor, SolrQueryRequest req) {
     this.processor = processor;
-    configDir = confDir;
     this.req = req;
   }
-  public SolrWriter(UpdateRequestProcessor processor, String confDir, String filePrefix, SolrQueryRequest req) {
-    this.processor = processor;
-    configDir = confDir;
-    if(filePrefix != null){
-      persistFilename = filePrefix+".properties";
-    }
-    this.req = req;
-  }
+  
 
   public boolean upload(SolrInputDocument d) {
     try {
@@ -90,44 +75,8 @@ public class SolrWriter {
       log.error("Exception while deleteing: " + id, e);
     }
   }
-
-
-  void persist(Properties p) {
-    OutputStream propOutput = null;
-
-    Properties props = readIndexerProperties();
-
-    try {
-      props.putAll(p);
-      File persistFile = getPersistFile();
-      propOutput = new FileOutputStream(persistFile);
-      props.store(propOutput, null);
-      log.info("Wrote last indexed time to " + persistFile.getAbsolutePath());
-    } catch (FileNotFoundException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "Unable to persist Index Start Time", e);
-    } catch (IOException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "Unable to persist Index Start Time", e);
-    } finally {
-      try {
-        if (propOutput != null)
-          propOutput.close();
-      } catch (IOException e) {
-        propOutput = null;
-      }
-    }
-  }
-
-  File getPersistFile() {
-    String filePath = configDir;
-    if (configDir != null && !configDir.endsWith(File.separator))
-      filePath += File.separator;
-    filePath += persistFilename;
-    return new File(filePath);
-  }
-
-  void finish() {
+  
+	void finish() {
     try {
       processor.finish();
     } catch (IOException e) {
@@ -136,29 +85,6 @@ public class SolrWriter {
     }
   }
   
-  Properties readIndexerProperties() {
-    Properties props = new Properties();
-    InputStream propInput = null;
-
-    try {
-      propInput = new FileInputStream(configDir
-              + persistFilename);
-      props.load(propInput);
-      log.info("Read " + persistFilename);
-    } catch (Exception e) {
-      log.warn("Unable to read: " + persistFilename);
-    } finally {
-      try {
-        if (propInput != null)
-          propInput.close();
-      } catch (IOException e) {
-        propInput = null;
-      }
-    }
-
-    return props;
-  }
-
   public void deleteByQuery(String query) {
     try {
       log.info("Deleting documents from Solr with query: " + query);
