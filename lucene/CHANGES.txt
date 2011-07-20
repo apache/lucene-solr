@@ -559,6 +559,11 @@ Optimizations
   greatly reduce RAM required during building, and CPU consumed, at
   the cost of a somewhat larger FST.  (Mike McCandless)
 
+Test Cases
+
+* LUCENE-3327: Fix AIOOBE when TestFSTs is run with
+  -Dtests.verbose=true (James Dyer via Mike McCandless)
+
 ======================= Lucene 3.3.0 =======================
 
 Changes in backwards compatibility policy

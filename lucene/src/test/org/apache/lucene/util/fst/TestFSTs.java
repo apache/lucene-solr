@@ -830,7 +830,7 @@ public class TestFSTs extends LuceneTestCase {
         final IntsRef prefix = ent.getKey();
         final CountMinOutput<T> cmo = ent.getValue();
         if (VERBOSE) {
-          System.out.println("  term=" + inputToString(inputMode, prefix) + " count=" + cmo.count + " isLeaf=" + cmo.isLeaf + " output=" + outputs.outputToString(cmo.output) + " isFinal=" + cmo.isFinal);
+          System.out.println("  term prefix=" + inputToString(inputMode, prefix, false) + " count=" + cmo.count + " isLeaf=" + cmo.isLeaf + " output=" + outputs.outputToString(cmo.output) + " isFinal=" + cmo.isFinal);
         }
         final boolean keep;
         if (prune1 > 0) {
@@ -897,7 +897,7 @@ public class TestFSTs extends LuceneTestCase {
       IntsRefFSTEnum.InputOutput<T> current;
       while((current = fstEnum.next()) != null) {
         if (VERBOSE) {
-          System.out.println("  fstEnum.next term=" + inputToString(inputMode, current.input) + " output=" + outputs.outputToString(current.output));
+          System.out.println("  fstEnum.next prefix=" + inputToString(inputMode, current.input, false) + " output=" + outputs.outputToString(current.output));
         }
         final CountMinOutput cmo = prefixes.get(current.input);
         assertNotNull(cmo);
@@ -920,7 +920,7 @@ public class TestFSTs extends LuceneTestCase {
           final CountMinOutput<T> cmo = ent.getValue();
           final T output = run(fst, ent.getKey(), stopNode);
           if (VERBOSE) {
-            System.out.println("TEST: verify term=" + inputToString(inputMode, ent.getKey()) + " output=" + outputs.outputToString(cmo.output));
+            System.out.println("TEST: verify prefix=" + inputToString(inputMode, ent.getKey(), false) + " output=" + outputs.outputToString(cmo.output));
           }
           // if (cmo.isFinal && !cmo.isLeaf) {
           if (cmo.isFinal) {
@@ -982,9 +982,15 @@ public class TestFSTs extends LuceneTestCase {
   public void testBigSet() throws IOException {
     testRandomWords(_TestUtil.nextInt(random, 50000, 60000), 1);
   }
-
+  
   private static String inputToString(int inputMode, IntsRef term) {
-    if (inputMode == 0) {
+    return inputToString(inputMode, term, true);
+  }
+
+  private static String inputToString(int inputMode, IntsRef term, boolean isValidUnicode) {
+    if (!isValidUnicode) {
+      return term.toString();
+    } else if (inputMode == 0) {
       // utf8
       return toBytesRef(term).utf8ToString() + " " + term;
     } else {
