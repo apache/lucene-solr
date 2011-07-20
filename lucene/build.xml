@@ -410,7 +410,8 @@
                   classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
-      <m2-deploy pom.xml="src/test-framework/pom.xml">
+      <m2-deploy pom.xml="src/test-framework/pom.xml"
+                 jar.file="${build.dir}/lucene-test-framework-${version}.jar">
         <artifact-attachments>
           <attach file="${build.dir}/lucene-test-framework-${version}-src.jar"
                   classifier="sources"/>
