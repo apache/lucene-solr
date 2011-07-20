@@ -466,6 +466,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         // Ignore the exception if it was due to abort:
         if (!(exc instanceof MergePolicy.MergeAbortedException)) {
+          //System.out.println(Thread.currentThread().getName() + ": CMS: exc");
+          //exc.printStackTrace(System.out);
           if (!suppressExceptions) {
             // suppressExceptions is normally only set during
             // testing.

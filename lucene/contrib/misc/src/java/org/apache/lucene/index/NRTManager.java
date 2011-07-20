@@ -233,7 +233,7 @@ public class NRTManager implements Closeable {
    **/
   public synchronized IndexSearcher get(long targetGen, boolean requireDeletes) {
 
-    assert noDeletesSearchingGen.get() >= searchingGen.get();
+    assert noDeletesSearchingGen.get() >= searchingGen.get(): "noDeletesSearchingGen=" + noDeletesSearchingGen.get() + " searchingGen=" + searchingGen.get();
 
     if (targetGen > getCurrentSearchingGen(requireDeletes)) {
       // Must wait

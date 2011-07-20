@@ -147,4 +147,10 @@ public class MockIndexInputWrapper extends IndexInput {
   public long readVLong() throws IOException {
     return delegate.readVLong();
   }
+
+  @Override
+  public String toString() {
+    return "MockIndexInputWrapper(" + delegate + ")";
+  }
 }
+

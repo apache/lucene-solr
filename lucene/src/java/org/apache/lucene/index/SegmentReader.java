@@ -31,7 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -161,9 +160,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si)) {
       liveDocs = new BitVector(directory(), si.getDelFileName(), new IOContext(context, true));
-      if (liveDocs.getVersion() < BitVector.VERSION_DGAPS_CLEARED) {
-        liveDocs.invertAll();
-      }
       liveDocsRef = new AtomicInteger(1);
       assert checkLiveCounts();
       if (liveDocs.size() != si.docCount) {
@@ -635,15 +631,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
-  }
-
-  // NOTE: only called from IndexWriter when a near
-  // real-time reader is opened, or applyDeletes is run,
-  // sharing a segment that's still being merged.  This
-  // method is not thread safe, and relies on the
-  // synchronization in IndexWriter
-  void loadTermsIndex(int indexDivisor) throws IOException {
-    core.fields.loadTermsIndex(indexDivisor);
   }
 
   // for testing only

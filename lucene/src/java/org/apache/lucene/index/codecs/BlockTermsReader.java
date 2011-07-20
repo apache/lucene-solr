@@ -165,11 +165,6 @@ public class BlockTermsReader extends FieldsProducer {
   }
   
   @Override
-  public void loadTermsIndex(int indexDivisor) throws IOException {
-    indexReader.loadTermsIndex(indexDivisor);
-  }
-
-  @Override
   public void close() throws IOException {
     try {
       try {

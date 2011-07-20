@@ -92,10 +92,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       @Override
       public void close() {
       }
-
-      @Override
-      public void loadTermsIndex(int indexDivisor) {
-      }
     } 
 
     static class RAMField extends Terms {

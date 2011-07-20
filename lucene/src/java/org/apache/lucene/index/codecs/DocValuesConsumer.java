@@ -103,21 +103,20 @@ public abstract class DocValuesConsumer {
     // TODO we need some kind of compatibility notation for values such
     // that two slightly different segments can be merged eg. fixed vs.
     // variable byte len or float32 vs. float64
-    int docBase = 0;
     boolean merged = false;
     /*
      * We ignore the given DocValues here and merge from the subReaders directly
      * to support bulk copies on the DocValues Writer level. if this gets merged
      * with MultiDocValues the writer can not optimize for bulk-copyable data
      */
-    for (final IndexReader reader : mergeState.readers) {
-      final IndexDocValues r = reader.docValues(mergeState.fieldInfo.name);
+    for(int readerIDX=0;readerIDX<mergeState.readers.size();readerIDX++) {
+      final org.apache.lucene.index.codecs.MergeState.IndexReaderAndLiveDocs reader = mergeState.readers.get(readerIDX);
+      final IndexDocValues r = reader.reader.docValues(mergeState.fieldInfo.name);
       if (r != null) {
         merged = true;
-        merge(new Writer.MergeState(r, docBase, reader.maxDoc(),
-                                    reader.getLiveDocs()));
+        merge(new Writer.MergeState(r, mergeState.docBase[readerIDX], reader.reader.maxDoc(),
+                                    reader.liveDocs));
       }
-      docBase += reader.numDocs();
     }
     if (merged) {
       finish(mergeState.mergedDocCount);

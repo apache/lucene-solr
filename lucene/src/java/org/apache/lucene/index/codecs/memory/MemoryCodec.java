@@ -767,11 +767,6 @@ public class MemoryCodec extends Codec {
       }
       
       @Override
-      public void loadTermsIndex(int indexDivisor) {
-        // no op
-      }
-
-      @Override
       public void close() {
         // Drop ref to FST:
         for(TermsReader termsReader : fields.values()) {

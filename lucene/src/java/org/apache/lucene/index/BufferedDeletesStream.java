@@ -235,7 +235,7 @@ class BufferedDeletesStream {
           delCount += applyQueryDeletes(packet.queriesIterable(), reader);
           segAllDeletes = reader.numDocs() == 0;
         } finally {
-          readerPool.release(reader);
+          readerPool.release(reader, IOContext.Context.READ);
         }
         anyNewDeletes |= delCount > 0;
 
@@ -277,7 +277,7 @@ class BufferedDeletesStream {
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
             segAllDeletes = reader.numDocs() == 0;
           } finally {
-            readerPool.release(reader);
+            readerPool.release(reader, IOContext.Context.READ);
           }
           anyNewDeletes |= delCount > 0;
 

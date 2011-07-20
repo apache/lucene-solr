@@ -143,12 +143,12 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   // Used by near real-time search
-  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, CodecProvider codecs, boolean applyAllDeletes) throws IOException {
+  DirectoryReader(IndexWriter writer, SegmentInfos infos, CodecProvider codecs, boolean applyAllDeletes) throws IOException {
     this.directory = writer.getDirectory();
     this.readOnly = true;
     this.applyAllDeletes = applyAllDeletes;       // saved for reopen
 
-    this.termInfosIndexDivisor = termInfosIndexDivisor;
+    this.termInfosIndexDivisor = writer.getConfig().getReaderTermsIndexDivisor();
     if (codecs == null) {
       this.codecs = CodecProvider.getDefault();
     } else {
@@ -171,8 +171,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       try {
         final SegmentInfo info = infos.info(i);
         assert info.dir == dir;
-        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor,
-                                                                        IOContext.READ);
+        final SegmentReader reader = writer.readerPool.getReadOnlyClone(info, IOContext.READ);
         if (reader.numDocs() > 0 || writer.getKeepFullyDeletedSegments()) {
           reader.readerFinishedListeners = readerFinishedListeners;
           readers.add(reader);

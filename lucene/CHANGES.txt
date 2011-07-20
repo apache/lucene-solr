@@ -489,6 +489,11 @@ Optimizations
   MultiTermQuery now stores TermState per leaf reader during rewrite to re-
   seek the term dictionary in TermQuery / TermWeight.
   (Simon Willnauer, Mike McCandless, Robert Muir)
+
+* LUCENE-3292: IndexWriter no longer shares the same SegmentReader
+  instance for merging and NRT readers, which enables directory impls
+  to separately tune IO flags for each.  (Varun Thacker, Simon
+  Willnauer, Mike McCandless)
   
 Bug fixes
 
