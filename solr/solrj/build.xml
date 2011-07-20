@@ -20,6 +20,13 @@
 
   <import file="../common-build.xml"/>
 
+  <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
+  <path id="test.classpath">
+    <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
+  	<pathelement path="${tests.userdir}"/>
+  	<path refid="test.base.classpath"/>
+  </path>
+
   <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel"/>
