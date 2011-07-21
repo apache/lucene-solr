@@ -313,6 +313,9 @@ New Features
 * LUCENE-2048: Added omitPositions to the schema, so you can omit position
   information while still indexing term frequencies.  (rmuir)
 
+* SOLR-2584: add UniqFieldsUpdateProcessor that removes duplicate values in the
+  specified fields. (Elmer Garduno, koji)
+
 Optimizations
 ----------------------
 
