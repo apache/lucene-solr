@@ -15,11 +15,10 @@ package org.apache.solr.handler.dataimport;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.File;
 import java.util.Properties;
 
 /**
- *
+ * @since solr 3.2
  */
 public interface DIHPropertiesWriter {
 
