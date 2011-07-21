@@ -154,6 +154,10 @@ New Features
   for faster reopen times. There is also a new 'soft' autocommit tracker that can be
   configured. (Mark Miller, Robert Muir)
 
+* SOLR-2399: Updated Solr Admin interface.  New look and feel with per core administration
+  and many new options.  (Stefan Matheis via ryan)
+
+
 Optimizations
 ----------------------
 
