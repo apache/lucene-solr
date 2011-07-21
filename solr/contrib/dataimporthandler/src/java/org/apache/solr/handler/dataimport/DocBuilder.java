@@ -85,7 +85,8 @@ public class DocBuilder {
   public VariableResolverImpl getVariableResolver() {
     try {
       VariableResolverImpl resolver = null;
-      if(dataImporter != null && dataImporter.getCore() != null){
+      if(dataImporter != null && dataImporter.getCore() != null
+          && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
         resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
       } else resolver = new VariableResolverImpl();
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
@@ -436,11 +437,11 @@ public class DocBuilder {
     private void runAThread(ThreadedEntityProcessorWrapper epw, EntityRow rows, String currProcess) throws Exception {
       currentEntityProcWrapper.set(epw);
       epw.threadedInit(context);
-      initEntity();
       try {
-        epw.init(rows);
-        DocWrapper docWrapper = this.docWrapper;
         Context.CURRENT_CONTEXT.set(context);
+        epw.init(rows);
+        initEntity();
+        DocWrapper docWrapper = this.docWrapper;
         for (; ;) {
           if(DocBuilder.this.stop.get()) break;
           try {
