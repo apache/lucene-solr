@@ -6,70 +6,55 @@
 
     </div>
 
-    <div class="block" id="field-analysis">
-    
-        <h2><span>Field Analysis</span></h2>
-        <div class="content">
-    
-        <div class="message-container">
-            <div class="message"></div>
-        </div>
-        
-        <form method="get">
+    <div id="analysis-holder">
+
+        <div id="field-analysis">
+              
+            <form method="get">
+                
+                <ul class="clearfix">
+                    
+                    <li class="index">
+                        
+                        <label for="analysis_fieldvalue_index">Field Value (Index)</label>
+                        <textarea name="analysis.fieldvalue" id="analysis_fieldvalue_index"></textarea>
+                        
+                    </li>
+                    
+                    <li class="query">
+                        
+                        <label for="analysis_fieldvalue_query">Field Value (Query)</label>
+                        <textarea name="analysis.query" id="analysis_fieldvalue_query"></textarea>
+                        
+                    </li>
+
+                    <li class="settings-holder clearfix">
+                        <div class="settings">
+
+                            <label for="type_or_name">Analyse Fieldname / FieldType:</label>
+                            <select id="type_or_name"></select>
+
+                            <div>
+
+                                <button type="submit">Analyse Values</button>
+
+                                <div class="verbose_output active">
+                                    <a>Verbose Output</a>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </li>
+                    
+                </ul>
+                
+            </form>
             
-            <ul class="clearfix">
-                
-                <li class="index">
-                    
-                    <label for="analysis_fieldvalue_index">Field Value (Index)</label>
-                    <textarea name="analysis.fieldvalue" id="analysis_fieldvalue_index"></textarea>
-                    
-                </li>
-                
-                <li class="query">
-                    
-                    <label for="analysis_fieldvalue_query">Field Value (Query)</label>
-                    <textarea name="analysis.query" id="analysis_fieldvalue_query"></textarea>
-                    
-                </li>
-
-                <li class="settings clearfix">
-
-                    <label for="type_or_name">Analyse Fieldname / FieldType:</label>
-                    <select id="type_or_name"></select>
-
-                    <div>
-
-                        <button type="submit">Analyse Values</button>
-
-                    </div>
-
-                </li>
-                
-            </ul>
-            
-        </form>
-        
-        </div>
-    </div>
-    
-    <div class="block analysis-result">
-        
-        <h2>
-            <span>{headline}</span>
-            <div class="verbose_output">
-                <a>Verbose Output</a>
-            </div>
-        </h2>
-        <div class="content">
-        
-        <div class="message-container">
-            <div class="message"></div>
         </div>
         
-        <div class="analysis-result-content clearfix">{content}</div>
-        
-        </div>
+        <div id="analysis-result" class="clearfix verbose_output"></div>
+
     </div>
 
 </div>
