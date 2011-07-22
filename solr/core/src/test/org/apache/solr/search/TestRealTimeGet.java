@@ -30,6 +30,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import sun.tools.asm.CatchData;
 
 import java.io.IOException;
 import java.util.*;
@@ -80,6 +81,8 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   private ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
   private volatile Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
+  private long snapshotCount;
+  private long committedModelClock;
   volatile int lastId;
   private final String field = "val_l";
   private volatile Throwable ex;
@@ -97,7 +100,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // query variables
     final int percentRealtimeQuery = 0;   // realtime get is not implemented yet
-    final AtomicLong operations = new AtomicLong(5000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(10000);  // number of query operations to perform in total
     int nReadThreads = 10;
 
 
@@ -116,42 +119,61 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         @Override
         public void run() {
-          while (operations.get() > 0) {
-            int oper = rand.nextInt(100);
-            int id = rand.nextInt(ndocs);
-            Long val = model.get(id);
-            long nextVal = Math.abs(val)+1;
+          try {
+            while (operations.get() > 0) {
+              int oper = rand.nextInt(100);
+              int id = rand.nextInt(ndocs);
+              Long val = model.get(id);
+              long nextVal = Math.abs(val)+1;
 
-            // set the lastId before we actually change it sometimes to try and
-            // uncover more race conditions between writing and reading
-            boolean before = random.nextBoolean();
-            if (before) {
-              lastId = id;
-            }
-
-            if (oper < commitPercent) {
-              if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                if (rand.nextInt(100) < softCommitPercent)
-                  assertU(h.commit("softCommit","true"));
-                else
-                  assertU(commit());
+              // set the lastId before we actually change it sometimes to try and
+              // uncover more race conditions between writing and reading
+              boolean before = random.nextBoolean();
+              if (before) {
+                lastId = id;
               }
 
-              committedModel = new HashMap<Integer,Long>(model);  // take a snapshot
-              numCommitting.decrementAndGet();
-            } else if (oper < commitPercent + deletePercent) {
-              assertU("<delete><id>" + id + "</id></delete>");
-              model.put(id, -nextVal);
-            } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
-              assertU("<delete><query>id:" + id + "</query></delete>");
-              model.put(id, -nextVal);
-            } else {
-              assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-            }
+              if (oper < commitPercent) {
+                if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
+                  Map<Integer,Long> newCommittedModel;
+                  long version;
 
-            if (!before) {
-              lastId = id;
+                  synchronized(this) {
+                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                    version = snapshotCount++;
+                  }
+
+                  if (rand.nextInt(100) < softCommitPercent)
+                    assertU(h.commit("softCommit","true"));
+                  else
+                    assertU(commit());
+
+                  synchronized(this) {
+                    // install this snapshot only if it's newer than the current one
+                    if (version >= committedModelClock) {
+                      committedModel = newCommittedModel;
+                      committedModelClock = version;
+                    }
+                  }
+                }
+                numCommitting.decrementAndGet();
+              } else if (oper < commitPercent + deletePercent) {
+                assertU("<delete><id>" + id + "</id></delete>");
+                model.put(id, -nextVal);
+              } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+                assertU("<delete><query>id:" + id + "</query></delete>");
+                model.put(id, -nextVal);
+              } else {
+                assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
+              }
+
+              if (!before) {
+                lastId = id;
+              }
             }
+          } catch (Throwable e) {
+            ex = e;
+            SolrException.log(log,e);
           }
         }
       };
