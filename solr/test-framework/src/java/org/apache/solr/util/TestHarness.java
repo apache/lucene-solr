@@ -71,8 +71,8 @@ import java.util.Map;
 public class TestHarness {
   protected CoreContainer container;
   private SolrCore core;
-  private XPath xpath = XPathFactory.newInstance().newXPath();
-  private DocumentBuilder builder;
+  private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
+  private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public XmlUpdateRequestHandler updater;
         
   public static SolrConfig createConfig(String confFile) {
@@ -145,15 +145,40 @@ public class TestHarness {
       core = container.getCore(coreName);
       if (core != null)
         core.close();
-      builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      
+
       updater = new XmlUpdateRequestHandler();
       updater.init( null );
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
-  
+
+  private DocumentBuilder getXmlDocumentBuilder() {
+    try {
+      DocumentBuilder builder = builderTL.get();
+      if (builder == null) {
+        builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        builderTL.set(builder);
+      }
+      return builder;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private XPath getXpath() {
+    try {
+      XPath xpath = xpathTL.get();
+      if (xpath == null) {
+        xpath = XPathFactory.newInstance().newXPath();
+        xpathTL.set(xpath);
+      }
+      return xpath;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   // Creates a container based on infos needed to create one core
   static class Initializer extends CoreContainer.Initializer {
     String coreName;
@@ -364,7 +389,7 @@ public class TestHarness {
                 
     Document document=null;
     try {
-      document = builder.parse(new ByteArrayInputStream
+      document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
                                (xml.getBytes("UTF-8")));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
@@ -374,7 +399,7 @@ public class TestHarness {
                 
     for (String xp : tests) {
       xp=xp.trim();
-      Boolean bool = (Boolean) xpath.evaluate(xp, document,
+      Boolean bool = (Boolean) getXpath().evaluate(xp, document,
                                               XPathConstants.BOOLEAN);
 
       if (!bool) {

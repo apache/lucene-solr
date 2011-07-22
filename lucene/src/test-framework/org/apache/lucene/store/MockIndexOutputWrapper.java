@@ -126,7 +126,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       // Maybe throw random exception; only do this on first
       // write to a new file:
       first = false;
-      dir.maybeThrowIOException();
+      dir.maybeThrowIOException(name);
     }
   }
 
@@ -155,5 +155,10 @@ public class MockIndexOutputWrapper extends IndexOutput {
     delegate.copyBytes(input, numBytes);
     // TODO: we may need to check disk full here as well
     dir.maybeThrowDeterministicException();
+  }
+
+  @Override
+  public String toString() {
+    return "MockIndexOutputWrapper(" + delegate + ")";
   }
 }

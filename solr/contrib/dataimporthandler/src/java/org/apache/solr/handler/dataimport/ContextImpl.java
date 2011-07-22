@@ -100,7 +100,7 @@ public class ContextImpl extends Context {
     if (entity.dataSrc != null && docBuilder != null && docBuilder.verboseDebug &&
              Context.FULL_DUMP.equals(currentProcess())) {
       //debug is not yet implemented properly for deltas
-      entity.dataSrc = docBuilder.writer.getDebugLogger().wrapDs(entity.dataSrc);
+      entity.dataSrc = docBuilder.getDebugLogger().wrapDs(entity.dataSrc);
     }
     return entity.dataSrc;
   }

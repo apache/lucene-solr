@@ -43,8 +43,6 @@ public abstract class TermsIndexReaderBase implements Closeable {
 
   public abstract FieldIndexEnum getFieldEnum(FieldInfo fieldInfo);
 
-  public abstract void loadTermsIndex(int indexDivisor) throws IOException;
-
   public abstract void close() throws IOException;
 
   public abstract void getExtensions(Collection<String> extensions);

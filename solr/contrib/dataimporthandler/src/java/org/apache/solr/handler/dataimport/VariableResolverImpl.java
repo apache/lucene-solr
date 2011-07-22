@@ -35,11 +35,6 @@ import java.util.regex.Pattern;
 public class VariableResolverImpl extends VariableResolver {
   private Map<String, Object> container = new HashMap<String, Object>();
 
-  /**
-   * Used for creating Evaluators
-   */
-  Context context;
-
   private final TemplateString templateString = new TemplateString();
 
   private final Map defaults ;

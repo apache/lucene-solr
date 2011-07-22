@@ -198,17 +198,12 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     Boolean finishCalled = Boolean.FALSE;
 
     public SolrWriterImpl() {
-      super(null, ".",null);
+      super(null, null);
     }
 
     @Override
     public boolean upload(SolrInputDocument doc) {
       return docs.add(doc);
-    }
-
-    @Override
-    public void log(int event, String name, Object row) {
-      // Do nothing
     }
 
     @Override
@@ -222,7 +217,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     }
     
     @Override
-    public void finish() {
+    public void close() {
       finishCalled = Boolean.TRUE;
     }
   }

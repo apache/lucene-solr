@@ -353,6 +353,11 @@ public final class BitVector implements Cloneable, Bits {
       } else {
         readBits(input);
       }
+
+      if (version < VERSION_DGAPS_CLEARED) {
+        invertAll();
+      }
+
       assert verifyCount();
     } finally {
       input.close();

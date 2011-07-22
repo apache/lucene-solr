@@ -523,6 +523,13 @@
    <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
    <field name="store" type="location" indexed="true" stored="true"/>
+   
+   <!-- to test uniq fields -->   
+   <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="uniq2" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="uniq3" type="string" indexed="true" stored="true"/>
+   <field name="nouniq" type="string" indexed="true" stored="true" multiValued="true"/>
+
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
 
 

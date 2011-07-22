@@ -113,7 +113,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           final InputSource is = new InputSource(core.getResourceLoader().openConfig(configLoc));
           is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(configLoc));
           importer = new DataImporter(is, core,
-                  dataSources, coreScopeSession);
+                  dataSources, coreScopeSession, myName);
         }
       }
     } catch (Throwable e) {
@@ -165,7 +165,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         try {
           processConfiguration((NamedList) initArgs.get("defaults"));
           importer = new DataImporter(new InputSource(new StringReader(requestParams.dataConfig)), req.getCore()
-                  , dataSources, coreScopeSession);
+                  , dataSources, coreScopeSession, myName);
         } catch (RuntimeException e) {
           rsp.add("exception", DebugLogger.getStacktraceString(e));
           importer = null;
@@ -280,7 +280,7 @@ public class DataImportHandler extends RequestHandlerBase implements
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
                                    final SolrResourceLoader loader, final DataImporter.RequestParams requestParams, SolrQueryRequest req) {
 
-    return new SolrWriter(processor, loader.getConfigDir(), myName, req) {
+    return new SolrWriter(processor, req) {
 
       @Override
       public boolean upload(SolrInputDocument document) {

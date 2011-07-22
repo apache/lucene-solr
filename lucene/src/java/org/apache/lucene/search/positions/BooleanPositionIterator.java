@@ -39,6 +39,13 @@ abstract class BooleanPositionIterator extends PositionIntervalIterator {
       iterators[i] = subScorers[i].positions();
     }
   }
+  
+  public BooleanPositionIterator(Scorer scorer, PositionIntervalIterator[] iterators,
+      IntervalQueue queue) throws IOException {
+    super(scorer);
+    this.queue = queue;
+    this.iterators = iterators;
+  }
 
   @Override
   public PositionIntervalIterator[] subs(boolean inOrder) {

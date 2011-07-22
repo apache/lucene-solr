@@ -23,7 +23,6 @@ import java.io.OutputStreamWriter; // for toDot
 import java.io.Writer;             // for toDot
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -63,6 +62,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
+    assert indexDivisor == -1 || indexDivisor > 0;
 
     try {
       
@@ -170,7 +170,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       }
     }
 
-    public void loadTermsIndex() throws IOException {
+    private void loadTermsIndex() throws IOException {
       if (fst == null) {
         IndexInput clone = (IndexInput) in.clone();
         clone.seek(indexStart);
@@ -202,27 +202,6 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
           fst = builder.finish();
         }
       }
-    }
-  }
-
-  // Externally synced in IndexWriter
-  @Override
-  public void loadTermsIndex(int indexDivisor) throws IOException {
-    if (!indexLoaded) {
-
-      if (indexDivisor < 0) {
-        this.indexDivisor = -indexDivisor;
-      } else {
-        this.indexDivisor = indexDivisor;
-      }
-
-      Iterator<FieldIndexData> it = fields.values().iterator();
-      while(it.hasNext()) {
-        it.next().loadTermsIndex();
-      }
-
-      indexLoaded = true;
-      in.close();
     }
   }
 

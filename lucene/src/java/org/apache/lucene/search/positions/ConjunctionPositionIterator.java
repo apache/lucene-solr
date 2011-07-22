@@ -37,6 +37,13 @@ public final class ConjunctionPositionIterator extends BooleanPositionIterator {
     this (scorer, subScorers, subScorers.length);
   }
   
+  public ConjunctionPositionIterator(Scorer scorer, PositionIntervalIterator... iterators) throws IOException {
+    super(scorer, iterators, new IntervalQueueAnd(iterators.length));
+    queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?
+    this.nrMustMatch = iterators.length;
+
+  }
+  
   public ConjunctionPositionIterator(Scorer scorer, Scorer[] subScorers, int nrMustMatch) throws IOException {
     super(scorer, subScorers, new IntervalQueueAnd(subScorers.length));
     queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?

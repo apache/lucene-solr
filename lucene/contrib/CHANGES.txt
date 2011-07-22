@@ -83,6 +83,7 @@ New Features
    Removed contrib/wordnet.  (Robert Muir, Mike McCandless)
 
 API Changes
+
  * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
    constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
    the target indexes. (Simon Willnauer, Jason Rutherglen)
@@ -95,6 +96,12 @@ Optimizations
       
 Bug Fixes
 
+ * LUCENE-3326: Fixed bug if you used MoreLikeThis.like(Reader), it would
+   try to re-analyze the same Reader multiple times, passing different
+   field names to the analyzer. Additionally MoreLikeThisQuery would take
+   your string and encode/decode it using the default charset, it now uses
+   a StringReader.  Finally, MoreLikeThis's methods that take File, URL, InputStream,
+   are deprecated, please create the Reader yourself. (Trejkaz, Robert Muir)
 
 ======================= Lucene 3.3.0 =======================
 

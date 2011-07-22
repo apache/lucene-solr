@@ -87,7 +87,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setBoostFactor(boostFactor);
     
     BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
-        "lucene release"));
+        "lucene release"), "text");
     List<BooleanClause> clauses = query.clauses();
     
     assertEquals("Expected " + originalValues.size() + " clauses.",
@@ -115,7 +115,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     mlt.setFieldNames(new String[] {"text"});
     mlt.setBoost(true);
     BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
-        "lucene release"));
+        "lucene release"), "text");
     List<BooleanClause> clauses = query.clauses();
 
     for (BooleanClause clause : clauses) {
@@ -123,5 +123,16 @@ public class TestMoreLikeThis extends LuceneTestCase {
       originalValues.put(tq.getTerm().text(), tq.getBoost());
     }
     return originalValues;
+  }
+  
+  // LUCENE-3326
+  public void testMultiFields() throws Exception {
+    MoreLikeThis mlt = new MoreLikeThis(reader);
+    mlt.setAnalyzer(new MockAnalyzer(random, MockTokenizer.WHITESPACE, false));
+    mlt.setMinDocFreq(1);
+    mlt.setMinTermFreq(1);
+    mlt.setMinWordLen(1);
+    mlt.setFieldNames(new String[] {"text", "foobar"});
+    mlt.like(new StringReader("this is a test"), "foobar");
   }
 }

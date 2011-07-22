@@ -551,7 +551,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         if (!success) {
           // Must force the close else the writer can have
           // open files which cause exc in MockRAMDir.close
-         
+          if (VERBOSE) {
+            System.out.println("TEST: now rollback");
+          }
           modifier.rollback();
         }
 

@@ -90,6 +90,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     for (int r = 0; r < 3; r++) {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
+      w.setInfoStream(VERBOSE ? System.out : null);
       final int numUpdates = atLeast(20);
       int numThreads = _TestUtil.nextInt(random, 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];

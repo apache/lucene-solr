@@ -490,6 +490,8 @@
   	<attribute name="tempDir" default="${build.dir}/test"/>
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
+        <attribute name="tests.nightly" default="${tests.nightly}"/>
+        <attribute name="tests.multiplier" default="${tests.multiplier}"/>
 
     <sequential>
 	    <condition property="runall">
@@ -540,10 +542,10 @@
               <!-- logging config file -->
               <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
           <!-- set whether or not nightly tests should run -->
-          <sysproperty key="tests.nightly" value="${tests.nightly}"/>
+          <sysproperty key="tests.nightly" value="@{tests.nightly}"/>
 
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-              <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
+              <sysproperty key="tests.multiplier" value="@{tests.multiplier}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>

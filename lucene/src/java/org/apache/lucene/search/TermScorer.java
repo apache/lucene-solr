@@ -174,17 +174,17 @@ final class TermScorer extends Scorer {
   @Override
   public PositionIntervalIterator positions() throws IOException {
     assert docsAndPosFactory != null;
-    return new TermPositions(docsAndPosFactory.create(), docsAndPosFactory.doPayloads);
+    return new TermPositions(this, docsAndPosFactory.create(), docsAndPosFactory.doPayloads);
   }
 
-  private final class TermPositions extends PositionIntervalIterator {
+ static final class TermPositions extends PositionIntervalIterator {
     private final PositionInterval interval;
     int positionsPending;
     private final DocsAndPositionsEnum docsAndPos;
     private int docID = -1;
 
-    public TermPositions(DocsAndPositionsEnum docsAndPos, boolean doPayloads) {
-      super(TermScorer.this);
+    public TermPositions(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads) {
+      super(scorer);
       this.docsAndPos = docsAndPos;
       this.interval = doPayloads ? new PayloadPosInterval(docsAndPos, this)
           : new PositionInterval();
@@ -219,7 +219,7 @@ final class TermScorer extends Scorer {
     public int advanceTo(int docId) throws IOException {
       int advance = docsAndPos.advance(docId);
       if (advance != NO_MORE_DOCS) {
-        positionsPending = freq = docsAndPos.freq();
+        positionsPending = docsAndPos.freq();
       }
       interval.reset();
       return docID = docsAndPos.docID();

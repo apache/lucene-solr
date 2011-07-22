@@ -34,13 +34,8 @@ import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.analysis.CharFilterFactory;
-import org.apache.solr.analysis.TokenFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SolrSimilarityProvider;
-import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
@@ -53,7 +48,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.*;
-import java.lang.reflect.Constructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,6 +132,11 @@ public final class IndexSchema {
     return name;
   }
   
+  /** The Default Lucene Match Version for this IndexSchema */
+  public Version getDefaultLuceneMatchVersion() {
+    return solrConfig.luceneMatchVersion;
+  }
+
   float getVersion() {
     return version;
   }
@@ -376,63 +375,18 @@ public final class IndexSchema {
 
       version = schemaConf.getFloat("/schema/@version", 1.0f);
 
-      final IndexSchema schema = this;
-      AbstractPluginLoader<FieldType> fieldLoader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType", true, true) {
 
-        @Override
-        protected FieldType create( ResourceLoader loader, String name, String className, Node node ) throws Exception
-        {
-          FieldType ft = (FieldType)loader.newInstance(className);
-          ft.setTypeName(name);
+      // load the Field Types
 
-          String expression = "./analyzer[@type='query']";
-          Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-          Analyzer queryAnalyzer = readAnalyzer(anode);
-
-          // An analyzer without a type specified, or with type="index"
-          expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
-          anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-          Analyzer analyzer = readAnalyzer(anode);
-          
-          // a custom similarity[Factory]
-          expression = "./similarity";
-          anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-          Similarity similarity = readSimilarity(anode);
-
-          if (queryAnalyzer==null) queryAnalyzer=analyzer;
-          if (analyzer==null) analyzer=queryAnalyzer;
-          if (analyzer!=null) {
-            ft.setAnalyzer(analyzer);
-            ft.setQueryAnalyzer(queryAnalyzer);
-          }
-          if (similarity!=null) {
-            ft.setSimilarity(similarity);
-          }
-          if (ft instanceof SchemaAware){
-            schemaAware.add((SchemaAware) ft);
-          }
-          return ft;
-        }
-        
-        @Override
-        protected void init(FieldType plugin, Node node) throws Exception {
-          Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), "name","class" );
-          plugin.setArgs(schema, params );
-        }
-
-        @Override
-        protected FieldType register(String name, FieldType plugin) throws Exception {
-          log.trace("fieldtype defined: " + plugin );
-          return fieldTypes.put( name, plugin );
-        }
-      };
-      
+      final FieldTypePluginLoader typeLoader 
+        = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
       String expression = "/schema/types/fieldtype | /schema/types/fieldType";
-      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      fieldLoader.load( loader, nodes );
+      NodeList nodes = (NodeList) xpath.evaluate(expression, document, 
+                                                 XPathConstants.NODESET);
+      typeLoader.load( loader, nodes );
 
-      
+      // load the Fields
 
       // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
       Map<String,Boolean> explicitRequiredProp = new HashMap<String, Boolean>();
@@ -506,7 +460,7 @@ public final class IndexSchema {
     dynamicFields = dFields.toArray(new DynamicField[dFields.size()]);
 
     Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
-    Similarity similarity = readSimilarity(node);
+    Similarity similarity = readSimilarity(loader, node);
     fallbackSimilarity = similarity == null ? new DefaultSimilarity() : similarity;
 
     node = (Node) xpath.evaluate("/schema/similarityProvider", document, XPathConstants.NODE);
@@ -759,7 +713,7 @@ public final class IndexSchema {
     return newArr;
   }
 
-  private Similarity readSimilarity(Node node) throws XPathExpressionException {
+  static Similarity readSimilarity(ResourceLoader loader, Node node) throws XPathExpressionException {
     if (node==null) {
       return null;
     } else {
@@ -782,140 +736,6 @@ public final class IndexSchema {
       return similarityFactory.getSimilarity();
     }
   }
-
-  //
-  // <analyzer><tokenizer class="...."/><tokenizer class="...." arg="....">
-  //
-  //
-  private Analyzer readAnalyzer(Node node) throws XPathExpressionException {
-    // parent node used to be passed in as "fieldtype"
-    // if (!fieldtype.hasChildNodes()) return null;
-    // Node node = DOMUtil.getChild(fieldtype,"analyzer");
-
-    if (node == null) return null;
-    NamedNodeMap attrs = node.getAttributes();
-    String analyzerName = DOMUtil.getAttr(attrs,"class");
-    if (analyzerName != null) {
-      try {
-        // No need to be core-aware as Analyzers are not in the core-aware list
-        final Class<? extends Analyzer> clazz = loader.findClass
-          (analyzerName).asSubclass(Analyzer.class);
-
-        try {
-          // first try to use a ctor with version parameter 
-          // (needed for many new Analyzers that have no default one anymore)
-          Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
-          final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
-          final Version luceneMatchVersion = (matchVersionStr == null) ?
-            solrConfig.luceneMatchVersion : Config.parseLuceneVersionString(matchVersionStr);
-          if (luceneMatchVersion == null) {
-            throw new SolrException
-              ( SolrException.ErrorCode.SERVER_ERROR,
-                "Configuration Error: Analyzer '" + clazz.getName() +
-                "' needs a 'luceneMatchVersion' parameter");
-          }
-          return cnstr.newInstance(luceneMatchVersion);
-        } catch (NoSuchMethodException nsme) {
-          // otherwise use default ctor
-          return clazz.newInstance();
-        }
-      } catch (Exception e) {
-        log.error("Cannot load analyzer: "+analyzerName, e);
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-                                 "Cannot load analyzer: "+analyzerName, e );
-      }
-    }
-
-    XPath xpath = XPathFactory.newInstance().newXPath();
-
-    // Load the CharFilters
-    // --------------------------------------------------------------------------------
-    final ArrayList<CharFilterFactory> charFilters = new ArrayList<CharFilterFactory>();
-    AbstractPluginLoader<CharFilterFactory> charFilterLoader =
-      new AbstractPluginLoader<CharFilterFactory>( "[schema.xml] analyzer/charFilter", false, false )
-    {
-      @Override
-      protected void init(CharFilterFactory plugin, Node node) throws Exception {
-        if( plugin != null ) {
-          final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
-          // copy the luceneMatchVersion from config, if not set
-          if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
-            params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
-          plugin.init( params );
-          charFilters.add( plugin );
-        }
-      }
-
-      @Override
-      protected CharFilterFactory register(String name, CharFilterFactory plugin) throws Exception {
-        return null; // used for map registration
-      }
-    };
-    charFilterLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./charFilter", node, XPathConstants.NODESET) );
-
-    // Load the Tokenizer
-    // Although an analyzer only allows a single Tokenizer, we load a list to make sure
-    // the configuration is ok
-    // --------------------------------------------------------------------------------
-    final ArrayList<TokenizerFactory> tokenizers = new ArrayList<TokenizerFactory>(1);
-    AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
-      new AbstractPluginLoader<TokenizerFactory>( "[schema.xml] analyzer/tokenizer", false, false )
-    {
-      @Override
-      protected void init(TokenizerFactory plugin, Node node) throws Exception {
-        if( !tokenizers.isEmpty() ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "The schema defines multiple tokenizers for: "+node );
-        }
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
-        // copy the luceneMatchVersion from config, if not set
-        if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
-          params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
-        plugin.init( params );
-        tokenizers.add( plugin );
-      }
-
-      @Override
-      protected TokenizerFactory register(String name, TokenizerFactory plugin) throws Exception {
-        return null; // used for map registration
-      }
-    };
-    tokenizerLoader.load( loader, (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
-    
-    // Make sure something was loaded
-    if( tokenizers.isEmpty() ) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
-    }
-    
-
-    // Load the Filters
-    // --------------------------------------------------------------------------------
-    final ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>();
-    AbstractPluginLoader<TokenFilterFactory> filterLoader = 
-      new AbstractPluginLoader<TokenFilterFactory>( "[schema.xml] analyzer/filter", false, false )
-    {
-      @Override
-      protected void init(TokenFilterFactory plugin, Node node) throws Exception {
-        if( plugin != null ) {
-          final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
-          // copy the luceneMatchVersion from config, if not set
-          if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
-            params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
-          plugin.init( params );
-          filters.add( plugin );
-        }
-      }
-
-      @Override
-      protected TokenFilterFactory register(String name, TokenFilterFactory plugin) throws Exception {
-        return null; // used for map registration
-      }
-    };
-    filterLoader.load( loader, (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
-
-    return new TokenizerChain(charFilters.toArray(new CharFilterFactory[charFilters.size()]),
-        tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
-  };
 
 
   static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {

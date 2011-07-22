@@ -17,15 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
+import org.apache.lucene.util.SetOnce;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -75,7 +76,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     int maxNumSegmentsOptimize;     // used by IndexWriter
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
-    List<SegmentReader> readerClones;   // used by IndexWriter
+    List<BitVector> readerLiveDocs;   // used by IndexWriter
     public final List<SegmentInfo> segments;
     public final int totalDocCount;
     boolean aborted;

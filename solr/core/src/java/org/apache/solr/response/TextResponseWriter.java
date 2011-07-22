@@ -203,10 +203,6 @@ public abstract class TextResponseWriter {
   {
     SolrDocument out = new SolrDocument();
     for( Fieldable f : doc.getFields() ) {
-      if( "gack_i".equals( f.name() ) ) {
-        System.out.println( f );
-      }
-      
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {

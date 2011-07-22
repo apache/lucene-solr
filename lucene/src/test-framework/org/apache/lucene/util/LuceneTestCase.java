@@ -754,7 +754,7 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}, but also with some random fudge.
    */
   public static int atLeast(Random random, int i) {
-    int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
+    int min = (TEST_NIGHTLY ? 3*i : i) * RANDOM_MULTIPLIER;
     int max = min+(min/2);
     return _TestUtil.nextInt(random, min, max);
   }
@@ -770,9 +770,9 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}.
    */
   public static boolean rarely(Random random) {
-    int p = TEST_NIGHTLY ? 25 : 5;
+    int p = TEST_NIGHTLY ? 10 : 5;
     p += (p * Math.log(RANDOM_MULTIPLIER));
-    int min = 100 - Math.min(p, 90); // never more than 90
+    int min = 100 - Math.min(p, 50); // never more than 50
     return random.nextInt(100) >= min;
   }
   
