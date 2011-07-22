@@ -101,6 +101,10 @@ public class TestFiltering extends SolrTestCaseJ4 {
     );
     assertEquals(0, DelegatingCollector.setLastDelegateCount - prevCount);
 
+    // test that offset works when not caching main query
+    assertJQ(req("q","{!cache=false}*:*", "start","2", "rows","1", "sort","val_i asc", "fl","val_i")
+        ,"/response/docs==[{'val_i':3}]"
+    );
 
   }
 
