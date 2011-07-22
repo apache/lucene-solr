@@ -32,7 +32,6 @@ class ConjunctionScorer extends Scorer {
   private final Scorer[] scorers;
   private final float coord;
   private int lastDoc = -1;
-  private PositionIntervalIterator positions;
 
   public ConjunctionScorer(Weight weight, float coord, boolean needsPositions, Collection<Scorer> scorers) throws IOException {
     this(weight, coord, needsPositions, scorers.toArray(new Scorer[scorers.size()]));
@@ -150,13 +149,11 @@ class ConjunctionScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    if (positions == null) {
-      if (scorersOrdered == null)
-        throw new IllegalStateException("no positions requested for this scorer");
-      // only created if needed for this scorer - no penalty for non-positional queries
-      positions = new ConjunctionPositionIterator(this, scorersOrdered);
+    if (scorersOrdered == null) {
+      throw new IllegalStateException("no positions requested for this scorer");
     }
-    return positions;
+      // only created if needed for this scorer - no penalty for non-positional queries
+    return new ConjunctionPositionIterator(this, scorersOrdered);
   }
 
 }
