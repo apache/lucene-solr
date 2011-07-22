@@ -320,6 +320,8 @@ New Features
 * SOLR-2584: add UniqFieldsUpdateProcessor that removes duplicate values in the
   specified fields. (Elmer Garduno, koji)
 
+* SOLR-2670: Added NIOFSDirectoryFactory (yonik)
+
 Optimizations
 ----------------------
 
