@@ -1151,10 +1151,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         getDocListNC(qr,cmd);
         //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
       }
-      if (key != null) {
-        superset = out.docList;
-        out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
-      }
+
+      superset = out.docList;
+      out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
     }
 
     // lastly, put the superset in the cache if the size is less than or equal

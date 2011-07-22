@@ -369,6 +369,12 @@ Bug Fixes
   prior to the float value.
   (Markus Jelsma, hossman)
 
+* SOLR-2662: When Solr is configured to have no queryResultCache, the
+  "start" parameter was not honored and the documents returned were
+   0 through start+offset.  (Markus Jelsma, yonik)
+
+
+
  Other Changes
 ----------------------
 
