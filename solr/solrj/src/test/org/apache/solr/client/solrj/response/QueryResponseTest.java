@@ -39,7 +39,7 @@ public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testDateFacets() throws Exception   {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader(null, null).openResource("sampleDateFacetResponse.xml");
+    InputStream is = new SolrResourceLoader(null, null).openResource("solrj/sampleDateFacetResponse.xml");
     assertNotNull(is);
     Reader in = new InputStreamReader(is, "UTF-8");
     NamedList<Object> response = parser.processResponse(in);

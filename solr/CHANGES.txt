@@ -373,11 +373,12 @@ Bug Fixes
 Build
 ----------------------
 
-* SOLR-2452: Rewrote the Solr build system:
+* SOLR-2452,SOLR-2653,LUCENE-3323,SOLR-2659,LUCENE-3329,SOLR-2666:
+  Rewrote the Solr build system:
   - Integrated more fully with the Lucene build system: generalized the
     Lucene build system and eliminated duplication.
   - Converted all Solr contribs to the Lucene/Solr conventional src/ layout:
-    java/, resources/, test/, and test-files/.
+    java/, resources/, test/, and test-files/<contrib-name>.
   - Created a new Solr-internal module named "core" by moving the java/,
     test/, and test-files/ directories from solr/src/ to solr/core/src/.
   - Merged solr/src/webapp/src/ into solr/core/src/java/.

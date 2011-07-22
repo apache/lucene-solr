@@ -214,7 +214,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSchemaFile() {
-      return "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-replication1.xml";
+      return "solrj/solr/conf/schema-replication1.xml";
     }
 
     public String getConfDir() {
@@ -226,9 +226,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getSolrConfigFile() {
-      String fname = "";
-      fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-slave1.xml";
-      return fname;
+      return "solrj/solr/conf/solrconfig-slave1.xml";
     }
 
     public void setUp() throws Exception {

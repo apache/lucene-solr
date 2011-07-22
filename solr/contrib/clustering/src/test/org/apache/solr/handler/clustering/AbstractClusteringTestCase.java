@@ -28,7 +28,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", "solr-clustering");
+    initCore("solrconfig.xml", "schema.xml", "clustering/solr");
     numberOfDocs = 0;
     for (String[] doc : DOCUMENTS) {
       assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
