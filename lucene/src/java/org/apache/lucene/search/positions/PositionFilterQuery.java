@@ -131,7 +131,8 @@ public class PositionFilterQuery extends Query implements Cloneable {
 
     @Override
     public PositionIntervalIterator positions() throws IOException {
-      return filtered;
+      return PositionFilterQuery.this.filter != null ? PositionFilterQuery.this.filter
+          .filter(other.positions()) : other.positions();
     }
 
     @Override
