@@ -163,4 +163,9 @@ public class SolrWriter implements DIHWriter {
 		/* NO-OP */		
 	}
 
+  @Override
+  public DebugLogger getDebugLogger() {
+    return debugLogger;
+  }
+
 }
