@@ -83,7 +83,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
       @Override
       public boolean add(Transformer transformer) {
         if (docBuilder != null && docBuilder.verboseDebug) {
-          transformer = docBuilder.writer.getDebugLogger().wrapTransformer(transformer);
+          transformer = docBuilder.getDebugLogger().wrapTransformer(transformer);
         }
         return super.add(transformer);
       }

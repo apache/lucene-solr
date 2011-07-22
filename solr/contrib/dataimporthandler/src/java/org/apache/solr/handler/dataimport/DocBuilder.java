@@ -105,7 +105,7 @@ public class DocBuilder {
 
 
 
-  private DebugLogger getDebubLogger(){
+  DebugLogger getDebugLogger(){
     if (debugLogger == null) {
       debugLogger = new DebugLogger();
     }
@@ -596,11 +596,11 @@ public class DocBuilder {
     Context.CURRENT_CONTEXT.set(ctx);
     
     if (requestParameters.start > 0) {
-      getDebubLogger().log(DIHLogLevels.DISABLE_LOGGING, null, null);
+      getDebugLogger().log(DIHLogLevels.DISABLE_LOGGING, null, null);
     }
 
     if (verboseDebug) {
-      getDebubLogger().log(DIHLogLevels.START_ENTITY, entity.name, null);
+      getDebugLogger().log(DIHLogLevels.START_ENTITY, entity.name, null);
     }
 
     int seenDocCount = 0;
@@ -614,11 +614,11 @@ public class DocBuilder {
           seenDocCount++;
 
           if (seenDocCount > requestParameters.start) {
-            getDebubLogger().log(DIHLogLevels.ENABLE_LOGGING, null, null);
+            getDebugLogger().log(DIHLogLevels.ENABLE_LOGGING, null, null);
           }
 
           if (verboseDebug && entity.isDocRoot) {
-            getDebubLogger().log(DIHLogLevels.START_DOC, entity.name, null);
+            getDebugLogger().log(DIHLogLevels.START_DOC, entity.name, null);
           }
           if (doc == null && entity.isDocRoot) {
             doc = new DocWrapper();
@@ -647,7 +647,7 @@ public class DocBuilder {
           }
 
           if (verboseDebug) {
-            getDebubLogger().log(DIHLogLevels.ENTITY_OUT, entity.name, arow);
+            getDebugLogger().log(DIHLogLevels.ENTITY_OUT, entity.name, arow);
           }
           importStatistics.rowsCount.incrementAndGet();
           if (doc != null) {
@@ -683,7 +683,7 @@ public class DocBuilder {
 
         } catch (DataImportHandlerException e) {
           if (verboseDebug) {
-            getDebubLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, e);
+            getDebugLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, e);
           }
           if(e.getErrCode() == DataImportHandlerException.SKIP_ROW){
             continue;
@@ -702,21 +702,21 @@ public class DocBuilder {
             throw e;
         } catch (Throwable t) {
           if (verboseDebug) {
-            getDebubLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, t);
+            getDebugLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, t);
           }
           throw new DataImportHandlerException(DataImportHandlerException.SEVERE, t);
         } finally {
           if (verboseDebug) {
-            getDebubLogger().log(DIHLogLevels.ROW_END, entity.name, null);
+            getDebugLogger().log(DIHLogLevels.ROW_END, entity.name, null);
             if (entity.isDocRoot)
-              getDebubLogger().log(DIHLogLevels.END_DOC, null, null);
+              getDebugLogger().log(DIHLogLevels.END_DOC, null, null);
             Context.CURRENT_CONTEXT.remove();
           }
         }
       }
     } finally {
       if (verboseDebug) {
-        getDebubLogger().log(DIHLogLevels.END_ENTITY, null, null);
+        getDebugLogger().log(DIHLogLevels.END_ENTITY, null, null);
       }
       entityProcessor.destroy();
     }
