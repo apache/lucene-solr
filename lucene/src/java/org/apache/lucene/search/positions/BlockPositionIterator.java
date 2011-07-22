@@ -17,34 +17,53 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.search.Scorer;
 
 /**
  * 
  * @lucene.experimental
- */ // nocommit - javadoc
-public class BlockPositionIterator extends PositionIntervalIterator {
+ */
+// nocommit - javadoc
+public final class BlockPositionIterator extends PositionIntervalIterator {
   private final PositionIntervalIterator[] iterators;
 
   private static final PositionInterval INFINITE_INTERVAL = new PositionInterval(
       Integer.MIN_VALUE, Integer.MIN_VALUE);
   private final PositionInterval[] intervals;
-  private final PositionInterval interval =  new PositionInterval(
+  private final PositionInterval interval = new PositionInterval(
       Integer.MIN_VALUE, Integer.MIN_VALUE);
-  
+  private final int[] gaps;
+
   private final int lastIter;
-  
+
   public BlockPositionIterator(PositionIntervalIterator other) {
+    this(other, defaultGaps(other.subs(true).length));
+  }
+
+  public BlockPositionIterator(PositionIntervalIterator other, int[] gaps) {
     super(other.getScorer());
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
     intervals = new PositionInterval[iterators.length];
-    lastIter = iterators.length-1;
+    lastIter = iterators.length - 1;
+    this.gaps = gaps;
   }
 
   public BlockPositionIterator(Scorer scorer, Scorer... subScorers)
+      throws IOException {
+    this(scorer, defaultGaps(subScorers.length), subScorers);
+  }
+
+  private static int[] defaultGaps(int num) {
+    int[] gaps = new int[num];
+    Arrays.fill(gaps, 1);
+    return gaps;
+  }
+
+  public BlockPositionIterator(Scorer scorer, int[] gaps, Scorer... subScorers)
       throws IOException {
     super(scorer);
     assert subScorers.length > 1;
@@ -54,44 +73,44 @@ public class BlockPositionIterator extends PositionIntervalIterator {
       iterators[i] = subScorers[i].positions();
       assert iterators[i] != null;
     }
-    lastIter = iterators.length-1;
+    lastIter = iterators.length - 1;
+    this.gaps = gaps;
   }
 
   @Override
   public PositionInterval next() throws IOException {
-    if (advance()) {
-      interval.begin = intervals[0].begin;
-      interval.end = intervals[lastIter].end;
-      return interval;
+    if ((intervals[0] = iterators[0].next()) == null) {
+      return null;
     }
-    return null;
-  }
-
-  private boolean advance() throws IOException {
-    intervals[0] = iterators[0].next();
-    if (intervals[0] == null) {
-      return false;
-    }
-    int i = 1;
-    final int len = iterators.length;
-    while (i < len ) {
-      while (intervals[i].begin <= intervals[i-1].end) {
-        intervals[i] = iterators[i].next();
-        if (intervals[i] == null) {
-          return false;
+    int offset = 0;
+    for (int i = 1; i < iterators.length;) {
+      final int gap = gaps[i];
+      while (intervals[i].begin + gap <= intervals[i - 1].end) {
+        if ((intervals[i] = iterators[i].next()) == null) {
+          return null;
         }
       }
-      if (intervals[i].begin == intervals[i-1].end+1) {
+      offset += gap;
+      if (intervals[i].begin == intervals[i - 1].end + gaps[i]) {
         i++;
-      } else {
-        intervals[0] = iterators[0].next();
-        if (intervals[0] == null) {
-          return false;
+        if (i < iterators.length && intervals[i] == INFINITE_INTERVAL) {
+          // advance only if really necessary
+          iterators[i].advanceTo(currentDoc);
+          assert iterators[i].docID() == currentDoc;
         }
+      } else {
+        do {
+          if ((intervals[0] = iterators[0].next()) == null) {
+            return null;
+          }
+        } while (intervals[0].begin < intervals[i].end - offset);
+
         i = 1;
       }
     }
-    return true;
+    interval.begin = intervals[0].begin;
+    interval.end = intervals[lastIter].end;
+    return interval;
   }
 
   @Override
@@ -109,14 +128,11 @@ public class BlockPositionIterator extends PositionIntervalIterator {
 
   @Override
   public int advanceTo(int docId) throws IOException {
-    if (docId == currentDoc) {
-      return docId;
-    }
-    for (int i = 0; i < iterators.length; i++) {
-      int advancedTo = iterators[i].advanceTo(docId);
-      intervals[i] = INFINITE_INTERVAL;
-      currentDoc = advancedTo;
-    }
-    return currentDoc;
+    iterators[0].advanceTo(docId);
+    assert iterators[0].docID() == docId;
+    iterators[1].advanceTo(docId);
+    assert iterators[1].docID() == docId;
+    Arrays.fill(intervals, INFINITE_INTERVAL);
+    return currentDoc = docId;
   }
 }
