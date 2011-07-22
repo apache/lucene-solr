@@ -196,10 +196,6 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
       return docs.add(doc);
     }
 
-    @Override
-    public void log(int event, String name, Object row) {
-      // Do nothing
-    }
 
     @Override
     public void doDeleteAll() {

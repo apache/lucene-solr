@@ -207,11 +207,6 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     }
 
     @Override
-    public void log(int event, String name, Object row) {
-      // Do nothing
-    }
-
-    @Override
     public void doDeleteAll() {
       deleteAllCalled = Boolean.TRUE;
     }
@@ -222,7 +217,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     }
     
     @Override
-    public void finish() {
+    public void close() {
       finishCalled = Boolean.TRUE;
     }
   }

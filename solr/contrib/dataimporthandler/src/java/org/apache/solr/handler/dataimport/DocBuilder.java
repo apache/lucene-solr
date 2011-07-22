@@ -56,30 +56,60 @@ public class DocBuilder {
 
   public Statistics importStatistics = new Statistics();
 
-  SolrWriter writer;
+  DIHWriter writer;
 
   DataImporter.RequestParams requestParameters;
 
   boolean verboseDebug = false;
 
-   Map<String, Object> session = new ConcurrentHashMap<String, Object>();
+  Map<String, Object> session = new ConcurrentHashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
   Map<String, Object> functionsNamespace;
   private Properties persistedProperties;
   
   private DIHPropertiesWriter propWriter;
+  private static final String PARAM_WRITER_IMPL = "writerImpl";
+  private static final String DEFAULT_WRITER_NAME = "SolrWriter";
+  private DebugLogger debugLogger;
 
-  public DocBuilder(DataImporter dataImporter, SolrWriter writer, DIHPropertiesWriter propWriter, DataImporter.RequestParams reqParams) {
+    @SuppressWarnings("unchecked")
+  public DocBuilder(DataImporter dataImporter, SolrWriter solrWriter, DIHPropertiesWriter propWriter, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
     this.dataImporter = dataImporter;
-    this.writer = writer;
     this.propWriter = propWriter;
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     requestParameters = reqParams;
     verboseDebug = requestParameters.debug && requestParameters.verbose;
     functionsNamespace = EvaluatorBag.getFunctionsNamespace(this.dataImporter.getConfig().functions, this);
     persistedProperties = propWriter.readIndexerProperties();
+    
+    String writerClassStr = null;
+    if(reqParams!=null && reqParams.requestParams != null) {
+    	writerClassStr = (String) reqParams.requestParams.get(PARAM_WRITER_IMPL);
+    }
+    if(writerClassStr != null && !writerClassStr.equals(DEFAULT_WRITER_NAME) && !writerClassStr.equals(DocBuilder.class.getPackage().getName() + "." + DEFAULT_WRITER_NAME)) {
+    	try {
+    		Class<DIHWriter> writerClass = loadClass(writerClassStr, dataImporter.getCore());
+    		this.writer = writerClass.newInstance();
+    	} catch (Exception e) {
+    		throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to load Writer implementation:" + writerClassStr, e);
+    	}
+   	} else {
+    	writer = solrWriter;
+    }
+    ContextImpl ctx = new ContextImpl(null, null, null, null, reqParams.requestParams, null, this);
+    writer.init(ctx);
+  }
+
+
+
+
+  private DebugLogger getDebubLogger(){
+    if (debugLogger == null) {
+      debugLogger = new DebugLogger();
+    }
+    return debugLogger;
   }
 
   public VariableResolverImpl getVariableResolver() {
@@ -139,94 +169,100 @@ public class DocBuilder {
 
   @SuppressWarnings("unchecked")
   public void execute() {
-    dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
-    document = dataImporter.getConfig().document;
-    final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
-    statusMessages.put(TIME_ELAPSED, new Object() {
-      @Override
-      public String toString() {
-        return getTimeElapsedSince(startTime.get());
-      }
-    });
-
-    statusMessages.put(DataImporter.MSG.TOTAL_QUERIES_EXECUTED,
-            importStatistics.queryCount);
-    statusMessages.put(DataImporter.MSG.TOTAL_ROWS_EXECUTED,
-            importStatistics.rowsCount);
-    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED,
-            importStatistics.docCount);
-    statusMessages.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED,
-            importStatistics.skipDocCount);
-
-    List<String> entities = requestParameters.entities;
-
-    // Trigger onImportStart
-    if (document.onImportStart != null) {
-      invokeEventListener(document.onImportStart);
-    }
-    AtomicBoolean fullCleanDone = new AtomicBoolean(false);
-    //we must not do a delete of *:* multiple times if there are multiple root entities to be run
-    Properties lastIndexTimeProps = new Properties();
-    lastIndexTimeProps.setProperty(LAST_INDEX_KEY,
-            DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getIndexStartTime()));
-    for (DataConfig.Entity e : document.entities) {
-      if (entities != null && !entities.contains(e.name))
-        continue;
-      lastIndexTimeProps.setProperty(e.name + "." + LAST_INDEX_KEY,
-              DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
-      root = e;
-      String delQuery = e.allAttributes.get("preImportDeleteQuery");
-      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
-        cleanByQuery(delQuery, fullCleanDone);
-        doDelta();
-        delQuery = e.allAttributes.get("postImportDeleteQuery");
-        if (delQuery != null) {
-          fullCleanDone.set(false);
-          cleanByQuery(delQuery, fullCleanDone);
-        }
-      } else {
-        cleanByQuery(delQuery, fullCleanDone);
-        doFullDump();
-        delQuery = e.allAttributes.get("postImportDeleteQuery");
-        if (delQuery != null) {
-          fullCleanDone.set(false);
-          cleanByQuery(delQuery, fullCleanDone);
-        }
-      }
-      statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
-    }
-
-    if (stop.get()) {
-      // Dont commit if aborted using command=abort
-      statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
-      rollback();
-    } else {
-      // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
-      if (!requestParameters.clean) {
-        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
-          finish(lastIndexTimeProps);
-        }
-      } else {
-        // Finished operation normally, commit now
-        finish(lastIndexTimeProps);
-      }
-      
-      if (writer != null) {
-        writer.finish();
-      }
-      
-      if (document.onImportEnd != null) {
-        invokeEventListener(document.onImportEnd);
-      }
-    }
-
-    statusMessages.remove(TIME_ELAPSED);
-    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED, ""+ importStatistics.docCount.get());
-    if(importStatistics.failedDocCount.get() > 0)
-      statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
-
-    statusMessages.put("Time taken ", getTimeElapsedSince(startTime.get()));
-    LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
+  	try {
+	    dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
+	    document = dataImporter.getConfig().document;
+	    final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
+	    statusMessages.put(TIME_ELAPSED, new Object() {
+	      @Override
+	      public String toString() {
+	        return getTimeElapsedSince(startTime.get());
+	      }
+	    });
+	
+	    statusMessages.put(DataImporter.MSG.TOTAL_QUERIES_EXECUTED,
+	            importStatistics.queryCount);
+	    statusMessages.put(DataImporter.MSG.TOTAL_ROWS_EXECUTED,
+	            importStatistics.rowsCount);
+	    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED,
+	            importStatistics.docCount);
+	    statusMessages.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED,
+	            importStatistics.skipDocCount);
+	
+	    List<String> entities = requestParameters.entities;
+	
+	    // Trigger onImportStart
+	    if (document.onImportStart != null) {
+	      invokeEventListener(document.onImportStart);
+	    }
+	    AtomicBoolean fullCleanDone = new AtomicBoolean(false);
+	    //we must not do a delete of *:* multiple times if there are multiple root entities to be run
+	    Properties lastIndexTimeProps = new Properties();
+	    lastIndexTimeProps.setProperty(LAST_INDEX_KEY,
+	            DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getIndexStartTime()));
+	    for (DataConfig.Entity e : document.entities) {
+	      if (entities != null && !entities.contains(e.name))
+	        continue;
+	      lastIndexTimeProps.setProperty(e.name + "." + LAST_INDEX_KEY,
+	              DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+	      root = e;
+	      String delQuery = e.allAttributes.get("preImportDeleteQuery");
+	      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
+	        cleanByQuery(delQuery, fullCleanDone);
+	        doDelta();
+	        delQuery = e.allAttributes.get("postImportDeleteQuery");
+	        if (delQuery != null) {
+	          fullCleanDone.set(false);
+	          cleanByQuery(delQuery, fullCleanDone);
+	        }
+	      } else {
+	        cleanByQuery(delQuery, fullCleanDone);
+	        doFullDump();
+	        delQuery = e.allAttributes.get("postImportDeleteQuery");
+	        if (delQuery != null) {
+	          fullCleanDone.set(false);
+	          cleanByQuery(delQuery, fullCleanDone);
+	        }
+	      }
+	      statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
+	    }
+	
+	    if (stop.get()) {
+	      // Dont commit if aborted using command=abort
+	      statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+	      rollback();
+	    } else {
+	      // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
+	      if (!requestParameters.clean) {
+	        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
+	          finish(lastIndexTimeProps);
+	        }
+	      } else {
+	        // Finished operation normally, commit now
+	        finish(lastIndexTimeProps);
+	      } 
+	      
+	      if (document.onImportEnd != null) {
+	        invokeEventListener(document.onImportEnd);
+	      }
+	    }
+	
+	    statusMessages.remove(TIME_ELAPSED);
+	    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED, ""+ importStatistics.docCount.get());
+	    if(importStatistics.failedDocCount.get() > 0)
+	      statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
+	
+	    statusMessages.put("Time taken ", getTimeElapsedSince(startTime.get()));
+	    LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
+	  } catch(Exception e)
+		{
+			throw new RuntimeException(e);
+		} finally
+		{
+			if (writer != null) {
+	      writer.close();
+	    }
+		}
   }
 
   @SuppressWarnings("unchecked")
@@ -560,11 +596,11 @@ public class DocBuilder {
     Context.CURRENT_CONTEXT.set(ctx);
     
     if (requestParameters.start > 0) {
-      writer.log(SolrWriter.DISABLE_LOGGING, null, null);
+      getDebubLogger().log(DIHLogLevels.DISABLE_LOGGING, null, null);
     }
 
     if (verboseDebug) {
-      writer.log(SolrWriter.START_ENTITY, entity.name, null);
+      getDebubLogger().log(DIHLogLevels.START_ENTITY, entity.name, null);
     }
 
     int seenDocCount = 0;
@@ -578,11 +614,11 @@ public class DocBuilder {
           seenDocCount++;
 
           if (seenDocCount > requestParameters.start) {
-            writer.log(SolrWriter.ENABLE_LOGGING, null, null);
+            getDebubLogger().log(DIHLogLevels.ENABLE_LOGGING, null, null);
           }
 
           if (verboseDebug && entity.isDocRoot) {
-            writer.log(SolrWriter.START_DOC, entity.name, null);
+            getDebubLogger().log(DIHLogLevels.START_DOC, entity.name, null);
           }
           if (doc == null && entity.isDocRoot) {
             doc = new DocWrapper();
@@ -611,7 +647,7 @@ public class DocBuilder {
           }
 
           if (verboseDebug) {
-            writer.log(SolrWriter.ENTITY_OUT, entity.name, arow);
+            getDebubLogger().log(DIHLogLevels.ENTITY_OUT, entity.name, arow);
           }
           importStatistics.rowsCount.incrementAndGet();
           if (doc != null) {
@@ -647,7 +683,7 @@ public class DocBuilder {
 
         } catch (DataImportHandlerException e) {
           if (verboseDebug) {
-            writer.log(SolrWriter.ENTITY_EXCEPTION, entity.name, e);
+            getDebubLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, e);
           }
           if(e.getErrCode() == DataImportHandlerException.SKIP_ROW){
             continue;
@@ -666,21 +702,21 @@ public class DocBuilder {
             throw e;
         } catch (Throwable t) {
           if (verboseDebug) {
-            writer.log(SolrWriter.ENTITY_EXCEPTION, entity.name, t);
+            getDebubLogger().log(DIHLogLevels.ENTITY_EXCEPTION, entity.name, t);
           }
           throw new DataImportHandlerException(DataImportHandlerException.SEVERE, t);
         } finally {
           if (verboseDebug) {
-            writer.log(SolrWriter.ROW_END, entity.name, null);
+            getDebubLogger().log(DIHLogLevels.ROW_END, entity.name, null);
             if (entity.isDocRoot)
-              writer.log(SolrWriter.END_DOC, null, null);
+              getDebubLogger().log(DIHLogLevels.END_DOC, null, null);
             Context.CURRENT_CONTEXT.remove();
           }
         }
       }
     } finally {
       if (verboseDebug) {
-        writer.log(SolrWriter.END_ENTITY, null, null);
+        getDebubLogger().log(DIHLogLevels.END_ENTITY, null, null);
       }
       entityProcessor.destroy();
     }

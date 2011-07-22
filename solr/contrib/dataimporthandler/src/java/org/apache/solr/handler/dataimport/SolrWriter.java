@@ -27,15 +27,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * <p> Writes documents to SOLR as well as provides methods for loading and persisting last index time. </p>
+ * <p> Writes documents to SOLR. </p>
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
  * @since solr 1.3
  */
-public class SolrWriter {
+public class SolrWriter implements DIHWriter {
   private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
 
   static final String LAST_INDEX_KEY = "last_index_time";
@@ -51,7 +53,16 @@ public class SolrWriter {
     this.req = req;
   }
   
-
+  @Override
+  public void close() {
+  	try {
+  		processor.finish();
+  	} catch (IOException e) {
+  		throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+  				"Unable to call finish() on UpdateRequestProcessor", e);
+  	}
+  }
+  @Override
   public boolean upload(SolrInputDocument d) {
     try {
       AddUpdateCommand command = new AddUpdateCommand(req);
@@ -64,7 +75,8 @@ public class SolrWriter {
 
     return true;
   }
-
+  
+  @Override
   public void deleteDoc(Object id) {
     try {
       log.info("Deleting document: " + id);
@@ -75,16 +87,8 @@ public class SolrWriter {
       log.error("Exception while deleteing: " + id, e);
     }
   }
-  
-	void finish() {
-    try {
-      processor.finish();
-    } catch (IOException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-          "Unable to call finish() on UpdateRequestProcessor", e);
-    }
-  }
-  
+  	
+	@Override
   public void deleteByQuery(String query) {
     try {
       log.info("Deleting documents from Solr with query: " + query);
@@ -96,6 +100,7 @@ public class SolrWriter {
     }
   }
 
+	@Override
   public void commit(boolean optimize) {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(req,optimize);
@@ -105,6 +110,7 @@ public class SolrWriter {
     }
   }
 
+	@Override
   public void rollback() {
     try {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
@@ -114,6 +120,7 @@ public class SolrWriter {
     }
   }
 
+	@Override
   public void doDeleteAll() {
     try {
       DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand(req);
@@ -151,28 +158,9 @@ public class SolrWriter {
       return null;
     }
   }
+	@Override
+	public void init(Context context) {
+		/* NO-OP */		
+	}
 
-  public DebugLogger getDebugLogger() {
-    if (debugLogger == null) {
-      debugLogger = new DebugLogger(this);
-    }
-    return debugLogger;
-  }
-
-  /**
-   * This method is used for verbose debugging
-   *
-   * @param event The event name start.entity ,end.entity ,transformer.row
-   * @param name  Name of the entity/transformer
-   * @param row   The actual data . Can be a Map<String,object> or a List<Map<String,object>>
-   */
-  public void log(int event, String name, Object row) {
-    getDebugLogger().log(event, name, row);
-  }
-
-  public static final int START_ENTITY = 1, END_ENTITY = 2,
-          TRANSFORMED_ROW = 3, ENTITY_META = 4, PRE_TRANSFORMER_ROW = 5,
-          START_DOC = 6, END_DOC = 7, ENTITY_OUT = 8, ROW_END = 9,
-          TRANSFORMER_EXCEPTION = 10, ENTITY_EXCEPTION = 11, DISABLE_LOGGING = 12,
-          ENABLE_LOGGING = 13;
 }
