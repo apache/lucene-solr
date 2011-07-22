@@ -30,7 +30,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import sun.tools.asm.CatchData;
 
 import java.io.IOException;
 import java.util.*;
