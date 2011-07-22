@@ -87,8 +87,10 @@ public class TermQuery extends Query {
         final DocsAndPositionsEnum docsAndPos = reader.termPositionsEnum(
             reader.getLiveDocs(), field, term.bytes(), state);
         assert docs != null;
-        assert docsAndPos != null;
-        return new TermScorer(this, docs, docsAndPos,  scorerContext.needsPayloads, similarity.exactDocScorer(
+        if (docsAndPos == null) {
+          throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run Query (term=" + term.text() + ")");
+        }
+        return new TermScorer(this, docs, new DocsAndPositionsEnumFactory(reader, term, state, scorerContext.needsPayloads), similarity.exactDocScorer(
             stats, field, context));
       } else {
         assert docs != null;
@@ -205,5 +207,27 @@ public class TermQuery extends Query {
   public int hashCode() {
     return Float.floatToIntBits(getBoost()) ^ term.hashCode();
   }
+  
+  static class DocsAndPositionsEnumFactory {
+    private final IndexReader reader;
+    private final Term term;
+    private final TermState state;
+    final boolean doPayloads;
 
+    DocsAndPositionsEnumFactory(IndexReader reader, Term term, TermState state, boolean doPayloads) {
+      super();
+      this.reader = reader;
+      this.term = term;
+      this.doPayloads = doPayloads;
+      this.state = state;
+    }
+
+    DocsAndPositionsEnum create() throws IOException {
+      DocsAndPositionsEnum termPositionsEnum = reader.termPositionsEnum(reader.getLiveDocs(), term.field(),
+          term.bytes(), state);
+      return termPositionsEnum;
+//      return reader.termPositionsEnum(reader.getLiveDocs(), term.field(),
+//          term.bytes(), state);
+    }
+  }
 }

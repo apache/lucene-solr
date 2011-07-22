@@ -39,7 +39,7 @@ final class TermScorer extends Scorer {
   private int[] freqs;
   private final DocsEnum.BulkReadResult bulkResult;
   private final Similarity.ExactDocScorer docScorer;
-  private final TermPositions positions;
+  private final TermQuery.DocsAndPositionsEnumFactory docsAndPosFactory;
   
   /**
    * Construct a <code>TermScorer</code>.
@@ -53,15 +53,15 @@ final class TermScorer extends Scorer {
    *          to be used for score computations.
    */
   TermScorer(Weight weight, DocsEnum td, Similarity.ExactDocScorer docScorer) throws IOException {
-    this(weight, td, null, false, docScorer);
+    this(weight, td, null, docScorer);
   }
   
-  TermScorer(Weight weight, DocsEnum td, DocsAndPositionsEnum docsAndPos, boolean doPayloads, Similarity.ExactDocScorer docScorer) throws IOException {
+  TermScorer(Weight weight, DocsEnum td, TermQuery.DocsAndPositionsEnumFactory docsAndPosFactory, Similarity.ExactDocScorer docScorer) throws IOException {
     super(weight);
     this.docScorer = docScorer;
     this.docsEnum = td;
     bulkResult = td.getBulkResult();
-    positions = docsAndPos != null ? new TermPositions(docsAndPos, doPayloads) : null;
+    this.docsAndPosFactory = docsAndPosFactory;
   }
 
   @Override
@@ -173,8 +173,8 @@ final class TermScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    assert positions != null;
-    return positions;
+    assert docsAndPosFactory != null;
+    return new TermPositions(docsAndPosFactory.create(), docsAndPosFactory.doPayloads);
   }
 
   private final class TermPositions extends PositionIntervalIterator {
@@ -222,8 +222,7 @@ final class TermScorer extends Scorer {
         positionsPending = freq = docsAndPos.freq();
       }
       interval.reset();
-      docID = docsAndPos.docID();
-      return advance;
+      return docID = docsAndPos.docID();
     }
     
     @Override
