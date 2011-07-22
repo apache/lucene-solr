@@ -40,7 +40,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   "<dataConfig>" +
   "  <dataSource type=\"BinFileDataSource\"/>" +
   "  <document>" +
-  "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("solr-word.pdf").getAbsolutePath() + "\" >" +
+  "    <entity processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
   "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
   "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
   "      <field column=\"text\"/>" +
@@ -58,7 +58,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("solr-dihextras").getAbsolutePath());
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("dihextras/solr").getAbsolutePath());
   }
 
   @Test
