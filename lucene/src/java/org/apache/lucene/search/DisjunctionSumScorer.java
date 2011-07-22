@@ -60,8 +60,6 @@ class DisjunctionSumScorer extends Scorer {
 
   private float currentScore = Float.NaN;
   
-  private PositionIntervalIterator positions = null;
-  
   /** Construct a <code>DisjunctionScorer</code>.
    * @param weight The weight to be used.
    * @param needsPositions 
@@ -246,12 +244,10 @@ class DisjunctionSumScorer extends Scorer {
   
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    if (positions == null) {
-      if (minimumNrMatchers > 1) {
-        positions = new ConjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]), minimumNrMatchers);
-      }
-      positions = new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
+    if (minimumNrMatchers > 1) {
+      return new ConjunctionPositionIterator(this,
+          subScorers.toArray(new Scorer[0]), minimumNrMatchers);
     }
-    return positions;
+    return new DisjunctionPositionIterator(this, subScorers.toArray(new Scorer[0]));
   }
 }
