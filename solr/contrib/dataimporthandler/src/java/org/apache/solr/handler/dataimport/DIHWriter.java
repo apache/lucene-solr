@@ -90,7 +90,4 @@ public interface DIHWriter {
 	 */
 	public void init(Context context) ;
 
-	//TODO add comments
-  public DebugLogger getDebugLogger();
-	
 }

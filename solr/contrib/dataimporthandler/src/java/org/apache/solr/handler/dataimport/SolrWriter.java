@@ -162,10 +162,4 @@ public class SolrWriter implements DIHWriter {
 	public void init(Context context) {
 		/* NO-OP */		
 	}
-
-  @Override
-  public DebugLogger getDebugLogger() {
-    return debugLogger;
-  }
-
 }
