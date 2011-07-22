@@ -34,7 +34,6 @@ import org.apache.lucene.search.positions.TestBlockPositionsIterator.BlockPositi
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 /**
  * TODO: 
@@ -56,7 +55,7 @@ public class PosHighlighterTest extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new MockAnalyzer(random, MockTokenizer.WHITESPACE, false);
-    dir = new SimpleFSDirectory(TEMP_DIR);
+    dir = newDirectory();
   }
   
   @Override
@@ -236,14 +235,13 @@ public class PosHighlighterTest extends LuceneTestCase {
   /*
    * Failing ... PhraseQuery scorer needs positions()?
    */
-  @Ignore("PhraseQuery has no position support yet")
   public void testPhraseOriginal() throws Exception {
     insertDocs(analyzer, "This is a test");
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term(F, "a"));
     pq.add(new Term(F, "test"));
     String frags[] = doSearch (pq);
-    assertEquals ("This is a <B>test</B>", frags[0]);
+    assertEquals ("This is <B>a</B> <B>test</B>", frags[0]);
   }
   
   public void testNestedBoolean () throws Exception {
