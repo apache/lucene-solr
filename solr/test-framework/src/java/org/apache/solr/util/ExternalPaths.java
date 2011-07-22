@@ -37,7 +37,17 @@ public class ExternalPaths {
   static String determineSourceHome() {
     // ugly, ugly hack to determine the example home without depending on the CWD
     // this is needed for example/multicore tests which reside outside the classpath
-    File base = SolrTestCaseJ4.getFile("solr/conf").getAbsoluteFile();
+    File file;
+    try {
+      file = new File("solr/conf");
+      if (!file.exists()) {
+        file = new File(Thread.currentThread().getContextClassLoader().getResource("solr/conf").toURI());
+      }
+    } catch (Exception e) {
+      // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
+      file = new File(".");
+    }
+    File base = file.getAbsoluteFile();
     while (!new File(base, "solr/CHANGES.txt").exists()) {
       base = base.getParentFile();
     }
