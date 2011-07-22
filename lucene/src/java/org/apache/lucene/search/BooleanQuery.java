@@ -18,10 +18,14 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
+import org.apache.lucene.search.Similarity.ExactDocScorer;
+import org.apache.lucene.search.TermQuery.TermWeight;
 
 import java.io.IOException;
 import java.util.*;
@@ -166,17 +170,24 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     protected ArrayList<Weight> weights;
     protected int maxCoord;  // num optional + num required
     private final boolean disableCoord;
+    private final boolean termConjunction;
 
     public BooleanWeight(IndexSearcher searcher, boolean disableCoord)
       throws IOException {
       this.similarityProvider = searcher.getSimilarityProvider();
       this.disableCoord = disableCoord;
       weights = new ArrayList<Weight>(clauses.size());
+      boolean termConjunction = clauses.isEmpty() || minNrShouldMatch != 0 ? false : true;
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = clauses.get(i);
-        weights.add(c.getQuery().createWeight(searcher));
+        Weight w = c.getQuery().createWeight(searcher);
+        if (!(c.isRequired() && (w instanceof TermWeight))) {
+          termConjunction = false;
+        }
+        weights.add(w);
         if (!c.isProhibited()) maxCoord++;
       }
+      this.termConjunction = termConjunction;
     }
 
     @Override
@@ -290,6 +301,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext)
         throws IOException {
+      if (termConjunction) {
+        // specialized scorer for term conjunctions
+        return createConjunctionTermScorer(context);
+      }
       List<Scorer> required = new ArrayList<Scorer>();
       List<Scorer> prohibited = new ArrayList<Scorer>();
       List<Scorer> optional = new ArrayList<Scorer>();
@@ -327,6 +342,23 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       
       // Return a BooleanScorer2
       return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
+    }
+
+    private Scorer createConjunctionTermScorer(AtomicReaderContext context)
+        throws IOException {
+      final DocsAndFreqs[] docsAndFreqs = new DocsAndFreqs[weights.size()];
+      for (int i = 0; i < docsAndFreqs.length; i++) {
+        final TermWeight weight = (TermWeight) weights.get(i);
+        final TermsEnum termsEnum = weight.getTermsEnum(context);
+        if (termsEnum == null) {
+          return null;
+        }
+        final ExactDocScorer docScorer = weight.createDocScorer(context);
+        docsAndFreqs[i] = new DocsAndFreqs(termsEnum.docs(
+            context.reader.getLiveDocs(), null), termsEnum.docFreq(), docScorer);
+      }
+      return new ConjunctionTermScorer(this, disableCoord ? 1.0f : coord(
+          docsAndFreqs.length, docsAndFreqs.length), docsAndFreqs);
     }
     
     @Override

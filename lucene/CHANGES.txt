@@ -494,6 +494,10 @@ Optimizations
   instance for merging and NRT readers, which enables directory impls
   to separately tune IO flags for each.  (Varun Thacker, Simon
   Willnauer, Mike McCandless)
+
+* LUCENE-3328: BooleanQuery now uses a specialized ConjunctionScorer if all
+  boolean clauses are required and instances of TermQuery. 
+  (Simon Willnauer, Robert Muir)
   
 Bug fixes
 

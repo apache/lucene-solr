@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
@@ -41,7 +42,7 @@ public class TermQuery extends Query {
   private int docFreq;
   private transient TermContext perReaderTermState;
 
-  private class TermWeight extends Weight {
+  final class TermWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.Stats stats;
     private transient TermContext termStates;
@@ -72,17 +73,38 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      final String field = term.field();
-      final IndexReader reader = context.reader;
       assert termStates.topReaderContext == ReaderUtil.getTopLevelContext(context) : "The top-reader used to create Weight (" + termStates.topReaderContext + ") is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
-      final TermState state = termStates.get(context.ord);
-      if (state == null) { // term is not present in that reader
-        assert termNotInReader(reader, field, term.bytes()) : "no termstate found but term exists in reader";
+      final TermsEnum termsEnum = getTermsEnum(context);
+      if (termsEnum == null) {
         return null;
       }
-      final DocsEnum docs = reader.termDocsEnum(reader.getLiveDocs(), field, term.bytes(), state);
+      // TODO should we reuse the DocsEnum here? 
+      final DocsEnum docs = termsEnum.docs(context.reader.getLiveDocs(), null);
       assert docs != null;
-      return new TermScorer(this, docs, similarity.exactDocScorer(stats, field, context));
+      return new TermScorer(this, docs, createDocScorer(context));
+    }
+    
+    /**
+     * Creates an {@link ExactDocScorer} for this {@link TermWeight}*/
+    ExactDocScorer createDocScorer(AtomicReaderContext context)
+        throws IOException {
+      return similarity.exactDocScorer(stats, term.field(), context);
+    }
+    
+    /**
+     * Returns a {@link TermsEnum} positioned at this weights Term or null if
+     * the term does not exist in the given context
+     */
+    TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
+      final TermState state = termStates.get(context.ord);
+      if (state == null) { // term is not present in that reader
+        assert termNotInReader(context.reader, term.field(), term.bytes()) : "no termstate found but term exists in reader";
+        return null;
+      }
+      final TermsEnum termsEnum = context.reader.terms(term.field())
+          .getThreadTermsEnum();
+      termsEnum.seekExact(term.bytes(), state);
+      return termsEnum;
     }
     
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
