@@ -311,7 +311,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
       
       // Check if we can return a BooleanScorer
-      if (!scorerContext.needsPositions && !scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
+      if (!scorerContext.scoreDocsInOrder && scorerContext.topScorer && required.size() == 0 && prohibited.size() < 32) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
       }
       

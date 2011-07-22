@@ -18,11 +18,14 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.positions.ConjunctionPositionIterator;
+import org.apache.lucene.search.positions.DisjunctionPositionIterator;
 import org.apache.lucene.search.positions.PositionIntervalIterator;
 
 /* Description from Doug Cutting (excerpted from
@@ -378,7 +381,19 @@ final class BooleanScorer extends Scorer {
 
   @Override
   public PositionIntervalIterator positions() throws IOException {
-    return super.positions();
+    final List<Scorer> scorers = new ArrayList<Scorer>();
+    SubScorer sub = this.scorers;
+    while(sub != null) {
+      if (!sub.prohibited) {
+        scorers.add(sub.scorer);
+      }
+      sub = sub.next;
+    }
+    if (this.minNrShouldMatch > 1) {
+      return new ConjunctionPositionIterator(this,
+          scorers.toArray(new Scorer[0]), this.minNrShouldMatch);
+    }
+    return new DisjunctionPositionIterator(this, scorers.toArray(new Scorer[0]));
   }
 
 }
