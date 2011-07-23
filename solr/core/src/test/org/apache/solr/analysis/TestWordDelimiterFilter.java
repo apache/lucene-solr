@@ -367,7 +367,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
     doSplit("ســـــــــــــــــلام", "ســـــــــــــــــلام");
     
     // enclosing mark, don't split
-    doSplit("۞test", "۞test");
+    doSplit("test⃝", "test⃝");
     
     // combining spacing mark (the virama), don't split
     doSplit("हिन्दी", "हिन्दी");
