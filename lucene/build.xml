@@ -214,9 +214,16 @@
                    failonerror="false"/>
   </target>
   	
-  <target name="javadocs-all" description="Generate javadoc for core and contrib classes" depends="build-contrib">
+  <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
+      
+      <!-- TODO: remove these dependencies: -->
+      <subant target="default">
+        <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+        <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
+        <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>
+      </subant>
 
       <path id="javadoc.classpath">
         <path refid="classpath"/>

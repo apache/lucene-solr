@@ -379,11 +379,15 @@
     </copy>
   </target>
  
-  <target name="javadocs-all" depends="compile,javadocs-dep"
+  <target name="javadocs-all" depends="prep-lucene-jars,javadocs-dep"
           description="Generate javadoc for core, java client and contrib">
     <sequential>
       <mkdir dir="${dest}/docs/api"/>
  
+      <subant target="module-jars-to-solr">
+        <fileset dir="contrib/analysis-extras" includes="build.xml"/>
+      </subant>
+
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <fileset dir="${dest}/contrib">
