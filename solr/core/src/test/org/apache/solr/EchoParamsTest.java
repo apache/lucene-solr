@@ -30,25 +30,32 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   }
 
   private static final String HEADER_XPATH = "/response/lst[@name='responseHeader']";
-
+  
   @Test
-  public void testDefaultEchoParams() {
+  public void test() {
+    defaultEchoParams();
+    defaultEchoParamsDefaultVersion();
+    explicitEchoParams();
+    allEchoParams();
+  }
+
+  // the following test methods rely on their order, which is no longer guaranteed by Java 7, so call them directly above:
+  
+  private void defaultEchoParams() {
     lrf.args.put("wt", "xml");
     lrf.args.put("version", "2.2");    
     assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
 
-  @Test
-  public void testDefaultEchoParamsDefaultVersion() {
+  private void defaultEchoParamsDefaultVersion() {
     lrf.args.put("wt", "xml");
     lrf.args.remove("version");    
     assertQ(req("foo"),HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
 
-  @Test
-  public void testExplicitEchoParams() {
+  private void explicitEchoParams() {
     lrf.args.put("wt", "xml");
     lrf.args.put("version", "2.2");
     lrf.args.put("echoParams", "explicit");
@@ -57,8 +64,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
     assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
   }
 
-  @Test
-  public void testAllEchoParams() {
+  private void allEchoParams() {
     lrf = h.getRequestFactory
       ("crazy_custom_qt", 0, 20,
        "version","2.2",

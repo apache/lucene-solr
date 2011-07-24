@@ -36,6 +36,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
 
   public void testCaching() throws Exception {
+    clearIndex();
     assertU(adoc("id","4", "val_i","1"));
     assertU(adoc("id","1", "val_i","2"));
     assertU(adoc("id","3", "val_i","3"));
