@@ -1281,7 +1281,7 @@ public abstract class LuceneTestCase extends Assert {
       // sort the test methods first before shuffling them, so that the shuffle is consistent
       // across different implementations that might order the methods different originally.
       Collections.sort(testMethods, new Comparator<FrameworkMethod>() {
-        @Override
+        /* not until java 6 @Override */
         public int compare(FrameworkMethod f1, FrameworkMethod f2) {
           return f1.getName().compareTo(f2.getName());
         }
