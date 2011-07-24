@@ -384,6 +384,7 @@
     <sequential>
       <mkdir dir="${dest}/docs/api"/>
  
+      <!-- TODO: optimize this, thats stupid here: -->
       <subant target="module-jars-to-solr">
         <fileset dir="contrib/analysis-extras" includes="build.xml"/>
       </subant>
