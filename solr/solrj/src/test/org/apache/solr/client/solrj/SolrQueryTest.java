@@ -21,6 +21,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.params.FacetParams;
 
 import junit.framework.Assert;
+import org.apache.solr.common.util.DateUtil;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * 
@@ -104,6 +109,47 @@ public class SolrQueryTest extends LuceneTestCase {
     assertTrue("expected default value to be true", q.getFacetSort());
     q.setFacetSort(false);
     assertFalse("expected set value to be false", q.getFacetSort());
+  }
+
+  public void testFacetNumericRange() {
+    SolrQuery q = new SolrQuery("dog");
+    q.addNumericRangeFacet("field", 1, 10, 1);
+    assertEquals("true", q.get(FacetParams.FACET));
+    assertEquals("field", q.get(FacetParams.FACET_RANGE));
+    assertEquals("1", q.get("f.field." + FacetParams.FACET_RANGE_START));
+    assertEquals("10", q.get("f.field." + FacetParams.FACET_RANGE_END));
+    assertEquals("1", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
+
+    q = new SolrQuery("dog");
+    q.addNumericRangeFacet("field", 1.0d, 10.0d, 1.0d);
+    assertEquals("true", q.get(FacetParams.FACET));
+    assertEquals("field", q.get(FacetParams.FACET_RANGE));
+    assertEquals("1.0", q.get("f.field." + FacetParams.FACET_RANGE_START));
+    assertEquals("10.0", q.get("f.field." + FacetParams.FACET_RANGE_END));
+    assertEquals("1.0", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
+
+    q = new SolrQuery("dog");
+    q.addNumericRangeFacet("field", 1.0f, 10.0f, 1.0f);
+    assertEquals("true", q.get(FacetParams.FACET));
+    assertEquals("field", q.get(FacetParams.FACET_RANGE));
+    assertEquals("1.0", q.get("f.field." + FacetParams.FACET_RANGE_START));
+    assertEquals("10.0", q.get("f.field." + FacetParams.FACET_RANGE_END));
+    assertEquals("1.0", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
+  }
+
+  public void testFacetDateRange() {
+    SolrQuery q = new SolrQuery("dog");
+    Calendar calendar = Calendar.getInstance(Locale.UK);
+    calendar.set(2010, 1, 1);
+    Date start = calendar.getTime();
+    calendar.set(2011, 1, 1);
+    Date end = calendar.getTime();
+    q.addDateRangeFacet("field", start, end, "+1MONTH");
+    assertEquals("true", q.get(FacetParams.FACET));
+    assertEquals("field", q.get(FacetParams.FACET_RANGE));
+    assertEquals(DateUtil.getThreadLocalDateFormat().format(start), q.get("f.field." + FacetParams.FACET_RANGE_START));
+    assertEquals(DateUtil.getThreadLocalDateFormat().format(end), q.get("f.field." + FacetParams.FACET_RANGE_END));
+    assertEquals("+1MONTH", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
   }
 
   public void testSettersGetters() {
