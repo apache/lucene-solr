@@ -18,7 +18,7 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.common.SolrInputDocument;
 
 /**
- * @solr.experimental
+ * @lucene.experimental
  *
  */
 public interface DIHWriter {
