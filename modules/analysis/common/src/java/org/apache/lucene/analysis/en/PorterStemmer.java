@@ -49,8 +49,6 @@ import java.io.InputStream;
 import java.io.FileInputStream;
 
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_CHAR;
-
-import org.apache.lucene.analysis.util.StemmerUtil;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -209,12 +207,15 @@ class PorterStemmer
   }
 
   private final boolean ends(String s) {
-    if (StemmerUtil.endsWith(b, k+1, s)) {
-      j = k-s.length();
-      return true;
-    } else {
+    int l = s.length();
+    int o = k-l+1;
+    if (o < k0)
       return false;
-    }
+    for (int i = 0; i < l; i++)
+      if (b[o+i] != s.charAt(i))
+        return false;
+    j = k-l;
+    return true;
   }
 
   /* setto(s) sets (j+1),...k to the characters in the string s, readjusting
