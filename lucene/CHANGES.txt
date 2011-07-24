@@ -531,6 +531,10 @@ Bug fixes
   corrupt index if a term with docfreq >= 16 was indexed more than once
   at the same position.  (Robert Muir)
 
+* LUCENE-3334: If Java7 is detected, IOUtils.closeSafely() will log
+  suppressed exceptions in the original exception, so stack trace
+  will contain them.  (Uwe Schindler)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
