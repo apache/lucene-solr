@@ -288,6 +288,19 @@ Upgrading from Solr 3.3
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
+* Previous versions of Solr silently allow and ignore some contradictory 
+  properties specified in schema.xml.  For example:
+    - indexed="false" omitNorms="false" 
+    - indexed="false" omitTermFreqAndPositions="false"
+  Field property validation has now been fixed, to ensure that
+  contradictions like these now generate error messages.  If users
+  have existing schemas that generate one of these new "conflicting
+  'false' field options for non-indexed field" error messages the
+  conflicting "omit*" properties can safely be removed, or changed to
+  "true" for consistent behavior with previous Solr versions.  This
+  situation has now been fixed to cause an error on startup when these
+  contradictory options.  See SOLR-2669.
+
 New Features
 ----------------------
 
@@ -378,6 +391,8 @@ Bug Fixes
   "start" parameter was not honored and the documents returned were
    0 through start+offset.  (Markus Jelsma, yonik)
 
+* SOLR-2669: Fix backwards validation of field properties in 
+  SchemaField.calcProps (hossman)
 
 
  Other Changes

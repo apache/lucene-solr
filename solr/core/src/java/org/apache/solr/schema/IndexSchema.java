@@ -577,7 +577,7 @@ public final class IndexSchema {
     } catch(Exception e) {
       // unexpected exception...
       SolrConfig.severeErrors.add( e );
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed",e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed: " + e.getMessage(), e,false);
     }
 
     // create the field analyzers

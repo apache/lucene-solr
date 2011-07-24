@@ -226,20 +226,27 @@ public final class SchemaField extends FieldProperties {
     }
 
     if (on(falseProps,INDEXED)) {
-      int pp = (INDEXED | OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS
+      int pp = (INDEXED 
               | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS
               | SORT_MISSING_FIRST | SORT_MISSING_LAST);
       if (on(pp,trueProps)) {
-        throw new RuntimeException("SchemaField: " + name + " conflicting indexed field options:" + props);
+        throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed field:" + props);
+      }
+      p &= ~pp;
+    }
+    if (on(falseProps,INDEXED)) {
+      int pp = (OMIT_NORMS | OMIT_TF_POSITIONS | OMIT_POSITIONS);
+      if (on(pp,falseProps)) {
+        throw new RuntimeException("SchemaField: " + name + " conflicting 'false' field options for non-indexed field:" + props);
       }
       p &= ~pp;
 
     }
 
-    if (on(falseProps,OMIT_TF_POSITIONS)) {
+    if (on(trueProps,OMIT_TF_POSITIONS)) {
       int pp = (OMIT_POSITIONS | OMIT_TF_POSITIONS);
-      if (on(pp, trueProps)) {
-        throw new RuntimeException("SchemaField: " + name + " conflicting indexed field options:" + props);
+      if (on(pp, falseProps)) {
+        throw new RuntimeException("SchemaField: " + name + " conflicting tf and position field options:" + props);
       }
       p &= ~pp;
     }

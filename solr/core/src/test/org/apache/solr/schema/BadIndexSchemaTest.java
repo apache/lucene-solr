@@ -49,6 +49,14 @@ public class BadIndexSchemaTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSevereErrorsForInvalidFieldOptions() throws Exception {
+    doTest("bad-schema-not-indexed-but-norms.xml", "bad_field");
+    doTest("bad-schema-not-indexed-but-tf.xml", "bad_field");
+    doTest("bad-schema-not-indexed-but-pos.xml", "bad_field");
+    doTest("bad-schema-omit-tf-but-not-pos.xml", "bad_field");
+  }
+
+  @Test
   public void testSevereErrorsForDuplicateFields() throws Exception {
     doTest("bad-schema-dup-field.xml", "fAgain");
   }
