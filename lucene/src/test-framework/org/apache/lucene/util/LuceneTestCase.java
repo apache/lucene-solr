@@ -347,12 +347,16 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   private static List<String> testClassesRun = new ArrayList<String>();
 
-  @BeforeClass
-  public static void beforeClassLuceneTestCaseJ4() {
-    state = State.INITIAL;
+  private static void initRandom() {
+    assert !random.initialized;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     random.initialized = true;
+  }
+
+  @BeforeClass
+  public static void beforeClassLuceneTestCaseJ4() {
+    state = State.INITIAL;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     
@@ -1408,6 +1412,10 @@ public abstract class LuceneTestCase extends Assert {
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
+      
+      initRandom();
+      Random r = new Random(random.nextLong());
+
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
       testMethods = new ArrayList<FrameworkMethod>();
       for (Method m : getTestClass().getJavaClass().getMethods()) {
@@ -1457,6 +1465,15 @@ public abstract class LuceneTestCase extends Assert {
           } catch (Exception e) { throw new RuntimeException(e); }
         }
       }
+      // sort the test methods first before shuffling them, so that the shuffle is consistent
+      // across different implementations that might order the methods different originally.
+      Collections.sort(testMethods, new Comparator<FrameworkMethod>() {
+        @Override
+        public int compare(FrameworkMethod f1, FrameworkMethod f2) {
+          return f1.getName().compareTo(f2.getName());
+        }
+      });
+      Collections.shuffle(testMethods, r);
       return testMethods;
     }
 
@@ -1494,6 +1511,7 @@ public abstract class LuceneTestCase extends Assert {
 
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
       super(clazz);
+      // evil we cannot init our random here, because super() calls computeTestMethods!!!!;
       Filter f = new Filter() {
 
         @Override
