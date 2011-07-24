@@ -41,6 +41,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml","schema11.xml");
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+  }
   
   String base = "external_foo_extf";
   static long start = System.currentTimeMillis();
