@@ -553,6 +553,10 @@ New Features
   AbstractField.setOmitTermFrequenciesAndPositions is deprecated,
   you should use DOCS_ONLY instead.  (Robert Muir)
 
+* LUCENE-3097: Added a new grouping collector that can be used to retrieve all most relevant
+  documents per group. This can be useful in situations when one wants to compute grouping
+  based facets / statistics on the complete query result. (Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 

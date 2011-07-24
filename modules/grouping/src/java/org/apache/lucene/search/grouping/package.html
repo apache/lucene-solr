@@ -164,5 +164,20 @@ will be <code>null</code>, so if you need to present this value you'll
 have to separately retrieve it (for example using stored
 fields, <code>FieldCache</code>, etc.).
 
+<p>Another collector is the <code>TermAllGroupHeadsCollector</code> that can be used to retrieve all most relevant
+   documents per group. Also known as group heads. This can be useful in situations when one wants to compute group
+   based facets / statistics on the complete query result. The collector can be executed during the first or second
+   phase.</p>
+
+<pre class="prettyprint">
+  AbstractAllGroupHeadsCollector c = TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
+  s.search(new TermQuery(new Term("content", searchTerm)), c);
+  // Return all group heads as int array
+  int[] groupHeadsArray = c.retrieveGroupHeads()
+  // Return all group heads as OpenBitSet.
+  int maxDoc = s.maxDoc();
+  OpenBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
+</pre>
+
 </body>
 </html>
