@@ -180,8 +180,18 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return details;
   }
 
-  @Test
-  public void testDetails() throws Exception {
+  public void test() throws Exception {
+    doTestDetails();
+    doTestReplicateAfterWrite2Slave();
+    doTestIndexAndConfigReplication();
+    doTestStopPoll();
+    doTestSnapPullWithMasterUrl();
+    doTestReplicateAfterStartup();
+    doTestIndexAndConfigAliasReplication();
+    doTestBackup();
+  }
+
+  private void doTestDetails() throws Exception {
     { 
       NamedList<Object> details = getDetails(masterClient);
       
@@ -234,8 +244,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testReplicateAfterWrite2Slave() throws Exception {
+  private void doTestReplicateAfterWrite2Slave() throws Exception {
     clearIndexWithReplication();
     nDocs--;
     for (int i = 0; i < nDocs; i++) {
@@ -299,8 +308,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, slaveQueryResult.getNumFound());
   }
 
-  @Test
-  public void testIndexAndConfigReplication() throws Exception {
+  private void doTestIndexAndConfigReplication() throws Exception {
     clearIndexWithReplication();
 
     nDocs--;
@@ -355,8 +363,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testStopPoll() throws Exception {
+  private void doTestStopPoll() throws Exception {
     clearIndexWithReplication();
 
     // Test:
@@ -423,8 +430,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   
-  @Test
-  public void testSnapPullWithMasterUrl() throws Exception {
+  private void doTestSnapPullWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
@@ -471,8 +477,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
 
-  @Test
-  public void testReplicateAfterStartup() throws Exception {
+  private void doTestReplicateAfterStartup() throws Exception {
     //stop slave
     slaveJetty.stop();
 
@@ -529,8 +534,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
 
-  @Test
-  public void testIndexAndConfigAliasReplication() throws Exception {
+  private void doTestIndexAndConfigAliasReplication() throws Exception {
     clearIndexWithReplication();
 
     nDocs--;
@@ -604,8 +608,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
   
-  @Test
-  public void testBackup() throws Exception {
+  private void doTestBackup() throws Exception {
     masterJetty.stop();
     master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
                           "solrconfig.xml");
