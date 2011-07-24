@@ -929,6 +929,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
 
   @Test
   public void testChineseDefaults() throws Exception {
+    SolrServer server = getSolrServer();
     // Empty the database...
     server.deleteByQuery( "*:*" );// delete everything!
     server.commit();
