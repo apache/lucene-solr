@@ -33,6 +33,12 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema-required-fields.xml");
   }
   
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+  }
+  
   @Test
   public void testRequiredFieldsConfig() {
     SolrCore core = h.getCore();
@@ -81,7 +87,6 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     
     // Check to make sure this submission did not succeed
     assertQ("should not find any", req("id:531") ,"//result[@numFound=0]" ); 
-    clearIndex();
   }
   
   @Test
