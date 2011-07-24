@@ -221,10 +221,10 @@
                    failonerror="false"/>
   </target>
   	
-  <target name="javadocs-all" description="Generate javadoc for core and contrib classes" depends="build-contrib">
+  <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
-
+      
       <path id="javadoc.classpath">
         <path refid="classpath"/>
         <pathelement location="${ant.home}/lib/ant.jar"/>
@@ -232,7 +232,6 @@
           <exclude name="build/**/*.jar"/>
           <include name="**/lib/*.jar"/>
         </fileset>
-        <pathelement location="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
       </path>
 
       <invoke-javadoc
