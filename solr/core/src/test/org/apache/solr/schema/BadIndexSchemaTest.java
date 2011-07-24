@@ -21,37 +21,44 @@ import java.util.regex.Pattern;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
 
-
+import org.junit.Test;
 
 /**
  */
-public class BadIndexSchemaTest extends AbstractSolrTestCase {
+public class BadIndexSchemaTest extends SolrTestCaseJ4 {
 
-  private static final String bad_type = "StrField (bad_type)";
+  private void doTest(final String schema, final String errString) 
+    throws Exception {
 
-  @Override public String getSchemaFile() { return "bad-schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+    ignoreException(Pattern.quote(errString));
+    try {
+      initCore( "solrconfig.xml", schema );
+    } catch (SolrException e) {
+      // short circut out if we found what we expected
+      if (-1 != e.getMessage().indexOf(errString)) return;
 
-  @Override 
-  public void setUp() throws Exception {
-    ignoreException("_twice");
-    ignoreException("ftAgain");
-    ignoreException("fAgain");
-    ignoreException(Pattern.quote(bad_type));
-
-    super.setUp();
+      // otherwise, rethrow it, possibly completley unrelated
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR, 
+         "Unexpected error, expected error matching: " + errString, e);
+    } finally {
+      SolrConfig.severeErrors.clear();
+    }
+    fail("Did not encounter any exception from: " + schema);
   }
-  
-  @Override 
-  public void tearDown() throws Exception {
-    SolrConfig.severeErrors.clear();
-    super.tearDown();
-  }
 
+  @Test
+  public void testSevereErrorsForInvalidFieldOptions() throws Exception {
+    doTest("bad-schema-not-indexed-but-norms.xml", "bad_field");
+    doTest("bad-schema-not-indexed-but-tf.xml", "bad_field");
+    doTest("bad-schema-not-indexed-but-pos.xml", "bad_field");
+    doTest("bad-schema-omit-tf-but-not-pos.xml", "bad_field");
+  }
   
   private Throwable findErrorWithSubstring( List<Throwable> err, String v )
   {
@@ -63,38 +70,45 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
     return null;
   }
   
-  
-  public void testSevereErrors() 
-  {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
+  public void testSevereErrors() throws Exception {
+    final String bad_type = "StrField (bad_type)";
+    try {
+      initCore( "solrconfig.xml", "bad-schema.xml" );
+      
+      ignoreException("_twice");
+      ignoreException("ftAgain");
+      ignoreException("fAgain");
+      ignoreException(Pattern.quote(bad_type));
+      
+      for( Throwable t : SolrConfig.severeErrors ) {
+        log.info( "got ex:"+t.getMessage() );
+      }
+    
+      assertEquals( 4, SolrConfig.severeErrors.size() );
 
-    for( Throwable t : SolrConfig.severeErrors ) {
-      log.info( "got ex:"+t.getMessage() );
+      List<Throwable> err = new LinkedList<Throwable>();
+      err.addAll( SolrConfig.severeErrors );
+      
+      Throwable t = findErrorWithSubstring( err, "*_twice" );
+      assertNotNull( t );
+      err.remove( t );
+      
+      t = findErrorWithSubstring( err, "ftAgain" );
+      assertNotNull( t );
+      err.remove( t );
+      
+      t = findErrorWithSubstring( err, "fAgain" );
+      assertNotNull( t );
+      err.remove( t );
+      
+      t = findErrorWithSubstring( err, bad_type );
+      assertNotNull( t );
+      err.remove( t );
+
+      // make sure thats all of them
+      assertTrue( err.isEmpty() );
+    } finally {
+      SolrConfig.severeErrors.clear();
     }
-    
-    assertEquals( 4, SolrConfig.severeErrors.size() );
-
-    List<Throwable> err = new LinkedList<Throwable>();
-    err.addAll( SolrConfig.severeErrors );
-    
-    Throwable t = findErrorWithSubstring( err, "*_twice" );
-    assertNotNull( t );
-    err.remove( t );
-    
-    t = findErrorWithSubstring( err, "ftAgain" );
-    assertNotNull( t );
-    err.remove( t );
-    
-    t = findErrorWithSubstring( err, "fAgain" );
-    assertNotNull( t );
-    err.remove( t );
-
-    t = findErrorWithSubstring( err, bad_type );
-    assertNotNull( t );
-    err.remove( t );
-
-    // make sure thats all of them
-    assertTrue( err.isEmpty() );
   }
 }
