@@ -17,17 +17,12 @@
 
 package org.apache.solr.client.solrj.response;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
+
+import java.util.*;
 
 /**
  * 
@@ -53,6 +48,7 @@ public class QueryResponse extends SolrResponseBase
   private List<FacetField> _facetFields = null;
   private List<FacetField> _limitingFacets = null;
   private List<FacetField> _facetDates = null;
+  private List<RangeFacet> _facetRanges = null;
   private NamedList<List<PivotField>> _facetPivot = null;
 
   // Highlight Info
@@ -244,6 +240,36 @@ public class QueryResponse extends SolrResponseBase
         _facetDates.add(f);
       }
     }
+
+    //Parse range facets
+    NamedList<NamedList<Object>> rf = (NamedList<NamedList<Object>>) info.get("facet_ranges");
+    if (rf != null) {
+      _facetRanges = new ArrayList<RangeFacet>( rf.size() );
+      for (Map.Entry<String, NamedList<Object>> facet : rf) {
+        NamedList<Object> values = facet.getValue();
+        Object rawGap = values.get("gap");
+
+        RangeFacet rangeFacet;
+        if (rawGap instanceof Number) {
+          Number gap = (Number) rawGap;
+          Number start = (Number) values.get("start");
+          Number end = (Number) values.get("end");
+          rangeFacet = new RangeFacet.Numeric(facet.getKey(), start, end, gap);
+        } else {
+          String gap = (String) rawGap;
+          Date start = (Date) values.get("start");
+          Date end = (Date) values.get("end");
+          rangeFacet = new RangeFacet.Date(facet.getKey(), start, end, gap);
+        }
+
+        NamedList<Integer> counts = (NamedList<Integer>) values.get("counts");
+        for (Map.Entry<String, Integer> entry : counts)   {
+          rangeFacet.addCount(entry.getKey(), entry.getValue());
+        }
+
+        _facetRanges.add(rangeFacet);
+      }
+    }
     
     //Parse pivot facets
     NamedList pf = (NamedList) info.get("facet_pivot");
@@ -327,6 +353,10 @@ public class QueryResponse extends SolrResponseBase
   
   public List<FacetField> getFacetDates()   {
     return _facetDates;
+  }
+
+  public List<RangeFacet> getFacetRanges() {
+    return _facetRanges;
   }
 
   public NamedList<List<PivotField>> getFacetPivot()   {

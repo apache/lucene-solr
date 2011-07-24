@@ -17,13 +17,17 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.common.util.DateUtil;
 
+import java.text.NumberFormat;
+import java.util.Date;
 import java.util.regex.Pattern;
 
 
@@ -223,6 +227,42 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addFacetPivotField(String ... fields) {
     add(FacetParams.FACET_PIVOT, fields);
+    this.set(FacetParams.FACET, true);
+    return this;
+  }
+
+  /**
+   * Add a numeric range facet.
+   *
+   * @param field The field
+   * @param start The start of range
+   * @param end The end of the range
+   * @param gap The gap between each count
+   * @return this
+   */
+  public SolrQuery addNumericRangeFacet(String field, Number start, Number end, Number gap) {
+    add(FacetParams.FACET_RANGE, field);
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toString());
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_END), end.toString());
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap.toString());
+    this.set(FacetParams.FACET, true);
+    return this;
+  }
+
+  /**
+   * Add a numeric range facet.
+   *
+   * @param field The field
+   * @param start The start of range
+   * @param end The end of the range
+   * @param gap The gap between each count
+   * @return this
+   */
+  public SolrQuery addDateRangeFacet(String field, Date start, Date end, String gap) {
+    add(FacetParams.FACET_RANGE, field);
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_START), DateUtil.getThreadLocalDateFormat().format(start));
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_END), DateUtil.getThreadLocalDateFormat().format(end));
+    add(String.format("f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
     this.set(FacetParams.FACET, true);
     return this;
   }
