@@ -19,8 +19,11 @@ package org.apache.lucene.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
-/** @lucene.internal */
+/** This class emulates the new Java 7 "Try-With-Resources" statement.
+ * Remove once Lucene is on Java 7.
+ * @lucene.internal */
 public final class IOUtils {
 
   private IOUtils() {} // no instance
@@ -55,6 +58,7 @@ public final class IOUtils {
           object.close();
         }
       } catch (Throwable t) {
+        addSuppressed((priorException == null) ? th : priorException, t);
         if (th == null) {
           th = t;
         }
@@ -81,6 +85,7 @@ public final class IOUtils {
           object.close();
         }
       } catch (Throwable t) {
+        addSuppressed((priorException == null) ? th : priorException, t);
         if (th == null) {
           th = t;
         }
@@ -118,6 +123,7 @@ public final class IOUtils {
           object.close();
         }
       } catch (Throwable t) {
+        addSuppressed(th, t);
         if (th == null)
           th = t;
       }
@@ -143,6 +149,7 @@ public final class IOUtils {
           object.close();
         }
       } catch (Throwable t) {
+        addSuppressed(th, t);
         if (th == null)
           th = t;
       }
@@ -153,6 +160,32 @@ public final class IOUtils {
       if (th instanceof RuntimeException) throw (RuntimeException) th;
       if (th instanceof Error) throw (Error) th;
       throw new RuntimeException(th);
+    }
+  }
+  
+  /** This reflected {@link Method} is {@code null} before Java 7 */
+  private static final Method SUPPRESS_METHOD;
+  static {
+    Method m;
+    try {
+      m = Throwable.class.getMethod("addSuppressed", Throwable.class);
+    } catch (Exception e) {
+      m = null;
+    }
+    SUPPRESS_METHOD = m;
+  }
+
+  /** adds a Throwable to the list of suppressed Exceptions of the first Throwable (if Java 7 is detected)
+   * @param exception this exception should get the suppressed one added
+   * @param suppressed the suppressed exception
+   */
+  private static final void addSuppressed(Throwable exception, Throwable suppressed) {
+    if (SUPPRESS_METHOD != null && exception != null && suppressed != null) {
+      try {
+        SUPPRESS_METHOD.invoke(exception, suppressed);
+      } catch (Exception e) {
+        // ignore any exceptions caused by invoking (e.g. security constraints)
+      }
     }
   }
 
