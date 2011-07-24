@@ -26,7 +26,13 @@ import java.io.IOException;
  * Test-case for RAMDirectoryFactory
  */
 public class RAMDirectoryFactoryTest extends LuceneTestCase {
-  public void testOpenReturnsTheSameForSamePath() throws IOException {
+
+  public void test() throws Exception {
+    dotestOpenReturnsTheSameForSamePath();
+    dotestOpenSucceedForEmptyDir();
+  }
+
+  private void dotestOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new RefCntRamDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
@@ -45,7 +51,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     dir2.close();
   }
 
-  public void testOpenSucceedForEmptyDir() throws IOException {
+  private void dotestOpenSucceedForEmptyDir() throws IOException {
     RAMDirectoryFactory factory = new RAMDirectoryFactory();
     Directory dir = factory.open("/fake/path");
     assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
