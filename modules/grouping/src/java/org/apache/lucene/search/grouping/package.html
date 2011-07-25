@@ -176,7 +176,7 @@ fields, <code>FieldCache</code>, etc.).
   int[] groupHeadsArray = c.retrieveGroupHeads()
   // Return all group heads as OpenBitSet.
   int maxDoc = s.maxDoc();
-  OpenBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
+  FixedBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
 </pre>
 
 </body>
