@@ -174,7 +174,7 @@ fields, <code>FieldCache</code>, etc.).
   s.search(new TermQuery(new Term("content", searchTerm)), c);
   // Return all group heads as int array
   int[] groupHeadsArray = c.retrieveGroupHeads()
-  // Return all group heads as OpenBitSet.
+  // Return all group heads as FixedBitSet.
   int maxDoc = s.maxDoc();
   FixedBitSet groupHeadsBitSet = c.retrieveGroupHeads(maxDoc)
 </pre>
