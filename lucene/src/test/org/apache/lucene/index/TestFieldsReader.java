@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -67,32 +67,32 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     IndexReader reader = IndexReader.open(dir);
-    Document doc = reader.document(0);
+    Document doc = reader.document2(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 
-    Fieldable field = doc.getField(DocHelper.TEXT_FIELD_2_KEY);
+    Field field = (Field) doc.getField(DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(field != null);
-    assertTrue(field.isTermVectorStored() == true);
+    assertTrue(field.storeTermVectors() == true);
 
-    assertTrue(field.isStoreOffsetWithTermVector() == true);
-    assertTrue(field.isStorePositionWithTermVector() == true);
+    assertTrue(field.storeTermVectorOffsets() == true);
+    assertTrue(field.storeTermVectorPositions() == true);
 
-    field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
+    field = (Field) doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
-    assertTrue(field.isTermVectorStored() == false);
-    assertTrue(field.isStoreOffsetWithTermVector() == false);
-    assertTrue(field.isStorePositionWithTermVector() == false);
+    assertTrue(field.storeTermVectors() == false);
+    assertTrue(field.storeTermVectorOffsets() == false);
+    assertTrue(field.storeTermVectorPositions() == false);
 
-    field = doc.getField(DocHelper.NO_TF_KEY);
+    field = (Field) doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
-    assertTrue(field.isTermVectorStored() == false);
-    assertTrue(field.isStoreOffsetWithTermVector() == false);
-    assertTrue(field.isStorePositionWithTermVector() == false);
+    assertTrue(field.storeTermVectors() == false);
+    assertTrue(field.storeTermVectorOffsets() == false);
+    assertTrue(field.storeTermVectorPositions() == false);
 
-    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
+    Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);
-    final List<Fieldable> fields = visitor.getDocument().getFields();
+    final List<IndexableField> fields = visitor.getDocument().getFields();
     assertEquals(1, fields.size());
     assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
 
@@ -229,25 +229,25 @@ public class TestFieldsReader extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
-    final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
+    final org.apache.lucene.document.NumericField.DataType[] typeAnswers = new org.apache.lucene.document.NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {
       org.apache.lucene.document2.Document doc = new org.apache.lucene.document2.Document();
       org.apache.lucene.document2.NumericField nf = new org.apache.lucene.document2.NumericField("nf", org.apache.lucene.document2.NumericField.TYPE_STORED);
       doc.add(nf);
       final Number answer;
-      final NumericField.DataType typeAnswer;
+      final org.apache.lucene.document.NumericField.DataType typeAnswer;
       if (random.nextBoolean()) {
         // float/double
         if (random.nextBoolean()) {
           final float f = random.nextFloat();
           nf.setFloatValue(f);
           answer = Float.valueOf(f);
-          typeAnswer = NumericField.DataType.FLOAT;
+          typeAnswer = org.apache.lucene.document.NumericField.DataType.FLOAT;
         } else {
           final double d = random.nextDouble();
           nf.setDoubleValue(d);
           answer = Double.valueOf(d);
-          typeAnswer = NumericField.DataType.DOUBLE;
+          typeAnswer = org.apache.lucene.document.NumericField.DataType.DOUBLE;
         }
       } else {
         // int/long
@@ -255,12 +255,12 @@ public class TestFieldsReader extends LuceneTestCase {
           final int i = random.nextInt();
           nf.setIntValue(i);
           answer = Integer.valueOf(i);
-          typeAnswer = NumericField.DataType.INT;
+          typeAnswer = org.apache.lucene.document.NumericField.DataType.INT;
         } else {
           final long l = random.nextLong();
           nf.setLongValue(l);
           answer = Long.valueOf(l);
-          typeAnswer = NumericField.DataType.LONG;
+          typeAnswer = org.apache.lucene.document.NumericField.DataType.LONG;
         }
       }
       answers[id] = answer;
@@ -276,12 +276,12 @@ public class TestFieldsReader extends LuceneTestCase {
     for(IndexReader sub : r.getSequentialSubReaders()) {
       final int[] ids = FieldCache.DEFAULT.getInts(sub, "id");
       for(int docID=0;docID<sub.numDocs();docID++) {
-        final Document doc = sub.document(docID);
-        final Fieldable f = doc.getFieldable("nf");
+        final Document doc = sub.document2(docID);
+        final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof NumericField);
         final NumericField nf = (NumericField) f;
-        assertEquals(answers[ids[docID]], nf.getNumericValue());
-        assertSame(typeAnswers[ids[docID]], nf.getDataType());
+        assertEquals(answers[ids[docID]], nf.numericValue());
+        assertSame(typeAnswers[ids[docID]], nf.numericDataType());
       }
     }
     r.close();

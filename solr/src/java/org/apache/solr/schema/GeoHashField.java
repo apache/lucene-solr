@@ -69,7 +69,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f)
+  public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }

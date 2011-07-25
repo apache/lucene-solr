@@ -37,7 +37,6 @@ import org.apache.lucene.document2.Field;
 import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.document2.StringField;
 import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -388,12 +387,12 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
         writer.close();
         IndexReader reader = IndexReader.open(dir, false);
-        org.apache.lucene.document.Document doc2 = reader.document(reader.maxDoc() - 1);
-        org.apache.lucene.document.Field[] fields = doc2.getFields("bin1");
+        Document doc2 = reader.document2(reader.maxDoc() - 1);
+        IndexableField[] fields = doc2.getFields("bin1");
         assertNotNull(fields);
         assertEquals(1, fields.length);
-        org.apache.lucene.document.Field b1 = fields[0];
-        assertTrue(b1.isBinary());
+        IndexableField b1 = fields[0];
+        assertTrue(b1.binaryValue(null) != null);
         BytesRef bytesRef = b1.binaryValue(null);
         assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
@@ -407,12 +406,12 @@ public class TestIndexReader extends LuceneTestCase
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
-        doc2 = reader.document(reader.maxDoc() - 1);
+        doc2 = reader.document2(reader.maxDoc() - 1);
         fields = doc2.getFields("bin1");
         assertNotNull(fields);
         assertEquals(1, fields.length);
         b1 = fields[0];
-        assertTrue(b1.isBinary());
+        assertTrue(b1.binaryValue(null) != null);
         bytesRef = b1.binaryValue(null);
         assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
@@ -928,16 +927,16 @@ public class TestIndexReader extends LuceneTestCase
       // check stored fields
       for (int i = 0; i < index1.maxDoc(); i++) {
         if (delDocs1 == null || !delDocs1.get(i)) {
-          org.apache.lucene.document.Document doc1 = index1.document(i);
-          org.apache.lucene.document.Document doc2 = index2.document(i);
-          List<Fieldable> fieldable1 = doc1.getFields();
-          List<Fieldable> fieldable2 = doc2.getFields();
+          Document doc1 = index1.document2(i);
+          Document doc2 = index2.document2(i);
+          List<IndexableField> fieldable1 = doc1.getFields();
+          List<IndexableField> fieldable2 = doc2.getFields();
           assertEquals("Different numbers of fields for doc " + i + ".", fieldable1.size(), fieldable2.size());
-          Iterator<Fieldable> itField1 = fieldable1.iterator();
-          Iterator<Fieldable> itField2 = fieldable2.iterator();
+          Iterator<IndexableField> itField1 = fieldable1.iterator();
+          Iterator<IndexableField> itField2 = fieldable2.iterator();
           while (itField1.hasNext()) {
-            org.apache.lucene.document.Field curField1 = (org.apache.lucene.document.Field) itField1.next();
-            org.apache.lucene.document.Field curField2 = (org.apache.lucene.document.Field) itField2.next();
+            Field curField1 = (Field) itField1.next();
+            Field curField2 = (Field) itField2.next();
             assertEquals("Different fields names for doc " + i + ".", curField1.name(), curField2.name());
             assertEquals("Different field values for doc " + i + ".", curField1.stringValue(), curField2.stringValue());
           }          

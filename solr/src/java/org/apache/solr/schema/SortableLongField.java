@@ -94,7 +94,7 @@ public class SortableLongField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String sval = f.stringValue();
     writer.writeLong(name, NumberUtils.SortableStr2long(sval,0,sval.length()));
   }

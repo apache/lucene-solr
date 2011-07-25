@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.ScoreDoc;
@@ -248,10 +249,10 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      org.apache.lucene.document.Document doc = searcher.doc(result[i].doc);
-      String[] v = doc.getValues("tracer");
+      Document doc = searcher.doc2(result[i].doc);
+      IndexableField[] v = doc.getFields("tracer");
       for (int j = 0 ; j < v.length ; ++j) {
-        buff.append(v[j]);
+        buff.append(v[j].stringValue());
       }
     }
     assertEquals(expectedResult, buff.toString());

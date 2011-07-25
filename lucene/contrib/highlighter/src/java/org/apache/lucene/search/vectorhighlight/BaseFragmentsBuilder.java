@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -117,8 +119,11 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
           if (fieldInfo.name.equals(fieldName)) {
             final byte[] b = new byte[numUTF8Bytes];
             in.readBytes(b, 0, b.length);
-            Field.TermVector termVector = Field.TermVector.toTermVector(fieldInfo.storeTermVector, fieldInfo.storeOffsetWithTermVector, fieldInfo.storePositionWithTermVector);
-            fields.add(new Field(fieldInfo.name, false, new String(b, "UTF-8"), Field.Store.YES, Field.Index.ANALYZED, termVector));
+            FieldType ft = new FieldType(TextField.TYPE_STORED);
+            ft.setStoreTermVectors(fieldInfo.storeTermVector);
+            ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+            ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+            fields.add(new Field(fieldInfo.name, ft, new String(b, "UTF-8")));
           } else {
             in.seek(in.getFilePointer() + numUTF8Bytes);
           }

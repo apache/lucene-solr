@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastWriter;
@@ -120,8 +120,8 @@ public abstract class TextResponseWriter {
     } else if (val instanceof String) {
       writeStr(name, val.toString(), true);
       // micro-optimization... using toString() avoids a cast first
-    } else if (val instanceof Fieldable) {
-      Fieldable f = (Fieldable)val;
+    } else if (val instanceof IndexableField) {
+      IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
         sf.getType().write(this, name, f);
@@ -202,7 +202,7 @@ public abstract class TextResponseWriter {
   public final SolrDocument toSolrDocument( Document doc )
   {
     SolrDocument out = new SolrDocument();
-    for( Fieldable f : doc.getFields() ) {
+    for( IndexableField f : doc) {
       if( "gack_i".equals( f.name() ) ) {
         System.out.println( f );
       }

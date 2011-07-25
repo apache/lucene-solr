@@ -31,8 +31,9 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.index.IndexableField;
 
 /**
  * A task which writes documents, one line per document. Each line is in the
@@ -172,7 +173,7 @@ public class WriteLineDocTask extends PerfTask {
 
     boolean sufficient = !checkSufficientFields;
     for (int i=0; i<fieldsToWrite.length; i++) {
-      Field f = doc.getField(fieldsToWrite[i]);
+      IndexableField f = doc.getField(fieldsToWrite[i]);
       String text = f == null ? "" : matcher.reset(f.stringValue()).replaceAll(" ").trim();
       sb.append(text).append(SEP);
       sufficient |= text.length()>0 && sufficientFields[i];

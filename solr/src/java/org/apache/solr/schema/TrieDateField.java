@@ -78,7 +78,7 @@ public class TrieDateField extends DateField {
 
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     wrappedField.write(writer, name, f);
   }
 

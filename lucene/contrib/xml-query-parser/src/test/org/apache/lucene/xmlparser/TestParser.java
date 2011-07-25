@@ -233,7 +233,7 @@ public class TestParser extends LuceneTestCase {
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for(int i=0;i<Math.min(numDocs,hits.totalHits);i++)
       {
-        org.apache.lucene.document.Document ldoc=searcher.doc(scoreDocs[i].doc);
+        Document ldoc=searcher.doc2(scoreDocs[i].doc);
         System.out.println("["+ldoc.get("date")+"]"+ldoc.get("contents"));
       }
       System.out.println();

@@ -152,7 +152,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, null, true, 1, new AppendingCodecProvider());
     assertEquals(2, reader.numDocs());
-    org.apache.lucene.document.Document doc2 = reader.document(0);
+    Document doc2 = reader.document2(0);
     assertEquals(text, doc2.get("f"));
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");

@@ -993,7 +993,7 @@ public class TestFSTs extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
-    org.apache.lucene.document.Document doc;
+    Document doc;
     int docCount = 0;
     while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
       writer.addDocument(doc);

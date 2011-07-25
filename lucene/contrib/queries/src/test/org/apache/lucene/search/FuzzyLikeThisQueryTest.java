@@ -88,7 +88,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		TopDocs topDocs = searcher.search(flt, 1);
 		ScoreDoc[] sd = topDocs.scoreDocs;
 		assertTrue("score docs must match 1 doc", (sd!=null)&&(sd.length>0));
-		org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
+		Document doc=searcher.doc2(sd[0].doc);
 		assertEquals("Should match most similar not most rare variant", "2",doc.get("id"));
 	}
 	//Test multiple input words are having variants produced
@@ -104,7 +104,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		TopDocs topDocs = searcher.search(flt, 1);
 		ScoreDoc[] sd = topDocs.scoreDocs;
 		assertTrue("score docs must match 1 doc", (sd!=null)&&(sd.length>0));
-		org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
+		Document doc=searcher.doc2(sd[0].doc);
 		assertEquals("Should match most similar when using 2 words", "2",doc.get("id"));
 	}
 	//Test bug found when first query word does not match anything
@@ -119,7 +119,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		TopDocs topDocs = searcher.search(flt, 1);
 		ScoreDoc[] sd = topDocs.scoreDocs;
 		assertTrue("score docs must match 1 doc", (sd!=null)&&(sd.length>0));
-		org.apache.lucene.document.Document doc=searcher.doc(sd[0].doc);
+		Document doc=searcher.doc2(sd[0].doc);
 		assertEquals("Should match most similar when using 2 words", "2",doc.get("id"));
 	}
 	

@@ -243,11 +243,15 @@ public class IndexSearcher {
     return reader.document(docID);
   }
 
+  public org.apache.lucene.document2.Document doc2(int docID) throws CorruptIndexException, IOException {
+    return reader.document2(docID);
+  }
+
   /* Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
   public void doc(int docID, StoredFieldVisitor fieldVisitor) throws CorruptIndexException, IOException {
     reader.document(docID, fieldVisitor);
   }
-  
+
   /** Expert: Set the SimilarityProvider implementation used by this Searcher.
    *
    */

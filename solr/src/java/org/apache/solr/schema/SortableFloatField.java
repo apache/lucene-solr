@@ -93,7 +93,7 @@ public class SortableFloatField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String sval = f.stringValue();
     writer.writeFloat(name, NumberUtils.SortableStr2float(sval));
   }

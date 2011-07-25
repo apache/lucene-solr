@@ -284,7 +284,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(2, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
+      Document d = searcher.doc2(scoreDocs[i].doc);
 
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
@@ -380,7 +380,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(18, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
+      Document d = searcher.doc2(scoreDocs[i].doc);
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
       double rsLng = Double.parseDouble(d.get(lngField));
@@ -475,7 +475,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
       double lastDistance = 0;
       for(int i =0 ; i < results; i++){
-        org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
+        Document d = searcher.doc2(scoreDocs[i].doc);
       
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));
@@ -570,7 +570,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
 	    
       for(int i =0 ; i < results; i++){
-        org.apache.lucene.document.Document d = searcher.doc(scoreDocs[i].doc);
+        Document d = searcher.doc2(scoreDocs[i].doc);
 	      
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));

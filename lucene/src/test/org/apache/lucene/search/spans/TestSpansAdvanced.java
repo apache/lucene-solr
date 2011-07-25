@@ -165,7 +165,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
       
       int id = topdocs.scoreDocs[i].doc;
       float score = topdocs.scoreDocs[i].score;
-      org.apache.lucene.document.Document doc = s.doc(id);
+      Document doc = s.doc2(id);
       assertEquals(expectedIds[i], doc.get(FIELD_ID));
       boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
       if (!scoreEq) {

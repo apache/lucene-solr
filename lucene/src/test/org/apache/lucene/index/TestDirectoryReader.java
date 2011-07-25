@@ -81,12 +81,12 @@ public class TestDirectoryReader extends LuceneTestCase {
     sis.read(dir);
     IndexReader reader = openReader();
     assertTrue(reader != null);
-    org.apache.lucene.document.Document newDoc1 = reader.document(0);
+    Document newDoc1 = reader.document2(0);
     assertTrue(newDoc1 != null);
-    assertTrue(DocHelper.numFields2(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    org.apache.lucene.document.Document newDoc2 = reader.document(1);
+    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
+    Document newDoc2 = reader.document2(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields2(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
+    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
     TestSegmentReader.checkNorms(reader);

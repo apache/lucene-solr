@@ -40,14 +40,14 @@ public class TestRollingUpdates extends LuceneTestCase {
     IndexReader r = null;
     final int numUpdates = (int) (SIZE * (2+random.nextDouble()));
     for(int docIter=0;docIter<numUpdates;docIter++) {
-      final org.apache.lucene.document.Document doc = docs.nextDoc();
+      final Document doc = docs.nextDoc();
       final String myID = ""+id;
       if (id == SIZE-1) {
         id = 0;
       } else {
         id++;
       }
-      doc.getField("docid").setValue(myID);
+      ((Field) doc.getField("docid")).setValue(myID);
       w.updateDocument(new Term("docid", myID), doc);
 
       if (docIter >= SIZE && random.nextInt(50) == 17) {

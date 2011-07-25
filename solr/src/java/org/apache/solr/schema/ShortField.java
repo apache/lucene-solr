@@ -56,7 +56,7 @@ public class ShortField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may

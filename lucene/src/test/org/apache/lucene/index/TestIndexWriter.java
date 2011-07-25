@@ -42,7 +42,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.BinaryField;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.Field;
@@ -1012,8 +1011,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    org.apache.lucene.document.Document doc2 = ir.document(0);
-    org.apache.lucene.document.Field f2 = doc2.getField("binary");
+    Document doc2 = ir.document2(0);
+    IndexableField f2 = doc2.getField("binary");
     b = f2.binaryValue(null).bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1283,8 +1282,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    org.apache.lucene.document.Document doc2 = ir.document(0);
-    org.apache.lucene.document.Field f3 = doc2.getField("binary");
+    Document doc2 = ir.document2(0);
+    IndexableField f3 = doc2.getField("binary");
     b = f3.binaryValue(null).bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1325,20 +1324,20 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    org.apache.lucene.document.Document doc2 = r.document(0);
-    Iterator<Fieldable> it = doc2.getFields().iterator();
+    Document doc2 = r.document2(0);
+    Iterator<IndexableField> it = doc2.getFields().iterator();
     assertTrue(it.hasNext());
-    org.apache.lucene.document.Field f = (org.apache.lucene.document.Field) it.next();
+    Field f = (Field) it.next();
     assertEquals(f.name(), "zzz");
     assertEquals(f.stringValue(), "a b c");
 
     assertTrue(it.hasNext());
-    f = (org.apache.lucene.document.Field) it.next();
+    f = (Field) it.next();
     assertEquals(f.name(), "aaa");
     assertEquals(f.stringValue(), "a b c");
 
     assertTrue(it.hasNext());
-    f = (org.apache.lucene.document.Field) it.next();
+    f = (Field) it.next();
     assertEquals(f.name(), "zzz");
     assertEquals(f.stringValue(), "1 2 3");
     assertFalse(it.hasNext());
@@ -1669,7 +1668,7 @@ public class TestIndexWriter extends LuceneTestCase {
           }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
-          org.apache.lucene.document.Document doc = r.document(hits.scoreDocs[0].doc);
+          Document doc = r.document2(hits.scoreDocs[0].doc);
           Document docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));

@@ -34,6 +34,11 @@ public final class BinaryField extends Field {
     super(name, BinaryField.TYPE_STORED, value, offset, length);
     this.isBinary = true;
   }
+  
+  public BinaryField(String name, FieldType custom, byte[] value) {
+	  super(name, custom, value);
+	  this.isBinary = true;
+  }
     
   public boolean isNumeric() {
     return false;

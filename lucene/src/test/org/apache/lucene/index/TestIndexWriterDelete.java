@@ -32,7 +32,6 @@ import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.document2.StringField;
 import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;

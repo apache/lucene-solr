@@ -22,7 +22,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.index.Document2StoredFieldVisitor;
 import org.apache.lucene.index.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.IndexReader;
 
@@ -56,9 +57,9 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   @Override
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
     if (fieldsToLoad == null) {
-      return ir.document(id);
+      return ir.document2(id);
     } else {
-      DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
+      Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(fieldsToLoad);
       ir.document(id, visitor);
       return visitor.getDocument();
     }

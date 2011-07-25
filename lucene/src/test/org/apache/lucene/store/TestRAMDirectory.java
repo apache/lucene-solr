@@ -88,7 +88,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
-      org.apache.lucene.document.Document doc = searcher.doc(i);
+      Document doc = searcher.doc2(i);
       assertTrue(doc.getField("content") != null);
     }
 

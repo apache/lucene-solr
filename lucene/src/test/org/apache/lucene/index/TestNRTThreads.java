@@ -31,9 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -72,19 +74,18 @@ public class TestNRTThreads extends LuceneTestCase {
   // TODO: is there a pre-existing way to do this!!!
   private Document cloneDoc(Document doc1) {
     final Document doc2 = new Document();
-    for(Fieldable f : doc1.getFields()) {
-      Field field1 = (Field) f;
+    for(IndexableField field1 : doc1.getFields()) {
+      
+      FieldType ft = new FieldType();
+      ft.setStored(field1.stored());
+      ft.setIndexed(field1.indexed());
+      ft.setTokenized(field1.tokenized());
+      ft.setOmitNorms(field1.omitNorms());
+      ft.setOmitTermFreqAndPositions(field1.omitTermFreqAndPositions());
       
       Field field2 = new Field(field1.name(),
-                               field1.stringValue(),
-                               field1.isStored() ? Field.Store.YES : Field.Store.NO,
-                               field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
-      if (field1.getOmitNorms()) {
-        field2.setOmitNorms(true);
-      }
-      if (field1.getOmitTermFreqAndPositions()) {
-        field2.setOmitTermFreqAndPositions(true);
-      }
+                               ft,
+                               field1.stringValue());
       doc2.add(field2);
     }
 
@@ -133,7 +134,7 @@ public class TestNRTThreads extends LuceneTestCase {
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
           if (delDocs == null || !delDocs.get(docID)) {
-            final Document doc = reader.document(docID);
+            final Document doc = reader.document2(docID);
             sum += doc.getFields().size();
           }
         }
@@ -185,7 +186,7 @@ public class TestNRTThreads extends LuceneTestCase {
                 final String addedField;
                 if (random.nextBoolean()) {
                   addedField = "extra" + random.nextInt(10);
-                  doc.add(new Field(addedField, "a random field", Field.Store.NO, Field.Index.ANALYZED));
+                  doc.add(new TextField(addedField, "a random field"));
                 } else {
                   addedField = null;
                 }
@@ -210,7 +211,7 @@ public class TestNRTThreads extends LuceneTestCase {
                       packID = packCount.getAndIncrement() + "";
                     }
 
-                    final Field packIDField = newField("packID", packID, Field.Store.YES, Field.Index.NOT_ANALYZED);
+                    final Field packIDField = newField("packID", packID, StringField.TYPE_STORED);
                     final List<String> docIDs = new ArrayList<String>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
                     final List<Document> docsList = new ArrayList<Document>();
@@ -524,7 +525,7 @@ public class TestNRTThreads extends LuceneTestCase {
             startDocID = docID;
           }
           lastDocID = docID;
-          final Document doc = s.doc(docID);
+          final Document doc = s.doc2(docID);
           assertEquals(subDocs.packID, doc.get("packID"));
         }
 

@@ -297,8 +297,4 @@ class DocHelper {
   public static int numFields(Document doc) {
     return doc.size();
   }
-  
-  public static int numFields2(org.apache.lucene.document.Document doc) {
-    return doc.getFields().size();
-  }
 }

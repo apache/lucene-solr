@@ -600,7 +600,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * calls back to TextResponseWriter to write the field value
    */
-  public abstract void write(TextResponseWriter writer, String name, Fieldable f) throws IOException;
+  public abstract void write(TextResponseWriter writer, String name, IndexableField f) throws IOException;
 
 
   /**

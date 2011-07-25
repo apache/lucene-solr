@@ -30,7 +30,7 @@ import org.apache.lucene.util.*;
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.Field;
 import org.apache.lucene.document2.FieldType;
@@ -133,8 +133,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
-  static Comparator<Fieldable> fieldNameComparator = new Comparator<Fieldable>() {
-    public int compare(Fieldable o1, Fieldable o2) {
+  static Comparator<IndexableField> fieldNameComparator = new Comparator<IndexableField>() {
+    public int compare(IndexableField o1, IndexableField o2) {
       return o1.name().compareTo(o2.name());
     }
   };
@@ -294,7 +294,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits delDocs = sub.getDeletedDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
-        org.apache.lucene.document.Document doc = sub.document(docID);
+        Document doc = sub.document2(docID);
         if (delDocs == null || !delDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.get("id"));
         } else {
@@ -383,7 +383,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       // verify stored fields are equivalent
       try {
-        verifyEquals(r1.document(id1), r2.document(id2));
+        verifyEquals(r1.document2(id1), r2.document2(id2));
       } catch (Throwable t) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2 + " term="+ term);
         System.out.println("  d1=" + r1.document(id1));
@@ -516,9 +516,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  public static void verifyEquals(org.apache.lucene.document.Document d1, org.apache.lucene.document.Document d2) {
-    List<Fieldable> ff1 = d1.getFields();
-    List<Fieldable> ff2 = d2.getFields();
+  public static void verifyEquals(Document d1, Document d2) {
+    List<IndexableField> ff1 = d1.getFields();
+    List<IndexableField> ff2 = d2.getFields();
 
     Collections.sort(ff1, fieldNameComparator);
     Collections.sort(ff2, fieldNameComparator);
@@ -526,8 +526,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     assertEquals(ff1 + " : " + ff2, ff1.size(), ff2.size());
 
     for (int i=0; i<ff1.size(); i++) {
-      Fieldable f1 = ff1.get(i);
-      Fieldable f2 = ff2.get(i);
+      IndexableField f1 = ff1.get(i);
+      IndexableField f2 = ff2.get(i);
       if (f1.binaryValue(null) != null) {
         assert(f2.binaryValue(null) != null);
       } else {

@@ -119,7 +119,7 @@ public final class SchemaField extends FieldProperties {
       + "}";
   }
 
-  public void write(TextResponseWriter writer, String name, Fieldable val) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField val) throws IOException {
     // name is passed in because it may be null if name should not be used.
     type.write(writer,name,val);
   }

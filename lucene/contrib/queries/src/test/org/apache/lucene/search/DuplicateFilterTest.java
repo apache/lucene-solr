@@ -93,7 +93,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
 		for(int i=0;i<hits.length;i++)
 		{
-		  org.apache.lucene.document.Document d=searcher.doc(hits[i].doc);
+		  Document d=searcher.doc2(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			assertFalse("No duplicate urls should be returned",results.contains(url));
 			results.add(url);
@@ -107,7 +107,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		boolean dupsFound=false;
 		for(int i=0;i<hits.length;i++)
 		{
-		  org.apache.lucene.document.Document d=searcher.doc(hits[i].doc);
+		  Document d=searcher.doc2(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			if(!dupsFound)
 				dupsFound=results.contains(url);
@@ -125,7 +125,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		assertTrue("Filtered searching should have found some matches",hits.length>0);
 		for(int i=0;i<hits.length;i++)
 		{
-		  org.apache.lucene.document.Document d=searcher.doc(hits[i].doc);
+		  Document d=searcher.doc2(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			assertFalse("No duplicate urls should be returned",results.contains(url));
 			results.add(url);
@@ -140,7 +140,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		assertTrue("Filtered searching should have found some matches",hits.length>0);
 		for(int i=0;i<hits.length;i++)
 		{
-		  org.apache.lucene.document.Document d=searcher.doc(hits[i].doc);
+		  Document d=searcher.doc2(hits[i].doc);
 			String url=d.get(KEY_FIELD);
                         DocsEnum td = MultiFields.getTermDocsEnum(reader,
                                                                   MultiFields.getDeletedDocs(reader),
@@ -164,7 +164,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		assertTrue("Filtered searching should have found some matches",hits.length>0);
 		for(int i=0;i<hits.length;i++)
 		{
-		  org.apache.lucene.document.Document d=searcher.doc(hits[i].doc);
+		  Document d=searcher.doc2(hits[i].doc);
 			String url=d.get(KEY_FIELD);
                         DocsEnum td = MultiFields.getTermDocsEnum(reader,
                                                                   MultiFields.getDeletedDocs(reader),

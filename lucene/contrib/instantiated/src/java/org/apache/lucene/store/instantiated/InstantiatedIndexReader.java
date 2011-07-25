@@ -275,12 +275,17 @@ public class InstantiatedIndexReader extends IndexReader {
   public Document document(int n) throws IOException {
     return getIndex().getDocumentsByNumber()[n].getDocument();
   }
+  
+  @Override
+  public org.apache.lucene.document2.Document document2(int n) throws IOException {
+    return getIndex().getDocumentsByNumber()[n].getDocument2();
+  }
 
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     throw new UnsupportedOperationException();
   }
-
+  
   /**
    * never ever touch these values. it is the true values, unless norms have
    * been touched.

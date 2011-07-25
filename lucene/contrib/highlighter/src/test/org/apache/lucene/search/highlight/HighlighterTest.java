@@ -112,7 +112,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      org.apache.lucene.document.Document doc = searcher.doc(hits.scoreDocs[i].doc);
+      Document doc = searcher.doc2(hits.scoreDocs[i].doc);
       String storedField = doc.get(FIELD_NAME);
 
       TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -1568,7 +1568,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TopDocs hits = searcher.search(query, null, 10);
     for( int i = 0; i < hits.totalHits; i++ ){
-      org.apache.lucene.document.Document doc = searcher.doc( hits.scoreDocs[i].doc );
+      Document doc = searcher.doc2( hits.scoreDocs[i].doc );
       String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
       if (VERBOSE) System.out.println("result:" +  result);
       assertEquals("more <B>random</B> words for second field", result);

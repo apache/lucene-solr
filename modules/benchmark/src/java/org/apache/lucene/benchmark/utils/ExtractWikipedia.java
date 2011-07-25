@@ -25,7 +25,7 @@ import java.util.Properties;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 
 /**
  * Extract the downloaded Wikipedia dump into separate files for indexing.

@@ -84,7 +84,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)
     {
-      org.apache.lucene.document.Document temp = reader.document(i);
+      Document temp = reader.document2(i);
       //System.out.println("doc "+i+"="+temp.getField("count").stringValue());
       //compare the index doc number to the value that it should be
       if (!temp.getField("count").stringValue().equals((i + startAt) + ""))

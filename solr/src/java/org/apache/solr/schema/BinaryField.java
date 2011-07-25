@@ -36,7 +36,7 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toBase64String(toObject(f)), false);
   }
 

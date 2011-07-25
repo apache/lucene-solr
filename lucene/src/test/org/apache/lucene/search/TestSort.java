@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -350,18 +351,18 @@ public class TestSort extends LuceneTestCase {
     int lastDocId = 0;
     boolean fail = false;
     for (int x = 0; x < n; ++x) {
-      org.apache.lucene.document.Document doc2 = searcher.doc(result[x].doc);
-      String[] v = doc2.getValues("tracer");
-      String[] v2 = doc2.getValues("tracer2");
+      Document doc2 = searcher.doc2(result[x].doc);
+      IndexableField[] v = doc2.getFields("tracer");
+      IndexableField[] v2 = doc2.getFields("tracer2");
       for (int j = 0; j < v.length; ++j) {
         if (last != null) {
-          int cmp = v[j].compareTo(last);
+          int cmp = v[j].stringValue().compareTo(last);
           if (!(cmp >= 0)) { // ensure first field is in order
             fail = true;
             System.out.println("fail:" + v[j] + " < " + last);
           }
           if (cmp == 0) { // ensure second field is in reverse order
-            cmp = v2[j].compareTo(lastSub);
+            cmp = v2[j].stringValue().compareTo(lastSub);
             if (cmp > 0) {
               fail = true;
               System.out.println("rev field fail:" + v2[j] + " > " + lastSub);
@@ -373,8 +374,8 @@ public class TestSort extends LuceneTestCase {
             }
           }
         }
-        last = v[j];
-        lastSub = v2[j];
+        last = v[j].stringValue();
+        lastSub = v2[j].stringValue();
         lastDocId = result[x].doc;
         buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+") ");
       }
@@ -956,10 +957,10 @@ public class TestSort extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i=0; i<n; ++i) {
-      org.apache.lucene.document.Document doc = searcher.doc(result[i].doc);
-      String[] v = doc.getValues("tracer");
+      Document doc = searcher.doc2(result[i].doc);
+      IndexableField[] v = doc.getFields("tracer");
       for (int j=0; j<v.length; ++j) {
-        buff.append (v[j]);
+        buff.append (v[j].stringValue());
       }
     }
     assertEquals (msg, expectedResult, buff.toString());

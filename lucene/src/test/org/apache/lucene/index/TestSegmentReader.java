@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.store.Directory;
 
@@ -61,13 +60,13 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testDocument() throws IOException {
     assertTrue(reader.numDocs() == 1);
     assertTrue(reader.maxDoc() >= 1);
-    org.apache.lucene.document.Document result = reader.document(0);
+    Document result = reader.document2(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
-    assertTrue(DocHelper.numFields2(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
+    assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
-    List<Fieldable> fields = result.getFields();
-    for (final Fieldable field : fields ) { 
+    List<IndexableField> fields = result.getFields();
+    for (final IndexableField field : fields ) { 
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }

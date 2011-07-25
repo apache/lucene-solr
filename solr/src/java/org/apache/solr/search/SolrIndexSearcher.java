@@ -17,10 +17,10 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.FieldSelector;
+import org.apache.lucene.document2.FieldSelectorResult;
+import org.apache.lucene.document2.FieldSelectorVisitor;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
@@ -403,7 +403,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * Retrieve the {@link Document} instance corresponding to the document id.
    */
   @Override
-  public Document doc(int i) throws IOException {
+  public Document doc2(int i) throws IOException {
     return doc(i, (Set<String>)null);
   }
 
@@ -432,7 +432,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
 
     if(!enableLazyFieldLoading || fields == null) {
-      d = getIndexReader().document(i);
+      d = getIndexReader().document2(i);
     } else {
       final FieldSelectorVisitor visitor = new FieldSelectorVisitor(new SetNonLazyFieldSelector(fields));
       getIndexReader().document(i, visitor);

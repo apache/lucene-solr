@@ -77,7 +77,7 @@ public class BCDIntField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeInt(name,toExternal(f));
   }
 }

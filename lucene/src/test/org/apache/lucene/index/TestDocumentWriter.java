@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.Field;
 import org.apache.lucene.document2.FieldType;
@@ -69,19 +68,19 @@ public class TestDocumentWriter extends LuceneTestCase {
     //After adding the document, we should be able to read it back in
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(reader != null);
-    org.apache.lucene.document.Document doc = reader.document(0);
+    Document doc = reader.document2(0);
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
-    Fieldable [] fields = doc.getFields("textField2");
+    IndexableField [] fields = doc.getFields("textField2");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
-    assertTrue(fields[0].isTermVectorStored());
+    assertTrue(fields[0].storeTermVectors());
 
     fields = doc.getFields("textField1");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_1_TEXT));
-    assertFalse(fields[0].isTermVectorStored());
+    assertFalse(fields[0].storeTermVectors());
 
     fields = doc.getFields("keyField");
     assertTrue(fields != null && fields.length == 1);

@@ -954,7 +954,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  #document(int)}.  If you want to load a subset, use
    *  {@link DocumentStoredFieldVisitor}.  */
   public abstract void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
-
+  
   // nocommit -- the new document(int docID) API should
   // clearly advertise that only field types/values are
   // preserved -- index time metadata like boost, omitNorm,
@@ -977,6 +977,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+    document(docID, visitor);
+    return visitor.getDocument();
+  }
+
+  public org.apache.lucene.document2.Document document2(int docID) throws CorruptIndexException, IOException {
+    ensureOpen();
+    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
   }

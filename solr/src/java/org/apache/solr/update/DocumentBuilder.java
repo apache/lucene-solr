@@ -338,10 +338,10 @@ public class DocumentBuilder {
    * 
    * @since solr 1.3
    */
-  public SolrDocument loadStoredFields( SolrDocument doc, org.apache.lucene.document.Document luceneDoc  )
+  public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
   {
-    for( Fieldable field : luceneDoc.getFields() ) {
-      if( field.isStored() ) {
+    for( IndexableField field : luceneDoc) {
+      if( field.stored() ) {
         SchemaField sf = schema.getField( field.name() );
         if( !schema.isCopyFieldTarget( sf ) ) {
           doc.addField( field.name(), sf.getType().toObject( field ) );

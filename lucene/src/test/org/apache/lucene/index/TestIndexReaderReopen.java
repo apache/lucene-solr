@@ -188,7 +188,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            org.apache.lucene.document.Document prevItereationDoc = reader.document(n);
+            Document prevItereationDoc = reader.document2(n);
             assertNotNull(prevItereationDoc);
             String id = prevItereationDoc.get("id");
             assertEquals(k+"_"+j, id);

@@ -25,9 +25,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.index.IndexableField;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -65,11 +65,11 @@ public class ReadTokensTask extends PerfTask {
 
   @Override
   public int doLogic() throws Exception {
-    List<Fieldable> fields = doc.getFields();
+    List<IndexableField> fields = doc.getFields();
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
-    for(final Fieldable field : fields) {
-      if (!field.isTokenized() || field instanceof NumericField) continue;
+    for(final IndexableField field : fields) {
+      if (!field.tokenized() || field instanceof NumericField) continue;
       
       final TokenStream stream;
       final TokenStream streamValue = field.tokenStreamValue();

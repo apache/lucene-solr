@@ -1229,7 +1229,7 @@ public class MemoryIndex {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       // no-op: there are no stored fields
     }
-
+    
     @Override
     public boolean hasDeletions() {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
