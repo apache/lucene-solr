@@ -387,7 +387,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
       ordSet.clear();
-      segmentGroupHeads = new GroupHead[groupIndex.size()];
+      segmentGroupHeads = new GroupHead[groupIndex.numOrd()];
       for (GroupHead collectedGroup : collectedGroups) {
         int groupOrd = groupIndex.binarySearchLookup(collectedGroup.groupValue, scratchBytesRef);
         if (groupOrd >= 0) {
