@@ -26,16 +26,32 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 
+/**
+ * This class should be extended by nodes intending to represent range queries. 
+ *
+ * @param <T> the type of the range query bounds (lower and upper)
+ */
 public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
     extends QueryNodeImpl implements FieldableNode {
   
   private boolean lowerInclusive, upperInclusive;
   
+  /**
+   * Constructs an {@link AbstractRangeQueryNode}, it should be invoked only by
+   * its extenders.
+   */
   protected AbstractRangeQueryNode() {
     setLeaf(false);
     allocate();
   }
   
+  /**
+   * Returns the field associated with this node.
+   * 
+   * @return the field associated with this node
+   * 
+   * @see FieldableNode
+   */
   public CharSequence getField() {
     CharSequence field = null;
     T lower = getLowerBound();
@@ -52,6 +68,11 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
     
   }
   
+  /**
+   * Sets the field associated with this node.
+   * 
+   * @param fieldName the field associated with this node
+   */
   public void setField(CharSequence fieldName) {
     T lower = getLowerBound();
     T upper = getUpperBound();
@@ -66,24 +87,57 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
     
   }
   
+  /**
+   * Returns the lower bound node.
+   * 
+   * @return the lower bound node.
+   */
   @SuppressWarnings("unchecked")
   public T getLowerBound() {
     return (T) getChildren().get(0);
   }
   
+  /**
+   * Returns the upper bound node.
+   * 
+   * @return the upper bound node.
+   */
   @SuppressWarnings("unchecked")
   public T getUpperBound() {
     return (T) getChildren().get(1);
   }
   
+  /**
+   * Returns whether the lower bound is inclusive or exclusive.
+   * 
+   * @return <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
+   */
   public boolean isLowerInclusive() {
     return lowerInclusive;
   }
   
+  /**
+   * Returns whether the upper bound is inclusive or exclusive.
+   * 
+   * @return <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
+   */
   public boolean isUpperInclusive() {
     return upperInclusive;
   }
   
+  /**
+   * Sets the lower and upper bounds.
+   * 
+   * @param lower the lower bound, <code>null</code> if lower bound is open
+   * @param upper the upper bound, <code>null</code> if upper bound is open
+   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
+   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
+   * 
+   * @see #getLowerBound()
+   * @see #getUpperBound()
+   * @see #isLowerInclusive()
+   * @see #isUpperInclusive()
+   */
   public void setBounds(T lower, T upper, boolean lowerInclusive,
       boolean upperInclusive) {
     

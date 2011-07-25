@@ -18,19 +18,32 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
  */
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
+import org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.TermQuery;
 
 /**
- * Builds a {@link TermQuery} object from a {@link FieldQueryNode} object.
+ * This builder does nothing. Commonly used for {@link QueryNode} objects that
+ * are built by its parent's builder.
+ * 
+ * @see StandardQueryBuilder
+ * @see QueryTreeBuilder
  */
 public class DummyQueryNodeBuilder implements StandardQueryBuilder {
 
+  /**
+   * Constructs a {@link DummyQueryNodeBuilder} object.
+   */
   public DummyQueryNodeBuilder() {
     // empty constructor
   }
 
+  /**
+   * Always return <code>null</code>.
+   * 
+   * return <code>null</code>
+   */
   public TermQuery build(QueryNode queryNode) throws QueryNodeException {
     return null;
   }

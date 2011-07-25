@@ -27,6 +27,7 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -38,8 +39,25 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
 
+/**
+ * This processor is used to convert {@link ParametricRangeQueryNode}s to
+ * {@link NumericRangeQueryNode}s. It looks for
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} set in the {@link FieldConfig} of
+ * every {@link ParametricRangeQueryNode} found. If
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} is found, it considers that
+ * {@link ParametricRangeQueryNode} to be a numeric range query and convert it to
+ * {@link NumericRangeQueryNode}.
+ * 
+ * @see ConfigurationKeys#NUMERIC_CONFIG
+ * @see ParametricRangeQueryNode
+ * @see NumericConfig
+ * @see NumericRangeQueryNode
+ */
 public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   
+  /**
+   * Constructs an empty {@link NumericRangeQueryNode} object.
+   */
   public NumericRangeQueryNodeProcessor() {
   // empty constructor
   }

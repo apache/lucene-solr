@@ -28,8 +28,17 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
 import org.apache.lucene.search.NumericRangeQuery;
 
+/**
+ * Builds {@link NumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
+ *
+ * @see NumericRangeQuery
+ * @see NumericRangeQueryNode
+ */
 public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   
+  /**
+   * Constructs a {@link NumericRangeQueryNodeBuilder} object.
+   */
   public NumericRangeQueryNodeBuilder() {
   // empty constructor
   }

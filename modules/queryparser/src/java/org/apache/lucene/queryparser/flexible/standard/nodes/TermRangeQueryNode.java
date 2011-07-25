@@ -20,13 +20,23 @@ package org.apache.lucene.queryparser.flexible.standard.nodes;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 
 /**
- * This query node represents a range query.
+ * This query node represents a range query composed by {@link FieldQueryNode}
+ * bounds, which means the bound values are strings.
  * 
- * @see org.apache.lucene.queryparser.flexible.standard.processors.ParametricRangeQueryNodeProcessor
- * @see org.apache.lucene.search.TermRangeQuery
+ * @see FieldQueryNode
+ * @see AbstractRangeQueryNode
  */
 public class TermRangeQueryNode extends AbstractRangeQueryNode<FieldQueryNode> {
   
+  /**
+   * Constructs a {@link TermRangeQueryNode} object using the given
+   * {@link FieldQueryNode} as its bounds.
+   * 
+   * @param lower the lower bound
+   * @param upper the upper bound
+   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
+   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
+   */
   public TermRangeQueryNode(FieldQueryNode lower, FieldQueryNode upper,
       boolean lowerInclusive, boolean upperInclusive) {
     setBounds(lower, upper, lowerInclusive, upperInclusive);
