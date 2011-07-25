@@ -78,13 +78,13 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   ***/
 
 
-  private ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
-  private volatile Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
-  private long snapshotCount;
-  private long committedModelClock;
+  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
+  Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
+  long snapshotCount;
+  long committedModelClock;
   volatile int lastId;
-  private final String field = "val_l";
-  private volatile Throwable ex;
+  final String field = "val_l";
+  volatile Throwable ex;
 
   @Test
   public void testStressGetRealtime() throws Exception {
@@ -137,7 +137,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   Map<Integer,Long> newCommittedModel;
                   long version;
 
-                  synchronized(this) {
+                  synchronized(TestRealTimeGet.this) {
                     newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
                     version = snapshotCount++;
                   }
@@ -147,7 +147,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   else
                     assertU(commit());
 
-                  synchronized(this) {
+                  synchronized(TestRealTimeGet.this) {
                     // install this snapshot only if it's newer than the current one
                     if (version >= committedModelClock) {
                       committedModel = newCommittedModel;
@@ -202,7 +202,9 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               if (realTime) {
                 val = model.get(id);
               } else {
-                val = committedModel.get(id);
+                synchronized(TestRealTimeGet.this) {
+                  val = committedModel.get(id);
+                }
               }
 
               SolrQueryRequest sreq;
