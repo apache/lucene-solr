@@ -17,6 +17,22 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
    artifacts are available in Maven repository layout here:
    
       <https://builds.apache.org/hudson/job/Lucene-Solr-Maven-trunk/lastSuccessfulBuild/artifact/maven_artifacts/>
+      
+   An example POM snippet:
+   
+     <project ...>
+       ...
+       <repositories>
+         ...
+         <repository>
+           <id>lucene-solr-jenkins-trunk</id>
+           <name>Lucene/Solr Jenkins trunk</name>
+           <url>https://builds.apache.org/job/Lucene-Solr-Maven-trunk/lastSuccessfulBuild/artifact/maven_artifacts</url>
+           <layout>default</layout>
+           <snapshots>
+             <enabled>true</enabled>
+           </snapshots>
+         </repository>
 
 
 B. How to generate Lucene Maven artifacts
@@ -98,21 +114,28 @@ D. How to use Maven to build Lucene/Solr
    Some example Maven commands you can use after you perform the above
    preparatory steps:
 
-   - Compile, package, and install all artifacts to your local repository:
+   - Compile, package, and install all binary artifacts to your local
+     repository:
 
          mvn install
 
      After compiling and packaging, but before installing each module's 
      artifact, the above command will also run all the module's tests.
 
-     To compile, package and install all artifacts without running any tests:
+   - Compile, package, and install all binary artifacts to your local
+     repository, without running any tests:
 
          mvn -DskipTests install
 
-   - Run tests:
+   - Compile, package, and install all binary and source artifacts to your
+     local repository, without running any tests:
+
+         mvn -DskipTests source:jar-no-fork install
+
+   - Run all tests:
 
          mvn test
 
-     To run all test methods defined in a test class:
+   - Run all test methods defined in a test class:
 
          mvn -Dtest=TestClassName test
