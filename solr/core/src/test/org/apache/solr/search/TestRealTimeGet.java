@@ -84,7 +84,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   long committedModelClock;
   volatile int lastId;
   final String field = "val_l";
-  volatile Throwable ex;
 
   @Test
   public void testStressGetRealtime() throws Exception {
@@ -118,61 +117,56 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         @Override
         public void run() {
-          try {
-            while (operations.get() > 0) {
-              int oper = rand.nextInt(100);
-              int id = rand.nextInt(ndocs);
-              Long val = model.get(id);
-              long nextVal = Math.abs(val)+1;
+          while (operations.get() > 0) {
+            int oper = rand.nextInt(100);
+            int id = rand.nextInt(ndocs);
+            Long val = model.get(id);
+            long nextVal = Math.abs(val)+1;
 
-              // set the lastId before we actually change it sometimes to try and
-              // uncover more race conditions between writing and reading
-              boolean before = random.nextBoolean();
-              if (before) {
-                lastId = id;
-              }
+            // set the lastId before we actually change it sometimes to try and
+            // uncover more race conditions between writing and reading
+            boolean before = random.nextBoolean();
+            if (before) {
+              lastId = id;
+            }
 
-              if (oper < commitPercent) {
-                if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
-                  Map<Integer,Long> newCommittedModel;
-                  long version;
+            if (oper < commitPercent) {
+              if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
+                Map<Integer,Long> newCommittedModel;
+                long version;
 
-                  synchronized(TestRealTimeGet.this) {
-                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
-                    version = snapshotCount++;
-                  }
+                synchronized(TestRealTimeGet.this) {
+                  newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                  version = snapshotCount++;
+                }
 
-                  if (rand.nextInt(100) < softCommitPercent)
-                    assertU(h.commit("softCommit","true"));
-                  else
-                    assertU(commit());
+                if (rand.nextInt(100) < softCommitPercent)
+                  assertU(h.commit("softCommit","true"));
+                else
+                  assertU(commit());
 
-                  synchronized(TestRealTimeGet.this) {
-                    // install this snapshot only if it's newer than the current one
-                    if (version >= committedModelClock) {
-                      committedModel = newCommittedModel;
-                      committedModelClock = version;
-                    }
+                synchronized(TestRealTimeGet.this) {
+                  // install this snapshot only if it's newer than the current one
+                  if (version >= committedModelClock) {
+                    committedModel = newCommittedModel;
+                    committedModelClock = version;
                   }
                 }
-                numCommitting.decrementAndGet();
-              } else if (oper < commitPercent + deletePercent) {
-                assertU("<delete><id>" + id + "</id></delete>");
-                model.put(id, -nextVal);
-              } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
-                assertU("<delete><query>id:" + id + "</query></delete>");
-                model.put(id, -nextVal);
-              } else {
-                assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
               }
-
-              if (!before) {
-                lastId = id;
-              }
+              numCommitting.decrementAndGet();
+            } else if (oper < commitPercent + deletePercent) {
+              assertU("<delete><id>" + id + "</id></delete>");
+              model.put(id, -nextVal);
+            } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+              assertU("<delete><query>id:" + id + "</query></delete>");
+              model.put(id, -nextVal);
+            } else {
+              assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
             }
-          } catch (Throwable e) {
-            ex = e;
-            SolrException.log(log,e);
+
+            if (!before) {
+              lastId = id;
+            }
           }
         }
       };
@@ -187,33 +181,33 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         @Override
         public void run() {
-          try {
-            while (operations.decrementAndGet() >= 0) {
-              int oper = rand.nextInt(100);
-              // bias toward a recently changed doc
-              int id = rand.nextInt(100) < 25 ? lastId : rand.nextInt(ndocs);
+          while (operations.decrementAndGet() >= 0) {
+            int oper = rand.nextInt(100);
+            // bias toward a recently changed doc
+            int id = rand.nextInt(100) < 25 ? lastId : rand.nextInt(ndocs);
 
-              // when indexing, we update the index, then the model
-              // so when querying, we should first check the model, and then the index
+            // when indexing, we update the index, then the model
+            // so when querying, we should first check the model, and then the index
 
-              boolean realTime = rand.nextInt(100) < percentRealtimeQuery;
-              long val;
+            boolean realTime = rand.nextInt(100) < percentRealtimeQuery;
+            long val;
 
-              if (realTime) {
-                val = model.get(id);
-              } else {
-                synchronized(TestRealTimeGet.this) {
-                  val = committedModel.get(id);
-                }
+            if (realTime) {
+              val = model.get(id);
+            } else {
+              synchronized(TestRealTimeGet.this) {
+                val = committedModel.get(id);
               }
+            }
 
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+            SolrQueryRequest sreq;
+            if (realTime) {
+              sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
+            } else {
+              sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
+            }
 
+            try {
               String response = h.query(sreq);
               Map rsp = (Map)ObjectBuilder.fromJSON(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
@@ -224,12 +218,9 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
                 assertTrue(foundVal >= Math.abs(val));
               }
+            } catch (Exception e) {
+              fail(e.toString());
             }
-          }
-          catch (Throwable e) {
-            ex = e;
-            operations.set(-1L);
-            SolrException.log(log,e);
           }
         }
       };
@@ -245,9 +236,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     for (Thread thread : threads) {
       thread.join();
     }
-
-    assertNull(ex);
-
   }
 
 }
