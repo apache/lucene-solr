@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 
@@ -83,15 +82,12 @@ public final class SchemaField extends FieldProperties {
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
   public boolean omitNorms() { return (properties & OMIT_NORMS)!=0; }
 
-  public IndexOptions indexOptions() { 
-    if ((properties & OMIT_TF_POSITIONS) != 0) {
-      return IndexOptions.DOCS_ONLY;
-    } else if ((properties & OMIT_POSITIONS) != 0) {
-      return IndexOptions.DOCS_AND_FREQS;
-    } else {
-      return IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    }
-  }
+  /** @deprecated Use {@link #omitTermFreqAndPositions} */
+  @Deprecated
+  public boolean omitTf() { return omitTermFreqAndPositions(); }
+
+  public boolean omitTermFreqAndPositions() { return (properties & OMIT_TF_POSITIONS)!=0; }
+  public boolean omitPositions() { return (properties & OMIT_POSITIONS)!=0; }
 
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
