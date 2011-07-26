@@ -164,6 +164,7 @@ public final class IndexWriterConfig implements Cloneable {
     } else {
       mergePolicy = new LogByteSizeMergePolicy();
     }
+    flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = DEFAULT_READER_POOLING;
     indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool();
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;

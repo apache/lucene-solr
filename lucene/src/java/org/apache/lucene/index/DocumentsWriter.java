@@ -134,12 +134,8 @@ final class DocumentsWriter {
     this.perThreadPool = config.getIndexerThreadPool();
     this.chain = config.getIndexingChain();
     this.perThreadPool.initialize(this, globalFieldNumbers, config);
-    final FlushPolicy configuredPolicy = config.getFlushPolicy();
-    if (configuredPolicy == null) {
-      flushPolicy = new FlushByRamOrCountsPolicy();
-    } else {
-      flushPolicy = configuredPolicy;
-    }
+    flushPolicy = config.getFlushPolicy();
+    assert flushPolicy != null;
     flushPolicy.init(this);
     flushControl = new DocumentsWriterFlushControl(this, config);
   }
