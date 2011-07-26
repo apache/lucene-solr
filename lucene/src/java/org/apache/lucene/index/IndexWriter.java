@@ -4842,29 +4842,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
 
+      docCount += docInc;
+      delCount += delInc;
+
       // skipWait is only used when a thread is BOTH adding
       // a doc and buffering a del term, and, the adding of
       // the doc already triggered a flush
       if (skipWait) {
-        docCount += docInc;
-        delCount += delInc;
         return false;
       }
 
       final int maxBufferedDocs = config.getMaxBufferedDocs();
       if (maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-          (docCount+docInc) >= maxBufferedDocs) {
+          docCount >= maxBufferedDocs) {
         return setFlushPending("maxBufferedDocs", true);
       }
-      docCount += docInc;
 
       final int maxBufferedDeleteTerms = config.getMaxBufferedDeleteTerms();
       if (maxBufferedDeleteTerms != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
-          (delCount+delInc) >= maxBufferedDeleteTerms) {
+          delCount >= maxBufferedDeleteTerms) {
         flushDeletes = true;
         return setFlushPending("maxBufferedDeleteTerms", true);
       }
-      delCount += delInc;
 
       return flushByRAMUsage("add delete/doc");
     }

@@ -30,6 +30,9 @@ Bug fixes
   block-add (IndexWriter.add/updateDocuments) methods.  (Robert Muir,
   Mike McCandless)
 
+* LUCENE-3340: Fixed case where IndexWriter was not flushing at
+  exactly maxBufferedDeleteTerms (Mike McCandless)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 

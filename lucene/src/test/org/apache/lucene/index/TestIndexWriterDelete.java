@@ -1007,6 +1007,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
                                     setMaxBufferedDeleteTerms(flushAtDelCount).setMaxBufferedDocs(1000).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
     w.setInfoStream(VERBOSE ? System.out : null);
+    if (VERBOSE) {
+      System.out.println("TEST: flush @ " + flushAtDelCount + " buffered delete terms");
+    }
     int count = 0;
     while(true) {
       Document doc = new Document();
@@ -1048,7 +1051,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                     setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false)) {
         @Override
         public void doAfterFlush() {
-          assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 10);
+          assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 7);
           docsInSegment.set(0);
           sawAfterFlush.set(true);
         }
