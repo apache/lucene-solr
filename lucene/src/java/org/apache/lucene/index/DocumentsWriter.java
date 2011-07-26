@@ -843,12 +843,6 @@ final class DocumentsWriter {
     final int startDocID = docState.docID;
     int docID = startDocID;
 
-    // We must delay pausing until the full doc block is
-    // added, else we can hit deadlock if more than one
-    // thread is adding a block and we need to pause when
-    // both are only part way done:
-    boolean doPauseWaitQueue = false;
-
     //System.out.println(Thread.currentThread().getName() + ": A " + docCount);
     for(Document doc : docs) {
       docState.doc = doc;
@@ -879,10 +873,10 @@ final class DocumentsWriter {
           assert perDoc == null || perDoc.docID == docState.docID;
           final boolean doPause;
           if (perDoc != null) {
-            doPauseWaitQueue |= waitQueue.add(perDoc);
+            waitQueue.add(perDoc);
           } else {
             skipDocWriter.docID = docState.docID;
-            doPauseWaitQueue |= waitQueue.add(skipDocWriter);
+            waitQueue.add(skipDocWriter);
           }
         }
 
@@ -940,14 +934,19 @@ final class DocumentsWriter {
           }
         }
       }
-
-      if (doPauseWaitQueue) {
-        waitForWaitQueue();
-      }
     }
-    //System.out.println(Thread.currentThread().getName() + ":   A " + docCount);
 
     synchronized(this) {
+      // We must delay pausing until the full doc block is
+      // added, else we can hit deadlock if more than one
+      // thread is adding a block and we need to pause when
+      // both are only part way done:
+      if (waitQueue.doPause()) {
+        waitForWaitQueue();
+      }
+
+      //System.out.println(Thread.currentThread().getName() + ":   A " + docCount);
+
       if (aborting) {
 
         // We are currently aborting, and another thread is
