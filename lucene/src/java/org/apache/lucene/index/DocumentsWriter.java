@@ -455,6 +455,9 @@ final class DocumentsWriter {
     final double ramBufferSizeMB = indexWriter.getConfig().getRAMBufferSizeMB();
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
         flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
+      if (infoStream != null) {
+        message("force apply deletes bytesUsed=" + flushControl.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*ramBufferSizeMB));
+      }
       applyAllDeletes(deleteQueue);
     }
 
