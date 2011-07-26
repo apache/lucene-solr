@@ -339,7 +339,11 @@ public final class DocumentsWriterFlushControl {
    * Returns the number of delete terms in the global pool
    */
   public int getNumGlobalTermDeletes() {
-    return documentsWriter.deleteQueue.numGlobalTermDeletes();
+    return documentsWriter.deleteQueue.numGlobalTermDeletes() + documentsWriter.indexWriter.bufferedDeletesStream.numTerms();
+  }
+  
+  public long getDeleteBytesUsed() {
+    return documentsWriter.deleteQueue.bytesUsed() + documentsWriter.indexWriter.bufferedDeletesStream.bytesUsed();
   }
 
   synchronized int numFlushingDWPT() {

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -941,6 +943,138 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 2500);
     }
+    w.close();
+    dir.close();
+  }
+
+  // LUCENE-3340: make sure deletes that we don't apply
+  // during flush (ie are just pushed into the stream) are
+  // in fact later flushed due to their RAM usage:
+  public void testFlushPushedDeletesByRAM() throws Exception {
+    Directory dir = newDirectory();
+    // Cannot use RandomIndexWriter because we don't want to
+    // ever call commit() for this test:
+    IndexWriter w = new IndexWriter(dir,
+                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
+                                    .setRAMBufferSizeMB(1.0f).setMaxBufferedDocs(1000).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
+    w.setInfoStream(VERBOSE ? System.out : null);
+    int count = 0;
+    while(true) {
+      Document doc = new Document();
+      doc.add(new Field("id", count+"", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      final Term delTerm;
+      if (count == 1010) {
+        // This is the only delete that applies
+        delTerm = new Term("id", ""+0);
+      } else {
+        // These get buffered, taking up RAM, but delete
+        // nothing when applied:
+        delTerm = new Term("id", "x" + count);
+      }
+      w.updateDocument(delTerm, doc);
+      // Eventually segment 0 should get a del docs:
+      if (dir.fileExists("_0_1.del")) {
+        if (VERBOSE) {
+          System.out.println("TEST: deletes created @ count=" + count);
+        }
+        break;
+      }
+      count++;
+
+      // Today we applyDelets @ count=7199; even if we make
+      // sizable improvements to RAM efficiency of buffered
+      // del term we're unlikely to go over 100K:
+      if (count > 100000) {
+        fail("delete's were not applied");
+      }
+    }
+    w.close();
+    dir.close();
+  }
+
+  // LUCENE-3340: make sure deletes that we don't apply
+  // during flush (ie are just pushed into the stream) are
+  // in fact later flushed due to their RAM usage:
+  public void testFlushPushedDeletesByCount() throws Exception {
+    Directory dir = newDirectory();
+    // Cannot use RandomIndexWriter because we don't want to
+    // ever call commit() for this test:
+    final int flushAtDelCount = atLeast(1020);
+    IndexWriter w = new IndexWriter(dir,
+                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+                                    setMaxBufferedDeleteTerms(flushAtDelCount).setMaxBufferedDocs(1000).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false));
+    w.setInfoStream(VERBOSE ? System.out : null);
+    int count = 0;
+    while(true) {
+      Document doc = new Document();
+      doc.add(new Field("id", count+"", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      final Term delTerm;
+      if (count == 1010) {
+        // This is the only delete that applies
+        delTerm = new Term("id", ""+0);
+      } else {
+        // These get buffered, taking up RAM, but delete
+        // nothing when applied:
+        delTerm = new Term("id", "x" + count);
+      }
+      w.updateDocument(delTerm, doc);
+      // Eventually segment 0 should get a del docs:
+      if (dir.fileExists("_0_1.del")) {
+        break;
+      }
+      count++;
+      if (count > flushAtDelCount) {
+        fail("delete's were not applied at count=" + flushAtDelCount);
+      }
+    }
+    w.close();
+    dir.close();
+  }
+
+  // Make sure buffered (pushed) deletes don't use up so
+  // much RAM that it forces long tail of tiny segments:
+  public void testApplyDeletesOnFlush() throws Exception {
+    Directory dir = newDirectory();
+    // Cannot use RandomIndexWriter because we don't want to
+    // ever call commit() for this test:
+    final AtomicInteger docsInSegment = new AtomicInteger();
+    final AtomicBoolean closing = new AtomicBoolean();
+    final AtomicBoolean sawAfterFlush = new AtomicBoolean();
+    IndexWriter w = new IndexWriter(dir,
+                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
+                                    setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setReaderPooling(false)) {
+        @Override
+        public void doAfterFlush() {
+          assertTrue("only " + docsInSegment.get() + " in segment", closing.get() || docsInSegment.get() >= 10);
+          docsInSegment.set(0);
+          sawAfterFlush.set(true);
+        }
+      };
+    w.setInfoStream(VERBOSE ? System.out : null);
+    int id = 0;
+    while(true) {
+      StringBuilder sb = new StringBuilder();
+      for(int termIDX=0;termIDX<100;termIDX++) {
+        sb.append(' ').append(_TestUtil.randomRealisticUnicodeString(random));
+      }
+      if (id == 500) {
+        w.deleteDocuments(new Term("id", "0"));
+      }
+      Document doc = new Document();
+      doc.add(newField("id", ""+id, Field.Index.NOT_ANALYZED));
+      doc.add(newField("body", sb.toString(), Field.Index.ANALYZED));
+      w.updateDocument(new Term("id", ""+id), doc);
+      docsInSegment.incrementAndGet();
+      if (dir.fileExists("_0_1.del")) {
+        if (VERBOSE) {
+          System.out.println("TEST: deletes created @ id=" + id);
+        }
+        break;
+      }
+      id++;
+    }
+    closing.set(true);
+    assertTrue(sawAfterFlush.get());
     w.close();
     dir.close();
   }

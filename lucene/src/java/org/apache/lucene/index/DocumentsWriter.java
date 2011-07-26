@@ -141,7 +141,7 @@ final class DocumentsWriter {
       flushPolicy = configuredPolicy;
     }
     flushPolicy.init(this);
-    flushControl = new DocumentsWriterFlushControl(this, config );
+    flushControl = new DocumentsWriterFlushControl(this, config);
   }
 
   synchronized void deleteQueries(final Query... queries) throws IOException {
@@ -309,6 +309,9 @@ final class DocumentsWriter {
   }
 
   private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean maybeMerge) throws IOException {
+    if (flushControl.doApplyAllDeletes()) {
+      applyAllDeletes(deleteQueue);
+    }
     if (flushingDWPT != null) {
       maybeMerge |= doFlush(flushingDWPT);
     } else {
@@ -443,10 +446,22 @@ final class DocumentsWriter {
         flushControl.doAfterFlush(flushingDWPT);
         flushingDWPT.checkAndResetHasAborted();
         indexWriter.flushCount.incrementAndGet();
+        indexWriter.doAfterFlush();
       }
      
       flushingDWPT = flushControl.nextPendingFlush();
     }
+
+    // If deletes alone are consuming > 1/2 our RAM
+    // buffer, force them all to apply now. This is to
+    // prevent too-frequent flushing of a long tail of
+    // tiny segments:
+    final double ramBufferSizeMB = indexWriter.getConfig().getRAMBufferSizeMB();
+    if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
+        flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
+      applyAllDeletes(deleteQueue);
+    }
+
     return maybeMerge;
   }
 
@@ -601,5 +616,4 @@ final class DocumentsWriter {
     }
     return true;
   }
- 
 }

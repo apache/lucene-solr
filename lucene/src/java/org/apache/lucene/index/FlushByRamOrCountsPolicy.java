@@ -60,15 +60,11 @@ public class FlushByRamOrCountsPolicy extends FlushPolicy {
       }
     }
     final DocumentsWriter writer = this.writer.get();
-    // If deletes alone are consuming > 1/2 our RAM
-    // buffer, force them all to apply now. This is to
-    // prevent too-frequent flushing of a long tail of
-    // tiny segments:
     if ((flushOnRAM() &&
-        writer.deleteQueue.bytesUsed() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()/2))) {
+        control.getDeleteBytesUsed() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
       control.setApplyAllDeletes();
      if (writer.infoStream != null) {
-       writer.message("force apply deletes bytesUsed=" +  writer.deleteQueue.bytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
+       writer.message("force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
      }
    }
   }
@@ -82,8 +78,12 @@ public class FlushByRamOrCountsPolicy extends FlushPolicy {
       control.setFlushPending(state);
     } else if (flushOnRAM()) {// flush by RAM
       final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
-      final long totalRam = control.activeBytes();
+      final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
       if (totalRam >= limit) {
+        final DocumentsWriter writer = this.writer.get();
+        if (writer.infoStream != null) {
+          writer.message("flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
+        }
         markLargestWriterPending(control, state, totalRam);
       }
     }
