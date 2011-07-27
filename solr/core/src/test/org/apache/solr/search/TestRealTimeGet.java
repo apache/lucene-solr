@@ -20,31 +20,22 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.DocValues;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.Version;
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,6 +90,10 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   final String field = "val_l";
   Object[] syncArr;
 
+
+  final ConcurrentHashMap<Integer,Long> sanityModel = new ConcurrentHashMap<Integer,Long>();
+
+
   private void initModel(int ndocs) {
     snapshotCount = 0;
     committedModelClock = 0;
@@ -127,7 +122,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
     // query variables
     final int percentRealtimeQuery = 0;   // realtime get is not implemented yet
-    final AtomicLong operations = new AtomicLong(10000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(0);  // number of query operations to perform in total       // TODO: once lucene level passes, we can move on to the solr level
     int nReadThreads = 10;
 
     initModel(ndocs);
@@ -282,7 +277,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
 
 
-  volatile IndexReader reader;
+  IndexReader reader;
 
   @Test
   public void testStressLuceneNRT() throws Exception {
@@ -296,7 +291,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int maxConcurrentCommits = 2;   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
 
     // query variables
-    final AtomicLong operations = new AtomicLong(100000);  // number of query operations to perform in total
+    final AtomicLong operations = new AtomicLong(10000000);  // number of query operations to perform in total       // TODO: temporarily high due to lack of stability
     int nReadThreads = 10;
 
     initModel(ndocs);
@@ -324,37 +319,43 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 if (numCommitting.incrementAndGet() <= maxConcurrentCommits) {
                   Map<Integer,Long> newCommittedModel;
                   long version;
+                  IndexReader oldReader;
 
                   synchronized(TestRealTimeGet.this) {
                     newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
                     version = snapshotCount++;
+                    oldReader = reader;
+                    oldReader.incRef();  // increment the reference since we will use this for reopening
                   }
 
                   IndexReader newReader;
                   if (rand.nextInt(100) < softCommitPercent) {
                     // assertU(h.commit("softCommit","true"));
-                    newReader = reader.reopen(writer, true);
+                    newReader = oldReader.reopen(writer, true);
                   } else {
                     // assertU(commit());
                     writer.commit();
-                    newReader = reader.reopen();
+                    newReader = oldReader.reopen();
                   }
 
                   synchronized(TestRealTimeGet.this) {
-                    // install the new reader if it's newest
+                    // install the new reader if it's newest (and check the current version since another reader may have already been installed)
                     if (newReader.getVersion() > reader.getVersion()) {
                       reader.decRef();
                       reader = newReader;
-                    } else if (newReader != reader) {
+
+                      // install this snapshot only if it's newer than the current one
+                      if (version >= committedModelClock) {
+                        committedModel = newCommittedModel;
+                        committedModelClock = version;
+                      }
+
+                    } else if (newReader != oldReader) {
+                      // if the same reader, don't decRef.
                       newReader.decRef();
                     }
 
-                    // install this snapshot only if it's newer than the current one
-                    if (version >= committedModelClock) {
-                      committedModel = newCommittedModel;
-                      committedModelClock = version;
-                    }
-
+                    oldReader.decRef();
                   }
                 }
                 numCommitting.decrementAndGet();
@@ -418,7 +419,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         public void run() {
           try {
             while (operations.decrementAndGet() >= 0) {
-              int oper = rand.nextInt(100);
               // bias toward a recently changed doc
               int id = rand.nextInt(100) < 25 ? lastId : rand.nextInt(ndocs);
 
