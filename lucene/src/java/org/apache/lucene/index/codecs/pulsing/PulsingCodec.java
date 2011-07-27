@@ -66,6 +66,11 @@ public class PulsingCodec extends Codec {
     this(1);
   }
   
+  /** @lucene.internal */
+  public int getFreqCutoff() {
+    return freqCutoff;
+  }
+
   /** Terms with freq <= freqCutoff are inlined into terms
    *  dict. */
   public PulsingCodec(int freqCutoff) {
