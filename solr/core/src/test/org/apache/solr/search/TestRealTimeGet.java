@@ -173,7 +173,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
             // set the lastId before we actually change it sometimes to try and
             // uncover more race conditions between writing and reading
-            boolean before = random.nextBoolean();
+            boolean before = rand.nextBoolean();
             if (before) {
               lastId = id;
             }
@@ -289,6 +289,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int ndocs = 100;
     int nWriteThreads = 10;
     final int maxConcurrentCommits = 2;   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+    final boolean tombstones = false;
 
     // query variables
     final AtomicLong operations = new AtomicLong(10000000);  // number of query operations to perform in total       // TODO: temporarily high due to lack of stability
@@ -368,7 +369,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
               // set the lastId before we actually change it sometimes to try and
               // uncover more race conditions between writing and reading
-              boolean before = random.nextBoolean();
+              boolean before = rand.nextBoolean();
               if (before) {
                 lastId = id;
               }
@@ -381,10 +382,28 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
                 if (oper < commitPercent + deletePercent) {
                   // assertU("<delete><id>" + id + "</id></delete>");
+
+                  // add tombstone first
+                  if (tombstones) {
+                    Document d = new Document();
+                    d.add(new Field("id","-"+Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+                    d.add(new Field(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
+                    writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
+                  }
+
                   writer.deleteDocuments(new Term("id",Integer.toString(id)));
                   model.put(id, -nextVal);
                 } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
                   //assertU("<delete><query>id:" + id + "</query></delete>");
+
+                  // add tombstone first
+                  if (tombstones) {
+                    Document d = new Document();
+                    d.add(new Field("id","-"+Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+                    d.add(new Field(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
+                    writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
+                  }
+
                   writer.deleteDocuments(new TermQuery(new Term("id", Integer.toString(id))));
                   model.put(id, -nextVal);
                 } else {
@@ -393,6 +412,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   d.add(new Field("id",Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
                   d.add(new Field(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
                   writer.updateDocument(new Term("id", Integer.toString(id)), d);
+
+                  if (tombstones) {
+                    // remove tombstone after new addition (this should be optional?)
+                    writer.deleteDocuments(new Term("id","-"+Integer.toString(id)));
+                  }
+
                   model.put(id, nextVal);
                 }
               }
@@ -441,12 +466,25 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               //  sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
               IndexSearcher searcher = new IndexSearcher(r);
               Query q = new TermQuery(new Term("id",Integer.toString(id)));
-              TopDocs results = searcher.search(q, 10);
+              TopDocs results = searcher.search(q, 1);
 
-              if (results.totalHits == 0) {
-                // there's no info we can get back with a delete, so not much we can check without further synchronization
+              if (results.totalHits == 0 && tombstones) {
+                // if we couldn't find the doc, look for it's tombstone
+                q = new TermQuery(new Term("id","-"+Integer.toString(id)));
+                results = searcher.search(q, 1);
+                if (results.totalHits == 0) {
+                  if (val == -1L) {
+                    // expected... no doc was added yet
+                    continue;
+                  }
+                  fail("No documents or tombstones found for id " + id + ", expected at least " + val);
+                }
+              }
+
+              if (results.totalHits == 0 && !tombstones) {
+                // nothing to do - we can't tell anything from a deleted doc without tombstones
               } else {
-                assertEquals(1, results.totalHits);
+                assertEquals(1, results.totalHits);   // we should have found the document, or it's tombstone
                 Document doc = searcher.doc(results.scoreDocs[0].doc);
                 long foundVal = Long.parseLong(doc.get(field));
                 if (foundVal < Math.abs(val)) {
