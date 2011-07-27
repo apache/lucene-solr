@@ -51,7 +51,7 @@ public class Test10KPulsings extends LuceneTestCase {
     // we always run this test with pulsing codec.
     CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
     
-    File f = _TestUtil.getTempDir("10kpulsings");
+    File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
@@ -102,7 +102,7 @@ public class Test10KPulsings extends LuceneTestCase {
     // we always run this test with pulsing codec.
     CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
     
-    File f = _TestUtil.getTempDir("10kpulsings");
+    File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
