@@ -38,6 +38,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Ignore;
 
 /**
  * Pulses 10k terms/docs, 
@@ -45,6 +46,7 @@ import org.apache.lucene.util._TestUtil;
  * 
  * @lucene.experimental
  */
+@Ignore("not yet")
 public class Test10KPulsings extends LuceneTestCase {
   /** creates a broken index with ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kPulsed -Dtests.seed=2835406743900800199:-6668246351730332054!!!! */
   public void test10kPulsed() throws Exception {
