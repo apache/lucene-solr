@@ -217,6 +217,7 @@
   <target name="javadocs" depends="compile-core">
    	<sequential>
       <mkdir dir="${javadoc.dir}"/>
+      <mkdir dir="${dest}/META-INF/"/>
       <invoke-javadoc destdir="${javadoc.dir}"
                       title="${Name} ${version} ${name} API">
         <sources>
