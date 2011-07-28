@@ -23,14 +23,7 @@
 
   <import file="../common-build.xml"/>
 
-  <target name="build-solr" unless="solr.core.compiled">
-    <ant dir="${common-solr.dir}/core" target="compile-test" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="solr.core.compiled" value="true"/>
-  </target>
-
-  <target name="compile-core" depends="build-solr, common.compile-core"/>
+  <target name="compile-core" depends="compile-solr-core,compile-solrj,common-solr.compile-core"/>
 
   <!-- redefine common-solr.test, and exclude 'validate-solr' dependency, since it should only run at solr/ level -->
   <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>

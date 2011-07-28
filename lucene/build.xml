@@ -561,4 +561,8 @@
             title="Lucene Search Engine: Test Framework" />
   </target>
 
+  <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-core" unless="lucene-core.uptodate">
+    <jarify/>
+  </target>
 </project>

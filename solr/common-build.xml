@@ -78,87 +78,6 @@
     -->
   <property name="solr.spec.version" value="4.0.0.${dateversion}" />
 
-  <!-- solr depends on the following modules/contribs -->	
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-        property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-  <module-uptodate name="analysis/phonetic" jarfile="${common.dir}/../modules/analysis/build/phonetic/lucene-analyzers-phonetic-${version}.jar"
-        property="analyzers-phonetic.uptodate" classpath.property="analyzers-phonetic.jar"/>
-  <module-uptodate name="suggest" jarfile="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"
-        property="suggest.uptodate" classpath.property="suggest.jar"/>
-  <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
-        property="grouping.uptodate" classpath.property="grouping.jar"/>
-  <module-uptodate name="queries" jarfile="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"
-        property="queries.uptodate" classpath.property="queries.jar"/>
-  <module-uptodate name="queryparser" jarfile="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"
-        property="queryparser.uptodate" classpath.property="queryparser.jar"/>
-  <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
-  <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
-  <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
-  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries-contrib.uptodate" classpath.property="queries-contrib.jar"/>
-  <contrib-uptodate name="spatial" property="spatial.uptodate" classpath.property="spatial.jar"/>
-
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/common" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-analyzers-phonetic" unless="analyzers-phonetic.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/phonetic" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-suggest" unless="suggest.uptodate">
-  	<ant dir="${common.dir}/../modules/suggest" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-grouping" unless="grouping.uptodate">
-  	<ant dir="${common.dir}/../modules/grouping" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-queries" unless="queries.uptodate">
-  	<ant dir="${common.dir}/../modules/queries" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-queryparser" unless="queryparser.uptodate">
-  	<ant dir="${common.dir}/../modules/queryparser" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-highlighter" unless="highlighter.uptodate">
-  	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-memory" unless="memory.uptodate">
-  	<ant dir="${common.dir}/contrib/memory" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-misc" unless="misc.uptodate">
-  	<ant dir="${common.dir}/contrib/misc" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-queries-contrib" unless="queries-contrib.uptodate">
-  	<ant dir="${common.dir}/contrib/queries" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-spatial" unless="spatial.uptodate">
-  	<ant dir="${common.dir}/contrib/spatial" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <!-- xml-query-parser contrib is required by the "luke" target -->
-  <target name="compile-xml-query-parser" unless="xml-query-parser.uptodate">
-  	<ant dir="${common.dir}/contrib/xml-query-parser" target="compile-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
   	<pathelement path="${analyzers-phonetic.jar}"/>
@@ -203,7 +122,7 @@
   </macrodef>
 
   <target name="validate" depends="validate-solr"/>
-  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>
+  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr.uptodate"/>
 
   <target name="check-legal-solr" depends="compile-tools">
     <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
@@ -237,7 +156,7 @@
       <arg value="-c" />
       <arg value="${common-solr.dir}/core/src/test-files/solr/lib" />
     </java>
-    <property name="validated-solr" value="true"/>
+    <property name="validated-solr.uptodate" value="true"/>
   </target>
   <path id="tools.runtime.classpath">
     <pathelement location="${common.dir}/build/classes/tools"/>
@@ -250,18 +169,20 @@
     <mkdir dir="${maven.dist.dir}"/>
   </target>
 
-  <target name="prep-lucene-jars"
-          depends="compile-analyzers-common, compile-analyzers-phonetic, compile-suggest,
-                   compile-highlighter, compile-memory, compile-misc, compile-queries-contrib,
-                   compile-spatial, compile-grouping, compile-queries, compile-queryparser">
+  <target name="prep-lucene-jars" 
+  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-suggest, jar-highlighter, jar-memory,
+  	               jar-misc, jar-queries-contrib, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
+  	  <property name="solr.deps.compiled" value="true"/>
+  </target>
+	
+  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
+    <!-- TODO: clean this up -->
+    <sequential>
     <ant dir="${common.dir}" target="default" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-  </target>
-
-  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <fileset file="${common.dir}/build/lucene-core-${version}.jar" />
+      <fileset file="${lucene-core.jar}" />
       <fileset file="${analyzers-common.jar}" />
       <fileset file="${analyzers-phonetic.jar}" />
       <fileset file="${suggest.jar}" />
@@ -274,6 +195,7 @@
       <fileset file="${queries-contrib.jar}" />
       <fileset file="${spatial.jar}" />
     </copy>
+    </sequential>
   </target>
 
   <!-- Shared core/solrj/test-framework/contrib targets -->
@@ -284,6 +206,9 @@
             implementation.title="org.apache.solr"
             spec.version="${solr.spec.version}"/>
   </target>
+
+  <target name="compile-core" depends="prep-lucene-jars,common.compile-core"/>
+  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
@@ -361,14 +286,15 @@
     <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
+  	<property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
   </target>
 
   <!-- Solr contrib targets -->
-  <target name="build-contrib" depends="compile-test"
-          description="Builds all contrib modules and their tests">
-    <contrib-crawl target="build-artifacts-and-tests"/>
+  <target name="compile-contrib" description="Compile contrib modules">
+  	<contrib-crawl target="compile-core"/>
   </target>
+
   <target name="contribs-add-to-war">
     <mkdir dir="${dest}/web"/>
     <delete dir="${dest}/web" includes="**/*" failonerror="false"/>

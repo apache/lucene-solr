@@ -38,9 +38,6 @@
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 
-  <module-uptodate name="analysis/common" jarfile="../build/common/lucene-analyzers-common-${version}.jar"
-    property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
     <path refid="base.classpath"/>
@@ -56,14 +53,7 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
-  <target name="compile-core" depends="build-analyzers-common, common.compile-core" />
-
-  <target name="build-analyzers-common" unless="analyzers-common.uptodate">
-    <echo>ICU building dependency ${analyzers-common.jar}</echo>
-    <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
+  <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
 
   <property name="gennorm2.src.dir" value="src/data/utr30"/>
   <property name="gennorm2.src.files" 

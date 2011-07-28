@@ -54,15 +54,7 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <target name="build-lucene" unless="core.compiled">
-    <ant dir="${common.dir}" target="compile-test" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <!-- set the property for this ant execution to speed up later tasks depending on this -->
-    <property name="core.compiled" value="true"/>
-  </target>
-  
-  <target name="init" depends="common.init,build-lucene"/>
+  <target name="init" depends="common.init,compile-lucene-core"/>
   <target name="compile-test" depends="init" if="contrib.has.tests">
     <antcall target="common.compile-test" inheritRefs="true" />
   </target>
@@ -117,14 +109,10 @@
   
   <macrodef name="contrib-uptodate">
     <attribute name="name"/>
-    <attribute name="property" default="@{name}.uptodate"/>
+    <attribute name="property"/>
+    <attribute name="jarfile"/>
     <attribute name="contrib-src-name" default="@{name}"/>
-    <attribute name="classpath.property" default="@{name}.jar"/>
-    <!-- set jarfile only, if the target jar file has no generic name, applies to analyzers with its common and smartcn subdir -->
-    <attribute name="jarfile" default="${common.dir}/build/contrib/@{name}/lucene-@{name}-${version}.jar"/>
     <sequential>
-      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
-      <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
         <srcfiles dir="${common.dir}/contrib/@{contrib-src-name}/src/java" includes="**/*.java"/>
       </uptodate>
@@ -133,16 +121,167 @@
 
   <macrodef name="module-uptodate">
     <attribute name="name"/>
-    <attribute name="property" default="@{name}.uptodate"/>
+    <attribute name="property"/>
+    <attribute name="jarfile"/>
     <attribute name="module-src-name" default="@{name}"/>
-    <attribute name="classpath.property" default="@{name}.jar"/>
-    <!-- set jarfile only, if the target jar file has no generic name, applies to analyzers with its common and smartcn subdir -->
-    <attribute name="jarfile" default="${common.dir}/../modules/@{module-src-name}/build/lucene-@{name}-${version}.jar"/>
     <sequential>
-      <property name="@{classpath.property}" location="@{jarfile}"/>
       <uptodate property="@{property}" targetfile="@{jarfile}">
       	<srcfiles dir="${common.dir}/../modules/@{module-src-name}/src/java" includes="**/*.java"/>
       </uptodate>
     </sequential>
   </macrodef>
+
+  <property name="analyzers-common.jar" value="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"/>
+  <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
+    <module-uptodate name="analysis/common" jarfile="${analyzers-common.jar}" property="analyzers-common.uptodate"/>
+  </target>
+  <target name="jar-analyzers-common" unless="analyzers-common.uptodate" depends="check-analyzers-common-uptodate">
+    <ant dir="${common.dir}/../modules/analysis/common" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-icu.jar" value="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"/>
+  <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
+    <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>
+  </target>
+  <target name="jar-analyzers-icu" unless="analyzers-icu.uptodate" depends="check-analyzers-icu-uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/icu" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-icu.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-phonetic.jar" value="${common.dir}/../modules/analysis/build/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
+  <target name="check-analyzers-phonetic-uptodate" unless="analyzers-phonetic.uptodate">
+    <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic.jar}" property="analyzers-phonetic.uptodate"/>
+  </target>
+  <target name="jar-analyzers-phonetic" unless="analyzers-phonetic.uptodate" depends="check-analyzers-phonetic-uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/phonetic" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+
+  <property name="analyzers-smartcn.jar" value="${common.dir}/../modules/analysis/build/smartcn/lucene-analyzers-smartcn-${version}.jar"/>
+  <target name="check-analyzers-smartcn-uptodate" unless="analyzers-smartcn.uptodate">
+    <module-uptodate name="analysis/smartcn" jarfile="${analyzers-smartcn.jar}" property="analyzers-smartcn.uptodate"/>
+  </target>
+  <target name="jar-analyzers-smartcn" unless="analyzers-smartcn.uptodate" depends="check-analyzers-smartcn-uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/smartcn" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-smartcn.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-stempel.jar" value="${common.dir}/../modules/analysis/build/stempel/lucene-analyzers-stempel-${version}.jar"/>
+  <target name="check-analyzers-stempel-uptodate" unless="analyzers-stempel.uptodate">
+    <module-uptodate name="analysis/stempel" jarfile="${analyzers-stempel.jar}" property="analyzers-stempel.uptodate"/>
+  </target>
+  <target name="jar-analyzers-stempel" unless="analyzers-stempel.uptodate" depends="check-analyzers-stempel-uptodate">
+  	<ant dir="${common.dir}/../modules/analysis/stempel" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-stempel.uptodate" value="true"/>
+  </target>
+
+  <property name="grouping.jar" value="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"/>
+  <target name="check-grouping-uptodate" unless="grouping.uptodate">
+    <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>
+  </target>
+  <target name="jar-grouping" unless="grouping.uptodate" depends="check-grouping-uptodate">
+  	<ant dir="${common.dir}/../modules/grouping" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="grouping.uptodate" value="true"/>
+  </target>
+
+  <property name="highlighter.jar" value="${common.dir}/build/contrib/highlighter/lucene-highlighter-${version}.jar"/>
+  <target name="check-highlighter-uptodate" unless="highlighter.uptodate">
+    <contrib-uptodate name="highlighter" jarfile="${highlighter.jar}" property="highlighter.uptodate"/>
+  </target>
+  <target name="jar-highlighter" unless="highlighter.uptodate" depends="check-highlighter-uptodate">
+    <ant dir="${common.dir}/contrib/highlighter" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="highlighter.uptodate" value="true"/>
+  </target>
+
+  <property name="memory.jar" value="${common.dir}/build/contrib/memory/lucene-memory-${version}.jar"/>
+  <target name="check-memory-uptodate" unless="memory.uptodate">
+    <contrib-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
+  </target>
+  <target name="jar-memory" unless="memory.uptodate" depends="check-memory-uptodate">
+    <ant dir="${common.dir}/contrib/memory" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="memory.uptodate" value="true"/>
+  </target>
+
+  <property name="misc.jar" value="${common.dir}/build/contrib/misc/lucene-misc-${version}.jar"/>
+  <target name="check-misc-uptodate" unless="misc.uptodate">
+    <contrib-uptodate name="misc" jarfile="${misc.jar}" property="misc.uptodate"/>
+  </target>
+  <target name="jar-misc" unless="misc.uptodate" depends="check-misc-uptodate">
+  	<ant dir="${common.dir}/contrib/misc" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="misc.uptodate" value="true"/>
+  </target>
+
+  <property name="queries.jar" value="${common.dir}/../modules/queries/build/lucene-queries-${version}.jar"/>
+  <target name="check-queries-uptodate" unless="queries.uptodate">
+    <module-uptodate name="queries" jarfile="${queries.jar}" property="queries.uptodate"/>
+  </target>
+  <target name="jar-queries" unless="queries.uptodate" depends="check-queries-uptodate">
+  	<ant dir="${common.dir}/../modules/queries" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries.uptodate" value="true"/>
+  </target>
+
+  <property name="queries-contrib.jar" value="${common.dir}/build/contrib/queries-contrib/lucene-queries-contrib-${version}.jar"/>
+  <target name="check-queries-contrib-uptodate" unless="queries-contrib.uptodate">
+    <contrib-uptodate name="queries-contrib" jarfile="${queries-contrib.jar}" contrib-src-name="queries" property="queries-contrib.uptodate"/>
+  </target>
+  <target name="jar-queries-contrib" unless="queries-contrib.uptodate" depends="check-queries-contrib-uptodate">
+    <ant dir="${common.dir}/contrib/queries" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries-contrib.uptodate" value="true"/>
+  </target>
+
+  <property name="queryparser.jar" value="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
+  <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
+    <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
+  </target>
+  <target name="jar-queryparser" unless="queryparser.uptodate" depends="check-queryparser-uptodate">
+    <ant dir="${common.dir}/../modules/queryparser" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queryparser.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial.jar" value="${common.dir}/build/contrib/spatial/lucene-spatial-${version}.jar"/>
+  <target name="check-spatial-uptodate" unless="spatial.uptodate">
+    <contrib-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
+  </target>
+  <target name="jar-spatial" unless="spatial.uptodate" depends="check-spatial-uptodate">
+  	<ant dir="${common.dir}/contrib/spatial" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial.uptodate" value="true"/>
+  </target>
+
+  <property name="suggest.jar" value="${common.dir}/../modules/suggest/build/lucene-suggest-${version}.jar"/>
+  <target name="check-suggest-uptodate" unless="suggest.uptodate">
+    <module-uptodate name="suggest" jarfile="${suggest.jar}" property="suggest.uptodate"/>
+  </target>
+  <target name="jar-suggest" unless="suggest.uptodate" depends="check-suggest-uptodate">
+  	<ant dir="${common.dir}/../modules/suggest" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="suggest.uptodate" value="true"/>
+  </target>
 </project>

@@ -20,14 +20,7 @@
 
   <import file="../common-build.xml"/>
 
-  <target name="compile-core" unless="solr.core.compiled"
-          depends="prep-lucene-jars, compile-solrj, common.compile-core">
-    <property name="solr.core.compiled" value="true"/>
-  </target>
-
-  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
-
-  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel"/>
+  <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>
 
   <target name="dist-maven" depends="jar-core,javadocs,jar-src,contrib-build.dist-maven">
     <m2-deploy-with-pom-template pom.xml="${common-solr.dir}/lib/solr-commons-csv-pom.xml.template"

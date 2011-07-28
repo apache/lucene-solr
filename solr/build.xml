@@ -40,7 +40,7 @@
   <!-- ========================================================================= -->
  
   <target name="example" description="Creates a runnable example configuration."
-          depends="prep-lucene-jars,dist-contrib,dist-war,build-contrib">
+          depends="dist-contrib,dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -88,6 +88,13 @@
     <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
   </target>
  
+
+  <target name="compile-xml-query-parser">
+  	<ant dir="${common.dir}/contrib/xml-query-parser" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <property  name="luke.version" value="1.0.1"/>
   <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
   <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup,compile-xml-query-parser">
@@ -120,7 +127,7 @@
   <!-- ========================================================================= -->
   
   <target name="compile" description="Compile the source code."
-          depends="compile-core, build-contrib"/>
+          depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="validate-solr, test-core, test-jsp, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
@@ -139,18 +146,21 @@
   
   <!-- Solrj targets -->
   <target name="test-solrj" description="Test java client">
-    <ant dir="solrj" target="test" inheritAll="false"/>
+    <ant dir="solrj" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
   </target>
   
   <!-- Solr contrib targets -->
-  <target name="test-contrib" description="Run contrib unit tests."
-          depends="build-contrib">
+  <target name="test-contrib" description="Run contrib unit tests.">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
   
   <!-- test-framework targets -->
   <target name="javadocs-test-framework">  <!-- Called from Jenkins build script --> 
-    <ant dir="test-framework" target="javadocs" inheritAll="false"/>
+    <ant dir="test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+  	</ant>
   </target>
   
   <!-- Webapp targets -->

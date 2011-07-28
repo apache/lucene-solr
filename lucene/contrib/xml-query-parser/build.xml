@@ -25,13 +25,8 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries-contrib.uptodate" classpath.property="queries-contrib.jar"/>
-  <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
   <property name="servlet.jar" location="${common.dir}/lib/servlet-api-2.4.jar"/>
   <available property="servlet.jar.present" type="file" file="${servlet.jar}"/>
-  <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
-  <module-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
-
 
   <path id="classpath">
     <pathelement path="${queries-contrib.jar}"/>
@@ -49,26 +44,16 @@
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="build-queries-contrib,build-queryparser,build-queries,common.compile-core" />
-
-  <target name="build-queries-contrib" unless="queries-contrib.uptodate">
-    <echo>XML Parser building dependency ${queries.jar}</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="queries-contrib.uptodate" value="true"/>
-  </target>
+  <target name="compile-core" depends="jar-queries-contrib,jar-queryparser,jar-queries,common.compile-core" />
 
   <!-- override contrib-build.xml target to also build web demo -->
   <target name="build-artifacts-and-tests" depends="jar, compile-test,build-web-demo" />
 
-  <target name="default" depends="jar-core,build-web-demo"/>
+  <target name="default" depends="jar-lucene-core,jar-core,build-web-demo"/>
 
   <target name="build-web-demo"  description="Compiles demo" if="servlet.jar.present">
 
     <echo>XML Parser compiling web demo</echo>
-
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
 
     <compile
       srcdir="src/demo/java"
@@ -82,24 +67,9 @@
         <include name="${final.name}.jar"/>
       </lib>
       <lib file="${queries.jar}"/>
-      <lib file="${lucene.jar}"/>
+      <lib file="${lucene-core.jar}"/>
       <classes dir="${build.dir}/classes/webdemo"/>
     </war>
 
   </target>
-
-  <target name="build-queryparser" unless="queryparser.uptodate">
-    <echo>XML QueryParser building dependency modules/queryparser</echo>
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
-    </subant>
-  </target>
-
-  <target name="build-queries" unless="queries.uptodate">
-    <echo>XML QueryParser building dependency modules/queries</echo>
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>
-    </subant>
-  </target>
-
 </project>

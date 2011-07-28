@@ -25,21 +25,10 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries.uptodate" classpath.property="queries.jar" />
-
   <path id="classpath">
-    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queries-contrib.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="build-queries, common.compile-core" />
-
-  <target name="build-queries" unless="queries.uptodate">
-    <echo>Misc building dependency ${queries.jar}</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="queries.uptodate" value="true"/>
-  </target>
-  
+  <target name="compile-core" depends="jar-queries-contrib, common.compile-core" />
 </project>

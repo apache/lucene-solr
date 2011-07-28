@@ -25,28 +25,11 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
-  <contrib-uptodate name="queries-contrib" contrib-src-name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
-
   <path id="classpath">
     <pathelement path="${memory.jar}"/>
-    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queries-contrib.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="build-memory, build-queries, common.compile-core" />
-
-  <target name="build-memory" unless="memory.uptodate">
-    <echo>Highlighter building dependency contrib/memory</echo>
-    <ant antfile="../memory/build.xml" target="default" inheritall="false" dir="../memory">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  
-  <target name="build-queries" unless="queries.uptodate">
-    <echo>Highlighter building dependency contrib/queries</echo>
-    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
+  <target name="compile-core" depends="jar-memory, jar-queries-contrib, common.compile-core" />
 </project>

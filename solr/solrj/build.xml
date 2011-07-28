@@ -27,10 +27,6 @@
   	<path refid="test.base.classpath"/>
   </path>
 
-  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
-
-  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel"/>
-
   <target name="dist" depends="common-solr.dist">
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">

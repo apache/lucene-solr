@@ -27,41 +27,13 @@
 
   <import file="../contrib-build.xml"/>
 
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-  <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
-  
-  <property name="lucene.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
-  <target name="lucene-jar-uptodate" unless="lucene.jar.uptodate">
-    <uptodate property="lucene.jar.uptodate" targetfile="${lucene.jar}">
-     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
-    </uptodate>
-  </target>
-  <target name="jar-lucene" depends="build-lucene" unless="lucene.jar.uptodate">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="init" depends="contrib-build.init,lucene-jar-uptodate,jar-lucene"/>
+  <target name="init" depends="contrib-build.init,jar-lucene-core"/>
   
   <path id="classpath">
 	 <pathelement path="${analyzers-common.jar}"/>
    <pathelement path="${queryparser.jar}"/>
-   <pathelement path="${lucene.jar}"/>
+   <pathelement path="${lucene-core.jar}"/>
   </path>
 
-  <target name="compile-core" depends="jar-analyzers-common,build-queryparser,common.compile-core" />
-
-  <target name="jar-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="jar-core">
-      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-    </subant>
-  </target>
-
-  <target name="build-queryparser" unless="queryparser.uptodate">
-    <echo>Demo building dependency modules/queryparser</echo>
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
-    </subant>
-  </target>
+  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,common.compile-core" />
 </project>

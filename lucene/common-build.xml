@@ -441,6 +441,25 @@
     </sequential>
   </macrodef>
 
+  <property name="lucene-core.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
+  <target name="check-lucene-core-uptodate" unless="lucene-core.uptodate">
+    <uptodate property="lucene-core.uptodate" targetfile="${lucene-core.jar}">
+     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+  <target name="jar-lucene-core" unless="lucene-core.uptodate" depends="check-lucene-core-uptodate">
+    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="lucene-core.uptodate" value="true"/>
+  </target>
+  <target name="compile-lucene-core" unless="core.compiled">
+    <ant dir="${common.dir}" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="core.compiled" value="true"/>
+  </target>
+
   <target name="compile-test-framework" depends="compile-core">
   	<compile-test-macro srcdir="${tests-framework.src.dir}" destdir="${common.dir}/build/classes/test-framework"
   						test.classpath="test.classpath"/>
