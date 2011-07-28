@@ -19,7 +19,7 @@
                  org.apache.solr.core.SolrCore,
                  org.apache.solr.common.SolrException"%>
 <%@ page import="org.apache.solr.request.LocalSolrQueryRequest"%>
-<%@ page import="org.apache.solr.request.SolrQueryResponse"%>
+<%@ page import="org.apache.solr.response.SolrQueryResponse"%>
 <%@ page import="org.apache.solr.request.ServletSolrParams"%>
 <%@ page import="org.apache.solr.request.SolrQueryRequest"%>
 
