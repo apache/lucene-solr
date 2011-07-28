@@ -394,6 +394,9 @@ Bug Fixes
 * SOLR-2669: Fix backwards validation of field properties in 
   SchemaField.calcProps (hossman)
 
+* SOLR-2676: Add "welcome-file-list" to solr.war so admin UI works correctly 
+  in servlet containers such as WebSphere that do not use a default list
+  (Jay R. Jaeger, hossman)
 
  Other Changes
 ----------------------
