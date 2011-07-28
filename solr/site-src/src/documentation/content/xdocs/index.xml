@@ -66,6 +66,42 @@ customization is required.
     </section>
     <section id="news">
       <title>News</title>
+<section><title>28 July 2011 - WARNING: Index corruption and crashes in Apache Lucene Core / Apache Solr with Java 7</title>
+  <p>Oracle released <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Java 7</a> today.
+  Unfortunately it contains hotspot compiler optimizations, which miscompile some loops.
+  This can affect code of several Apache projects. Sometimes JVMs only crash, but in several cases,
+  results calculated can be incorrect, leading to bugs in applications
+  (see Hotspot bugs <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7070134">7070134</a>,
+  <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7044738">7044738</a>,
+  <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7068051">7068051</a>).</p>
+  <p><strong>Apache Lucene Core</strong> and <strong>Apache Solr</strong> are two Apache projects,
+  which are affected by these bugs, namely all versions released until today.
+  Solr users with the default configuration will have
+  Java crashing with <code>SIGSEGV</code> as soon as they start to index documents, as one
+  affected part is the well-known Porter stemmer
+  (see <a href="https://issues.apache.org/jira/browse/LUCENE-3335">LUCENE-3335</a>).
+  Other loops in Lucene may be miscompiled, too, leading to index corruption
+  (especially on Lucene trunk with pulsing codec; other loops may be
+  affected, too - <a href="https://issues.apache.org/jira/browse/LUCENE-3346">LUCENE-3346</a>).</p>
+  <p>These problems were detected only 5 days before the official Java 7 release,
+  so Oracle had no time to fix those bugs, affecting also many more applications.
+  In response to our questions, they proposed to include the fixes into service
+  release u2 (eventually into service release u1, see
+  <a href="http://mail.openjdk.java.net/pipermail/hotspot-compiler-dev/2011-July/005971.html">this mail</a>).
+  <strong>This means you cannot use Apache Lucene/Solr with Java 7 releases before Update 2!</strong>
+  If you do, please don't open bug reports, it is not the committers' fault!
+  At least disable loop optimizations using the <code>-XX:-UseLoopPredicate</code> JVM option
+  to not risk index corruptions.</p>
+  <p><em>Please note:</em> Also Java 6 users are affected, if they use one of those
+  JVM options, which are <strong>not</strong> enabled by default: <code>-XX:+OptimizeStringConcat</code>
+  or <code>-XX:+AggressiveOpts</code>.</p>
+  <p>It is strongly recommended not to use any hotspot optimization switches in any Java
+  version without extensive testing!</p>
+  <p>In case you upgrade to Java 7, remember that you may have to reindex, as the unicode
+  version shipped with Java 7 changed and tokenization behaves differently
+  (e.g. lowercasing). For more information, read <code>JRE_VERSION_MIGRATION.txt</code>
+  in your distribution package!</p>
+</section>
 <section>
    <title>July 2011 - Solr 3.3 Released</title>
   <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.3</a>!
