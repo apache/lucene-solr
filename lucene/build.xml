@@ -32,7 +32,6 @@
   <path id="test.classpath">
   	<path refid="classpath"/>
     <path refid="junit-path"/>
-    <path refid="ant-path"/>
     <pathelement location="${build.dir}/classes/test-framework"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
