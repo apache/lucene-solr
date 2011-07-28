@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -279,6 +280,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   IndexReader reader;
 
+  @Ignore
   @Test
   public void testStressLuceneNRT() throws Exception {
     // update variables
