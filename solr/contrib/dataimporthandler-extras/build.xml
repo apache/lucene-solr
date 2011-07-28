@@ -30,7 +30,7 @@
                          classpath.property="solr-dataimporthandler.jar"/>
 
   <target name="compile-solr-dataimporthandler" unless="solr-dataimporthandler.uptodate">
-  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="default" inheritAll="false">
+  	<ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -54,5 +54,5 @@
   </path>
 
   <target name="compile-core" depends="compile-solr-dataimporthandler, solr-contrib-build.compile-core"/>
-  <target name="compile-test" depends="compile-solr-dataimporthandler-tests, contrib-build.compile-test"/>
+  <target name="compile-test" depends="compile-solr-dataimporthandler-tests, common-solr.compile-test"/>
 </project>

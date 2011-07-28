@@ -11,13 +11,6 @@
     <!-- the tests have some parallel problems -->
     <property name="tests.threadspercpu" value="0"/>
 
-    <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
-    <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
-    <!-- analyzers common needs a hack for the jar file: -->
-    <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-    <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
-
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 
@@ -183,7 +176,7 @@
     <fileset dir="${common.dir}/contrib/icu/lib" includes="icu4j*.jar"/>
 	</path>
 	
-	<target name="collation" depends="compile,compile-icu,top-100k-wiki-word-files">
+	<target name="collation" depends="compile,jar-icu,top-100k-wiki-word-files">
 	    <echo>Running contrib/benchmark with alg file: ${collation.alg.file}</echo>
 	    <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
 	          maxmemory="${task.mem}" output="${collation.output.file}">
@@ -225,28 +218,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="compile-highlighter" unless="highlighter.uptodate">
-      <subant target="default">
-         <fileset dir="${common.dir}/contrib/highlighter" includes="build.xml"/>
-      </subant>
-    </target>
-    <target name="compile-icu" unless="icu.uptodate">
-      <subant target="default">
-         <fileset dir="${common.dir}/contrib/icu" includes="build.xml"/>
-      </subant>
-    </target>
-    <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-      <subant target="default">
-        <fileset dir="${common.dir}/contrib/analyzers/common" includes="build.xml"/>
-      </subant>
-    </target>
-    <target name="compile-memory" unless="memory.uptodate">
-      <subant target="default">
-         <fileset dir="${common.dir}/contrib/memory" includes="build.xml"/>
-      </subant>
-    </target>
-
-    <target name="init" depends="contrib-build.init,compile-memory,compile-highlighter,compile-analyzers-common"/>
+    <target name="init" depends="contrib-build.init,jar-memory,jar-highlighter,jar-analyzers-common"/>
   
     <target name="clean-javacc">
       <fileset dir="src/java/org/apache/lucene/benchmark/byTask/feeds/demohtml" includes="*.java">

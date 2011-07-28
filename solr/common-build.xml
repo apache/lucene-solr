@@ -74,64 +74,6 @@
     -->
   <property name="solr.spec.version" value="3.4.0.${dateversion}" />
 
-  <!-- solr depends on the following modules/contribs -->	
-  <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
-    property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-  <contrib-uptodate name="spellchecker" property="spellchecker.uptodate" classpath.property="spellchecker.jar"/>
-  <contrib-uptodate name="grouping" property="grouping.uptodate" classpath.property="grouping.jar"/>
-  <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
-  <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
-  <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
-  <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
-  <contrib-uptodate name="spatial" property="spatial.uptodate" classpath.property="spatial.jar"/>
-
-  <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
-  	<ant dir="${common.dir}/contrib/analyzers/common" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-spellchecker" unless="spellchecker.uptodate">
-  	<ant dir="${common.dir}/contrib/spellchecker" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-grouping" unless="grouping.uptodate">
-  	<ant dir="${common.dir}/contrib/grouping" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-queries" unless="queries.uptodate">
-  	<ant dir="${common.dir}/contrib/queries" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-highlighter" unless="highlighter.uptodate">
-  	<ant dir="${common.dir}/contrib/highlighter" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-memory" unless="memory.uptodate">
-  	<ant dir="${common.dir}/contrib/memory" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-misc" unless="misc.uptodate">
-  	<ant dir="${common.dir}/contrib/misc" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="compile-spatial" unless="spatial.uptodate">
-  	<ant dir="${common.dir}/contrib/spatial" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <!-- xml-query-parser contrib is required by the "luke" target -->
-  <target name="compile-xml-query-parser" unless="xml-query-parser.uptodate">
-  	<ant dir="${common.dir}/contrib/xml-query-parser" target="compile-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
   <path id="solr.base.classpath">
   	<pathelement path="${analyzers-common.jar}"/>
   	<pathelement path="${highlighter.jar}"/>
@@ -173,7 +115,7 @@
   </macrodef>
 
   <target name="validate" depends="validate-solr"/>
-  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr"/>
+  <target name="validate-solr" depends="check-legal-solr" unless="validated-solr.uptodate"/>
 
   <target name="check-legal-solr" depends="compile-tools">
     <java classname="org.apache.lucene.validation.DependencyChecker" failonerror="true" fork="true">
@@ -207,7 +149,7 @@
       <arg value="-c" />
       <arg value="${common-solr.dir}/core/src/test-files/solr/lib" />
     </java>
-    <property name="validated-solr" value="true"/>
+    <property name="validated-solr.uptodate" value="true"/>
   </target>
   <path id="tools.runtime.classpath">
     <pathelement location="${common.dir}/build/classes/tools"/>
@@ -220,17 +162,14 @@
     <mkdir dir="${maven.dist.dir}"/>
   </target>
 
-  <target name="prep-lucene-jars"
-          depends="compile-analyzers-common, compile-spellchecker, compile-highlighter,
-                   compile-memory, compile-misc, compile-spatial, compile-grouping, compile-queries">
-    <ant dir="${common.dir}" target="default" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
+  <target name="prep-lucene-jars" 
+  	      depends="jar-lucene-core, jar-analyzers-common, jar-spellchecker, jar-highlighter,
+  	               jar-memory, jar-misc, jar-spatial, jar-grouping, jar-queries"/>
 
   <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
+    <sequential>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <fileset file="${common.dir}/build/lucene-core-${version}.jar" />
+      <fileset file="${lucene-core.jar}" />
       <fileset file="${analyzers-common.jar}" />
       <fileset file="${spellchecker.jar}" />
       <fileset file="${grouping.jar}" />
@@ -240,6 +179,7 @@
       <fileset file="${misc.jar}" />
       <fileset file="${spatial.jar}" />
     </copy>
+    </sequential>
   </target>
 
   <!-- Shared core/solrj/test-framework/contrib targets -->
@@ -250,6 +190,9 @@
             implementation.title="org.apache.solr"
             spec.version="${solr.spec.version}"/>
   </target>
+
+  <target name="compile-core" depends="prep-lucene-jars,common.compile-core"/>
+  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
@@ -327,14 +270,15 @@
     <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
+  	<property name="solr.core.compiled" value="true"/>
     <property name="solr.test.framework.compiled" value="true"/>
   </target>
 
   <!-- Solr contrib targets -->
-  <target name="build-contrib" depends="compile-test"
-          description="Builds all contrib modules and their tests">
-    <contrib-crawl target="build-artifacts-and-tests"/>
+  <target name="compile-contrib" description="Compile contrib modules">
+  	<contrib-crawl target="compile-core"/>
   </target>
+
   <target name="contribs-add-to-war">
     <mkdir dir="${dest}/web"/>
     <delete dir="${dest}/web" includes="**/*" failonerror="false"/>

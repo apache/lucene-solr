@@ -25,14 +25,6 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
-  <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
-    property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-  <contrib-uptodate name="analyzers/smartcn" jarfile="${common.dir}/build/contrib/analyzers/smartcn/lucene-smartcn-${version}.jar"
-		property="analyzers-smartcn.uptodate" classpath.property="analyzers-smartcn.jar"/>
-  <contrib-uptodate name="analyzers/stempel" jarfile="${common.dir}/build/contrib/analyzers/stempel/lucene-stempel-${version}.jar"
-		property="analyzers-stempel.uptodate" classpath.property="analyzers-stempel.jar"/>
-
   <path id="classpath">
   	<pathelement path="${icu.jar}"/>
   	<pathelement path="${analyzers-smartcn.jar}"/>
@@ -40,26 +32,7 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="compile-icu" unless="icu.uptodate">
-  	<ant dir="${common.dir}/contrib/icu" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="compile-analyzers-smartcn" unless="analyzers-smartcn.uptodate">
-  	<ant dir="${common.dir}/contrib/analyzers/smartcn" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="compile-analyzers-stempel" unless="analyzers-stempel.uptodate">
-  	<ant dir="${common.dir}/contrib/analyzers/stempel" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="contrib-jars-to-solr"
-          depends="compile-icu, compile-analyzers-smartcn, compile-analyzers-stempel">
+  <target name="contrib-jars-to-solr" depends="jar-icu, jar-analyzers-smartcn, jar-analyzers-stempel">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${icu.jar}"/>
@@ -68,5 +41,6 @@
     </copy>
   </target>
 
-  <target name="compile-core" depends="contrib-jars-to-solr, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="jar-icu, jar-analyzers-smartcn, jar-analyzers-stempel, solr-contrib-build.compile-core"/>
+  <target name="dist" depends="contrib-jars-to-solr, common-solr.dist"/>
 </project>

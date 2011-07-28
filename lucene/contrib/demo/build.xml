@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="demo" default="jar-core">
+<project name="demo" default="jar-core" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <description>
     Lucene Demo
@@ -27,32 +27,12 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
-      property="analyzers.uptodate" classpath.property="analyzers.jar"/>
-  
-  <property name="lucene.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
-  <target name="lucene-jar-uptodate" unless="lucene.jar.uptodate">
-    <uptodate property="lucene.jar.uptodate" targetfile="${lucene.jar}">
-     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
-    </uptodate>
-  </target>
-  <target name="jar-lucene" depends="build-lucene" unless="lucene.jar.uptodate">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="init" depends="contrib-build.init,lucene-jar-uptodate,jar-lucene"/>
+  <target name="init" depends="contrib-build.init,jar-lucene-core"/>
   
   <path id="classpath">
-	 <pathelement path="${analyzers.jar}"/>
-     <pathelement path="${lucene.jar}"/>
+	 <pathelement path="${analyzers-common.jar}"/>
+   <pathelement path="${lucene-core.jar}"/>
   </path>
 
-  <target name="compile-core" depends="jar-analyzers,common.compile-core" />
-
-  <target name="jar-analyzers" unless="analyzers.uptodate">
-    <subant target="jar-core">
-      <fileset dir="${common.dir}/contrib/analyzers/common" includes="build.xml"/>
-    </subant>
-  </target>
+  <target name="compile-core" depends="jar-analyzers-common,common.compile-core" />
 </project>
