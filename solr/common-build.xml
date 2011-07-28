@@ -294,6 +294,9 @@
   <target name="compile-contrib" description="Compile contrib modules">
   	<contrib-crawl target="compile-core"/>
   </target>
+  <target name="compile-test-contrib" description="Compile contrib modules' tests">
+  	<contrib-crawl target="compile-test"/>
+  </target>
 
   <target name="contribs-add-to-war">
     <mkdir dir="${dest}/web"/>

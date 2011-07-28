@@ -129,11 +129,11 @@
   <target name="compile" description="Compile the source code."
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
-          depends="validate-solr, test-core, test-jsp, test-contrib"/>
+          depends="validate-solr, test-core, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="test-solr-core, test-solrj"/>
   <target name="compile-test" description="Compile unit tests."
-          depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj"/>
+          depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib, test-jsp"/>
   <target name="javadocs" description="Calls javadocs-all" depends="javadocs-all"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
