@@ -398,6 +398,9 @@ Bug Fixes
  Other Changes
 ----------------------
 
+* SOLR-2629: Eliminate deprecation warnings in some JSPs.
+  (Bernd Fehling, hossman)
+
 Build
 ----------------------
 
