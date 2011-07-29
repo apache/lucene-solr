@@ -354,6 +354,9 @@ public class RandomIndexWriter implements Closeable {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
+      if (r.nextInt(5) == 1) {
+        w.commit();
+      }
       return w.getReader(applyDeletions);
     } else {
       if (LuceneTestCase.VERBOSE) {
