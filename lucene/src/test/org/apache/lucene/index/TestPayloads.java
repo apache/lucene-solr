@@ -341,11 +341,15 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
-    static final Charset utf8 = Charset.forName("UTF-8");
     private void generateRandomData(byte[] data) {
       // this test needs the random data to be valid unicode
       String s = _TestUtil.randomFixedByteLengthUnicodeString(random, data.length);
-      byte b[] = s.getBytes(utf8);
+      byte b[];
+      try {
+        b = s.getBytes("UTF-8");
+      } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException(e);
+      }
       assert b.length == data.length;
       System.arraycopy(b, 0, data, 0, b.length);
     }
@@ -511,7 +515,7 @@ public class TestPayloads extends LuceneTestCase {
                     tp.nextPosition();
                     byte payload[] = new byte[5];
                     tp.getPayload(payload, 0);
-                    assertEquals(terms.term().text, new String(payload, 0, payload.length, utf8));
+                    assertEquals(terms.term().text, new String(payload, 0, payload.length, "UTF-8"));
                 }
             }
             tp.close();
@@ -535,7 +539,11 @@ public class TestPayloads extends LuceneTestCase {
             this.pool = pool;
             payload = pool.get();
             generateRandomData(payload);
-            term = new String(payload, 0, payload.length, utf8);
+            try {
+              term = new String(payload, 0, payload.length, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+              throw new RuntimeException(e);
+            }
             first = true;
             payloadAtt = addAttribute(PayloadAttribute.class);
             termAtt = addAttribute(CharTermAttribute.class);
