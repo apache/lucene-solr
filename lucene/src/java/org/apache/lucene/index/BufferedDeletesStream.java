@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.BytesRef;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
@@ -182,7 +183,7 @@ class BufferedDeletesStream {
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
-    BufferedDeletes coalescedDeletes = null;
+    CoalescedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
 
     int infosIDX = infos2.size()-1;
@@ -200,7 +201,7 @@ class BufferedDeletesStream {
       if (packet != null && segGen < packet.delGen()) {
         //System.out.println("  coalesce");
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes(true);
+          coalescedDeletes = new CoalescedDeletes();
         }
         if (!packet.isSegmentPrivate) {
           /*
@@ -251,7 +252,7 @@ class BufferedDeletesStream {
         }
 
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes(true);
+          coalescedDeletes = new CoalescedDeletes();
         }
         
         /*
@@ -463,7 +464,8 @@ class BufferedDeletesStream {
     if (term != null) {
       assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) > 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
     }
-    lastDeleteTerm = term;
+    // TODO: we re-use term now in our merged iterable, but we shouldn't clone, instead copy for this assert
+    lastDeleteTerm = term == null ? null : new Term(term.field(), new BytesRef(term.bytes));
     return true;
   }
 

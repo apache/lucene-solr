@@ -18,17 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
 /* Holds buffered deletes, by docID, term or query for a
  * single segment. This is used to hold buffered pending
@@ -67,7 +64,7 @@ class BufferedDeletes {
   final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
 
   final AtomicInteger numTermDeletes = new AtomicInteger();
-  final Map<Term,Integer> terms;
+  final Map<Term,Integer> terms = new HashMap<Term,Integer>();
   final Map<Query,Integer> queries = new HashMap<Query,Integer>();
   final List<Integer> docIDs = new ArrayList<Integer>();
 
@@ -78,18 +75,13 @@ class BufferedDeletes {
   private final static boolean VERBOSE_DELETES = false;
 
   long gen;
-  public BufferedDeletes(boolean sortTerms) {
-    this(sortTerms, new AtomicLong());
+  public BufferedDeletes() {
+    this(new AtomicLong());
   }
 
-  BufferedDeletes(boolean sortTerms, AtomicLong bytesUsed) {
+  BufferedDeletes(AtomicLong bytesUsed) {
     assert bytesUsed != null;
     this.bytesUsed = bytesUsed;
-    if (sortTerms) {
-      terms = new TreeMap<Term,Integer>();
-    } else {
-      terms = new HashMap<Term,Integer>();
-    }
   }
 
   @Override
@@ -114,50 +106,6 @@ class BufferedDeletes {
       }
 
       return s;
-    }
-  }
-
-  void update(BufferedDeletes in) {
-    numTermDeletes.addAndGet(in.numTermDeletes.get());
-    for (Map.Entry<Term,Integer> ent : in.terms.entrySet()) {
-      final Term term = ent.getKey();
-      if (!terms.containsKey(term)) {
-        // only incr bytesUsed if this term wasn't already buffered:
-        bytesUsed.addAndGet(BYTES_PER_DEL_TERM);
-      }
-      terms.put(term, MAX_INT);
-    }
-
-    for (Map.Entry<Query,Integer> ent : in.queries.entrySet()) {
-      final Query query = ent.getKey();
-      if (!queries.containsKey(query)) {
-        // only incr bytesUsed if this query wasn't already buffered:
-        bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
-      }
-      queries.put(query, MAX_INT);
-    }
-
-    // docIDs never move across segments and the docIDs
-    // should already be cleared
-  }
-
-  void update(FrozenBufferedDeletes in) {
-    numTermDeletes.addAndGet(in.numTermDeletes);
-    for(Term term : in.terms) {
-      if (!terms.containsKey(term)) {
-        // only incr bytesUsed if this term wasn't already buffered:
-        bytesUsed.addAndGet(BYTES_PER_DEL_TERM);
-      }
-      terms.put(term, MAX_INT);
-    }
-
-    for(int queryIdx=0;queryIdx<in.queries.length;queryIdx++) {
-      final Query query = in.queries[queryIdx];
-      if (!queries.containsKey(query)) {
-        // only incr bytesUsed if this query wasn't already buffered:
-        bytesUsed.addAndGet(BYTES_PER_DEL_QUERY);
-      }
-      queries.put(query, MAX_INT);
     }
   }
 
@@ -193,44 +141,7 @@ class BufferedDeletes {
       bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (RamUsageEstimator.NUM_BYTES_CHAR * term.field().length()));
     }
   }
-
-  public Iterable<Term> termsIterable() {
-    return new Iterable<Term>() {
-      @Override
-      public Iterator<Term> iterator() {
-        return terms.keySet().iterator();
-      }
-    };
-  }
-
-  public Iterable<QueryAndLimit> queriesIterable() {
-    return new Iterable<QueryAndLimit>() {
-      
-      @Override
-      public Iterator<QueryAndLimit> iterator() {
-        return new Iterator<QueryAndLimit>() {
-          private final Iterator<Map.Entry<Query,Integer>> iter = queries.entrySet().iterator();
-
-          @Override
-          public boolean hasNext() {
-            return iter.hasNext();
-          }
-
-          @Override
-          public QueryAndLimit next() {
-            final Map.Entry<Query,Integer> ent = iter.next();
-            return new QueryAndLimit(ent.getKey(), ent.getValue());
-          }
-
-          @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
-          }
-        };
-      }
-    };
-  }    
-    
+ 
   void clear() {
     terms.clear();
     queries.clear();

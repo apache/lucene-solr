@@ -41,8 +41,8 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
-    BufferedDeletes bd1 = new BufferedDeletes(false);
-    BufferedDeletes bd2 = new BufferedDeletes(false);
+    BufferedDeletes bd1 = new BufferedDeletes();
+    BufferedDeletes bd2 = new BufferedDeletes();
     int last1 = 0;
     int last2 = 0;
     Set<Term> uniqueValues = new HashSet<Term>();
@@ -70,8 +70,11 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     assertEquals(uniqueValues, bd1.terms.keySet());
     assertEquals(uniqueValues, bd2.terms.keySet());
-    assertEquals(uniqueValues, new HashSet<Term>(Arrays.asList(queue
-        .freezeGlobalBuffer(null).terms)));
+    HashSet<Term> frozenSet = new HashSet<Term>();
+    for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
+      frozenSet.add(t);
+    }
+    assertEquals(uniqueValues, frozenSet);
     assertEquals("num deletes must be 0 after freeze", 0, queue
         .numGlobalTermDeletes());
   }
@@ -129,7 +132,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       if (random.nextInt(5) == 0) {
         FrozenBufferedDeletes freezeGlobalBuffer = queue
             .freezeGlobalBuffer(null);
-        assertEquals(termsSinceFreeze, freezeGlobalBuffer.terms.length);
+        assertEquals(termsSinceFreeze, freezeGlobalBuffer.termCount);
         assertEquals(queriesSinceFreeze, freezeGlobalBuffer.queries.length);
         queriesSinceFreeze = 0;
         termsSinceFreeze = 0;
@@ -168,8 +171,11 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
-    assertEquals(uniqueValues, new HashSet<Term>(Arrays.asList(queue
-        .freezeGlobalBuffer(null).terms)));
+    HashSet<Term> frozenSet = new HashSet<Term>();
+    for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
+      frozenSet.add(t);
+    }
+    assertEquals(uniqueValues, frozenSet);
     assertEquals("num deletes must be 0 after freeze", 0, queue
         .numGlobalTermDeletes());
   }
@@ -188,7 +194,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       this.index = index;
       this.ids = ids;
       this.slice = queue.newSlice();
-      deletes = new BufferedDeletes(false);
+      deletes = new BufferedDeletes();
       this.latch = latch;
     }
 

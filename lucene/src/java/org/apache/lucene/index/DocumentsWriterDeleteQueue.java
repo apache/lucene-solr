@@ -81,7 +81,7 @@ final class DocumentsWriterDeleteQueue {
   }
   
   DocumentsWriterDeleteQueue(long generation) {
-    this(new BufferedDeletes(false), generation);
+    this(new BufferedDeletes(), generation);
   }
 
   DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes, long generation) {

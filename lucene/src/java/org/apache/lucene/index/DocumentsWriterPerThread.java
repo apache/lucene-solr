@@ -188,7 +188,7 @@ public class DocumentsWriterPerThread {
     bytesUsed = new AtomicLong(0);
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
     consumer = indexingChain.getChain(this);
-    pendingDeletes = new BufferedDeletes(false);
+    pendingDeletes = new BufferedDeletes();
     initialize();
   }
   
@@ -476,7 +476,7 @@ public class DocumentsWriterPerThread {
         segmentDeletes = null;
       } else {
         segmentDeletes = pendingDeletes;
-        pendingDeletes = new BufferedDeletes(false);
+        pendingDeletes = new BufferedDeletes();
       }
 
       if (infoStream != null) {
