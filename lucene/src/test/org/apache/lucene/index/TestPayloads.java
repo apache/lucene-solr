@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -340,8 +341,13 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
+    static final Charset utf8 = Charset.forName("UTF-8");
     private void generateRandomData(byte[] data) {
-        random.nextBytes(data);
+      // this test needs the random data to be valid unicode
+      String s = _TestUtil.randomFixedByteLengthUnicodeString(random, data.length);
+      byte b[] = s.getBytes(utf8);
+      assert b.length == data.length;
+      System.arraycopy(b, 0, data, 0, b.length);
     }
 
     private byte[] generateRandomData(int n) {
@@ -503,7 +509,9 @@ public class TestPayloads extends LuceneTestCase {
                 int freq = tp.freq();
                 for (int i = 0; i < freq; i++) {
                     tp.nextPosition();
-                    assertEquals(pool.bytesToString(tp.getPayload(new byte[5], 0)), terms.term().text);
+                    byte payload[] = new byte[5];
+                    tp.getPayload(payload, 0);
+                    assertEquals(terms.term().text, new String(payload, 0, payload.length, utf8));
                 }
             }
             tp.close();
@@ -527,7 +535,7 @@ public class TestPayloads extends LuceneTestCase {
             this.pool = pool;
             payload = pool.get();
             generateRandomData(payload);
-            term = pool.bytesToString(payload);
+            term = new String(payload, 0, payload.length, utf8);
             first = true;
             payloadAtt = addAttribute(PayloadAttribute.class);
             termAtt = addAttribute(CharTermAttribute.class);
@@ -557,18 +565,6 @@ public class TestPayloads extends LuceneTestCase {
             pool = new ArrayList<byte[]>();
             for (int i = 0; i < capacity; i++) {
                 pool.add(new byte[size]);
-            }
-        }
-        
-        private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
-
-        synchronized String bytesToString(byte[] bytes) {
-            String s = new String(bytes);
-            UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
-            try {
-                return new String(utf8Result.result, 0, utf8Result.length, "UTF-8");
-            } catch (UnsupportedEncodingException uee) {
-                return null;
             }
         }
     
