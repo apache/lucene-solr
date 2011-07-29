@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -171,13 +172,17 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
-    HashSet<Term> frozenSet = new HashSet<Term>();
+    Set<Term> frozenSet = new HashSet<Term>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
-      frozenSet.add(t);
+      BytesRef bytesRef = new BytesRef();
+      bytesRef.copy(t.bytes);
+      frozenSet.add(new Term(t.field, bytesRef));
     }
-    assertEquals(uniqueValues, frozenSet);
     assertEquals("num deletes must be 0 after freeze", 0, queue
         .numGlobalTermDeletes());
+    assertEquals(uniqueValues.size(), frozenSet.size());
+    assertEquals(uniqueValues, frozenSet);
+   
   }
 
   private static class UpdateThread extends Thread {
