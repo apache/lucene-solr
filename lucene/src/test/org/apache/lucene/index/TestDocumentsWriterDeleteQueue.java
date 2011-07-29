@@ -16,7 +16,6 @@ package org.apache.lucene.index;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -73,7 +72,9 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     assertEquals(uniqueValues, bd2.terms.keySet());
     HashSet<Term> frozenSet = new HashSet<Term>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
-      frozenSet.add(t);
+      BytesRef bytesRef = new BytesRef();
+      bytesRef.copy(t.bytes);
+      frozenSet.add(new Term(t.field, bytesRef));
     }
     assertEquals(uniqueValues, frozenSet);
     assertEquals("num deletes must be 0 after freeze", 0, queue
