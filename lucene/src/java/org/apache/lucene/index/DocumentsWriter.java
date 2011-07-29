@@ -135,7 +135,7 @@ final class DocumentsWriter {
   private final int maxThreadStates;
 
   // Deletes for our still-in-RAM (to be flushed next) segment
-  private BufferedDeletes pendingDeletes = new BufferedDeletes(false);
+  private BufferedDeletes pendingDeletes = new BufferedDeletes();
   
   static class DocState {
     DocumentsWriter docWriter;

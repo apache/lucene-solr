@@ -19,8 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-/** A memory-resident {@link IndexInput} implementation. */
-class RAMInputStream extends IndexInput implements Cloneable {
+/** A memory-resident {@link IndexInput} implementation. 
+ *  
+ *  @lucene.internal */
+public class RAMInputStream extends IndexInput implements Cloneable {
   static final int BUFFER_SIZE = RAMOutputStream.BUFFER_SIZE;
 
   private RAMFile file;
@@ -33,7 +35,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
   private long bufferStart;
   private int bufferLength;
 
-  RAMInputStream(RAMFile f) throws IOException {
+  public RAMInputStream(RAMFile f) throws IOException {
     file = f;
     length = file.length;
     if (length/BUFFER_SIZE >= Integer.MAX_VALUE) {
