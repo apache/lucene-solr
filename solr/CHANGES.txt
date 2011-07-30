@@ -52,7 +52,9 @@ Upgrading from Solr 3.3-dev
   If q.op is effectively "OR" then mm=0%.  Users who wish to force the
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
-
+  
+* FacetComponent no longer catches and embeds exceptions occurred during facet
+  processing, it throws HTTP 400 or 500 exceptions instead.
 
 Detailed Change List
 ----------------------
@@ -212,6 +214,9 @@ Bug Fixes
   
 * SOLR-2193, SOLR-2565, SOLR-2651: SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
+
+* SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
+  exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)
   
 Other Changes
 ----------------------
