@@ -24,6 +24,7 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -177,22 +178,14 @@ public class SimpleFacets {
       facetResponse.add("facet_dates", getFacetDateCounts());
       facetResponse.add("facet_ranges", getFacetRangeCounts());
 
-    } catch (Exception e) {
+    } catch (IOException e) {
       SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
-      addException("Exception during facet counts", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (ParseException e) {
+      SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
     return facetResponse;
-  }
-
-  public void addException(String msg, Exception e) {
-    List exceptions = (List)facetResponse.get("exception");
-    if (exceptions == null) {
-      exceptions = new ArrayList();
-      facetResponse.add("exception", exceptions);
-    }
-
-    String entry = msg + '\n' + SolrException.toStr(e);
-    exceptions.add(entry);
   }
 
   /**
@@ -216,18 +209,11 @@ public class SimpleFacets {
 
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
-        try {
-          parseParams(FacetParams.FACET_QUERY, q);
+        parseParams(FacetParams.FACET_QUERY, q);
 
-          // TODO: slight optimization would prevent double-parsing of any localParams
-          Query qobj = QParser.getParser(q, null, req).getQuery();
-          res.add(key, searcher.numDocs(qobj, base));
-        }
-        catch (Exception e) {
-          String msg = "Exception during facet.query of " + q;
-          SolrException.logOnce(SolrCore.log, msg, e);
-          addException(msg , e);
-        }
+        // TODO: slight optimization would prevent double-parsing of any localParams
+        Query qobj = QParser.getParser(q, null, req).getQuery();
+        res.add(key, searcher.numDocs(qobj, base));
       }
     }
 
@@ -305,18 +291,12 @@ public class SimpleFacets {
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
     if (null != facetFs) {
       for (String f : facetFs) {
-        try {
-          parseParams(FacetParams.FACET_FIELD, f);
-          String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
-          if (termList != null) {
-            res.add(key, getListedTermCounts(facetValue, termList));
-          } else {
-            res.add(key, getTermCounts(facetValue));
-          }
-        } catch (Exception e) {
-          String msg = "Exception during facet.field of " + f;
-          SolrException.logOnce(SolrCore.log, msg, e);
-          addException(msg , e);
+        parseParams(FacetParams.FACET_FIELD, f);
+        String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
+        if (termList != null) {
+          res.add(key, getListedTermCounts(facetValue, termList));
+        } else {
+          res.add(key, getTermCounts(facetValue));
         }
       }
     }
@@ -591,13 +571,7 @@ public class SimpleFacets {
     if (null == fields || 0 == fields.length) return resOuter;
 
     for (String f : fields) {
-      try {
-        getFacetDateCounts(f, resOuter);
-      } catch (Exception e) {
-        String msg = "Exception during facet.date of " + f;
-        SolrException.logOnce(SolrCore.log, msg, e);
-        addException(msg , e);
-      }
+      getFacetDateCounts(f, resOuter);
     }
 
     return resOuter;
@@ -767,20 +741,14 @@ public class SimpleFacets {
    * @see FacetParams#FACET_RANGE
    */
 
-  public NamedList getFacetRangeCounts() {
+  public NamedList getFacetRangeCounts() throws IOException, ParseException {
     final NamedList resOuter = new SimpleOrderedMap();
     final String[] fields = params.getParams(FacetParams.FACET_RANGE);
 
     if (null == fields || 0 == fields.length) return resOuter;
 
     for (String f : fields) {
-      try {
-        getFacetRangeCounts(f, resOuter);
-      } catch (Exception e) {
-        String msg = "Exception during facet.range of " + f;
-        SolrException.logOnce(SolrCore.log, msg, e);
-        addException(msg , e);
-      }
+      getFacetRangeCounts(f, resOuter);
     }
 
     return resOuter;

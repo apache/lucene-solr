@@ -44,6 +44,9 @@ Upgrading from Solr 3.3
   "true" for consistent behavior with previous Solr versions.  This
   situation has now been fixed to cause an error on startup when these
   contradictory options.  See SOLR-2669.
+  
+* FacetComponent no longer catches and embeds exceptions occurred during facet
+  processing, it throws HTTP 400 or 500 exceptions instead.
 
 New Features
 ----------------------
@@ -141,6 +144,9 @@ Bug Fixes
 * SOLR-2676: Add "welcome-file-list" to solr.war so admin UI works correctly 
   in servlet containers such as WebSphere that do not use a default list
   (Jay R. Jaeger, hossman)
+
+* SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
+  exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)
 
  Other Changes
 ----------------------
