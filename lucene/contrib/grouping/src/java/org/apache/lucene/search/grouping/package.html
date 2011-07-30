@@ -145,7 +145,7 @@ Then, at search time, do this up front:
 
 <pre class="prettyprint">
   // Set this once in your app & save away for reusing across all queries:
-  Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("end", "x"))));
+  Filter groupEndDocs = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupEnd", "x"))));
 </pre>
 
 Finally, do this per search:
