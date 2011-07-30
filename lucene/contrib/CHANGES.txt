@@ -102,6 +102,9 @@ Bug Fixes
    your string and encode/decode it using the default charset, it now uses
    a StringReader.  Finally, MoreLikeThis's methods that take File, URL, InputStream,
    are deprecated, please create the Reader yourself. (Trejkaz, Robert Muir)
+   
+ * LUCENE-3347: XML query parser did not always incorporate boosts from
+   UserQuery elements.  (Moogie, Uwe Schindler)
 
 ======================= Lucene 3.3.0 =======================
 

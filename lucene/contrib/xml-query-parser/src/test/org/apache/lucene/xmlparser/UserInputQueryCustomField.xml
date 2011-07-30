@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<UserQuery fieldName="doesNotExist">Bank</UserQuery>
+<UserQuery fieldName="doesNotExist" boost="10">Bank^2</UserQuery>

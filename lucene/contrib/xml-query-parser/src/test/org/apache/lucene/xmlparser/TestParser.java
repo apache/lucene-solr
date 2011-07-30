@@ -121,6 +121,7 @@ public class TestParser extends LuceneTestCase {
 	public void testCustomFieldUserQueryXML() throws ParserException, IOException
 	{
 			Query q=parse("UserInputQueryCustomField.xml");
+			assertEquals(20.0f, q.getBoost());
 			int h = searcher.search(q, null, 1000).totalHits;
 			assertEquals("UserInputQueryCustomField should produce 0 result ", 0,h);
 	}

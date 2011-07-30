@@ -74,7 +74,8 @@ public class UserInputQueryBuilder implements QueryBuilder {
 				QueryParser parser=createQueryParser(fieldName, analyzer);
 				q = parser.parse(text);				
 			}
-			q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+			// use the boost of the original query here, too and multiply (which may be != 1.0f):
+			q.setBoost(q.getBoost()*DOMUtils.getAttribute(e,"boost",1.0f));
 			return q;
 		} catch (ParseException e1) {
 			throw new ParserException(e1.getMessage());
