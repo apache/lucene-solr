@@ -148,12 +148,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         // still inc softCommit
         softCommitTracker.docsSinceCommit++;
       }
-      
-      // this is the only unsynchronized code in the iwAccess block, which
-      // should account for most of the time
-			Term updateTerm = null;
 
       if (cmd.overwrite) {
+        Term updateTerm;
         Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
         boolean del = false;
         if (cmd.updateTerm == null) {
@@ -189,7 +186,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
 
-  // could return the number of docs deleted, but is that always possible to know???
+  // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     deleteByIdCommands.incrementAndGet();
@@ -204,16 +201,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
-  // why not return number of docs deleted?
-  // Depending on implementation, we may not be able to immediately determine the num...
+  // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     deleteByQueryCommands.incrementAndGet();
     deleteByQueryCommandsCumulative.incrementAndGet();
     boolean madeIt=false;
-    boolean delAll=false;
     try {
-      Query q = null;
+      Query q;
       try {
         QParser parser = QParser.getParser(cmd.query, "lucene", cmd.req);
         q = parser.getQuery();
@@ -221,7 +216,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
       
-      delAll = MatchAllDocsQuery.class == q.getClass();
+      boolean delAll = MatchAllDocsQuery.class == q.getClass();
       
       if (delAll) {
         deleteAll();
@@ -248,7 +243,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
     mergeIndexesCommands.incrementAndGet();
-    int rc = -1;
+    int rc;
 
     log.info("start " + cmd);
     
@@ -308,10 +303,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (cmd.optimize) {
         callPostOptimizeCallbacks();
       }
-      
-      // open a new searcher in the sync block to avoid opening it
-      // after a deleteByQuery changed the index, or in between deletes
-      // and adds of another commit being done.
+
       if (cmd.softCommit) {
         core.getSearcher(true,false,waitSearcher, true);
       } else {
@@ -338,7 +330,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
-    // outside of the synchronized block so that other update operations can proceed.
+    // outside any synchronized block so that other update operations can proceed.
     if (waitSearcher!=null && waitSearcher[0] != null) {
        try {
         waitSearcher[0].get();
