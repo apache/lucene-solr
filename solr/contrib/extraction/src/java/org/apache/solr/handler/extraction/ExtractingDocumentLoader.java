@@ -119,7 +119,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   }
 
   void addDoc(SolrContentHandler handler) throws IOException {
-    templateAdd.indexedId = null;
+    templateAdd.clear();
     doAdd(handler, templateAdd);
   }
 

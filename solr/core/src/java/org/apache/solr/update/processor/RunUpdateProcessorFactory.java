@@ -57,7 +57,6 @@ class RunUpdateProcessor extends UpdateRequestProcessor
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    cmd.doc = DocumentBuilder.toDocument(cmd.getSolrInputDocument(), req.getSchema());
     updateHandler.addDoc(cmd);
     super.processAdd(cmd);
   }

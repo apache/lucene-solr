@@ -111,34 +111,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
   }
-
-  protected final Term idTerm(String readableId) {
-    // to correctly create the Term, the string needs to be run
-    // through the Analyzer for that field.
-    return new Term(idField.getName(), idFieldType.toInternal(readableId));
-  }
-
-  protected final String getIndexedId(Document doc) {
-    if (idField == null)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Operation requires schema to have a unique key field");
-
-    // Right now, single valued fields that require value transformation from external to internal (indexed)
-    // form have that transformation already performed and stored as the field value.
-    Fieldable[] id = doc.getFieldables( idField.getName() );
-    if (id == null || id.length < 1)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + idField.getName());
-    if( id.length > 1 )
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + idField.getName());
-
-    return idFieldType.storedToIndexed( id[0] );
-  }
-
-  protected final String getIndexedIdOptional(Document doc) {
-    if (idField == null) return null;
-    Fieldable f = doc.getFieldable(idField.getName());
-    if (f == null) return null;
-    return idFieldType.storedToIndexed(f);
-  }
   
   /**
    * Allows the UpdateHandler to create the SolrIndexSearcher after it
@@ -165,44 +137,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
   public abstract void close() throws IOException;
-
-
-  static class DeleteHitCollector extends Collector {
-    public int deleted=0;
-    public final SolrIndexSearcher searcher;
-    private int docBase;
-
-    public DeleteHitCollector(SolrIndexSearcher searcher) {
-      this.searcher = searcher;
-    }
-
-    @Override
-    public void collect(int doc) {
-      try {
-        searcher.getIndexReader().deleteDocument(doc + docBase);
-        deleted++;
-      } catch (IOException e) {
-        // don't try to close the searcher on failure for now...
-        // try { closeSearcher(); } catch (Exception ee) { SolrException.log(log,ee); }
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error deleting doc# "+doc,e,false);
-      }
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      docBase = context.docBase;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      
-    }
-  }
 
 
   /**

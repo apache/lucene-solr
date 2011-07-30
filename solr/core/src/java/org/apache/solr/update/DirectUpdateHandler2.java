@@ -154,10 +154,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 			Term updateTerm = null;
 
       if (cmd.overwrite) {
-        if (cmd.indexedId == null) {
-          cmd.indexedId = getIndexedId(cmd.doc);
-        }
-        Term idTerm = new Term(idField.getName(), cmd.indexedId);
+        Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
         boolean del = false;
         if (cmd.updateTerm == null) {
           updateTerm = idTerm;
@@ -166,7 +163,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           updateTerm = cmd.updateTerm;
         }
 
-        writer.updateDocument(updateTerm, cmd.getLuceneDocument(schema));
+        writer.updateDocument(updateTerm, cmd.getLuceneDocument());
         if(del) { // ensure id remains unique
           BooleanQuery bq = new BooleanQuery();
           bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
@@ -175,7 +172,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         }
       } else {
         // allow duplicates
-        writer.addDocument(cmd.getLuceneDocument(schema));
+        writer.addDocument(cmd.getLuceneDocument());
       }
 
       rc = 1;
@@ -198,7 +195,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
+    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
     if (commitTracker.timeUpperBound > 0) {
       commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);

@@ -294,7 +294,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final boolean tombstones = false;
 
     // query variables
-    final AtomicLong operations = new AtomicLong(10000000);  // number of query operations to perform in total       // TODO: temporarily high due to lack of stability
+    final AtomicLong operations = new AtomicLong(0);  // number of query operations to perform in total       // TODO: temporarily high due to lack of stability
     int nReadThreads = 10;
 
     initModel(ndocs);

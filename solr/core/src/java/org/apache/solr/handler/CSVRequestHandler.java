@@ -411,7 +411,7 @@ class SingleThreadedCSVLoader extends CSVLoader {
 
   @Override
   void addDoc(int line, String[] vals) throws IOException {
-    templateAdd.indexedId = null;
+    templateAdd.clear();
     SolrInputDocument doc = new SolrInputDocument();
     doAdd(line, vals, doc, templateAdd);
   }
