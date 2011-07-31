@@ -151,6 +151,10 @@ Bug Fixes
 * SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
   exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)
 
+* SOLR-2606: Fixed sort parsing of fields containing punctuation that 
+  failed due to sort by function changes introduced in SOLR-1297
+  (Mitsu Hadeishi, hossman)
+
  Other Changes
 ----------------------
 
