@@ -270,8 +270,6 @@ public class  FacetComponent extends SearchComponent
       int shardNum = rb.getShardNum(srsp.getShard());
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
 
-      fi.addExceptions((List)facet_counts.get("exception"));
-
       // handle facet queries
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
       if (facet_queries != null) {
@@ -369,8 +367,6 @@ public class  FacetComponent extends SearchComponent
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
 
-      fi.addExceptions((List)facet_counts.get("exception"));
-
       if (facet_fields == null) continue; // this can happen when there's an exception      
 
       for (int i=0; i<facet_fields.size(); i++) {
@@ -400,10 +396,6 @@ public class  FacetComponent extends SearchComponent
     FacetInfo fi = rb._facetInfo;
 
     NamedList facet_counts = new SimpleOrderedMap();
-
-    if (fi.exceptionList != null) {
-      facet_counts.add("exception",fi.exceptionList);
-    }
 
     NamedList facet_queries = new SimpleOrderedMap();
     facet_counts.add("facet_queries",facet_queries);
@@ -542,12 +534,6 @@ public class  FacetComponent extends SearchComponent
           facets.put(ff.getKey(), ff);
         }
       }
-    }
-        
-    public void addExceptions(List exceptions) {
-      if (exceptions == null) return;
-      if (exceptionList == null) exceptionList = new ArrayList();
-      exceptionList.addAll(exceptions);
     }
   }
 
