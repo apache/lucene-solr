@@ -289,10 +289,6 @@ public class FacetComponent extends SearchComponent
       int shardNum = rb.getShardNum(srsp.getShard());
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
 
-      @SuppressWarnings("unchecked")
-      List<String> excepts = (List<String>)facet_counts.get("exception");
-      fi.addExceptions(excepts);
-
       // handle facet queries
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
       if (facet_queries != null) {
@@ -476,10 +472,6 @@ public class FacetComponent extends SearchComponent
       // int shardNum = rb.getShardNum(srsp.shard);
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
-  
-      @SuppressWarnings("unchecked") 
-      List<String> excepts = (List<String>)facet_counts.get("exception");
-      fi.addExceptions(excepts);
 
       if (facet_fields == null) continue; // this can happen when there's an exception      
 
@@ -510,10 +502,6 @@ public class FacetComponent extends SearchComponent
     FacetInfo fi = rb._facetInfo;
 
     NamedList<Object> facet_counts = new SimpleOrderedMap<Object>();
-
-    if (fi.exceptionList != null) {
-      facet_counts.add("exception",fi.exceptionList);
-    }
 
     NamedList<Number> facet_queries = new SimpleOrderedMap<Number>();
     facet_counts.add("facet_queries",facet_queries);
@@ -635,8 +623,6 @@ public class FacetComponent extends SearchComponent
     public SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacets
       = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
 
-    public List<String> exceptionList;
-
     void parse(SolrParams params, ResponseBuilder rb) {
       queryFacets = new LinkedHashMap<String,QueryFacet>();
       facets = new LinkedHashMap<String,DistribFieldFacet>();
@@ -657,12 +643,6 @@ public class FacetComponent extends SearchComponent
           facets.put(ff.getKey(), ff);
         }
       }
-    }
-        
-    public void addExceptions(List<String> exceptions) {
-      if (exceptions == null) return;
-      if (exceptionList == null) exceptionList = new ArrayList<String>();
-      exceptionList.addAll(exceptions);
     }
   }
 
