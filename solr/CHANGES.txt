@@ -406,6 +406,10 @@ Bug Fixes
   in servlet containers such as WebSphere that do not use a default list
   (Jay R. Jaeger, hossman)
 
+* SOLR-2606: Fixed sort parsing of fields containing punctuation that 
+  failed due to sort by function changes introduced in SOLR-1297
+  (Mitsu Hadeishi, hossman)
+
  Other Changes
 ----------------------
 

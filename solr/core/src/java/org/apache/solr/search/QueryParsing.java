@@ -247,10 +247,11 @@ public class QueryParsing {
 
         // short circuit test for a really simple field name
         String field = sp.getId(null);
-        ParseException qParserException = null;
+        Exception qParserException = null;
 
-        if (field == null || sp.ch() != ' ') {
+        if (field == null || !Character.isWhitespace(sp.peekChar())) {
           // let's try it as a function instead
+          field = null;
           String funcStr = sp.val.substring(start);
 
           QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
@@ -297,7 +298,9 @@ public class QueryParsing {
               }
               continue;
             }
-          } catch (ParseException e) {
+          } catch (IOException ioe) {
+            throw ioe;
+          } catch (Exception e) {
             // hang onto this in case the string isn't a full field name either
             qParserException = e;
           }
