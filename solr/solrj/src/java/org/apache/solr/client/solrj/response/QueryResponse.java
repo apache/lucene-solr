@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 import java.util.*;
 
@@ -42,6 +43,10 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<NamedList<Object>> _spellInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
+
+  // Grouping response
+  private NamedList<Object> _groupedInfo = null;
+  private GroupResponse _groupResponse = null;
 
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
@@ -108,7 +113,11 @@ public class QueryResponse extends SolrResponseBase
         _debugInfo = (NamedList<Object>) res.getVal( i );
         extractDebugInfo( _debugInfo );
       }
-      else if( "highlighting".equals( n ) ) {
+      else if( "grouped".equals( n ) ) {
+        _groupedInfo = (NamedList<Object>) res.getVal( i );
+        extractGroupedInfo( _groupedInfo );
+      }
+       else if( "highlighting".equals( n ) ) {
         _highlightingInfo = (NamedList<Object>) res.getVal( i );
         extractHighlightingInfo( _highlightingInfo );
       }
@@ -166,6 +175,54 @@ public class QueryResponse extends SolrResponseBase
       for( Map.Entry<String, String> info : explain ) {
         String key = info.getKey();
         _explainMap.put( key, info.getValue() );
+      }
+    }
+  }
+
+  private void extractGroupedInfo( NamedList<Object> info ) {
+    if ( info != null ) {
+      _groupResponse = new GroupResponse();
+      int size = info.size();
+      for (int i=0; i < size; i++) {
+        String fieldName = info.getName(i);
+        Object fieldGroups =  info.getVal(i);
+        SimpleOrderedMap<Object> simpleOrderedMap = (SimpleOrderedMap<Object>) fieldGroups;
+
+        Object oMatches = simpleOrderedMap.get("matches");
+        Object oNGroups = simpleOrderedMap.get("ngroups");
+        Object oGroups = simpleOrderedMap.get("groups");
+        Object queryCommand = simpleOrderedMap.get("doclist");
+        if (oMatches == null) {
+          continue;
+        }
+
+        if (oGroups != null) {
+          Integer iMatches = (Integer) oMatches;
+          ArrayList<Object> groupsArr = (ArrayList<Object>) oGroups;
+          GroupCommand groupedCommand;
+          if (oNGroups != null) {
+            Integer iNGroups = (Integer) oNGroups;
+            groupedCommand = new GroupCommand(fieldName, iMatches, iNGroups);
+          } else {
+            groupedCommand = new GroupCommand(fieldName, iMatches);
+          }
+
+          for (Object oGrp : groupsArr) {
+            SimpleOrderedMap grpMap = (SimpleOrderedMap) oGrp;
+            Object sGroupValue = grpMap.get( "groupValue");
+            SolrDocumentList doclist = (SolrDocumentList) grpMap.get( "doclist");
+            Group group = new Group(sGroupValue.toString(), doclist) ;
+            groupedCommand.add(group);
+          }
+
+          _groupResponse.add(groupedCommand);
+        } else if (queryCommand != null) {
+          Integer iMatches = (Integer) oMatches;
+          GroupCommand groupCommand = new GroupCommand(fieldName, iMatches);
+          SolrDocumentList docList = (SolrDocumentList) queryCommand;
+          groupCommand.add(new Group(fieldName, docList));
+          _groupResponse.add(groupCommand);
+        }
       }
     }
   }
@@ -332,6 +389,21 @@ public class QueryResponse extends SolrResponseBase
     return _facetQuery;
   }
 
+  /**
+   * Returns the {@link GroupResponse} containing the group commands.
+   * A group command can be the result of one of the following parameters:
+   * <ul>
+   *   <li>group.field
+   *   <li>group.func
+   *   <li>group.query
+   * </ul>
+   *
+   * @return the {@link GroupResponse} containing the group commands
+   */
+  public GroupResponse getGroupResponse() {
+    return _groupResponse;
+  }
+  
   public Map<String, Map<String, List<String>>> getHighlighting() {
     return _highlighting;
   }
@@ -365,7 +437,7 @@ public class QueryResponse extends SolrResponseBase
   
   /** get 
    * 
-   * @param name the name of the 
+   * @param name the name of the
    * @return the FacetField by name or null if it does not exist
    */
   public FacetField getFacetField(String name) {

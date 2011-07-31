@@ -342,8 +342,11 @@ New Features
 
 * SOLR-2523: Added support in SolrJ to easily interact with range facets.
   The range facet response can be parsed and is retrievable from the
-  QueryResponse class. The SolrQuery has convenient methods for using
+  QueryResponse class. The SolrQuery class has convenient methods for using
   range facets. (Martijn van Groningen)
+
+* SOLR-2637: Added support for group result parsing in SolrJ.
+  (Tao Cheng, Martijn van Groningen)
 
 Optimizations
 ----------------------
