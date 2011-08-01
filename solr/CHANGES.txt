@@ -98,7 +98,9 @@ New Features
 
 * SOLR-1566: Transforming documents in the ResponseWriters.  This will allow
   for more complex results in responses and open the door for function queries
-  as results. (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl)
+  as results. 
+  (ryan with patches from grant, noble, cmale, yonik, Jan Høydahl, 
+  Arul Kalaipandian, hossman)
 
 * SOLR-2396: Add CollationField, which is much more efficient than 
   the Solr 3.x CollationKeyFilterFactory, and also supports 

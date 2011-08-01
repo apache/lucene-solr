@@ -89,12 +89,15 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
 
       if (o instanceof SolrDocument) {
-        // Remove any fields that were not requested
-        // This typically happens when distributed search adds extra fields to an internal request
+        // Remove any fields that were not requested.
+        // This typically happens when distributed search adds 
+        // extra fields to an internal request
         SolrDocument doc = (SolrDocument)o;
-        for( String fname : doc.getFieldNames() ) {
-          if( !returnFields.wantsField( fname ) ) {
-            doc.removeFields( fname );
+        Iterator<Map.Entry<String, Object>> i = doc.iterator();
+        while ( i.hasNext() ) {
+          String fname = i.next().getKey();
+          if ( !returnFields.wantsField( fname ) ) {
+            i.remove();
           }
         }
         return doc;
