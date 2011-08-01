@@ -44,12 +44,13 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
  * value, it will only create the {@link TermRangeQueryNode} using the
  * non-parsed values. <br/>
  * <br/>
- * If a {@link ConfigurationKeys#LOCALE} is defined in the {@link QueryConfigHandler} it
- * will be used to parse the date, otherwise {@link Locale#getDefault()} will be
- * used. <br/>
+ * If a {@link ConfigurationKeys#LOCALE} is defined in the
+ * {@link QueryConfigHandler} it will be used to parse the date, otherwise
+ * {@link Locale#getDefault()} will be used. <br/>
  * <br/>
- * If a {@link ConfigurationKeys#DATE_RESOLUTION} is defined and the {@link Resolution} is
- * not <code>null</code> it will also be used to parse the date value. <br/>
+ * If a {@link ConfigurationKeys#DATE_RESOLUTION} is defined and the
+ * {@link Resolution} is not <code>null</code> it will also be used to parse the
+ * date value. <br/>
  * <br/>
  * 
  * @see ConfigurationKeys#DATE_RESOLUTION
@@ -74,7 +75,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       DateTools.Resolution dateRes = null;
       boolean inclusive = false;
       Locale locale = getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
-
+      
       if (locale == null) {
         locale = Locale.getDefault();
       }
@@ -95,9 +96,6 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       
       if (upper.getOperator() == CompareOperator.LE) {
         inclusive = true;
-        
-      } else if (lower.getOperator() == CompareOperator.GE) {
-        inclusive = true;
       }
       
       String part1 = lower.getTextAsString();
@@ -106,33 +104,41 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       try {
         DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
         df.setLenient(true);
-        Date d1 = df.parse(part1);
-        Date d2 = df.parse(part2);
-        if (inclusive) {
-          // The user can only specify the date, not the time, so make sure
-          // the time is set to the latest possible time of that date to really
-          // include all documents:
-          Calendar cal = Calendar.getInstance(locale);
-          cal.setTime(d2);
-          cal.set(Calendar.HOUR_OF_DAY, 23);
-          cal.set(Calendar.MINUTE, 59);
-          cal.set(Calendar.SECOND, 59);
-          cal.set(Calendar.MILLISECOND, 999);
-          d2 = cal.getTime();
+        
+        if (part1.length() > 0) {
+          Date d1 = df.parse(part1);
+          part1 = DateTools.dateToString(d1, dateRes);
+          lower.setText(part1);
         }
         
-        part1 = DateTools.dateToString(d1, dateRes);
-        part2 = DateTools.dateToString(d2, dateRes);
+        if (part2.length() > 0) {
+          Date d2 = df.parse(part2);
+          if (inclusive) {
+            // The user can only specify the date, not the time, so make sure
+            // the time is set to the latest possible time of that date to
+            // really
+            // include all documents:
+            Calendar cal = Calendar.getInstance(locale);
+            cal.setTime(d2);
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            d2 = cal.getTime();
+          }
+          
+          part2 = DateTools.dateToString(d2, dateRes);
+          upper.setText(part2);
+          
+        }
+        
       } catch (Exception e) {
         // do nothing
       }
       
-      lower.setText(part1);
-      upper.setText(part2);
-      
-      return new TermRangeQueryNode(lower, upper,
-          lower.getOperator() == CompareOperator.GE,
-          upper.getOperator() == CompareOperator.LE);
+      return new TermRangeQueryNode(lower, upper, part1.length() == 0
+          | lower.getOperator() == CompareOperator.GE, part2.length() == 0
+          | upper.getOperator() == CompareOperator.LE);
       
     }
     

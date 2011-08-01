@@ -83,8 +83,10 @@ public class TestNumericQueryParser extends LuceneTestCase {
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   
-  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date) throws ParseException {
-    return date == dateFormat.parse(dateFormat.format(new Date(date))).getTime();
+  private static boolean checkDateFormatSanity(DateFormat dateFormat, long date)
+      throws ParseException {
+    return date == dateFormat.parse(dateFormat.format(new Date(date)))
+        .getTime();
   }
   
   @BeforeClass
@@ -112,8 +114,8 @@ public class TestNumericQueryParser extends LuceneTestCase {
       
       // assumes localized date pattern will have at least year, month, day,
       // hour, minute
-      dateFormat = (SimpleDateFormat) DateFormat
-          .getDateTimeInstance(DATE_STYLE, TIME_STYLE, LOCALE);
+      dateFormat = (SimpleDateFormat) DateFormat.getDateTimeInstance(
+          DATE_STYLE, TIME_STYLE, LOCALE);
       
       // not all date patterns includes era, full year, timezone and second,
       // so we add them here
@@ -135,9 +137,8 @@ public class TestNumericQueryParser extends LuceneTestCase {
         // only positive values
         randomDate = Math.abs(randomDate);
       } while (randomDate == 0L);
-
-      dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat,
-          randomDate);
+      
+      dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat, randomDate);
       
       dateFormatSanityCheckPass &= checkDateFormatSanity(dateFormat, 0);
       
@@ -152,7 +153,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     NUMBER_FORMAT.setMinimumFractionDigits((random.nextInt() & 20) + 1);
     NUMBER_FORMAT.setMaximumIntegerDigits((random.nextInt() & 20) + 1);
     NUMBER_FORMAT.setMinimumIntegerDigits((random.nextInt() & 20) + 1);
-
+    
     double randomDouble;
     long randomLong;
     int randomInt;
@@ -167,8 +168,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     while ((randomFloat = normalizeNumber(Math.abs(random.nextFloat()))
         .floatValue()) == 0.0f)
       ;
-    while ((randomInt = normalizeNumber(Math.abs(random.nextInt()))
-        .intValue()) == 0)
+    while ((randomInt = normalizeNumber(Math.abs(random.nextInt())).intValue()) == 0)
       ;
     
     randomNumberMap.put(NumericField.DataType.LONG.name(), randomLong);
@@ -178,7 +178,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     randomNumberMap.put(DATE_FIELD_NAME, randomDate);
     
     RANDOM_NUMBER_MAP = Collections.unmodifiableMap(randomNumberMap);
-
+    
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -218,10 +218,14 @@ public class TestNumericQueryParser extends LuceneTestCase {
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
-   
+    
   }
   
   private static Number getNumberType(NumberType numberType, String fieldName) {
+    
+    if (numberType == null) {
+      return null;
+    }
     
     switch (numberType) {
       
@@ -253,6 +257,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
         
       default:
         return 0;
+        
     }
     
   }
@@ -295,25 +300,25 @@ public class TestNumericQueryParser extends LuceneTestCase {
     assertRangeQuery(NumberType.NEGATIVE, NumberType.NEGATIVE, true, true, 1);
   }
   
-  // @Test
+   @Test
   // test disabled since standard syntax parser does not work with inclusive and
   // exclusive at the same time
-//   public void testInclusiveLowerNumericRange() throws Exception {
-//   assertRangeQuery(NumberType.NEGATIVE, NumberType.ZERO, true, false, 1);
-//   assertRangeQuery(NumberType.ZERO, NumberType.POSITIVE, true, false, 1);
-//   assertRangeQuery(NumberType.NEGATIVE, NumberType.POSITIVE, true, false, 2);
-//   assertRangeQuery(NumberType.NEGATIVE, NumberType.NEGATIVE, true, false, 1);
-//   }
+  public void testInclusiveLowerNumericRange() throws Exception {
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.ZERO, false, true, 1);
+    assertRangeQuery(NumberType.ZERO, NumberType.POSITIVE, false, true, 1);
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.POSITIVE, false, true, 2);
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.NEGATIVE, false, true, 0);
+   }
   
-  // @Test
+  @Test
   // test disabled since standard syntax parser does not work with inclusive and
   // exclusive at the same time
-//   public void testInclusiveUpperNumericRange() throws Exception {
-//     assertRangeQuery(NumberType.NEGATIVE, NumberType.ZERO, false, true, 1);
-//     assertRangeQuery(NumberType.ZERO, NumberType.POSITIVE, false, true, 1);
-//     assertRangeQuery(NumberType.NEGATIVE, NumberType.POSITIVE, false, true, 2);
-//     assertRangeQuery(NumberType.NEGATIVE, NumberType.NEGATIVE, false, true, 1);
-//   }
+  public void testInclusiveUpperNumericRange() throws Exception {
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.ZERO, true, false, 1);
+    assertRangeQuery(NumberType.ZERO, NumberType.POSITIVE, true, false, 1);
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.POSITIVE, true, false, 2);
+    assertRangeQuery(NumberType.NEGATIVE, NumberType.NEGATIVE, true, false, 0);
+  }
   
   @Test
   public void testExclusiveNumericRange() throws Exception {
@@ -325,6 +330,43 @@ public class TestNumericQueryParser extends LuceneTestCase {
   }
   
   @Test
+  public void testOpenRangeNumericQuery() throws Exception {
+    assertOpenRangeQuery(NumberType.ZERO, "<", 1);
+    assertOpenRangeQuery(NumberType.POSITIVE, "<", 2);
+    assertOpenRangeQuery(NumberType.NEGATIVE, "<", 0);
+    
+    assertOpenRangeQuery(NumberType.ZERO, "<=", 2);
+    assertOpenRangeQuery(NumberType.POSITIVE, "<=", 3);
+    assertOpenRangeQuery(NumberType.NEGATIVE, "<=", 1);
+    
+    assertOpenRangeQuery(NumberType.ZERO, ">", 1);
+    assertOpenRangeQuery(NumberType.POSITIVE, ">", 0);
+    assertOpenRangeQuery(NumberType.NEGATIVE, ">", 2);
+    
+    assertOpenRangeQuery(NumberType.ZERO, ">=", 2);
+    assertOpenRangeQuery(NumberType.POSITIVE, ">=", 1);
+    assertOpenRangeQuery(NumberType.NEGATIVE, ">=", 3);
+    
+    assertOpenRangeQuery(NumberType.NEGATIVE, "=", 1);
+    assertOpenRangeQuery(NumberType.ZERO, "=", 1);
+    assertOpenRangeQuery(NumberType.POSITIVE, "=", 1);
+    
+    assertRangeQuery(NumberType.NEGATIVE, null, true, true, 3);
+    assertRangeQuery(NumberType.NEGATIVE, null, false, true, 2);
+    assertRangeQuery(NumberType.POSITIVE, null, true, false, 1);
+    assertRangeQuery(NumberType.ZERO, null, false, false, 1);
+
+    assertRangeQuery(null, NumberType.POSITIVE, true, true, 3);
+    assertRangeQuery(null, NumberType.POSITIVE, true, false, 2);
+    assertRangeQuery(null, NumberType.NEGATIVE, false, true, 1);
+    assertRangeQuery(null, NumberType.ZERO, false, false, 1);
+    
+    assertRangeQuery(null, null, false, false, 3);
+    assertRangeQuery(null, null, true, true, 3);
+    
+  }
+  
+  @Test
   public void testSimpleNumericQuery() throws Exception {
     assertSimpleQuery(NumberType.ZERO, 1);
     assertSimpleQuery(NumberType.POSITIVE, 1);
@@ -332,7 +374,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
   }
   
   public void assertRangeQuery(NumberType lowerType, NumberType upperType,
-      boolean upperInclusive, boolean lowerInclusive, int expectedDocCount)
+      boolean lowerInclusive, boolean upperInclusive, int expectedDocCount)
       throws QueryNodeException, IOException {
     
     StringBuilder sb = new StringBuilder();
@@ -349,13 +391,28 @@ public class TestNumericQueryParser extends LuceneTestCase {
           .append('"').append(upperInclusiveStr).append(' ');
     }
     
-    String lowerDateStr = ESCAPER.escape(
-        DATE_FORMAT.format(new Date(getNumberType(lowerType, DATE_FIELD_NAME)
-            .longValue())), LOCALE, EscapeQuerySyntax.Type.STRING).toString();
+    Number lowerDateNumber = getNumberType(lowerType, DATE_FIELD_NAME);
+    Number upperDateNumber = getNumberType(upperType, DATE_FIELD_NAME);
+    String lowerDateStr;
+    String upperDateStr;
     
-    String upperDateStr = ESCAPER.escape(
-        DATE_FORMAT.format(new Date(getNumberType(upperType, DATE_FIELD_NAME)
-            .longValue())), LOCALE, EscapeQuerySyntax.Type.STRING).toString();
+    if (lowerDateNumber != null) {
+      lowerDateStr = ESCAPER.escape(
+          DATE_FORMAT.format(new Date(lowerDateNumber.longValue())), LOCALE,
+          EscapeQuerySyntax.Type.STRING).toString();
+      
+    } else {
+      lowerDateStr = "*";
+    }
+    
+    if (upperDateNumber != null) {
+    upperDateStr = ESCAPER.escape(
+          DATE_FORMAT.format(new Date(upperDateNumber.longValue())), LOCALE,
+          EscapeQuerySyntax.Type.STRING).toString();
+    
+    } else {
+      upperDateStr = "*";
+    }
     
     sb.append("+").append(DATE_FIELD_NAME).append(':')
         .append(lowerInclusiveStr).append('"').append(lowerDateStr).append(
@@ -364,6 +421,26 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     testQuery(sb.toString(), expectedDocCount);
     
+  }
+  
+  public void assertOpenRangeQuery(NumberType boundType, String operator, int expectedDocCount)
+      throws QueryNodeException, IOException {
+
+    StringBuilder sb = new StringBuilder();
+    
+    for (NumericField.DataType type : NumericField.DataType.values()) {
+      String boundStr = numberToString(getNumberType(boundType, type.name()));
+      
+      sb.append("+").append(type.name()).append(operator).append('"').append(boundStr).append('"').append(' ');
+    }
+    
+    String boundDateStr = ESCAPER.escape(
+        DATE_FORMAT.format(new Date(getNumberType(boundType, DATE_FIELD_NAME)
+            .longValue())), LOCALE, EscapeQuerySyntax.Type.STRING).toString();
+    
+    sb.append("+").append(DATE_FIELD_NAME).append(operator).append('"').append(boundDateStr).append('"');
+    
+    testQuery(sb.toString(), expectedDocCount);
   }
   
   public void assertSimpleQuery(NumberType numberType, int expectedDocCount)
@@ -401,12 +478,11 @@ public class TestNumericQueryParser extends LuceneTestCase {
     if (VERBOSE) System.out.println(msg);
     
     assertEquals(msg, expectedDocCount, topDocs.totalHits);
-    
   }
   
   private static String numberToString(Number number) {
-    return ESCAPER.escape(NUMBER_FORMAT.format(number), LOCALE,
-        EscapeQuerySyntax.Type.STRING).toString();
+    return number == null ? "*" : ESCAPER.escape(NUMBER_FORMAT.format(number),
+        LOCALE, EscapeQuerySyntax.Type.STRING).toString();
   }
   
   private static Number normalizeNumber(Number number) throws ParseException {

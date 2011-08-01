@@ -4,8 +4,8 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
  
  import org.apache.lucene.messages.Message;
  import org.apache.lucene.messages.MessageImpl;
- import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
- import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+ import org.apache.lucene.queryparser.flexible.core.*;
+ import org.apache.lucene.queryparser.flexible.core.messages.*;
 
 /**
  * This exception is thrown when parse errors are encountered.
@@ -56,7 +56,7 @@ public class ParseException extends QueryNodeParseException {
   /** Constructor with message. */
   public ParseException(Message message) {
      super(message);
-                         }
+   }
 
   /**
    * This variable determines which constructor was used to create
@@ -193,4 +193,4 @@ public class ParseException extends QueryNodeParseException {
    }
 
 }
-/* JavaCC - OriginalChecksum=38bce846fe6c8482993969f741c0323e (do not edit this line) */
+/* JavaCC - OriginalChecksum=0f25f4245374bbf9920c9a82efecadd2 (do not edit this line) */

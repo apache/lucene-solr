@@ -29,6 +29,7 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
@@ -69,7 +70,7 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
     if (node instanceof FieldQueryNode
-        && !(node instanceof ParametricQueryNode)) {
+        && !(node.getParent() instanceof ParametricRangeQueryNode)) {
       
       QueryConfigHandler config = getQueryConfigHandler();
       
@@ -85,30 +86,38 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
           if (numericConfig != null) {
             
             NumberFormat numberFormat = numericConfig.getNumberFormat();
-            Number number;
+            String text = fieldNode.getTextAsString();
+            Number number = null;
             
-            try {
-              number = numberFormat.parse(fieldNode.getTextAsString());
+            if (text.length() > 0) {
               
-            } catch (ParseException e) {
+              try {
+                number = numberFormat.parse(text);
+                
+              } catch (ParseException e) {
+                throw new QueryNodeParseException(new MessageImpl(
+                    QueryParserMessages.COULD_NOT_PARSE_NUMBER, fieldNode
+                        .getTextAsString(), numberFormat.getClass()
+                        .getCanonicalName()), e);
+              }
+              
+              switch (numericConfig.getType()) {
+                case LONG:
+                  number = number.longValue();
+                  break;
+                case INT:
+                  number = number.intValue();
+                  break;
+                case DOUBLE:
+                  number = number.doubleValue();
+                  break;
+                case FLOAT:
+                  number = number.floatValue();
+              }
+              
+            } else {
               throw new QueryNodeParseException(new MessageImpl(
-                  QueryParserMessages.COULD_NOT_PARSE_NUMBER, fieldNode
-                      .getTextAsString(), numberFormat.getClass()
-                      .getCanonicalName()), e);
-            }
-            
-            switch (numericConfig.getType()) {
-              case LONG:
-                number = number.longValue();
-                break;
-              case INT:
-                number = number.intValue();
-                break;
-              case DOUBLE:
-                number = number.doubleValue();
-                break;
-              case FLOAT:
-                number = number.floatValue();
+                  QueryParserMessages.NUMERIC_CANNOT_BE_EMPTY, fieldNode.getFieldAsString()));
             }
             
             NumericQueryNode lowerNode = new NumericQueryNode(fieldNode

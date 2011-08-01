@@ -67,7 +67,8 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
         || node instanceof ParametricQueryNode || node instanceof RegexpQueryNode) {
 
       TextableQueryNode txtNode = (TextableQueryNode) node;
-      txtNode.setText(UnescapedCharSequence.toLowerCase(txtNode.getText()));
+      CharSequence text = txtNode.getText();
+      txtNode.setText(text != null ? UnescapedCharSequence.toLowerCase(text) : null);
     }
 
     return node;

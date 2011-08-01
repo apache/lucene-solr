@@ -547,6 +547,17 @@ public class TestQueryParser extends LuceneTestCase {
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
     
+    // test open ranges
+    assertQueryEquals("[ a TO * ]", null, "[a TO *]");
+    assertQueryEquals("[ * TO z ]", null, "[* TO z]");
+    assertQueryEquals("[ * TO * ]", null, "[* TO *]");
+    
+    // mixing exclude and include bounds
+    assertQueryEquals("{ a TO z ]", null, "{a TO z]");
+    assertQueryEquals("[ a TO z }", null, "[a TO z}");
+    assertQueryEquals("{ a TO * ]", null, "{a TO *]");
+    assertQueryEquals("[ * TO z }", null, "[* TO z}");
+    
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
     assertQueryEquals("{ a TO z }", null, "{a TO z}");

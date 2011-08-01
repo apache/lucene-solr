@@ -50,19 +50,8 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     NumericQueryNode lowerNumericNode = numericRangeNode.getLowerBound();
     NumericQueryNode upperNumericNode = numericRangeNode.getUpperBound();
     
-    Number lowerNumber, upperNumber;
-    
-    if (lowerNumericNode != null) {
-      lowerNumber = lowerNumericNode.getValue();
-    } else {
-      lowerNumber = null;
-    }
-    
-    if (upperNumericNode != null) {
-      upperNumber = upperNumericNode.getValue();
-    } else {
-      upperNumber = null;
-    }
+    Number lowerNumber = lowerNumericNode.getValue();
+    Number upperNumber = upperNumericNode.getValue();
     
     NumericConfig numericConfig = numericRangeNode.getNumericConfig();
     NumericField.DataType numberType = numericConfig.getType();

@@ -204,4 +204,18 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
     
   }
   
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("<").append(getClass().getCanonicalName());
+    sb.append(" lowerInclusive=").append(isLowerInclusive());
+    sb.append(" upperInclusive=").append(isUpperInclusive());
+    sb.append(">\n\t");
+    sb.append(getUpperBound()).append("\n\t");
+    sb.append(getLowerBound()).append("\n");
+    sb.append("</").append(getClass().getCanonicalName()).append(">\n");
+
+    return sb.toString();
+
+  }
+  
 }

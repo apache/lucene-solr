@@ -37,48 +37,50 @@ public interface StandardSyntaxParserConstants {
   /** RegularExpression Id. */
   int RPAREN = 14;
   /** RegularExpression Id. */
-  int COLON = 15;
+  int OP_COLON = 15;
   /** RegularExpression Id. */
-  int CARAT = 16;
+  int OP_EQUAL = 16;
   /** RegularExpression Id. */
-  int QUOTED = 17;
+  int OP_LESSTHAN = 17;
   /** RegularExpression Id. */
-  int TERM = 18;
+  int OP_LESSTHANEQ = 18;
   /** RegularExpression Id. */
-  int FUZZY_SLOP = 19;
+  int OP_MORETHAN = 19;
   /** RegularExpression Id. */
-  int REGEXPTERM = 20;
+  int OP_MORETHANEQ = 20;
   /** RegularExpression Id. */
-  int RANGEIN_START = 21;
+  int CARAT = 21;
   /** RegularExpression Id. */
-  int RANGEEX_START = 22;
+  int QUOTED = 22;
   /** RegularExpression Id. */
-  int NUMBER = 23;
+  int TERM = 23;
   /** RegularExpression Id. */
-  int RANGEIN_TO = 24;
+  int FUZZY_SLOP = 24;
   /** RegularExpression Id. */
-  int RANGEIN_END = 25;
+  int REGEXPTERM = 25;
   /** RegularExpression Id. */
-  int RANGEIN_QUOTED = 26;
+  int RANGEIN_START = 26;
   /** RegularExpression Id. */
-  int RANGEIN_GOOP = 27;
+  int RANGEEX_START = 27;
   /** RegularExpression Id. */
-  int RANGEEX_TO = 28;
+  int NUMBER = 28;
   /** RegularExpression Id. */
-  int RANGEEX_END = 29;
+  int RANGE_TO = 29;
   /** RegularExpression Id. */
-  int RANGEEX_QUOTED = 30;
+  int RANGEIN_END = 30;
   /** RegularExpression Id. */
-  int RANGEEX_GOOP = 31;
+  int RANGEEX_END = 31;
+  /** RegularExpression Id. */
+  int RANGE_QUOTED = 32;
+  /** RegularExpression Id. */
+  int RANGE_GOOP = 33;
 
   /** Lexical state. */
   int Boost = 0;
   /** Lexical state. */
-  int RangeEx = 1;
+  int Range = 1;
   /** Lexical state. */
-  int RangeIn = 2;
-  /** Lexical state. */
-  int DEFAULT = 3;
+  int DEFAULT = 2;
 
   /** Literal token values. */
   String[] tokenImage = {
@@ -98,6 +100,11 @@ public interface StandardSyntaxParserConstants {
     "\"(\"",
     "\")\"",
     "\":\"",
+    "\"=\"",
+    "\"<\"",
+    "\"<=\"",
+    "\">\"",
+    "\">=\"",
     "\"^\"",
     "<QUOTED>",
     "<TERM>",
@@ -108,12 +115,9 @@ public interface StandardSyntaxParserConstants {
     "<NUMBER>",
     "\"TO\"",
     "\"]\"",
-    "<RANGEIN_QUOTED>",
-    "<RANGEIN_GOOP>",
-    "\"TO\"",
     "\"}\"",
-    "<RANGEEX_QUOTED>",
-    "<RANGEEX_GOOP>",
+    "<RANGE_QUOTED>",
+    "<RANGE_GOOP>",
   };
 
 }
