@@ -240,7 +240,7 @@ public class _TestUtil {
       } else if (t <= 1) {
         chars[i++] = (char) random.nextInt(0x80);
       } else if (2 == t) {
-        chars[i++] = (char) nextInt(random, 0x80, 0x800);
+        chars[i++] = (char) nextInt(random, 0x80, 0x7ff);
       } else if (3 == t) {
         chars[i++] = (char) nextInt(random, 0x800, 0xd7ff);
       } else if (4 == t) {
@@ -348,7 +348,7 @@ public class _TestUtil {
         buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
         bytes -= 3;
       } else if (3 == t) {
-        buffer[i] = (char) nextInt(r, 0xe000, 0xffff);
+        buffer[i] = (char) nextInt(r, 0xe000, 0xfffe);
         bytes -= 3;
       } else if (4 == t) {
         // Make a surrogate pair

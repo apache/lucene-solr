@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +39,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
 
@@ -342,10 +340,16 @@ public class TestPayloads extends LuceneTestCase {
     }
     
     private void generateRandomData(byte[] data) {
-      // this test needs the random data to be valid unicode: historically it hasn't done a great job
-      for (int i = 0; i < data.length; i++) {
-        data[i] = (byte) _TestUtil.nextInt(random, 'a', 'z');
+      // this test needs the random data to be valid unicode
+      String s = _TestUtil.randomFixedByteLengthUnicodeString(random, data.length);
+      byte b[];
+      try {
+        b = s.getBytes("UTF-8");
+      } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException(e);
       }
+      assert b.length == data.length;
+      System.arraycopy(b, 0, data, 0, b.length);
     }
 
     private byte[] generateRandomData(int n) {
