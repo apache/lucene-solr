@@ -29,6 +29,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -298,6 +299,10 @@ public class RandomIndexWriter implements Closeable {
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     w.deleteDocuments(term);
   }
+
+  public void deleteDocuments(Query q) throws CorruptIndexException, IOException {
+    w.deleteDocuments(q);
+  }
   
   public void commit() throws CorruptIndexException, IOException {
     w.commit();
@@ -321,9 +326,14 @@ public class RandomIndexWriter implements Closeable {
   }
 
   private boolean doRandomOptimize = true;
+  private boolean doRandomOptimizeAssert = true;
 
   public void setDoRandomOptimize(boolean v) {
     doRandomOptimize = v;
+  }
+
+  public void setDoRandomOptimizeAssert(boolean v) {
+    doRandomOptimizeAssert = v;
   }
 
   private void doRandomOptimize() throws IOException {
@@ -336,7 +346,7 @@ public class RandomIndexWriter implements Closeable {
         // partial optimize
         final int limit = _TestUtil.nextInt(r, 1, segCount);
         w.optimize(limit);
-        assert w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
+        assert !doRandomOptimizeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
       }
     }
     switchDoDocValues();
@@ -364,7 +374,11 @@ public class RandomIndexWriter implements Closeable {
       }
       w.commit();
       switchDoDocValues();
-      return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10), w.getConfig().getCodecProvider());
+      if (r.nextBoolean()) {
+        return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10), w.getConfig().getCodecProvider());
+      } else {
+        return w.getReader(applyDeletions);
+      }
     }
   }
 
