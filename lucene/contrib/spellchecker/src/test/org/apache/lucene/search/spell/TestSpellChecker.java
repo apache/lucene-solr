@@ -136,6 +136,20 @@ public class TestSpellChecker extends LuceneTestCase {
       compareSP.close();
     compIdx.close();
   }
+  
+  public void testBogusField() throws Exception {
+    IndexReader r = IndexReader.open(userindex, true);
+    Directory compIdx = newDirectory();
+    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
+    addwords(r, compareSP, "field3");
+
+    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "bogusFieldBogusField", false);
+    assertEquals(0, similar.length);
+    r.close();
+    if (!compareSP.isClosed())
+      compareSP.close();
+    compIdx.close();
+  }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {
     String[] similar = spellChecker.suggestSimilar("fvie", 2);
