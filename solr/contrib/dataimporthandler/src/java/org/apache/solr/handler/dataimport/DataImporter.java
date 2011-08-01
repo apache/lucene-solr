@@ -18,11 +18,13 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -515,7 +517,7 @@ public class DataImporter {
     public String command = null;
 
     public boolean debug = false;
-
+    
     public boolean verbose = false;
 
     public boolean syncMode = false;
@@ -537,6 +539,10 @@ public class DataImporter {
     public String dataConfig;
 
     public ContentStream contentStream;
+    
+    public List<SolrInputDocument> debugDocuments = new ArrayList<SolrInputDocument>(0);
+    
+    public NamedList debugVerboseOutput = null;
 
     public RequestParams() {
     }

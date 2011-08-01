@@ -74,8 +74,6 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private Map<String, Properties> dataSources = new HashMap<String, Properties>();
 
-  private List<SolrInputDocument> debugDocuments;
-
   private boolean debugEnabled = true;
 
   private String myName = "dataimport";
@@ -197,16 +195,18 @@ public class DataImportHandler extends RequestHandlerBase implements
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
         SolrWriter sw = getSolrWriter(processor, loader, requestParams, req);
-
+        
         if (requestParams.debug) {
           if (debugEnabled) {
             // Synchronous request for the debug mode
             importer.runCmd(requestParams, sw);
             rsp.add("mode", "debug");
-            rsp.add("documents", debugDocuments);
-            if (sw.debugLogger != null)
-              rsp.add("verbose-output", sw.debugLogger.output);
-            debugDocuments = null;
+            rsp.add("documents", requestParams.debugDocuments);
+            if (requestParams.debugVerboseOutput != null) {
+            	rsp.add("verbose-output", requestParams.debugVerboseOutput);
+            }
+            requestParams.debugDocuments = new ArrayList<SolrInputDocument>(0);
+            requestParams.debugVerboseOutput = null;
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;
           }
@@ -215,7 +215,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           if(requestParams.contentStream == null && !requestParams.syncMode){
             importer.runAsync(requestParams, sw);
           } else {
-              importer.runCmd(requestParams, sw);
+            importer.runCmd(requestParams, sw);
           }
         }
       } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) {
@@ -285,11 +285,6 @@ public class DataImportHandler extends RequestHandlerBase implements
       @Override
       public boolean upload(SolrInputDocument document) {
         try {
-          if (requestParams.debug) {
-            if (debugDocuments == null)
-              debugDocuments = new ArrayList<SolrInputDocument>();
-            debugDocuments.add(document);
-          }
           return super.upload(document);
         } catch (RuntimeException e) {
           LOG.error( "Exception while adding: " + document, e);

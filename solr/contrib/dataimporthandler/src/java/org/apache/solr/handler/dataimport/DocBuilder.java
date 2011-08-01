@@ -72,11 +72,13 @@ public class DocBuilder {
   private static final String PARAM_WRITER_IMPL = "writerImpl";
   private static final String DEFAULT_WRITER_NAME = "SolrWriter";
   private DebugLogger debugLogger;
-
+  private DataImporter.RequestParams reqParams;
+  
     @SuppressWarnings("unchecked")
   public DocBuilder(DataImporter dataImporter, SolrWriter solrWriter, DIHPropertiesWriter propWriter, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
     this.dataImporter = dataImporter;
+    this.reqParams = reqParams;
     this.propWriter = propWriter;
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     requestParameters = reqParams;
@@ -262,6 +264,9 @@ public class DocBuilder {
 			if (writer != null) {
 	      writer.close();
 	    }
+			if(requestParameters.debug) {
+				requestParameters.debugVerboseOutput = getDebugLogger().output;	
+			}
 		}
   }
 
@@ -514,6 +519,9 @@ public class DocBuilder {
                   LOG.debug("adding a doc "+docWrapper);
                 }
                 boolean result = writer.upload(docWrapper);
+                if(reqParams.debug) {
+                	reqParams.debugDocuments.add(docWrapper);
+                }
                 docWrapper = null;
                 if (result){
                   importStatistics.docCount.incrementAndGet();
@@ -672,6 +680,9 @@ public class DocBuilder {
               return;
             if (!doc.isEmpty()) {
               boolean result = writer.upload(doc);
+              if(reqParams.debug) {
+              	reqParams.debugDocuments.add(doc);
+              }
               doc = null;
               if (result){
                 importStatistics.docCount.incrementAndGet();

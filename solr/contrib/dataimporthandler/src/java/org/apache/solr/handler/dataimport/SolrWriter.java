@@ -44,8 +44,6 @@ public class SolrWriter implements DIHWriter {
 
   private final UpdateRequestProcessor processor;
 
-  DebugLogger debugLogger;
-
   SolrQueryRequest req;
 
   public SolrWriter(UpdateRequestProcessor processor, SolrQueryRequest req) {
