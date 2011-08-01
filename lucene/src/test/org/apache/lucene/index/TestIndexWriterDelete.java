@@ -74,8 +74,15 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     Term term = new Term("city", "Amsterdam");
     int hitCount = getHitCount(dir, term);
     assertEquals(1, hitCount);
+    if (VERBOSE) {
+      System.out.println("\nTEST: now delete by term=" + term);
+    }
     modifier.deleteDocuments(term);
     modifier.commit();
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: now getHitCount");
+    }
     hitCount = getHitCount(dir, term);
     assertEquals(0, hitCount);
 

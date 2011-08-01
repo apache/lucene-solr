@@ -70,6 +70,7 @@ final class TermScorer extends Scorer {
   public boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     while (doc < end) {                           // for docs in window
+      //System.out.println("TS: collect doc=" + doc);
       c.collect(doc);                      // collect score
       if (++pointer >= pointerMax) {
         refillBuffer();

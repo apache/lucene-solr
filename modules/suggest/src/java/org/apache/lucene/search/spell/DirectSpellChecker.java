@@ -400,7 +400,7 @@ public class DirectSpellChecker {
     if (terms == null) {
       return Collections.emptyList();
     }
-    FuzzyTermsEnum e = new FuzzyTermsEnum(terms.iterator(), atts, term, editDistance, Math.max(minPrefix, editDistance-1));
+    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1));
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     
     BytesRef queryTerm = new BytesRef(term.text());

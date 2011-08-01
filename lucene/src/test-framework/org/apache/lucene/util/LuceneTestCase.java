@@ -348,7 +348,8 @@ public abstract class LuceneTestCase extends Assert {
   private static List<String> testClassesRun = new ArrayList<String>();
 
   private static void initRandom() {
-    assert !random.initialized;
+    // nocommit
+    //assert !random.initialized;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     random.initialized = true;
@@ -484,7 +485,7 @@ public abstract class LuceneTestCase extends Assert {
       System.err.println("NOTE: test params are: codec=" + codecDescription +
         ", locale=" + locale +
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
-    if (testsFailed) {
+    if (VERBOSE || testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
       System.err.println("NOTE: " + System.getProperty("os.name") + " "
@@ -1429,10 +1430,11 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
+      // nocommit
+      initRandom();
       if (testMethods != null)
         return testMethods;
       
-      initRandom();
       Random r = new Random(random.nextLong());
 
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());

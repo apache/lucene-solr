@@ -60,7 +60,7 @@ public class RandomIndexWriter implements Closeable {
 
     private final Random r;
 
-    public MockIndexWriter(Random r,Directory dir, IndexWriterConfig conf) throws IOException {
+    public MockIndexWriter(Random r, Directory dir, IndexWriterConfig conf) throws IOException {
       super(dir, conf);
       // must make a private random since our methods are
       // called from different threads; else test failures may

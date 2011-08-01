@@ -1,0 +1,60 @@
+test perf on single seg index too!
+
+"upgrade" postings reader/writer API to match block tree; then non-tree codec uses it too and we only need 1 impl of each postings
+
+what to do about short terms that "force" a block to mark itself has hasTerms!!??
+
+hmm should I re-shuffle the blocks into "forward" order...?
+
+try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
+
+maybe: allow more bytes to be spent on index WITHOUT changing hte blocking?  ie add next-byte into index, but don't change the term blocks
+
+run fuzzy q under profiler
+
+maybe make a "terms block cache" that holds low-prefix LRU term blocks in ram...?
+
+try forcing no hasTerms if depth < 2?
+
+maybe a cache holding all short-length terms will be big perf boost?  it saves having to scan the low-depth blocks... or... maybe a bit noting whether this block contains any terms != empty string suffix; or, we separately hold all 'short'/'straggler' terms in a map, enabling the low-depth blocks to then 'lie' and say they have no terms?
+
+allow the index to "reach in" and index first/2nd/etc. bytes of the prefixes w/in a block?  ie, if block 'foo' has 22 entries, but they all start with either 'a' or 'e' then i can store safely fooa/fooe in the index, pointing to the same block
+
+hmm -- should I do something "special" for prefix terms?  ie short terms like 'a' that force a "fake" block (having only the one term 'a').  if i don't do something special, any time we seek a* we will have to scan this block?
+
+hmm -- fix DOT when there are multiple outputs!?  oh, maybe not -- it just works?
+
+GRRR -- indexing MUCH slower now?
+
+automaton q should apply maxlength test on each scan'd term
+
+maybe blocks should NOT store sub-block pointers?  it's reudundant w/ the index...
+
+make a blocking policy that achieves burst trie, ie, all terms are in leaf blocks
+  - need special handling for terms that are fully present in the index?
+  - this should be good for "packed" PKs?  hmm, only first "clean" index written...
+
+would be nice to bake into FST outputs this ability to pack bits (ie multiple outputs) into a single long output... instead of app having to do its own packing
+
+how can I make seek(TermState) efficient...?  TermState needs to hold full frame stack!?  hmm... maybe not, once I don't store sub-block entries?
+
+intersect
+  - can have a "allow terms out of order" mode... eg w/ the IntersectedTermsEnum?  that could be HUGE gain
+
+maybe we should provide a "terms dict rewriter" tool?  ie can rewrite terms dict w/ new settings after segment was already created
+
+add block-sorting phase (writer)
+
+break up big blocks (must add floor arcs into FST)
+  - test on fully packed terms eg Test2B!!
+
+fix seek() to re-use what's already done, eg w/in leaf block seek, but
+  also w/in inner-block seek
+
+LATER:
+  - if entire terms index shares a certain prefix (eg 0000) then optimize this case -- pull out a common prefix, once, so don't do arc-by-arc scan for that
+    - ooh: for this case, instead of the "empty" block, we should store the 0000 block as the "root"
+  - TERMS DICT should store min, max term, common prefix for fast NOT_FOUND case?
+  - specialize the "onlyExact" case high up, so we don't sprinkle if's all throughout
+  - must remove var gap terms index writer/reader
+  - should we "align" our term dict blocks w/ disk blocks!?

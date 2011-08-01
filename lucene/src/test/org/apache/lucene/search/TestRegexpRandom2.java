@@ -143,6 +143,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
+      if (VERBOSE) {
+        System.out.println("TEST: regexp=" + reg);
+      }
       assertSame(reg);
     }
   }
@@ -161,9 +164,10 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     // automatically comparable.
     
     // TODO: does this check even matter anymore?!
-    Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
-    if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
-      return;
+    // nocommit: we'll find out!!
+    //Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
+    //if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
+    //return;
     
     TopDocs smartDocs = searcher1.search(smart, 25);
     TopDocs dumbDocs = searcher2.search(dumb, 25);

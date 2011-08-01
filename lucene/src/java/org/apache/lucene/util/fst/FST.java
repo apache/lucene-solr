@@ -123,7 +123,7 @@ public class FST<T> {
     public int label;
     public T output;
 
-    int target;
+    public int target;
 
     byte flags;
     public T nextFinalOutput;
@@ -272,6 +272,10 @@ public class FST<T> {
         readNextRealArc(arc, in);
       }
     }
+  }
+
+  public T getEmptyOutput() {
+    return emptyOutput;
   }
 
   void setEmptyOutput(T v) throws IOException {
@@ -597,9 +601,9 @@ public class FST<T> {
       arc.label = END_LABEL;
       arc.output = follow.nextFinalOutput;
       if (follow.target <= 0) {
-        arc.flags = BIT_LAST_ARC;
+        arc.flags = BIT_LAST_ARC | BIT_FINAL_ARC;
       } else {
-        arc.flags = 0;
+        arc.flags = BIT_FINAL_ARC;
         arc.nextArc = follow.target;
       }
       //System.out.println("    insert isFinal; nextArc=" + follow.target + " isLast=" + arc.isLast() + " output=" + outputs.outputToString(arc.output));
@@ -609,8 +613,7 @@ public class FST<T> {
     }
   }
 
-  // Not private because NodeHash needs access:
-  Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
+  public Arc<T> readFirstRealArc(int address, Arc<T> arc) throws IOException {
 
     final BytesReader in = getBytesReader(address);
 
@@ -693,7 +696,9 @@ public class FST<T> {
     return readLabel(in);
   }
 
-  Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
+  /** Never returns null, but you should never call this if
+   *  arc.isLast() is true. */
+  public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
     // this is a continuing arc in a fixed array
     if (arc.bytesPerArc != 0) {
       // arcs are at fixed entries
@@ -925,7 +930,7 @@ public class FST<T> {
     }
   }
 
-  final BytesReader getBytesReader(int pos) {
+  public final BytesReader getBytesReader(int pos) {
     // TODO: maybe re-use via ThreadLocal?
     return new BytesReader(pos);
   }

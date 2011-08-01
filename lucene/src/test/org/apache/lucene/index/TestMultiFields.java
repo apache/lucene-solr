@@ -29,10 +29,15 @@ public class TestMultiFields extends LuceneTestCase {
 
     int num = atLeast(2);
     for (int iter = 0; iter < num; iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
+
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
       _TestUtil.keepFullyDeletedSegments(w);
+      w.setInfoStream(VERBOSE ? System.out : null);
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();
@@ -46,6 +51,9 @@ public class TestMultiFields extends LuceneTestCase {
       doc.add(id);
 
       boolean onlyUniqueTerms = random.nextBoolean();
+      if (VERBOSE) {
+        System.out.println("TEST: onlyUniqueTerms=" + onlyUniqueTerms + " numDocs=" + numDocs);
+      }
       Set<BytesRef> uniqueTerms = new HashSet<BytesRef>();
       for(int i=0;i<numDocs;i++) {
 
@@ -74,21 +82,33 @@ public class TestMultiFields extends LuceneTestCase {
           int delID = random.nextInt(i);
           deleted.add(delID);
           w.deleteDocuments(new Term("id", ""+delID));
+          if (VERBOSE) {
+            System.out.println("TEST: delete " + delID);
+          }
         }
       }
 
       if (VERBOSE) {
         List<BytesRef> termsList = new ArrayList<BytesRef>(uniqueTerms);
         Collections.sort(termsList, BytesRef.getUTF8SortedAsUTF16Comparator());
-        System.out.println("UTF16 order:");
+        System.out.println("TEST: terms in UTF16 order:");
         for(BytesRef b : termsList) {
-          System.out.println("  " + UnicodeUtil.toHexString(b.utf8ToString()));
+          System.out.println("  " + UnicodeUtil.toHexString(b.utf8ToString()) + " " + b);
+          for(int docID : docs.get(b)) {
+            if (deleted.contains(docID)) {
+              System.out.println("    " + docID + " (deleted)");
+            } else {
+              System.out.println("    " + docID);
+            }
+          }
         }
       }
 
       IndexReader reader = w.getReader();
       w.close();
-      //System.out.println("TEST reader=" + reader);
+      if (VERBOSE) {
+        System.out.println("TEST: reader=" + reader);
+      }
 
       Bits liveDocs = MultiFields.getLiveDocs(reader);
       for(int delDoc : deleted) {
@@ -99,7 +119,7 @@ public class TestMultiFields extends LuceneTestCase {
       for(int i=0;i<100;i++) {
         BytesRef term = terms.get(random.nextInt(terms.size()));
         if (VERBOSE) {
-          System.out.println("TEST: seek to term= "+ UnicodeUtil.toHexString(term.utf8ToString()));
+          System.out.println("TEST: seek term="+ UnicodeUtil.toHexString(term.utf8ToString()) + " " + term);
         }
         
         DocsEnum docsEnum = terms2.docs(liveDocs, term, null);

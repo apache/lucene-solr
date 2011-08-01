@@ -43,14 +43,28 @@ public final class ByteArrayDataInput extends DataInput {
     reset(bytes, 0, bytes.length);
   }
 
+  public void rewind() {
+    // nocommit -- not right if .reset was called w/
+    // non-zero offset...
+    pos = 0;
+  }
+
   public int getPosition() {
     return pos;
+  }
+
+  public void setPosition(int pos) {
+    this.pos = pos;
   }
 
   public void reset(byte[] bytes, int offset, int len) {
     this.bytes = bytes;
     pos = offset;
     limit = offset + len;
+  }
+
+  public int length() {
+    return limit;
   }
 
   public boolean eof() {

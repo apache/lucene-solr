@@ -132,8 +132,9 @@ public class TestNRTThreads extends LuceneTestCase {
     }
     _TestUtil.reduceOpenFiles(writer);
 
-    final int NUM_INDEX_THREADS = 2;
-    final int NUM_SEARCH_THREADS = 3;
+    // nocommit
+    final int NUM_INDEX_THREADS = 1; // 2
+    final int NUM_SEARCH_THREADS = 1; // 3
 
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 

@@ -45,6 +45,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 
+// nocommit -- cut the postings interface over to the same
+// as blocktree?  this way we don't need 2x of each codec's
+// postings impls?
+
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
  *  PostingsReaderBase}.  This class is reusable for

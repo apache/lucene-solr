@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.IOUtils;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
@@ -57,6 +58,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     CollectionUtil.quickSort(allFields);
 
     final FieldsConsumer consumer = state.segmentCodecs.codec().fieldsConsumer(state);
+
+    boolean success = false;
 
     try {
       TermsHash termsHash = null;
@@ -100,8 +103,9 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       if (termsHash != null) {
         termsHash.reset();
       }
+      success = true;
     } finally {
-      consumer.close();
+      IOUtils.closeSafely(!success, consumer);
     }
   }
 

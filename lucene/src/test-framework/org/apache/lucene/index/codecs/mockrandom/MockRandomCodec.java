@@ -30,6 +30,8 @@ import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
@@ -43,6 +45,8 @@ import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
@@ -53,6 +57,8 @@ import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsReaderImpl;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriterImpl;
+import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsReader;
+import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsWriter;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
@@ -60,6 +66,8 @@ import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -137,7 +145,7 @@ public class MockRandomCodec extends Codec {
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " seed=" + seed);
+      System.out.println("MockRandomCodec: writing to seg=" + state.segmentName + " codecID=" + state.codecId + " seed=" + seed);
     }
 
     final String seedFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, SEED_EXT);
@@ -152,87 +160,122 @@ public class MockRandomCodec extends Codec {
     
     random.nextInt(); // consume a random for buffersize
     
-    PostingsWriterBase postingsWriter;
-
     if (random.nextBoolean()) {
-      postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random), skipInterval);
-    } else {
+      // Use BlockTree terms dict
+
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: writing Standard postings");
+        System.out.println("MockRandomCodec: writing BlockTree terms dict");
       }
-      postingsWriter = new StandardPostingsWriter(state, skipInterval);
-    }
+      BlockTreePostingsWriterBase postingsWriter = new StandardTreePostingsWriter(state);
 
-    if (random.nextBoolean()) {
-      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
-    }
-
-    final TermsIndexWriterBase indexWriter;
-    boolean success = false;
-
-    try {
       if (random.nextBoolean()) {
-        state.termIndexInterval = _TestUtil.nextInt(random, 1, 100);
+        final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
         if (LuceneTestCase.VERBOSE) {
-          System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + state.termIndexInterval + ")");
+          System.out.println("MockRandomCodec: pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        indexWriter = new FixedGapTermsIndexWriter(state);
-      } else {
-        final VariableGapTermsIndexWriter.IndexTermSelector selector;
-        final int n2 = random.nextInt(3);
-        if (n2 == 0) {
-          final int tii = _TestUtil.nextInt(random, 1, 100);
-          selector = new VariableGapTermsIndexWriter.EveryNTermSelector(tii);
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: variable-gap terms index (tii=" + tii + ")");
-          }
-        } else if (n2 == 1) {
-          final int docFreqThresh = _TestUtil.nextInt(random, 2, 100);
-          final int tii = _TestUtil.nextInt(random, 1, 100);
-          selector = new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThresh, tii);
-        } else {
-          final long seed2 = random.nextLong();
-          final int gap = _TestUtil.nextInt(random, 2, 40);
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: random-gap terms index (max gap=" + gap + ")");
-          }
-          selector = new VariableGapTermsIndexWriter.IndexTermSelector() {
-              final Random rand = new Random(seed2);
-
-              @Override
-              public boolean isIndexTerm(BytesRef term, TermStats stats) {
-                return rand.nextInt(gap) == gap/2;
-              }
-
-              @Override
-              public void newField(FieldInfo fieldInfo) {
-              }
-            };
-        }
-        indexWriter = new VariableGapTermsIndexWriter(state, selector);
+        postingsWriter = new PulsingTreePostingsWriter(totTFCutoff, postingsWriter);
       }
-      success = true;
-    } finally {
-      if (!success) {
-        postingsWriter.close();
-      }
-    }
 
-    success = false;
-    try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        try {
+      final int minTermsInBlock = _TestUtil.nextInt(random, 4, 100);
+      final int maxTermsInBlock = minTermsInBlock*2 + random.nextInt(100);
+
+      boolean success = false;
+      try {
+        FieldsConsumer ret = new BlockTreeTermsWriter(state, postingsWriter, minTermsInBlock, maxTermsInBlock);
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
           postingsWriter.close();
-        } finally {
-          indexWriter.close();
+        }
+      }
+    } else {
+
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: writing Block terms dict");
+      }
+
+      PostingsWriterBase postingsWriter;
+      if (random.nextBoolean()) {
+        postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random), skipInterval);
+      } else {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("MockRandomCodec: writing Standard postings");
+        }
+        postingsWriter = new StandardPostingsWriter(state, skipInterval);
+      }
+
+      if (random.nextBoolean()) {
+        final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
+        }
+        postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
+      }
+
+      boolean success = false;
+
+      final TermsIndexWriterBase indexWriter;
+      try {
+        if (random.nextBoolean()) {
+          state.termIndexInterval = _TestUtil.nextInt(random, 1, 100);
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + state.termIndexInterval + ")");
+          }
+          indexWriter = new FixedGapTermsIndexWriter(state);
+        } else {
+          final VariableGapTermsIndexWriter.IndexTermSelector selector;
+          final int n2 = random.nextInt(3);
+          if (n2 == 0) {
+            final int tii = _TestUtil.nextInt(random, 1, 100);
+            selector = new VariableGapTermsIndexWriter.EveryNTermSelector(tii);
+           if (LuceneTestCase.VERBOSE) {
+              System.out.println("MockRandomCodec: variable-gap terms index (tii=" + tii + ")");
+            }
+          } else if (n2 == 1) {
+            final int docFreqThresh = _TestUtil.nextInt(random, 2, 100);
+            final int tii = _TestUtil.nextInt(random, 1, 100);
+            selector = new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThresh, tii);
+          } else {
+            final long seed2 = random.nextLong();
+            final int gap = _TestUtil.nextInt(random, 2, 40);
+            if (LuceneTestCase.VERBOSE) {
+             System.out.println("MockRandomCodec: random-gap terms index (max gap=" + gap + ")");
+            }
+           selector = new VariableGapTermsIndexWriter.IndexTermSelector() {
+                final Random rand = new Random(seed2);
+
+                @Override
+                public boolean isIndexTerm(BytesRef term, TermStats stats) {
+                  return rand.nextInt(gap) == gap/2;
+                }
+
+                @Override
+                  public void newField(FieldInfo fieldInfo) {
+                }
+              };
+          }
+          indexWriter = new VariableGapTermsIndexWriter(state, selector);
+          success = true;
+        }
+      } finally {
+        if (!success) {
+          postingsWriter.close();
+        }
+      }
+
+      success = false;
+      try {
+        FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, postingsWriter);
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
+          try {
+            postingsWriter.close();
+          } finally {
+            indexWriter.close();
+          }
         }
       }
     }
@@ -245,7 +288,7 @@ public class MockRandomCodec extends Codec {
     final IndexInput in = state.dir.openInput(seedFileName, state.context);
     final long seed = in.readLong();
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " seed=" + seed);
+      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " codecID=" + state.codecId + " seed=" + seed);
     }
     in.close();
 
@@ -256,91 +299,135 @@ public class MockRandomCodec extends Codec {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
     }
 
-    PostingsReaderBase postingsReader;
-
     if (random.nextBoolean()) {
-      postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
-                                                 state.context, new MockIntStreamFactory(random), state.codecId);
-    } else {
+      // Use BlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading Standard postings");
+        System.out.println("MockRandomCodec: reading BlockTree terms dict");
       }
-      postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
-    }
+      BlockTreePostingsReaderBase postingsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
 
-    if (random.nextBoolean()) {
-      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
-      }
-      postingsReader = new PulsingPostingsReaderImpl(postingsReader);
-    }
-
-    final TermsIndexReaderBase indexReader;
-    boolean success = false;
-
-    try {
       if (random.nextBoolean()) {
-        // if termsIndexDivisor is set to -1, we should not touch it. It means a
-        // test explicitly instructed not to load the terms index.
-        if (state.termsIndexDivisor != -1) {
-          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
-        }
+        final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
         if (LuceneTestCase.VERBOSE) {
-          System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+          System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        indexReader = new FixedGapTermsIndexReader(state.dir,
-                                                   state.fieldInfos,
-                                                   state.segmentInfo.name,
-                                                   state.termsIndexDivisor,
-                                                   BytesRef.getUTF8SortedAsUnicodeComparator(),
-                                                   state.codecId, state.context);
-      } else {
-        final int n2 = random.nextInt(3);
-        if (n2 == 1) {
-          random.nextInt();
-        } else if (n2 == 2) {
-          random.nextLong();
-        }
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
-        }
-        if (state.termsIndexDivisor != -1) {
-          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
-        }
-        indexReader = new VariableGapTermsIndexReader(state.dir,
+        postingsReader = new PulsingTreePostingsReader(postingsReader);
+      }
+
+      // randomness diverges from writer, here:
+      if (state.termsIndexDivisor != -1) {
+        state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+      }
+
+      final int termsCacheSize = _TestUtil.nextInt(random, 1, 1024);
+
+      boolean success = false;
+      try {
+        FieldsProducer ret = new BlockTreeTermsReader(state.dir,
                                                       state.fieldInfos,
                                                       state.segmentInfo.name,
-                                                      state.termsIndexDivisor,
-                                                      state.codecId, state.context);
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        postingsReader.close();
-      }
-    }
-
-    final int termsCacheSize = _TestUtil.nextInt(random, 1, 1024);
-
-    success = false;
-    try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
-                                                state.fieldInfos,
-                                                state.segmentInfo.name,
-                                                postingsReader,
-                                                state.context,
-                                                termsCacheSize,
-                                                state.codecId);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        try {
+                                                      postingsReader,
+                                                      state.context,
+                                                      termsCacheSize,
+                                                      state.codecId,
+                                                      state.termsIndexDivisor);
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
           postingsReader.close();
-        } finally {
-          indexReader.close();
+        }
+      }
+    } else {
+
+      PostingsReaderBase postingsReader;
+
+      if (random.nextBoolean()) {
+        postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
+                                                   state.context, new MockIntStreamFactory(random), state.codecId);
+      } else {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("MockRandomCodec: reading Standard postings");
+        }
+        postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      }
+
+      if (random.nextBoolean()) {
+        final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
+        }
+        postingsReader = new PulsingPostingsReaderImpl(postingsReader);
+      }
+
+      final TermsIndexReaderBase indexReader;
+      boolean success = false;
+      try {
+        final boolean doFixedGap = random.nextBoolean();
+
+        // randomness diverges from writer, here:
+        if (state.termsIndexDivisor != -1) {
+          state.termsIndexDivisor = _TestUtil.nextInt(random, 1, 10);
+        }
+
+        if (doFixedGap) {
+          // if termsIndexDivisor is set to -1, we should not touch it. It means a
+          // test explicitly instructed not to load the terms index.
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MockRandomCodec: fixed-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+          }
+          indexReader = new FixedGapTermsIndexReader(state.dir,
+                                                     state.fieldInfos,
+                                                     state.segmentInfo.name,
+                                                     state.termsIndexDivisor,
+                                                     BytesRef.getUTF8SortedAsUnicodeComparator(),
+                                                     state.codecId, state.context);
+        } else {
+          final int n2 = random.nextInt(3);
+          if (n2 == 1) {
+            random.nextInt();
+          } else if (n2 == 2) {
+            random.nextLong();
+          }
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("MockRandomCodec: variable-gap terms index (divisor=" + state.termsIndexDivisor + ")");
+          }
+          indexReader = new VariableGapTermsIndexReader(state.dir,
+                                                        state.fieldInfos,
+                                                        state.segmentInfo.name,
+                                                        state.termsIndexDivisor,
+                                                        state.codecId, state.context);
+
+        }
+
+        success = true;
+      } finally {
+        if (!success) {
+          postingsReader.close();
+        }
+      }
+
+      final int termsCacheSize = _TestUtil.nextInt(random, 1, 1024);
+
+      success = false;
+      try {
+        FieldsProducer ret = new BlockTermsReader(indexReader,
+                                                  state.dir,
+                                                  state.fieldInfos,
+                                                  state.segmentInfo.name,
+                                                  postingsReader,
+                                                  state.context,
+                                                  termsCacheSize,
+                                                  state.codecId);
+        success = true;
+        return ret;
+      } finally {
+        if (!success) {
+          try {
+            postingsReader.close();
+          } finally {
+            indexReader.close();
+          }
         }
       }
     }
@@ -353,6 +440,7 @@ public class MockRandomCodec extends Codec {
     SepPostingsReaderImpl.files(segmentInfo, codecId, files);
     StandardPostingsReader.files(dir, segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
@@ -371,6 +459,7 @@ public class MockRandomCodec extends Codec {
   public void getExtensions(Set<String> extensions) {
     SepPostingsWriterImpl.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
+    BlockTreeTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     VariableGapTermsIndexReader.getIndexExtensions(extensions);
     DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());

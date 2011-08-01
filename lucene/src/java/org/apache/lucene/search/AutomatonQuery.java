@@ -22,12 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.AutomatonTermsEnum.CompiledAutomaton;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.MinimizationOperations;
 import org.apache.lucene.util.automaton.SpecialOperations;
 
@@ -130,12 +130,12 @@ public class AutomatonQuery extends MultiTermQuery {
           }
         };
       } else {
-        final AutomatonTermsEnum.CompiledAutomaton compiled = 
+        final CompiledAutomaton compiled = 
           new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton));
         factory = new TermsEnumFactory() {
           @Override
           protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return new AutomatonTermsEnum(terms.iterator(), compiled);
+            return terms.intersect(compiled, null);
           }
         };
       }

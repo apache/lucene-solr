@@ -84,9 +84,12 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
       }
     
+      // nocommit -- can we assert we never double-add term into PQ
+  
       @Override
       public boolean collect(BytesRef bytes) throws IOException {
         final float boost = boostAtt.getBoost();
+        System.out.println("TTR.collect term=" + bytes.utf8ToString() + " boost=" + boost + " ord=" + readerContext.ord);
         // ignore uncompetitive hits
         if (stQueue.size() == maxSize) {
           final ScoreTerm t = stQueue.peek();

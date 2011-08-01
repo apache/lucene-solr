@@ -17,12 +17,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.AutomatonTermsEnum.CompiledAutomaton;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
@@ -34,12 +40,8 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -72,7 +74,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private int maxEdits;
   private final boolean raw;
 
-  private final TermsEnum tenum;
+  private final Terms terms;
   private final Term term;
   private final int termText[];
   private final int realPrefixLength;
@@ -94,7 +96,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException
    */
-  public FuzzyTermsEnum(TermsEnum tenum, AttributeSource atts, Term term, 
+  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
       final float minSimilarity, final int prefixLength) throws IOException {
     if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
       throw new IllegalArgumentException("fractional edit distances are not allowed");
@@ -102,7 +104,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       throw new IllegalArgumentException("minimumSimilarity cannot be less than 0");
     if(prefixLength < 0)
       throw new IllegalArgumentException("prefixLength cannot be less than 0");
-    this.tenum = tenum;
+    this.terms = terms;
     this.term = term;
 
     // convert the string into a utf32 int[] representation for fast comparisons
@@ -143,8 +145,10 @@ public final class FuzzyTermsEnum extends TermsEnum {
       throws IOException {
     final List<CompiledAutomaton> runAutomata = initAutomata(editDistance);
     if (editDistance < runAutomata.size()) {
-      return new AutomatonFuzzyTermsEnum(runAutomata.subList(0, editDistance + 1)
-          .toArray(new CompiledAutomaton[editDistance + 1]), lastTerm);
+      if (BlockTreeTermsWriter.DEBUG) System.out.println("FuzzyTE.getAEnum: ed=" + editDistance + " lastTerm=" + (lastTerm==null ? "null" : lastTerm.utf8ToString()));
+      final CompiledAutomaton compiled = runAutomata.get(editDistance);
+      return new AutomatonFuzzyTermsEnum(terms.intersect(compiled, lastTerm == null ? null : compiled.floor(lastTerm, new BytesRef())),
+                                         runAutomata.subList(0, editDistance + 1).toArray(new CompiledAutomaton[editDistance + 1]));
     } else {
       return null;
     }
@@ -152,6 +156,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
   /** initialize levenshtein DFAs up to maxDistance, if possible */
   private List<CompiledAutomaton> initAutomata(int maxDistance) {
+    // nocommit -- is this called multiple times per query!?
     final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
@@ -301,36 +306,40 @@ public final class FuzzyTermsEnum extends TermsEnum {
   public BytesRef term() throws IOException {
     return actualEnum.term();
   }
-  
+
   /**
-   * Implement fuzzy enumeration with automaton.
+   * Implement fuzzy enumeration with Terms.intersect.
    * <p>
    * This is the fastest method as opposed to LinearFuzzyTermsEnum:
    * as enumeration is logarithmic to the number of terms (instead of linear)
    * and comparison is linear to length of the term (rather than quadratic)
    */
-  private class AutomatonFuzzyTermsEnum extends AutomatonTermsEnum {
+  private class AutomatonFuzzyTermsEnum extends FilteredTermsEnum {
     private final ByteRunAutomaton matchers[];
     
     private final BytesRef termRef;
     
-    private final BytesRef lastTerm;
     private final BoostAttribute boostAtt =
       attributes().addAttribute(BoostAttribute.class);
     
-    public AutomatonFuzzyTermsEnum(CompiledAutomaton compiled[], 
-        BytesRef lastTerm) throws IOException {
-      super(tenum, compiled[compiled.length - 1]);
+    public AutomatonFuzzyTermsEnum(TermsEnum tenum, CompiledAutomaton compiled[]) 
+      throws IOException {
+      super(tenum, false);
       this.matchers = new ByteRunAutomaton[compiled.length];
       for (int i = 0; i < compiled.length; i++)
         this.matchers[i] = compiled[i].runAutomaton;
-      this.lastTerm = lastTerm;
       termRef = new BytesRef(term.text());
     }
-    
+
+    // nocommit -- we lost the more efficient (always seek)
+    // accept for FuzzyTermsEnum in Terms.intersect!  so on
+    // non-intersect-capable terms dicts this is slower?
+    // maybe we stuff a hint (boolean alwaysSeek) into CA?
+
     /** finds the smallest Lev(n) DFA that accepts the term. */
     @Override
     protected AcceptStatus accept(BytesRef term) {    
+      //System.out.println("AFTE.accept term=" + term);
       int ed = matchers.length - 1;
       
       if (matches(term, ed)) { // we match the outer dfa
@@ -342,24 +351,27 @@ public final class FuzzyTermsEnum extends TermsEnum {
             break;
           }
         }
+        //System.out.println("CHECK term=" + term.utf8ToString() + " ed=" + ed);
         
         // scale to a boost and return (if similarity > minSimilarity)
         if (ed == 0) { // exact match
           boostAtt.setBoost(1.0F);
-          return AcceptStatus.YES_AND_SEEK;
+          //System.out.println("  yes");
+          return AcceptStatus.YES;
         } else {
           final int codePointCount = UnicodeUtil.codePointCount(term);
           final float similarity = 1.0f - ((float) ed / (float) 
-              (Math.min(codePointCount, termLength)));
+                                           (Math.min(codePointCount, termLength)));
           if (similarity > minSimilarity) {
             boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
-            return AcceptStatus.YES_AND_SEEK;
+            //System.out.println("  yes");
+            return AcceptStatus.YES;
           } else {
-            return AcceptStatus.NO_AND_SEEK;
+            return AcceptStatus.NO;
           }
         }
       } else {
-        return AcceptStatus.NO_AND_SEEK;
+        return AcceptStatus.NO;
       }
     }
     
@@ -367,16 +379,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
     final boolean matches(BytesRef term, int k) {
       return k == 0 ? term.equals(termRef) : matchers[k].run(term.bytes, term.offset, term.length);
     }
-    
-    /** defers to superclass, except can start at an arbitrary location */
-    @Override
-    protected BytesRef nextSeekTerm(BytesRef term) throws IOException {
-      if (term == null)
-        term = lastTerm;
-      return super.nextSeekTerm(term);
-    }
   }
-  
+
   /**
    * Implement fuzzy enumeration with linear brute force.
    */
@@ -408,7 +412,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * @throws IOException
      */
     public LinearFuzzyTermsEnum() throws IOException {
-      super(tenum);
+      super(terms.iterator());
 
       this.text = new int[termLength - realPrefixLength];
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);

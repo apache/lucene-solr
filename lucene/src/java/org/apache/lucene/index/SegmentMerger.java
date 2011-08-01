@@ -562,12 +562,14 @@ final class SegmentMerger {
     }
     codec = segmentWriteState.segmentCodecs.codec();
     final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
+    boolean success = false;
     try {
       consumer.merge(mergeState,
                      new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
+      success = true;
     } finally {
-      consumer.close();
+      IOUtils.closeSafely(!success, consumer);
     }
   }
 

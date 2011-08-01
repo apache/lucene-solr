@@ -21,16 +21,17 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.TermContext;
 
 abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.RewriteMethod {
   
@@ -51,6 +52,9 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
     Comparator<BytesRef> lastTermComp = null;
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
     for (AtomicReaderContext context : leaves) {
+      if (BlockTreeTermsWriter.DEBUG) {
+        System.out.println("\nTERM COLLECTING REWRITE: now switch to seg=" + context.reader);
+      }
       final Fields fields = context.reader.fields();
       if (fields == null) {
         // reader has no fields
@@ -81,6 +85,8 @@ abstract class TermCollectingRewrite<Q extends Query> extends MultiTermQuery.Rew
         if (!collector.collect(bytes))
           return; // interrupt whole term collection, so also don't iterate other subReaders
       }
+
+      //System.out.println("terms reader=" + context.reader + " stats: " + termsEnum.getStats());
     }
   }
   

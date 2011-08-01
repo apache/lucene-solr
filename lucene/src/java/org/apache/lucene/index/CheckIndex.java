@@ -888,7 +888,9 @@ public class CheckIndex {
 
         // Test seek to last term:
         if (lastTerm != null) {
-          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) { 
+            // nocommit
+            System.out.println("CI: seek to last term " + lastTerm + " failed");
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
 
