@@ -141,4 +141,25 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+  
+  public void testBogusField() throws Exception {
+    DirectSpellChecker spellChecker = new DirectSpellChecker();
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
+
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(newField("numbers", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      writer.addDocument(doc);
+    }
+
+    IndexReader ir = writer.getReader();
+
+    SuggestWord[] similar = spellChecker.suggestSimilar(new Term("bogusFieldBogusField", "fvie"), 2, ir, false);
+    assertEquals(0, similar.length);
+    ir.close();
+    writer.close();
+    dir.close();
+  }
 }

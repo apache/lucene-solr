@@ -28,6 +28,7 @@ import java.util.PriorityQueue;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
@@ -395,7 +396,11 @@ public class DirectSpellChecker {
     AttributeSource atts = new AttributeSource();
     MaxNonCompetitiveBoostAttribute maxBoostAtt =
       atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-    FuzzyTermsEnum e = new FuzzyTermsEnum(MultiFields.getTerms(ir, term.field()).iterator(), atts, term, editDistance, Math.max(minPrefix, editDistance-1));
+    Terms terms = MultiFields.getTerms(ir, term.field());
+    if (terms == null) {
+      return Collections.emptyList();
+    }
+    FuzzyTermsEnum e = new FuzzyTermsEnum(terms.iterator(), atts, term, editDistance, Math.max(minPrefix, editDistance-1));
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     
     BytesRef queryTerm = new BytesRef(term.text());
