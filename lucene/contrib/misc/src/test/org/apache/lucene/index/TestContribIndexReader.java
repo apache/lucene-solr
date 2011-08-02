@@ -23,10 +23,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorVisitor;
-import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldSelector;
+import org.apache.lucene.document2.FieldSelectorVisitor;
+import org.apache.lucene.document2.SetBasedFieldSelector;
 import org.apache.lucene.document2.BinaryField;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.FieldType;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestContribIndexReader extends LuceneTestCase {
-  private org.apache.lucene.document.Document getDocument(IndexReader ir, int docID, FieldSelector selector)  throws IOException {
+  private Document getDocument(IndexReader ir, int docID, FieldSelector selector)  throws IOException {
     final FieldSelectorVisitor visitor = new FieldSelectorVisitor(selector);
     ir.document(docID, visitor);
     return visitor.getDocument();
@@ -137,11 +137,11 @@ public class TestContribIndexReader extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = IndexReader.open(dir, false);
-    org.apache.lucene.document.Document doc2 = reader.document(reader.maxDoc() - 1);
-    org.apache.lucene.document.Field[] fields = doc2.getFields("bin1");
+    Document doc2 = reader.document2(reader.maxDoc() - 1);
+    IndexableField[] fields = doc2.getFields("bin1");
     assertNotNull(fields);
     assertEquals(1, fields.length);
-    org.apache.lucene.document.Field b1 = fields[0];
+    Field b1 = (Field) fields[0];
     assertTrue(b1.isBinary());
     BytesRef bytesRef = b1.binaryValue(null);
     assertEquals(bin.length, bytesRef.length);
@@ -152,11 +152,11 @@ public class TestContribIndexReader extends LuceneTestCase {
     lazyFields.add("bin1");
     FieldSelector sel = new SetBasedFieldSelector(new HashSet<String>(), lazyFields);
     doc2 = getDocument(reader, reader.maxDoc() - 1, sel);
-    Fieldable[] fieldables = doc2.getFieldables("bin1");
+    IndexableField[] fieldables = doc2.getFields("bin1");
     assertNotNull(fieldables);
     assertEquals(1, fieldables.length);
-    Fieldable fb1 = fieldables[0];
-    assertTrue(fb1.isBinary());
+    IndexableField fb1 = fieldables[0];
+    assertTrue(fb1.binaryValue(null)!=null);
     bytesRef = fb1.binaryValue(null);
     assertEquals(bin.length, bytesRef.bytes.length);
     assertEquals(bin.length, bytesRef.length);
@@ -171,11 +171,11 @@ public class TestContribIndexReader extends LuceneTestCase {
     writer.optimize();
     writer.close();
     reader = IndexReader.open(dir, false);
-    doc2 = reader.document(reader.maxDoc() - 1);
+    doc2 = reader.document2(reader.maxDoc() - 1);
     fields = doc2.getFields("bin1");
     assertNotNull(fields);
     assertEquals(1, fields.length);
-    b1 = fields[0];
+    b1 = (Field) fields[0];
     assertTrue(b1.isBinary());
     bytesRef = b1.binaryValue(null);
     assertEquals(bin.length, bytesRef.length);

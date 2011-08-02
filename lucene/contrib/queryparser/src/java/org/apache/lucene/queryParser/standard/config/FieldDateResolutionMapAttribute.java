@@ -19,7 +19,7 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.util.Map;
 
-import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document2.DateTools;
 import org.apache.lucene.util.Attribute;
 
 /**

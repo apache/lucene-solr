@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
@@ -171,7 +172,7 @@ public interface Fieldable {
   // nocommit api break
   abstract BytesRef binaryValue(BytesRef reuse);
 
-  abstract NumericField.DataType getDataType();
+  abstract DataType getDataType();
 
   abstract Number getNumericValue();
 

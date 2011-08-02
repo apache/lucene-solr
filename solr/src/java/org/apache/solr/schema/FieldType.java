@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -263,7 +262,7 @@ public abstract class FieldType extends FieldProperties {
     return createField(field.getName(), val, newType, boost);
   }
 
-  protected Fieldable createField(String name, String val, org.apache.lucene.document.Field.Store storage, org.apache.lucene.document.Field.Index index,
+  /*protected Fieldable createField(String name, String val, org.apache.lucene.document.Field.Store storage, org.apache.lucene.document.Field.Index index,
       org.apache.lucene.document.Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
     org.apache.lucene.document.Field f = new org.apache.lucene.document.Field(name,
                         val,
@@ -295,7 +294,7 @@ public abstract class FieldType extends FieldProperties {
             getFieldIndex(field, val), getFieldTermVec(field, val), field.omitNorms(),
             field.omitTf(), boost);
   }
-
+  */
 
   /**
    * Create the field from native Lucene parts.  Mostly intended for use by FieldTypes outputing multiple
@@ -326,30 +325,6 @@ public abstract class FieldType extends FieldProperties {
     IndexableField f = createField( field, value, boost);
     return f==null ? new IndexableField[]{} : new IndexableField[]{f};
   }
-
-  /* Helpers for field construction */
-  protected org.apache.lucene.document.Field.TermVector getFieldTermVec(SchemaField field,
-                                             String internalVal) {
-    org.apache.lucene.document.Field.TermVector ftv = org.apache.lucene.document.Field.TermVector.NO;
-    if (field.storeTermPositions() && field.storeTermOffsets())
-      ftv = org.apache.lucene.document.Field.TermVector.WITH_POSITIONS_OFFSETS;
-    else if (field.storeTermPositions())
-      ftv = org.apache.lucene.document.Field.TermVector.WITH_POSITIONS;
-    else if (field.storeTermOffsets())
-      ftv = org.apache.lucene.document.Field.TermVector.WITH_OFFSETS;
-    else if (field.storeTermVector())
-      ftv = org.apache.lucene.document.Field.TermVector.YES;
-    return ftv;
-  }
-  protected org.apache.lucene.document.Field.Store getFieldStore(SchemaField field,
-                                      String internalVal) {
-    return field.stored() ? org.apache.lucene.document.Field.Store.YES : org.apache.lucene.document.Field.Store.NO;
-  }
-  protected org.apache.lucene.document.Field.Index getFieldIndex(SchemaField field,
-                                      String internalVal) {
-    return field.indexed() ? (isTokenized() ? org.apache.lucene.document.Field.Index.ANALYZED :
-      org.apache.lucene.document.Field.Index.NOT_ANALYZED) : org.apache.lucene.document.Field.Index.NO;
-  }
   
   /**
    * Convert an external value (from XML update command or from query string)
@@ -367,13 +342,10 @@ public abstract class FieldType extends FieldProperties {
    * value
    * @see #toInternal
    */
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     // currently used in writing XML of the search result (but perhaps
     // a more efficient toXML(IndexableField f, Writer w) should be used
     // in the future.
-    return f.stringValue();
-  }
-  public String toExternal(IndexableField f) {
     return f.stringValue();
   }
 
@@ -382,9 +354,6 @@ public abstract class FieldType extends FieldProperties {
    * @see #toInternal
    * @since solr 1.3
    */
-  public Object toObject(Fieldable f) {
-    return toExternal(f); // by default use the string
-  }
   public Object toObject(IndexableField f) {
     return toExternal(f); // by default use the string
   }
@@ -408,23 +377,15 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Given the stored field, return the human readable representation */
-  public String storedToReadable(Fieldable f) {
-    return toExternal(f);
-  }
-  /** Given the stored field, return the human readable representation */
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
 
   /** Given the stored field, return the indexed form */
-  public String storedToIndexed(Fieldable f) {
+  public String storedToIndexed(IndexableField f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
     // that the indexed form is the same as the stored field form.
-    return f.stringValue();
-  }
-  /** Given the stored field, return the indexed form */
-  public String storedToIndexed(IndexableField f) {
     return f.stringValue();
   }
 

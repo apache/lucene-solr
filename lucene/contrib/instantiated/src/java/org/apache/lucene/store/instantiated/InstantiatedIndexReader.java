@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Comparator;
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
@@ -272,13 +272,8 @@ public class InstantiatedIndexReader extends IndexReader {
    */
 
   @Override
-  public Document document(int n) throws IOException {
+  public Document document2(int n) throws IOException {
     return getIndex().getDocumentsByNumber()[n].getDocument();
-  }
-  
-  @Override
-  public org.apache.lucene.document2.Document document2(int n) throws IOException {
-    return getIndex().getDocumentsByNumber()[n].getDocument2();
   }
 
   @Override

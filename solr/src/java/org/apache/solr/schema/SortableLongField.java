@@ -27,7 +27,6 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;
@@ -81,15 +80,6 @@ public class SortableLongField extends FieldType {
 
   @Override
   public Long toObject(IndexableField f) {
-    return NumberUtils.SortableStr2long(f.stringValue(),0,5);
-  }
-  @Override
-  public String toExternal(Fieldable f) {
-    return indexedToReadable(f.stringValue());
-  }
-
-  @Override
-  public Long toObject(Fieldable f) {
     return NumberUtils.SortableStr2long(f.stringValue(),0,5);
   }
 

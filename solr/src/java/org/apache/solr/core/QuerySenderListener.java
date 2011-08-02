@@ -65,7 +65,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           if (o instanceof DocList) {
             DocList docs = (DocList)o;
             for (DocIterator iter = docs.iterator(); iter.hasNext();) {
-              newSearcher.doc(iter.nextDoc());
+              newSearcher.doc2(iter.nextDoc());
             }
           }
         }

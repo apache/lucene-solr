@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField.DataType;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.IndexReader;

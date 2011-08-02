@@ -267,7 +267,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     final int hitCount = hits.length;
     assertEquals("wrong number of hits", expectedCount, hitCount);
     for(int i=0;i<hitCount;i++) {
-      reader.document(hits[i].doc);
+      reader.document2(hits[i].doc);
       reader.getTermFreqVectors(hits[i].doc);
     }
   }

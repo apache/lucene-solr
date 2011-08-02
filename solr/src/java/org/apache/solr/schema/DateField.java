@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
@@ -211,24 +210,11 @@ public class DateField extends FieldType {
   public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
-  @Override
-  public String toExternal(Fieldable f) {
-    return indexedToReadable(f.stringValue());
-  }
 
   public Date toObject(String indexedForm) throws java.text.ParseException {
     return parseDate(indexedToReadable(indexedForm));
   }
 
-  @Override
-  public Date toObject(Fieldable f) {
-    try {
-      return parseDate( toExternal(f) );
-    }
-    catch( ParseException ex ) {
-      throw new RuntimeException( ex );
-    }
-  }
   @Override
   public Date toObject(IndexableField f) {
     try {

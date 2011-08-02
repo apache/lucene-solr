@@ -777,7 +777,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
                     null, 1000).scoreDocs;
                 if (hits.length > 0) {
-                  searcher.doc(hits[0].doc);
+                  searcher.doc2(hits[0].doc);
                 }
                 searcher.close();
                 if (refreshed != r) {
@@ -1105,7 +1105,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertTrue(r1 != r3);
     r1.close();
     try {
-      r1.document(2);
+      r1.document2(2);
       fail("did not hit exception");
     } catch (AlreadyClosedException ace) {
       // expected

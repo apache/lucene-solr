@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;

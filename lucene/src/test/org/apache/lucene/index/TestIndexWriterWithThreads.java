@@ -276,7 +276,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         final Bits delDocs = MultiFields.getDeletedDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
-            reader.document(j);
+            reader.document2(j);
             reader.getTermFreqVectors(j);
           }
         }

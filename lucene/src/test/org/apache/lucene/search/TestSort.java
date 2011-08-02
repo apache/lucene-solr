@@ -161,6 +161,7 @@ public class TestSort extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(97))
     );
     FieldType customType = new FieldType();
+    customType.setStored(true);
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);

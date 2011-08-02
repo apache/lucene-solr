@@ -60,21 +60,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     /* private field types */
     /* private field types */
 
-    private static final FieldType custom = new FieldType(TextField.TYPE_UNSTORED);
     private static final FieldType custom1 = new FieldType(TextField.TYPE_UNSTORED);
-    private static final FieldType custom2 = new FieldType(StringField.TYPE_UNSTORED);
+    private static final FieldType custom2 = new FieldType();
     private static final FieldType custom3 = new FieldType();
     private static final FieldType custom4 = new FieldType(StringField.TYPE_UNSTORED);
     private static final FieldType custom5 = new FieldType(TextField.TYPE_UNSTORED);
     
     static {
-      custom.setStored(true);
 
       custom1.setStoreTermVectors(true);
       custom1.setStoreTermVectorPositions(true);
       custom1.setStoreTermVectorOffsets(true);
-
+      
       custom2.setStored(true);
+      custom2.setIndexed(true);
       
       custom3.setStored(true);
 
@@ -134,7 +133,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       final Document doc = new Document();
 
-      doc.add(newField("content1", "aaa bbb ccc ddd", DocCopyIterator.custom));
+      doc.add(newField("content1", "aaa bbb ccc ddd", TextField.TYPE_STORED));
       doc.add(newField("content6", "aaa bbb ccc ddd", DocCopyIterator.custom1));
       doc.add(newField("content2", "aaa bbb ccc ddd", DocCopyIterator.custom2));
       doc.add(newField("content3", "aaa bbb ccc ddd", DocCopyIterator.custom3));
@@ -370,7 +369,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(newField("field", "a field", DocCopyIterator.custom));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
     w.doFail = true;
     try {
@@ -389,7 +388,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(newField("field", "a field", DocCopyIterator.custom));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
 
     Analyzer analyzer = new Analyzer() {
@@ -402,7 +401,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     Document crashDoc = new Document();
-    crashDoc.add(newField("crash", "do it on token 4", DocCopyIterator.custom));
+    crashDoc.add(newField("crash", "do it on token 4", TextField.TYPE_STORED));
     try {
       w.addDocument(crashDoc, analyzer);
       fail("did not hit expected exception");
@@ -443,7 +442,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
     w.doFail = true;
     Document doc = new Document();
-    doc.add(newField("field", "a field", DocCopyIterator.custom));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     for(int i=0;i<10;i++)
       try {
         w.addDocument(doc);
@@ -652,7 +651,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           if (delDocs.get(j))
             numDel++;
           else {
-            reader.document(j);
+            reader.document2(j);
             reader.getTermFreqVectors(j);
           }
         }
@@ -676,7 +675,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       int numDel = 0;
       assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document(j);
+        reader.document2(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();
@@ -766,7 +765,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (delDocs.get(j))
           numDel++;
         else {
-          reader.document(j);
+          reader.document2(j);
           reader.getTermFreqVectors(j);
         }
       }
@@ -789,7 +788,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.maxDoc());
       assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document(j);
+        reader.document2(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();
@@ -916,7 +915,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
-      doc.add(newField("field", "a field", DocCopyIterator.custom));
+      doc.add(newField("field", "a field", TextField.TYPE_STORED));
       w.addDocument(doc);
       dir.failOn(failure);
       try {
@@ -1248,7 +1247,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         int numDocs = 10 + random.nextInt(30);
         for (int i = 0; i < numDocs; i++) {
           Document doc = new Document();
-          Field field = newField(random, "field", "a field", DocCopyIterator.custom);
+          Field field = newField(random, "field", "a field", TextField.TYPE_STORED);
           doc.add(field);
           // random TV
           try {
@@ -1264,12 +1263,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             
         }
         Document document = new Document();
-        document.add(new Field("field", DocCopyIterator.custom, "a field"));
+        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
         w.addDocument(document);
 
         for (int i = 0; i < numDocs; i++) {
           Document doc = new Document();
-          Field field = newField(random, "field", "a field", DocCopyIterator.custom);
+          Field field = newField(random, "field", "a field", TextField.TYPE_STORED);
           doc.add(field);
           // random TV
           try {
@@ -1284,7 +1283,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
         }
         document = new Document();
-        document.add(new Field("field", DocCopyIterator.custom, "a field"));
+        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
         w.addDocument(document);
         w.close();
         IndexReader reader = IndexReader.open(dir);

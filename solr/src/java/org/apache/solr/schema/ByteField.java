@@ -16,7 +16,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.ByteValuesCreator;
@@ -78,7 +77,7 @@ public class ByteField extends FieldType {
   }
 
   @Override
-  public Byte toObject(Fieldable f) {
+  public Byte toObject(IndexableField f) {
     return Byte.valueOf(toExternal(f));
   }
 }

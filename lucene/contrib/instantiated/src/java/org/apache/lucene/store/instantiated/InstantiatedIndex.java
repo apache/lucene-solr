@@ -189,15 +189,15 @@ public class InstantiatedIndex
       } else {
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
-        org.apache.lucene.document.Document sourceDocument = sourceIndexReader.document(i);
+        Document sourceDocument = sourceIndexReader.document2(i);
         for (IndexableField field : sourceDocument) {
           if (fields == null || fields.contains(field.name())) {
-            document.getDocument2().add(field);
+            document.getDocument().add(field);
           }
         }
         document.setDocumentNumber(i);
         documentsByNumber[i] = document;
-        for (IndexableField field : document.getDocument2()) {
+        for (IndexableField field : document.getDocument()) {
           if (fields == null || fields.contains(field.name())) {
             if (field.storeTermVectors()) {
               if (document.getVectorSpace() == null) {
@@ -290,7 +290,7 @@ public class InstantiatedIndex
       if (document == null) {
         continue; // deleted
       }
-      for (IndexableField field : document.getDocument2()) {
+      for (IndexableField field : document.getDocument()) {
         if (field.storeTermVectors() && field.storeTermVectorOffsets()) {
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
           if (termPositionVector != null) {

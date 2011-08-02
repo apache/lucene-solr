@@ -386,8 +386,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
         verifyEquals(r1.document2(id1), r2.document2(id2));
       } catch (Throwable t) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2 + " term="+ term);
-        System.out.println("  d1=" + r1.document(id1));
-        System.out.println("  d2=" + r2.document(id2));
+        System.out.println("  d1=" + r1.document2(id1));
+        System.out.println("  d2=" + r2.document2(id2));
         throw t;
       }
 
@@ -709,9 +709,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
           case 0:
             customType.setStored(true);
             customType.setOmitNorms(true);
+            customType.setIndexed(true);
             fields.add(newField("f" + nextInt(100), getString(1), customType));
             break;
           case 1:
+            customType.setIndexed(true);
             customType.setTokenized(true);
             fields.add(newField("f" + nextInt(100), getString(0), customType));
             break;
@@ -724,6 +726,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             break;
           case 3:
             customType.setStored(true);
+            customType.setIndexed(true);
             customType.setTokenized(true);
             fields.add(newField("f" + nextInt(100), getString(bigFieldSize), customType));
             break;          

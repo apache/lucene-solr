@@ -471,7 +471,7 @@ public class InstantiatedIndexWriter implements Closeable {
     // normalize settings per field name in document
 
     Map<String /* field name */, FieldSetting> fieldSettingsByFieldName = new HashMap<String, FieldSetting>();
-    for (IndexableField field : document.getDocument2()) {
+    for (IndexableField field : document.getDocument()) {
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
       if (fieldSetting == null) {
         fieldSetting = new FieldSetting();
@@ -515,7 +515,7 @@ public class InstantiatedIndexWriter implements Closeable {
     Map<IndexableField, LinkedList<Token>> tokensByField = new LinkedHashMap<IndexableField, LinkedList<Token>>(20);
 
     // tokenize indexed fields.
-    for (Iterator<IndexableField> it = document.getDocument2().iterator(); it.hasNext();) {
+    for (Iterator<IndexableField> it = document.getDocument().iterator(); it.hasNext();) {
 
       IndexableField field = it.next();
 

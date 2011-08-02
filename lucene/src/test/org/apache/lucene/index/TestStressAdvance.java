@@ -62,7 +62,7 @@ public class TestStressAdvance extends LuceneTestCase {
       final IndexReader r = w.getReader();
       final int[] idToDocID = new int[r.maxDoc()];
       for(int docID=0;docID<idToDocID.length;docID++) {
-        int id = Integer.parseInt(r.document(docID).get("id"));
+        int id = Integer.parseInt(r.document2(docID).get("id"));
         if (aDocs.contains(id)) {
           aDocIDs.add(docID);
         } else {

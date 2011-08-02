@@ -1,8 +1,9 @@
-package org.apache.lucene.document;
+package org.apache.lucene.document2;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 
@@ -34,8 +35,10 @@ public class TestBinaryDocument extends LuceneTestCase {
   public void testBinaryFieldInIndex()
     throws Exception
   {
-    Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes());
-    Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
+    FieldType ft = new FieldType();
+    ft.setStored(true);
+    IndexableField binaryFldStored = new BinaryField("binaryStored", binaryValStored.getBytes());
+    IndexableField stringFldStored = new Field("stringStored", ft, binaryValStored);
 
     Document doc = new Document();
     
@@ -53,7 +56,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document docFromReader = reader.document(0);
+    Document docFromReader = reader.document2(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary stored field and compare it's content with the original one */
@@ -77,8 +80,8 @@ public class TestBinaryDocument extends LuceneTestCase {
   }
   
   public void testCompressionTools() throws Exception {
-    Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
-    Fieldable stringFldCompressed = new Field("stringCompressed", CompressionTools.compressString(binaryValCompressed));
+    IndexableField binaryFldCompressed = new BinaryField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
+    IndexableField stringFldCompressed = new BinaryField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
     Document doc = new Document();
     
@@ -92,7 +95,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** open a reader and fetch the document */ 
     IndexReader reader = writer.getReader();
-    Document docFromReader = reader.document(0);
+    Document docFromReader = reader.document2(0);
     assertTrue(docFromReader != null);
     
     /** fetch the binary compressed field and compare it's content with the original one */

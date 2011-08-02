@@ -534,9 +534,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=Long.parseLong(searcher.doc(sd[0].doc).get(field));
+      long last=Long.parseLong(searcher.doc2(sd[0].doc).get(field));
       for (int j=1; j<sd.length; j++) {
-        long act=Long.parseLong(searcher.doc(sd[j].doc).get(field));
+        long act=Long.parseLong(searcher.doc2(sd[j].doc).get(field));
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

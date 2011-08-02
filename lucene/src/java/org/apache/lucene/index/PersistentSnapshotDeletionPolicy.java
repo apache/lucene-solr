@@ -23,11 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -70,13 +68,13 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
       int numDocs = r.numDocs();
       // index is allowed to have exactly one document or 0.
       if (numDocs == 1) {
-        Document doc = r.document(r.maxDoc() - 1);
-        Field sid = doc.getField(SNAPSHOTS_ID);
+        Document doc = r.document2(r.maxDoc() - 1);
+        Field sid = (Field) doc.getField(SNAPSHOTS_ID);
         if (sid == null) {
           throw new IllegalStateException("directory is not a valid snapshots store!");
         }
         doc.removeField(SNAPSHOTS_ID);
-        for (Fieldable f : doc.getFields()) {
+        for (IndexableField f : doc) {
           snapshots.put(f.name(), f.stringValue());
         }
       } else if (numDocs != 0) {
@@ -189,12 +187,14 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private void persistSnapshotInfos(String id, String segment) throws IOException {
     writer.deleteAll();
     Document d = new Document();
-    d.add(new Field(SNAPSHOTS_ID, "", Store.YES, Index.NO));
+    FieldType ft = new FieldType();
+    ft.setStored(true);
+    d.add(new Field(SNAPSHOTS_ID, ft, ""));
     for (Entry<String, String> e : super.getSnapshots().entrySet()) {
-      d.add(new Field(e.getKey(), e.getValue(), Store.YES, Index.NO));
+      d.add(new Field(e.getKey(), ft, e.getValue()));
     }
     if (id != null) {
-      d.add(new Field(id, segment, Store.YES, Index.NO));
+      d.add(new Field(id, ft, segment));
     }
     writer.addDocument(d);
     writer.commit();

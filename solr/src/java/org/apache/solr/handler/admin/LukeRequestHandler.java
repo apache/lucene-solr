@@ -33,9 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
@@ -121,7 +122,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     if( docId != null ) {
       Document doc = null;
       try {
-        doc = reader.document( docId );
+        doc = reader.document2( docId );
       }
       catch( Exception ex ) {}
       if( doc == null ) {
@@ -164,19 +165,19 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * @return a string representing a Fieldable's flags.  
    */
-  private static String getFieldFlags( Fieldable f )
+  private static String getFieldFlags( IndexableField f )
   {
     StringBuilder flags = new StringBuilder();
-    flags.append( (f != null && f.isIndexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isTokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.indexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.tokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.stored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' ); // SchemaField Specific
-    flags.append( (f != null && f.isTermVectorStored())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStoreOffsetWithTermVector())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStorePositionWithTermVector()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
-    flags.append( (f != null && f.getOmitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isLazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isBinary())                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectors())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectorOffsets())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectorPositions()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
+    flags.append( (f != null && f.omitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
+    flags.append( (f != null && ((Field) f).lazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.binaryValue(null)!=null)                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
@@ -236,7 +237,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     final CharsRef spare = new CharsRef();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for( Object o : doc.getFields() ) {
-      Fieldable fieldable = (Fieldable)o;
+      Field fieldable = (Field)o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
       
       SchemaField sfield = schema.getFieldOrNull( fieldable.name() );
@@ -257,11 +258,11 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      f.add( "boost", fieldable.getBoost() );
+      f.add( "boost", fieldable.boost() );
       f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
             
       // If we have a term vector, return that
-      if( fieldable.isTermVectorStored() ) {
+      if( fieldable.storeTermVectors() ) {
         try {
           TermFreqVector v = reader.getTermFreqVector( docId, fieldable.name() );
           if( v != null ) {
@@ -320,8 +321,8 @@ public class LukeRequestHandler extends RequestHandlerBase
         if( top.totalHits > 0 ) {
           // Find a document with this field
           try {
-            Document doc = searcher.doc( top.scoreDocs[0].doc );
-            Fieldable fld = doc.getFieldable( fieldName );
+            Document doc = searcher.doc2( top.scoreDocs[0].doc );
+            IndexableField fld = doc.getField( fieldName );
             if( fld != null ) {
               f.add( "index", getFieldFlags( fld ) );
             }

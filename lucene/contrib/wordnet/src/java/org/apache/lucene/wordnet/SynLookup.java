@@ -29,8 +29,9 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -90,12 +91,12 @@ public class SynLookup {
 		ScoreDoc[] hits = searcher.search(query, countingCollector.numHits).scoreDocs;
 		
 		for (int i = 0; i < hits.length; i++) {
-			Document doc = searcher.doc(hits[i].doc);
+			Document doc = searcher.doc2(hits[i].doc);
 
-			String[] values = doc.getValues(Syns2Index.F_SYN);
+			IndexableField[] values = doc.getFields(Syns2Index.F_SYN);
 
 			for (int j = 0; j < values.length; j++) {
-				System.out.println(values[j]);
+				System.out.println(values[j].stringValue());
 			}
 		}
 
@@ -154,11 +155,11 @@ public class SynLookup {
 
         @Override
         public void collect(int doc) throws IOException {
-          Document d = reader.document(doc);
-          String[] values = d.getValues( Syns2Index.F_SYN);
+          Document d = reader.document2(doc);
+          IndexableField[] values = d.getFields( Syns2Index.F_SYN);
           for ( int j = 0; j < values.length; j++)
           {
-            String syn = values[ j];
+            String syn = values[ j].stringValue();
             if ( already.add( syn))
             {
               TermQuery tq = new TermQuery( new Term( field, syn));

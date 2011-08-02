@@ -25,9 +25,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.FieldType;
 import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorVisitor;
-import org.apache.lucene.document.MapFieldSelector;
+import org.apache.lucene.document2.FieldSelector;
+import org.apache.lucene.document2.FieldSelectorVisitor;
+import org.apache.lucene.document2.MapFieldSelector;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -90,7 +90,7 @@ public class TestContribParallelReader extends LuceneTestCase {
     return newSearcher(pr);
   }
 
-  private org.apache.lucene.document.Document getDocument(IndexReader ir, int docID, FieldSelector selector) throws IOException {
+  private Document getDocument(IndexReader ir, int docID, FieldSelector selector) throws IOException {
     final FieldSelectorVisitor visitor = new FieldSelectorVisitor(selector);
     ir.document(docID, visitor);
     return visitor.getDocument();
@@ -103,9 +103,9 @@ public class TestContribParallelReader extends LuceneTestCase {
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
 
-    org.apache.lucene.document.Document doc11 = getDocument(pr, 0, new MapFieldSelector("f1"));
-    org.apache.lucene.document.Document doc24 = getDocument(pr, 1, new MapFieldSelector(Arrays.asList("f4")));
-    org.apache.lucene.document.Document doc223 = getDocument(pr, 1, new MapFieldSelector("f2", "f3"));
+    Document doc11 = getDocument(pr, 0, new MapFieldSelector("f1"));
+    Document doc24 = getDocument(pr, 1, new MapFieldSelector(Arrays.asList("f4")));
+    Document doc223 = getDocument(pr, 1, new MapFieldSelector("f2", "f3"));
     
     assertEquals(1, doc11.getFields().size());
     assertEquals(1, doc24.getFields().size());

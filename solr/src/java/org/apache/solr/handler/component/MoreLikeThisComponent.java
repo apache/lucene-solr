@@ -80,7 +80,7 @@ public class MoreLikeThisComponent extends SearchComponent
       int id = iterator.nextDoc();
       int rows = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
       DocListAndSet sim = mltHelper.getMoreLikeThis( id, 0, rows, null, null, flags );
-      String name = schema.printableUniqueKey( searcher.doc( id ) );
+      String name = schema.printableUniqueKey( searcher.doc2( id ) );
       mlt.add(name, sim.docList);
       
       if( dbg != null ){
@@ -92,7 +92,7 @@ public class MoreLikeThisComponent extends SearchComponent
         DocIterator mltIte = sim.docList.iterator();
         while( mltIte.hasNext() ){
           int mltid = mltIte.nextDoc();
-          String key = schema.printableUniqueKey( searcher.doc( mltid ) );
+          String key = schema.printableUniqueKey( searcher.doc2( mltid ) );
           explains.add( key, searcher.explain( mltHelper.getRealMLTQuery(), mltid ) );
         }
         docDbg.add( "explain", explains );

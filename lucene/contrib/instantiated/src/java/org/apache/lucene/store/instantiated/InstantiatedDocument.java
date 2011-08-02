@@ -64,13 +64,8 @@ public class InstantiatedDocument {
     this.vectorSpace = vectorSpace;
   }
 
-  public Document getDocument2() {
+  public Document getDocument() {
     return document;
-  }
-  
-  //nocommit this code is temporary!!
-  public org.apache.lucene.document.Document getDocument() {
-    return null;
   }
 
   @Override

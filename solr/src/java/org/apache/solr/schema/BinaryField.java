@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document2.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
@@ -50,19 +49,9 @@ public class BinaryField extends FieldType  {
   public String toExternal(IndexableField f) {
     return toBase64String(toObject(f));
   }
-  @Override
-  public String toExternal(Fieldable f) {
-    return toBase64String(toObject(f));
-  }
 
   @Override
   public ByteBuffer toObject(IndexableField f) {
-    BytesRef bytes = f.binaryValue(null);
-    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
-  }
-  
-  @Override
-  public ByteBuffer toObject(Fieldable f) {
     BytesRef bytes = f.binaryValue(null);
     return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }

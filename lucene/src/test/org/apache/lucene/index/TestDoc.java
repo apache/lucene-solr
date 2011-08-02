@@ -224,7 +224,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader reader = SegmentReader.get(true, si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
       for (int i = 0; i < reader.numDocs(); i++)
-        out.println(reader.document(i));
+        out.println(reader.document2(i));
 
       FieldsEnum fis = reader.fields().iterator();
       String field = fis.next();

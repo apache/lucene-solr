@@ -16,8 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -103,34 +102,8 @@ public class TrieField extends FieldType {
 
   @Override
   public Object toObject(IndexableField f) {
-    if (f instanceof org.apache.lucene.document2.NumericField) {
-      final Number val = ((org.apache.lucene.document2.NumericField) f).numericValue();
-      if (val==null) return badFieldString(f);
-      return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
-    } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytes = f.binaryValue(null);
-      if (bytes==null) return badFieldString(f);
-      switch (type) {
-        case INTEGER:
-          return toInt(bytes.bytes);
-        case FLOAT:
-          return Float.intBitsToFloat(toInt(bytes.bytes));
-        case LONG:
-          return toLong(bytes.bytes);
-        case DOUBLE:
-          return Double.longBitsToDouble(toLong(bytes.bytes));
-        case DATE:
-          return new Date(toLong(bytes.bytes));
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
-    }
-  }
-  @Override
-  public Object toObject(Fieldable f) {
     if (f instanceof NumericField) {
-      final Number val = ((NumericField) f).getNumericValue();
+      final Number val = ((NumericField) f).numericValue();
       if (val==null) return badFieldString(f);
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
@@ -318,10 +291,6 @@ public class TrieField extends FieldType {
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
-  @Override
-  public String storedToReadable(Fieldable f) {
-    return toExternal(f);
-  }
 
   @Override
   public String readableToIndexed(String val) {
@@ -364,19 +333,9 @@ public class TrieField extends FieldType {
     String s = f.stringValue();
     return "ERROR:SCHEMA-INDEX-MISMATCH,stringValue="+s;
   }
-  static String badFieldString(Fieldable f) {
-    String s = f.stringValue();
-    return "ERROR:SCHEMA-INDEX-MISMATCH,stringValue="+s;
-  }
 
   @Override
   public String toExternal(IndexableField f) {
-    return (type == TrieTypes.DATE)
-      ? dateField.toExternal((Date) toObject(f)) 
-      : toObject(f).toString();
-  }
-  @Override
-  public String toExternal(Fieldable f) {
     return (type == TrieTypes.DATE)
       ? dateField.toExternal((Date) toObject(f)) 
       : toObject(f).toString();
@@ -450,67 +409,6 @@ public class TrieField extends FieldType {
     final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     if (f instanceof org.apache.lucene.document2.NumericField) {
       final Number val = ((org.apache.lucene.document2.NumericField) f).numericValue();
-      if (val==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
-      switch (type) {
-        case INTEGER:
-          NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
-          break;
-        case FLOAT:
-          NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
-          break;
-        case LONG: //fallthrough!
-        case DATE:
-          NumericUtils.longToPrefixCoded(val.longValue(), 0, bytes);
-          break;
-        case DOUBLE:
-          NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
-          break;
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
-    } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytesRef = f.binaryValue(null);
-      if (bytesRef==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
-      switch (type) {
-        case INTEGER:
-          NumericUtils.intToPrefixCoded(toInt(bytesRef.bytes), 0, bytes);
-          break;
-        case FLOAT: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
-          // copied from NumericUtils to not convert to/from float two times
-          // code in next 2 lines is identical to: int v = NumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
-          int v = toInt(bytesRef.bytes);
-          if (v<0) v ^= 0x7fffffff;
-          NumericUtils.intToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        case LONG: //fallthrough!
-        case DATE:
-          NumericUtils.longToPrefixCoded(toLong(bytesRef.bytes), 0, bytes);
-          break;
-        case DOUBLE: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
-          // copied from NumericUtils to not convert to/from double two times
-          // code in next 2 lines is identical to: long v = NumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
-          long v = toLong(bytesRef.bytes);
-          if (v<0) v ^= 0x7fffffffffffffffL;
-          NumericUtils.longToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
-    }
-    return bytes.utf8ToString();
-  }
-  @Override
-  public String storedToIndexed(Fieldable f) {
-    final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-    if (f instanceof NumericField) {
-      final Number val = ((NumericField) f).getNumericValue();
       if (val==null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {

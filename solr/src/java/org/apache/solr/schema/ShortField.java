@@ -16,7 +16,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -82,10 +81,6 @@ public class ShortField extends FieldType {
 
   @Override
   public Short toObject(IndexableField f) {
-    return Short.valueOf(toExternal(f));
-  }
-  @Override
-  public Short toObject(Fieldable f) {
     return Short.valueOf(toExternal(f));
   }
 

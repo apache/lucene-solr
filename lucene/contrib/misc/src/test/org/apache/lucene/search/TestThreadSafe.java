@@ -22,10 +22,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorVisitor;
 import org.apache.lucene.document2.*;
 
 import java.util.Random;
@@ -71,7 +69,7 @@ public class TestThreadSafe extends LuceneTestCase {
     }
 
 
-    private org.apache.lucene.document.Document getDocument(IndexReader ir, int docID, FieldSelector selector) throws IOException {
+    private Document getDocument(IndexReader ir, int docID, FieldSelector selector) throws IOException {
       final FieldSelectorVisitor visitor = new FieldSelectorVisitor(selector);
       ir.document(docID, visitor);
       return visitor.getDocument();
@@ -79,21 +77,20 @@ public class TestThreadSafe extends LuceneTestCase {
 
     void loadDoc(IndexReader ir) throws IOException {
       // beware of deleted docs in the future
-      org.apache.lucene.document.Document doc = getDocument(ir, rand.nextInt(ir.maxDoc()),
-                                                            new org.apache.lucene.document.FieldSelector() {
-                                                              public org.apache.lucene.document.FieldSelectorResult accept(String fieldName) {
+      Document doc = getDocument(ir, rand.nextInt(ir.maxDoc()),
+                                                            new FieldSelector() {
+                                                              public FieldSelectorResult accept(String fieldName) {
                                                                 switch(rand.nextInt(2)) {
-                                                                case 0: return org.apache.lucene.document.FieldSelectorResult.LAZY_LOAD;
-                                                                case 1: return org.apache.lucene.document.FieldSelectorResult.LOAD;
+                                                                case 0: return FieldSelectorResult.LAZY_LOAD;
+                                                                case 1: return FieldSelectorResult.LOAD;
                                                                   // TODO: add other options
-                                                                default: return org.apache.lucene.document.FieldSelectorResult.LOAD;
+                                                                default: return FieldSelectorResult.LOAD;
                                                                 }
                                                               }
                                                             }
                                                             );
 
-      List<Fieldable> fields = doc.getFields();
-      for (final Fieldable f : fields ) {
+      for (final IndexableField f : doc ) {
         validateField(f);
       }
 
@@ -102,7 +99,7 @@ public class TestThreadSafe extends LuceneTestCase {
   }
 
 
-  void validateField(Fieldable f) {
+  void validateField(IndexableField f) {
     String val = f.stringValue();
     if (!val.startsWith("^") || !val.endsWith("$")) {
       throw new RuntimeException("Invalid field:" + f.toString() + " val=" +val);

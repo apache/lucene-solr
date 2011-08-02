@@ -80,7 +80,7 @@ public class TestMultiMMap extends LuceneTestCase {
     int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {
       int docID = random.nextInt(numDocs);
-      assertEquals("" + docID, reader.document(docID).get("docid"));
+      assertEquals("" + docID, reader.document2(docID).get("docid"));
     }
     reader.close();
     dir.close();

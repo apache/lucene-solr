@@ -30,8 +30,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -147,11 +148,11 @@ public final class SynExpand {
 
         @Override
         public void collect(int doc) throws IOException {
-          Document d = reader.document(doc);
-          String[] values = d.getValues( Syns2Index.F_SYN);
+          Document d = reader.document2(doc);
+          IndexableField[] values = d.getFields( Syns2Index.F_SYN);
           for ( int j = 0; j < values.length; j++)
           {
-            String syn = values[ j];
+            String syn = values[ j].stringValue();
             if ( already.add( syn)) // avoid dups of top level words and synonyms
             {
               TermQuery tq = new TermQuery( new Term( field, syn));

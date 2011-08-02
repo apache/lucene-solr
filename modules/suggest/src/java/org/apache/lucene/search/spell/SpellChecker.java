@@ -24,8 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -387,7 +388,7 @@ public class SpellChecker implements java.io.Closeable {
       SuggestWord sugWord = new SuggestWord();
       for (int i = 0; i < stop; i++) {
 
-        sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD); // get orig word
+        sugWord.string = indexSearcher.doc2(hits[i].doc).get(F_WORD); // get orig word
 
         // don't suggest a word for itself, that would be silly
         if (sugWord.string.equals(word)) {
@@ -606,9 +607,7 @@ public class SpellChecker implements java.io.Closeable {
     Document doc = new Document();
     // the word field is never queried on... its indexed so it can be quickly
     // checked for rebuild (and stored for retrieval). Doesn't need norms or TF/pos
-    Field f = new Field(F_WORD, text, Field.Store.YES, Field.Index.NOT_ANALYZED);
-    f.setOmitTermFreqAndPositions(true);
-    f.setOmitNorms(true);
+    Field f = new Field(F_WORD, StringField.TYPE_STORED, text);
     doc.add(f); // orig term
     addGram(text, doc, ng1, ng2);
     return doc;
@@ -621,21 +620,17 @@ public class SpellChecker implements java.io.Closeable {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add(new StringField(key, gram));
         if (i == 0) {
           // only one term possible in the startXXField, TF/pos and norms aren't needed.
-          Field startField = new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED);
-          startField.setOmitTermFreqAndPositions(true);
-          startField.setOmitNorms(true);
+          Field startField = new StringField("start" + ng, gram);
           doc.add(startField);
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
         // only one term possible in the endXXField, TF/pos and norms aren't needed.
-        Field endField = new Field("end" + ng, end, Field.Store.NO, Field.Index.NOT_ANALYZED);
-        endField.setOmitTermFreqAndPositions(true);
-        endField.setOmitNorms(true);
+        Field endField = new StringField("end" + ng, end);
         doc.add(endField);
       }
     }

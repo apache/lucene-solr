@@ -26,7 +26,7 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document2.FieldSelectorVisitor;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.Field;
 import org.apache.lucene.index.IndexableField;

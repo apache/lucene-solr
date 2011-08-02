@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document2.DateTools;
 import org.apache.lucene.document2.Document;
 import org.apache.lucene.document2.TextField;
 import org.apache.lucene.index.IndexWriter;

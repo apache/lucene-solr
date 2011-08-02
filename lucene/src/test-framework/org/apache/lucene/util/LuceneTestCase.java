@@ -1073,7 +1073,7 @@ public abstract class LuceneTestCase extends Assert {
       newType.setStored(true); // randomly store it
     }
 
-    if (!newType.storeTermVectors()) {
+    if (newType.indexed() && !newType.storeTermVectors()) {
       newType.setStoreTermVectors(random.nextBoolean());
     }
 

@@ -20,7 +20,8 @@ package org.apache.lucene.index;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.util.BytesRef;
 
 // nocommit jdocs
@@ -66,7 +67,7 @@ public interface IndexableField {
 
   // Numeric field:
   public boolean numeric();
-  public NumericField.DataType numericDataType();
+  public DataType numericDataType();
   public Number numericValue();
 
   // If this returns true then we index this field:

@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
@@ -47,10 +46,6 @@ public class TrieDateField extends DateField {
 
   @Override
   public Date toObject(IndexableField f) {
-    return (Date) wrappedField.toObject(f);
-  }
-  @Override
-  public Date toObject(Fieldable f) {
     return (Date) wrappedField.toObject(f);
   }
 
@@ -96,10 +91,6 @@ public class TrieDateField extends DateField {
   public String storedToReadable(IndexableField f) {
     return wrappedField.storedToReadable(f);
   }
-  @Override
-  public String storedToReadable(Fieldable f) {
-    return wrappedField.storedToReadable(f);
-  }
 
   @Override
   public String readableToIndexed(String val) {  
@@ -115,10 +106,6 @@ public class TrieDateField extends DateField {
   public String toExternal(IndexableField f) {
     return wrappedField.toExternal(f);
   }
-  @Override
-  public String toExternal(Fieldable f) {
-    return wrappedField.toExternal(f);
-  }
 
   @Override
   public String indexedToReadable(String _indexedForm) {
@@ -132,10 +119,6 @@ public class TrieDateField extends DateField {
 
   @Override
   public String storedToIndexed(IndexableField f) {
-    return wrappedField.storedToIndexed(f);
-  }
-  @Override
-  public String storedToIndexed(Fieldable f) {
     return wrappedField.storedToIndexed(f);
   }
 

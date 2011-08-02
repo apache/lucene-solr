@@ -22,7 +22,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
@@ -90,10 +89,6 @@ public class UUIDField extends StrField {
 
   @Override
   public UUID toObject(IndexableField f) {
-    return UUID.fromString(f.stringValue());
-  }
-  @Override
-  public UUID toObject(Fieldable f) {
     return UUID.fromString(f.stringValue());
   }
 }

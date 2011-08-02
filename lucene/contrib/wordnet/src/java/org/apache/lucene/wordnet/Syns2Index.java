@@ -32,8 +32,10 @@ import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document2.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -260,7 +262,7 @@ public class Syns2Index
               int n = index(word2Nums, num2Words, g, doc);
               if (n > 0)
               {
-          doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.NOT_ANALYZED));
+          doc.add( new Field( F_WORD, StringField.TYPE_STORED, g));
                   if ((++row % mod) == 0)
                   {
                       o.println("\trow=" + row + "/" + word2Nums.size() + " doc= " + doc);
@@ -305,7 +307,9 @@ public class Syns2Index
                 continue;
             }
             num++;
-			doc.add( new Field( F_SYN, cur, Field.Store.YES, Field.Index.NO));
+            FieldType ft = new FieldType();
+            ft.setStored(true);
+            doc.add( new Field( F_SYN, ft, cur));
         }
         return num;
     }

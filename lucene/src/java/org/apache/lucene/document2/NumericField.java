@@ -21,7 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.NumericField.DataType;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
@@ -134,17 +134,10 @@ import org.apache.lucene.search.FieldCache; // javadocs
  */
 public final class NumericField extends Field {
   
-  /**
-   * Data type of the value in {@link NumericField}.
-   * 
+  /** Data type of the value in {@link NumericField}.
    * @since 3.2
    */
-  
-  /*
-  public static enum DataType {
-    INT, LONG, FLOAT, DOUBLE
-  }
-  */
+  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
 
   public static final FieldType TYPE_UNSTORED = new FieldType();
   public static final FieldType TYPE_STORED = new FieldType();

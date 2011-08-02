@@ -131,13 +131,13 @@ public class ChainedFilterTest extends LuceneTestCase {
     TopDocs hits = searcher.search(query, chain, 1000);
     numHits = hits.totalHits;
     assertEquals(MAX / 2, numHits);
-    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    assertEquals("bob", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
     
     chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT});
     hits = searcher.search(query, chain, 1000);
     numHits = hits.totalHits;
     assertEquals(MAX / 2, numHits);
-    assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    assertEquals("sue", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testOR() throws Exception {
@@ -154,7 +154,7 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     TopDocs hits = searcher.search(query, chain, 1000);
     assertEquals("AND matches just bob", MAX / 2, hits.totalHits);
-    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    assertEquals("bob", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testXOR() throws Exception {
@@ -163,7 +163,7 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     TopDocs hits = searcher.search(query, chain, 1000);
     assertEquals("XOR matches sue", MAX / 2, hits.totalHits);
-    assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    assertEquals("sue", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testANDNOT() throws Exception {
@@ -174,7 +174,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     TopDocs hits = searcher.search(query, chain, 1000);
     assertEquals("ANDNOT matches just bob",
         MAX / 2, hits.totalHits);
-    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    assertEquals("bob", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
     
     chain = getChainedFilter(
         new Filter[]{bobFilter, bobFilter},
@@ -183,7 +183,7 @@ public class ChainedFilterTest extends LuceneTestCase {
       hits = searcher.search(query, chain, 1000);
       assertEquals("ANDNOT bob ANDNOT bob matches all sues",
           MAX / 2, hits.totalHits);
-      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+      assertEquals("sue", searcher.doc2(hits.scoreDocs[0].doc).get("owner"));
   }
 
   /*

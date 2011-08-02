@@ -320,7 +320,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
       IndexReader reader = IndexReader.open(dir, true);
       for(int i=0;i<reader.numDocs();i++) {
-        reader.document(i);
+        reader.document2(i);
         reader.getTermFreqVectors(i);
       }
       reader.close();
@@ -422,7 +422,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, true);
     for(int i=0;i<10;i++) {
       reader.getTermFreqVectors(i);
-      reader.document(i);
+      reader.document2(i);
     }
     reader.close();
     dir.close();

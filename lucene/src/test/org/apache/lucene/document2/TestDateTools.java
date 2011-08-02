@@ -1,4 +1,4 @@
-package org.apache.lucene.document;
+package org.apache.lucene.document2;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

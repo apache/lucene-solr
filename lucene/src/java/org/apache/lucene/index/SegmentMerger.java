@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document2.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.index.codecs.Codec;
@@ -316,7 +316,7 @@ final class SegmentMerger {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Document doc = reader.document(j);
+        Document doc = reader.document2(j);
         fieldsWriter.addDocument(doc, fieldInfos);
         docCount++;
         checkAbort.work(300);
@@ -343,7 +343,7 @@ final class SegmentMerger {
       for (; docCount < maxDoc; docCount++) {
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Document doc = reader.document(docCount);
+        Document doc = reader.document2(docCount);
         fieldsWriter.addDocument(doc, fieldInfos);
         checkAbort.work(300);
       }

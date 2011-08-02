@@ -94,7 +94,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     final Bits delDocs = MultiFields.getDeletedDocs(r);
     for (int i = 0; i < r.maxDoc(); i++) {
       if(delDocs == null || !delDocs.get(i)) {
-        String sval=r.document(i).get(FIELD_RECORD_ID);
+        String sval=r.document2(i).get(FIELD_RECORD_ID);
         if(sval!=null) {
           int val=Integer.parseInt(sval);
           assertTrue("Did not expect document #"+val, expecteds.get(val));

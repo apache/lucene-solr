@@ -20,7 +20,7 @@ package org.apache.lucene.document2;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -94,10 +94,20 @@ public class Field implements IndexableField {
   }
   
   public Field(String name, boolean internName, FieldType type, String value) {
-    if (name == null)
+    if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
-    if (value == null)
+    }
+    if (value == null) {
       throw new IllegalArgumentException("value cannot be null");
+    }
+    if (!type.stored() && !type.indexed()) {
+      throw new IllegalArgumentException("it doesn't make sense to have a field that "
+        + "is neither indexed nor stored");
+    }
+    if (!type.indexed() && !type.tokenized() && (type.storeTermVectors())) {
+      throw new IllegalArgumentException("cannot store term vector information "
+          + "for a field that is not indexed");
+    }
     
     this.type = type;
     this.name = name;

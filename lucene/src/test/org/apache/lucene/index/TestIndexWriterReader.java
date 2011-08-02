@@ -139,7 +139,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r1 = writer.getReader();
     assertTrue(r1.isCurrent());
 
-    String id10 = r1.document(10).getField("id").stringValue();
+    String id10 = r1.document2(10).getField("id").stringValue();
     
     Document newDoc = r1.document2(10);
     newDoc.removeField("id");
@@ -329,7 +329,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // get a reader
     IndexReader r1 = writer.getReader();
 
-    String id10 = r1.document(10).getField("id").stringValue();
+    String id10 = r1.document2(10).getField("id").stringValue();
 
     // deleted IW docs should not show up in the next getReader
     writer.deleteDocuments(new Term("id", id10));
@@ -337,7 +337,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(1, count(new Term("id", id10), r1));
     assertEquals(0, count(new Term("id", id10), r2));
     
-    String id50 = r1.document(50).getField("id").stringValue();
+    String id50 = r1.document2(50).getField("id").stringValue();
     assertEquals(1, count(new Term("id", id50), r1));
     
     writer.deleteDocuments(new Term("id", id50));
@@ -346,7 +346,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(0, count(new Term("id", id10), r3));
     assertEquals(0, count(new Term("id", id50), r3));
     
-    String id75 = r1.document(75).getField("id").stringValue();
+    String id75 = r1.document2(75).getField("id").stringValue();
     writer.deleteDocuments(new TermQuery(new Term("id", id75)));
     IndexReader r4 = writer.getReader();
     assertEquals(1, count(new Term("id", id75), r3));

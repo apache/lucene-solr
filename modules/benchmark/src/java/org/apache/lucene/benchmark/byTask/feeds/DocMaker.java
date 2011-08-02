@@ -211,7 +211,7 @@ public class DocMaker {
     
     // Set ID_FIELD
     FieldType ft = new FieldType(valType);
-    ft.setIndexed(false);
+    ft.setIndexed(true);
 
     Field idField = ds.getField(ID_FIELD, ft);
     int id;

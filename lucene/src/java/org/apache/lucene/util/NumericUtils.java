@@ -18,7 +18,7 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document2.NumericField;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 

@@ -24,7 +24,7 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document2.NumericField; // for javadocs
 
 /**
  * A range filter built on top of a cached single term field (in {@link FieldCache}).

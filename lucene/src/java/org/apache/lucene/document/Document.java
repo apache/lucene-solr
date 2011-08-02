@@ -102,7 +102,7 @@ public final class Document implements Iterable<IndexableField> {
             return field instanceof NumericField;
           }
 
-          public NumericField.DataType numericDataType() {
+          public org.apache.lucene.document2.NumericField.DataType numericDataType() {
             return field.getDataType();
           }
 

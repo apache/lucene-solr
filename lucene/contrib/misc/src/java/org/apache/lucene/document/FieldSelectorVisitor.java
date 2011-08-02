@@ -213,7 +213,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
       return null;
     }
 
-    public NumericField.DataType getDataType() {
+    public org.apache.lucene.document2.NumericField.DataType getDataType() {
       return null;
     }
 

@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
@@ -134,10 +135,8 @@ public final class NumericField extends AbstractField {
   /** Data type of the value in {@link NumericField}.
    * @since 3.2
    */
-  public static enum DataType { INT, LONG, FLOAT, DOUBLE }
-
   private transient NumericTokenStream numericTS;
-  private DataType type;
+  private org.apache.lucene.document2.NumericField.DataType type;
   private final int precisionStep;
 
   /**
@@ -251,7 +250,7 @@ public final class NumericField extends AbstractField {
   /** Returns the data type of the current value, {@code null} if not yet set.
    * @since 3.2
    */
-  public DataType getDataType() {
+  public org.apache.lucene.document2.NumericField.DataType getDataType() {
     return type;
   }
 

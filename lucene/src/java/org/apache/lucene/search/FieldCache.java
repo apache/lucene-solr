@@ -24,7 +24,7 @@ import org.apache.lucene.search.cache.CachedArray.*;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document2.NumericField; // for javadocs
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.util.packed.PackedInts;
 

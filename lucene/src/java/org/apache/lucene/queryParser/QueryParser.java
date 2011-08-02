@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document2.DateTools;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;

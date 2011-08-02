@@ -1289,13 +1289,13 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);
 
-    assertTrue(ir.document(0).getFieldable("binary").isBinary());
-    assertTrue(ir.document(1).getFieldable("binary").isBinary());
-    assertTrue(ir.document(2).getFieldable("binary").isBinary());
+    assertTrue(ir.document2(0).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document2(1).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document2(2).getField("binary").binaryValue(null)!=null);
 
-    assertEquals("value", ir.document(0).get("string"));
-    assertEquals("value", ir.document(1).get("string"));
-    assertEquals("value", ir.document(2).get("string"));
+    assertEquals("value", ir.document2(0).get("string"));
+    assertEquals("value", ir.document2(1).get("string"));
+    assertEquals("value", ir.document2(2).get("string"));
 
 
     // test that the terms were indexed.

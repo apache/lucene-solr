@@ -84,7 +84,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals("3 documents should match", 3, hits.length);
     List<String> order = Arrays.asList("bbbbb","abbbb","aabbb");
     for (int i = 0; i < hits.length; i++) {
-      final String term = searcher.doc(hits[i].doc).get("field");
+      final String term = searcher.doc2(hits[i].doc).get("field");
       //System.out.println(hits[i].score);
       assertEquals(order.get(i), term);
     }
@@ -96,7 +96,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals("only 2 documents should match", 2, hits.length);
     order = Arrays.asList("bbbbb","abbbb");
     for (int i = 0; i < hits.length; i++) {
-      final String term = searcher.doc(hits[i].doc).get("field");
+      final String term = searcher.doc2(hits[i].doc).get("field");
       //System.out.println(hits[i].score);
       assertEquals(order.get(i), term);
     }
@@ -113,43 +113,43 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
     // default allows for up to two edits:
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
-    assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[2].doc).get("field"), ("aaabb"));
 
     // query similar to a word in the index:
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
-    assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[2].doc).get("field"), ("aaabb"));
     
     // now with prefix
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
-    assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[2].doc).get("field"), ("aaabb"));
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 2);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
-    assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[2].doc).get("field"), ("aaabb"));
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 3);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
-    assertEquals(searcher.doc(hits[2].doc).get("field"), ("aaabb"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[2].doc).get("field"), ("aaabb"));
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 4);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaa"));
-    assertEquals(searcher.doc(hits[1].doc).get("field"), ("aaaab"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaa"));
+    assertEquals(searcher.doc2(hits[1].doc).get("field"), ("aaaab"));
     query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 5);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -158,25 +158,25 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("ddddd"));
     
     // now with prefix
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("ddddd"));
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 2);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("ddddd"));
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 3);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("ddddd"));
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 4);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("ddddd"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("ddddd"));
     query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 5);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -212,17 +212,17 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 0);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaaaa"));
     
     // now with prefix
     query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 1);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaaaa"));
     query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 4);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals(searcher.doc(hits[0].doc).get("field"), ("aaaaaaa"));
+    assertEquals(searcher.doc2(hits[0].doc).get("field"), ("aaaaaaa"));
     query = new FuzzyQuery(new Term("field", "aaaaccc"), 0.5f, 5);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -377,9 +377,9 @@ public class TestFuzzyQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
     // normally, 'Lucenne' would be the first result as IDF will skew the score.
-    assertEquals("Lucene", reader.document(hits[0].doc).get("field"));
-    assertEquals("Lucene", reader.document(hits[1].doc).get("field"));
-    assertEquals("Lucenne", reader.document(hits[2].doc).get("field"));
+    assertEquals("Lucene", reader.document2(hits[0].doc).get("field"));
+    assertEquals("Lucene", reader.document2(hits[1].doc).get("field"));
+    assertEquals("Lucenne", reader.document2(hits[2].doc).get("field"));
     searcher.close();
     reader.close();
     directory.close();
@@ -417,7 +417,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(r);
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("Giga byte", searcher.doc2(hits[0].doc).get("field"));
     searcher.close();
     r.close();
     index.close();
@@ -443,28 +443,28 @@ public class TestFuzzyQuery extends LuceneTestCase {
     FuzzyQuery q = (FuzzyQuery) qp.parse("fouba~2");
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("foobar", searcher.doc2(hits[0].doc).get("field"));
     
     q = (FuzzyQuery) qp.parse("foubara~2");
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("foobar", searcher.doc2(hits[0].doc).get("field"));
     
     q = (FuzzyQuery) qp.parse("t~3");
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("test", searcher.doc2(hits[0].doc).get("field"));
     
     q = new FuzzyQuery(new Term("field", "a"), 4f, 0, 50);
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
-    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
+    assertEquals("test", searcher.doc2(hits[0].doc).get("field"));
     
     q = new FuzzyQuery(new Term("field", "a"), 6f, 0, 50);
     hits = searcher.search(q, 10).scoreDocs;
     assertEquals(2, hits.length);
-    assertEquals("test", searcher.doc(hits[0].doc).get("field"));
-    assertEquals("foobar", searcher.doc(hits[1].doc).get("field"));
+    assertEquals("test", searcher.doc2(hits[0].doc).get("field"));
+    assertEquals("foobar", searcher.doc2(hits[1].doc).get("field"));
     
     searcher.close();
     reader.close();

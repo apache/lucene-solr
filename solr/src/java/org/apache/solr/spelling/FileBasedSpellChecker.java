@@ -24,8 +24,9 @@ import org.apache.lucene.index.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.TextField;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.RAMDirectory;
@@ -100,7 +101,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         for (String s : lines) {
           Document d = new Document();
-          d.add(new Field(WORD_FIELD_NAME, s, Field.Store.NO, Field.Index.ANALYZED));
+          d.add(new TextField(WORD_FIELD_NAME, s));
           writer.addDocument(d);
         }
         writer.optimize();

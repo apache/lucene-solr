@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -80,10 +79,6 @@ public class DoubleField extends FieldType {
 
   @Override
   public Double toObject(IndexableField f) {
-    return Double.valueOf(toExternal(f));
-  }
-  @Override
-  public Double toObject(Fieldable f) {
     return Double.valueOf(toExternal(f));
   }
 }

@@ -22,14 +22,13 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.FieldSelectorVisitor;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.LoadFirstFieldSelector;
-import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.document2.Document;
+import org.apache.lucene.document2.Field;
+import org.apache.lucene.document2.FieldSelector;
+import org.apache.lucene.document2.FieldSelectorResult;
+import org.apache.lucene.document2.FieldSelectorVisitor;
+import org.apache.lucene.document2.LoadFirstFieldSelector;
+import org.apache.lucene.document2.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -87,28 +86,28 @@ public class TestContribFieldsReader extends LuceneTestCase {
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
     Document doc = getDocument(reader, 0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
-    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
+    IndexableField field = doc.getField(DocHelper.LAZY_FIELD_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("field is not lazy and it should be", field.isLazy());
+    assertTrue("field is not lazy and it should be", ((Field) field).lazy());
     String value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
     assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
 
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF1_KEY);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == false);
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == false);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF1_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF1_TEXT) == true);
 
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF2_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF2_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == true);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == true);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF2_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF2_TEXT) == true);
 
-    field = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
+    field = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
 
@@ -152,32 +151,32 @@ public class TestContribFieldsReader extends LuceneTestCase {
 
     Document doc = getDocument(reader, 0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
-    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
+    IndexableField field = doc.getField(DocHelper.LAZY_FIELD_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("field is not lazy and it should be", field.isLazy());
+    assertTrue("field is not lazy and it should be", ((Field) field).lazy());
     String value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
     assertTrue("calling stringValue() twice should give different references", field.stringValue() != field.stringValue());
 
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == false);
     assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
 
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF1_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == false);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF1_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF1_TEXT) == true);
     assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
 
-    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF2_KEY);
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF2_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("Field is lazy and it should not be", field.isLazy() == true);
+    assertTrue("Field is lazy and it should not be", ((Field) field).lazy() == true);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF2_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF2_TEXT) == true);
     assertTrue("calling stringValue() twice should give different references", field.stringValue() != field.stringValue());
 
-    field = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
+    field = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
     assertTrue("calling binaryValue() twice should give different references", field.binaryValue(null).bytes != field.binaryValue(null).bytes);
@@ -200,9 +199,9 @@ public class TestContribFieldsReader extends LuceneTestCase {
     Document doc = getDocument(reader, 0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
     int count = 0;
-    List<Fieldable> l = doc.getFields();
-    for (final Fieldable fieldable : l ) {
-      Field field = (Field) fieldable;
+    List<IndexableField> l = doc.getFields();
+    for (final IndexableField IndexableField : l ) {
+      Field field = (Field) IndexableField;
 
       assertTrue("field is null and it shouldn't be", field != null);
       String sv = field.stringValue();
@@ -244,11 +243,11 @@ public class TestContribFieldsReader extends LuceneTestCase {
       IndexReader reader = IndexReader.open(tmpDir);
 
       Document doc;
-      doc = reader.document(0);//Load all of them
+      doc = reader.document2(0);//Load all of them
       assertTrue("doc is null and it shouldn't be", doc != null);
-      Fieldable field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
+      IndexableField field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
       assertTrue("field is null and it shouldn't be", field != null);
-      assertTrue("field is lazy", field.isLazy() == false);
+      assertTrue("field is lazy", ((Field) field).lazy() == false);
       String value;
       long start;
       long finish;
@@ -265,8 +264,8 @@ public class TestContribFieldsReader extends LuceneTestCase {
       System.gc();
       reader = IndexReader.open(tmpDir);
       doc = getDocument(reader, 0, fieldSelector);
-      field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
-      assertTrue("field is not lazy", field.isLazy() == true);
+      field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
+      assertTrue("field is not lazy", ((Field) field).lazy() == true);
       start = System.currentTimeMillis();
       //On my machine this took around 50 - 70ms
       value = field.stringValue();
@@ -298,12 +297,12 @@ public class TestContribFieldsReader extends LuceneTestCase {
           return FieldSelectorResult.NO_LOAD;
       }
     });
-    Fieldable f1 = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
-    Fieldable f3 = doc.getFieldable(DocHelper.TEXT_FIELD_3_KEY);
-    Fieldable fb = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
-    assertTrue(f1.isBinary());
-    assertTrue(!f3.isBinary());
-    assertTrue(fb.isBinary());
+    IndexableField f1 = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
+    IndexableField f3 = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
+    IndexableField fb = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
+    assertTrue(f1.binaryValue(null)!=null);
+    assertTrue(f3.binaryValue(null)==null);
+    assertTrue(fb.binaryValue(null)!=null);
     assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.binaryValue(null).bytes);
     assertEquals(DocHelper.FIELD_3_TEXT, f3.stringValue());
     assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.binaryValue(null).bytes);

@@ -203,13 +203,13 @@ public class TestFieldsReader extends LuceneTestCase {
 
       for(int i=0;i<2;i++) {
         try {
-          reader.document(i);
+          reader.document2(i);
         } catch (IOException ioe) {
           // expected
           exc = true;
         }
         try {
-          reader.document(i);
+          reader.document2(i);
         } catch (IOException ioe) {
           // expected
           exc = true;
@@ -229,25 +229,25 @@ public class TestFieldsReader extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
-    final org.apache.lucene.document.NumericField.DataType[] typeAnswers = new org.apache.lucene.document.NumericField.DataType[numDocs];
+    final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {
       org.apache.lucene.document2.Document doc = new org.apache.lucene.document2.Document();
       org.apache.lucene.document2.NumericField nf = new org.apache.lucene.document2.NumericField("nf", org.apache.lucene.document2.NumericField.TYPE_STORED);
       doc.add(nf);
       final Number answer;
-      final org.apache.lucene.document.NumericField.DataType typeAnswer;
+      final NumericField.DataType typeAnswer;
       if (random.nextBoolean()) {
         // float/double
         if (random.nextBoolean()) {
           final float f = random.nextFloat();
           nf.setFloatValue(f);
           answer = Float.valueOf(f);
-          typeAnswer = org.apache.lucene.document.NumericField.DataType.FLOAT;
+          typeAnswer = NumericField.DataType.FLOAT;
         } else {
           final double d = random.nextDouble();
           nf.setDoubleValue(d);
           answer = Double.valueOf(d);
-          typeAnswer = org.apache.lucene.document.NumericField.DataType.DOUBLE;
+          typeAnswer = NumericField.DataType.DOUBLE;
         }
       } else {
         // int/long
@@ -255,17 +255,17 @@ public class TestFieldsReader extends LuceneTestCase {
           final int i = random.nextInt();
           nf.setIntValue(i);
           answer = Integer.valueOf(i);
-          typeAnswer = org.apache.lucene.document.NumericField.DataType.INT;
+          typeAnswer = NumericField.DataType.INT;
         } else {
           final long l = random.nextLong();
           nf.setLongValue(l);
           answer = Long.valueOf(l);
-          typeAnswer = org.apache.lucene.document.NumericField.DataType.LONG;
+          typeAnswer = NumericField.DataType.LONG;
         }
       }
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      doc.add(new org.apache.lucene.document2.NumericField("id", Integer.MAX_VALUE).setIntValue(id));
+      doc.add(new NumericField("id", Integer.MAX_VALUE).setIntValue(id));
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();

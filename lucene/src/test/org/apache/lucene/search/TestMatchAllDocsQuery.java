@@ -55,9 +55,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
     assertEquals(3, hits.length);
-    assertEquals("one", is.doc(hits[0].doc).get("key"));
-    assertEquals("two", is.doc(hits[1].doc).get("key"));
-    assertEquals("three four", is.doc(hits[2].doc).get("key"));
+    assertEquals("one", is.doc2(hits[0].doc).get("key"));
+    assertEquals("two", is.doc2(hits[1].doc).get("key"));
+    assertEquals("three four", is.doc2(hits[2].doc).get("key"));
 
     // assert with norms scoring turned on
 
@@ -65,9 +65,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
 
-    assertEquals("three four", is.doc(hits[0].doc).get("key"));    
-    assertEquals("two", is.doc(hits[1].doc).get("key"));
-    assertEquals("one", is.doc(hits[2].doc).get("key"));
+    assertEquals("three four", is.doc2(hits[0].doc).get("key"));    
+    assertEquals("two", is.doc2(hits[1].doc).get("key"));
+    assertEquals("one", is.doc2(hits[2].doc).get("key"));
 
     // change norm & retest
     is.getIndexReader().setNorm(0, "key", is.getSimilarityProvider().get("key").encodeNormValue(400f));
@@ -75,9 +75,9 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
 
-    assertEquals("one", is.doc(hits[0].doc).get("key"));
-    assertEquals("three four", is.doc(hits[1].doc).get("key"));    
-    assertEquals("two", is.doc(hits[2].doc).get("key"));
+    assertEquals("one", is.doc2(hits[0].doc).get("key"));
+    assertEquals("three four", is.doc2(hits[1].doc).get("key"));    
+    assertEquals("two", is.doc2(hits[2].doc).get("key"));
     
     // some artificial queries to trigger the use of skipTo():
     

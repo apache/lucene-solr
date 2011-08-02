@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexableField;
 /**
  *
@@ -29,10 +28,6 @@ public class BCDStrField extends BCDIntField {
    */
   @Override
   public String toObject(IndexableField f) {
-    return toExternal(f);
-  }
-  @Override
-  public String toObject(Fieldable f) {
     return toExternal(f);
   }
 }

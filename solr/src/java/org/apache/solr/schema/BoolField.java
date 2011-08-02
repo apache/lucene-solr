@@ -31,7 +31,6 @@ import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 
@@ -118,17 +117,9 @@ public class BoolField extends FieldType {
   public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
-  @Override
-  public String toExternal(Fieldable f) {
-    return indexedToReadable(f.stringValue());
-  }
 
   @Override
   public Boolean toObject(IndexableField f) {
-    return Boolean.valueOf( toExternal(f) );
-  }
-  @Override
-  public Boolean toObject(Fieldable f) {
     return Boolean.valueOf( toExternal(f) );
   }
 

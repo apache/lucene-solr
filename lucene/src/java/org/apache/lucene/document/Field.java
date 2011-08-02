@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document2.NumericField.DataType;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.StringHelper;
 
@@ -279,7 +280,7 @@ public final class Field extends AbstractField implements Fieldable {
     return null;
   }
 
-  public NumericField.DataType getDataType() {
+  public DataType getDataType() {
     return null;
   }
 
