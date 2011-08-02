@@ -137,9 +137,11 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     final Q q = getTopLevelQuery();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
+    // nocommit -- how come I see 2 seekExacts for the same
+    // term in a row in the terms dict, around here...?
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes);
-      assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq();
+      assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;
       addClause(q, term, st.termState.docFreq(), query.getBoost() * st.boost, st.termState); // add to query
     }
     query.incTotalNumberOfTerms(scoreTerms.length);

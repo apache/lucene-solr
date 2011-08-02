@@ -610,6 +610,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           final long newFP = fpOrig + (code >>> 1);
           assert newFP == fpEnd: "newFP=" + newFP + " fpEnd=" + fpEnd;
 
+          // nocommit -- skip floor blocks here too!
           assert numFollowFloorBlocks > 0;
           numFollowFloorBlocks--;
           if (numFollowFloorBlocks == 0) {
@@ -634,7 +635,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         void load(BytesRef frameIndexData) throws IOException {
 
-          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData);
+          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a"));
 
           if (frameIndexData != null && transitions.length != 0) {
             // Floor frame
@@ -650,19 +651,20 @@ public class BlockTreeTermsReader extends FieldsProducer {
               numFollowFloorBlocks = floorDataReader.readVInt();
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
-              // Maybe skip floor blocks:
-              // nocommit -- must set nextFloorLabel to 256
-              // if we exhasuted it?
-              // nocommit turn on
-              while (false && numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
-                if (DEBUG) System.out.println("    skip floor block!");
-                final long code2 = floorDataReader.readVLong();
-                fp = fpOrig + (code2 >>> 1);
-                numFollowFloorBlocks--;
-                if (numFollowFloorBlocks != 0) {
-                  nextFloorLabel = floorDataReader.readByte() & 0xff;
-                } else {
-                  nextFloorLabel = 256;
+
+              if (!runAutomaton.isAccept(state)) {
+                // Maybe skip floor blocks:
+                // nocommit
+                while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
+                  final long code2 = floorDataReader.readVLong();
+                  fp = fpOrig + (code2 >>> 1);
+                  numFollowFloorBlocks--;
+                  if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+                  if (numFollowFloorBlocks != 0) {
+                    nextFloorLabel = floorDataReader.readByte() & 0xff;
+                  } else {
+                    nextFloorLabel = 256;
+                  }
                 }
               }
             }
@@ -817,6 +819,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (startTerm != null) {
           seekToStartTerm(startTerm);
         }
+        if (DEBUG) {
+          System.out.println("\nintEnum.init seg=" + segment);
+        }
       }
 
       @Override
@@ -890,9 +895,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public int docFreq() throws IOException {
-        //System.out.println("BTR.docFreq");
+        if (DEBUG) System.out.println("BTIR.docFreq");
         currentFrame.decodeMetaData();
-        //System.out.println("  return " + state.docFreq);
+        if (DEBUG) System.out.println("  return " + currentFrame.termState.docFreq);
         return currentFrame.termState.docFreq;
       }
 
@@ -1016,7 +1021,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       public BytesRef next() throws IOException {
 
         if (DEBUG) {
-          System.out.println("\nintEnum.next");
+          System.out.println("\nintEnum.next seg=" + segment);
           System.out.println("  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
         }
 
@@ -1060,7 +1065,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
                 // beyond what the max transition will allow
                 if (DEBUG) System.out.println("      break: trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]));
 
-                // sneaky!
+                // sneaky!  forces a pop above
                 currentFrame.isLastInFloor = true;
                 //while (!currentFrame.isLastInFloor) {
                 //currentFrame.loadNextFloorBlock();
@@ -1092,8 +1097,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
             currentFrame = pushFrame(state);
             if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
           } else if (runAutomaton.isAccept(state)) {
-            if (DEBUG) System.out.println("      term match to state=" + state + "; return term=" + brToString(term));
             copyTerm();
+            if (DEBUG) System.out.println("      term match to state=" + state + "; return term=" + brToString(term));
             assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
             return term;
           } else {
@@ -1103,12 +1108,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       private void copyTerm() {
+        //System.out.println("      copyTerm cur.prefix=" + currentFrame.prefix + " cur.suffix=" + currentFrame.suffix + " first=" + (char) currentFrame.suffixBytes[currentFrame.startBytePos]);
         final int len = currentFrame.prefix + currentFrame.suffix;
         if (term.bytes.length < len) {
           term.bytes = ArrayUtil.grow(term.bytes, len);
         }
-        term.length = len;
         System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+        term.length = len;
       }
 
       @Override
@@ -2119,9 +2125,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       @Override
       public int docFreq() throws IOException {
         assert !eof;
-        //System.out.println("BTR.docFreq");
+        if (DEBUG) System.out.println("BTR.docFreq");
         currentFrame.decodeMetaData();
-        //System.out.println("  return " + state.docFreq);
+        if (DEBUG) System.out.println("  return " + currentFrame.state.docFreq);
         return currentFrame.state.docFreq;
       }
 
