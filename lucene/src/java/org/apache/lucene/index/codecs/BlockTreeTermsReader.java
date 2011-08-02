@@ -764,6 +764,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
       }
 
+      private final BytesRef savedStartTerm;
+
       public IntersectEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
         // nocommit can we use suffixRef?
         // nocommit in some cases we can do hard filter by
@@ -790,6 +792,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         f.arc = arc;
         f.outputPrefix = arc.output;
         f.load(rootCode);
+
+        // nocommit
+        savedStartTerm = startTerm == null ? null : new BytesRef(startTerm);
 
         currentFrame = f;
         if (startTerm != null) {
@@ -909,10 +914,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
         FST.Arc<BytesRef> arc = arcs[0];
         assert arc == currentFrame.arc;
 
-        for(int idx=0;idx<target.length;idx++) {
-          final int targetLabel = target.bytes[target.offset+idx] & 0xff;
-          final int nextState = runAutomaton.step(currentFrame.state, targetLabel);
-          assert nextState != -1;
+        for(int idx=0;idx<=target.length;idx++) {
+          final int targetLabel = idx == target.length ? -1 : target.bytes[target.offset+idx] & 0xff;
+          final int nextState;
+          if (idx < target.length) {
+            nextState = runAutomaton.step(currentFrame.state, targetLabel);
+            assert nextState != -1;
+          } else {
+            nextState = -1;
+          }
           if (DEBUG) System.out.println("  idx=" + idx + " label=" + (char) targetLabel + " f.ord=" + currentFrame.ord);
 
           boolean lastIsSubBlock = false;
@@ -922,7 +932,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
             final int saveStartBytePos = currentFrame.startBytePos;
             final int saveSuffix = currentFrame.suffix;
             final long saveLastSubFP = currentFrame.lastSubFP;
+            final int saveTermBlockOrd = currentFrame.termState.termBlockOrd;
+
             final boolean isSubBlock = currentFrame.next();
+
             if (DEBUG) System.out.println("    cycle ent=" + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" + currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
             if (term.bytes.length < term.length) {
@@ -932,6 +945,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             if (isSubBlock && target.startsWith(term)) {
               // Recurse
+              assert nextState != -1;
               currentFrame = pushFrame(nextState);
               break;
             } else {
@@ -962,6 +976,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
                 currentFrame.startBytePos = saveStartBytePos;
                 currentFrame.suffix = saveSuffix;
                 currentFrame.suffixesReader.setPosition(savePos);
+                currentFrame.termState.termBlockOrd = saveTermBlockOrd;
                 System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
                 term.length = currentFrame.prefix + currentFrame.suffix;
                 if (lastIsSubBlock) {
@@ -976,9 +991,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }
           }
         }
-
-        // nocommit -- must handle this (target is prefix in index)
-        if (DEBUG) System.out.println("  end return term=" + brToString(term));
       }
 
       @Override
@@ -1063,6 +1075,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           } else if (runAutomaton.isAccept(state)) {
             if (DEBUG) System.out.println("      term match to state=" + state + "; return term=" + brToString(term));
             copyTerm();
+            assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
             return term;
           } else {
             //System.out.println("    no match");
