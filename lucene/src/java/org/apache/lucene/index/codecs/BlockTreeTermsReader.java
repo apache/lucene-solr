@@ -653,7 +653,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
               // Maybe skip floor blocks:
               // nocommit -- must set nextFloorLabel to 256
               // if we exhasuted it?
-              while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
+              // nocommit turn on
+              while (false && numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
                 if (DEBUG) System.out.println("    skip floor block!");
                 final long code2 = floorDataReader.readVLong();
                 fp = fpOrig + (code2 >>> 1);
