@@ -88,7 +88,7 @@ import org.apache.lucene.util.fst.Util;
 
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
   public static boolean DEBUG2 = false;
   public static boolean SAVE_DOT_FILES = false;
 

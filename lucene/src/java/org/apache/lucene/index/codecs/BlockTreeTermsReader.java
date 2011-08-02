@@ -634,7 +634,39 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         void load(BytesRef frameIndexData) throws IOException {
 
-          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig);
+          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData);
+
+          if (frameIndexData != null && transitions.length != 0) {
+            // Floor frame
+            if (floorData.length < frameIndexData.length) {
+              this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
+            }
+            System.arraycopy(frameIndexData.bytes, frameIndexData.offset, floorData, 0, frameIndexData.length);
+            floorDataReader.reset(floorData, 0, frameIndexData.length);
+            // Skip first long -- has redundant fp, hasTerms
+            // flag, isFloor flag
+            final long code = floorDataReader.readVLong();
+            if ((code & OUTPUT_FLAG_IS_FLOOR) != 0) {
+              numFollowFloorBlocks = floorDataReader.readVInt();
+              nextFloorLabel = floorDataReader.readByte() & 0xff;
+              if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
+              // Maybe skip floor blocks:
+              // nocommit -- must set nextFloorLabel to 256
+              // if we exhasuted it?
+              while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
+                if (DEBUG) System.out.println("    skip floor block!");
+                final long code2 = floorDataReader.readVLong();
+                fp = fpOrig + (code2 >>> 1);
+                numFollowFloorBlocks--;
+                if (numFollowFloorBlocks != 0) {
+                  nextFloorLabel = floorDataReader.readByte() & 0xff;
+                } else {
+                  nextFloorLabel = 256;
+                }
+              }
+            }
+          }
+
           in.seek(fp);
           int code = in.readVInt();
           entCount = code >> 1;
@@ -660,22 +692,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           in.readBytes(statBytes, 0, numBytes);
           statsReader.reset(statBytes, 0, numBytes);
           metaDataUpto = 0;
-
-          if (frameIndexData != null && !isLastInFloor) {
-            // Floor frame
-            if (floorData.length < frameIndexData.length) {
-              this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
-            }
-            if (DEBUG) System.out.println("    frameIndexData=" + frameIndexData);
-            System.arraycopy(frameIndexData.bytes, frameIndexData.offset, floorData, 0, frameIndexData.length);
-            floorDataReader.reset(floorData, 0, frameIndexData.length);
-            // Skip first long -- has redundant fp, hasTerms
-            // flag, isFloor flag
-            floorDataReader.readVLong();
-            numFollowFloorBlocks = floorDataReader.readVInt();
-            nextFloorLabel = floorDataReader.readByte() & 0xff;
-            if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
-          }
 
           termState.termBlockOrd = 0;
           nextEnt = 0;
@@ -991,6 +1007,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }
           }
         }
+
+        assert false;
       }
 
       @Override
