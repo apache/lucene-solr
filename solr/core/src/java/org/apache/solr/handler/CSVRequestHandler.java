@@ -34,13 +34,18 @@ import org.apache.commons.io.IOUtils;
 
 import java.util.regex.Pattern;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 
 public class CSVRequestHandler extends ContentStreamHandlerBase {
+	public static Logger log = LoggerFactory.getLogger(CSVRequestHandler.class);
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
@@ -83,16 +88,20 @@ abstract class CSVLoader extends ContentStreamLoader {
   public static final String ENCAPSULATOR="encapsulator";
   public static final String ESCAPE="escape";
   public static final String OVERWRITE="overwrite";
+  public static final String LITERALS_PREFIX = "literal.";
 
   private static Pattern colonSplit = Pattern.compile(":");
   private static Pattern commaSplit = Pattern.compile(",");
+  
+  public static Logger log = LoggerFactory.getLogger(CSVRequestHandler.class);
 
   final IndexSchema schema;
   final SolrParams params;
   final CSVStrategy strategy;
   final UpdateRequestProcessor processor;
 
-
+  // hashmap to save any literal fields and their values
+  HashMap <SchemaField, String> literals;
   String[] fieldnames;
   SchemaField[] fields;
   CSVLoader.FieldAdder[] adders;
@@ -189,6 +198,7 @@ abstract class CSVLoader extends ContentStreamLoader {
     this.processor = processor;
     this.params = req.getParams();
     schema = req.getSchema();
+    this.literals = new HashMap<SchemaField, String>();
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
@@ -289,7 +299,7 @@ abstract class CSVLoader extends ContentStreamLoader {
           adders[i] = new CSVLoader.FieldMapperSingle(mapArgs[0], mapArgs[1], adders[i]);
         }
       }
-
+ 
       if (params.getFieldBool(fname,TRIM,false)) {
         adders[i] = new CSVLoader.FieldTrimmer(adders[i]);
       }
@@ -305,6 +315,18 @@ abstract class CSVLoader extends ContentStreamLoader {
         CSVStrategy fstrat = new CSVStrategy(fsep,fenc,CSVStrategy.COMMENTS_DISABLED,fesc, false, false, false, false);
         adders[i] = new CSVLoader.FieldSplitter(fstrat, adders[i]);
       }
+    }
+    // look for any literal fields - literal.foo=xyzzy
+    Iterator<String> paramNames = params.getParameterNamesIterator();
+    while (paramNames.hasNext()) {
+      String pname = paramNames.next();
+      if (!pname.startsWith(LITERALS_PREFIX)) continue;
+
+      String name = pname.substring(LITERALS_PREFIX.length());
+      SchemaField sf = schema.getFieldOrNull(name);
+      if(sf == null)
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid field name for literal:'"+ name +"'");
+      literals.put(sf, params.get(pname));
     }
   }
 
@@ -397,6 +419,13 @@ abstract class CSVLoader extends ContentStreamLoader {
       adders[i].add(doc, line, i, val);
     }
 
+    // add any literals
+    for (SchemaField sf : literals.keySet()) {
+    	String fn = sf.getName();
+    	String val = literals.get(sf);
+    	doc.addField(fn, val);
+    }
+   
     template.solrDoc = doc;
     processor.processAdd(template);
   }

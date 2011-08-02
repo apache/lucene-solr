@@ -161,6 +161,9 @@ New Features
 * SOLR-2399: Updated Solr Admin interface.  New look and feel with per core administration
   and many new options.  (Stefan Matheis via ryan)
 
+* SOLR-1032: CSV handler now supports "literal.field_name=value" parameters.
+  (Simon Rosenthal, ehatcher)
+
 
 Optimizations
 ----------------------
