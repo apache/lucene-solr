@@ -602,23 +602,22 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // current transition is after current floor block
 
         void loadNextFloorBlock() throws IOException {
-          if (DEBUG) System.out.println("    loadNextFoorBlock");
-          fp = fpEnd;
-
-          // Redundant check:
-          final long code = floorDataReader.readVLong();
-          final long newFP = fpOrig + (code >>> 1);
-          assert newFP == fpEnd: "newFP=" + newFP + " fpEnd=" + fpEnd;
-
-          // nocommit -- skip floor blocks here too!
           assert numFollowFloorBlocks > 0;
-          numFollowFloorBlocks--;
-          if (numFollowFloorBlocks == 0) {
-            nextFloorLabel = 256;
-          } else {
-            nextFloorLabel = floorDataReader.readByte() & 0xFF;
-          }
-          if (DEBUG) System.out.println("    nextFloorLabel=" + nextFloorLabel);
+          if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
+
+          do {
+            final long code = floorDataReader.readVLong();
+            fp = fpOrig + (code >>> 1);
+            numFollowFloorBlocks--;
+            if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+            if (numFollowFloorBlocks != 0) {
+              nextFloorLabel = floorDataReader.readByte() & 0xff;
+            } else {
+              nextFloorLabel = 256;
+            }
+            if (DEBUG) System.out.println("    nextFloorLabel=" + (char) nextFloorLabel);
+          } while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[transitionIndex].getMin());
+
           load(null);
         }
 
@@ -652,6 +651,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
 
+              // If current state is accept, we must process
+              // first block in case it has empty suffix:
               if (!runAutomaton.isAccept(state)) {
                 // Maybe skip floor blocks:
                 // nocommit
