@@ -48,18 +48,19 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
 
   private final IndexInput freqIn;
   private final IndexInput proxIn;
-  //public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   int skipInterval;
   int maxSkipLevels;
   int skipMinimum;
 
-  //private String segment;
+  // nocommit
+  private String segment;
 
   public StandardTreePostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardTreeCodec.FREQ_EXTENSION),
                            ioContext);
-    //this.segment = segmentInfo.name;
+    this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
@@ -164,7 +165,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
     //return;
     //}
 
-    //if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
+    if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
       termState.bytesReader = new ByteArrayDataInput();
@@ -178,7 +179,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
 
   @Override
   public void resetTermsBlock(FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
-    //if (DEBUG) System.out.println("  SPR.resetTermsBlock ts=" + _termState);
+    if (DEBUG) System.out.println("SPR.resetTermsBlock ts=" + _termState);
     final StandardTermState termState = (StandardTermState) _termState;
     assert termState.bytes != null;
     termState.bytesReader.rewind();
@@ -188,7 +189,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
   public void nextTerm(FieldInfo fieldInfo, BlockTreeTermState _termState)
     throws IOException {
     final StandardTermState termState = (StandardTermState) _termState;
-    //if (DEBUG) System.out.println("  stpr.nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
+    if (DEBUG) System.out.println("SPR: nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
     final boolean isFirstTerm = termState.termBlockOrd == 0;
 
     if (isFirstTerm) {
@@ -196,17 +197,15 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
     } else {
       termState.freqOffset += termState.bytesReader.readVLong();
     }
-    /*
     if (DEBUG) {
       System.out.println("  dF=" + termState.docFreq);
       System.out.println("  freqFP=" + termState.freqOffset);
     }
-    */
     assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();
-      //System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
+      if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
       // undefined
@@ -218,7 +217,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
       } else {
         termState.proxOffset += termState.bytesReader.readVLong();
       }
-      //System.out.println("  proxFP=" + termState.proxOffset);
+      if (DEBUG) System.out.println("  proxFP=" + termState.proxOffset);
     }
   }
     
@@ -236,7 +235,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
         docsEnum = new SegmentDocsEnum(freqIn);
       }
     }
-    //System.out.println("SPR.docs ts=" + termState);
+    if (DEBUG) System.out.println("SPR.docs ts=" + termState);
     return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
   }
 
@@ -322,7 +321,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
       assert limit > 0;
       ord = 0;
       doc = 0;
-      //System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
+      if (DEBUG) System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
 
       skipped = false;
 
@@ -342,7 +341,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
 
         // Decode next doc/freq pair
         final int code = freqIn.readVInt();
-        //System.out.println("      code=" + code);
+        if (DEBUG) System.out.println("      code=" + code);
         if (omitTF) {
           doc += code;
         } else {
@@ -506,16 +505,17 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
-      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
+      if (DEBUG) System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
 
       return this;
     }
 
     @Override
     public int nextDoc() throws IOException {
+      if (DEBUG) System.out.println("SPR.nextDoc seg=" + segment + " freqIn.fp=" + freqIn.getFilePointer());
       while(true) {
         if (ord == limit) {
-          //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
+          if (DEBUG) System.out.println("  return END");
           return doc = NO_MORE_DOCS;
         }
 
@@ -539,7 +539,7 @@ public class StandardTreePostingsReader extends BlockTreePostingsReaderBase {
 
       position = 0;
 
-      //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
+      if (DEBUG) System.out.println("  return doc=" + doc);
       return doc;
     }
 

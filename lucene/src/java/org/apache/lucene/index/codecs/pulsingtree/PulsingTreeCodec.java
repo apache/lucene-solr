@@ -52,12 +52,16 @@ import org.apache.lucene.store.IOContext;
 public class PulsingTreeCodec extends Codec {
 
   private final int freqCutoff;
+  private final int minBlockSize;
+  private final int maxBlockSize;
 
   /** Terms with freq <= freqCutoff are inlined into terms
    *  dict. */
-  public PulsingTreeCodec(int freqCutoff) {
+  public PulsingTreeCodec(int freqCutoff, int minBlockSize, int maxBlockSize) {
     super("PulsingTree");
     this.freqCutoff = freqCutoff;
+    this.minBlockSize = minBlockSize;
+    this.maxBlockSize = maxBlockSize;
   }
 
   @Override
@@ -79,8 +83,7 @@ public class PulsingTreeCodec extends Codec {
     // Terms dict
     boolean success = false;
     try {
-      // nocommit make this 24 configurable
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, 32, 64);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
       success = true;
       return ret;
     } finally {

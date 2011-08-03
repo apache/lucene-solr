@@ -104,7 +104,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.indexOptions;
-    //System.out.println("PW field=" + fieldInfo.name + " omitTF=" + omitTF);
+    //System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
   }

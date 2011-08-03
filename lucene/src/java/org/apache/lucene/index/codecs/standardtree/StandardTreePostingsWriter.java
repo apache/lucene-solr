@@ -44,7 +44,7 @@ import org.apache.lucene.util.CodecUtil;
 public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBase {
   final static String CODEC = "StandardTreePostingsWriterImpl";
 
-  public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  private static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
   
   // Increment version to change it:
   final static int VERSION_START = 0;
@@ -81,11 +81,12 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
   int lastPayloadLength;
   int lastPosition;
 
-  //private String segment;
+  // nocommit
+  private String segment;
 
   public StandardTreePostingsWriter(SegmentWriteState state) throws IOException {
     super();
-    //this.segment = state.segmentName;
+    this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardTreeCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
     if (state.fieldInfos.hasProx()) {
@@ -119,6 +120,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
   @Override
   public void startTerm() {
     freqStart = freqOut.getFilePointer();
+    if (DEBUG) System.out.println("SPW: startTerm freqOut.fp=" + freqStart);
     if (proxOut != null) {
       proxStart = proxOut.getFilePointer();
       // force first payload to write its length
@@ -153,8 +155,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    //System.out.println("StandardW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq);
-    if (DEBUG) System.out.println("SPW.startDoc docID=" + docID + " freqOut.fp=" + freqOut.getFilePointer());
+    if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());
 
     final int delta = docID - lastDocID;
     
@@ -185,7 +186,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
-    //System.out.println("StandardW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
+    if (DEBUG) System.out.println("SPW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
 
@@ -236,7 +237,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
   @Override
   public void finishTerm(TermStats stats) throws IOException {
 
-    //System.out.println("StandardW.finishTerm seg=" + segment);
+    if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -260,7 +261,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
 
   @Override
   public void flushTermsBlock(int start, int count) throws IOException {
-    if (DEBUG) System.out.println("SPW.flushTermsBlock start=" + start + " count=" + count + " left=" + (pendingTerms.size()-count));
+    if (DEBUG) System.out.println("SPW: flushTermsBlock start=" + start + " count=" + count + " left=" + (pendingTerms.size()-count) + " pendingTerms.size()=" + pendingTerms.size());
 
     if (count == 0) {
       // nocommit: silly?  can we avoid this if we know
@@ -288,6 +289,7 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
     long lastProxStart = firstTerm.proxStart;
     for(int idx=limit-count+1; idx<limit; idx++) {
       final PendingTerm term = pendingTerms.get(idx);
+      if (DEBUG) System.out.println("  write term freqStart=" + term.freqStart);
       // The rest of the terms term are delta coded:
       bytesWriter.writeVLong(term.freqStart - lastFreqStart);
       lastFreqStart = term.freqStart;

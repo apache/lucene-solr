@@ -8,6 +8,8 @@ perf tests:
 
 run Test2BTerms!!
 
+test if cutting over prefix query to .intersect is faster
+
 hmm: maybe switch PKLookupTask to intersect!?  do we have fast string builder?
 
 "upgrade" postings reader/writer API to match block tree; then non-tree codec uses it too and we only need 1 impl of each postings

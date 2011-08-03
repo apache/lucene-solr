@@ -48,8 +48,7 @@ public class CoreCodecProvider extends CodecProvider {
     register(new StandardTreeCodec(25, 48));
     register(new PreFlexCodec());
     register(new PulsingCodec());
-    // nocommit: how come no args to this one?
-    register(new PulsingTreeCodec(1));
+    register(new PulsingTreeCodec(1, 25, 48));
     register(new SimpleTextCodec());
     register(new MemoryCodec());
   }

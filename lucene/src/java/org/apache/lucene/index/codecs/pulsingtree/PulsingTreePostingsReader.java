@@ -113,7 +113,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
 
   @Override
   public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
-    //System.out.println("PR.readTermsBlock");
+    //System.out.println("PR.readTermsBlock state=" + _termState);
     final PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.inlinedBytes == null) {
       termState.inlinedBytes = new byte[128];
@@ -152,8 +152,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
     //System.out.println("PR nextTerm");
     PulsingTermState termState = (PulsingTermState) _termState;
 
-    // total TF, but in the omitTFAP case its computed based
-    // on docFreq.
+    // if we have positions, its total TF, otherwise its computed based on docFreq.
     long count = fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS ? termState.totalTermFreq : termState.docFreq;
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
@@ -247,6 +246,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
     private Bits liveDocs;
     private int docID;
     private int freq;
+    private int payloadLength;
 
     public PulsingDocsEnum(FieldInfo fieldInfo) {
       indexOptions = fieldInfo.indexOptions;
@@ -262,6 +262,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
       System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
       postings.reset(bytes);
       docID = 0;
+      payloadLength = 0;
       freq = 1;
       this.liveDocs = liveDocs;
       return this;
@@ -292,22 +293,23 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
             freq = postings.readVInt();     // else read freq
           }
 
-          // Skip positions
-          if (storePayloads) {
-            int payloadLength = -1;
-            for(int pos=0;pos<freq;pos++) {
-              final int posCode = postings.readVInt();
-              if ((posCode & 1) != 0) {
-                payloadLength = postings.readVInt();
+          if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+            // Skip positions
+            if (storePayloads) {
+              for(int pos=0;pos<freq;pos++) {
+                final int posCode = postings.readVInt();
+                if ((posCode & 1) != 0) {
+                  payloadLength = postings.readVInt();
+                }
+                if (payloadLength != 0) {
+                  postings.skipBytes(payloadLength);
+                }
               }
-              if (payloadLength != 0) {
-                postings.skipBytes(payloadLength);
+            } else {
+              for(int pos=0;pos<freq;pos++) {
+                // TODO: skipVInt
+                postings.readVInt();
               }
-            }
-          } else {
-            for(int pos=0;pos<freq;pos++) {
-              // TODO: skipVInt
-              postings.readVInt();
             }
           }
         }
@@ -368,6 +370,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
       postings.reset(bytes);
       this.liveDocs = liveDocs;
       payloadLength = 0;
+      posPending = 0;
       docID = 0;
       //System.out.println("PR d&p reset storesPayloads=" + storePayloads + " bytes=" + bytes.length + " this=" + this);
       return this;
@@ -419,7 +422,7 @@ public class PulsingTreePostingsReader extends BlockTreePostingsReaderBase {
       int doc;
       while((doc=nextDoc()) != NO_MORE_DOCS) {
         if (doc >= target) {
-          return doc;
+          return docID = doc;
         }
       }
       return docID = NO_MORE_DOCS;

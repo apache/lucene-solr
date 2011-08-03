@@ -270,6 +270,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       }
 
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+      // nocommit -- can we pass false for shareSuffixes?
       final Builder<BytesRef> indexBuilder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1,
                                                                    0, 0, true, true, Integer.MAX_VALUE,
                                                                    outputs, null);
@@ -770,7 +771,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      //System.out.println("BTW.startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
+      if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
       postingsWriter.startTerm();
       /*
       if (fieldInfo.name.equals("id")) {
