@@ -104,9 +104,7 @@ public class TestSpanQueryParserSimpleSample extends LuceneTestCase {
     // create a config handler with a attribute used in
     // UniqueFieldQueryNodeProcessor
     QueryConfigHandler spanQueryConfigHandler = new SpansQueryConfigHandler();
-    UniqueFieldAttribute uniqueFieldAtt = spanQueryConfigHandler
-        .getAttribute(UniqueFieldAttribute.class);
-    uniqueFieldAtt.setUniqueField("index");
+    spanQueryConfigHandler.set(SpansQueryConfigHandler.UNIQUE_FIELD, "index");
 
     // set up the processor pipeline with the ConfigHandler
     // and create the pipeline for this simple demo

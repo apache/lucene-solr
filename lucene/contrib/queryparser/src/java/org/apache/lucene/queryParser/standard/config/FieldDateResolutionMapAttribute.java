@@ -25,7 +25,11 @@ import org.apache.lucene.util.Attribute;
 /**
  * This attribute enables the user to define a default DateResolution per field.
  * it's used by {@link FieldDateResolutionFCListener#buildFieldConfig(org.apache.lucene.queryParser.core.config.FieldConfig)}
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface FieldDateResolutionMapAttribute extends Attribute {
   /**
    * @param dateRes a mapping from field name to its default boost

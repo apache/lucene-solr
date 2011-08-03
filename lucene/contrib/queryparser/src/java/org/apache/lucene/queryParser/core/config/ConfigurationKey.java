@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser.standard.config;
+package org.apache.lucene.queryParser.core.config;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,23 +17,26 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
-import org.apache.lucene.queryParser.standard.processors.PhraseSlopQueryNodeProcessor;
-import org.apache.lucene.util.Attribute;
-
 /**
- * This attribute is used by {@link PhraseSlopQueryNodeProcessor} processor and
- * must be defined in the {@link QueryConfigHandler}. This attribute tells the
- * processor what is the default phrase slop when no slop is defined in a
- * phrase. <br/>
+ * An instance of this class represents a key that is used to retrieve a value
+ * from {@link AbstractQueryConfig}. It also holds the value's type, which is
+ * defined in the generic argument.
  * 
- * @deprecated
- * 
+ * @see AbstractQueryConfig
  */
-@Deprecated
-public interface FuzzyAttribute extends Attribute {
-  public void setPrefixLength(int prefixLength);
-  public int getPrefixLength();
-  public void setFuzzyMinSimilarity(float minSimilarity);
-  public float getFuzzyMinSimilarity();
+final public class ConfigurationKey<T> {
+  
+  private ConfigurationKey() {}
+  
+  /**
+   * Creates a new instance.
+   * 
+   * @param <T> the value's type
+   * 
+   * @return a new instance
+   */
+  public static <T> ConfigurationKey<T> newInstance() {
+    return new ConfigurationKey<T>();
+  }
+  
 }

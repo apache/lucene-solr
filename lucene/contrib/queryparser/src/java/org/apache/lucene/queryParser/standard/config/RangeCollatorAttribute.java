@@ -30,7 +30,10 @@ import org.apache.lucene.util.Attribute;
  * the processor which {@link Collator} should be used for a
  * {@link TermRangeQuery} <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface RangeCollatorAttribute extends Attribute {
   public void setDateResolution(Collator rangeCollator);
   public Collator getRangeCollator();

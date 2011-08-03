@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.PhraseSlopQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -28,26 +31,28 @@ import org.apache.lucene.util.AttributeImpl;
  * phrase. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class DefaultPhraseSlopAttributeImpl extends AttributeImpl 
-				implements DefaultPhraseSlopAttribute {
+				implements DefaultPhraseSlopAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012527049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private int defaultPhraseSlop = 0;
-
-  public DefaultPhraseSlopAttributeImpl() {
-	  defaultPhraseSlop = 0; //default value in 2.4
-  }
+  public DefaultPhraseSlopAttributeImpl() {}
 
   public void setDefaultPhraseSlop(int defaultPhraseSlop) {
-    this.defaultPhraseSlop = defaultPhraseSlop;
+    this.config.set(ConfigurationKeys.PHRASE_SLOP, defaultPhraseSlop);
   }
 
   public int getDefaultPhraseSlop() {
-    return this.defaultPhraseSlop;
+    return config.get(ConfigurationKeys.PHRASE_SLOP, 0);
   }
 
   @Override
@@ -64,7 +69,7 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof DefaultPhraseSlopAttributeImpl
-        && ((DefaultPhraseSlopAttributeImpl) other).defaultPhraseSlop == this.defaultPhraseSlop) {
+        && ((DefaultPhraseSlopAttributeImpl) other).getDefaultPhraseSlop() == getDefaultPhraseSlop()) {
 
       return true;
 
@@ -76,13 +81,22 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return Integer.valueOf(this.defaultPhraseSlop).hashCode();
+    return Integer.valueOf(getDefaultPhraseSlop()).hashCode();
   }
 
   @Override
   public String toString() {
-    return "<defaultPhraseSlop defaultPhraseSlop=" + this.defaultPhraseSlop
+    return "<defaultPhraseSlop defaultPhraseSlop=" + getDefaultPhraseSlop()
         + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.PHRASE_SLOP)) {
+      setDefaultPhraseSlop(0);
+    }
+    
   }
 
 }

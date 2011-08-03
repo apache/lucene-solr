@@ -19,7 +19,10 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.util.Arrays;
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.MultiFieldQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,30 @@ import org.apache.lucene.util.AttributeImpl;
  * processor to which fields the terms in the query should be expanded. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.MultiFieldAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class MultiFieldAttributeImpl extends AttributeImpl
-				implements MultiFieldAttribute {
+				implements MultiFieldAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6809760312720049526L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private CharSequence[] fields;
-
   public MultiFieldAttributeImpl() {
     // empty constructor
   }
 
   public void setFields(CharSequence[] fields) {
-    this.fields = fields;
+    config.set(ConfigurationKeys.MULTI_FIELDS, fields);
   }
 
   public CharSequence[] getFields() {
-    return this.fields;
+    return config.get(ConfigurationKeys.MULTI_FIELDS);
   }
 
   @Override
@@ -67,7 +74,7 @@ public class MultiFieldAttributeImpl extends AttributeImpl
     if (other instanceof MultiFieldAttributeImpl) {
     	MultiFieldAttributeImpl fieldsAttr = (MultiFieldAttributeImpl) other;
 
-      return Arrays.equals(this.fields, fieldsAttr.fields);
+      return Arrays.equals(getFields(), fieldsAttr.getFields());
 
     }
 
@@ -77,12 +84,16 @@ public class MultiFieldAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(this.fields);
+    return Arrays.hashCode(getFields());
   }
 
   @Override
   public String toString() {
-    return "<fieldsAttribute fields=" + Arrays.toString(this.fields) + "/>";
+    return "<fieldsAttribute fields=" + Arrays.toString(getFields()) + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
   }
 
 }

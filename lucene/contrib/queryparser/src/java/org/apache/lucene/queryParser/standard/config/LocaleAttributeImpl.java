@@ -19,7 +19,10 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.util.Locale;
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,30 @@ import org.apache.lucene.util.AttributeImpl;
  * the processor what is the default {@link Locale} used to parse a date. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.LocaleAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class LocaleAttributeImpl extends AttributeImpl
-				implements LocaleAttribute {
+				implements LocaleAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6804760312720049526L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
   private Locale locale = Locale.getDefault();
 
-  public LocaleAttributeImpl() {
-	  locale = Locale.getDefault(); //default in 2.4
-  }
+  public LocaleAttributeImpl() {}
 
   public void setLocale(Locale locale) {
-    this.locale = locale;
+    config.set(ConfigurationKeys.LOCALE, locale);
   }
 
   public Locale getLocale() {
-    return this.locale;
+    return config.get(ConfigurationKeys.LOCALE);
   }
 
   @Override
@@ -89,6 +96,15 @@ public class LocaleAttributeImpl extends AttributeImpl
   @Override
   public String toString() {
     return "<localeAttribute locale=" + this.locale + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.LOCALE)) {
+      config.set(ConfigurationKeys.LOCALE, Locale.getDefault());
+    }
+    
   }
 
 }

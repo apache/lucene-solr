@@ -19,7 +19,10 @@ package org.apache.lucene.queryParser.standard.config;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,28 @@ import org.apache.lucene.util.AttributeImpl;
  * the processor which {@link Resolution} to use when parsing the date. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.DateResolutionAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class DateResolutionAttributeImpl extends AttributeImpl 
-				implements DateResolutionAttribute {
+				implements DateResolutionAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6804360312723049526L;
 
   { enableBackwards = false; }
   
-  private DateTools.Resolution dateResolution = null;
-
-  public DateResolutionAttributeImpl() {
-	  dateResolution = null; //default in 2.4
-  }
+  private AbstractQueryConfig config;
+  
+  public DateResolutionAttributeImpl() {}
 
   public void setDateResolution(DateTools.Resolution dateResolution) {
-    this.dateResolution = dateResolution;
+    config.set(ConfigurationKeys.DATE_RESOLUTION, dateResolution);
   }
 
   public DateTools.Resolution getDateResolution() {
-    return this.dateResolution;
+    return config.get(ConfigurationKeys.DATE_RESOLUTION);
   }
 
   @Override
@@ -82,13 +87,18 @@ public class DateResolutionAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return (this.dateResolution == null) ? 0 : this.dateResolution.hashCode();
+    DateTools.Resolution resolution = getDateResolution();
+    return (resolution == null) ? 0 : resolution.hashCode();
   }
 
   @Override
   public String toString() {
-    return "<dateResolutionAttribute dateResolution='" + this.dateResolution
+    return "<dateResolutionAttribute dateResolution='" + getDateResolution()
         + "'/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
   }
 
 }

@@ -25,7 +25,7 @@ Contains the base classes used to configure the query processing
 
 <h2>Query Configuration Interfaces</h2>
 <p>
-The package <tt>org.apache.lucene.queryParser.config</tt> contains query configuration handler
+The package <tt>org.apache.lucene.queryParser.core.config</tt> contains query configuration handler
 abstract class that all config handlers should extend.
 </p>
 <p>
@@ -33,17 +33,32 @@ See {@link org.apache.lucene.queryParser.standard.config.StandardQueryConfigHand
 implementation.
 </p>
 <p>
-{@link org.apache.lucene.queryParser.core.config.FieldConfig} and {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}
- should use {@link org.apache.lucene.util.Attribute} to store all attributes
-required by the config implementation. See <tt>org.apache.lucene.queryParser.standard.config.*Attribute</tt>
-for reference implementation.
-</p>
-<p>
-The {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}, {@link org.apache.lucene.queryParser.core.config.FieldConfig},
- and {@link org.apache.lucene.util.Attribute}s are used in the processors to access config
+The {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler} and {@link org.apache.lucene.queryParser.core.config.FieldConfig} are used in the processors to access config
 information in a flexible and independent way.
 See {@link org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor} for a 
 reference implementation.
+</p>
+<p>
+Since version 3.4, the configuration API has changed. It no longer uses {@link org.apache.lucene.util.Attribute} objects to configure
+a query parser. Instead, it uses {@link org.apache.lucene.queryParser.core.config.ConfigurationKey} objects to set any configuration
+to a {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}. For now, both configuration APIs are working, however, 
+they cannot be used at the same time. So if you start moving your code to the new API, move it completely or keep using the old API.
+</p>
+<p>
+Here is an example about how the new configuration API works:
+ <blockquote> 
+ <pre>
+
+...
+// this constant will be the key to get and set your configuration. This should be unique in your application.
+final public static {@link org.apache.lucene.queryParser.core.config.ConfigurationKey}<{@link java.text.NumberFormat}> MY_CONFIG = {@link org.apache.lucene.queryParser.core.config.ConfigurationKey}.newInstance();
+...
+// make sure to use your unique key instance to set and get your configuration
+queryConfigHandler.set(MY_CONFIG, {@link java.text.NumberFormat}.getInstance());
+{@link java.text.NumberFormat} numberFormat = queryConfigHandler.get(MY_CONFIG);
+...
+ </blockquote> 
+ </pre>
 </p>
 </body>
 </html

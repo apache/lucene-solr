@@ -18,7 +18,10 @@ package org.apache.lucene.queryParser.standard.config;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.AnalyzerQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,28 @@ import org.apache.lucene.util.AttributeImpl;
  * analyze the query terms. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.AnalyzerAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class AnalyzerAttributeImpl extends AttributeImpl 
-				implements AnalyzerAttribute {
+				implements AnalyzerAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6804760312723049526L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private Analyzer analyzer;
-
-  public AnalyzerAttributeImpl() {
-    analyzer = null; //default value 2.4
-  }
+  public AnalyzerAttributeImpl() {}
 
   public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
+    config.set(ConfigurationKeys.ANALYZER, analyzer);
   }
 
   public Analyzer getAnalyzer() {
-    return this.analyzer;
+    return config.get(ConfigurationKeys.ANALYZER);
   }
 
   @Override
@@ -66,10 +71,12 @@ public class AnalyzerAttributeImpl extends AttributeImpl
 
     if (other instanceof AnalyzerAttributeImpl) {
     	AnalyzerAttributeImpl analyzerAttr = (AnalyzerAttributeImpl) other;
+    	Analyzer otherAnalyzer = analyzerAttr.getAnalyzer();
+    	Analyzer thisAnalyzer = getAnalyzer();
 
-      if (analyzerAttr.analyzer == this.analyzer
-          || (this.analyzer != null && analyzerAttr.analyzer != null && this.analyzer
-              .equals(analyzerAttr.analyzer))) {
+      if (otherAnalyzer == thisAnalyzer
+          || (thisAnalyzer != null && otherAnalyzer != null && thisAnalyzer
+              .equals(otherAnalyzer))) {
 
         return true;
 
@@ -83,12 +90,17 @@ public class AnalyzerAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return (this.analyzer == null) ? 0 : this.analyzer.hashCode();
+    Analyzer analyzer = getAnalyzer();
+    return (analyzer == null) ? 0 : analyzer.hashCode();
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
   }
 
   @Override
   public String toString() {
-    return "<analyzerAttribute analyzer='" + this.analyzer + "'/>";
+    return "<analyzerAttribute analyzer='" + getAnalyzer() + "'/>";
   }
 
 }

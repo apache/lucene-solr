@@ -21,6 +21,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.FieldConfigListener;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
  * This listener listens for every field configuration request and assign a
@@ -45,29 +46,18 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
   }
 
   public void buildFieldConfig(FieldConfig fieldConfig) {
-    DateResolutionAttribute fieldDateResAttr = fieldConfig
-        .addAttribute(DateResolutionAttribute.class);
     DateTools.Resolution dateRes = null;
 
-    if (this.config.hasAttribute(FieldDateResolutionMapAttribute.class)) {
-      FieldDateResolutionMapAttribute dateResMapAttr = this.config
-          .addAttribute(FieldDateResolutionMapAttribute.class);
-      dateRes = dateResMapAttr.getFieldDateResolutionMap().get(
+    if (this.config.has(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP)) {
+      dateRes = this.config.get(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP).get(
           fieldConfig.getField());
     }
 
     if (dateRes == null) {
-
-      if (this.config.hasAttribute(DateResolutionAttribute.class)) {
-        DateResolutionAttribute dateResAttr = this.config
-            .addAttribute(DateResolutionAttribute.class);
-        dateRes = dateResAttr.getDateResolution();
-
-      }
-
+      dateRes = this.config.get(ConfigurationKeys.DATE_RESOLUTION);
     }
 
-    fieldDateResAttr.setDateResolution(dateRes);
+    fieldConfig.set(ConfigurationKeys.DATE_RESOLUTION, dateRes);
 
   }
 

@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
@@ -30,26 +33,30 @@ import org.apache.lucene.util.AttributeImpl;
  * use. <br/>
  * 
  * @see MultiTermRewriteMethodAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
-    implements MultiTermRewriteMethodAttribute {
+    implements MultiTermRewriteMethodAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012723049527L;
   
+  private AbstractQueryConfig config;
+  
   { enableBackwards = false; }
   
-  private MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
-
   public MultiTermRewriteMethodAttributeImpl() {
     // empty constructor
   }
 
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
-    multiTermRewriteMethod = method;
+   config.set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, method);
   }
 
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
-    return multiTermRewriteMethod;
+    return config.get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
   }
 
   @Override
@@ -66,7 +73,7 @@ public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof MultiTermRewriteMethodAttributeImpl
-        && ((MultiTermRewriteMethodAttributeImpl) other).multiTermRewriteMethod == this.multiTermRewriteMethod) {
+        && ((MultiTermRewriteMethodAttributeImpl) other).getMultiTermRewriteMethod() == getMultiTermRewriteMethod()) {
 
       return true;
 
@@ -78,13 +85,22 @@ public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return multiTermRewriteMethod.hashCode();
+    return getMultiTermRewriteMethod().hashCode();
   }
 
   @Override
   public String toString() {
     return "<multiTermRewriteMethod multiTermRewriteMethod="
-        + this.multiTermRewriteMethod + "/>";
+        + getMultiTermRewriteMethod() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD)) {
+      config.set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    }
+    
   }
 
 }

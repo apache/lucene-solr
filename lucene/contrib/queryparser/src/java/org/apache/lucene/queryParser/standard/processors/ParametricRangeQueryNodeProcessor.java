@@ -35,9 +35,7 @@ import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.DateResolutionAttribute;
-import org.apache.lucene.queryParser.standard.config.LocaleAttribute;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
 
 /**
@@ -45,24 +43,19 @@ import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
  * {@link RangeQueryNode} objects. It reads the lower and upper bounds value
  * from the {@link ParametricRangeQueryNode} object and try to parse their
  * values using a {@link DateFormat}. If the values cannot be parsed to a date
- * value, it will only create the {@link RangeQueryNode} using the non-parsed
- * values. <br/>
+ * value, it will only create the {@link RangeQueryNode} using the
+ * non-parsed values. <br/>
  * <br/>
- * If a {@link LocaleAttribute} is defined in the {@link QueryConfigHandler} it
+ * If a {@link ConfigurationKeys#LOCALE} is defined in the {@link QueryConfigHandler} it
  * will be used to parse the date, otherwise {@link Locale#getDefault()} will be
  * used. <br/>
  * <br/>
- * If a {@link DateResolutionAttribute} is defined and the {@link Resolution} is
+ * If a {@link ConfigurationKeys#DATE_RESOLUTION} is defined and the {@link Resolution} is
  * not <code>null</code> it will also be used to parse the date value. <br/>
  * <br/>
- * This processor will also try to retrieve a {@link RangeCollatorAttribute}
- * from the {@link QueryConfigHandler}. If a {@link RangeCollatorAttribute} is
- * found and the {@link Collator} is not <code>null</code>, it's set on the
- * {@link RangeQueryNode}. <br/>
  * 
- * @see RangeCollatorAttribute
- * @see DateResolutionAttribute
- * @see LocaleAttribute
+ * @see ConfigurationKeys#DATE_RESOLUTION
+ * @see ConfigurationKeys#LOCALE
  * @see RangeQueryNode
  * @see ParametricRangeQueryNode
  */
@@ -79,25 +72,16 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       ParametricRangeQueryNode parametricRangeNode = (ParametricRangeQueryNode) node;
       ParametricQueryNode upper = parametricRangeNode.getUpperBound();
       ParametricQueryNode lower = parametricRangeNode.getLowerBound();
-      Locale locale = Locale.getDefault();
-      Collator collator = null;
       DateTools.Resolution dateRes = null;
       boolean inclusive = false;
-
-      if (getQueryConfigHandler().hasAttribute(RangeCollatorAttribute.class)) {
-
-        collator = getQueryConfigHandler().getAttribute(
-            RangeCollatorAttribute.class).getRangeCollator();
-
-      }
-
-      if (getQueryConfigHandler().hasAttribute(LocaleAttribute.class)) {
-
-        locale = getQueryConfigHandler().getAttribute(LocaleAttribute.class)
-            .getLocale();
-
-      }
-
+      
+      Locale locale = getQueryConfigHandler().get(ConfigurationKeys.LOCALE,
+          Locale.getDefault());
+      
+      Collator collator = getQueryConfigHandler().get(
+          ConfigurationKeys.RANGE_COLLATOR);
+      
+      
       CharSequence field = parametricRangeNode.getField();
       String fieldStr = null;
 
@@ -109,14 +93,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
           .getFieldConfig(fieldStr);
 
       if (fieldConfig != null) {
-
-        if (fieldConfig.hasAttribute(DateResolutionAttribute.class)) {
-
-          dateRes = fieldConfig.getAttribute(DateResolutionAttribute.class)
-              .getDateResolution();
-
-        }
-
+        dateRes = fieldConfig.get(ConfigurationKeys.DATE_RESOLUTION);
       }
 
       if (upper.getOperator() == CompareOperator.LE) {

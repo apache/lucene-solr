@@ -29,7 +29,10 @@ import org.apache.lucene.util.Attribute;
  * and must be defined in the {@link QueryConfigHandler}. This attribute tells
  * the processor which {@link Resolution} to use when parsing the date. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface DateResolutionAttribute extends Attribute {
   /**
    * Sets the default date resolution used by {@link RangeQueryNode}s for

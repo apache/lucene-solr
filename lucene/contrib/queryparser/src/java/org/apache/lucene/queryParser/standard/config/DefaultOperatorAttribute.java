@@ -26,8 +26,11 @@ import org.apache.lucene.util.Attribute;
  * be defined in the {@link QueryConfigHandler}. This attribute tells the
  * processor which is the default boolean operator when no operator is defined
  * between terms. <br/>
- *
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface DefaultOperatorAttribute extends Attribute {	
   public static enum Operator {
 	    AND, OR;

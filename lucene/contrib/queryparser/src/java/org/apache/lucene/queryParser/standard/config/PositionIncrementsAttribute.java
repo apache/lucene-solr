@@ -25,8 +25,11 @@ import org.apache.lucene.util.Attribute;
  * This attribute is used by {@link AnalyzerQueryNodeProcessor} processor and
  * must be defined in the {@link QueryConfigHandler}. This attribute tells the
  * processor if the position increment is enabled. <br/>
- *
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface PositionIncrementsAttribute extends Attribute {
   public void setPositionIncrementsEnabled(boolean positionIncrementsEnabled);
   public boolean isPositionIncrementsEnabled();

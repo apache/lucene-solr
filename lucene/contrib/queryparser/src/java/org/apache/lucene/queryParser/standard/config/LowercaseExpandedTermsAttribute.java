@@ -28,7 +28,10 @@ import org.apache.lucene.util.Attribute;
  * and must be defined in the {@link QueryConfigHandler}. This attribute tells
  * the processor what is the default {@link Locale} used to parse a date. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface LowercaseExpandedTermsAttribute extends Attribute {
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms);
   public boolean isLowercaseExpandedTerms();

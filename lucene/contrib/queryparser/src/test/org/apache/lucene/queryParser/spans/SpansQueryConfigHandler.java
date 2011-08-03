@@ -17,6 +17,7 @@ package org.apache.lucene.queryParser.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.ConfigurationKey;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 
@@ -27,9 +28,11 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
  * It does not return any configuration for a field in specific.
  */
 public class SpansQueryConfigHandler extends QueryConfigHandler {
-
+  
+  final public static ConfigurationKey<String> UNIQUE_FIELD = ConfigurationKey.newInstance();
+  
   public SpansQueryConfigHandler() {
-    addAttribute(UniqueFieldAttribute.class);
+    // empty constructor
   }
 
   @Override

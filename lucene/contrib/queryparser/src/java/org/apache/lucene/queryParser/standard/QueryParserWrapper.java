@@ -36,17 +36,8 @@ import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessor;
 import org.apache.lucene.queryParser.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.queryParser.standard.builders.StandardQueryTreeBuilder;
-import org.apache.lucene.queryParser.standard.config.AllowLeadingWildcardAttribute;
-import org.apache.lucene.queryParser.standard.config.AnalyzerAttribute;
-import org.apache.lucene.queryParser.standard.config.DateResolutionAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute;
-import org.apache.lucene.queryParser.standard.config.DefaultPhraseSlopAttribute;
-import org.apache.lucene.queryParser.standard.config.LocaleAttribute;
-import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute;
-import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
-import org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.BooleanClause;
@@ -136,11 +127,8 @@ public class QueryParserWrapper {
 
   public Analyzer getAnalyzer() {
 
-    if (this.config != null
-        && this.config.hasAttribute(AnalyzerAttribute.class)) {
-
-      return this.config.getAttribute(AnalyzerAttribute.class).getAnalyzer();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.ANALYZER);
     }
 
     return null;
@@ -211,12 +199,8 @@ public class QueryParserWrapper {
 
   public boolean getAllowLeadingWildcard() {
 
-    if (this.config != null
-        && this.config.hasAttribute(AllowLeadingWildcardAttribute.class)) {
-
-      return this.config.getAttribute(AllowLeadingWildcardAttribute.class)
-          .isAllowLeadingWildcard();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.ALLOW_LEADING_WILDCARD, false);
     }
 
     return false;
@@ -225,12 +209,9 @@ public class QueryParserWrapper {
 
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
 
-    if (this.config != null
-        && this.config.hasAttribute(MultiTermRewriteMethodAttribute.class)) {
-
-      return this.config.getAttribute(MultiTermRewriteMethodAttribute.class)
-          .getMultiTermRewriteMethod();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD,
+          MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
     }
 
     return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
@@ -243,14 +224,7 @@ public class QueryParserWrapper {
       FieldConfig fieldConfig = this.config.getFieldConfig(fieldName);
 
       if (fieldConfig != null) {
-
-        if (this.config.hasAttribute(DateResolutionAttribute.class)) {
-
-          return this.config.getAttribute(DateResolutionAttribute.class)
-              .getDateResolution();
-
-        }
-
+        return fieldConfig.get(ConfigurationKeys.DATE_RESOLUTION);
       }
 
     }
@@ -261,12 +235,9 @@ public class QueryParserWrapper {
 
   public boolean getEnablePositionIncrements() {
 
-    if (this.config != null
-        && this.config.hasAttribute(PositionIncrementsAttribute.class)) {
-
-      return this.config.getAttribute(PositionIncrementsAttribute.class)
-          .isPositionIncrementsEnabled();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS,
+          false);
     }
 
     return false;
@@ -283,8 +254,8 @@ public class QueryParserWrapper {
 
   public Locale getLocale() {
 
-    if (this.config != null && this.config.hasAttribute(LocaleAttribute.class)) {
-      return this.config.getAttribute(LocaleAttribute.class).getLocale();
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.LOCALE, Locale.getDefault());
     }
 
     return Locale.getDefault();
@@ -293,12 +264,8 @@ public class QueryParserWrapper {
 
   public boolean getLowercaseExpandedTerms() {
 
-    if (this.config != null
-        && this.config.hasAttribute(LowercaseExpandedTermsAttribute.class)) {
-
-      return this.config.getAttribute(LowercaseExpandedTermsAttribute.class)
-          .isLowercaseExpandedTerms();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true);
     }
 
     return true;
@@ -307,12 +274,8 @@ public class QueryParserWrapper {
 
   public int getPhraseSlop() {
 
-    if (this.config != null
-        && this.config.hasAttribute(AllowLeadingWildcardAttribute.class)) {
-
-      return this.config.getAttribute(DefaultPhraseSlopAttribute.class)
-          .getDefaultPhraseSlop();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.PHRASE_SLOP, 0);
     }
 
     return 0;
@@ -321,12 +284,8 @@ public class QueryParserWrapper {
 
   public Collator getRangeCollator() {
 
-    if (this.config != null
-        && this.config.hasAttribute(RangeCollatorAttribute.class)) {
-
-      return this.config.getAttribute(RangeCollatorAttribute.class)
-          .getRangeCollator();
-
+    if (this.config != null) {
+      return this.config.get(ConfigurationKeys.RANGE_COLLATOR);
     }
 
     return null;
@@ -383,11 +342,10 @@ public class QueryParserWrapper {
 
   public Operator getDefaultOperator() {
 
-    if (this.config != null
-        && this.config.hasAttribute(DefaultOperatorAttribute.class)) {
+    if (this.config != null) {
 
-      return (this.config.getAttribute(DefaultOperatorAttribute.class)
-          .getOperator() == org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator.AND) ? AND_OPERATOR
+      return (this.config.get(ConfigurationKeys.DEFAULT_OPERATOR, org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.OR)
+           == org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.AND) ? AND_OPERATOR
           : OR_OPERATOR;
 
     }

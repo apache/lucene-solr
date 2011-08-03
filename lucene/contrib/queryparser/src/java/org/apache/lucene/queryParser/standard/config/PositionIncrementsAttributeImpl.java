@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.AnalyzerQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -27,26 +30,28 @@ import org.apache.lucene.util.AttributeImpl;
  * processor if the position increment is enabled. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class PositionIncrementsAttributeImpl extends AttributeImpl
-				implements PositionIncrementsAttribute {
+				implements PositionIncrementsAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2804763012793049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private boolean positionIncrementsEnabled = false;
-
-  public PositionIncrementsAttributeImpl() {
-	  positionIncrementsEnabled = false; //default in 2.4
-  }
+  public PositionIncrementsAttributeImpl() {}
 
   public void setPositionIncrementsEnabled(boolean positionIncrementsEnabled) {
-    this.positionIncrementsEnabled = positionIncrementsEnabled;
+    config.set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, positionIncrementsEnabled);
   }
 
   public boolean isPositionIncrementsEnabled() {
-    return this.positionIncrementsEnabled;
+    return config.get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false);
   }
 
   @Override
@@ -63,7 +68,8 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof PositionIncrementsAttributeImpl
-        && ((PositionIncrementsAttributeImpl) other).positionIncrementsEnabled == this.positionIncrementsEnabled) {
+        && ((PositionIncrementsAttributeImpl) other)
+            .isPositionIncrementsEnabled() == isPositionIncrementsEnabled()) {
 
       return true;
 
@@ -75,13 +81,22 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return this.positionIncrementsEnabled ? -1 : Integer.MAX_VALUE;
+    return isPositionIncrementsEnabled() ? -1 : Integer.MAX_VALUE;
   }
 
   @Override
   public String toString() {
     return "<positionIncrements positionIncrementsEnabled="
-        + this.positionIncrementsEnabled + "/>";
+        + isPositionIncrementsEnabled() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.ENABLE_POSITION_INCREMENTS)) {
+      config.set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false);
+    }
+    
   }
 
 }

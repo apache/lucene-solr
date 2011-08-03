@@ -26,7 +26,10 @@ import org.apache.lucene.util.Attribute;
  * must be defined in the {@link QueryConfigHandler}. It basically tells the
  * processor if it should allow leading wildcard. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface AllowLeadingWildcardAttribute extends Attribute {
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard);
   public boolean isAllowLeadingWildcard();

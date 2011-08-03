@@ -59,7 +59,8 @@ import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
-import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -196,7 +197,7 @@ public class TestQPHelper extends LuceneTestCase {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
 
-    qp.setDefaultOperator(Operator.OR);
+    qp.setDefaultOperator(StandardQueryConfigHandler.Operator.OR);
 
     return qp;
 

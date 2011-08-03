@@ -27,7 +27,10 @@ import org.apache.lucene.util.Attribute;
  * processor what is the default phrase slop when no slop is defined in a
  * phrase. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface DefaultPhraseSlopAttribute extends Attribute {
   public void setDefaultPhraseSlop(int defaultPhraseSlop);
   public int getDefaultPhraseSlop();

@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.MultiFieldQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,30 @@ import org.apache.lucene.util.AttributeImpl;
  * <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.BoostAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class BoostAttributeImpl extends AttributeImpl 
-				implements BoostAttribute {
+				implements BoostAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012523049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private float boost = 1.0f;
-
   public BoostAttributeImpl() {
     // empty constructor
   }
 
   public void setBoost(float boost) {
-    this.boost = boost;
+    config.set(ConfigurationKeys.BOOST, boost);
   }
 
   public float getBoost() {
-    return this.boost;
+    return config.get(ConfigurationKeys.BOOST, 1.0f);
   }
 
   @Override
@@ -65,7 +72,7 @@ public class BoostAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof BoostAttributeImpl
-        && ((BoostAttributeImpl) other).boost == this.boost) {
+        && ((BoostAttributeImpl) other).getBoost() == getBoost()) {
 
       return true;
 
@@ -77,12 +84,21 @@ public class BoostAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return Float.valueOf(this.boost).hashCode();
+    return Float.valueOf(getBoost()).hashCode();
   }
 
   @Override
   public String toString() {
-    return "<boostAttribute boost=" + this.boost + "/>";
+    return "<boostAttribute boost=" + getBoost() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.BOOST)) {
+      config.set(ConfigurationKeys.BOOST, 1.0f);
+    }
+    
   }
 
 }

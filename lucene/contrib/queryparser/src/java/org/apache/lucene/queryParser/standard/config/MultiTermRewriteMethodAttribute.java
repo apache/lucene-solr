@@ -18,6 +18,7 @@ package org.apache.lucene.queryParser.standard.config;
  */
 
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.processors.MultiTermRewriteMethodProcessor;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
@@ -29,10 +30,13 @@ import org.apache.lucene.util.Attribute;
  * processor. It basically tells the processor which {@link RewriteMethod} to
  * use. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface MultiTermRewriteMethodAttribute extends Attribute {
   
-  public static final String TAG_ID = "MultiTermRewriteMethodAttribute";
+  public static final String TAG_ID = MultiTermRewriteMethodProcessor.TAG_ID;
   
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method);
 

@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.AllowLeadingWildcardProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -27,22 +30,25 @@ import org.apache.lucene.util.AttributeImpl;
  * processor if it should allow leading wildcard. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.AllowLeadingWildcardAttribute
+ * 
+ * @deprecated
  */
+@Deprecated
 public class AllowLeadingWildcardAttributeImpl extends AttributeImpl 
-				implements AllowLeadingWildcardAttribute {
+				implements AllowLeadingWildcardAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2804763012723049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private boolean allowLeadingWildcard = false;  // default in 2.9
-
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
-    this.allowLeadingWildcard = allowLeadingWildcard;
+    config.set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, allowLeadingWildcard);
   }
 
   public boolean isAllowLeadingWildcard() {
-    return this.allowLeadingWildcard;
+    return config.get(ConfigurationKeys.ALLOW_LEADING_WILDCARD, false);
   }
 
   @Override
@@ -59,7 +65,7 @@ public class AllowLeadingWildcardAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof AllowLeadingWildcardAttributeImpl
-        && ((AllowLeadingWildcardAttributeImpl) other).allowLeadingWildcard == this.allowLeadingWildcard) {
+        && ((AllowLeadingWildcardAttributeImpl) other).isAllowLeadingWildcard() == isAllowLeadingWildcard()) {
 
       return true;
 
@@ -71,13 +77,22 @@ public class AllowLeadingWildcardAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return this.allowLeadingWildcard ? -1 : Integer.MAX_VALUE;
+    return isAllowLeadingWildcard() ? -1 : Integer.MAX_VALUE;
   }
 
   @Override
   public String toString() {
     return "<allowLeadingWildcard allowLeadingWildcard="
-        + this.allowLeadingWildcard + "/>";
+        + isAllowLeadingWildcard() + "/>";
+  }
+
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.ALLOW_LEADING_WILDCARD)) {
+     config.set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, false); // default in 2.9 
+    }
+    
   }
 
 }

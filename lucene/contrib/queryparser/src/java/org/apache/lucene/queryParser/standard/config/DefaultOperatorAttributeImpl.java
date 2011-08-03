@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.GroupQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -28,16 +31,20 @@ import org.apache.lucene.util.AttributeImpl;
  * between terms. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class DefaultOperatorAttributeImpl extends AttributeImpl
-				implements DefaultOperatorAttribute {
+				implements DefaultOperatorAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6804760312723049526L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private Operator operator = Operator.OR;
-
   public DefaultOperatorAttributeImpl() {
     // empty constructor
   }
@@ -48,12 +55,29 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
       throw new IllegalArgumentException("default operator cannot be null!");
     }
 
-    this.operator = operator;
+    org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator newOperator;
+    
+    if (operator == Operator.AND) {
+      newOperator = org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.AND;
+    } else {
+      newOperator = org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.OR;
+    }
+    
+    config.set(ConfigurationKeys.DEFAULT_OPERATOR, newOperator);
 
   }
 
   public Operator getOperator() {
-    return this.operator;
+    org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator newOperator = config.get(ConfigurationKeys.DEFAULT_OPERATOR, org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.OR);
+    Operator oldOperator;
+    
+    if (newOperator == org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator.AND) {
+      oldOperator = Operator.OR;
+    } else {
+      oldOperator = Operator.AND;
+    }
+    
+    return oldOperator;
   }
 
   @Override
@@ -90,7 +114,16 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
 
   @Override
   public String toString() {
-    return "<defaultOperatorAttribute operator=" + this.operator.name() + "/>";
+    return "<defaultOperatorAttribute operator=" + getOperator().name() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.DEFAULT_OPERATOR)) {
+      setOperator(Operator.OR); 
+     }
+    
   }
 
 }

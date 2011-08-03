@@ -43,8 +43,9 @@ import org.apache.lucene.util.AttributeSource;
  * @see FieldConfig
  * @see FieldConfigListener
  * @see QueryConfigHandler
+ * 
  */
-public abstract class QueryConfigHandler extends AttributeSource {
+public abstract class QueryConfigHandler extends AbstractQueryConfig {
 
   private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
 
@@ -92,7 +93,7 @@ public abstract class QueryConfigHandler extends AttributeSource {
     return fieldConfig;
 
   }
-
+  
   /**
    * Adds a listener. The added listeners are called in the order they are
    * added.

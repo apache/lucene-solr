@@ -19,7 +19,10 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.util.Locale;
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -29,26 +32,28 @@ import org.apache.lucene.util.AttributeImpl;
  * the processor what is the default {@link Locale} used to parse a date. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
-				implements LowercaseExpandedTermsAttribute {
+				implements LowercaseExpandedTermsAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2804760312723049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private boolean lowercaseExpandedTerms = true;
-
-  public LowercaseExpandedTermsAttributeImpl() {
-    lowercaseExpandedTerms = true; // default in 2.4
-  }
+  public LowercaseExpandedTermsAttributeImpl() {}
 
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-	  this.lowercaseExpandedTerms = lowercaseExpandedTerms; 
+      config.set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms); 
   }
 
   public boolean isLowercaseExpandedTerms() {
-    return this.lowercaseExpandedTerms;
+    return config.get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true);
   }
 
   @Override
@@ -65,7 +70,8 @@ public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof LowercaseExpandedTermsAttributeImpl
-        && ((LowercaseExpandedTermsAttributeImpl) other).lowercaseExpandedTerms == this.lowercaseExpandedTerms) {
+        && ((LowercaseExpandedTermsAttributeImpl) other)
+            .isLowercaseExpandedTerms() == isLowercaseExpandedTerms()) {
 
       return true;
 
@@ -77,13 +83,22 @@ public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return this.lowercaseExpandedTerms ? -1 : Integer.MAX_VALUE;
+    return isLowercaseExpandedTerms() ? -1 : Integer.MAX_VALUE;
   }
 
   @Override
   public String toString() {
     return "<lowercaseExpandedTerms lowercaseExpandedTerms="
-        + this.lowercaseExpandedTerms + "/>";
+        + isLowercaseExpandedTerms() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS)) {
+      config.set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true);
+    }
+    
   }
 
 }

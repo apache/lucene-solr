@@ -19,7 +19,10 @@ package org.apache.lucene.queryParser.standard.config;
 
 import java.text.Collator;
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.AttributeImpl;
@@ -31,26 +34,28 @@ import org.apache.lucene.util.AttributeImpl;
  * {@link TermRangeQuery} <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class RangeCollatorAttributeImpl extends AttributeImpl
-				implements RangeCollatorAttribute {
+				implements RangeCollatorAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -6804360312723049526L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private Collator rangeCollator;
-
-  public RangeCollatorAttributeImpl() {
-	  rangeCollator = null; // default value for 2.4
-  }
+  public RangeCollatorAttributeImpl() {}
 
   public void setDateResolution(Collator rangeCollator) {
-    this.rangeCollator = rangeCollator;
+    config.set(ConfigurationKeys.RANGE_COLLATOR, rangeCollator);
   }
 
   public Collator getRangeCollator() {
-    return this.rangeCollator;
+    return config.get(ConfigurationKeys.RANGE_COLLATOR);
   }
 
   @Override
@@ -68,9 +73,12 @@ public class RangeCollatorAttributeImpl extends AttributeImpl
 
     if (other instanceof RangeCollatorAttributeImpl) {
     	RangeCollatorAttributeImpl rangeCollatorAttr = (RangeCollatorAttributeImpl) other;
+    	
+    	Collator thisCollator = getRangeCollator();
+    	Collator otherCollator = rangeCollatorAttr.getRangeCollator();
 
-      if (rangeCollatorAttr.rangeCollator == this.rangeCollator
-          || rangeCollatorAttr.rangeCollator.equals(this.rangeCollator)) {
+      if (otherCollator == thisCollator
+          || otherCollator.equals(thisCollator)) {
 
         return true;
 
@@ -84,13 +92,18 @@ public class RangeCollatorAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return (this.rangeCollator == null) ? 0 : this.rangeCollator.hashCode();
+    Collator collator = getRangeCollator();
+    return (collator == null) ? 0 : collator.hashCode();
   }
 
   @Override
   public String toString() {
-    return "<rangeCollatorAttribute rangeCollator='" + this.rangeCollator
+    return "<rangeCollatorAttribute rangeCollator='" + getRangeCollator()
         + "'/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
   }
 
 }

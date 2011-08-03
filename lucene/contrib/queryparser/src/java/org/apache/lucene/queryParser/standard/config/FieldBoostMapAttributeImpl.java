@@ -20,7 +20,10 @@ package org.apache.lucene.queryParser.standard.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.MultiFieldQueryNodeProcessor;
 import org.apache.lucene.util.AttributeImpl;
 
@@ -32,27 +35,30 @@ import org.apache.lucene.util.AttributeImpl;
  * <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.BoostAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class FieldBoostMapAttributeImpl extends AttributeImpl 
-				implements FieldBoostMapAttribute {
+				implements FieldBoostMapAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012523049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private Map<String, Float> boosts = new LinkedHashMap<String, Float>();
-  
-
   public FieldBoostMapAttributeImpl() {
     // empty constructor
   }
 
   public void setFieldBoostMap(Map<String, Float> boosts) {
-    this.boosts = boosts;
+    config.set(ConfigurationKeys.FIELD_BOOST_MAP, boosts);
   }
   
   public Map<String, Float> getFieldBoostMap() {
-    return this.boosts;
+    return config.get(ConfigurationKeys.FIELD_BOOST_MAP);
   }
 
   @Override
@@ -69,7 +75,7 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof FieldBoostMapAttributeImpl
-        && ((FieldBoostMapAttributeImpl) other).boosts.equals(this.boosts) ) {
+        && ((FieldBoostMapAttributeImpl) other).getFieldBoostMap().equals(getFieldBoostMap()) ) {
 
       return true;
 
@@ -82,15 +88,25 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
   @Override
   public int hashCode() {
     final int prime = 97;
-    if (this.boosts != null) 
-      return this.boosts.hashCode() * prime;
+    Map<String, Float> boostMap = getFieldBoostMap();
+    if (boostMap != null) 
+      return boostMap.hashCode() * prime;
     else 
       return Float.valueOf(prime).hashCode();
   }
 
   @Override
   public String toString() {
-    return "<fieldBoostMapAttribute map=" + this.boosts + "/>";
+    return "<fieldBoostMapAttribute map=" + getFieldBoostMap() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.FIELD_BOOST_MAP)) {
+      setFieldBoostMap(new LinkedHashMap<String, Float>());
+    }
+    
   }
 
 }

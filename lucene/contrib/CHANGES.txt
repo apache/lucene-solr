@@ -32,6 +32,14 @@ API Changes
  * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
    constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
    the target indexes. (Simon Willnauer, Jason Rutherglen)
+   
+ * LUCENE-2979: queryparser configuration API located under 
+   org.apache.lucene.queryParser.core.config has been simplified and
+   Attribute objects no longer should be used to configure query parsers. Now
+   any configuration should be done through AbstractQueryConfig's set and get 
+   methods. The old API, which uses Attributes objects, is still in place, however
+   it has been deprecated and will be removed soon. 
+   (Phillipe Ramalho via Adriano Crestani)
 
 Optimizations
 

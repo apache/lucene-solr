@@ -25,7 +25,11 @@ import org.apache.lucene.util.Attribute;
 /**
  * This attribute enables the user to define a default boost per field.
  * it's used by {@link FieldBoostMapFCListener#buildFieldConfig(FieldConfig)}
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface FieldBoostMapAttribute extends Attribute {
   /**
    * @param boosts a mapping from field name to its default boost

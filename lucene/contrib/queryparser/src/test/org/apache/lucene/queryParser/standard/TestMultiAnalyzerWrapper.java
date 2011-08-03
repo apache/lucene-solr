@@ -43,6 +43,7 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
   private static int multiToken = 0;
 
+  @SuppressWarnings("deprecation")
   public void testMultiAnalyzer() throws ParseException {
 
     QueryParserWrapper qp = new QueryParserWrapper("", new MultiAnalyzer());
@@ -125,6 +126,7 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
   //    
   // }
 
+  @SuppressWarnings("deprecation")
   public void testPosIncrementAnalyzer() throws ParseException {
     QueryParserWrapper qp = new QueryParserWrapper("",
         new PosIncrementAnalyzer());

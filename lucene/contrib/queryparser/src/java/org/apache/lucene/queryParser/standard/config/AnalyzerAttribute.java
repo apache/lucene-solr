@@ -28,7 +28,10 @@ import org.apache.lucene.util.Attribute;
  * processor the {@link Analyzer}, if there is one, which will be used to
  * analyze the query terms. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface AnalyzerAttribute extends Attribute {
   public void setAnalyzer(Analyzer analyzer);
   public Analyzer getAnalyzer();

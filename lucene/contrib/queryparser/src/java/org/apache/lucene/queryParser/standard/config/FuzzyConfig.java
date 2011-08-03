@@ -17,23 +17,30 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
-import org.apache.lucene.queryParser.standard.processors.PhraseSlopQueryNodeProcessor;
-import org.apache.lucene.util.Attribute;
+import org.apache.lucene.search.FuzzyQuery;
 
-/**
- * This attribute is used by {@link PhraseSlopQueryNodeProcessor} processor and
- * must be defined in the {@link QueryConfigHandler}. This attribute tells the
- * processor what is the default phrase slop when no slop is defined in a
- * phrase. <br/>
- * 
- * @deprecated
- * 
- */
-@Deprecated
-public interface FuzzyAttribute extends Attribute {
-  public void setPrefixLength(int prefixLength);
-  public int getPrefixLength();
-  public void setFuzzyMinSimilarity(float minSimilarity);
-  public float getFuzzyMinSimilarity();
+public class FuzzyConfig {
+  
+  private int prefixLength = FuzzyQuery.defaultPrefixLength;
+
+  private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
+  
+  public FuzzyConfig() {}
+
+  public int getPrefixLength() {
+    return prefixLength;
+  }
+
+  public void setPrefixLength(int prefixLength) {
+    this.prefixLength = prefixLength;
+  }
+
+  public float getMinSimilarity() {
+    return minSimilarity;
+  }
+
+  public void setMinSimilarity(float minSimilarity) {
+    this.minSimilarity = minSimilarity;
+  }
+  
 }

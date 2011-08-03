@@ -22,6 +22,9 @@ import java.util.Map;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.util.AttributeImpl;
 
 /**
@@ -29,27 +32,30 @@ import org.apache.lucene.util.AttributeImpl;
  * it's used by {@link FieldDateResolutionFCListener#buildFieldConfig(org.apache.lucene.queryParser.core.config.FieldConfig)}
  *
  * @see FieldDateResolutionMapAttribute
+ * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public class FieldDateResolutionMapAttributeImpl extends AttributeImpl 
-				implements FieldDateResolutionMapAttribute {
+				implements FieldDateResolutionMapAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012523049527L;
+  
+  private AbstractQueryConfig config;
 
   { enableBackwards = false; }
   
-  private Map<CharSequence, DateTools.Resolution> dateRes = new HashMap<CharSequence, DateTools.Resolution>();
-  
-
   public FieldDateResolutionMapAttributeImpl() {
     // empty constructor
   }
 
   public void setFieldDateResolutionMap(Map<CharSequence, DateTools.Resolution> dateRes) {
-    this.dateRes = dateRes;
+    config.set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP, dateRes);
   }
   
   public Map<CharSequence, Resolution> getFieldDateResolutionMap() {
-    return this.dateRes;
+    return config.get(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP);
   }
 
   @Override
@@ -66,7 +72,8 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof FieldDateResolutionMapAttributeImpl
-        && ((FieldDateResolutionMapAttributeImpl) other).dateRes.equals(this.dateRes) ) {
+        && ((FieldDateResolutionMapAttributeImpl) other)
+            .getFieldDateResolutionMap().equals(getFieldDateResolutionMap())) {
 
       return true;
 
@@ -79,15 +86,25 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
   @Override
   public int hashCode() {
     final int prime = 97;
-    if (this.dateRes != null) 
-      return this.dateRes.hashCode() * prime;
+    Map<CharSequence, DateTools.Resolution> dateRes = getFieldDateResolutionMap();
+    if (dateRes != null) 
+      return dateRes.hashCode() * prime;
     else 
       return Float.valueOf(prime).hashCode();
   }
 
   @Override
   public String toString() {
-    return "<fieldDateResolutionMapAttribute map=" + this.dateRes + "/>";
+    return "<fieldDateResolutionMapAttribute map=" + getFieldDateResolutionMap() + "/>";
+  }
+  
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+    
+    if (!config.has(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP)) {
+      setFieldDateResolutionMap(new HashMap<CharSequence, DateTools.Resolution>());
+    }
+    
   }
 
 }

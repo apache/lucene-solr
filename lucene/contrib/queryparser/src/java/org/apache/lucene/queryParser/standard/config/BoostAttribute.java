@@ -28,7 +28,10 @@ import org.apache.lucene.util.Attribute;
  * defined to it. <br/>
  * <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface BoostAttribute extends Attribute {
   public void setBoost(float boost);
   public float getBoost();

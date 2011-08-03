@@ -26,7 +26,10 @@ import org.apache.lucene.util.Attribute;
  * must be defined in the {@link QueryConfigHandler}. This attribute tells the
  * processor to which fields the terms in the query should be expanded. <br/>
  * 
+ * @deprecated
+ * 
  */
+@Deprecated
 public interface MultiFieldAttribute extends Attribute {
   public void setFields(CharSequence[] fields);
   public CharSequence[] getFields();

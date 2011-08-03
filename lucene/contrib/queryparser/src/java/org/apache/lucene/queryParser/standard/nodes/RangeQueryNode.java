@@ -21,7 +21,7 @@ import java.text.Collator;
 
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
-import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 
 /**
@@ -29,7 +29,7 @@ import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNod
  * be used by the range query and if the constant score rewrite is enabled. <br/>
  * 
  * @see ParametricRangeQueryNodeProcessor
- * @see RangeCollatorAttribute
+ * @see ConfigurationKeys#RANGE_COLLATOR
  * @see org.apache.lucene.search.TermRangeQuery
  */
 public class RangeQueryNode extends ParametricRangeQueryNode {

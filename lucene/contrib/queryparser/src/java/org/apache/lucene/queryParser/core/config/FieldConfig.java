@@ -27,7 +27,7 @@ import org.apache.lucene.util.AttributeSource;
  * @see QueryConfigHandler
  * @see org.apache.lucene.util.Attribute
  */
-public class FieldConfig extends AttributeSource {
+public class FieldConfig extends AbstractQueryConfig {
 
   private String fieldName;
 
@@ -83,7 +83,7 @@ public class FieldConfig extends AttributeSource {
 
   @Override
   public String toString() {
-    return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\""
+    return "<fieldconfig name=\"" + this.fieldName + "\" configurations=\""
         + super.toString() + "\"/>";
   }
 

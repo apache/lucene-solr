@@ -17,9 +17,11 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
+import org.apache.lucene.queryParser.core.config.AbstractQueryConfig;
+import org.apache.lucene.queryParser.core.config.ConfigAttribute;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
+import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.PhraseSlopQueryNodeProcessor;
-import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.util.AttributeImpl;
 
 /**
@@ -29,36 +31,52 @@ import org.apache.lucene.util.AttributeImpl;
  * phrase. <br/>
  * 
  * @see org.apache.lucene.queryParser.standard.config.FuzzyAttribute
+ * 
+ * @deprecated
+ * 
  */
-public class FuzzyAttributeImpl extends AttributeImpl 
-				implements FuzzyAttribute {
+@Deprecated
+public class FuzzyAttributeImpl extends AttributeImpl implements
+    FuzzyAttribute, ConfigAttribute {
 
   private static final long serialVersionUID = -2104763012527049527L;
 
-  { enableBackwards = false; }
-  
-  private int prefixLength = FuzzyQuery.defaultPrefixLength;
+  private AbstractQueryConfig config;
 
-  private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
+  {
+    enableBackwards = false;
+  }
 
   public FuzzyAttributeImpl() {
     // empty constructor
   }
 
   public void setPrefixLength(int prefixLength) {
-    this.prefixLength = prefixLength;
+    getFuzzyConfig().setPrefixLength(prefixLength);
   }
 
   public int getPrefixLength() {
-    return this.prefixLength;
+    return getFuzzyConfig().getPrefixLength();
   }
 
   public void setFuzzyMinSimilarity(float minSimilarity) {
-    this.minSimilarity = minSimilarity;
+    getFuzzyConfig().setMinSimilarity(minSimilarity);
+  }
+  
+  private FuzzyConfig getFuzzyConfig() {
+    FuzzyConfig fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG);
+    
+    if (fuzzyConfig == null) {
+      fuzzyConfig = new FuzzyConfig();
+      config.set(ConfigurationKeys.FUZZY_CONFIG, fuzzyConfig);
+    }
+    
+    return fuzzyConfig;
+    
   }
 
   public float getFuzzyMinSimilarity() {
-    return this.minSimilarity;
+    return getFuzzyConfig().getMinSimilarity();
   }
 
   @Override
@@ -75,7 +93,7 @@ public class FuzzyAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof FuzzyAttributeImpl
-        && ((FuzzyAttributeImpl) other).prefixLength == this.prefixLength) {
+        && ((FuzzyAttributeImpl) other).getPrefixLength() == getPrefixLength()) {
 
       return true;
 
@@ -87,12 +105,23 @@ public class FuzzyAttributeImpl extends AttributeImpl
 
   @Override
   public int hashCode() {
-    return Integer.valueOf(this.prefixLength).hashCode();
+    return Integer.valueOf(getPrefixLength()).hashCode();
   }
 
   @Override
   public String toString() {
-    return "<fuzzyAttribute prefixLength=" + this.prefixLength + ",minSimilarity=" + this.minSimilarity + "/>";
+    FuzzyConfig fuzzyConfig = getFuzzyConfig();
+    return "<fuzzyAttribute prefixLength=" + fuzzyConfig.getPrefixLength()
+        + ",minSimilarity=" + fuzzyConfig.getMinSimilarity() + "/>";
+  }
+
+  public void setQueryConfigHandler(AbstractQueryConfig config) {
+    this.config = config;
+
+    if (!config.has(ConfigurationKeys.FUZZY_CONFIG)) {
+      config.set(ConfigurationKeys.FUZZY_CONFIG, new FuzzyConfig());
+    }
+
   }
 
 }
