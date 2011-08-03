@@ -281,6 +281,9 @@ Other Changes
 * SOLR-2663: FieldTypePluginLoader has been refactored out of IndexSchema 
   and made public. (hossman)
 
+* SOLR-2331,SOLR-2691: Refactor CoreContainer's SolrXML serialization code and improve testing
+  (Yury Kats, hossman, Mark Miller)
+
 Documentation
 ----------------------
 
