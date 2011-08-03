@@ -28,7 +28,8 @@ import org.apache.lucene.util.Bits;
 
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter; // javadocs
 
-/** BlockTermsReader interacts with a single instance
+/** The core terms dictionaries (BlockTermsReader,
+ *  BlockTreeTermsReader) interact with a single instance
  *  of this class to manage creation of {@link DocsEnum} and
  *  {@link DocsAndPositionsEnum} instances.  It provides an
  *  IndexInput (termsIn) where this class may read any
@@ -49,11 +50,11 @@ public abstract class PostingsReaderBase implements Closeable {
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsEnum docs(FieldInfo fieldInfo, BlockTermState state, Bits liveDocs, DocsEnum reuse) throws IOException;
+  public abstract DocsEnum docs(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsEnum reuse) throws IOException;
 
   /** Must fully consume state, since after this call that
    *  TermState may be reused. */
-  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException;
+  public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException;
 
   public abstract void close() throws IOException;
 
@@ -61,4 +62,6 @@ public abstract class PostingsReaderBase implements Closeable {
    *  method should merely load the byte[] blob but not
    *  decode, which is done in {@link #nextTerm}. */
   public abstract void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState termState) throws IOException;
+
+  public abstract void resetTermsBlock(FieldInfo fieldInfo, BlockTermState termState) throws IOException;
 }

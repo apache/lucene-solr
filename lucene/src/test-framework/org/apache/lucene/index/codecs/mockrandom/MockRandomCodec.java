@@ -45,8 +45,6 @@ import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
-import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
@@ -57,8 +55,6 @@ import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSingleIntFactory;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsReaderImpl;
 import org.apache.lucene.index.codecs.pulsing.PulsingPostingsWriterImpl;
-import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsReader;
-import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsWriter;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
@@ -66,8 +62,6 @@ import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
-import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
-import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -159,7 +153,9 @@ public class MockRandomCodec extends Codec {
     final Random random = new Random(seed);
     
     random.nextInt(); // consume a random for buffersize
-    
+
+    // nocommit -- also use block tree w/ sep randomly here!
+
     if (random.nextBoolean()) {
       // Use BlockTree terms dict
 
@@ -167,16 +163,17 @@ public class MockRandomCodec extends Codec {
         System.out.println("MockRandomCodec: writing BlockTree terms dict");
       }
       // nocommit randomize that skipInterval:
-      BlockTreePostingsWriterBase postingsWriter = new StandardTreePostingsWriter(state, 16);
+      PostingsWriterBase postingsWriter = new StandardPostingsWriter(state, 16);
 
       if (random.nextBoolean()) {
         final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsWriter = new PulsingTreePostingsWriter(totTFCutoff, postingsWriter);
+        postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
       }
 
+      // nocommit expand allowed range:
       final int minTermsInBlock = _TestUtil.nextInt(random, 4, 100);
       final int maxTermsInBlock = minTermsInBlock*2 + random.nextInt(100);
 
@@ -196,14 +193,14 @@ public class MockRandomCodec extends Codec {
         System.out.println("MockRandomCodec: writing Block terms dict");
       }
 
-      BlockTreePostingsWriterBase postingsWriter;
+      PostingsWriterBase postingsWriter;
       if (random.nextBoolean()) {
         postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random), skipInterval);
       } else {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: writing Standard postings");
         }
-        postingsWriter = new StandardTreePostingsWriter(state, skipInterval);
+        postingsWriter = new StandardPostingsWriter(state, skipInterval);
       }
 
       if (random.nextBoolean()) {
@@ -211,7 +208,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsWriter = new PulsingTreePostingsWriter(totTFCutoff, postingsWriter);
+        postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
       }
 
       boolean success = false;
@@ -305,14 +302,14 @@ public class MockRandomCodec extends Codec {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading BlockTree terms dict");
       }
-      BlockTreePostingsReaderBase postingsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
 
       if (random.nextBoolean()) {
         final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsReader = new PulsingTreePostingsReader(postingsReader);
+        postingsReader = new PulsingPostingsReaderImpl(postingsReader);
       }
 
       // randomness diverges from writer, here:
@@ -344,7 +341,7 @@ public class MockRandomCodec extends Codec {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Block terms dict");
       }
-      BlockTreePostingsReaderBase postingsReader;
+      PostingsReaderBase postingsReader;
 
       if (random.nextBoolean()) {
         postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
@@ -353,7 +350,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: reading Standard postings");
         }
-        postingsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+        postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       }
 
       if (random.nextBoolean()) {
@@ -361,7 +358,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsReader = new PulsingTreePostingsReader(postingsReader);
+        postingsReader = new PulsingPostingsReaderImpl(postingsReader);
       }
 
       final TermsIndexReaderBase indexReader;

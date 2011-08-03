@@ -238,7 +238,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   public static class MockCodecProvider extends CodecProvider {
 
     public MockCodecProvider() {
-      StandardCodec standardCodec = new StandardCodec();
+      StandardCodec standardCodec = new StandardCodec(25, 48);
       setDefaultFieldCodec(standardCodec.name);
       SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
       MockSepCodec mockSepCodec = new MockSepCodec();
@@ -253,7 +253,7 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   public static class MockCodecProvider2 extends CodecProvider {
 
     public MockCodecProvider2() {
-      StandardCodec standardCodec = new StandardCodec();
+      StandardCodec standardCodec = new StandardCodec(25, 48);
       setDefaultFieldCodec(standardCodec.name);
       SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
       MockSepCodec mockSepCodec = new MockSepCodec();
@@ -277,9 +277,9 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
       CodecProvider provider = new CodecProvider();
-      Codec[] codecs = new Codec[] { new StandardCodec(),
+      Codec[] codecs = new Codec[] { new StandardCodec(25, 48),
           new SimpleTextCodec(), new MockSepCodec(),
-          new PulsingCodec(1 + random.nextInt(20)),
+          new PulsingCodec(1 + random.nextInt(20), 25, 48),
           new MockVariableIntBlockCodec(1 + random.nextInt(10)),
           new MockFixedIntBlockCodec(1 + random.nextInt(10)) };
       for (Codec codec : codecs) {

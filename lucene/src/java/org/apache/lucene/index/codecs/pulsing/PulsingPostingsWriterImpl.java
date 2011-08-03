@@ -18,10 +18,13 @@ package org.apache.lucene.index.codecs.pulsing;
  */
 
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.TermStats;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -50,6 +53,15 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   private IndexOptions indexOptions;
   private boolean storePayloads;
 
+  private static class PendingTerm {
+    private final byte[] bytes;
+    public PendingTerm(byte[] bytes) {
+      this.bytes = bytes;
+    }
+  }
+
+  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
+
   // one entry per position
   private final Position[] pending;
   private int pendingCount = 0;                           // -1 once we've hit too many positions
@@ -72,6 +84,8 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
   public PulsingPostingsWriterImpl(int maxPositions, PostingsWriterBase wrappedPostingsWriter) throws IOException {
+    super();
+
     pending = new Position[maxPositions];
     for(int i=0;i<maxPositions;i++) {
       pending[i] = new Position();
@@ -92,7 +106,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   @Override
   public void startTerm() {
-    //System.out.println("PW   startTerm");
+    if (DEBUG) System.out.println("PW   startTerm");
     assert pendingCount == 0;
   }
 
@@ -104,19 +118,33 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.indexOptions = fieldInfo.indexOptions;
-    //System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
+    if (DEBUG) System.out.println("PW field=" + fieldInfo.name + " indexOptions=" + indexOptions);
     storePayloads = fieldInfo.storePayloads;
     wrappedPostingsWriter.setField(fieldInfo);
+    DEBUG = BlockTreeTermsWriter.DEBUG;
   }
+
+  private boolean DEBUG;
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     assert docID >= 0: "got docID=" + docID;
-    //System.out.println("PW     doc=" + docID);
+
+    /*
+    if (termID != -1) {
+      if (docID == 0) {
+        baseDocID = termID;
+      } else if (baseDocID + docID != termID) {
+        throw new RuntimeException("WRITE: baseDocID=" + baseDocID + " docID=" + docID + " termID=" + termID);
+      }
+    }
+    */
+
+    if (DEBUG) System.out.println("PW     doc=" + docID);
 
     if (pendingCount == pending.length) {
       push();
-      //System.out.println("PW: wrapped.finishDoc");
+      if (DEBUG) System.out.println("PW: wrapped.finishDoc");
       wrappedPostingsWriter.finishDoc();
     }
 
@@ -142,7 +170,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
 
-    //System.out.println("PW       pos=" + position + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
+    if (DEBUG) System.out.println("PW       pos=" + position + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
     if (pendingCount == pending.length) {
       push();
     }
@@ -170,24 +198,28 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
 
   @Override
   public void finishDoc() throws IOException {
-    //System.out.println("PW     finishDoc");
+    if (DEBUG) System.out.println("PW     finishDoc");
     if (pendingCount == -1) {
       wrappedPostingsWriter.finishDoc();
     }
   }
 
   private final RAMOutputStream buffer = new RAMOutputStream();
-  private final RAMOutputStream buffer2 = new RAMOutputStream();
+
+  private int baseDocID;
 
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
-    //System.out.println("PW   finishTerm docCount=" + stats.docFreq);
+    if (DEBUG) System.out.println("PW   finishTerm docCount=" + stats.docFreq + " pendingCount=" + pendingCount + " pendingTerms.size()=" + pendingTerms.size());
 
     assert pendingCount > 0 || pendingCount == -1;
 
     if (pendingCount == -1) {
       wrappedPostingsWriter.finishTerm(stats);
+      // Must add null entry to record terms that our
+      // wrapped postings impl added
+      pendingTerms.add(null);
     } else {
 
       // There were few enough total occurrences for this
@@ -210,7 +242,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
           final int delta = doc.docID - lastDocID;
           lastDocID = doc.docID;
 
-          //System.out.println("  write doc=" + doc.docID + " freq=" + doc.termFreq);
+          if (DEBUG) System.out.println("  write doc=" + doc.docID + " freq=" + doc.termFreq);
 
           if (doc.termFreq == 1) {
             buffer.writeVInt((delta<<1)|1);
@@ -225,7 +257,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
             assert pos.docID == doc.docID;
             final int posDelta = pos.pos - lastPos;
             lastPos = pos.pos;
-            //System.out.println("    write pos=" + pos.pos);
+            if (DEBUG) System.out.println("    write pos=" + pos.pos);
             if (storePayloads) {
               final int payloadLength = pos.payload == null ? 0 : pos.payload.length;
               if (payloadLength != lastPayloadLength) {
@@ -248,6 +280,7 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
         for(int posIDX=0;posIDX<pendingCount;posIDX++) {
           final Position doc = pending[posIDX];
           final int delta = doc.docID - lastDocID;
+          assert doc.termFreq != 0;
           if (doc.termFreq == 1) {
             buffer.writeVInt((delta<<1)|1);
           } else {
@@ -264,10 +297,10 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
           lastDocID = doc.docID;
         }
       }
-      
-      //System.out.println("  bytes=" + buffer.getFilePointer());
-      buffer2.writeVInt((int) buffer.getFilePointer());
-      buffer.writeTo(buffer2);
+
+      final byte[] bytes = new byte[(int) buffer.getFilePointer()];
+      buffer.writeTo(bytes, 0);
+      pendingTerms.add(new PendingTerm(bytes));
       buffer.reset();
     }
 
@@ -280,20 +313,50 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
   }
 
   @Override
-  public void flushTermsBlock() throws IOException {
-    termsOut.writeVInt((int) buffer2.getFilePointer());
-    buffer2.writeTo(termsOut);
-    buffer2.reset();
+  public void flushTermsBlock(int start, int count) throws IOException {
+    if (DEBUG) System.out.println("PW: flushTermsBlock start=" + start + " count=" + count + " pendingTerms.size()=" + pendingTerms.size());
+    int wrappedCount = 0;
+    assert buffer.getFilePointer() == 0;
+    assert start >= count;
 
+    final int limit = pendingTerms.size() - start + count;
+
+    for(int idx=pendingTerms.size()-start; idx<limit; idx++) {
+      final PendingTerm term = pendingTerms.get(idx);
+      if (term == null) {
+        wrappedCount++;
+      } else {
+        buffer.writeVInt(term.bytes.length);
+        buffer.writeBytes(term.bytes, 0, term.bytes.length);
+      }
+    }
+
+    termsOut.writeVInt((int) buffer.getFilePointer());
+    buffer.writeTo(termsOut);
+    buffer.reset();
+
+    // nocommit: O(N^2) though with small N...
+    int futureWrappedCount = 0;
+    final int limit2 = pendingTerms.size();
+    for(int idx=limit;idx<limit2;idx++) {
+      if (pendingTerms.get(idx) == null) {
+        futureWrappedCount++;
+      }
+    }
+
+    // Remove the terms we just wrote:
+    pendingTerms.subList(pendingTerms.size()-start, limit).clear();
+
+    if (DEBUG) System.out.println("PW:   len=" + buffer.getFilePointer() + " fp=" + termsOut.getFilePointer() + " futureWrappedCount=" + futureWrappedCount + " wrappedCount=" + wrappedCount);
     // TODO: can we avoid calling this if all terms
     // were inlined...?  Eg for a "primary key" field, the
     // wrapped codec is never invoked...
-    wrappedPostingsWriter.flushTermsBlock();
+    wrappedPostingsWriter.flushTermsBlock(futureWrappedCount+wrappedCount, wrappedCount);
   }
 
   // Pushes pending positions to the wrapped codec
   private void push() throws IOException {
-    //System.out.println("PW now push @ " + pendingCount + " wrapped=" + wrappedPostingsWriter);
+    if (DEBUG) System.out.println("PW now push @ " + pendingCount + " wrapped=" + wrappedPostingsWriter);
     assert pendingCount == pending.length;
       
     wrappedPostingsWriter.startTerm();
@@ -304,17 +367,17 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
       for(Position pos : pending) {
         if (doc == null) {
           doc = pos;
-          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
+          if (DEBUG) System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         } else if (doc.docID != pos.docID) {
           assert pos.docID > doc.docID;
-          //System.out.println("PW: wrapped.finishDoc");
+          if (DEBUG) System.out.println("PW: wrapped.finishDoc");
           wrappedPostingsWriter.finishDoc();
           doc = pos;
-          //System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
+          if (DEBUG) System.out.println("PW: wrapped.startDoc docID=" + doc.docID + " tf=" + doc.termFreq);
           wrappedPostingsWriter.startDoc(doc.docID, doc.termFreq);
         }
-        //System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
+        if (DEBUG) System.out.println("PW:   wrapped.addPos pos=" + pos.pos);
         wrappedPostingsWriter.addPosition(pos.pos, pos.payload);
       }
       //wrappedPostingsWriter.finishDoc();

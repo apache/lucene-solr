@@ -27,8 +27,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.codecs.BlockTreeTermState;
-import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTermState;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -48,7 +48,7 @@ import org.apache.lucene.util.CodecUtil;
 // create two separate docs readers, one that also reads
 // prox and one that doesn't?
 
-public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
+public class SepPostingsReaderImpl extends PostingsReaderBase {
 
   final IntIndexInput freqIn;
   final IntIndexInput docIn;
@@ -141,7 +141,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
     }
   }
 
-  private static final class SepTermState extends BlockTreeTermState {
+  private static final class SepTermState extends BlockTermState {
     // We store only the seek point to the docs file because
     // the rest of the info (freqIndex, posIndex, etc.) is
     // stored in the docs file:
@@ -204,7 +204,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public BlockTreeTermState newTermState() throws IOException {
+  public BlockTermState newTermState() throws IOException {
     final SepTermState state = new SepTermState();
     state.docIndex = docIn.index();
     if (freqIn != null) {
@@ -217,7 +217,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
+  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     //System.out.println("SEPR: readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
     final int len = termsIn.readVInt();
@@ -233,7 +233,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public void resetTermsBlock(FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
+  public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
     //System.out.println("SEPR.resetTermsBlock ts=" + _termState);
     final SepTermState termState = (SepTermState) _termState;
     assert termState.bytes != null;
@@ -241,7 +241,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public void nextTerm(FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
+  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     final boolean isFirstTerm = termState.termBlockOrd == 0;
     //System.out.println("SEPR.nextTerm termCount=" + termState.termBlockOrd + " isFirstTerm=" + isFirstTerm + " bytesReader.pos=" + termState.bytesReader.getPosition());
@@ -279,7 +279,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTreeTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum)) {
@@ -298,7 +298,7 @@ public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTreeTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;

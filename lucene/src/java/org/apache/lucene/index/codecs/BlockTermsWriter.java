@@ -60,7 +60,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tib";
 
   protected final IndexOutput out;
-  final BlockTreePostingsWriterBase postingsWriter;
+  final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
   private final TermsIndexWriterBase termsIndexWriter;
@@ -69,7 +69,7 @@ public class BlockTermsWriter extends FieldsConsumer {
   // private final String segment;
 
   public BlockTermsWriter(TermsIndexWriterBase termsIndexWriter,
-      SegmentWriteState state, BlockTreePostingsWriterBase postingsWriter)
+      SegmentWriteState state, PostingsWriterBase postingsWriter)
       throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
@@ -154,7 +154,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
-    private final BlockTreePostingsWriterBase postingsWriter;
+    private final PostingsWriterBase postingsWriter;
     private final long termsStartPointer;
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
@@ -168,7 +168,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     TermsWriter(
         TermsIndexWriterBase.FieldWriter fieldIndexWriter,
         FieldInfo fieldInfo,
-        BlockTreePostingsWriterBase postingsWriter) 
+        PostingsWriterBase postingsWriter) 
     {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;

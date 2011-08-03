@@ -41,12 +41,12 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
-import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
-import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -112,7 +112,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      BlockTreePostingsWriterBase docs = new StandardTreePostingsWriter(state);
+      PostingsWriterBase docs = new StandardPostingsWriter(state);
 
       // TODO: should we make the terms index more easily
       // pluggable?  Ie so that this codec would record which
@@ -149,7 +149,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-      BlockTreePostingsReaderBase postings = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+      PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       TermsIndexReaderBase indexReader;
 
       boolean success = false;
@@ -198,7 +198,7 @@ public class TestDocTermOrds extends LuceneTestCase {
 
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-      StandardTreePostingsReader.files(dir, segmentInfo, id, files);
+      StandardPostingsReader.files(dir, segmentInfo, id, files);
       BlockTermsReader.files(dir, segmentInfo, id, files);
       FixedGapTermsIndexReader.files(dir, segmentInfo, id, files);
       DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());

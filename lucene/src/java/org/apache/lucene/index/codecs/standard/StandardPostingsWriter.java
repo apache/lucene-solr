@@ -21,32 +21,37 @@ package org.apache.lucene.index.codecs.standard;
  *  index file format */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.TermStats;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.codecs.standard.DefaultSkipListWriter;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
-import org.apache.lucene.util.IOUtils;
 
 /** @lucene.experimental */
 public final class StandardPostingsWriter extends PostingsWriterBase {
-  final static String CODEC = "StandardPostingsWriterImpl";
+  final static String CODEC = "StandardPostingsWriter";
+
+  private static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
   
   // Increment version to change it:
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  IndexOutput freqOut;
-  IndexOutput proxOut;
+  final IndexOutput freqOut;
+  final IndexOutput proxOut;
   final DefaultSkipListWriter skipListWriter;
   /** Expert: The fraction of TermDocs entries stored in skip tables,
    * used to accelerate {@link DocsEnum#advance(int)}.  Larger values result in
@@ -71,57 +76,43 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   IndexOptions indexOptions;
   boolean storePayloads;
   // Starts a new term
-  long lastFreqStart;
   long freqStart;
-  long lastProxStart;
   long proxStart;
   FieldInfo fieldInfo;
   int lastPayloadLength;
   int lastPosition;
 
-  private int pendingCount;
-
   // nocommit
   private String segment;
-  private Directory dir;
-
-  private RAMOutputStream bytesWriter = new RAMOutputStream();
 
   public StandardPostingsWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_SKIP_INTERVAL);
   }
   
   public StandardPostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
+    super();
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
     this.segment = state.segmentName;
-    this.dir = state.directory;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
-    //System.out.println("SPW: init freqFileName=" + fileName + " freqOut=" + freqOut);
-    boolean success = false;
-    try {
-      if (state.fieldInfos.hasProx()) {
-        // At least one field does not omit TF, so create the
-        // prox file
-        fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.PROX_EXTENSION);
-        proxOut = state.directory.createOutput(fileName, state.context);
-      } else {
-        // Every field omits TF so we will write no prox file
-        proxOut = null;
-      }
-      
-      totalNumDocs = state.numDocs;
-      
-      skipListWriter = new DefaultSkipListWriter(skipInterval, maxSkipLevels,
-          state.numDocs, freqOut, proxOut);
-      //System.out.println("  success");
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeSafely(true, freqOut, proxOut);
-      }
+    if (state.fieldInfos.hasProx()) {
+      // At least one field does not omit TF, so create the
+      // prox file
+      fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.PROX_EXTENSION);
+      proxOut = state.directory.createOutput(fileName, state.context);
+    } else {
+      // Every field omits TF so we will write no prox file
+      proxOut = null;
     }
+
+    totalNumDocs = state.numDocs;
+
+    skipListWriter = new DefaultSkipListWriter(skipInterval,
+                                               maxSkipLevels,
+                                               state.numDocs,
+                                               freqOut,
+                                               proxOut);
   }
 
   @Override
@@ -136,7 +127,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   @Override
   public void startTerm() {
     freqStart = freqOut.getFilePointer();
-    //System.out.println("SPR: startTerm seg=" + segment + " pendingCount=" + pendingCount + " freqStart=" + freqStart);
+    if (DEBUG) System.out.println("SPW: startTerm freqOut.fp=" + freqStart);
     if (proxOut != null) {
       proxStart = proxOut.getFilePointer();
       // force first payload to write its length
@@ -150,6 +141,13 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   @Override
   public void setField(FieldInfo fieldInfo) {
     //System.out.println("SPW: setField");
+    /*
+    if (BlockTreeTermsWriter.DEBUG && fieldInfo.name.equals("id")) {
+      DEBUG = true;
+    } else {
+      DEBUG = false;
+    }
+    */
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.indexOptions;
     storePayloads = fieldInfo.storePayloads;
@@ -164,7 +162,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    //System.out.println("SPR:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq);
+    if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());
 
     final int delta = docID - lastDocID;
     
@@ -195,13 +193,13 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
-    //System.out.println("SPR:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
+    if (DEBUG) System.out.println("SPW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
 
     final int delta = position - lastPosition;
-
-    assert delta >= 0: "position=" + position + " lastPosition=" + lastPosition;
+    
+    assert delta >= 0: "position=" + position + " lastPosition=" + lastPosition;            // not quite right (if pos=0 is repeated twice we don't catch it)
 
     lastPosition = position;
 
@@ -228,58 +226,106 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   public void finishDoc() {
   }
 
+  private static class PendingTerm {
+    public final long freqStart;
+    public final long proxStart;
+    public final int skipOffset;
+
+    public PendingTerm(long freqStart, long proxStart, int skipOffset) {
+      this.freqStart = freqStart;
+      this.proxStart = proxStart;
+      this.skipOffset = skipOffset;
+    }
+  }
+
+  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
+
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
-    //System.out.println("SPR: finishTerm seg=" + segment);
+
+    if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
     assert stats.docFreq == df;
 
-    final boolean isFirstTerm = pendingCount == 0;
-    //System.out.println("  isFirstTerm=" + isFirstTerm);
-
-    //System.out.println("  freqFP=" + freqStart);
-    if (isFirstTerm) {
-      bytesWriter.writeVLong(freqStart);
-    } else {
-      bytesWriter.writeVLong(freqStart-lastFreqStart);
-    }
-    lastFreqStart = freqStart;
-
+    final int skipOffset;
     if (df >= skipMinimum) {
-      bytesWriter.writeVInt((int) (skipListWriter.writeSkip(freqOut)-freqStart));
+      skipOffset = (int) (skipListWriter.writeSkip(freqOut)-freqStart);
+    } else {
+      skipOffset = -1;
     }
 
-    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      //System.out.println("  proxFP=" + proxStart);
-      if (isFirstTerm) {
-        bytesWriter.writeVLong(proxStart);
-      } else {
-        bytesWriter.writeVLong(proxStart - lastProxStart);
-      }
-      lastProxStart = proxStart;
-    }
-     
+    pendingTerms.add(new PendingTerm(freqStart, proxStart, skipOffset));
+
     lastDocID = 0;
     df = 0;
-    pendingCount++;
   }
 
+  private final RAMOutputStream bytesWriter = new RAMOutputStream();
+
   @Override
-  public void flushTermsBlock() throws IOException {
-    //System.out.println("SPW: flushBlock pendingCount=" + pendingCount);
+  public void flushTermsBlock(int start, int count) throws IOException {
+    if (DEBUG) System.out.println("SPW: flushTermsBlock start=" + start + " count=" + count + " left=" + (pendingTerms.size()-count) + " pendingTerms.size()=" + pendingTerms.size());
+
+    if (count == 0) {
+      // nocommit: silly?  can we avoid this if we know
+      // block has no terms?
+      termsOut.writeByte((byte) 0);
+      return;
+    }
+
+    assert start <= pendingTerms.size();
+    assert count <= start;
+
+    final int limit = pendingTerms.size() - start + count;
+    final PendingTerm firstTerm = pendingTerms.get(limit - count);
+    // First term in block is abs coded:
+    bytesWriter.writeVLong(firstTerm.freqStart);
+
+    if (firstTerm.skipOffset != -1) {
+      assert firstTerm.skipOffset > 0;
+      bytesWriter.writeVInt(firstTerm.skipOffset);
+    }
+    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      bytesWriter.writeVLong(firstTerm.proxStart);
+    }
+    long lastFreqStart = firstTerm.freqStart;
+    long lastProxStart = firstTerm.proxStart;
+    for(int idx=limit-count+1; idx<limit; idx++) {
+      final PendingTerm term = pendingTerms.get(idx);
+      if (DEBUG) System.out.println("  write term freqStart=" + term.freqStart);
+      // The rest of the terms term are delta coded:
+      bytesWriter.writeVLong(term.freqStart - lastFreqStart);
+      lastFreqStart = term.freqStart;
+      if (term.skipOffset != -1) {
+        assert term.skipOffset > 0;
+        bytesWriter.writeVInt(term.skipOffset);
+      }
+      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        bytesWriter.writeVLong(term.proxStart - lastProxStart);
+        lastProxStart = term.proxStart;
+      }
+    }
+
     termsOut.writeVInt((int) bytesWriter.getFilePointer());
     bytesWriter.writeTo(termsOut);
     bytesWriter.reset();
-    pendingCount = 0;
+
+    // Remove the terms we just wrote:
+    pendingTerms.subList(limit-count, limit).clear();
   }
 
   @Override
   public void close() throws IOException {
-    //System.out.println("SPW: close freqOut.fp=" + freqOut.getFilePointer() + " proxOut.fp=" + proxOut.getFilePointer());
-    IOUtils.closeSafely(false, freqOut, proxOut);
+    try {
+      freqOut.close();
+    } finally {
+      if (proxOut != null) {
+        proxOut.close();
+      }
+    }
   }
 }

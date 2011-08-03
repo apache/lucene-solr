@@ -51,7 +51,7 @@ public class Test10KPulsings extends LuceneTestCase {
   /** creates a broken index with ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kPulsed -Dtests.seed=2835406743900800199:-6668246351730332054!!!! */
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1, 25, 48));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);
@@ -102,7 +102,7 @@ public class Test10KPulsings extends LuceneTestCase {
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
+    CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1, 25, 48));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     MockDirectoryWrapper dir = newFSDirectory(f);

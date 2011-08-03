@@ -1043,7 +1043,7 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public static class MockCodecProvider extends CodecProvider {
     public MockCodecProvider() {
-      StandardCodec standardCodec = new StandardCodec();
+      StandardCodec standardCodec = new StandardCodec(25, 48);
       SimpleTextCodec simpleTextCodec = new SimpleTextCodec();
       MockSepCodec mockSepCodec = new MockSepCodec();
       register(standardCodec);
@@ -1148,7 +1148,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new StandardCodec());
+      provider.register(new StandardCodec(25, 48));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(toAdd, conf);
       Document doc = new Document();
@@ -1161,7 +1161,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
+      provider.register(new PulsingCodec(1 + random.nextInt(20), 25, 48));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       try {
@@ -1182,7 +1182,7 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random));
       CodecProvider provider = new CodecProvider();
-      provider.register(new PulsingCodec(1 + random.nextInt(20)));
+      provider.register(new PulsingCodec(1 + random.nextInt(20), 25, 48));
       conf.setCodecProvider(provider);
       IndexWriter w = new IndexWriter(dir, conf);
       IndexReader indexReader = IndexReader.open(toAdd);

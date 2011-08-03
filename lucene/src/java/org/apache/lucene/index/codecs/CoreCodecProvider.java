@@ -20,10 +20,8 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.pulsingtree.PulsingTreeCodec;
 import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.standardtree.StandardTreeCodec;
 
 /**
  * A CodecProvider that registers all core codecs that ship
@@ -44,11 +42,9 @@ import org.apache.lucene.index.codecs.standardtree.StandardTreeCodec;
 
 public class CoreCodecProvider extends CodecProvider {
   public CoreCodecProvider() {
-    register(new StandardCodec());
-    register(new StandardTreeCodec(25, 48));
+    register(new StandardCodec(25, 48));
     register(new PreFlexCodec());
-    register(new PulsingCodec());
-    register(new PulsingTreeCodec(1, 25, 48));
+    register(new PulsingCodec(1, 25, 48));
     register(new SimpleTextCodec());
     register(new MemoryCodec());
   }

@@ -88,7 +88,7 @@ import org.apache.lucene.util.fst.Util;
 
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
   public static boolean DEBUG2 = false;
   public static boolean SAVE_DOT_FILES = false;
 
@@ -108,7 +108,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   final int minItemsInBlock;
   final int maxItemsInBlock;
 
-  final BlockTreePostingsWriterBase postingsWriter;
+  final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
@@ -117,7 +117,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   // nocommit should take min block size?
   public BlockTreeTermsWriter(
                               SegmentWriteState state,
-                              BlockTreePostingsWriterBase postingsWriter,
+                              PostingsWriterBase postingsWriter,
                               int minItemsInBlock,
                               int maxItemsInBlock)
     throws IOException

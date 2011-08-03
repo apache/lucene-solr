@@ -69,8 +69,15 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public Object clone() {
-      PulsingTermState clone = new PulsingTermState();
-      clone.copyFrom(this);
+      PulsingTermState clone;
+      clone = (PulsingTermState) super.clone();
+      if (postingsSize != -1) {
+        clone.postings = new byte[postingsSize];
+        System.arraycopy(postings, 0, clone.postings, 0, postingsSize);
+      } else {
+        assert wrappedTermState != null;
+        clone.wrappedTermState = (BlockTermState) wrappedTermState.clone();
+      }
       return clone;
     }
 
@@ -84,10 +91,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           postings = new byte[ArrayUtil.oversize(other.postingsSize, 1)];
         }
         System.arraycopy(other.postings, 0, postings, 0, other.postingsSize);
-      } else if (wrappedTermState != null) {
-        wrappedTermState.copyFrom(other.wrappedTermState);
       } else {
-        wrappedTermState = (BlockTermState) other.wrappedTermState.clone();
+        wrappedTermState.copyFrom(other.wrappedTermState);
       }
 
       // NOTE: we do not copy the
@@ -108,19 +113,31 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
   @Override
   public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+    //System.out.println("PR.readTermsBlock state=" + _termState);
     final PulsingTermState termState = (PulsingTermState) _termState;
     if (termState.inlinedBytes == null) {
       termState.inlinedBytes = new byte[128];
       termState.inlinedBytesReader = new ByteArrayDataInput();
     }
     int len = termsIn.readVInt();
+    //System.out.println("  len=" + len + " fp=" + termsIn.getFilePointer());
     if (termState.inlinedBytes.length < len) {
       termState.inlinedBytes = new byte[ArrayUtil.oversize(len, 1)];
     }
     termsIn.readBytes(termState.inlinedBytes, 0, len);
     termState.inlinedBytesReader.reset(termState.inlinedBytes);
-    termState.wrappedTermState.termCount = 0;
+    termState.wrappedTermState.termBlockOrd = 0;
     wrappedPostingsReader.readTermsBlock(termsIn, fieldInfo, termState.wrappedTermState);
+  }
+
+  @Override
+  public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+    final PulsingTermState termState = (PulsingTermState) _termState;
+    if (termState.inlinedBytes != null) {
+      termState.inlinedBytesReader.rewind();
+    }
+    termState.wrappedTermState.termBlockOrd = 0;
+    wrappedPostingsReader.resetTermsBlock(fieldInfo, termState.wrappedTermState);
   }
 
   @Override
@@ -140,7 +157,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     //System.out.println("  count=" + count + " threshold=" + maxPositions);
 
     if (count <= maxPositions) {
-      //System.out.println("  inlined pos=" + termState.inlinedBytesReader.getPosition());
 
       // Inlined into terms dict -- just read the byte[] blob in,
       // but don't decode it now (we only decode when a DocsEnum
@@ -154,6 +170,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       // current term block) into another byte[] (just the
       // blob for this term)...
       termState.inlinedBytesReader.readBytes(termState.postings, 0, termState.postingsSize);
+      //System.out.println("  inlined bytes=" + termState.postingsSize);
     } else {
       //System.out.println("  not inlined");
       termState.postingsSize = -1;
@@ -161,7 +178,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
       termState.wrappedTermState.docFreq = termState.docFreq;
       termState.wrappedTermState.totalTermFreq = termState.totalTermFreq;
       wrappedPostingsReader.nextTerm(fieldInfo, termState.wrappedTermState);
-      termState.wrappedTermState.termCount++;
+      termState.wrappedTermState.termBlockOrd++;
     }
   }
 
@@ -239,6 +256,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     public PulsingDocsEnum reset(Bits liveDocs, PulsingTermState termState) {
       //System.out.println("PR docsEnum termState=" + termState + " docFreq=" + termState.docFreq);
       assert termState.postingsSize != -1;
+      // nocommit -- reuse the last byte[] if we can?  or
+      // can we directly ref termState's bytes...?  dangerous?
       final byte[] bytes = new byte[termState.postingsSize];
       System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
       postings.reset(bytes);
@@ -263,6 +282,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         }
 
         final int code = postings.readVInt();
+        //System.out.println("  read code=" + code);
         if (indexOptions == IndexOptions.DOCS_ONLY) {
           docID += code;
         } else {
@@ -295,7 +315,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         }
 
         if (liveDocs == null || liveDocs.get(docID)) {
-          //System.out.println("  return docID=" + docID + " freq=" + freq);
           return docID;
         }
       }
@@ -359,7 +378,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      //System.out.println("PR.nextDoc this=" + this);
+      //System.out.println("PR d&p nextDoc this=" + this);
 
       while(true) {
         //System.out.println("  cycle skip posPending=" + posPending);
@@ -367,16 +386,15 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         skipPositions();
 
         if (postings.eof()) {
-          //System.out.println("  END");
+          //System.out.println("PR   END");
           return docID = NO_MORE_DOCS;
         }
-        //System.out.println("  read doc code");
+
         final int code = postings.readVInt();
         docID += code >>> 1;            // shift off low bit
         if ((code & 1) != 0) {          // if low bit is set
           freq = 1;                     // freq is one
         } else {
-          //System.out.println("  read freq");
           freq = postings.readVInt();     // else read freq
         }
         posPending = freq;
@@ -401,10 +419,8 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      //System.out.println("PR.advance target=" + target);
       int doc;
       while((doc=nextDoc()) != NO_MORE_DOCS) {
-        //System.out.println("  nextDoc got doc=" + doc);
         if (doc >= target) {
           return docID = doc;
         }
@@ -414,7 +430,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     @Override
     public int nextPosition() throws IOException {
-      //System.out.println("PR.nextPosition posPending=" + posPending + " vs freq=" + freq);
+      //System.out.println("PR d&p nextPosition posPending=" + posPending + " vs freq=" + freq);
       
       assert posPending > 0;
       posPending--;
@@ -424,7 +440,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
           //System.out.println("PR     skip payload=" + payloadLength);
           postings.skipBytes(payloadLength);
         }
-        //System.out.println("  read pos code");
         final int code = postings.readVInt();
         //System.out.println("PR     code=" + code);
         if ((code & 1) != 0) {
@@ -437,17 +452,16 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
         position += postings.readVInt();
       }
 
-      //System.out.println("  return pos=" + position + " hasPayload=" + !payloadRetrieved + " posPending=" + posPending + " this=" + this);
+      //System.out.println("PR d&p nextPos return pos=" + position + " this=" + this);
       return position;
     }
 
     private void skipPositions() throws IOException {
-      //System.out.println("PR.skipPositions: posPending=" + posPending);
       while(posPending != 0) {
         nextPosition();
       }
       if (storePayloads && !payloadRetrieved) {
-        //System.out.println("  skip last payload len=" + payloadLength);
+        //System.out.println("  skip payload len=" + payloadLength);
         postings.skipBytes(payloadLength);
         payloadRetrieved = true;
       }

@@ -67,12 +67,12 @@ public class BlockTermsReader extends FieldsProducer {
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
-  private final BlockTreePostingsReaderBase postingsReader;
+  private final PostingsReaderBase postingsReader;
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
   // Caches the most recently looked-up field + terms:
-  private final DoubleBarrelLRUCache<FieldAndTerm,BlockTreeTermState> termsCache;
+  private final DoubleBarrelLRUCache<FieldAndTerm,BlockTermState> termsCache;
 
   // Reads the terms index
   private TermsIndexReaderBase indexReader;
@@ -113,12 +113,12 @@ public class BlockTermsReader extends FieldsProducer {
   // nocommit
   private String segment;
   
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, BlockTreePostingsReaderBase postingsReader, IOContext context,
+  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
     throws IOException {
     
     this.postingsReader = postingsReader;
-    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTreeTermState>(termsCacheSize);
+    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
@@ -291,7 +291,7 @@ public class BlockTermsReader extends FieldsProducer {
     // Iterates through terms in this field
     private final class SegmentTermsEnum extends TermsEnum {
       private final IndexInput in;
-      private final BlockTreeTermState state;
+      private final BlockTermState state;
       private final boolean doOrd;
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
       private final TermsIndexReaderBase.FieldIndexEnum indexEnum;
@@ -574,7 +574,7 @@ public class BlockTermsReader extends FieldsProducer {
                   // Store in cache
                   decodeMetaData();
                   //System.out.println("  cache! state=" + state);
-                  termsCache.put(new FieldAndTerm(fieldTerm), (BlockTreeTermState) state.clone());
+                  termsCache.put(new FieldAndTerm(fieldTerm), (BlockTermState) state.clone());
                 }
 
                 return SeekStatus.FOUND;
@@ -721,8 +721,8 @@ public class BlockTermsReader extends FieldsProducer {
       @Override
       public void seekExact(BytesRef target, TermState otherState) throws IOException {
         //System.out.println("BTR.seekExact termState target=" + target.utf8ToString() + " " + target + " this=" + this);
-        assert otherState != null && otherState instanceof BlockTreeTermState;
-        assert !doOrd || ((BlockTreeTermState) otherState).ord < numTerms;
+        assert otherState != null && otherState instanceof BlockTermState;
+        assert !doOrd || ((BlockTermState) otherState).ord < numTerms;
         state.copyFrom(otherState);
         seekPending = true;
         indexIsCurrent = false;

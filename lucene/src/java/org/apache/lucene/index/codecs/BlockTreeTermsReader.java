@@ -64,9 +64,6 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
-// nocommit
-//   - need indexDivisor (?)
-
 // nocommit finish jdocs
 
 /*  A block-based terms index and dictionary that assigns
@@ -83,6 +80,7 @@ import org.apache.lucene.util.fst.Util;
  * index divisor when opening an IndexReader.  Instead, you
  * can change the min/maxItemsPerBlock during indexing.
  **/
+
 public class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
@@ -98,7 +96,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
-  private final BlockTreePostingsReaderBase postingsReader;
+  private final PostingsReaderBase postingsReader;
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
@@ -144,7 +142,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   private String segment;
   
   public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, String segment,
-                              BlockTreePostingsReaderBase postingsReader, IOContext ioContext,
+                              PostingsReaderBase postingsReader, IOContext ioContext,
                               int termsCacheSize, int codecId, int indexDivisor)
     throws IOException {
     
@@ -579,7 +577,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         FST.Arc<BytesRef> arc;
 
-        final BlockTreeTermState termState;
+        final BlockTermState termState;
 
         // Cumulative output so far
         BytesRef outputPrefix;
@@ -714,9 +712,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           suffix = suffixesReader.readVInt();
           startBytePos = suffixesReader.getPosition();
           suffixesReader.skipBytes(suffix);
-          // nocommit -- don't incr this for leaf!  same for
-          // main enum too... just set in decodeMetaData
-          termState.termBlockOrd++;
           return false;
         }
 
@@ -741,10 +736,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         public void decodeMetaData() throws IOException {
 
-          assert termState.termBlockOrd > 0;
-
           // lazily catch up on metadata decode:
-          final int limit = termState.termBlockOrd;
+          final int limit = isLeafBlock ? nextEnt : termState.termBlockOrd;
+          assert limit > 0;
 
           // We must set/incr state.termCount because
           // postings impl can look at this
@@ -1697,7 +1691,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public SeekStatus seekCeil(final BytesRef target, final boolean useCache) throws IOException {
-        // nocommit can this be an assert...?
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
@@ -1763,10 +1756,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           int cmp = 0;
 
-          // nocommit try reversing vLong byte order!!
-
-          // nocommit test empty string seeking when we have
-          // seek state
+          // TOOD: we should write our vLong backwards (MSB
+          // first) to get better sharing from the FST
 
           // First compare up to valid seek frames:
           while (targetUpto < targetLimit) {
@@ -1779,8 +1770,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }
             arc = arcs[1+targetUpto];
             assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-            // nocommit -- we could save the outputs in
-            // local byte[][]?
+            // TOOD: we could save the outputs in local
+            // byte[][] instead of making new objs ever
+            // seek; but, often the FST doesn't have any
+            // shared bytes (but this could change if we
+            // reverse vLong byte order)
             if (arc.output != NO_OUTPUT) {
               output = fstOutputs.add(output, arc.output);
             }
@@ -1888,7 +1882,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }
             
             // nocommit right?  or am i losing seek reuse!!
-            // what if targetUpto is 0!?
             // nocommit -- this differs from seekExact!?
             validIndexPrefix = currentFrame.prefix;
             //validIndexPrefix = targetUpto;
@@ -1971,9 +1964,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         } else {
           return result;
         }
-
-        // nocommit -- add back asserts that verify we don't
-        // scan too many blocks...
       }
 
       private void printSeekState() throws IOException {
@@ -2167,7 +2157,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
         assert clearEOF();
         if (target.compareTo(term) != 0 || !termExists) {
-          assert otherState != null && otherState instanceof BlockTreeTermState;
+          assert otherState != null && otherState instanceof BlockTermState;
           currentFrame = staticFrame;
           currentFrame.state.copyFrom(otherState);
           term.copy(target);
@@ -2255,7 +2245,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // metaData
         int metaDataUpto;
 
-        final BlockTreeTermState state;
+        final BlockTermState state;
 
         public Frame(int ord) throws IOException {
           this.ord = ord;
@@ -2362,18 +2352,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
           if (DEBUG) {
             System.out.println("      fpEnd=" + fpEnd);
           }
-
-          //blocksSinceSeek++;
-          //indexIsCurrent &= (blocksSinceSeek < indexReader.getDivisor());
-          //System.out.println("  indexIsCurrent=" +
-          //indexIsCurrent);
         }
 
         // nocommit -- maybe don't bother w/ this?  just
         // reload the block?  it's gotta be rare
         void rewind() throws IOException {
           //System.out.println("rewind");
-          //new Throwable().printStackTrace(System.out);
           // Keeps the block loaded, but rewinds its state:
           if (nextEnt > 0 || fp != fpOrig) {
             if (DEBUG) {
@@ -2401,7 +2385,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
             statsReader.rewind();
             metaDataUpto = 0;
             state.termBlockOrd = 0;
-            // nocommit: only if hasTerms?
+            // TODO: skip this if !hasTerms?  Then postings
+            // impl wouldn't have to write useless 0 byte
             postingsReader.resetTermsBlock(fieldInfo, state);
             lastSubFP = -1;
           } else if (DEBUG) {
@@ -2427,7 +2412,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           suffixesReader.readBytes(term.bytes, prefix, suffix);
           // A normal term
           termExists = true;
-          state.termBlockOrd++;
           return false;
         }
 
@@ -2536,10 +2520,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           //if (DEBUG) System.out.println("\nBTTR.decodeMetadata seg=" + segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
 
-          assert state.termBlockOrd > 0;
-
           // lazily catch up on metadata decode:
-          final int limit = state.termBlockOrd;
+          final int limit = isLeafBlock ? nextEnt : state.termBlockOrd;
+          assert limit > 0;
 
           // We must set/incr state.termCount because
           // postings impl can look at this
@@ -2638,14 +2621,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           if (nextEnt == entCount) {
             if (exactOnly) {
-              // nocommit -- don't pass these since they are
-              // instance vars now
               fillTerm();
             }
             return SeekStatus.END;
           }
 
-          // nocommit
           assert prefixMatches(target);
 
           // Loop over each entry (term or sub-block) in this block:
@@ -2774,7 +2754,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             return SeekStatus.END;
           }
 
-          // nocommit
           assert prefixMatches(target);
 
           // Loop over each entry (term or sub-block) in this block:
