@@ -13,7 +13,8 @@ $Id$
 
 ================== Release 3.4.0-dev ==============
 
-(No Changes)
+SOLR-2692: Typo in param name fixed: "carrot.fragzise" changed to 
+  "carrot.fragSize" (Stanislaw Osinski).
 
 ================== Release 3.3.0 ==================
 
