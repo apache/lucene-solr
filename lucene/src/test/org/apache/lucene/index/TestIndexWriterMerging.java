@@ -221,6 +221,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(50))
     );
 
+    writer.setInfoStream(VERBOSE ? System.out : null);
+
     Document document = new Document();
 
     document = new Document();

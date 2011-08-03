@@ -86,7 +86,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       }
       IndexWriter writer = new IndexWriter(directory, conf);
       if (VERBOSE) {
-        System.out.println("TEST: now build index");
+        System.out.println("TEST: now build index MAX_DOCS=" + MAX_DOCS);
         writer.setInfoStream(System.out);
       }
 

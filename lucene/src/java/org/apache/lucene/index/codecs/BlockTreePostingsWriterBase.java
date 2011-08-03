@@ -28,8 +28,6 @@ import org.apache.lucene.index.FieldInfo;
  */
 
 public abstract class BlockTreePostingsWriterBase extends PostingsConsumer implements Closeable {
-  // nocommit
-  //public int termID;
 
   public abstract void start(IndexOutput termsOut) throws IOException;
 

@@ -60,16 +60,16 @@ public class BlockTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tib";
 
   protected final IndexOutput out;
-  final PostingsWriterBase postingsWriter;
+  final BlockTreePostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
   private final TermsIndexWriterBase termsIndexWriter;
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
 
-  //private final String segment;
+  // private final String segment;
 
   public BlockTermsWriter(TermsIndexWriterBase termsIndexWriter,
-      SegmentWriteState state, PostingsWriterBase postingsWriter)
+      SegmentWriteState state, BlockTreePostingsWriterBase postingsWriter)
       throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
@@ -80,7 +80,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       writeHeader(out);
       currentField = null;
       this.postingsWriter = postingsWriter;
-      //segment = state.segmentName;
+      // segment = state.segmentName;
       
       //System.out.println("BTW.init seg=" + state.segmentName);
       
@@ -154,7 +154,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
-    private final PostingsWriterBase postingsWriter;
+    private final BlockTreePostingsWriterBase postingsWriter;
     private final long termsStartPointer;
     private long numTerms;
     private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
@@ -168,7 +168,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     TermsWriter(
         TermsIndexWriterBase.FieldWriter fieldIndexWriter,
         FieldInfo fieldInfo,
-        PostingsWriterBase postingsWriter) 
+        BlockTreePostingsWriterBase postingsWriter) 
     {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;
@@ -188,7 +188,7 @@ public class BlockTermsWriter extends FieldsConsumer {
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      //System.out.println("BTW.startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
+      //System.out.println("BTW: startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
       postingsWriter.startTerm();
       return postingsWriter;
     }
@@ -199,7 +199,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
       assert stats.docFreq > 0;
-      //System.out.println("BTW.finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment + " df=" + stats.docFreq);
+      //System.out.println("BTW: finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment + " df=" + stats.docFreq);
 
       final boolean isIndexTerm = fieldIndexWriter.checkIndexTerm(text, stats);
 
@@ -308,7 +308,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       bytesWriter.writeTo(out);
       bytesWriter.reset();
 
-      postingsWriter.flushTermsBlock();
+      postingsWriter.flushTermsBlock(pendingCount, pendingCount);
       lastPrevTerm.copy(pendingTerms[pendingCount-1].term);
       pendingCount = 0;
     }

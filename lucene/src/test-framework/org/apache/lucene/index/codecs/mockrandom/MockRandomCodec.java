@@ -166,7 +166,8 @@ public class MockRandomCodec extends Codec {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing BlockTree terms dict");
       }
-      BlockTreePostingsWriterBase postingsWriter = new StandardTreePostingsWriter(state);
+      // nocommit randomize that skipInterval:
+      BlockTreePostingsWriterBase postingsWriter = new StandardTreePostingsWriter(state, 16);
 
       if (random.nextBoolean()) {
         final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
@@ -195,14 +196,14 @@ public class MockRandomCodec extends Codec {
         System.out.println("MockRandomCodec: writing Block terms dict");
       }
 
-      PostingsWriterBase postingsWriter;
+      BlockTreePostingsWriterBase postingsWriter;
       if (random.nextBoolean()) {
         postingsWriter = new SepPostingsWriterImpl(state, new MockIntStreamFactory(random), skipInterval);
       } else {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: writing Standard postings");
         }
-        postingsWriter = new StandardPostingsWriter(state, skipInterval);
+        postingsWriter = new StandardTreePostingsWriter(state, skipInterval);
       }
 
       if (random.nextBoolean()) {
@@ -210,7 +211,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsWriter = new PulsingPostingsWriterImpl(totTFCutoff, postingsWriter);
+        postingsWriter = new PulsingTreePostingsWriter(totTFCutoff, postingsWriter);
       }
 
       boolean success = false;
@@ -256,8 +257,8 @@ public class MockRandomCodec extends Codec {
               };
           }
           indexWriter = new VariableGapTermsIndexWriter(state, selector);
-          success = true;
         }
+        success = true;
       } finally {
         if (!success) {
           postingsWriter.close();
@@ -340,7 +341,10 @@ public class MockRandomCodec extends Codec {
       }
     } else {
 
-      PostingsReaderBase postingsReader;
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockRandomCodec: reading Block terms dict");
+      }
+      BlockTreePostingsReaderBase postingsReader;
 
       if (random.nextBoolean()) {
         postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
@@ -349,7 +353,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: reading Standard postings");
         }
-        postingsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+        postingsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
       }
 
       if (random.nextBoolean()) {
@@ -357,7 +361,7 @@ public class MockRandomCodec extends Codec {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
         }
-        postingsReader = new PulsingPostingsReaderImpl(postingsReader);
+        postingsReader = new PulsingTreePostingsReader(postingsReader);
       }
 
       final TermsIndexReaderBase indexReader;

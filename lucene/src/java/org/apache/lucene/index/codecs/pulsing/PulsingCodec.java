@@ -25,11 +25,13 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
+import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsWriter;
+import org.apache.lucene.index.codecs.pulsingtree.PulsingTreePostingsReader;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
@@ -41,6 +43,7 @@ import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreeCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -87,11 +90,11 @@ public class PulsingCodec extends Codec {
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // We wrap StandardPostingsWriter, but any StandardPostingsWriter
     // will work:
-    PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
+    BlockTreePostingsWriterBase docsWriter = new StandardTreePostingsWriter(state);
 
     // Terms that have <= freqCutoff number of docs are
     // "pulsed" (inlined):
-    PostingsWriterBase pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
+    BlockTreePostingsWriterBase pulsingWriter = new PulsingTreePostingsWriter(freqCutoff, docsWriter);
 
     // Terms dict index
     TermsIndexWriterBase indexWriter;
@@ -123,8 +126,8 @@ public class PulsingCodec extends Codec {
 
     // We wrap StandardPostingsReader, but any StandardPostingsReader
     // will work:
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
-    PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
+    BlockTreePostingsReaderBase docsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    BlockTreePostingsReaderBase pulsingReader = new PulsingTreePostingsReader(docsReader);
 
     // Terms dict index reader
     TermsIndexReaderBase indexReader;
@@ -167,7 +170,7 @@ public class PulsingCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, id, files);
+    StandardTreePostingsReader.files(dir, segmentInfo, id, files);
     BlockTermsReader.files(dir, segmentInfo, id, files);
     VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
@@ -175,7 +178,7 @@ public class PulsingCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    StandardCodec.getStandardExtensions(extensions);
+    StandardTreeCodec.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
   

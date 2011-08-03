@@ -32,11 +32,11 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.standardtree.StandardTreeCodec;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
@@ -63,7 +63,7 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
           throws IOException {
-    PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
+    BlockTreePostingsWriterBase docsWriter = new StandardTreePostingsWriter(state);
     boolean success = false;
     AppendingTermsIndexWriter indexWriter = null;
     try {
@@ -93,7 +93,7 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    BlockTreePostingsReaderBase docsReader = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
@@ -116,7 +116,7 @@ public class AppendingCodec extends Codec {
               state.dir, state.fieldInfos, state.segmentInfo.name,
               docsReader,
               state.context,
-              StandardCodec.TERMS_CACHE_SIZE,
+              StandardTreeCodec.TERMS_CACHE_SIZE,
               state.codecId);
       success = true;
       return ret;
@@ -134,7 +134,7 @@ public class AppendingCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files)
           throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, codecId, files);
+    StandardTreePostingsReader.files(dir, segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
@@ -142,7 +142,7 @@ public class AppendingCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    StandardCodec.getStandardExtensions(extensions);
+    StandardTreeCodec.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
   

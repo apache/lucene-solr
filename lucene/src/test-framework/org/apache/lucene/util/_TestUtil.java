@@ -154,7 +154,7 @@ public class _TestUtil {
   public static CheckIndex.Status checkIndex(Directory dir, CodecProvider codecs) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos));
+    checker.setInfoStream(new PrintStream(bos), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null, codecs);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");

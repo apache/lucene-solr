@@ -58,12 +58,13 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */
-  final int skipInterval = 16;
+  static final int DEFAULT_SKIP_INTERVAL = 16;
+  final int skipInterval;
   
   /**
    * Expert: minimum docFreq to write any skip data at all
    */
-  final int skipMinimum = skipInterval;
+  final int skipMinimum;
 
   /** Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
@@ -85,7 +86,13 @@ public final class StandardTreePostingsWriter extends BlockTreePostingsWriterBas
   private String segment;
 
   public StandardTreePostingsWriter(SegmentWriteState state) throws IOException {
+    this(state, DEFAULT_SKIP_INTERVAL);
+  }
+  
+  public StandardTreePostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
     super();
+    this.skipInterval = skipInterval;
+    this.skipMinimum = skipInterval; /* set to the same for now */
     this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardTreeCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);

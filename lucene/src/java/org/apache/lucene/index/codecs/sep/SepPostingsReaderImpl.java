@@ -27,8 +27,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.codecs.BlockTermState;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTreeTermState;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -48,7 +48,7 @@ import org.apache.lucene.util.CodecUtil;
 // create two separate docs readers, one that also reads
 // prox and one that doesn't?
 
-public class SepPostingsReaderImpl extends PostingsReaderBase {
+public class SepPostingsReaderImpl extends BlockTreePostingsReaderBase {
 
   final IntIndexInput freqIn;
   final IntIndexInput docIn;
@@ -141,7 +141,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
     }
   }
 
-  private static final class SepTermState extends BlockTermState {
+  private static final class SepTermState extends BlockTreeTermState {
     // We store only the seek point to the docs file because
     // the rest of the info (freqIndex, posIndex, etc.) is
     // stored in the docs file:
@@ -153,6 +153,9 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
 
     // Only used for "primary" term state; these are never
     // copied on clone:
+    // nocommit: messy -- shouldn't this bytes/bytesReader
+    // live outside?  dangerous that they are here since we
+    // may cache them...
     byte[] bytes;
     ByteArrayDataInput bytesReader;
 
@@ -201,7 +204,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public BlockTermState newTermState() throws IOException {
+  public BlockTreeTermState newTermState() throws IOException {
     final SepTermState state = new SepTermState();
     state.docIndex = docIn.index();
     if (freqIn != null) {
@@ -214,10 +217,11 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+  public void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
+    //System.out.println("SEPR: readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
     final int len = termsIn.readVInt();
-    //System.out.println("SepR.readTermsBlock len=" + len);
+    //System.out.println("  numBytes=" + len);
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
       termState.bytesReader = new ByteArrayDataInput(termState.bytes);
@@ -229,32 +233,40 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
+  public void resetTermsBlock(FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
+    //System.out.println("SEPR.resetTermsBlock ts=" + _termState);
     final SepTermState termState = (SepTermState) _termState;
-    //System.out.println("SepR.nextTerm termCount=" + termState.termCount);
+    assert termState.bytes != null;
+    termState.bytesReader.rewind();
+  }
+
+  @Override
+  public void nextTerm(FieldInfo fieldInfo, BlockTreeTermState _termState) throws IOException {
+    final SepTermState termState = (SepTermState) _termState;
+    final boolean isFirstTerm = termState.termBlockOrd == 0;
+    //System.out.println("SEPR.nextTerm termCount=" + termState.termBlockOrd + " isFirstTerm=" + isFirstTerm + " bytesReader.pos=" + termState.bytesReader.getPosition());
     //System.out.println("  docFreq=" + termState.docFreq);
-    final boolean isFirstTerm = termState.termCount == 0;
     termState.docIndex.read(termState.bytesReader, isFirstTerm);
     //System.out.println("  docIndex=" + termState.docIndex);
     if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
       termState.freqIndex.read(termState.bytesReader, isFirstTerm);
-    }
-    
-    if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      //System.out.println("  freqIndex=" + termState.freqIndex);
-      termState.posIndex.read(termState.bytesReader, isFirstTerm);
-      //System.out.println("  posIndex=" + termState.posIndex);
-      if (fieldInfo.storePayloads) {
-        if (isFirstTerm) {
-          termState.payloadFP = termState.bytesReader.readVLong();
-        } else {
-          termState.payloadFP += termState.bytesReader.readVLong();
+      if (fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        //System.out.println("  freqIndex=" + termState.freqIndex);
+        termState.posIndex.read(termState.bytesReader, isFirstTerm);
+        //System.out.println("  posIndex=" + termState.posIndex);
+        if (fieldInfo.storePayloads) {
+          if (isFirstTerm) {
+            termState.payloadFP = termState.bytesReader.readVLong();
+          } else {
+            termState.payloadFP += termState.bytesReader.readVLong();
+          }
+          //System.out.println("  payloadFP=" + termState.payloadFP);
         }
-        //System.out.println("  payloadFP=" + termState.payloadFP);
       }
     }
+
     if (termState.docFreq >= skipMinimum) {
-      //System.out.println("   readSkip @ " + termState.bytesReader.pos);
+      //System.out.println("   readSkip @ " + termState.bytesReader.getPosition());
       if (isFirstTerm) {
         termState.skipFP = termState.bytesReader.readVLong();
       } else {
@@ -267,7 +279,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public DocsEnum docs(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
+  public DocsEnum docs(FieldInfo fieldInfo, BlockTreeTermState _termState, Bits liveDocs, DocsEnum reuse) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     SepDocsEnum docsEnum;
     if (reuse == null || !(reuse instanceof SepDocsEnum)) {
@@ -286,7 +298,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTreeTermState _termState, Bits liveDocs, DocsAndPositionsEnum reuse) throws IOException {
     assert fieldInfo.indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     final SepTermState termState = (SepTermState) _termState;
     SepDocsAndPositionsEnum postingsEnum;
@@ -656,6 +668,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           // Skipper did move
           skipper.getFreqIndex().seek(freqReader);
           skipper.getDocIndex().seek(docReader);
+          //System.out.println("  doc seek'd to " + skipper.getDocIndex());
           // NOTE: don't seek pos here; do it lazily
           // instead.  Eg a PhraseQuery may skip to many
           // docs before finally asking for positions...

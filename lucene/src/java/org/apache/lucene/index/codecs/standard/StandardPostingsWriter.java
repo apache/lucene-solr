@@ -24,12 +24,13 @@ import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.TermStats;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
@@ -80,7 +81,9 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   private int pendingCount;
 
-  //private String segment;
+  // nocommit
+  private String segment;
+  private Directory dir;
 
   private RAMOutputStream bytesWriter = new RAMOutputStream();
 
@@ -91,9 +94,11 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   public StandardPostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
-    //this.segment = state.segmentName;
+    this.segment = state.segmentName;
+    this.dir = state.directory;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
+    //System.out.println("SPW: init freqFileName=" + fileName + " freqOut=" + freqOut);
     boolean success = false;
     try {
       if (state.fieldInfos.hasProx()) {
@@ -110,6 +115,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
       
       skipListWriter = new DefaultSkipListWriter(skipInterval, maxSkipLevels,
           state.numDocs, freqOut, proxOut);
+      //System.out.println("  success");
       success = true;
     } finally {
       if (!success) {
@@ -129,8 +135,8 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void startTerm() {
-    //System.out.println("StandardW: startTerm seg=" + segment + " pendingCount=" + pendingCount);
     freqStart = freqOut.getFilePointer();
+    //System.out.println("SPR: startTerm seg=" + segment + " pendingCount=" + pendingCount + " freqStart=" + freqStart);
     if (proxOut != null) {
       proxStart = proxOut.getFilePointer();
       // force first payload to write its length
@@ -158,7 +164,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    //System.out.println("StandardW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq);
+    //System.out.println("SPR:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq);
 
     final int delta = docID - lastDocID;
     
@@ -189,7 +195,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   /** Add a new position & payload */
   @Override
   public void addPosition(int position, BytesRef payload) throws IOException {
-    //System.out.println("StandardW:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
+    //System.out.println("SPR:     addPos pos=" + position + " payload=" + (payload == null ? "null" : (payload.length + " bytes")) + " proxFP=" + proxOut.getFilePointer());
     assert indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS: "invalid indexOptions: " + indexOptions;
     assert proxOut != null;
 
@@ -225,7 +231,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
-    //System.out.println("StandardW.finishTerm seg=" + segment);
+    //System.out.println("SPR: finishTerm seg=" + segment);
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -264,7 +270,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void flushTermsBlock() throws IOException {
-    //System.out.println("SPW.flushBlock pendingCount=" + pendingCount);
+    //System.out.println("SPW: flushBlock pendingCount=" + pendingCount);
     termsOut.writeVInt((int) bytesWriter.getFilePointer());
     bytesWriter.writeTo(termsOut);
     bytesWriter.reset();
@@ -273,6 +279,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
+    //System.out.println("SPW: close freqOut.fp=" + freqOut.getFilePointer() + " proxOut.fp=" + proxOut.getFilePointer());
     IOUtils.closeSafely(false, freqOut, proxOut);
   }
 }

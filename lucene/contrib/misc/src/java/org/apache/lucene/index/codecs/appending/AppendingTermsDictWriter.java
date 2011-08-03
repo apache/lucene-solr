@@ -20,7 +20,7 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.store.IndexOutput;
@@ -30,7 +30,7 @@ public class AppendingTermsDictWriter extends BlockTermsWriter {
   final static String CODEC_NAME = "APPENDING_TERMS_DICT";
 
   public AppendingTermsDictWriter(TermsIndexWriterBase indexWriter,
-                                  SegmentWriteState state, PostingsWriterBase postingsWriter)
+                                  SegmentWriteState state, BlockTreePostingsWriterBase postingsWriter)
     throws IOException {
     super(indexWriter, state, postingsWriter);
   }

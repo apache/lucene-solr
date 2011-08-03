@@ -30,8 +30,10 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsWriter;
+import org.apache.lucene.index.codecs.standardtree.StandardTreePostingsReader;
 import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
@@ -51,7 +53,7 @@ public class StandardCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new StandardPostingsWriter(state);
+    BlockTreePostingsWriterBase docs = new StandardTreePostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
@@ -88,7 +90,7 @@ public class StandardCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
+    BlockTreePostingsReaderBase postings = new StandardTreePostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;

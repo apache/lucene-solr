@@ -33,8 +33,8 @@ import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTreePostingsWriterBase;
 import org.apache.lucene.index.codecs.BlockTermsReader;
 import org.apache.lucene.index.codecs.BlockTermsWriter;
 import org.apache.lucene.index.codecs.TermsIndexReaderBase;
@@ -60,7 +60,7 @@ public class MockSepCodec extends Codec {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
 
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockSingleIntFactory());
+    BlockTreePostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockSingleIntFactory());
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -92,7 +92,7 @@ public class MockSepCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
+    BlockTreePostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo,
         state.context, new MockSingleIntFactory(), state.codecId);
 
     TermsIndexReaderBase indexReader;

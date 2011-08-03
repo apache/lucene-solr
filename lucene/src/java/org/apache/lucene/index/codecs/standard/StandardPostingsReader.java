@@ -51,12 +51,14 @@ public class StandardPostingsReader extends PostingsReaderBase {
   int maxSkipLevels;
   int skipMinimum;
 
-  //private String segment;
+  // nocommit
+  private String segment;
 
   public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext context, int codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            context);
-    //this.segment = segmentInfo.name;
+    this.segment = segmentInfo.name;
+    //System.out.println("SPR: init freqIn.length=" + freqIn.length() + " fname=" + IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
@@ -181,7 +183,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
     //System.out.println("  dF=" + termState.docFreq);
     //System.out.println("  freqFP=" + termState.freqOffset);
-    assert termState.freqOffset < freqIn.length();
+    assert termState.freqOffset < freqIn.length(): "seg=" + segment + " freqOffset=" + termState.freqOffset + " >= freqIn.length=" + freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();

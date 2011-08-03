@@ -17,6 +17,7 @@ package org.apache.lucene.index.codecs;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -76,7 +77,12 @@ import org.apache.lucene.util.fst.Util;
  *  #seekExact} is often able to determine a term cannot
  *  exist without doing any IO.  Note that this terms
  *  dictionary has it's own fixed terms index (ie, it does
- *  not support a pluggable terms index). */
+ *  not support a pluggable terms index).
+ *
+ * <p><b>NOTE</b>: this terms dictionary does not support
+ * index divisor when opening an IndexReader.  Instead, you
+ * can change the min/maxItemsPerBlock during indexing.
+ **/
 public class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
@@ -295,8 +301,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
-  // nocommit -- have CheckIndex run this:
-  public static class BlockTreeStats {
+  public static class Stats {
     public int indexNodeCount;
     public int indexArcCount;
     public int indexNumBytes;
@@ -326,7 +331,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     public final String segment;
     public final String field;
 
-    public BlockTreeStats(String segment, String field) {
+    public Stats(String segment, String field) {
       this.segment = segment;
       this.field = field;
     }
@@ -380,8 +385,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
       assert totalBlockCount == mixedBlockCount + termsOnlyBlockCount + subBlocksOnlyBlockCount: "totalBlockCount=" + totalBlockCount + " mixedBlockCount=" + mixedBlockCount + " subBlocksOnlyBlockCount=" + subBlocksOnlyBlockCount + " termsOnlyBlockCount=" + termsOnlyBlockCount;
     }
 
-    public void print(PrintStream out) {
-      out.println("BlockTree stats for segment=" + segment + " field=" + field);
+    @Override
+    public String toString() {
+      final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+      final PrintStream out = new PrintStream(bos);
+      
       out.println("  index FST:");
       out.println("    " + indexNodeCount + " nodes");
       out.println("    " + indexArcCount + " arcs");
@@ -412,19 +420,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
         assert totalBlockCount == total;
       }
+
+      return bos.toString();
     }
   }
-
-  //private static int framePushCount;
-
-  // nocommit -- in block header we could record that block
-  // has no sub-blocks (is a "leaf" block) and specialize
-  // decodes, eg don't flag each entry
 
   final Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
   final BytesRef NO_OUTPUT = fstOutputs.getNoOutput();
 
-  private class FieldReader extends Terms implements Closeable {
+  public final class FieldReader extends Terms implements Closeable {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
@@ -466,19 +470,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
           System.out.println("FST INDEX: SAVED to " + dotFileName);
           w.close();
         }
-
-        // nocommit -- impl terms index divisor (how!?)
       }
+    }
 
-      // nocommit
-      if (false && fieldInfo.name.equals("body")) {
-        Automaton a = new RegExp("fa[mpty].*").toAutomaton();
-        CompiledAutomaton ca = new CompiledAutomaton(a, SpecialOperations.isFinite(a));
-        TermsEnum te = intersect(ca, null);
-        while(te.next() != null) {
-          System.out.println("m: " + te.term().utf8ToString());
-        }
-      }
+    /** For debugging */
+    public Stats computeStats() throws IOException {
+      return new SegmentTermsEnum().computeBlockStats();
     }
 
     @Override
@@ -522,8 +519,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     // NOTE: cannot seek!
     private final class IntersectEnum extends TermsEnum {
       private final IndexInput in;
-
-      // nocommit -- I don't need the index!?
 
       private Frame[] stack;
       
@@ -598,9 +593,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           termState.totalTermFreq = -1;
         }
 
-        // nocommit -- skip whole floor blocks if the min of
-        // current transition is after current floor block
-
         void loadNextFloorBlock() throws IOException {
           assert numFollowFloorBlocks > 0;
           if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
@@ -655,7 +647,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               // first block in case it has empty suffix:
               if (!runAutomaton.isAccept(state)) {
                 // Maybe skip floor blocks:
-                // nocommit
                 while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
                   final long code2 = floorDataReader.readVLong();
                   fp = fpOrig + (code2 >>> 1);
@@ -709,7 +700,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           }
         }
 
-        // nocommit -- maybe add a scanToLabel?
+        // TODO: maybe add scanToLabel; should give perf boost
 
         public boolean next() {
           return isLeafBlock ? nextLeaf() : nextNonLeaf();
@@ -1216,9 +1207,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       /** Runs next() through the entire terms dict,
        *  computing aggregate statistics. */
-      public BlockTreeStats computeBlockStats() throws IOException {
+      public Stats computeBlockStats() throws IOException {
 
-        BlockTreeStats stats = new BlockTreeStats(segment, fieldInfo.name);
+        Stats stats = new Stats(segment, fieldInfo.name);
         if (index != null) {
           stats.indexNodeCount = index.getNodeCount();
           stats.indexArcCount = index.getArcCount();
@@ -2365,13 +2356,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // nocommit: only if hasTerms?
           postingsReader.readTermsBlock(in, fieldInfo, state);
 
-          if (!isLastInFloor) {
-            // Sub-blocks of a single floor block are always
-            // written one after another -- tail recurse:
-            fpEnd = in.getFilePointer();
-            //if (DEBUG) {
-            //System.out.println("      fpEnd=" + fpEnd);
-            //}
+          // Sub-blocks of a single floor block are always
+          // written one after another -- tail recurse:
+          fpEnd = in.getFilePointer();
+          if (DEBUG) {
+            System.out.println("      fpEnd=" + fpEnd);
           }
 
           //blocksSinceSeek++;

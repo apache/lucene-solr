@@ -10,8 +10,6 @@ run Test2BTerms!!
 
 test if cutting over prefix query to .intersect is faster
 
-hmm: maybe switch PKLookupTask to intersect!?  do we have fast string builder?
-
 "upgrade" postings reader/writer API to match block tree; then non-tree codec uses it too and we only need 1 impl of each postings
 
 what to do about short terms that "force" a block to mark itself has hasTerms!!??
@@ -22,19 +20,15 @@ what to do about short terms that "force" a block to mark itself has hasTerms!!?
 
 try forcing no hasTerms if depth < 2?
 
-hmm -- fix DOT when there are multiple outputs!?  oh, maybe not -- it just works?
-
 automaton q should apply maxlength test on each scan'd term
 
 intersect should use suffix ref
 
 maybe blocks should NOT store sub-block pointers?  it's reudundant w/ the index...
 
-make a blocking policy that achieves burst trie, ie, all terms are in leaf blocks
-  - need special handling for terms that are fully present in the index?
-  - this should be good for "packed" PKs?  hmm, only first "clean" index written...
-
 LATER:
+  - hmm: maybe switch PKLookupTask to intersect!?  do we have fast string builder?
+  - hmm -- fix DOT when there are multiple outputs!?  oh, maybe not -- it just works?
   - maybe we should provide a "terms dict rewriter" tool?  ie can rewrite terms dict w/ new settings after segment was already created
   - intersect
     - can have a "allow terms out of order" mode... eg w/ the IntersectedTermsEnum?  that could be HUGE gain
