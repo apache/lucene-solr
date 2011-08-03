@@ -264,7 +264,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     SolrQueryRequest req = null;
     String[] snippetFieldAry = null;
-    if (produceSummary == true) {
+    if (produceSummary) {
       highlighter = HighlightComponent.getHighlighter(core);
       if (highlighter != null){
         Map<String, Object> args = Maps.newHashMap();

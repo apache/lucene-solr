@@ -58,14 +58,52 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   @Test
   public void testProduceSummary() throws Exception {
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-    solrParams.add(CarrotParams.SUMMARY_FRAGSIZE, "200");//how do we validate this?
+    // We'll make two queries, one with- and another one without summary
+    // and assert that documents are shorter when highlighter is in use.
+    final List<NamedList<Object>> noSummaryClusters = clusterWithHighlighting(false, 80);
+    final List<NamedList<Object>> summaryClusters = clusterWithHighlighting(true, 80);
+
+    assertEquals("Equal number of clusters", noSummaryClusters.size(), summaryClusters.size());
+    for (int i = 0; i < noSummaryClusters.size(); i++) {
+      assertTrue("Summary shorter than original document", 
+          getLabels(noSummaryClusters.get(i)).get(1).length() > 
+          getLabels(summaryClusters.get(i)).get(1).length()); 
+    }
+  }
+  
+  @Test
+  public void testSummaryFragSize() throws Exception {
+    // We'll make two queries, one short summaries and another one with longer
+    // summaries and will check that the results differ.
+    final List<NamedList<Object>> shortSummaryClusters = clusterWithHighlighting(true, 30);
+    final List<NamedList<Object>> longSummaryClusters = clusterWithHighlighting(true, 80);
     
-  	// Note: the expected number of clusters may change after upgrading Carrot2
-  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
-    final int expectedNumClusters = 15;
-    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, expectedNumClusters, new TermQuery(new Term("snippet", "mine")), solrParams);
+    assertEquals("Equal number of clusters", shortSummaryClusters.size(), longSummaryClusters.size());
+    for (int i = 0; i < shortSummaryClusters.size(); i++) {
+      assertTrue("Summary shorter than original document", 
+          getLabels(shortSummaryClusters.get(i)).get(1).length() < 
+      getLabels(longSummaryClusters.get(i)).get(1).length()); 
+    }
+  }
+
+  private List<NamedList<Object>> clusterWithHighlighting(
+      boolean enableHighlighting, int fragSize) throws IOException {
+    
+    final TermQuery query = new TermQuery(new Term("snippet", "mine"));
+    // Two documents don't have mining in the snippet
+    int expectedNumDocuments = numberOfDocs - 2;
+
+    final ModifiableSolrParams summaryParams = new ModifiableSolrParams();
+    summaryParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+    summaryParams.add(CarrotParams.PRODUCE_SUMMARY,
+        Boolean.toString(enableHighlighting));
+    summaryParams
+        .add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(fragSize));
+    final List<NamedList<Object>> summaryClusters = checkEngine(
+        getClusteringEngine("echo"), expectedNumDocuments,
+        expectedNumDocuments, query, summaryParams);
+    
+    return summaryClusters;
   }
 
   @Test
@@ -227,7 +265,6 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       assertEquals("docList size", expectedNumDocs, docList.matches());
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add(CarrotParams.PRODUCE_SUMMARY, "true");
       solrParams.add(clusteringParams);
 
       // Perform clustering

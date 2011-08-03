@@ -397,6 +397,10 @@
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
     </lst>
     <lst name="engine">
+      <str name="name">echo</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
       <str name="name">lexical-resource-check</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
     </lst>
