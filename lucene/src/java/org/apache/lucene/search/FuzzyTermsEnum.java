@@ -156,10 +156,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
   /** initialize levenshtein DFAs up to maxDistance, if possible */
   private List<CompiledAutomaton> initAutomata(int maxDistance) {
-    // nocommit -- is this called multiple times per query!?
-    // it shouldn't be, its getting this list from the attribute,
-    // which preserves the CAs across segments (only Uwe really knows if it works)
     final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
+    //System.out.println("cached automata size: " + runAutomata.size());
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
@@ -167,6 +165,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
       for (int i = runAutomata.size(); i <= maxDistance; i++) {
         Automaton a = builder.toAutomaton(i);
+        //System.out.println("compute automaton n=" + i);
         // constant prefix
         if (realPrefixLength > 0) {
           Automaton prefix = BasicAutomata.makeString(
