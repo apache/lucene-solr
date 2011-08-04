@@ -42,9 +42,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
-import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.automaton.SpecialOperations;
 
@@ -70,16 +70,16 @@ public class TestTermsEnum2 extends LuceneTestCase {
     Field field = newField("field", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(field);
     terms = new TreeSet<BytesRef>();
-    termsAutomaton = new Automaton();
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = _TestUtil.randomUnicodeString(random);
       field.setValue(s);
       terms.add(new BytesRef(s));
-      termsAutomaton = BasicOperations.union(termsAutomaton, BasicAutomata.makeString(s));
       writer.addDocument(doc);
     }
+    
+    termsAutomaton = DaciukMihovAutomatonBuilder.build(terms);
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
@@ -98,7 +98,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      Automaton alternate = BasicOperations.intersection(termsAutomaton, automaton);
+      Automaton alternate = BasicOperations.intersection(automaton, termsAutomaton);
       AutomatonQuery a1 = new AutomatonQuery(new Term("field", ""), automaton);
       AutomatonQuery a2 = new AutomatonQuery(new Term("field", ""), alternate);
       CheckHits.checkEqual(a1, searcher.search(a1, 25).scoreDocs, searcher.search(a2, 25).scoreDocs);
@@ -157,11 +157,12 @@ public class TestTermsEnum2 extends LuceneTestCase {
       CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton));
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
       Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
-      Automaton actual = new Automaton();
+      TreeSet<BytesRef> found = new TreeSet<BytesRef>();
       while (te.next() != null) {
-        actual = BasicOperations.union(actual, BasicAutomata.makeString(te.term().utf8ToString()));
+        found.add(new BytesRef(te.term()));
       }
       
+      Automaton actual = DaciukMihovAutomatonBuilder.build(found);     
       assertTrue(BasicOperations.sameLanguage(expected, actual));
     }
   }
