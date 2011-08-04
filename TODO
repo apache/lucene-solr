@@ -9,8 +9,6 @@ perf tests:
       Indexer: net bytes indexed 9635556306
       Indexer: 30.824156883707392 GB/hour plain text
 
-  - make sure perf isn't (much?) worse if codec doesn't implement intersect, compared to today!!
-    -- benchmark preflex
   - test perf on single seg index too!
   - try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
   - run fuzzy q under profiler

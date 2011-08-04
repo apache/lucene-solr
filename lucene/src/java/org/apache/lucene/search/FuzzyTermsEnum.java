@@ -333,8 +333,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
       termRef = new BytesRef(term.text());
     }
 
-    // nocommit -- benchmark this:
-
     /** finds the smallest Lev(n) DFA that accepts the term. */
     @Override
     protected AcceptStatus accept(BytesRef term) {    
