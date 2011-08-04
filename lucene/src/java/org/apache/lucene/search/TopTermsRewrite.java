@@ -139,6 +139,9 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
     // nocommit -- how come I see 2 seekExacts for the same
     // term in a row in the terms dict, around here...?
+    
+    // could this be if we are using a non-intersect() capable terms impl (e.g. preflex)
+    // that its the off-by-one regarding 'start term' ? are we seeking backwards!!!!!!
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes);
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;

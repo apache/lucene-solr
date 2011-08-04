@@ -333,13 +333,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       termRef = new BytesRef(term.text());
     }
 
-    // nocommit -- we lost the more efficient (always seek)
-    // accept for FuzzyTermsEnum in Terms.intersect!  so on
-    // non-intersect-capable terms dicts this is slower?
-
-    // Yes: this is totally broken. It never seeks ever for e.g. preflex
-    
-    // maybe we stuff a hint (boolean alwaysSeek) into CA?
+    // nocommit -- benchmark this:
 
     /** finds the smallest Lev(n) DFA that accepts the term. */
     @Override
@@ -347,36 +341,34 @@ public final class FuzzyTermsEnum extends TermsEnum {
       //System.out.println("AFTE.accept term=" + term);
       int ed = matchers.length - 1;
       
-      if (matches(term, ed)) { // we match the outer dfa
-        // now compute exact edit distance
-        while (ed > 0) {
-          if (matches(term, ed - 1)) {
-            ed--;
-          } else {
-            break;
-          }
+      // we are wrapping either an intersect() TermsEnum or an AutomatonTermsENum,
+      // so we know the outer DFA always matches.
+      // now compute exact edit distance
+      while (ed > 0) {
+        if (matches(term, ed - 1)) {
+          ed--;
+        } else {
+          break;
         }
-        //System.out.println("CHECK term=" + term.utf8ToString() + " ed=" + ed);
-        
-        // scale to a boost and return (if similarity > minSimilarity)
-        if (ed == 0) { // exact match
-          boostAtt.setBoost(1.0F);
+      }
+      //System.out.println("CHECK term=" + term.utf8ToString() + " ed=" + ed);
+      
+      // scale to a boost and return (if similarity > minSimilarity)
+      if (ed == 0) { // exact match
+        boostAtt.setBoost(1.0F);
+        //System.out.println("  yes");
+        return AcceptStatus.YES;
+      } else {
+        final int codePointCount = UnicodeUtil.codePointCount(term);
+        final float similarity = 1.0f - ((float) ed / (float) 
+            (Math.min(codePointCount, termLength)));
+        if (similarity > minSimilarity) {
+          boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
           //System.out.println("  yes");
           return AcceptStatus.YES;
         } else {
-          final int codePointCount = UnicodeUtil.codePointCount(term);
-          final float similarity = 1.0f - ((float) ed / (float) 
-                                           (Math.min(codePointCount, termLength)));
-          if (similarity > minSimilarity) {
-            boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
-            //System.out.println("  yes");
-            return AcceptStatus.YES;
-          } else {
-            return AcceptStatus.NO;
-          }
+          return AcceptStatus.NO;
         }
-      } else {
-        return AcceptStatus.NO;
       }
     }
     
