@@ -348,6 +348,16 @@ public class Builder<T> {
     add(scratchIntsRef, output);
   }
 
+  // for debugging
+  private String toString(BytesRef b) {
+    final String s;
+    try {
+      return b.utf8ToString() + " " + b;
+    } catch (Throwable t) {
+      return b.toString();
+    }
+  }
+
   /** It's OK to add the same input twice in a row with
    *  different outputs, as long as outputs impls the merge
    *  method. */
@@ -361,9 +371,9 @@ public class Builder<T> {
       b.length = input.length;
       if (DEBUG) {
         if (output == NO_OUTPUT) {
-          System.out.println("\nFST ADD: input=" + b.utf8ToString() + " " + b);
+          System.out.println("\nFST ADD: input=" + toString(b) + " " + b);
         } else {
-          System.out.println("\nFST ADD: input=" + b.utf8ToString() + " " + b + " output=" + fst.outputs.outputToString(output));
+          System.out.println("\nFST ADD: input=" + toString(b) + " " + b + " output=" + fst.outputs.outputToString(output));
         }
       }
       //System.out.println("  " + b.utf8ToString() + " dnp=" + doNotPrune);

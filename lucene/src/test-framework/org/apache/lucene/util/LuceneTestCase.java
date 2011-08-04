@@ -352,8 +352,7 @@ public abstract class LuceneTestCase extends Assert {
   private static List<String> testClassesRun = new ArrayList<String>();
 
   private static void initRandom() {
-    // nocommit
-    //assert !random.initialized;
+    assert !random.initialized;
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     random.initialized = true;
@@ -1434,10 +1433,10 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
-      // nocommit
-      initRandom();
       if (testMethods != null)
         return testMethods;
+
+      initRandom();
       
       Random r = new Random(random.nextLong());
 

@@ -75,6 +75,9 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
   }
 
   public void assertFromTestData(int codePointTable[]) throws Exception {
+    if (VERBOSE) {
+      System.out.println("TEST: codePointTable=" + codePointTable);
+    }
     InputStream stream = getClass().getResourceAsStream("fuzzyTestData.txt");
     BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
     
@@ -83,6 +86,8 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
+
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
     
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
@@ -95,6 +100,9 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     
     IndexReader r = writer.getReader();
     IndexSearcher searcher = newSearcher(r);
+    if (VERBOSE) {
+      System.out.println("TEST: searcher=" + searcher);
+    }
     writer.close();
     String line;
     while ((line = reader.readLine()) != null) {
