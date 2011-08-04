@@ -293,7 +293,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       
       if (!cmd.softCommit) {
         writer.commit();
-        
+        numDocsPending.set(0);
         callPostCommitCallbacks();
       } else {
         callPostSoftCommitCallbacks();

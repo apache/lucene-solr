@@ -191,6 +191,10 @@ Optimizations
   on each commit (ie commits no longer wait for background merges to complete), 
   works with SolrCore to provide faster 'soft' commits, and has an improved API 
   that requires less instanceof special casing. (Mark Miller, Robert Muir)
+  Additional Work:
+  SOLR-2697: commit and autocommit operations don't reset 
+  DirectUpdateHandler2.numDocsPending stats attribute.
+  (Alexey Serba, Mark Miller)
 
 Bug Fixes
 ----------------------
