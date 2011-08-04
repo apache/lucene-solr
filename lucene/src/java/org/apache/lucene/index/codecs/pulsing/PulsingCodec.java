@@ -66,7 +66,7 @@ public class PulsingCodec extends Codec {
 
   @Override
   public String toString() {
-    return name + "(freqCutoff=" + freqCutoff + ")";
+    return name + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override

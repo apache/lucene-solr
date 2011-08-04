@@ -1,4 +1,3 @@
-
 perf tests:
   - GRRR -- indexing MUCH slower now?
     trunk:
@@ -34,9 +33,8 @@ automaton q should apply maxlength test on each scan'd term
 
 intersect should use suffix ref
 
-maybe blocks should NOT store sub-block pointers?  it's reudundant w/ the index...
-
 LATER:
+  - maybe blocks should NOT store sub-block pointers?  it's reudundant w/ the index...
   - hmm: maybe switch PKLookupTask to intersect!?  do we have fast string builder?
   - hmm -- fix DOT when there are multiple outputs!?  oh, maybe not -- it just works?
   - maybe we should provide a "terms dict rewriter" tool?  ie can rewrite terms dict w/ new settings after segment was already created

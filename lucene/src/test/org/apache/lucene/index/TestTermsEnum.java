@@ -175,12 +175,21 @@ public class TestTermsEnum extends LuceneTestCase {
     terms.clear();
   }
 
+  private boolean accepts(CompiledAutomaton c, BytesRef b) {
+    int state = c.runAutomaton.getInitialState();
+    for(int idx=0;idx<b.length;idx++) {
+      assertTrue(state != -1);
+      state = c.runAutomaton.step(state, b.bytes[b.offset+idx] & 0xff);
+    }
+    return c.runAutomaton.isAccept(state);
+  }
+
   // Tests Terms.intersect
   public void testIntersectRandom() throws IOException {
 
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, dir);
-
+    
     final int numTerms = atLeast(1000);
 
     final Set<String> terms = new HashSet<String>();
@@ -267,6 +276,7 @@ public class TestTermsEnum extends LuceneTestCase {
         final BytesRef b = new BytesRef(s);
         acceptTermsArray[upto++] = b;
         acceptTermsSet.add(b);
+        assertTrue(accepts(c, b));
       }
       Arrays.sort(acceptTermsArray);
 

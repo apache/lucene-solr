@@ -624,7 +624,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
         void load(BytesRef frameIndexData) throws IOException {
 
-          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a"));
+          if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
 
           if (frameIndexData != null && transitions.length != 0) {
             // Floor frame
@@ -772,6 +772,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       private final BytesRef savedStartTerm;
 
       public IntersectEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+        if (DEBUG) {
+          System.out.println("\nintEnum.init seg=" + segment);
+        }
         // nocommit can we use suffixRef?
         // nocommit in some cases we can do hard filter by
         // length!!  eg regexp ????????
@@ -804,9 +807,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         currentFrame = f;
         if (startTerm != null) {
           seekToStartTerm(startTerm);
-        }
-        if (DEBUG) {
-          System.out.println("\nintEnum.init seg=" + segment);
         }
       }
 
@@ -846,6 +846,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         
         f.fp = f.fpOrig = currentFrame.lastSubFP;
         f.prefix = currentFrame.prefix + currentFrame.suffix;
+        if (DEBUG) System.out.println("    pushFrame state=" + state + " prefix=" + f.prefix);
         f.setState(state);
 
         // Walk the arc through the index -- we only
@@ -909,6 +910,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
       }
 
+      private int getState() {
+        int state = currentFrame.state;
+        for(int idx=0;idx<currentFrame.suffix;idx++) {
+          state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
+          assert state != -1;
+        }
+        return state;
+      }
+
       // NOTE: specialized to only doing the first-time
       // seek, but we could generalize it to allow
       // arbitrary seekExact/Ceil.  Note that this is a
@@ -923,15 +933,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         assert arc == currentFrame.arc;
 
         for(int idx=0;idx<=target.length;idx++) {
-          final int targetLabel = idx == target.length ? -1 : target.bytes[target.offset+idx] & 0xff;
-          final int nextState;
-          if (idx < target.length) {
-            nextState = runAutomaton.step(currentFrame.state, targetLabel);
-            assert nextState != -1;
-          } else {
-            nextState = -1;
-          }
-          if (DEBUG) System.out.println("  idx=" + idx + " label=" + (char) targetLabel + " f.ord=" + currentFrame.ord);
 
           boolean lastIsSubBlock = false;
 
@@ -953,8 +954,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             if (isSubBlock && target.startsWith(term)) {
               // Recurse
-              assert nextState != -1;
-              currentFrame = pushFrame(nextState);
+              currentFrame = pushFrame(getState());
               break;
             } else {
               final int cmp = term.compareTo(target);
@@ -989,10 +989,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
                 term.length = currentFrame.prefix + currentFrame.suffix;
                 if (lastIsSubBlock) {
                   // Recurse
-                  currentFrame = pushFrame(nextState);
+                  currentFrame = pushFrame(getState());
                   break;
                 } else {
-                  if (DEBUG) System.out.println("  return term=" + brToString(term));
+                  if (DEBUG) System.out.println("  fallback return term=" + brToString(term) + " curFrame.nextEnt=" + currentFrame.nextEnt);
                   return;
                 }
               }
@@ -1053,9 +1053,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
                 // sneaky!  forces a pop above
                 currentFrame.isLastInFloor = true;
-                //while (!currentFrame.isLastInFloor) {
-                //currentFrame.loadNextFloorBlock();
-                //}
                 currentFrame.nextEnt = currentFrame.entCount;
                 continue nextTerm;
               }
@@ -1072,7 +1069,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
             state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
             if (state == -1) {
               // No match
+              //System.out.println("    no s=" + state);
               continue nextTerm;
+            } else {
+              //System.out.println("    c s=" + state);
             }
           }
 
@@ -1088,7 +1088,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
             return term;
           } else {
-            //System.out.println("    no match");
+            //System.out.println("    no s=" + state);
           }
         }
       }

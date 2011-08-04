@@ -461,12 +461,12 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
               assert numSubs == 0;
               label = -1;
             } else {
-              label = term.term.bytes[term.term.offset + prefixLength];
+              label = term.term.bytes[term.term.offset + prefixLength] & 0xff;
             }
           } else {
             PendingBlock block = (PendingBlock) ent;
             assert block.prefix.length > prefixLength;
-            label = block.prefix.bytes[block.prefix.offset + prefixLength];
+            label = block.prefix.bytes[block.prefix.offset + prefixLength] & 0xff;
           }
 
           if (label != lastLabel && (termCount + subCount) != 0) {
@@ -579,6 +579,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             }
 
             if (curStart <= maxItemsInBlock) {
+              // nocommit -- should we do a better job
+              // segmenting here...?
               // remainder is small enough to fit into a
               // block.  NOTE that this may be too small (<
               // minItemsInBlock); need a true segmenter
@@ -605,16 +607,14 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       return 1;
     }
 
-    String brPrefixToString(BytesRef b) {
-      // nocommit
-      return b.toString();
-      //return b.utf8ToString() + " " + b;
-    }
-
-    String brToString(BytesRef b) {
-      // nocommit
-      // return b.toString();
-      return b.utf8ToString() + " " + b;
+    // for debugging
+    private String toString(BytesRef b) {
+      final String s;
+      try {
+        return b.utf8ToString() + " " + b;
+      } catch (Throwable t) {
+        return b.toString();
+      }
     }
 
     // TODO: we could block-write the term suffix pointers;
@@ -624,27 +624,21 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
       assert length > 0;
 
-      final BytesRef prefix = new BytesRef(indexPrefixLength);
-      for(int m=0;m<indexPrefixLength;m++) {
-        prefix.bytes[m] = (byte) prevTerm.ints[m];
-      }
-      prefix.length = indexPrefixLength;
-
-      /*if (isFloor) {
-        System.out.println("  wb seg=" + segment + " prefix=" + prefix.utf8ToString() + " " + prefix + " field=" + fieldInfo.name + " prefix=" + prefixLength + " pending=" + pending.size() + " start=" + start + " length=" + length);
-      } else {
-        System.out.println("\nWB seg=" + segment + " prefix=" + prefix.utf8ToString() + " " + prefix + " field=" + fieldInfo.name + " prefix=" + prefixLength + " pending=" + pending.size() + " start=" + start + " length=" + length);
-        }*/
       assert pending.size() >= start: "pending.size()=" + pending.size() + " start=" + start + " length=" + length;
 
       final List<Object> slice = pending.subList(pending.size()-start, pending.size()-start + length);
 
       final long startFP = out.getFilePointer();
 
+      final BytesRef prefix = new BytesRef(indexPrefixLength);
+      for(int m=0;m<indexPrefixLength;m++) {
+        prefix.bytes[m] = (byte) prevTerm.ints[m];
+      }
+      prefix.length = indexPrefixLength;
       out.writeVInt((length<<1)|(isLastInFloor ? 1:0));
 
       if (DEBUG2 || DEBUG) {
-        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + prefix + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
+        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
       }
 
       // 1st pass: pack term suffix bytes into byte[] blob
@@ -699,7 +693,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             BytesRef suffixBytes = new BytesRef(suffix);
             System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
             suffixBytes.length = suffix;
-            System.out.println("    write sub-block suffix=" + brPrefixToString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
+            System.out.println("    write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
           }
 
           bytesWriter.writeVLong(startFP - block.fp);
@@ -771,7 +765,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
     @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
-      if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment);
+      if (DEBUG) System.out.println("\nBTTW.startTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment);
       postingsWriter.startTerm();
       /*
       if (fieldInfo.name.equals("id")) {
@@ -787,7 +781,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
 
       assert stats.docFreq > 0;
-      if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + text.utf8ToString() + " " + text + " seg=" + segment + " df=" + stats.docFreq);
+      if (DEBUG) System.out.println("BTTW.finishTerm term=" + fieldInfo.name + ":" + toString(text) + " seg=" + segment + " df=" + stats.docFreq);
 
       blockBuilder.add(text, noOutputs.getNoOutput());
       pending.add(new PendingTerm(new BytesRef(text), stats));

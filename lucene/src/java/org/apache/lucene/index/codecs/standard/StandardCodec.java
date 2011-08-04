@@ -124,6 +124,11 @@ public class StandardCodec extends Codec {
   }
 
   @Override
+  public String toString() {
+    return name + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
+  }
+
+  @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
     return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());
   }
