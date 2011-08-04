@@ -48,8 +48,7 @@ import org.apache.lucene.util.automaton.UTF32ToUTF8;
  * </p>
  * @lucene.experimental
  */
-// nocommit should this be package private...?
-public class AutomatonTermsEnum extends FilteredTermsEnum {
+class AutomatonTermsEnum extends FilteredTermsEnum {
   // a tableized array-based form of the DFA
   private final ByteRunAutomaton runAutomaton;
   // common suffix of the automaton
