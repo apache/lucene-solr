@@ -88,7 +88,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
   private final IndexInput in;
 
   public static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
-  //private static final boolean DEBUG = false;
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
@@ -488,9 +487,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       private final BytesRef term = new BytesRef();
 
-      // nocommit -- this is nearly identical to the Frame
-      // in STE!
-      private class Frame {
+      // TODO: can we share this with the frame in STE?
+      private final class Frame {
         final int ord;
         long fp;
         long fpOrig;
@@ -691,10 +689,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
           }
         }
 
+        public int getTermBlockOrd() {
+          return isLeafBlock ? nextEnt : termState.termBlockOrd;
+        }
+
         public void decodeMetaData() throws IOException {
 
           // lazily catch up on metadata decode:
-          final int limit = isLeafBlock ? nextEnt : termState.termBlockOrd;
+          final int limit = getTermBlockOrd();
           assert limit > 0;
 
           // We must set/incr state.termCount because
@@ -727,14 +729,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       private final BytesRef savedStartTerm;
-
+      
+      // TODO: in some cases we can filter by length?  eg
+      // regexp foo*bar must be at least length 6 bytes
       public IntersectEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
         if (DEBUG) {
           System.out.println("\nintEnum.init seg=" + segment);
         }
-        // nocommit can we use suffixRef?
-        // nocommit in some cases we can do hard filter by
-        // length!!  eg regexp ????????
         runAutomaton = compiled.runAutomaton;
         compiledAutomaton = compiled;
         in = (IndexInput) BlockTreeTermsReader.this.in.clone();
@@ -968,8 +969,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           System.out.println("  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
         }
 
-        // nocommit -- we could be more efficient w/ floor
-        // blocks by jumping over whole blocks?
         nextTerm:
         while(true) {
           // Pop finished frames
@@ -1021,7 +1020,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           // See if the term prefix matches the automaton:
           int state = currentFrame.state;
-          // nocommit -- move into Frame?
           for (int idx=0;idx<currentFrame.suffix;idx++) {
             state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
             if (state == -1) {
@@ -1130,8 +1128,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // Empty string prefix must have an output in the index!
         //assert arc.isFinal();
 
-        // nocommit -- can we avoid this?  eg if is going to
-        // call seek...
         currentFrame = staticFrame;
         final FST.Arc<BytesRef> arc;
         if (index != null) {
@@ -1356,9 +1352,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         int targetUpto;
         BytesRef output;
 
-        // nocommit: use FST's root arc cache somehow?  oh
-        // we do already -- verify the lookup is using it!
-
         targetBeforeCurrentLength = currentFrame.ord;
 
         if (currentFrame != staticFrame) {
@@ -1386,10 +1379,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           int cmp = 0;
 
-          // nocommit try reversing vLong byte order!!
-
-          // nocommit test empty string seeking when we have
-          // seek state
+          // TODO: reverse vLong byte order for better FST
+          // prefix output sharing
 
           // First compare up to valid seek frames:
           while (targetUpto < targetLimit) {
@@ -1514,9 +1505,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + toHex(targetLabel));
             }
             
-            // nocommit right?  or am i losing seek reuse!!
-            // what if targetUpto is 0!?
-            // nocommit +1?
             validIndexPrefix = currentFrame.prefix;
             //validIndexPrefix = targetUpto;
 
@@ -1524,12 +1512,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             if (!currentFrame.hasTerms) {
               termExists = false;
-              // nocommit -- should we just set length here?
-              // nocommit -- only have to copy suffix:
               term.bytes[targetUpto] = (byte) targetLabel;
               term.length = 1+targetUpto;
-              //term.copy(target);
-              //term.length = targetUpto;
               if (DEBUG) {
                 System.out.println("  FAST NOT_FOUND term=" + brToString(term));
               }
@@ -1544,15 +1528,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
                 System.out.println("  return FOUND term=" + term.utf8ToString() + " " + term);
               }
               return true;
-            } else if (result == SeekStatus.END) {
-              // nocommit -- merge w/ else clause
-              if (DEBUG) {
-                System.out.println("  return NOT_FOUND term=" + brToString(term));
-              }
-              return false;
             } else {
               if (DEBUG) {
-                System.out.println("  return NOT_FOUND term=" + brToString(term));
+                System.out.println("  got " + result + "; return NOT_FOUND term=" + brToString(term));
               }
               return false;
             }
@@ -1587,9 +1565,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // Target term is entirely contained in the index:
         if (!currentFrame.hasTerms) {
           termExists = false;
-          // nocommit -- should we just set length here?
-          // nocommit -- only have to copy suffix:
-          //term.copy(target);
           term.length = targetUpto;
           if (DEBUG) {
             System.out.println("  FAST NOT_FOUND term=" + brToString(term));
@@ -1605,23 +1580,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
             System.out.println("  return FOUND term=" + term.utf8ToString() + " " + term);
           }
           return true;
-        } else if (result == SeekStatus.END) {
-          // nocommit -- merge w/ else clause
-          if (DEBUG) {
-            System.out.println("  return NOT_FOUND term=" + brToString(term));
-          }
-          return false;
         } else {
-          //termExists = false;
           if (DEBUG) {
-            System.out.println("  return NOT_FOUND term=" + term.utf8ToString());
+            System.out.println("  got result " + result + "; return NOT_FOUND term=" + term.utf8ToString());
           }
 
           return false;
         }
-
-        // nocommit -- add back asserts that verify we don't
-        // scan too many blocks...
       }
 
       @Override
@@ -1797,8 +1762,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + toHex(targetLabel));
             }
             
-            // nocommit right?  or am i losing seek reuse!!
-            // nocommit -- this differs from seekExact!?
             validIndexPrefix = currentFrame.prefix;
             //validIndexPrefix = targetUpto;
 
@@ -1808,8 +1771,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             final SeekStatus result = currentFrame.scanToTerm(target, false);
             if (result == SeekStatus.END) {
-
-              // nocommit -- these 2 aren't needed?
               term.copy(target);
               termExists = false;
 
@@ -1863,7 +1824,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final SeekStatus result = currentFrame.scanToTerm(target, false);
 
         if (result == SeekStatus.END) {
-          // nocommit?
           term.copy(target);
           termExists = false;
           if (next() != null) {
@@ -1894,9 +1854,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
             assert f != null;
             final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
             if (f.nextEnt == -1) {
-              System.out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + (f.isLeafBlock ? f.nextEnt : f.state.termBlockOrd));
+              System.out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             } else {
-              System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + (f.isLeafBlock ? f.nextEnt : f.state.termBlockOrd));
+              System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             }
             //if (f == currentFrame) {
             //  break;
@@ -1969,7 +1929,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             if (currentFrame.ord == 0) {
               //if (DEBUG) System.out.println("  return null");
               assert setEOF();
-              // nocommit
               term.length = 0;
               validIndexPrefix = 0;
               currentFrame.rewind();
@@ -2077,8 +2036,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           currentFrame = staticFrame;
           currentFrame.state.copyFrom(otherState);
           term.copy(target);
-          // nocommit -- make this a method & call it from N places!!:
-          currentFrame.metaDataUpto = currentFrame.isLeafBlock ? currentFrame.nextEnt : currentFrame.state.termBlockOrd;
+          currentFrame.metaDataUpto = currentFrame.getTermBlockOrd();
           assert currentFrame.metaDataUpto > 0;
           validIndexPrefix = 0;
         } else {
@@ -2171,8 +2129,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
 
         public void setFloorData(ByteArrayDataInput in, BytesRef source) {
-          // nocommit -- can I not copy here?  just use
-          // incoming source.bytes?
           final int numBytes = source.length - (in.getPosition() - source.offset);
           if (numBytes > floorData.length) {
             floorData = new byte[ArrayUtil.oversize(numBytes, 1)];
@@ -2184,6 +2140,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
           //if (DEBUG) {
           //System.out.println("    setFloorData fpOrig=" + fpOrig + " bytes=" + new BytesRef(source.bytes, source.offset + in.getPosition(), numBytes) + " numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + toHex(nextFloorLabel));
           //}
+        }
+
+        public int getTermBlockOrd() {
+          return isLeafBlock ? nextEnt : state.termBlockOrd;
         }
 
         void loadNextFloorBlock() throws IOException {
@@ -2244,9 +2204,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             }*/
 
           // stats
-          // nocommit: we could store stats for sub-blocks?
-          // is that at all useful...?
-          // nocommit: only if hasTerms?
           numBytes = in.readVInt();
           if (statBytes.length < numBytes) {
             statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
@@ -2258,8 +2215,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
           state.termBlockOrd = 0;
           nextEnt = 0;
           lastSubFP = -1;
-          
-          // nocommit: only if hasTerms?
+
+          // TODO: we could skip this if !hasTerms; but
+          // that's rare so won't help much
           postingsReader.readTermsBlock(in, fieldInfo, state);
 
           // Sub-blocks of a single floor block are always
@@ -2391,6 +2349,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
           long newFP = fpOrig;
           while (true) {
             newFP = fpOrig + floorDataReader.readVLong();
+
+            // We don't store hasTerms for the follow floor blocks:
+            hasTerms = true;
             //if (DEBUG) {
             //System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
             //}
@@ -2434,7 +2395,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           //if (DEBUG) System.out.println("\nBTTR.decodeMetadata seg=" + segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
 
           // lazily catch up on metadata decode:
-          final int limit = isLeafBlock ? nextEnt : state.termBlockOrd;
+          final int limit = getTermBlockOrd();
           assert limit > 0;
 
           // We must set/incr state.termCount because

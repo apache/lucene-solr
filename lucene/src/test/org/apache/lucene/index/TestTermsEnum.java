@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,6 +42,7 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 
 public class TestTermsEnum extends LuceneTestCase {
 
@@ -157,9 +159,8 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String randomString() {
-    // nocommit
-    return _TestUtil.randomSimpleString(random);
-    //return _TestUtil.randomRealisticUnicodeString(random);
+    //return _TestUtil.randomSimpleString(random);
+    return _TestUtil.randomRealisticUnicodeString(random);
   }
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
@@ -188,7 +189,6 @@ public class TestTermsEnum extends LuceneTestCase {
   // Tests Terms.intersect
   public void testIntersectRandom() throws IOException {
 
-    // nocommit -- cutover to the efficient builder else oome
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, dir);
     
@@ -235,36 +235,37 @@ public class TestTermsEnum extends LuceneTestCase {
     // NOTE: intentional insanity!!
     final int[] docIDToID = FieldCache.DEFAULT.getInts(r, "id");
 
-    // nocommit: explicitly test the no-terms case, ie A
-    // accepting nothing
-
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
-      // nocommit -- also mix in infinite A's -- ie, random
-      // regexp -> A
+      // TODO: can we also test infinite As here...?
 
       // From the random terms, pick some ratio and compile an
       // automaton:
       final List<Automaton> as = new ArrayList<Automaton>();
       final Set<String> acceptTerms = new HashSet<String>();
+      final TreeSet<BytesRef> sortedAcceptTerms = new TreeSet<BytesRef>();
       final double keepPct = random.nextDouble();
-      if (VERBOSE) {
-        System.out.println("\nTEST: keepPct=" + keepPct);
-      }
-      for (String s : terms) {
-        final String s2;
-        if (random.nextDouble() <= keepPct) {
-          s2 = s;
-        } else {
-          s2 = randomString();
+      Automaton a;
+      if (iter == 0) {
+        if (VERBOSE) {
+          System.out.println("\nTEST: empty automaton");
         }
-        acceptTerms.add(s2);
-        as.add(BasicAutomata.makeString(s2));
-      }
-      Automaton a = BasicOperations.union(as);
-      a.determinize();
-      if (random.nextBoolean()) {
-        a = Automaton.minimize(a);
+        a = BasicAutomata.makeEmpty();
+      } else {
+        if (VERBOSE) {
+          System.out.println("\nTEST: keepPct=" + keepPct);
+        }
+        for (String s : terms) {
+          final String s2;
+          if (random.nextDouble() <= keepPct) {
+            s2 = s;
+          } else {
+            s2 = randomString();
+          }
+          acceptTerms.add(s2);
+          sortedAcceptTerms.add(new BytesRef(s2));
+        }
+        a = DaciukMihovAutomatonBuilder.build(sortedAcceptTerms);
       }
       final CompiledAutomaton c = new CompiledAutomaton(a, true);
 
@@ -288,7 +289,7 @@ public class TestTermsEnum extends LuceneTestCase {
       }
 
       for(int iter2=0;iter2<100;iter2++) {
-        final BytesRef startTerm = random.nextBoolean() ? null : acceptTermsArray[random.nextInt(acceptTermsArray.length)];
+        final BytesRef startTerm = acceptTermsArray.length == 0 || random.nextBoolean() ? null : acceptTermsArray[random.nextInt(acceptTermsArray.length)];
 
         final TermsEnum te = MultiFields.getTerms(r, "f").intersect(c, startTerm);
 
