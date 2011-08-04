@@ -67,6 +67,9 @@
     <jflex file="src/java/org/apache/lucene/analysis/standard/ClassicTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/StandardTokenizerImpl31.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard/std31"
+           nobak="on" />
   </target>
 
   <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">

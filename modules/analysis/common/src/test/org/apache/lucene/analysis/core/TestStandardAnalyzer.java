@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -221,6 +222,23 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
   }
   
+  public void testCombiningMarks() throws Exception {
+    checkOneTerm(a, "ざ", "ざ"); // hiragana
+    checkOneTerm(a, "ザ", "ザ"); // katakana
+    checkOneTerm(a, "壹゙", "壹゙"); // ideographic
+    checkOneTerm(a, "아゙",  "아゙"); // hangul
+  }
+  
+  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
+  @Deprecated
+  public void testCombiningMarksBackwards() throws Exception {
+    Analyzer a = new StandardAnalyzer(Version.LUCENE_33);
+    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
+    checkOneTerm(a, "ザ", "ザ"); // katakana Works
+    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
+    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
+  }
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, new StandardAnalyzer(TEST_VERSION_CURRENT), 10000*RANDOM_MULTIPLIER);

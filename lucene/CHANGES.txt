@@ -535,6 +535,11 @@ Bug fixes
   suppressed exceptions in the original exception, so stack trace
   will contain them.  (Uwe Schindler)
 
+* LUCENE-3358: StandardTokenizer wrongly discarded combining marks attached
+  to Han or Hiragana characters, this is fixed if you supply Version >= 3.4
+  If you supply a previous lucene version, you get the old buggy behavior
+  for backwards compatibility.  (Trejkaz, Robert Muir)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 

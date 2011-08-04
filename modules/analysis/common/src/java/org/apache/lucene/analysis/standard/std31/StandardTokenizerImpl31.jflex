@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.standard.std31;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,30 +17,24 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * This class implements Word Break rules from the Unicode Text Segmentation 
- * algorithm, as specified in 
- * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
- * <p/>
- * Tokens produced are of the following types:
- * <ul>
- *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>
- *   <li>&lt;NUM&gt;: A number</li>
- *   <li>&lt;SOUTHEAST_ASIAN&gt;: A sequence of characters from South and Southeast
- *       Asian languages, including Thai, Lao, Myanmar, and Khmer</li>
- *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
- *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
- * </ul>
+ * This class implements StandardTokenizer, except with a bug 
+ * (https://issues.apache.org/jira/browse/LUCENE-3358) where Han and Hiragana
+ * characters would be split from combining characters:
+ * @deprecated This class is only for exact backwards compatibility
  */
+@Deprecated
 %%
 
 %unicode 6.0
 %integer
 %final
 %public
-%class StandardTokenizerImpl
+%class StandardTokenizerImpl31
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
@@ -71,8 +65,6 @@ MidLetterEx    = ({MidLetter} | {MidNumLet})   ({Format} | {Extend})*
 MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
 ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
-HanEx = {Han} ({Format} | {Extend})*
-HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 %{
   /** Alphanumeric sequences */
@@ -180,8 +172,8 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 // UAX#29 WB14.  Any ÷ Any
 //
-{HanEx} { return IDEOGRAPHIC_TYPE; }
-{HiraganaEx} { return HIRAGANA_TYPE; }
+{Han} { return IDEOGRAPHIC_TYPE; }
+{Hiragana} { return HIRAGANA_TYPE; }
 
 
 // UAX#29 WB3.   CR × LF

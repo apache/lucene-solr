@@ -22,7 +22,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.io.Reader;
 import java.io.IOException;
 
-interface StandardTokenizerInterface {
+/** @lucene.internal */
+public interface StandardTokenizerInterface {
 
   /** This character denotes the end of file */
   public static final int YYEOF = -1;
@@ -30,12 +31,12 @@ interface StandardTokenizerInterface {
   /**
    * Copies the matched text into the CharTermAttribute
    */
-  void getText(CharTermAttribute t);
+  public void getText(CharTermAttribute t);
 
   /**
    * Returns the current position.
    */
-  int yychar();
+  public int yychar();
 
   /**
    * Resets the scanner to read from a new input stream.
@@ -47,12 +48,12 @@ interface StandardTokenizerInterface {
    *
    * @param reader   the new input stream 
    */
-  void yyreset(Reader reader);
+  public void yyreset(Reader reader);
 
   /**
    * Returns the length of the matched text region.
    */
-  int yylength();
+  public int yylength();
 
   /**
    * Resumes scanning until the next regular expression is matched,
@@ -61,6 +62,6 @@ interface StandardTokenizerInterface {
    * @return      the next token, {@link #YYEOF} on end of stream
    * @exception   IOException  if any I/O-Error occurs
    */
-  int getNextToken() throws IOException;
+  public int getNextToken() throws IOException;
 
 }
