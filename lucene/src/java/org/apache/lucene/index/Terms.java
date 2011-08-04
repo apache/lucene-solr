@@ -51,12 +51,10 @@ public abstract class Terms {
    *
    * <p><b>NOTE</b>: the returned TermsEnum cannot
    * seek</p>. */
-  // nocommit need direct tests of this:
-  // nocommit not great that we pass startTerm... better to
-  // fully support .seekXXX in the returned enum?
   public TermsEnum intersect(CompiledAutomaton compiled, final BytesRef startTerm) throws IOException {
-    //System.out.println("Terms.intersect compiled=" + compiled + " startTerm=" + startTerm);
-    //new Throwable().printStackTrace(System.out);
+    // TODO: eventually we could support seekCeil/Exact on
+    // the returned enum, instead of only being able to seek
+    // at the start
     if (startTerm == null) {
       return new AutomatonTermsEnum(iterator(), compiled);
     } else {

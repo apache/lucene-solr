@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
@@ -49,10 +50,8 @@ public class TestBlockTree extends LuceneTestCase {
   private final String FIELD = "field";
 
   private IndexReader makeIndex(int minTermsInBlock, int maxTermsInBlock, String... terms) throws Exception {
-    // nocommit -- cutover to newDirectory
-    d = new RAMDirectory();
-    // nocommit -- switch to riw / other codecs:
-    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
+    d = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
 
     CoreCodecProvider cp = new CoreCodecProvider();    
     cp.unregister(cp.lookup("Standard"));
@@ -60,19 +59,18 @@ public class TestBlockTree extends LuceneTestCase {
     cp.setDefaultFieldCodec("Standard");
     iwc.setCodecProvider(cp);
 
-    final IndexWriter w = new IndexWriter(d, iwc);
-    w.setInfoStream(VERBOSE ? System.out : null);
+    final RandomIndexWriter w = new RandomIndexWriter(random, d, iwc);
+    w.w.setInfoStream(VERBOSE ? System.out : null);
     for(String term : terms) {
       Document doc = new Document();
-      // nocommit -- switch to newField
-      Field f = new Field(FIELD, term, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field f = newField(FIELD, term, Field.Index.NOT_ANALYZED_NO_NORMS);
       doc.add(f);
       w.addDocument(doc);
     }
     if (r != null) {
       close();
     }
-    r = IndexReader.open(w, true);
+    r = w.getReader();
     w.close();
     return r;
   }
@@ -150,7 +148,6 @@ public class TestBlockTree extends LuceneTestCase {
   //   - term that's entirely in the index
 
   public void testFloorBlocks() throws Exception {
-    // nocommit put 'aa' back!
     final String[] terms = new String[] {"aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9", "aa", "xx"};
     r = makeIndex(3, 6, terms);
     //r = makeIndex(3, 6, "aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9");
@@ -205,15 +202,12 @@ public class TestBlockTree extends LuceneTestCase {
   // nocommit: test 0 terms case too!
 
   private String getRandomString() {
-    // nocommit
     //return _TestUtil.randomSimpleString(random);
     return _TestUtil.randomRealisticUnicodeString(random);
   }
 
   public void testRandomTerms() throws Exception {
-    // nocommit
-    //final String[] terms = new String[_TestUtil.nextInt(random, 1, atLeast(1000))];
-    final String[] terms = new String[_TestUtil.nextInt(random, 1, atLeast(500))];
+    final String[] terms = new String[_TestUtil.nextInt(random, 1, atLeast(1000))];
     final Set<String> seen = new HashSet<String>();
 
     final boolean allowEmptyString = random.nextBoolean();
@@ -242,7 +236,6 @@ public class TestBlockTree extends LuceneTestCase {
     }
 
     while(seen.size() < terms.length) {
-      // nocommit -- use full unicode string
       final String t = getRandomString();
       if (!seen.contains(t) && (allowEmptyString || t.length() != 0)) {
         terms[seen.size()] = t;

@@ -18,28 +18,29 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.AutomatonTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -165,9 +166,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     
     // TODO: does this check even matter anymore?!
     // nocommit: we'll find out!!
-    //Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
-    //if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
-    //return;
+    Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
+    if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
+      return;
     
     TopDocs smartDocs = searcher1.search(smart, 25);
     TopDocs dumbDocs = searcher2.search(dumb, 25);

@@ -60,7 +60,6 @@ public final class MultiTerms extends Terms {
     termComp = _termComp;
   }
 
-  // nocommit -- implement intersect
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
     final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();

@@ -86,11 +86,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
   // Open input to the main terms dict file (_X.tib)
   private final IndexInput in;
 
-  private static final int OUTPUT_FLAGS_NUM_BITS = 2;
-  private static final int OUTPUT_FLAGS_MASK = 0x3;
-  private static final int OUTPUT_FLAG_IS_FLOOR = 0x1;
-  private static final int OUTPUT_FLAG_HAS_TERMS = 0x2;
-
   public static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
   //private static final boolean DEBUG = false;
 
@@ -100,55 +95,21 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
-  // Caches the most recently looked-up field + terms:
-  private final DoubleBarrelLRUCache<FieldAndTerm,BlockTermState> termsCache;
-
   private int indexDivisor;
 
   // keeps the dirStart offset
   protected long dirOffset;
   protected long indexDirOffset;
 
-  // Used as key for the terms cache
-  private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
-    String field;
-    BytesRef term;
-
-    public FieldAndTerm() {
-    }
-
-    public FieldAndTerm(FieldAndTerm other) {
-      field = other.field;
-      term = new BytesRef(other.term);
-    }
-
-    @Override
-    public boolean equals(Object _other) {
-      FieldAndTerm other = (FieldAndTerm) _other;
-      return other.field == field && term.bytesEquals(other.term);
-    }
-
-    @Override
-    public Object clone() {
-      return new FieldAndTerm(this);
-    }
-
-    @Override
-    public int hashCode() {
-      return field.hashCode() * 31 + term.hashCode();
-    }
-  }
-  
   private String segment;
   
   public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, String segment,
                               PostingsReaderBase postingsReader, IOContext ioContext,
-                              int termsCacheSize, int codecId, int indexDivisor)
+                              int codecId, int indexDivisor)
     throws IOException {
     
     this.postingsReader = postingsReader;
     this.indexDivisor = indexDivisor;
-    termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTreeTermsWriter.TERMS_EXTENSION),
@@ -355,7 +316,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     void endBlock(FieldReader.SegmentTermsEnum.Frame frame) {
-      final int termCount = frame.state.termBlockOrd;
+      final int termCount = frame.isLeafBlock ? frame.entCount : frame.state.termBlockOrd;
       final int subBlockCount = frame.entCount - termCount;
       totalTermCount += termCount;
       if (termCount != 0 && subBlockCount != 0) {
@@ -453,7 +414,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
       }
 
-      rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >> OUTPUT_FLAGS_NUM_BITS;
+      rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
 
       if (indexIn != null) {
         final IndexInput clone = (IndexInput) indexIn.clone();
@@ -636,7 +597,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             // Skip first long -- has redundant fp, hasTerms
             // flag, isFloor flag
             final long code = floorDataReader.readVLong();
-            if ((code & OUTPUT_FLAG_IS_FLOOR) != 0) {
+            if ((code & BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
               numFollowFloorBlocks = floorDataReader.readVInt();
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
@@ -662,14 +623,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           in.seek(fp);
           int code = in.readVInt();
-          entCount = code >> 1;
+          entCount = code >>> 1;
           assert entCount > 0;
           isLastInFloor = (code & 1) != 0;
 
           // term suffixes:
           code = in.readVInt();
           isLeafBlock = (code & 1) != 0;
-          int numBytes = code >> 1;
+          int numBytes = code >>> 1;
           if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
           if (suffixBytes.length < numBytes) {
             suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
@@ -1132,7 +1093,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     // Iterates through terms in this field
     private final class SegmentTermsEnum extends TermsEnum {
       private final IndexInput in;
-      private final FieldAndTerm fieldTerm = new FieldAndTerm();
 
       private Frame[] stack;
       private final Frame staticFrame;
@@ -1157,7 +1117,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (DEBUG) System.out.println("BTTR.init seg=" + segment);
         in = (IndexInput) BlockTreeTermsReader.this.in.clone();
         in.seek(termsStartPointer);
-        fieldTerm.field = fieldInfo.name;
         stack = new Frame[5];
         for(int stackOrd=0;stackOrd<stack.length;stackOrd++) {
           stack[stackOrd] = new Frame(stackOrd);
@@ -1324,11 +1283,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
       Frame pushFrame(FST.Arc<BytesRef> arc, BytesRef frameData, int length) throws IOException {
         scratchReader.reset(frameData.bytes, frameData.offset, frameData.length);
         final long code = scratchReader.readVLong();
-        final long fpSeek = code >> OUTPUT_FLAGS_NUM_BITS;
+        final long fpSeek = code >>> BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
         final Frame f = getFrame(1+currentFrame.ord);
-        f.hasTerms = (code & OUTPUT_FLAG_HAS_TERMS) != 0;
+        f.hasTerms = (code & BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
         f.hasTermsOrig = f.hasTerms;
-        f.isFloor = (code & OUTPUT_FLAG_IS_FLOOR) != 0;
+        f.isFloor = (code & BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0;
         if (f.isFloor) {
           f.setFloorData(scratchReader, frameData);
         }
@@ -1394,27 +1353,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
         assert clearEOF();
 
         if (DEBUG) {
-          System.out.println("\nBTTR.seekExact seg=" + segment + " target=" + fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") useCache=" + useCache + " validIndexPrefix=" + validIndexPrefix);
+          System.out.println("\nBTTR.seekExact seg=" + segment + " target=" + fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
           printSeekState();
-        }
-
-        // Check cache
-        if (useCache) {
-          fieldTerm.term = target;
-          // TODO: should we differentiate "frozen"
-          // TermState (ie one that was cloned and
-          // cached/returned by termState()) from the
-          // malleable (primary) one?
-          final TermState cachedState = termsCache.get(fieldTerm);
-          if (cachedState != null) {
-            if (DEBUG) {
-              System.out.println("  cached!");
-            }
-            seekExact(target, cachedState);
-            //System.out.println("  term=" + term.utf8ToString());
-            return true;
-          }
-          // nocommit -- we never enroll state into the termsCache!
         }
 
         FST.Arc<BytesRef> arc;
@@ -1702,28 +1642,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         assert clearEOF();
 
         //if (DEBUG) {
-        //System.out.println("\nBTTR.seekCeil seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") useCache=" + useCache + " validIndexPrefix=  " + validIndexPrefix);
+        //System.out.println("\nBTTR.seekCeil seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
         //printSeekState();
         //}
-
-        // Check cache
-        if (useCache) {
-          fieldTerm.term = target;
-          // TODO: should we differentiate "frozen"
-          // TermState (ie one that was cloned and
-          // cached/returned by termState()) from the
-          // malleable (primary) one?
-          final TermState cachedState = termsCache.get(fieldTerm);
-          if (cachedState != null) {
-            //if (DEBUG) {
-            //System.out.println("  cached!");
-            //}
-            seekExact(target, cachedState);
-            //System.out.println("  term=" + term.utf8ToString());
-            return SeekStatus.FOUND;
-          }
-          // nocommit -- we never enroll state into the termsCache!
-        }
 
         FST.Arc<BytesRef> arc;
         int targetUpto;
@@ -1978,9 +1899,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
             assert f != null;
             final BytesRef prefix = new BytesRef(term.bytes, 0, f.prefix);
             if (f.nextEnt == -1) {
-              System.out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.state.termBlockOrd);
+              System.out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + (f.isLeafBlock ? f.nextEnt : f.state.termBlockOrd));
             } else {
-              System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.state.termBlockOrd);
+              System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + (f.isLeafBlock ? f.nextEnt : f.state.termBlockOrd));
             }
             //if (f == currentFrame) {
             //  break;
@@ -2000,7 +1921,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
               } else if (isSeekFrame && !f.isFloor) {
                 final ByteArrayDataInput reader = new ByteArrayDataInput(output.bytes, output.offset, output.length);
                 final long codeOrig = reader.readVLong();
-                final long code = (f.fp << OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? OUTPUT_FLAG_IS_FLOOR:0);
+                final long code = (f.fp << BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
                 if (codeOrig != code) {
                   System.out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
                   throw new RuntimeException("seek state is broken");
@@ -2161,7 +2082,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
           currentFrame = staticFrame;
           currentFrame.state.copyFrom(otherState);
           term.copy(target);
-          currentFrame.metaDataUpto = currentFrame.state.termBlockOrd;
+          // nocommit -- make this a method & call it from N places!!:
+          currentFrame.metaDataUpto = currentFrame.isLeafBlock ? currentFrame.nextEnt : currentFrame.state.termBlockOrd;
           assert currentFrame.metaDataUpto > 0;
           validIndexPrefix = 0;
         } else {
@@ -2294,12 +2216,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
             // Already loaded
             return;
           }
-          blockLoadCount++;
           //System.out.println("blc=" + blockLoadCount);
 
           in.seek(fp);
           int code = in.readVInt();
-          entCount = code >> 1;
+          entCount = code >>> 1;
           assert entCount > 0;
           isLastInFloor = (code & 1) != 0;
           assert arc == null || (isLastInFloor || isFloor);
@@ -2312,7 +2233,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // term suffixes:
           code = in.readVInt();
           isLeafBlock = (code & 1) != 0;
-          int numBytes = code >> 1;
+          int numBytes = code >>> 1;
           if (suffixBytes.length < numBytes) {
             suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
           }
@@ -2531,8 +2452,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
 
-            blockMDScanCount++;
-
             // TODO: we could make "tiers" of metadata, ie,
             // decode docFreq/totalTF but don't decode postings
             // metadata; this way caller could get
@@ -2581,7 +2500,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           while(true) {
             assert nextEnt < entCount;
             nextEnt++;
-            blockSubScanCount++;
             // nocommit should we also set instance startBytePos/suffix?
             final int code = suffixesReader.readVInt();
             suffixesReader.skipBytes(isLeafBlock ? code : code >>> 1);
@@ -2632,7 +2550,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           //nextTerm: while(nextEnt < entCount) {
           nextTerm: while (true) {
             nextEnt++;
-            blockTermScanCount++;
 
             suffix = suffixesReader.readVInt();
 
@@ -2649,6 +2566,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
             final int termLen = prefix + suffix;
             startBytePos = suffixesReader.getPosition();
             suffixesReader.skipBytes(suffix);
+
+            // nocommit not needed?  always == nextEnt in
+            // the leaf case
             state.termBlockOrd++;
 
             final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
@@ -2760,7 +2680,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           //nextTerm: while(nextEnt < entCount) {
           nextTerm: while (true) {
             nextEnt++;
-            blockTermScanCount++;
 
             final int code = suffixesReader.readVInt();
             suffix = code >>> 1;

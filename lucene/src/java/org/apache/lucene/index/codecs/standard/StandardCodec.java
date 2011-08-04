@@ -86,7 +86,6 @@ public class StandardCodec extends Codec {
                                                     state.segmentInfo.name,
                                                     postings,
                                                     state.context,
-                                                    TERMS_CACHE_SIZE,
                                                     state.codecId,
                                                     state.termsIndexDivisor);
       success = true;

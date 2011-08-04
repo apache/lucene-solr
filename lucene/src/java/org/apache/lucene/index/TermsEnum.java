@@ -42,22 +42,6 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental */
 public abstract class TermsEnum {
 
-  // nocommit
-  public static int blockLoadCount;
-  public static int blockTermScanCount;
-  public static int blockSubScanCount;
-  public static int blockMDScanCount;
-
-  // nocommit
-  public final static String getStats() {
-    final String s = "blockLoad=" + blockLoadCount + " termScan=" + blockTermScanCount + " subScan=" + blockSubScanCount + " mdScan=" + blockMDScanCount;
-    blockLoadCount = 0;
-    blockTermScanCount = 0;
-    blockSubScanCount = 0;
-    blockMDScanCount = 0;
-    return s;
-  }
-
   private AttributeSource atts = null;
 
   /** Returns the related attributes. */

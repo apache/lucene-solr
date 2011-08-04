@@ -16,6 +16,7 @@ perf tests:
   - run fuzzy q under profiler
 
 run Test2BTerms!!
+  - then run CI -verbose on the index!!
 
 test if cutting over prefix query to .intersect is faster
 

@@ -83,14 +83,16 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 
-// nocommit -- somehow save/print stats for debugging, eg
-// how many normal blocks, floor blocks, etc.
-
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
   public static boolean DEBUG = false;
   public static boolean DEBUG2 = false;
   public static boolean SAVE_DOT_FILES = false;
+
+  static final int OUTPUT_FLAGS_NUM_BITS = 2;
+  static final int OUTPUT_FLAGS_MASK = 0x3;
+  static final int OUTPUT_FLAG_IS_FLOOR = 0x1;
+  static final int OUTPUT_FLAG_HAS_TERMS = 0x2;
 
   final static String CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
 
@@ -114,7 +116,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
   private final String segment;
 
-  // nocommit should take min block size?
   public BlockTreeTermsWriter(
                               SegmentWriteState state,
                               PostingsWriterBase postingsWriter,
@@ -122,9 +123,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                               int maxItemsInBlock)
     throws IOException
   {
-
-    // nocommit -- make sure minItemsInBlock is > 1
-
     if (minItemsInBlock <= 0) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 1; got " + minItemsInBlock);
     }
@@ -217,9 +215,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   }
 
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
-    // nocommit assert fp is "small enough"
-    // nocommit use constants here instead of 1, 2:
-    return (fp << 2) | (hasTerms ? 2 : 0) | (isFloor ? 1 : 0);
+    assert fp < (1L << 62);
+    return (fp << 2) | (hasTerms ? OUTPUT_FLAG_HAS_TERMS : 0) | (isFloor ? OUTPUT_FLAG_IS_FLOOR : 0);
   }
 
   private static class PendingBlock {
@@ -250,9 +247,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       assert (isFloor && floorBlocks != null && floorBlocks.size() != 0) || (!isFloor && floorBlocks == null): "isFloor=" + isFloor + " floorBlocks=" + floorBlocks;
 
       assert scratchBytes.getFilePointer() == 0;
-      // nocommit -- vLong is bad for FST!!!  it writes LSB
-      // first which means less byte[] prefix sharing I
-      // think???  sheesh.
+
+      // TODO: try writing the leading vLong in MSB order
+      // (opposite of what Lucene does today), for better
+      // outputs sharing in the FST
       scratchBytes.writeVLong(encodeOutput(fp, hasTerms, isFloor));
       if (isFloor) {
         scratchBytes.writeVInt(floorBlocks.size());
@@ -264,7 +262,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           scratchBytes.writeByte((byte) sub.floorLeadByte);
           assert sub.fp > fp;
           // nocommit -- why do we need hasTerms here?
-          // nocommit -- need isFloor here?
           scratchBytes.writeVLong(((sub.fp - fp) << 1) | (sub.hasTerms ? 1 : 0));
         }
       }

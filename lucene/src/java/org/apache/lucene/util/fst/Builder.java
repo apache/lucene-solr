@@ -362,22 +362,19 @@ public class Builder<T> {
    *  different outputs, as long as outputs impls the merge
    *  method. */
   public void add(IntsRef input, T output) throws IOException {
-    // nocommit
-    {
+    if (DEBUG) {
       BytesRef b = new BytesRef(input.length);
       for(int x=0;x<input.length;x++) {
         b.bytes[x] = (byte) input.ints[x];
       }
       b.length = input.length;
-      if (DEBUG) {
-        if (output == NO_OUTPUT) {
-          System.out.println("\nFST ADD: input=" + toString(b) + " " + b);
-        } else {
-          System.out.println("\nFST ADD: input=" + toString(b) + " " + b + " output=" + fst.outputs.outputToString(output));
-        }
+      if (output == NO_OUTPUT) {
+        System.out.println("\nFST ADD: input=" + toString(b) + " " + b);
+      } else {
+        System.out.println("\nFST ADD: input=" + toString(b) + " " + b + " output=" + fst.outputs.outputToString(output));
       }
-      //System.out.println("  " + b.utf8ToString() + " dnp=" + doNotPrune);
     }
+    //System.out.println("  " + b.utf8ToString() + " dnp=" + doNotPrune);
 
     assert lastInput.length == 0 || input.compareTo(lastInput) >= 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
     assert validOutput(output);

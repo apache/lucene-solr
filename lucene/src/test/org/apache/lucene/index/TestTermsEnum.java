@@ -157,8 +157,9 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String randomString() {
-    // nocommit -- unicode
+    // nocommit
     return _TestUtil.randomSimpleString(random);
+    //return _TestUtil.randomRealisticUnicodeString(random);
   }
 
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
@@ -187,6 +188,7 @@ public class TestTermsEnum extends LuceneTestCase {
   // Tests Terms.intersect
   public void testIntersectRandom() throws IOException {
 
+    // nocommit -- cutover to the efficient builder else oome
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random, dir);
     
@@ -227,9 +229,6 @@ public class TestTermsEnum extends LuceneTestCase {
       }
     }
 
-    // nocommit
-    w.optimize();
-
     final IndexReader r = w.getReader();
     w.close();
 
@@ -241,7 +240,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 
-      // nocommmit -- also mix in infinite A's -- ie, random
+      // nocommit -- also mix in infinite A's -- ie, random
       // regexp -> A
 
       // From the random terms, pick some ratio and compile an

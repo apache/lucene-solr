@@ -107,7 +107,6 @@ public class PulsingCodec extends Codec {
                                                     state.dir, state.fieldInfos, state.segmentInfo.name,
                                                     pulsingReader,
                                                     state.context,
-                                                    StandardCodec.TERMS_CACHE_SIZE,
                                                     state.codecId,
                                                     state.termsIndexDivisor);
       success = true;
