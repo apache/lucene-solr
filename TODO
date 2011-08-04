@@ -1,7 +1,17 @@
 
 perf tests:
   - GRRR -- indexing MUCH slower now?
+    trunk:
+      Indexer: finished (960889 msec)
+      Indexer: net bytes indexed 9635556306
+      Indexer: 33.62065752061142 GB/hour plain text
+    branch:
+      Indexer: finished (1048065 msec)
+      Indexer: net bytes indexed 9635556306
+      Indexer: 30.824156883707392 GB/hour plain text
+
   - make sure perf isn't (much?) worse if codec doesn't implement intersect, compared to today!!
+    -- benchmark preflex
   - test perf on single seg index too!
   - try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
   - run fuzzy q under profiler
