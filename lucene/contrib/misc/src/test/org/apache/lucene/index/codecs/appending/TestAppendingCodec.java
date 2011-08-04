@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -152,7 +152,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, null, true, 1, new AppendingCodecProvider());
     assertEquals(2, reader.numDocs());
-    Document doc2 = reader.document2(0);
+    Document doc2 = reader.document(0);
     assertEquals(text, doc2.get("f"));
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");

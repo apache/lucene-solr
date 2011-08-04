@@ -1,5 +1,8 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
 /**
  * Copyright 2004 The Apache Software Foundation
  *

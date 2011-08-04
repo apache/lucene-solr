@@ -26,7 +26,7 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.store.*;
-import org.apache.lucene.document2.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -127,7 +127,7 @@ public class TestSearch extends LuceneTestCase {
 
         out.println(hits.length + " total results");
         for (int i = 0 ; i < hits.length && i < 10; i++) {
-          Document d = searcher.doc2(hits[i].doc);
+          Document d = searcher.doc(hits[i].doc);
           out.println(i + " " + hits[i].score + " " + d.get("contents"));
         }
       }

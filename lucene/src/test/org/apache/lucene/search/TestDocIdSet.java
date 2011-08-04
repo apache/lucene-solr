@@ -24,9 +24,9 @@ import java.util.Iterator;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;

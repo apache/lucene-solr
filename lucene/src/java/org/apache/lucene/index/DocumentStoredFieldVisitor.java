@@ -21,9 +21,12 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.HashSet;
 
+import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.IndexInput;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
@@ -33,6 +36,7 @@ import org.apache.lucene.store.IndexInput;
  *  document.
  *
  * @lucene.experimental */
+
 public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   private final Document doc = new Document();
   private final Set<String> fieldsToAdd;
@@ -60,7 +64,7 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     if (accept(fieldInfo)) {
       final byte[] b = new byte[numBytes];
       in.readBytes(b, 0, b.length);
-      doc.add(new Field(fieldInfo.name, b));
+      doc.add(new BinaryField(fieldInfo.name, b));
     } else {
       in.seek(in.getFilePointer() + numBytes);
     }
@@ -72,14 +76,15 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     if (accept(fieldInfo)) {
       final byte[] b = new byte[numUTF8Bytes];
       in.readBytes(b, 0, b.length);
+      FieldType ft = new FieldType(TextField.TYPE_STORED);
+      ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+      ft.setStoreTermVectors(fieldInfo.storeTermVector);
       doc.add(new Field(fieldInfo.name,
                         false,
-                        new String(b, "UTF-8"),
-                        Field.Store.YES,
-                        Field.Index.ANALYZED,  // made up!
-                        Field.TermVector.toTermVector(fieldInfo.storeTermVector,
-                                                      fieldInfo.storeOffsetWithTermVector,
-                                                      fieldInfo.storePositionWithTermVector)));
+                        ft,
+                        new String(b, "UTF-8")));
     } else {
       in.seek(in.getFilePointer() + numUTF8Bytes);
     }
@@ -89,7 +94,9 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   @Override
   public boolean intField(FieldInfo fieldInfo, int value) {
     if (accept(fieldInfo)) {
-      doc.add(new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setIntValue(value));
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setIntValue(value));
     }
     return false;
   }
@@ -97,7 +104,9 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   @Override
   public boolean longField(FieldInfo fieldInfo, long value) {
     if (accept(fieldInfo)) {
-      doc.add(new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setLongValue(value));
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setLongValue(value));
     }
     return false;
   }
@@ -105,7 +114,9 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   @Override
   public boolean floatField(FieldInfo fieldInfo, float value) {
     if (accept(fieldInfo)) {
-      doc.add(new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setFloatValue(value));
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setFloatValue(value));
     }
     return false;
   }
@@ -113,7 +124,9 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   @Override
   public boolean doubleField(FieldInfo fieldInfo, double value) {
     if (accept(fieldInfo)) {
-      doc.add(new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setDoubleValue(value));
+      FieldType ft = new FieldType(NumericField.TYPE_STORED);
+      ft.setIndexed(fieldInfo.isIndexed);
+      doc.add(new NumericField(fieldInfo.name, ft).setDoubleValue(value));
     }
     return false;
   }

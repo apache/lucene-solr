@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -150,9 +150,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
-      Document doc=searcher.doc2(sd[0].doc);
+      Document doc=searcher.doc(sd[0].doc);
       assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get(field)) );
-      doc=searcher.doc2(sd[sd.length-1].doc);
+      doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get(field)) );
       if (i>0 && 
           (searcher.getIndexReader().getSequentialSubReaders() == null || 
@@ -217,9 +217,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
-    Document doc=searcher.doc2(sd[0].doc);
+    Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
-    doc=searcher.doc2(sd[sd.length-1].doc);
+    doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
 
     q=NumericRangeQuery.newLongRange(field, precisionStep, null, upper, false, true);
@@ -227,9 +227,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
-    doc=searcher.doc2(sd[0].doc);
+    doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
-    doc=searcher.doc2(sd[sd.length-1].doc);
+    doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
@@ -263,9 +263,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
-    Document doc=searcher.doc2(sd[0].doc);
+    Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
-    doc=searcher.doc2(sd[sd.length-1].doc);
+    doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
 
     q=NumericRangeQuery.newLongRange(field, precisionStep, lower, null, true, false);
@@ -273,9 +273,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
-    doc=searcher.doc2(sd[0].doc);
+    doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
-    doc=searcher.doc2(sd[sd.length-1].doc);
+    doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
@@ -534,9 +534,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=Long.parseLong(searcher.doc2(sd[0].doc).get(field));
+      long last=Long.parseLong(searcher.doc(sd[0].doc).get(field));
       for (int j=1; j<sd.length; j++) {
-        long act=Long.parseLong(searcher.doc2(sd[j].doc).get(field));
+        long act=Long.parseLong(searcher.doc(sd[j].doc).get(field));
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

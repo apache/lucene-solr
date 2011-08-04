@@ -20,9 +20,17 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldReaderException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
@@ -59,7 +67,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     case LOAD_AND_BREAK:
       final byte[] b = new byte[numBytes];
       in.readBytes(b, 0, b.length);
-      doc.add(new Field(fieldInfo.name, b));
+      doc.add(new BinaryField(fieldInfo.name, b));
       return accept != FieldSelectorResult.LOAD;
     case LAZY_LOAD:
     case LATENT:
@@ -85,8 +93,11 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     case LOAD_AND_BREAK:
       final byte[] b = new byte[numUTF8Bytes];
       in.readBytes(b, 0, b.length);
-      Field.TermVector termVector = Field.TermVector.toTermVector(fieldInfo.storeTermVector, fieldInfo.storeOffsetWithTermVector, fieldInfo.storePositionWithTermVector);
-      doc.add(new Field(fieldInfo.name, false, new String(b, "UTF-8"), Field.Store.YES, Field.Index.ANALYZED, termVector));
+      FieldType ft = new FieldType(TextField.TYPE_STORED);
+      ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+      ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+      doc.add(new Field(fieldInfo.name, ft, new String(b, "UTF-8"))); 
       return accept != FieldSelectorResult.LOAD;
     case LAZY_LOAD:
     case LATENT:
@@ -106,27 +117,41 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
 
   @Override
   public boolean intField(FieldInfo fieldInfo, int value) throws IOException {
-    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setIntValue(value));
+		FieldType ft = new FieldType(NumericField.TYPE_STORED);
+		ft.setIndexed(fieldInfo.isIndexed);
+		ft.setOmitNorms(fieldInfo.omitNorms);
+		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setIntValue(value));
   }
 
   @Override
-  public boolean longField(FieldInfo fieldInfo, long value) throws IOException {
-    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setLongValue(value));
+  public boolean longField(FieldInfo fieldInfo, long value) throws IOException { 
+		FieldType ft = new FieldType(NumericField.TYPE_STORED);
+		ft.setIndexed(fieldInfo.isIndexed);
+		ft.setOmitNorms(fieldInfo.omitNorms);
+		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setLongValue(value));
   }
 
   @Override
   public boolean floatField(FieldInfo fieldInfo, float value) throws IOException {
-    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setFloatValue(value));
+		FieldType ft = new FieldType(NumericField.TYPE_STORED);
+		ft.setIndexed(fieldInfo.isIndexed);
+		ft.setOmitNorms(fieldInfo.omitNorms);
+		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setFloatValue(value));
   }
 
   @Override
   public boolean doubleField(FieldInfo fieldInfo, double value) throws IOException {
-    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, Field.Store.YES, fieldInfo.isIndexed).setDoubleValue(value));
+		FieldType ft = new FieldType(NumericField.TYPE_STORED);
+		ft.setIndexed(fieldInfo.isIndexed);
+		ft.setOmitNorms(fieldInfo.omitNorms);
+		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+    return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setDoubleValue(value));
   }
 
   private boolean addNumericField(FieldInfo fieldInfo, NumericField f) {
-    f.setOmitNorms(fieldInfo.omitNorms);
-    f.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
     doc.add(f);
     final FieldSelectorResult accept = selector.accept(fieldInfo.name);
     switch (accept) {
@@ -147,19 +172,25 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
   }
 
   private void addFieldLazy(IndexInput in, FieldInfo fi, boolean binary, boolean cacheResult, int numBytes) throws IOException {
-    final AbstractField f;
+    final IndexableField f;
     final long pointer = in.getFilePointer();
     // Need to move the pointer ahead by toRead positions
     in.seek(pointer+numBytes);
+    FieldType ft = new FieldType();
+    ft.setStored(true);
+    ft.setOmitNorms(fi.omitNorms);
+    ft.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    ft.setLazy(true);
+    
     if (binary) {
-      f = new LazyField(in, fi.name, Field.Store.YES, numBytes, pointer, binary, cacheResult);
+      f = new LazyField(in, fi.name, ft, numBytes, pointer, binary, cacheResult);
     } else {
-      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
-      f = new LazyField(in, fi.name, Field.Store.YES, Field.Index.ANALYZED, termVector, numBytes, pointer, binary, cacheResult);
+      ft.setStoreTermVectors(fi.storeTermVector);
+      ft.setStoreTermVectorOffsets(fi.storeOffsetWithTermVector);
+      ft.setStoreTermVectorPositions(fi.storePositionWithTermVector);
+      f = new LazyField(in, fi.name, ft, numBytes, pointer, binary, cacheResult);
     }
     
-    f.setOmitNorms(fi.omitNorms);
-    f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
     doc.add(f);
   }
 
@@ -172,21 +203,21 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     sizebytes[1] = (byte) (numBytes>>>16);
     sizebytes[2] = (byte) (numBytes>>> 8);
     sizebytes[3] = (byte)  numBytes      ;
-    doc.add(new Field(fi.name, sizebytes));
+    doc.add(new BinaryField(fi.name, sizebytes));
   }
 
   /**
    * A Lazy field implementation that defers loading of fields until asked for, instead of when the Document is
    * loaded.
    */
-  private static class LazyField extends AbstractField {
+  private static class LazyField extends Field {
     private int toRead;
     private long pointer;
     private final boolean cacheResult;
     private final IndexInput in;
 
-    public LazyField(IndexInput in, String name, Field.Store store, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
-      super(name, store, Field.Index.NO, Field.TermVector.NO);
+    public LazyField(IndexInput in, String name, FieldType ft, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
+      super(name, ft);
       this.in = in;
       this.toRead = toRead;
       this.pointer = pointer;
@@ -194,26 +225,15 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
       this.cacheResult = cacheResult;
       if (isBinary)
         binaryLength = toRead;
-      lazy = true;
     }
 
-    public LazyField(IndexInput in, String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
-      super(name, store, index, termVector);
-      this.in = in;
-      this.toRead = toRead;
-      this.pointer = pointer;
-      this.isBinary = isBinary;
-      this.cacheResult = cacheResult;
-      if (isBinary)
-        binaryLength = toRead;
-      lazy = true;
-    }
-
-    public Number getNumericValue() {
+    @Override
+    public Number numericValue() {
       return null;
     }
 
-    public org.apache.lucene.document2.NumericField.DataType getDataType() {
+    @Override
+    public DataType numericDataType() {
       return null;
     }
 

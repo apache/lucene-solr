@@ -21,7 +21,7 @@ package org.apache.solr.update;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 

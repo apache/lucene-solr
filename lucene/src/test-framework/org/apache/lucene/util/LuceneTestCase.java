@@ -36,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -1058,14 +1058,14 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
   
-  public static org.apache.lucene.document2.Field newField(String name, String value, FieldType type) {
+  public static org.apache.lucene.document.Field newField(String name, String value, FieldType type) {
     return newField(random, name, value, type);
   }
   
-  public static org.apache.lucene.document2.Field newField(Random random, String name, String value, FieldType type) {
+  public static org.apache.lucene.document.Field newField(Random random, String name, String value, FieldType type) {
     if (usually(random)) {
       // most of the time, don't modify the params
-      return new org.apache.lucene.document2.Field(name, type, value);
+      return new org.apache.lucene.document.Field(name, type, value);
     }
 
     FieldType newType = new FieldType(type);
@@ -1095,7 +1095,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     */
     
-    return new org.apache.lucene.document2.Field(name, newType, value);
+    return new org.apache.lucene.document.Field(name, newType, value);
   }
   
   /** return a random Locale from the available locales on the system */

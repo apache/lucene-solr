@@ -20,8 +20,8 @@ package org.apache.lucene.queryParser.standard.config;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.document2.DateTools;
-import org.apache.lucene.document2.DateTools.Resolution;
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.util.AttributeImpl;
 
 /**

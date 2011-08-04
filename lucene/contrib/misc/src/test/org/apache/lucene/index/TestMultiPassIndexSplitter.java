@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
@@ -77,7 +77,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = IndexReader.open(dirs[0], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
-    Document doc = ir.document2(0);
+    Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("1")));
@@ -85,7 +85,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     ir.close();
     ir = IndexReader.open(dirs[1], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    doc = ir.document2(0);
+    doc = ir.document(0);
     assertEquals("1", doc.get("id"));
     te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("0")));
@@ -94,7 +94,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     ir.close();
     ir = IndexReader.open(dirs[2], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    doc = ir.document2(0);
+    doc = ir.document(0);
     assertEquals("2", doc.get("id"));
 
     te = MultiFields.getTerms(ir, "id").iterator();
@@ -122,19 +122,19 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = IndexReader.open(dirs[0], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    Document doc = ir.document2(0);
+    Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     int start = ir.numDocs();
     ir.close();
     ir = IndexReader.open(dirs[1], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    doc = ir.document2(0);
+    doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));
     start += ir.numDocs();
     ir.close();
     ir = IndexReader.open(dirs[2], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    doc = ir.document2(0);
+    doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));
     // make sure the deleted doc is not here
     TermsEnum te = MultiFields.getTerms(ir, "id").iterator();

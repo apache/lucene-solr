@@ -43,10 +43,10 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 
 import java.io.Reader;
 import java.io.IOException;

@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
@@ -99,7 +99,7 @@ public abstract class ReadTask extends PerfTask {
       Bits delDocs = MultiFields.getDeletedDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
         if (null == delDocs || ! delDocs.get(m)) {
-          doc = reader.document2(m);
+          doc = reader.document(m);
           res += (doc == null ? 0 : 1);
         }
       }
@@ -144,7 +144,7 @@ public abstract class ReadTask extends PerfTask {
           System.out.println("numDocs() = " + reader.numDocs());
           for(int i=0;i<hits.scoreDocs.length;i++) {
             final int docID = hits.scoreDocs[i].doc;
-            final Document doc = reader.document2(docID);
+            final Document doc = reader.document(docID);
             System.out.println("  " + i + ": doc=" + docID + " score=" + hits.scoreDocs[i].score + " " + printHitsField + " =" + doc.get(printHitsField));
           }
         }
@@ -197,7 +197,7 @@ public abstract class ReadTask extends PerfTask {
 
 
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
-    return ir.document2(id);
+    return ir.document(id);
   }
 
   /**

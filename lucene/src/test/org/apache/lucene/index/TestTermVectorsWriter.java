@@ -26,11 +26,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -320,7 +320,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
       IndexReader reader = IndexReader.open(dir, true);
       for(int i=0;i<reader.numDocs();i++) {
-        reader.document2(i);
+        reader.document(i);
         reader.getTermFreqVectors(i);
       }
       reader.close();
@@ -422,7 +422,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, true);
     for(int i=0;i<10;i++) {
       reader.getTermFreqVectors(i);
-      reader.document2(i);
+      reader.document(i);
     }
     reader.close();
     dir.close();

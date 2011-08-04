@@ -17,9 +17,9 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;

@@ -32,11 +32,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -651,7 +651,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           if (delDocs.get(j))
             numDel++;
           else {
-            reader.document2(j);
+            reader.document(j);
             reader.getTermFreqVectors(j);
           }
         }
@@ -675,7 +675,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       int numDel = 0;
       assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document2(j);
+        reader.document(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();
@@ -765,7 +765,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (delDocs.get(j))
           numDel++;
         else {
-          reader.document2(j);
+          reader.document(j);
           reader.getTermFreqVectors(j);
         }
       }
@@ -788,7 +788,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.maxDoc());
       assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document2(j);
+        reader.document(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();

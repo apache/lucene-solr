@@ -33,7 +33,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -801,7 +801,7 @@ public final class MoreLikeThis {
         o.println();
         ScoreDoc[] scoreDocs = hits.scoreDocs;
         for (int i = 0; i < Math.min(25, len); i++) {
-            Document d = searcher.doc2(scoreDocs[i].doc);
+            Document d = searcher.doc(scoreDocs[i].doc);
 			String summary = d.get( "summary");
             o.println("score  : " + scoreDocs[i].score);
             o.println("url    : " + d.get("url"));
@@ -825,7 +825,7 @@ public final class MoreLikeThis {
 
             // field does not store term vector info
             if (vector == null) {
-            	Document d=ir.document2(docNum);
+            	Document d=ir.document(docNum);
             	IndexableField text[]=d.getFields(fieldName);
             	if(text!=null)
             	{

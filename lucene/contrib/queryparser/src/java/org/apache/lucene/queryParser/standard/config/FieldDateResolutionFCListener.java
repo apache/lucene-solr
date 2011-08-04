@@ -17,7 +17,7 @@ package org.apache.lucene.queryParser.standard.config;
  * limitations under the License.
  */
 
-import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.FieldConfigListener;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;

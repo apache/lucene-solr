@@ -24,9 +24,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 
 public class TestCrash extends LuceneTestCase {
 

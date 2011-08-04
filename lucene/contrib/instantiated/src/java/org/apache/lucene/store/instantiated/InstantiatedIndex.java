@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiNorms;
@@ -189,7 +189,7 @@ public class InstantiatedIndex
       } else {
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
-        Document sourceDocument = sourceIndexReader.document2(i);
+        Document sourceDocument = sourceIndexReader.document(i);
         for (IndexableField field : sourceDocument) {
           if (fields == null || fields.contains(field.name())) {
             document.getDocument().add(field);

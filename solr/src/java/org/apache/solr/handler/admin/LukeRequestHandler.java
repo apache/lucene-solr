@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -122,7 +122,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     if( docId != null ) {
       Document doc = null;
       try {
-        doc = reader.document2( docId );
+        doc = reader.document( docId );
       }
       catch( Exception ex ) {}
       if( doc == null ) {
@@ -321,7 +321,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         if( top.totalHits > 0 ) {
           // Find a document with this field
           try {
-            Document doc = searcher.doc2( top.scoreDocs[0].doc );
+            Document doc = searcher.doc( top.scoreDocs[0].doc );
             IndexableField fld = doc.getField( fieldName );
             if( fld != null ) {
               f.add( "index", getFieldFlags( fld ) );

@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -68,7 +68,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
       int numDocs = r.numDocs();
       // index is allowed to have exactly one document or 0.
       if (numDocs == 1) {
-        Document doc = r.document2(r.maxDoc() - 1);
+        Document doc = r.document(r.maxDoc() - 1);
         Field sid = (Field) doc.getField(SNAPSHOTS_ID);
         if (sid == null) {
           throw new IllegalStateException("directory is not a valid snapshots store!");

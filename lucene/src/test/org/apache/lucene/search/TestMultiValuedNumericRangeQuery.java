@@ -22,9 +22,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.NumericField;
-import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;

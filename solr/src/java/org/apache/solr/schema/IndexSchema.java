@@ -260,7 +260,7 @@ public final class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public IndexableField getUniqueKeyField(org.apache.lucene.document2.Document doc) {
+  public IndexableField getUniqueKeyField(org.apache.lucene.document.Document doc) {
     return doc.getField(uniqueKeyFieldName);  // this should return null if name is null
   }
 
@@ -269,7 +269,7 @@ public final class IndexSchema {
    * the specified Document
    * @return null if this schema has no unique key field
    */
-  public String printableUniqueKey(org.apache.lucene.document2.Document doc) {
+  public String printableUniqueKey(org.apache.lucene.document.Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
     return f==null ? null : uniqueKeyFieldType.toExternal(f);
   }

@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
@@ -239,14 +239,8 @@ public class IndexSearcher {
   }
 
   /* Sugar for <code>.getIndexReader().document(docID)</code> */
-  /*
   public Document doc(int docID) throws CorruptIndexException, IOException {
     return reader.document(docID);
-  }
-  */
-
-  public org.apache.lucene.document2.Document doc2(int docID) throws CorruptIndexException, IOException {
-    return reader.document2(docID);
   }
 
   /* Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */

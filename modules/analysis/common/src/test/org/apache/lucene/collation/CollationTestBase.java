@@ -37,11 +37,11 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
@@ -249,7 +249,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      Document doc = searcher.doc2(result[i].doc);
+      Document doc = searcher.doc(result[i].doc);
       IndexableField[] v = doc.getFields("tracer");
       for (int j = 0 ; j < v.length ; ++j) {
         buff.append(v[j].stringValue());

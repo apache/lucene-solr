@@ -24,9 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -388,7 +388,7 @@ public class SpellChecker implements java.io.Closeable {
       SuggestWord sugWord = new SuggestWord();
       for (int i = 0; i < stop; i++) {
 
-        sugWord.string = indexSearcher.doc2(hits[i].doc).get(F_WORD); // get orig word
+        sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD); // get orig word
 
         // don't suggest a word for itself, that would be silly
         if (sugWord.string.equals(word)) {

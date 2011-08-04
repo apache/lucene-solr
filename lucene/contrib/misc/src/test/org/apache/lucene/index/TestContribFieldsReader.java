@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldSelector;
-import org.apache.lucene.document2.FieldSelectorResult;
-import org.apache.lucene.document2.FieldSelectorVisitor;
-import org.apache.lucene.document2.LoadFirstFieldSelector;
-import org.apache.lucene.document2.SetBasedFieldSelector;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document.LoadFirstFieldSelector;
+import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 
 public class TestContribFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static org.apache.lucene.document2.Document testDoc = new org.apache.lucene.document2.Document();
+  private static org.apache.lucene.document.Document testDoc = new org.apache.lucene.document.Document();
   private static FieldInfos fieldInfos = null;
 
   @BeforeClass
@@ -243,7 +243,7 @@ public class TestContribFieldsReader extends LuceneTestCase {
       IndexReader reader = IndexReader.open(tmpDir);
 
       Document doc;
-      doc = reader.document2(0);//Load all of them
+      doc = reader.document(0);//Load all of them
       assertTrue("doc is null and it shouldn't be", doc != null);
       IndexableField field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
       assertTrue("field is null and it shouldn't be", field != null);

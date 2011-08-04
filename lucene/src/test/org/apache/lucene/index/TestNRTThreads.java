@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -134,7 +134,7 @@ public class TestNRTThreads extends LuceneTestCase {
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
           if (delDocs == null || !delDocs.get(docID)) {
-            final Document doc = reader.document2(docID);
+            final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }
         }
@@ -525,7 +525,7 @@ public class TestNRTThreads extends LuceneTestCase {
             startDocID = docID;
           }
           lastDocID = docID;
-          final Document doc = s.doc2(docID);
+          final Document doc = s.doc(docID);
           assertEquals(subDocs.packID, doc.get("packID"));
         }
 

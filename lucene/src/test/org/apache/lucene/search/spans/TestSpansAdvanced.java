@@ -24,10 +24,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -165,7 +165,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
       
       int id = topdocs.scoreDocs[i].doc;
       float score = topdocs.scoreDocs[i].score;
-      Document doc = s.doc2(id);
+      Document doc = s.doc(id);
       assertEquals(expectedIds[i], doc.get(FIELD_ID));
       boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
       if (!scoreEq) {

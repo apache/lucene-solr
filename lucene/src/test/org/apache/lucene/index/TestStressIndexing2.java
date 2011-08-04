@@ -31,10 +31,10 @@ import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
@@ -294,7 +294,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits delDocs = sub.getDeletedDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
-        Document doc = sub.document2(docID);
+        Document doc = sub.document(docID);
         if (delDocs == null || !delDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.get("id"));
         } else {
@@ -383,11 +383,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       // verify stored fields are equivalent
       try {
-        verifyEquals(r1.document2(id1), r2.document2(id2));
+        verifyEquals(r1.document(id1), r2.document(id2));
       } catch (Throwable t) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2 + " term="+ term);
-        System.out.println("  d1=" + r1.document2(id1));
-        System.out.println("  d2=" + r2.document2(id2));
+        System.out.println("  d1=" + r1.document(id1));
+        System.out.println("  d2=" + r2.document(id2));
         throw t;
       }
 

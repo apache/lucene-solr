@@ -23,7 +23,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.util.Bits;
@@ -897,7 +897,7 @@ public class CheckIndex {
       for (int j = 0; j < info.docCount; ++j) {
         if (delDocs == null || !delDocs.get(j)) {
           status.docCount++;
-          Document doc = reader.document2(j);
+          Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
         }
       }      

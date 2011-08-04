@@ -42,11 +42,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document2.BinaryField;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -1011,7 +1011,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    Document doc2 = ir.document2(0);
+    Document doc2 = ir.document(0);
     IndexableField f2 = doc2.getField("binary");
     b = f2.binaryValue(null).bytes;
     assertTrue(b != null);
@@ -1282,20 +1282,20 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);
-    Document doc2 = ir.document2(0);
+    Document doc2 = ir.document(0);
     IndexableField f3 = doc2.getField("binary");
     b = f3.binaryValue(null).bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);
 
-    assertTrue(ir.document2(0).getField("binary").binaryValue(null)!=null);
-    assertTrue(ir.document2(1).getField("binary").binaryValue(null)!=null);
-    assertTrue(ir.document2(2).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document(0).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document(1).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document(2).getField("binary").binaryValue(null)!=null);
 
-    assertEquals("value", ir.document2(0).get("string"));
-    assertEquals("value", ir.document2(1).get("string"));
-    assertEquals("value", ir.document2(2).get("string"));
+    assertEquals("value", ir.document(0).get("string"));
+    assertEquals("value", ir.document(1).get("string"));
+    assertEquals("value", ir.document(2).get("string"));
 
 
     // test that the terms were indexed.
@@ -1324,7 +1324,7 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Document doc2 = r.document2(0);
+    Document doc2 = r.document(0);
     Iterator<IndexableField> it = doc2.getFields().iterator();
     assertTrue(it.hasNext());
     Field f = (Field) it.next();
@@ -1668,7 +1668,7 @@ public class TestIndexWriter extends LuceneTestCase {
           }
           TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
           assertEquals(1, hits.totalHits);
-          Document doc = r.document2(hits.scoreDocs[0].doc);
+          Document doc = r.document(hits.scoreDocs[0].doc);
           Document docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
             assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));

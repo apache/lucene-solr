@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -407,8 +407,8 @@ public class TrieField extends FieldType {
   @Override
   public String storedToIndexed(IndexableField f) {
     final BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-    if (f instanceof org.apache.lucene.document2.NumericField) {
-      final Number val = ((org.apache.lucene.document2.NumericField) f).numericValue();
+    if (f instanceof org.apache.lucene.document.NumericField) {
+      final Number val = ((org.apache.lucene.document.NumericField) f).numericValue();
       if (val==null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {
@@ -477,14 +477,14 @@ public class TrieField extends FieldType {
       return null;
     }
     
-    org.apache.lucene.document2.FieldType ft = new org.apache.lucene.document2.FieldType();
+    org.apache.lucene.document.FieldType ft = new org.apache.lucene.document.FieldType();
     ft.setStored(stored);
     ft.setTokenized(true);
     ft.setIndexed(indexed);
     ft.setOmitNorms(field.omitNorms());
     ft.setOmitTermFreqAndPositions(field.omitTf());
     
-    final org.apache.lucene.document2.NumericField f = new org.apache.lucene.document2.NumericField(field.getName(), precisionStep, ft);
+    final org.apache.lucene.document.NumericField f = new org.apache.lucene.document.NumericField(field.getName(), precisionStep, ft);
     switch (type) {
       case INTEGER:
         int i = (value instanceof Number)

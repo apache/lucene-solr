@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.FieldCache; // javadocs
@@ -974,18 +974,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  /*
-  public Document document(int docID) throws CorruptIndexException, IOException {
+  public org.apache.lucene.document.Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
-    document(docID, visitor);
-    return visitor.getDocument();
-  }
-  */
-
-  public org.apache.lucene.document2.Document document2(int docID) throws CorruptIndexException, IOException {
-    ensureOpen();
-    final Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
   }
@@ -1011,7 +1002,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
-   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its
+   * org.apache.lucene.document.Field#setBoost(float) boost} and its
    * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *

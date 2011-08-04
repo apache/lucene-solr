@@ -86,7 +86,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     assertEquals("All docs should be matched!",N_DOCS,h.length);
     String prevID = "ID"+(N_DOCS+1); // greater than all ids of docs in this test
     for (int i=0; i<h.length; i++) {
-      String resID = s.doc2(h[i].doc).get(ID_FIELD);
+      String resID = s.doc(h[i].doc).get(ID_FIELD);
       log(i+".   score="+h[i].score+"  -  "+resID);
       log(s.explain(q,h[i].doc));
       assertTrue("res id "+resID+" should be < prev res id "+prevID, resID.compareTo(prevID)<0);
@@ -134,7 +134,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     for (ScoreDoc aSd : sd) {
       float score = aSd.score;
       log(s.explain(q, aSd.doc));
-      String id = s.getIndexReader().document2(aSd.doc).get(ID_FIELD);
+      String id = s.getIndexReader().document(aSd.doc).get(ID_FIELD);
       float expectedScore = expectedFieldScore(id); // "ID7" --> 7.0
       assertEquals("score of " + id + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
     }

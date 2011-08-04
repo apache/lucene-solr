@@ -78,7 +78,7 @@ public class TestOrdValues extends FunctionTestSetup {
             : "IC";  // smaller than all ids of docs in this test ("ID0001", etc.)
 
     for (int i = 0; i < h.length; i++) {
-      String resID = s.doc2(h[i].doc).get(ID_FIELD);
+      String resID = s.doc(h[i].doc).get(ID_FIELD);
       log(i + ".   score=" + h[i].score + "  -  " + resID);
       log(s.explain(q, h[i].doc));
       if (inOrder) {
@@ -123,7 +123,7 @@ public class TestOrdValues extends FunctionTestSetup {
     ScoreDoc sd[] = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {
       float score = sd[i].score;
-      String id = s.getIndexReader().document2(sd[i].doc).get(ID_FIELD);
+      String id = s.getIndexReader().document(sd[i].doc).get(ID_FIELD);
       log("-------- " + i + ". Explain doc " + id);
       log(s.explain(q, sd[i].doc));
       float expectedScore = N_DOCS - i;

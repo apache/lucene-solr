@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
@@ -465,7 +465,7 @@ public class QueryComponent extends SearchComponent
       Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList sortVals = new NamedList(); // order is important for the sort fields
-      org.apache.lucene.document2.FieldType docft = new org.apache.lucene.document2.FieldType();
+      org.apache.lucene.document.FieldType docft = new org.apache.lucene.document.FieldType();
       docft.setStored(true);
       Field field = new Field("dummy", docft, ""); // a dummy Field
       ReaderContext topReaderContext = searcher.getTopReaderContext();

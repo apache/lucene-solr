@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document2.Document;       // javadocs
+import org.apache.lucene.document.Document;
 import org.apache.lucene.store.IndexInput;
 
 /**

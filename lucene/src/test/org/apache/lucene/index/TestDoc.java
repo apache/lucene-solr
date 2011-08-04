@@ -30,9 +30,9 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -224,7 +224,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader reader = SegmentReader.get(true, si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
       for (int i = 0; i < reader.numDocs(); i++)
-        out.println(reader.document2(i));
+        out.println(reader.document(i));
 
       FieldsEnum fis = reader.fields().iterator();
       String field = fis.next();

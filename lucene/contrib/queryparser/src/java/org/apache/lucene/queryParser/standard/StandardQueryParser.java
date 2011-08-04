@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.TooManyListenersException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryParserHelper;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;

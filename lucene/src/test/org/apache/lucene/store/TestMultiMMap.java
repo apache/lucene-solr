@@ -21,9 +21,9 @@ import java.io.File;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.LuceneTestCase;
@@ -80,7 +80,7 @@ public class TestMultiMMap extends LuceneTestCase {
     int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {
       int docID = random.nextInt(numDocs);
-      assertEquals("" + docID, reader.document2(docID).get("docid"));
+      assertEquals("" + docID, reader.document(docID).get("docid"));
     }
     reader.close();
     dir.close();

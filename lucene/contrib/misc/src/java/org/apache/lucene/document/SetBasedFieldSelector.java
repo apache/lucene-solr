@@ -18,6 +18,8 @@ package org.apache.lucene.document;
 
 import java.util.Set;
 
+import org.apache.lucene.document.Field;
+
 /**
  * Declare what fields to load normally and what fields to load lazily
  *

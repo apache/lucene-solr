@@ -30,11 +30,11 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
@@ -188,7 +188,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            Document prevItereationDoc = reader.document2(n);
+            Document prevItereationDoc = reader.document(n);
             assertNotNull(prevItereationDoc);
             String id = prevItereationDoc.get("id");
             assertEquals(k+"_"+j, id);
@@ -777,7 +777,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                     new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
                     null, 1000).scoreDocs;
                 if (hits.length > 0) {
-                  searcher.doc2(hits[0].doc);
+                  searcher.doc(hits[0].doc);
                 }
                 searcher.close();
                 if (refreshed != r) {
@@ -1105,7 +1105,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertTrue(r1 != r3);
     r1.close();
     try {
-      r1.document2(2);
+      r1.document(2);
       fail("did not hit exception");
     } catch (AlreadyClosedException ace) {
       // expected

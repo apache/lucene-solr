@@ -26,7 +26,7 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
 
   @Override
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
-    Document document = ir.document2(id);
+    Document document = ir.document(id);
     if (document != null) {
       numDocsRetrieved++;
     }

@@ -17,7 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;

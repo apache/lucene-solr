@@ -19,11 +19,11 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -180,7 +180,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
-          + r.document2(ds.docID()).get("id"));
+          + r.document(ds.docID()).get("id"));
     }
   }
   
@@ -194,7 +194,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     final Scorer ds = dw.scorer((AtomicReaderContext)s.getTopReaderContext(), ScorerContext.def());
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
-    assertEquals("found wrong docid", "d4", r.document2(ds.docID()).get("id"));
+    assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));
   }
   
   public void testSimpleEqualScores1() throws Exception {
@@ -280,7 +280,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     try {
       assertEquals("3 docs should match " + q.toString(), 3, h.length);
-      assertEquals("wrong first", "d2", s.doc2(h[0].doc).get("id"));
+      assertEquals("wrong first", "d2", s.doc(h[0].doc).get("id"));
       float score0 = h[0].score;
       float score1 = h[1].score;
       float score2 = h[2].score;
@@ -356,7 +356,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
         assertEquals("score #" + i + " is not the same", score, h[i].score,
             SCORE_COMP_THRESH);
       }
-      assertEquals("wrong last", "d1", s.doc2(h[h.length - 1].doc).get("id"));
+      assertEquals("wrong last", "d1", s.doc(h[h.length - 1].doc).get("id"));
       float score1 = h[h.length - 1].score;
       assertTrue("d1 does not have worse score then others: " + score + " >? "
           + score1, score > score1);
@@ -394,10 +394,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       float score2 = h[2].score;
       float score3 = h[3].score;
       
-      String doc0 = s.doc2(h[0].doc).get("id");
-      String doc1 = s.doc2(h[1].doc).get("id");
-      String doc2 = s.doc2(h[2].doc).get("id");
-      String doc3 = s.doc2(h[3].doc).get("id");
+      String doc0 = s.doc(h[0].doc).get("id");
+      String doc1 = s.doc(h[1].doc).get("id");
+      String doc2 = s.doc(h[2].doc).get("id");
+      String doc3 = s.doc(h[3].doc).get("id");
       
       assertTrue("doc0 should be d2 or d4: " + doc0, doc0.equals("d2")
           || doc0.equals("d4"));
@@ -448,10 +448,10 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       float score2 = h[2].score;
       float score3 = h[3].score;
       
-      String doc0 = s.doc2(h[0].doc).get("id");
-      String doc1 = s.doc2(h[1].doc).get("id");
-      String doc2 = s.doc2(h[2].doc).get("id");
-      String doc3 = s.doc2(h[3].doc).get("id");
+      String doc0 = s.doc(h[0].doc).get("id");
+      String doc1 = s.doc(h[1].doc).get("id");
+      String doc2 = s.doc(h[2].doc).get("id");
+      String doc3 = s.doc(h[3].doc).get("id");
       
       assertEquals("doc0 should be d4: ", "d4", doc0);
       assertEquals("doc1 should be d3: ", "d3", doc1);
@@ -491,7 +491,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     DecimalFormat f = new DecimalFormat("0.000000000");
     
     for (int i = 0; i < h.length; i++) {
-      Document d = searcher.doc2(h[i].doc);
+      Document d = searcher.doc(h[i].doc);
       float score = h[i].score;
       System.err
           .println("#" + i + ": " + f.format(score) + " - " + d.get("id"));

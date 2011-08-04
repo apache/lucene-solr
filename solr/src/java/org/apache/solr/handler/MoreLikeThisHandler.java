@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
@@ -342,7 +342,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
-      Document doc = reader.document2(id);
+      Document doc = reader.document(id);
       rawMLTQuery = mlt.like(id);
       boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {
@@ -391,7 +391,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         int id = iterator.nextDoc();
         
         DocListAndSet sim = getMoreLikeThis( id, 0, rows, null, null, flags );
-        String name = schema.printableUniqueKey( reader.document2( id ) );
+        String name = schema.printableUniqueKey( reader.document( id ) );
 
         mlt.add(name, sim.docList);
       }

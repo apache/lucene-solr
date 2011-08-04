@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.NumericField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -284,7 +284,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(2, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = searcher.doc2(scoreDocs[i].doc);
+      Document d = searcher.doc(scoreDocs[i].doc);
 
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
@@ -380,7 +380,7 @@ public class TestCartesian extends LuceneTestCase {
     assertEquals(18, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = searcher.doc2(scoreDocs[i].doc);
+      Document d = searcher.doc(scoreDocs[i].doc);
       String name = d.get("name");
       double rsLat = Double.parseDouble(d.get(latField));
       double rsLng = Double.parseDouble(d.get(lngField));
@@ -475,7 +475,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
       double lastDistance = 0;
       for(int i =0 ; i < results; i++){
-        Document d = searcher.doc2(scoreDocs[i].doc);
+        Document d = searcher.doc(scoreDocs[i].doc);
       
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));
@@ -570,7 +570,7 @@ public class TestCartesian extends LuceneTestCase {
       assertEquals(expected[x], results);
 	    
       for(int i =0 ; i < results; i++){
-        Document d = searcher.doc2(scoreDocs[i].doc);
+        Document d = searcher.doc(scoreDocs[i].doc);
 	      
         String name = d.get("name");
         double rsLat = Double.parseDouble(d.get(latField));

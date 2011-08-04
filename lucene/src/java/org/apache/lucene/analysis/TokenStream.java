@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.lang.reflect.Modifier;
 
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;

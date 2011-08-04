@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
@@ -249,7 +249,7 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
-    org.apache.lucene.document2.FieldType newType = new org.apache.lucene.document2.FieldType();
+    org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
     newType.setIndexed(field.indexed());
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
@@ -301,11 +301,11 @@ public abstract class FieldType extends FieldProperties {
    * Fields per SchemaField
    * @param name The name of the field
    * @param val The _internal_ value to index
-   * @param type {@link org.apache.lucene.document2.FieldType}
+   * @param type {@link org.apache.lucene.document.FieldType}
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(String name, String val, org.apache.lucene.document2.FieldType type, float boost){
+  protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
     Field f = new Field(name, type, val);
     f.setBoost(boost);
     return f;

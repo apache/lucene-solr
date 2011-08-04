@@ -23,7 +23,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.document2.*;
+import org.apache.lucene.document.*;
 
 public class TestValueSource extends LuceneTestCase {
 

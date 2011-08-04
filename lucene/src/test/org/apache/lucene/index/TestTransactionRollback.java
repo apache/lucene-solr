@@ -28,9 +28,9 @@ import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
@@ -94,7 +94,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     final Bits delDocs = MultiFields.getDeletedDocs(r);
     for (int i = 0; i < r.maxDoc(); i++) {
       if(delDocs == null || !delDocs.get(i)) {
-        String sval=r.document2(i).get(FIELD_RECORD_ID);
+        String sval=r.document(i).get(FIELD_RECORD_ID);
         if(sval!=null) {
           int val=Integer.parseInt(sval);
           assertTrue("Did not expect document #"+val, expecteds.get(val));

@@ -9,10 +9,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.NumericField;
-import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -233,7 +233,7 @@ public class TestParser extends LuceneTestCase {
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for(int i=0;i<Math.min(numDocs,hits.totalHits);i++)
       {
-        Document ldoc=searcher.doc2(scoreDocs[i].doc);
+        Document ldoc=searcher.doc(scoreDocs[i].doc);
         System.out.println("["+ldoc.get("date")+"]"+ldoc.get("contents"));
       }
       System.out.println();

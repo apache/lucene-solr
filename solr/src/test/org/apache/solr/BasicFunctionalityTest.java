@@ -26,9 +26,9 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.document2.FieldSelectorVisitor;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelectorVisitor;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.common.SolrException;
@@ -562,7 +562,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
-    Document d = req.getSearcher().doc2(dl.iterator().nextDoc());
+    Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
     assertFalse( ((Field) d.getField("test_hlt")).lazy() );
     assertFalse( ((Field) d.getField("title")).lazy() );
@@ -585,7 +585,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     DocIterator di = dl.iterator();    
-    Document d = req.getSearcher().doc2(di.nextDoc());
+    Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
     System.out.println(d.getField("test_hlt").getClass());
     assertTrue( ((Field) d.getField("test_hlt")).lazy() );

@@ -31,9 +31,9 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.StringField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 
 /**
  * Holds tests cases to verify external APIs are accessible

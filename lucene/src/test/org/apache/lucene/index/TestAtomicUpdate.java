@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
-import org.apache.lucene.document2.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 
 import java.util.Random;

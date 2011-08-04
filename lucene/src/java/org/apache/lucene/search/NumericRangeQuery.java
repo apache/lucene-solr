@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.index.Terms;

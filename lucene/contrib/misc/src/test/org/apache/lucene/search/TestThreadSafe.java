@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.*;
+import org.apache.lucene.document.*;
 
 import java.util.Random;
 import java.util.List;

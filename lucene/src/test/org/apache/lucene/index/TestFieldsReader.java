@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.NumericField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static org.apache.lucene.document2.Document testDoc = new org.apache.lucene.document2.Document();
+  private static Document testDoc = new Document();
   private static FieldInfos fieldInfos = null;
 
   @BeforeClass
@@ -67,7 +67,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     IndexReader reader = IndexReader.open(dir);
-    Document doc = reader.document2(0);
+    Document doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 
@@ -90,7 +90,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.storeTermVectorOffsets() == false);
     assertTrue(field.storeTermVectorPositions() == false);
 
-    Document2StoredFieldVisitor visitor = new Document2StoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
+    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);
     final List<IndexableField> fields = visitor.getDocument().getFields();
     assertEquals(1, fields.size());
@@ -203,13 +203,13 @@ public class TestFieldsReader extends LuceneTestCase {
 
       for(int i=0;i<2;i++) {
         try {
-          reader.document2(i);
+          reader.document(i);
         } catch (IOException ioe) {
           // expected
           exc = true;
         }
         try {
-          reader.document2(i);
+          reader.document(i);
         } catch (IOException ioe) {
           // expected
           exc = true;
@@ -231,8 +231,8 @@ public class TestFieldsReader extends LuceneTestCase {
     final Number[] answers = new Number[numDocs];
     final NumericField.DataType[] typeAnswers = new NumericField.DataType[numDocs];
     for(int id=0;id<numDocs;id++) {
-      org.apache.lucene.document2.Document doc = new org.apache.lucene.document2.Document();
-      org.apache.lucene.document2.NumericField nf = new org.apache.lucene.document2.NumericField("nf", org.apache.lucene.document2.NumericField.TYPE_STORED);
+      Document doc = new Document();
+      NumericField nf = new NumericField("nf", NumericField.TYPE_STORED);
       doc.add(nf);
       final Number answer;
       final NumericField.DataType typeAnswer;
@@ -276,7 +276,7 @@ public class TestFieldsReader extends LuceneTestCase {
     for(IndexReader sub : r.getSequentialSubReaders()) {
       final int[] ids = FieldCache.DEFAULT.getInts(sub, "id");
       for(int docID=0;docID<sub.numDocs();docID++) {
-        final Document doc = sub.document2(docID);
+        final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof NumericField);
         final NumericField nf = (NumericField) f;

@@ -87,7 +87,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
     if (field.stored()) {
       String storedVal = externalVal;  // normalize or not?
-      org.apache.lucene.document2.FieldType customType = new org.apache.lucene.document2.FieldType();
+      org.apache.lucene.document.FieldType customType = new org.apache.lucene.document.FieldType();
       customType.setStored(true);
       f[f.length - 1] = createField(field.getName(), storedVal, customType, boost);
     }

@@ -18,7 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
 public abstract class BenchmarkHighlighter {

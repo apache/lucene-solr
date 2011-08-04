@@ -22,12 +22,12 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
-import org.apache.lucene.document2.FieldSelector;
-import org.apache.lucene.document2.FieldSelectorVisitor;
-import org.apache.lucene.document2.MapFieldSelector;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.MapFieldSelector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;

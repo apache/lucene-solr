@@ -22,7 +22,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.document2.NumericField; // for javadocs
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;

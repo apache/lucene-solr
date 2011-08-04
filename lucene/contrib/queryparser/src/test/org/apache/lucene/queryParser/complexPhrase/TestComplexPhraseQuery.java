@@ -21,9 +21,9 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -98,7 +98,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     TopDocs td = searcher.search(q, 10);
     ScoreDoc[] sd = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {
-      Document doc = searcher.doc2(sd[i].doc);
+      Document doc = searcher.doc(sd[i].doc);
       String id = doc.get("id");
       assertTrue(qString + "matched doc#" + id + " not expected", expecteds
           .contains(id));

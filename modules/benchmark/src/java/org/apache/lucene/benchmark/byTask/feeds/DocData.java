@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.util.Date;
 import java.util.Properties;
 
-import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document.DateTools;
 
 /** Output of parsing (e.g. HTML parsing) of an input document. */
 public class DocData {

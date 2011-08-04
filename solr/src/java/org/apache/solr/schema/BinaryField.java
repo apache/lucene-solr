@@ -20,7 +20,7 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.lucene.document2.Field;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -81,7 +81,7 @@ public class BinaryField extends FieldType  {
       len = buf.length;
     }
 
-    Field f = new org.apache.lucene.document2.BinaryField(field.getName(), buf, offset, len);
+    Field f = new org.apache.lucene.document.BinaryField(field.getName(), buf, offset, len);
     f.setBoost(boost);
     return f;
   }

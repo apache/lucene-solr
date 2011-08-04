@@ -16,7 +16,7 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 
 import java.util.List;
 import java.util.Map;

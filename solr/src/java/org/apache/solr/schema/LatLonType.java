@@ -16,7 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document2.FieldType;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import org.apache.lucene.document2.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;

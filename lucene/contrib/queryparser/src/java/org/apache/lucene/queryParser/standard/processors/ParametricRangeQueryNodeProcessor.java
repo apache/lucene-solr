@@ -23,8 +23,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.lucene.document2.DateTools;
-import org.apache.lucene.document2.DateTools.Resolution;
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.config.FieldConfig;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;

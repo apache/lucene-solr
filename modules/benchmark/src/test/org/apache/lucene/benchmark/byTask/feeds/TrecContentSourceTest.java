@@ -29,7 +29,7 @@ import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document2.DateTools;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 

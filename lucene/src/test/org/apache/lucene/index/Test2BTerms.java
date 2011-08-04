@@ -22,7 +22,7 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.document2.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.codecs.CodecProvider;
 import java.io.File;
 import java.io.IOException;

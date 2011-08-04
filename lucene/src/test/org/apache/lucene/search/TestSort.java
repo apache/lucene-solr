@@ -25,11 +25,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -352,7 +352,7 @@ public class TestSort extends LuceneTestCase {
     int lastDocId = 0;
     boolean fail = false;
     for (int x = 0; x < n; ++x) {
-      Document doc2 = searcher.doc2(result[x].doc);
+      Document doc2 = searcher.doc(result[x].doc);
       IndexableField[] v = doc2.getFields("tracer");
       IndexableField[] v2 = doc2.getFields("tracer2");
       for (int j = 0; j < v.length; ++j) {
@@ -958,7 +958,7 @@ public class TestSort extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i=0; i<n; ++i) {
-      Document doc = searcher.doc2(result[i].doc);
+      Document doc = searcher.doc(result[i].doc);
       IndexableField[] v = doc.getFields("tracer");
       for (int j=0; j<v.length; ++j) {
         buff.append (v[j].stringValue());

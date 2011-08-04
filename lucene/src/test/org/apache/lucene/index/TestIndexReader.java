@@ -31,12 +31,12 @@ import java.util.Set;
 import java.util.SortedSet;
 import org.junit.Assume;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document2.BinaryField;
-import org.apache.lucene.document2.Document;
-import org.apache.lucene.document2.Field;
-import org.apache.lucene.document2.FieldType;
-import org.apache.lucene.document2.StringField;
-import org.apache.lucene.document2.TextField;
+import org.apache.lucene.document.BinaryField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -387,7 +387,7 @@ public class TestIndexReader extends LuceneTestCase
         writer.addDocument(doc);
         writer.close();
         IndexReader reader = IndexReader.open(dir, false);
-        Document doc2 = reader.document2(reader.maxDoc() - 1);
+        Document doc2 = reader.document(reader.maxDoc() - 1);
         IndexableField[] fields = doc2.getFields("bin1");
         assertNotNull(fields);
         assertEquals(1, fields.length);
@@ -406,7 +406,7 @@ public class TestIndexReader extends LuceneTestCase
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
-        doc2 = reader.document2(reader.maxDoc() - 1);
+        doc2 = reader.document(reader.maxDoc() - 1);
         fields = doc2.getFields("bin1");
         assertNotNull(fields);
         assertEquals(1, fields.length);
@@ -927,8 +927,8 @@ public class TestIndexReader extends LuceneTestCase
       // check stored fields
       for (int i = 0; i < index1.maxDoc(); i++) {
         if (delDocs1 == null || !delDocs1.get(i)) {
-          Document doc1 = index1.document2(i);
-          Document doc2 = index2.document2(i);
+          Document doc1 = index1.document(i);
+          Document doc2 = index2.document(i);
           List<IndexableField> fieldable1 = doc1.getFields();
           List<IndexableField> fieldable2 = doc2.getFields();
           assertEquals("Different numbers of fields for doc " + i + ".", fieldable1.size(), fieldable2.size());
