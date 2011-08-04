@@ -540,7 +540,7 @@ public class DataImporter {
 
     public ContentStream contentStream;
     
-    public List<SolrInputDocument> debugDocuments = new ArrayList<SolrInputDocument>(0);
+    public List<SolrInputDocument> debugDocuments = Collections.synchronizedList(new ArrayList<SolrInputDocument>());
     
     public NamedList debugVerboseOutput = null;
 

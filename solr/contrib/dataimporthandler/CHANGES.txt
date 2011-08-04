@@ -20,6 +20,7 @@ Bug Fixes
 * SOLR-2492: DIH does not commit if only deletes are processed (James Dyer via shalin)
 * SOLR-2186: DataImportHandler's multi-threaded option throws NPE (Lance Norskog, Frank Wesemann, shalin)
 * SOLR-2655: DIH multi threaded mode does not resolve attributes correctly (Frank Wesemann, shalin)
+* SOLR-2695: Documents are collected in unsynchronized list in multi-threaded debug mode (Michael McCandless, shalin)
 
 ==================  3.3.0 ==================
 
