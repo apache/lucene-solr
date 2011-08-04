@@ -75,7 +75,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private Map<String, Properties> dataSources = new HashMap<String, Properties>();
 
-  private List<SolrInputDocument> debugDocuments;
+  private List<SolrInputDocument> debugDocuments = Collections.synchronizedList(new ArrayList<SolrInputDocument>());
 
   private boolean debugEnabled = true;
 
@@ -207,7 +207,7 @@ public class DataImportHandler extends RequestHandlerBase implements
             rsp.add("documents", debugDocuments);
             if (sw.debugLogger != null)
               rsp.add("verbose-output", sw.debugLogger.output);
-            debugDocuments = null;
+            debugDocuments.clear();
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;
           }
@@ -287,8 +287,6 @@ public class DataImportHandler extends RequestHandlerBase implements
       public boolean upload(SolrInputDocument document) {
         try {
           if (requestParams.debug) {
-            if (debugDocuments == null)
-              debugDocuments = new ArrayList<SolrInputDocument>();
             debugDocuments.add(document);
           }
           return super.upload(document);
