@@ -535,6 +535,13 @@ Bug fixes
   suppressed exceptions in the original exception, so stack trace
   will contain them.  (Uwe Schindler)
 
+* LUCENE-3339: Fixed deadlock case when multiple threads use the new
+  block-add (IndexWriter.add/updateDocuments) methods.  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-3340: Fixed case where IndexWriter was not flushing at
+  exactly maxBufferedDeleteTerms (Mike McCandless)
+
 * LUCENE-3358: StandardTokenizer wrongly discarded combining marks attached
   to Han or Hiragana characters, this is fixed if you supply Version >= 3.4
   If you supply a previous lucene version, you get the old buggy behavior
