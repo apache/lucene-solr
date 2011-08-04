@@ -157,6 +157,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
   /** initialize levenshtein DFAs up to maxDistance, if possible */
   private List<CompiledAutomaton> initAutomata(int maxDistance) {
     // nocommit -- is this called multiple times per query!?
+    // it shouldn't be, its getting this list from the attribute,
+    // which preserves the CAs across segments (only Uwe really knows if it works)
     final List<CompiledAutomaton> runAutomata = dfaAtt.automata();
     if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
@@ -334,6 +336,9 @@ public final class FuzzyTermsEnum extends TermsEnum {
     // nocommit -- we lost the more efficient (always seek)
     // accept for FuzzyTermsEnum in Terms.intersect!  so on
     // non-intersect-capable terms dicts this is slower?
+
+    // Yes: this is totally broken. It never seeks ever for e.g. preflex
+    
     // maybe we stuff a hint (boolean alwaysSeek) into CA?
 
     /** finds the smallest Lev(n) DFA that accepts the term. */
