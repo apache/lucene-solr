@@ -13,9 +13,6 @@ perf tests:
   - try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
   - run fuzzy q under profiler
 
-run Test2BTerms!!
-  - then run CI -verbose on the index!!
-
 test if cutting over prefix query to .intersect is faster
 
 "upgrade" postings reader/writer API to match block tree; then non-tree codec uses it too and we only need 1 impl of each postings

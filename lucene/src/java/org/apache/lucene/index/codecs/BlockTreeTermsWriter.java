@@ -261,15 +261,13 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           }
           scratchBytes.writeByte((byte) sub.floorLeadByte);
           assert sub.fp > fp;
-          // nocommit -- why do we need hasTerms here?
-          scratchBytes.writeVLong(((sub.fp - fp) << 1) | (sub.hasTerms ? 1 : 0));
+          scratchBytes.writeVLong(sub.fp - fp);
         }
       }
 
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-      // nocommit -- can we pass false for shareSuffixes?
       final Builder<BytesRef> indexBuilder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1,
-                                                                   0, 0, true, true, Integer.MAX_VALUE,
+                                                                   0, 0, true, false, Integer.MAX_VALUE,
                                                                    outputs, null);
       if (DEBUG) {
         System.out.println("  compile index for prefix=" + prefix);
@@ -326,7 +324,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
-    private final long termsStartPointer;
     private long numTerms;
     long sumTotalTermFreq;
     long sumDocFreq;
@@ -370,26 +367,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           }
           node.numArcs = 0;
 
-          boolean forceBlock = false;
-
-          // nocommit fixup
-
-          if (idx == 1) {
-            // nocommit -- make this 1 configurable -- maybe
-            // 2 is better if there are many terms?
-
-            // We force a block if prefix is length 1 and
-            // there are any terms, so that the root block
-            // doesn't have terms.
-
-            // nocommit: instead, we should accum termCount &
-            // blockCount into UnCompiledNode?
-            for(int pendingIdx=0;pendingIdx<totCount && !forceBlock;pendingIdx++) {
-              forceBlock |= pending.get(pending.size()-pendingIdx-1) instanceof PendingTerm;
-            }
-          }
-
-          if (totCount >= minItemsInBlock || idx == 0 || forceBlock) {
+          if (totCount >= minItemsInBlock || idx == 0) {
             if (DEBUG2 || DEBUG) {
               if (totCount < minItemsInBlock && idx != 0) {
                 System.out.println("  force block has terms");
@@ -420,9 +398,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         pending.add(nonFloorBlock);
       } else {
 
-        // nocommit -- we could enrich this format so that
-        // we store min & max label for this block, then it
-        // can be "authoritative"
+        // TODO: we could store min & max suffix start byte
+        // in each block, to make floor blocks authoritative
 
         if (DEBUG) {
           final BytesRef prefix = new BytesRef(prefixLength);
@@ -525,7 +502,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           subTermCountSums[idx] = sum;
         }
 
-        // nocommit -- need viterbi search here?
+        // TODO: make a better segmenter?
 
         // Naive segmentation, not always best (it can produce
         // a too-small block as the last block):
@@ -567,7 +544,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             // to allow the case where the sub did have
             // "many" floor'd sub-blocks somehow... then
             // it's valid?
-            //assert subCount > 1: "subCount=" + subCount + " sub=" + sub + " of " + numSubs + " subTermCount=" + subTermCountSums[sub] + " subSubCount=" + subSubCounts[sub] + " depth=" + prefixLength;
+            assert minItemsInBlock == 1 || subCount > 1: "minItemsInBlock=" + minItemsInBlock + " subCount=" + subCount + " sub=" + sub + " of " + numSubs + " subTermCount=" + subTermCountSums[sub] + " subSubCount=" + subSubCounts[sub] + " depth=" + prefixLength;
             subCount = 0;
             startLabel = subBytes[sub+1];
 
@@ -576,8 +553,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             }
 
             if (curStart <= maxItemsInBlock) {
-              // nocommit -- should we do a better job
-              // segmenting here...?
               // remainder is small enough to fit into a
               // block.  NOTE that this may be too small (<
               // minItemsInBlock); need a true segmenter
@@ -655,9 +630,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       for (Object ent : slice) {
         if (ent instanceof PendingTerm) {
           PendingTerm term = (PendingTerm) ent;
-          // nocommit turn back on -- but need a separate
-          //prefix (not indexPrefix, since that may be floor)
-          //assert term.term.startsWith(prefix);
           final int suffix = term.term.length - prefixLength;
           if (DEBUG2 || DEBUG) {
             BytesRef suffixBytes = new BytesRef(suffix);
@@ -675,13 +647,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         } else {
           assert !isLeafBlock;
           PendingBlock block = (PendingBlock) ent;
-          // nocommit turn back on -- but need a separate
-          //prefix (not indexPrefix, since that may be floor)
-          //assert block.prefix.startsWith(prefix);
           final int suffix = block.prefix.length - prefixLength;
 
-          // nocommit: why does this trip?
-          //assert suffix > 0;
+          assert suffix > 0;
           bytesWriter.writeVInt((suffix<<1)|1);
           bytesWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
           assert block.fp < startFP;
@@ -707,9 +675,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       for(Object ent : slice) {
         if (ent instanceof PendingTerm) {
           PendingTerm term = (PendingTerm) ent;
-          // nocommit -- turn back on, but need separate
-          // prefix from indexPrefix because of floor
-          //assert term.term.startsWith(prefix);
           bytesWriter.writeVInt(term.stats.docFreq);
           if (fieldInfo.indexOptions != IndexOptions.DOCS_ONLY) {
             assert term.stats.totalTermFreq >= term.stats.docFreq;
@@ -724,7 +689,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       bytesWriter.reset();
 
       // 3rd pass: have postings writer write block
-      // nocommit only if termCount != 0?
       postingsWriter.flushTermsBlock(futureTermCount+termCount, termCount);
 
       // Remove slice replaced by block:
@@ -751,7 +715,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                                          noOutputs,
                                          new FindBlocks());
 
-      termsStartPointer = out.getFilePointer();
       postingsWriter.setField(fieldInfo);
     }
     
@@ -789,7 +752,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     // Finishes all terms in this field
     @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq) throws IOException {
-      // nocommit write sumDocFreq
       if (numTerms > 0) {
         blockBuilder.finish();
 
@@ -843,8 +805,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
           out.writeVInt(field.fieldInfo.number);
           out.writeVLong(field.numTerms);
-          // nocommit: we may not need termsStartPointer?
-          out.writeVLong(field.termsStartPointer);
           final BytesRef rootCode = ((PendingBlock) field.pending.get(0)).index.getEmptyOutput();
           assert rootCode != null: "field=" + field.fieldInfo.name + " numTerms=" + field.numTerms;
           out.writeVInt(rootCode.length);

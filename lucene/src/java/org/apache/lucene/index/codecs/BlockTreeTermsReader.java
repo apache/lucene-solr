@@ -66,20 +66,21 @@ import org.apache.lucene.util.fst.Util;
 
 // nocommit finish jdocs
 
-/*  A block-based terms index and dictionary that assigns
+/** A block-based terms index and dictionary that assigns
  *  terms to variable length blocks according to how they
  *  share prefixes.  The terms index is a prefix trie
- *  whose leaves are blocks that all share a common prefix.
- *  The advantage of this approach is that {@link
- *  #seekExact} is often able to determine a term cannot
- *  exist without doing any IO.  Note that this terms
- *  dictionary has it's own fixed terms index (ie, it does
- *  not support a pluggable terms index).
+ *  whose leaves are term blocks.  The advantage of this
+ *  approach is that {@link #seekExact} is often able to
+ *  determine a term cannot exist without doing any IO, and
+ *  intersection with Automata is very fast.  Note that this
+ *  terms dictionary has it's own fixed terms index (ie, it
+ *  does not support a pluggable terms index
+ *  implementation).
  *
- * <p><b>NOTE</b>: this terms dictionary does not support
- * index divisor when opening an IndexReader.  Instead, you
- * can change the min/maxItemsPerBlock during indexing.
- **/
+ *  <p><b>NOTE</b>: this terms dictionary does not support
+ *  index divisor when opening an IndexReader.  Instead, you
+ *  can change the min/maxItemsPerBlock during indexing.
+ */
 
 public class BlockTreeTermsReader extends FieldsProducer {
 
@@ -143,7 +144,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
         assert numTerms >= 0;
-        final long termsStartPointer = in.readVLong();
         final int numBytes = in.readVInt();
         final BytesRef rootCode = new BytesRef(new byte[numBytes]);
         in.readBytes(rootCode.bytes, 0, numBytes);
@@ -154,7 +154,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final long sumDocFreq = in.readVLong();
         final long indexStartFP = indexDivisor != -1 ? indexIn.readVLong() : 0;
         assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, rootCode, sumTotalTermFreq, sumDocFreq, indexStartFP, indexIn));
+        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, indexStartFP, indexIn));
       }
       success = true;
     } finally {
@@ -390,7 +390,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
   public final class FieldReader extends Terms implements Closeable {
     final long numTerms;
     final FieldInfo fieldInfo;
-    final long termsStartPointer;
     final long sumTotalTermFreq;
     final long sumDocFreq;
     final long indexStartFP;
@@ -400,12 +399,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
     //private boolean DEBUG;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, long termsStartPointer, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, long indexStartFP, IndexInput indexIn) throws IOException {
+    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, long indexStartFP, IndexInput indexIn) throws IOException {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
       this.numTerms = numTerms;
-      this.termsStartPointer = termsStartPointer;
       this.sumTotalTermFreq = sumTotalTermFreq; 
       this.sumDocFreq = sumDocFreq; 
       this.indexStartFP = indexStartFP;
@@ -557,8 +555,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
 
           do {
-            final long code = floorDataReader.readVLong();
-            fp = fpOrig + (code >>> 1);
+            fp = fpOrig + floorDataReader.readVLong();
             numFollowFloorBlocks--;
             if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
             if (numFollowFloorBlocks != 0) {
@@ -607,8 +604,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
               if (!runAutomaton.isAccept(state)) {
                 // Maybe skip floor blocks:
                 while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
-                  final long code2 = floorDataReader.readVLong();
-                  fp = fpOrig + (code2 >>> 1);
+                  fp = fpOrig + floorDataReader.readVLong();
                   numFollowFloorBlocks--;
                   if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
                   if (numFollowFloorBlocks != 0) {
@@ -762,7 +758,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         f.outputPrefix = arc.output;
         f.load(rootCode);
 
-        // nocommit
+        // for assert:
         savedStartTerm = startTerm == null ? null : new BytesRef(startTerm);
 
         currentFrame = f;
@@ -1116,7 +1112,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
       public SegmentTermsEnum() throws IOException {
         if (DEBUG) System.out.println("BTTR.init seg=" + segment);
         in = (IndexInput) BlockTreeTermsReader.this.in.clone();
-        in.seek(termsStartPointer);
         stack = new Frame[5];
         for(int stackOrd=0;stackOrd<stack.length;stackOrd++) {
           stack[stackOrd] = new Frame(stackOrd);
@@ -2394,11 +2389,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
           assert numFollowFloorBlocks != 0;
 
           long newFP = fpOrig;
-          hasTerms = hasTermsOrig;
           while (true) {
-            final long code = floorDataReader.readVLong();
-            hasTerms = (code & 1) != 0;
-            newFP = fpOrig + (code >>> 1);
+            newFP = fpOrig + floorDataReader.readVLong();
             //if (DEBUG) {
             //System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
             //}
