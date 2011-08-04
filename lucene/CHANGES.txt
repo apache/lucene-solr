@@ -33,6 +33,11 @@ Bug fixes
 * LUCENE-3340: Fixed case where IndexWriter was not flushing at
   exactly maxBufferedDeleteTerms (Mike McCandless)
 
+* LUCENE-3358: StandardTokenizer wrongly discarded combining marks attached
+  to Han or Hiragana characters, this is fixed if you supply Version >= 3.4
+  If you supply a previous lucene version, you get the old buggy behavior
+  for backwards compatibility.  (Trejkaz, Robert Muir)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
