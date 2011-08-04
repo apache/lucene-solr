@@ -79,14 +79,14 @@ public class TestCodecProviderSupport extends SolrTestCaseJ4 {
     }
 
     try {
-      codecProvider.register(new StandardCodec());
+      codecProvider.register(new StandardCodec(25, 48));
       fail("should be unmodifiable");
     } catch (UnsupportedOperationException e) {
       //
     }
 
     try {
-      codecProvider.unregister(new StandardCodec());
+      codecProvider.unregister(new StandardCodec(25, 48));
       fail("should be unmodifiable");
     } catch (UnsupportedOperationException e) {
       //

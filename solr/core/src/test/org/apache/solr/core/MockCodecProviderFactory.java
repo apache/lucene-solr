@@ -41,8 +41,8 @@ public class MockCodecProviderFactory extends CodecProviderFactory {
   @Override
   public CodecProvider create() {
     CodecProvider cp = new CodecProvider();
-    cp.register(new StandardCodec());
-    cp.register(new PulsingCodec());
+    cp.register(new StandardCodec(25, 48));
+    cp.register(new PulsingCodec(1, 25, 48));
     if (codecs != null) {
       for (Object codec : codecs.getAll("name")) {
         if (!cp.isCodecRegistered((String)codec)) {
