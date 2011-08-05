@@ -49,6 +49,7 @@ public class StandardCodec extends Codec {
   public StandardCodec(int minBlockSize, int maxBlockSize) {
     super("Standard");
     this.minBlockSize = minBlockSize;
+    assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
   }
 

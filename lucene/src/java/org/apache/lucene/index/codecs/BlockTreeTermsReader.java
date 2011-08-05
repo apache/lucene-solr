@@ -64,8 +64,6 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
-// nocommit finish jdocs
-
 /** A block-based terms index and dictionary that assigns
  *  terms to variable length blocks according to how they
  *  share prefixes.  The terms index is a prefix trie
@@ -79,7 +77,21 @@ import org.apache.lucene.util.fst.Util;
  *
  *  <p><b>NOTE</b>: this terms dictionary does not support
  *  index divisor when opening an IndexReader.  Instead, you
- *  can change the min/maxItemsPerBlock during indexing.
+ *  can change the min/maxItemsPerBlock during indexing.</p>
+ *
+ *  <p>The data structure used by this implementation is very
+ *  similar to a burst trie
+ *  (http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.18.3499),
+ *  but with added logic to break up too-large blocks of all
+ *  terms sharing a given prefix into smaller ones.</p>
+ *
+ *  <p>Use {@link CheckIndex} with the <code>-verbose</code>
+ *  option to see summary statistics on the blocks in the
+ *  dictionary.
+ *
+ *  See {@link BlockTreeTermsWriter}.
+ *
+ * @lucene.experimental
  */
 
 public class BlockTreeTermsReader extends FieldsProducer {

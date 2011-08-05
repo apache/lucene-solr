@@ -32,10 +32,6 @@ public class BlockTermState extends OrdTermState {
   public int termBlockOrd;          // the term's ord in the current block
   public long blockFilePointer;  // fp into the terms dict primary file (_X.tim) that holds this term
 
-  // nocommit -- should not be here?  BT dict doesn't need
-  // it but B dict does?
-  public int blockTermCount;     // how many terms in current block
-
   @Override
   public void copyFrom(TermState _other) {
     assert _other instanceof BlockTermState : "can not copy from " + _other.getClass().getName();

@@ -282,8 +282,8 @@ public abstract class LuceneTestCase extends Assert {
     swapCodec(new MockSepCodec(), cp);
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
-    int minItemsPerBlock = _TestUtil.nextInt(random, 1, 100);
-    int maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
+    int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+    int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
     swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
@@ -1564,13 +1564,13 @@ public abstract class LuceneTestCase extends Assert {
       this.perFieldSeed = random.nextInt();
       // TODO: make it possible to specify min/max iterms per
       // block via CL:
-      int minItemsPerBlock = _TestUtil.nextInt(random, 1, 100);
-      int maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
+      int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+      int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
       register(randomizCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new PreFlexCodec()));
       // TODO: make it possible to specify min/max iterms per
       // block via CL:
-      minItemsPerBlock = _TestUtil.nextInt(random, 1, 100);
+      minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
       maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
       register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new SimpleTextCodec()));

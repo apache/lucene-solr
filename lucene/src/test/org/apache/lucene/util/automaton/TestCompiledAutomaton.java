@@ -64,7 +64,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
       for(BytesRef t : termBytes) {
         System.out.println("  " + t.utf8ToString());
       }
-      System.out.println(c.utf8.toDot());
+      //System.out.println(c.utf8.toDot());
     }
 
     for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
@@ -114,6 +114,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     testFloor(c, "foc", "fob");
     testFloor(c, "foz", "foo");
     testFloor(c, "f", null);
+    testFloor(c, "", null);
     testFloor(c, "aa", null);
     testFloor(c, "zzz", "goo");
   }

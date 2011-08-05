@@ -334,8 +334,6 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     long lastSkipFP = 0;
 
     if (count == 0) {
-      // nocommit: silly?  can we avoid this if we know
-      // block has no terms?
       termsOut.writeByte((byte) 0);
       return;
     }

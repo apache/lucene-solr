@@ -61,6 +61,7 @@ public class PulsingCodec extends Codec {
     super("Pulsing");
     this.freqCutoff = freqCutoff;
     this.minBlockSize = minBlockSize;
+    assert minBlockSize > 1;
     this.maxBlockSize = maxBlockSize;
   }
 

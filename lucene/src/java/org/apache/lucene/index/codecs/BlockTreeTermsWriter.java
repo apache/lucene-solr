@@ -83,6 +83,11 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 
+/** See {@link BlockTreeTermsReader}.
+ *
+ * @lucene.experimental
+*/
+
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
   public static boolean DEBUG = false;
@@ -116,6 +121,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
   private final String segment;
 
+  /** Create a new writer.  The number of items (terms or
+   *  sub-blocks) per block will aim to be between
+   *  minItemsPerBlock and maxItemsPerBlock, though in some
+   *  cases the blocks may be smaller than the min. */
   public BlockTreeTermsWriter(
                               SegmentWriteState state,
                               PostingsWriterBase postingsWriter,
@@ -123,8 +132,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                               int maxItemsInBlock)
     throws IOException
   {
-    if (minItemsInBlock <= 0) {
-      throw new IllegalArgumentException("minItemsInBlock must be >= 1; got " + minItemsInBlock);
+    if (minItemsInBlock <= 1) {
+      throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
     if (maxItemsInBlock <= 0) {
       throw new IllegalArgumentException("maxItemsInBlock must be >= 1; got " + maxItemsInBlock);

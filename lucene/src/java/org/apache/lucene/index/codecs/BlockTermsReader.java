@@ -45,10 +45,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
 
-// nocommit -- cut the postings interface over to the same
-// as blocktree?  this way we don't need 2x of each codec's
-// postings impls?
-
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
  *  PostingsReaderBase}.  This class is reusable for
@@ -110,8 +106,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
   
-  // nocommit
-  private String segment;
+  // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
@@ -120,7 +115,7 @@ public class BlockTermsReader extends FieldsProducer {
     this.postingsReader = postingsReader;
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
-    this.segment = segment;
+    // this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
                        context);
 
@@ -326,6 +321,9 @@ public class BlockTermsReader extends FieldsProducer {
       /* Common prefix used for all terms in this block. */
       private int termBlockPrefix;
 
+      /* How many terms in current block */
+      private int blockTermCount;
+
       private byte[] docFreqBytes;
       private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
@@ -447,7 +445,7 @@ public class BlockTermsReader extends FieldsProducer {
           //System.out.println("  seek: term=" + term.utf8ToString());
         } else {
           //System.out.println("  skip seek");
-          if (state.termBlockOrd == state.blockTermCount && !nextBlock()) {
+          if (state.termBlockOrd == blockTermCount && !nextBlock()) {
             indexIsCurrent = false;
             return SeekStatus.END;
           }
@@ -483,8 +481,8 @@ public class BlockTermsReader extends FieldsProducer {
               // but it could be in next block.  We
               // must scan to end-of-block to set common
               // prefix for next block:
-              if (state.termBlockOrd < state.blockTermCount) {
-                while(state.termBlockOrd < state.blockTermCount-1) {
+              if (state.termBlockOrd < blockTermCount) {
+                while(state.termBlockOrd < blockTermCount-1) {
                   state.termBlockOrd++;
                   state.ord++;
                   termSuffixesReader.skipBytes(termSuffixesReader.readVInt());
@@ -584,7 +582,7 @@ public class BlockTermsReader extends FieldsProducer {
               }
             }
 
-            if (state.termBlockOrd == state.blockTermCount) {
+            if (state.termBlockOrd == blockTermCount) {
               // Must pre-fill term for next block's common prefix
               term.length = termBlockPrefix + suffix;
               if (term.bytes.length < term.length) {
@@ -650,8 +648,8 @@ public class BlockTermsReader extends FieldsProducer {
          metadata, ie docFreq, totalTermFreq or pulls a D/&PEnum, we then (lazily)
          decode all metadata up to the current term. */
       private BytesRef _next() throws IOException {
-        //System.out.println("BTR._next seg=" + segment + " this=" + this + " termCount=" + state.termBlockOrd + " (vs " + state.blockTermCount + ")");
-        if (state.termBlockOrd == state.blockTermCount && !nextBlock()) {
+        //System.out.println("BTR._next seg=" + segment + " this=" + this + " termCount=" + state.termBlockOrd + " (vs " + blockTermCount + ")");
+        if (state.termBlockOrd == blockTermCount && !nextBlock()) {
           //System.out.println("  eof");
           indexIsCurrent = false;
           return null;
@@ -804,9 +802,9 @@ public class BlockTermsReader extends FieldsProducer {
 
         //System.out.println("BTR.nextBlock() fp=" + in.getFilePointer() + " this=" + this);
         state.blockFilePointer = in.getFilePointer();
-        state.blockTermCount = in.readVInt();
-        //System.out.println("  blockTermCount=" + state.blockTermCount);
-        if (state.blockTermCount == 0) {
+        blockTermCount = in.readVInt();
+        //System.out.println("  blockTermCount=" + blockTermCount);
+        if (blockTermCount == 0) {
           return false;
         }
         termBlockPrefix = in.readVInt();

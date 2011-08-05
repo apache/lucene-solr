@@ -43,9 +43,9 @@ public final class ByteArrayDataInput extends DataInput {
     reset(bytes, 0, bytes.length);
   }
 
+  // NOTE: sets pos to 0, which is not right if you had
+  // called reset w/ non-zero offset!!
   public void rewind() {
-    // nocommit -- not right if .reset was called w/
-    // non-zero offset...
     pos = 0;
   }
 

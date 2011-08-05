@@ -335,7 +335,8 @@ public final class PulsingPostingsWriterImpl extends PostingsWriterBase {
     buffer.writeTo(termsOut);
     buffer.reset();
 
-    // nocommit: O(N^2) though with small N...
+    // TDOO: this could be somewhat costly since
+    // pendingTerms.size() could be biggish?
     int futureWrappedCount = 0;
     final int limit2 = pendingTerms.size();
     for(int idx=limit;idx<limit2;idx++) {

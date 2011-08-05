@@ -181,8 +181,10 @@ public class MockRandomCodec extends Codec {
         System.out.println("MockRandomCodec: writing BlockTree terms dict");
       }
 
-      final int minTermsInBlock = _TestUtil.nextInt(random, 1, 100);
-      final int maxTermsInBlock = Math.max(1, (minTermsInBlock-1)*2 + random.nextInt(100));
+      // TODO: would be nice to allow 1 but this is very
+      // slow to write
+      final int minTermsInBlock = _TestUtil.nextInt(random, 2, 100);
+      final int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random.nextInt(100));
 
       boolean success = false;
       try {

@@ -38,19 +38,12 @@ public class CompiledAutomaton {
   public final BytesRef commonSuffixRef;
   public final boolean finite;
 
-  public final Automaton a;
-  public final Automaton utf8;
-
   // nocommit -- move pulling of a TermsEnum into here, so
   // that we can optimize for cases where a simpler enume
   // (prefix enum, all terms, no terms, etc.) can be used
     
   public CompiledAutomaton(Automaton automaton, boolean finite) {
-    // nocommit
-    this.a = automaton;
     Automaton utf8 = new UTF32ToUTF8().convert(automaton);
-    // nocommit
-    this.utf8 = utf8;
     runAutomaton = new ByteRunAutomaton(utf8, true);
     sortedTransitions = utf8.getSortedTransitions();
     this.finite = finite;
@@ -62,9 +55,6 @@ public class CompiledAutomaton {
   }
 
   private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
-
-  // nocommit -- needs tests; make sure we test infinite
-  // case (should just work?)
 
   private BytesRef addTail(int state, BytesRef term, int idx, int leadLabel) {
 
@@ -127,8 +117,6 @@ public class CompiledAutomaton {
    *  (ie, the provided input term is before the first term
    *  accepted by this Automaton). */
   public BytesRef floor(BytesRef input, BytesRef output) {
-
-    // nocommit make sure we test empty string
 
     output.offset = 0;
     if (DEBUG) System.out.println("CA.floor input=" + input.utf8ToString());
