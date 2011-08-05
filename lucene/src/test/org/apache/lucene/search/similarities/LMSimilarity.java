@@ -114,7 +114,7 @@ public abstract class LMSimilarity extends EasySimilarity {
   public static class DefaultCollectionModel implements CollectionModel {
     @Override
     public float computeProbability(EasyStats stats) {
-      return (float)stats.getTotalTermFreq() / stats.getSumTotalTermFreq();
+      return (float)stats.getTotalTermFreq() / stats.getNumberOfFieldTokens();
     }
   }
 }

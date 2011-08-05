@@ -49,15 +49,17 @@ public class IBSimilarity extends EasySimilarity {
   /** The term frequency normalization. */
   protected final Normalization normalization;
   
-  public IBSimilarity(Class<Distribution> distributionClass,
-                      Class<Lambda> lambdaClass,
-                      Class<Normalization> normalizationClass)
-  throws InstantiationException, IllegalAccessException {
-    distribution = distributionClass.newInstance();
-    lambda = lambdaClass.newInstance();
-    normalization = (normalizationClass != null)
-                  ? normalizationClass.newInstance()
-                  : new Normalization.NoNormalization();
+  public IBSimilarity(Distribution distribution,
+                      Lambda lambda,
+                      Normalization normalization) {
+    this.distribution = distribution;
+    this.lambda = lambda;
+    this.normalization = normalization;
+  }
+  
+  /** Creates an instance with no normalization. */
+  public IBSimilarity(Distribution distribution, Lambda lambda) {
+    this(distribution, lambda, new Normalization.NoNormalization());
   }
   
   @Override

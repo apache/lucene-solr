@@ -17,6 +17,8 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Similarity;
 
 /**
@@ -33,11 +35,7 @@ public class EasyStats extends Similarity.Stats {
   /** The document frequency. */
   protected int docFreq;
   /** The total number of occurrences of this term across all documents. */
-  // TODO: same field?
   protected long totalTermFreq;
-  /** The total number of terms across all documents. */
-  // TODO: same field?
-  protected long sumTotalTermFreq;
   /** The number of unique terms. */
   // nocommit might be per-segment only
   protected long uniqueTermCount;
@@ -70,12 +68,18 @@ public class EasyStats extends Similarity.Stats {
     this.numberOfDocuments = numberOfDocuments;
   }
   
-  /** Returns the total number of tokens in the field. */
+  /**
+   * Returns the total number of tokens in the field.
+   * @see Terms#getSumTotalTermFreq()
+   */
   public long getNumberOfFieldTokens() {
     return numberOfFieldTokens;
   }
   
-  /** Sets the total number of tokens in the field. */
+  /**
+   * Sets the total number of tokens in the field.
+   * @see Terms#getSumTotalTermFreq()
+   */
   public void setNumberOfFieldTokens(long numberOfFieldTokens) {
     this.numberOfFieldTokens = numberOfFieldTokens;
   }
@@ -108,16 +112,6 @@ public class EasyStats extends Similarity.Stats {
   /** Sets the total number of occurrences of this term across all documents. */
   public void setTotalTermFreq(long totalTermFreq) {
     this.totalTermFreq = totalTermFreq;
-  }
-  
-  /** Returns the total number of terms across all documents. */
-  public long getSumTotalTermFreq() {
-    return sumTotalTermFreq;
-  }
-  
-  /** Sets the total number of terms across all documents. */
-  public void setSumTotalTermFreq(long sumTotalTermFreq) {
-    this.sumTotalTermFreq = sumTotalTermFreq;
   }
   
   /** Returns the number of unique terms. */

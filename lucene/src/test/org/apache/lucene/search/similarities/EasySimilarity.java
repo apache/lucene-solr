@@ -57,10 +57,9 @@ public abstract class EasySimilarity extends Similarity {
       String fieldName, TermContext... termContexts) throws IOException {
     IndexReader reader = searcher.getIndexReader();
     int numberOfDocuments = reader.maxDoc();
-    long sumTotalTermFreq = MultiFields.getTerms(searcher.getIndexReader(),
+    long numberOfFieldTokens = MultiFields.getTerms(searcher.getIndexReader(),
         fieldName).getSumTotalTermFreq();
-    long numberOfFieldTokens = sumTotalTermFreq; // nocommit: these are the same stat?
-    float avgFieldLength = (float)sumTotalTermFreq / numberOfDocuments;
+    float avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
     
     // nocommit This is for phrases, and it doesn't really work... have to
     // find a method that makes sense
@@ -76,31 +75,7 @@ public abstract class EasySimilarity extends Similarity {
     stats.setAvgFieldLength(avgFieldLength);
     stats.setDocFreq(docFreq);
     stats.setTotalTermFreq(totalTermFreq);
-    stats.setSumTotalTermFreq(sumTotalTermFreq);
     // nocommit uniqueTermCount? (LUCENE-3290)
-  }
-  
-  /** Encodes the document length. */
-  @Override
-  public byte computeNorm(FieldInvertState state) {
-    return encodeNormValue(state.getLength());
-  }
-  
-  /** Decodes a normalization factor stored in an index.
-   * @see #encodeNormValue(float)
-   */
-  // nocommit to protected?
-  // nocommit is int OK?
-  public int decodeNormValue(byte norm) {
-    // SmallFloat seems OK, because tf is smoothed anyway.
-    return (int)SmallFloat.byte315ToFloat(norm);
-  }
-  
-  /** Encodes the length to a byte via SmallInt. */
-  // nocommit to protected?
-  public byte encodeNormValue(int length) {
-    // SmallFloat seems OK, because tf is smoothed anyway.
-    return SmallFloat.floatToByte315(length);
   }
   
   /**
@@ -169,6 +144,45 @@ public abstract class EasySimilarity extends Similarity {
       AtomicReaderContext context) throws IOException {
     return new EasySloppyDocScorer((EasyStats) stats,
                                    context.reader.norms(fieldName));
+  }
+
+  // ------------------------------ Norm handling ------------------------------
+  
+  /** Cache of decoded bytes. */
+  private static final float[] NORM_TABLE = new float[256];
+
+  static {
+    for (int i = 0; i < 256; i++)
+      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
+  }
+
+  /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
+  @Override
+  public byte computeNorm(FieldInvertState state) {
+    final int numTerms;
+    // nocommit: to include discountOverlaps?
+//    if (discountOverlaps)
+//      numTerms = state.getLength() - state.getNumOverlap();
+//    else
+      numTerms = state.getLength();
+//    return encodeNormValue(state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms))));
+    return encodeNormValue(numTerms);
+  }
+  
+  /** Decodes a normalization factor (document length) stored in an index.
+   * @see #encodeNormValue(float)
+   */
+  // nocommit to protected?
+  // nocommit is int OK?
+  public int decodeNormValue(byte norm) {
+    float floatNorm = NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
+    return (int)(1.0 / (floatNorm * floatNorm));  
+  }
+  
+  /** Encodes the length to a byte via SmallFloat. */
+  // nocommit to protected?
+  public byte encodeNormValue(int length) {
+    return SmallFloat.floatToByte315((float)(1.0 / Math.sqrt(length)));
   }
   
   // ----------------------------- Static methods ------------------------------
