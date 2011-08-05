@@ -23,9 +23,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 
-// nocommit
-import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
@@ -58,7 +55,7 @@ public class Builder<T> {
   private final FST<T> fst;
   private final T NO_OUTPUT;
 
-  public boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  // private static final boolean DEBUG = false;
 
   // simplistic pruning: we prune node (and all following
   // nodes) if less than this number of terms go through it:
@@ -202,24 +199,19 @@ public class Builder<T> {
       freezeTail.freeze(frontier, prefixLenPlus1, lastInput);
     } else {
       //System.out.println("  compileTail " + prefixLenPlus1);
-      for(int idx=lastInput.length; idx >= prefixLenPlus1; idx--) {
+      final int downTo = Math.max(1, prefixLenPlus1);
+      for(int idx=lastInput.length; idx >= downTo; idx--) {
 
         boolean doPrune = false;
         boolean doCompile = false;
 
         final UnCompiledNode<T> node = frontier[idx];
-        final UnCompiledNode<T> parent = idx == 0 ? null : frontier[idx-1];
-
-        // nocommit: just have for loop go to 1 not 0?
-        if (parent == null) {
-          return;
-        }
+        final UnCompiledNode<T> parent = frontier[idx-1];
 
         if (node.inputCount < minSuffixCount1) {
           doPrune = true;
           doCompile = true;
         } else if (idx > prefixLenPlus1) {
-          //System.out.println("    pic=" + parent.inputCount + " parent=" + parent + " numArcs=" + parent.numArcs);
           // prune if parent's inputCount is less than suffixMinCount2
           if (parent.inputCount < minSuffixCount2 || (minSuffixCount2 == 1 && parent.inputCount == 1 && idx > 1)) {
             // my parent, about to be compiled, doesn't make the cut, so
@@ -362,6 +354,7 @@ public class Builder<T> {
    *  different outputs, as long as outputs impls the merge
    *  method. */
   public void add(IntsRef input, T output) throws IOException {
+    /*
     if (DEBUG) {
       BytesRef b = new BytesRef(input.length);
       for(int x=0;x<input.length;x++) {
@@ -374,7 +367,7 @@ public class Builder<T> {
         System.out.println("\nFST ADD: input=" + toString(b) + " " + b + " output=" + fst.outputs.outputToString(output));
       }
     }
-    //System.out.println("  " + b.utf8ToString() + " dnp=" + doNotPrune);
+    */
 
     assert lastInput.length == 0 || input.compareTo(lastInput) >= 0: "inputs are added out of order lastInput=" + lastInput + " vs input=" + input;
     assert validOutput(output);
@@ -425,9 +418,7 @@ public class Builder<T> {
     for(int idx=prefixLenPlus1;idx<=input.length;idx++) {
       frontier[idx-1].addArc(input.ints[input.offset + idx - 1],
                              frontier[idx]);
-      //System.out.println("  incr tail " + idx);
       frontier[idx].inputCount++;
-      //System.out.println("  incr2 " + idx + " ct=" + frontier[idx].inputCount + " n=" + frontier[idx]);
     }
 
     final UnCompiledNode<T> lastNode = frontier[input.length];
@@ -489,7 +480,6 @@ public class Builder<T> {
 
     // minimize nodes in the last word's suffix
     freezeTail(0);
-    //System.out.println("finish: inputCount=" + frontier[0].inputCount);
     if (root.inputCount < minSuffixCount1 || root.inputCount < minSuffixCount2 || root.numArcs == 0) {
       if (fst.emptyOutput == null) {
         return null;
@@ -502,7 +492,7 @@ public class Builder<T> {
         compileAllTargets(root, lastInput.length);
       }
     }
-    if (DEBUG) System.out.println("  builder.finish root.isFinal=" + root.isFinal + " root.output=" + root.output);
+    //if (DEBUG) System.out.println("  builder.finish root.isFinal=" + root.isFinal + " root.output=" + root.output);
     fst.finish(compileNode(root, lastInput.length).address);
 
     return fst;

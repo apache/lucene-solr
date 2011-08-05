@@ -28,6 +28,8 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 
+// TODO: move this class to oal.index
+
 /**
  * Abstract class for enumerating a subset of all terms. 
  * 

@@ -78,17 +78,40 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       public void setNextEnum(TermsEnum termsEnum) throws IOException {
         this.termsEnum = termsEnum;
         this.termComp = termsEnum.getComparator();
+        
+        assert compareToLastTerm(null);
+
         // lazy init the initial ScoreTerm because comparator is not known on ctor:
         if (st == null)
           st = new ScoreTerm(this.termComp, new TermContext(topReaderContext));
         boostAtt = termsEnum.attributes().addAttribute(BoostAttribute.class);
       }
     
-      // nocommit -- can we assert we never double-add term into PQ
+      // for assert:
+      private BytesRef lastTerm;
+      private boolean compareToLastTerm(BytesRef t) {
+        if (lastTerm == null && t != null) {
+          lastTerm = new BytesRef(t);
+        } else if (t == null) {
+          lastTerm = null;
+        } else {
+          assert lastTerm.compareTo(t) < 0: "lastTerm=" + lastTerm + " t=" + t;
+          lastTerm.copy(t);
+        }
+        return true;
+      }
   
       @Override
       public boolean collect(BytesRef bytes) throws IOException {
         final float boost = boostAtt.getBoost();
+
+        // make sure within a single seg we always collect
+        // terms in order -- nocommit dangerous, if codec
+        // uses its own termComp?  should we nuke that
+        // ability?  terms must always be "unsigned byte[]
+        // order"?
+        assert compareToLastTerm(bytes);
+
         //System.out.println("TTR.collect term=" + bytes.utf8ToString() + " boost=" + boost + " ord=" + readerContext.ord);
         // ignore uncompetitive hits
         if (stQueue.size() == maxSize) {

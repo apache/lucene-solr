@@ -153,9 +153,10 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
 
     // Only used for "primary" term state; these are never
     // copied on clone:
-    // nocommit: messy -- shouldn't this bytes/bytesReader
-    // live outside?  dangerous that they are here since we
-    // may cache them...
+    
+    // TODO: these should somehow be stored per-TermsEnum
+    // not per TermState; maybe somehow the terms dict
+    // should load/manage the byte[]/DataReader for us?
     byte[] bytes;
     ByteArrayDataInput bytesReader;
 

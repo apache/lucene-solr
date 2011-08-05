@@ -79,7 +79,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
       fp = out.getFilePointer();
     }
     @Override
-    public void set(IntIndexOutput.Index other, boolean copyLast) {
+    public void copyFrom(IntIndexOutput.Index other, boolean copyLast) {
       fp = ((Index) other).fp;
       if (copyLast) {
         lastFP = ((Index) other).fp;

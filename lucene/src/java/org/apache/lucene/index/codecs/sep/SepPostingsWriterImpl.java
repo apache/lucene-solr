@@ -285,16 +285,16 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     assert stats.docFreq == df;
 
     final IntIndexOutput.Index docIndexCopy = docOut.index();
-    docIndexCopy.set(docIndex, false);
+    docIndexCopy.copyFrom(docIndex, false);
 
     final IntIndexOutput.Index freqIndexCopy;
     final IntIndexOutput.Index posIndexCopy;
     if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndexCopy = freqOut.index();
-      freqIndexCopy.set(freqIndex, false);
+      freqIndexCopy.copyFrom(freqIndex, false);
       if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
         posIndexCopy = posOut.index();
-        posIndexCopy.set(posIndex, false);
+        posIndexCopy.copyFrom(posIndex, false);
       } else {
         posIndexCopy = null;
       }
@@ -349,14 +349,14 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       final boolean isFirstTerm = idx == 0;
       final PendingTerm t = slice.get(idx);
       //System.out.println("  write idx=" + idx + " docIndex=" + t.docIndex);
-      docIndexFlush.set(t.docIndex, false);
+      docIndexFlush.copyFrom(t.docIndex, false);
       docIndexFlush.write(indexBytesWriter, isFirstTerm);
       if (indexOptions != IndexOptions.DOCS_ONLY) {
-        freqIndexFlush.set(t.freqIndex, false);
+        freqIndexFlush.copyFrom(t.freqIndex, false);
         freqIndexFlush.write(indexBytesWriter, isFirstTerm);
         //System.out.println("    freqIndex=" + t.freqIndex);
         if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-          posIndexFlush.set(t.posIndex, false);
+          posIndexFlush.copyFrom(t.posIndex, false);
           posIndexFlush.write(indexBytesWriter, isFirstTerm);
           //System.out.println("    posIndex=" + t.posIndex);
           if (storePayloads) {

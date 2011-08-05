@@ -102,8 +102,8 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   private String randomString() {
-    // nocommit -- unicode
-    return _TestUtil.randomSimpleString(random);
+    // return _TestUtil.randomSimpleString(random);
+    return _TestUtil.randomRealisticUnicodeString(random);
   }
 
   public void testBasic() throws Exception {
@@ -117,6 +117,4 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     testFloor(c, "aa", null);
     testFloor(c, "zzz", "goo");
   }
-
-  // nocommit -- make random tester, and random term source
 }

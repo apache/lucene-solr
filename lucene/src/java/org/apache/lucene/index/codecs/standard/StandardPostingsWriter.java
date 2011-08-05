@@ -82,8 +82,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   int lastPayloadLength;
   int lastPosition;
 
-  // nocommit
-  private String segment;
+  // private String segment;
 
   public StandardPostingsWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_SKIP_INTERVAL);
@@ -93,7 +92,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     super();
     this.skipInterval = skipInterval;
     this.skipMinimum = skipInterval; /* set to the same for now */
-    this.segment = state.segmentName;
+    // this.segment = state.segmentName;
     String fileName = IndexFileNames.segmentFileName(state.segmentName, state.codecId, StandardCodec.FREQ_EXTENSION);
     freqOut = state.directory.createOutput(fileName, state.context);
     if (state.fieldInfos.hasProx()) {
@@ -162,7 +161,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
    *  then we just skip consuming positions/payloads. */
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());
+    // if (DEBUG) System.out.println("SPW:   startDoc seg=" + segment + " docID=" + docID + " tf=" + termDocFreq + " freqOut.fp=" + freqOut.getFilePointer());
 
     final int delta = docID - lastDocID;
     
@@ -244,7 +243,7 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
   @Override
   public void finishTerm(TermStats stats) throws IOException {
 
-    if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
+    // if (DEBUG) System.out.println("SPW: finishTerm seg=" + segment + " freqStart=" + freqStart);
     assert stats.docFreq > 0;
 
     // TODO: wasteful we are counting this (counting # docs
@@ -271,8 +270,6 @@ public final class StandardPostingsWriter extends PostingsWriterBase {
     if (DEBUG) System.out.println("SPW: flushTermsBlock start=" + start + " count=" + count + " left=" + (pendingTerms.size()-count) + " pendingTerms.size()=" + pendingTerms.size());
 
     if (count == 0) {
-      // nocommit: silly?  can we avoid this if we know
-      // block has no terms?
       termsOut.writeByte((byte) 0);
       return;
     }

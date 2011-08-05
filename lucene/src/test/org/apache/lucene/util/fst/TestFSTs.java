@@ -1027,10 +1027,7 @@ public class TestFSTs extends LuceneTestCase {
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
     Document doc;
     int docCount = 0;
-    final int numDocs = atLeast(400);
-    // nocommit
-    //while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
-    while((doc = docs.nextDoc()) != null && docCount < numDocs) {
+    while((doc = docs.nextDoc()) != null && System.currentTimeMillis() < stopTime) {
       writer.addDocument(doc);
       docCount++;
     }

@@ -48,19 +48,18 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   private final IndexInput freqIn;
   private final IndexInput proxIn;
-  public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  // public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   int skipInterval;
   int maxSkipLevels;
   int skipMinimum;
 
-  // nocommit
-  private String segment;
+  // private String segment;
 
   public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
                            ioContext);
-    this.segment = segmentInfo.name;
+    // this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
@@ -160,12 +159,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     final int len = termsIn.readVInt();
 
-    // nocommit: we should be able to do this?:
-    //if (len == 0) {
-    //return;
-    //}
-
-    if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
+    // if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
       termState.bytesReader = new ByteArrayDataInput();
@@ -179,7 +173,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   @Override
   public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    if (DEBUG) System.out.println("SPR.resetTermsBlock ts=" + _termState);
+    // if (DEBUG) System.out.println("SPR.resetTermsBlock ts=" + _termState);
     final StandardTermState termState = (StandardTermState) _termState;
     assert termState.bytes != null;
     termState.bytesReader.rewind();
@@ -189,7 +183,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
   public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState)
     throws IOException {
     final StandardTermState termState = (StandardTermState) _termState;
-    if (DEBUG) System.out.println("SPR: nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
+    // if (DEBUG) System.out.println("SPR: nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
     final boolean isFirstTerm = termState.termBlockOrd == 0;
 
     if (isFirstTerm) {
@@ -197,15 +191,17 @@ public class StandardPostingsReader extends PostingsReaderBase {
     } else {
       termState.freqOffset += termState.bytesReader.readVLong();
     }
+    /*
     if (DEBUG) {
       System.out.println("  dF=" + termState.docFreq);
       System.out.println("  freqFP=" + termState.freqOffset);
     }
+    */
     assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();
-      if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
+      // if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
       // undefined
@@ -217,7 +213,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       } else {
         termState.proxOffset += termState.bytesReader.readVLong();
       }
-      if (DEBUG) System.out.println("  proxFP=" + termState.proxOffset);
+      // if (DEBUG) System.out.println("  proxFP=" + termState.proxOffset);
     }
   }
     
@@ -235,7 +231,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         docsEnum = new SegmentDocsEnum(freqIn);
       }
     }
-    if (DEBUG) System.out.println("SPR.docs ts=" + termState);
+    // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
     return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
   }
 
@@ -321,7 +317,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       assert limit > 0;
       ord = 0;
       doc = 0;
-      if (DEBUG) System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
+      // if (DEBUG) System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
 
       skipped = false;
 
@@ -341,7 +337,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
         // Decode next doc/freq pair
         final int code = freqIn.readVInt();
-        if (DEBUG) System.out.println("      code=" + code);
+        // if (DEBUG) System.out.println("      code=" + code);
         if (omitTF) {
           doc += code;
         } else {
@@ -505,17 +501,17 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
-      if (DEBUG) System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
+      // if (DEBUG) System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
 
       return this;
     }
 
     @Override
     public int nextDoc() throws IOException {
-      if (DEBUG) System.out.println("SPR.nextDoc seg=" + segment + " freqIn.fp=" + freqIn.getFilePointer());
+      // if (DEBUG) System.out.println("SPR.nextDoc seg=" + segment + " freqIn.fp=" + freqIn.getFilePointer());
       while(true) {
         if (ord == limit) {
-          if (DEBUG) System.out.println("  return END");
+          // if (DEBUG) System.out.println("  return END");
           return doc = NO_MORE_DOCS;
         }
 
@@ -539,7 +535,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       position = 0;
 
-      if (DEBUG) System.out.println("  return doc=" + doc);
+      // if (DEBUG) System.out.println("  return doc=" + doc);
       return doc;
     }
 

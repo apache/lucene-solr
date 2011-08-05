@@ -261,7 +261,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           }
           scratchBytes.writeByte((byte) sub.floorLeadByte);
           assert sub.fp > fp;
-          scratchBytes.writeVLong(sub.fp - fp);
+          scratchBytes.writeVLong((sub.fp - fp) << 1 | (sub.hasTerms ? 1 : 0));
         }
       }
 
@@ -272,7 +272,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       if (DEBUG) {
         System.out.println("  compile index for prefix=" + prefix);
       }
-      indexBuilder.DEBUG = false;
+      //indexBuilder.DEBUG = false;
       final byte[] bytes = new byte[(int) scratchBytes.getFilePointer()];
       assert bytes.length > 0;
       scratchBytes.writeTo(bytes, 0);
@@ -349,7 +349,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
         for(int idx=lastInput.length; idx >= prefixLenPlus1; idx--) {
           final Builder.UnCompiledNode<Object> node = frontier[idx];
-          final Builder.UnCompiledNode<Object> parent = idx == 0 ? null : frontier[idx-1];
 
           long totCount = 0;
 
@@ -357,8 +356,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             totCount++;
           }
 
-          //System.out.println("VISIT node=" + node + "
-          //arcs=" + node.numArcs);
           for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
             @SuppressWarnings("unchecked") final Builder.UnCompiledNode<Object> target = (Builder.UnCompiledNode<Object>) node.arcs[arcIdx].target;
             totCount += target.inputCount;
@@ -410,6 +407,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
           System.out.println("writeBlocks: prefix=" + prefix + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
         }
+        //System.out.println("\nwbs count=" + count);
 
         final int savLabel = prevTerm.ints[prevTerm.offset + prefixLength];
 
@@ -502,7 +500,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           subTermCountSums[idx] = sum;
         }
 
-        // TODO: make a better segmenter?
+        // TODO: make a better segmenter?  It'd have to
+        // absorb the too-small end blocks backwards into
+        // the previous blocks
 
         // Naive segmentation, not always best (it can produce
         // a too-small block as the last block):
@@ -516,6 +516,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
         for(int sub=0;sub<numSubs;sub++) {
           pendingCount += subTermCounts[sub] + subSubCounts[sub];
+          //System.out.println("  " + (subTermCounts[sub] + subSubCounts[sub]));
           subCount++;
 
           // greedily make a floor block as soon as we've
@@ -537,7 +538,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
               floorBlocks.add(floorBlock);
             }
             curStart -= pendingCount;
-            //System.out.println("    " + curStart + " remain");
+            //System.out.println("    = " + pendingCount);
             pendingCount = 0;
 
             // nocommit -- not valid?  but if i change this
@@ -561,6 +562,15 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
               assert firstBlock != null;
               prevTerm.ints[prevTerm.offset + prefixLength] = startLabel;
               //System.out.println("  final " + (numSubs-sub-1) + " subs");
+              /*
+              for(sub++;sub < numSubs;sub++) {
+                System.out.println("  " + (subTermCounts[sub] + subSubCounts[sub]));
+              }
+              System.out.println("    = " + curStart);
+              if (curStart < minItemsInBlock) {
+                System.out.println("      **");
+              }
+              */
               floorBlocks.add(writeBlock(prevTerm, prefixLength, prefixLength+1, curStart, curStart, 0, true, startLabel, true));
               break;
             }

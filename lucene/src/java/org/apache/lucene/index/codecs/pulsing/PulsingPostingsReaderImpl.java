@@ -240,6 +240,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class PulsingDocsEnum extends DocsEnum {
+    private byte[] postingsBytes;
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final IndexOptions indexOptions;
     private final boolean storePayloads;
@@ -256,11 +257,16 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     public PulsingDocsEnum reset(Bits liveDocs, PulsingTermState termState) {
       //System.out.println("PR docsEnum termState=" + termState + " docFreq=" + termState.docFreq);
       assert termState.postingsSize != -1;
-      // nocommit -- reuse the last byte[] if we can?  or
-      // can we directly ref termState's bytes...?  dangerous?
-      final byte[] bytes = new byte[termState.postingsSize];
-      System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
-      postings.reset(bytes);
+
+      // Must make a copy of termState's byte[] so that if
+      // app does TermsEnum.next(), this DocsEnum is not affected
+      if (postingsBytes == null) {
+        postingsBytes = new byte[termState.postingsSize];
+      } else if (postingsBytes.length < termState.postingsSize) {
+        postingsBytes = ArrayUtil.grow(postingsBytes, termState.postingsSize);
+      }
+      System.arraycopy(termState.postings, 0, postingsBytes, 0, termState.postingsSize);
+      postings.reset(postingsBytes, 0, termState.postingsSize);
       docID = 0;
       payloadLength = 0;
       freq = 1;
@@ -342,6 +348,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class PulsingDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    private byte[] postingsBytes;
     private final ByteArrayDataInput postings = new ByteArrayDataInput();
     private final boolean storePayloads;
 
@@ -365,9 +372,13 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
 
     public PulsingDocsAndPositionsEnum reset(Bits liveDocs, PulsingTermState termState) {
       assert termState.postingsSize != -1;
-      final byte[] bytes = new byte[termState.postingsSize];
-      System.arraycopy(termState.postings, 0, bytes, 0, termState.postingsSize);
-      postings.reset(bytes);
+      if (postingsBytes == null) {
+        postingsBytes = new byte[termState.postingsSize];
+      } else if (postingsBytes.length < termState.postingsSize) {
+        postingsBytes = ArrayUtil.grow(postingsBytes, termState.postingsSize);
+      }
+      System.arraycopy(termState.postings, 0, postingsBytes, 0, termState.postingsSize);
+      postings.reset(postingsBytes, 0, termState.postingsSize);
       this.liveDocs = liveDocs;
       payloadLength = 0;
       posPending = 0;

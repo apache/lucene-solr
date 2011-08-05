@@ -553,7 +553,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
 
           do {
-            fp = fpOrig + floorDataReader.readVLong();
+            fp = fpOrig + (floorDataReader.readVLong() >>> 1);
             numFollowFloorBlocks--;
             if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
             if (numFollowFloorBlocks != 0) {
@@ -602,7 +602,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
               if (!runAutomaton.isAccept(state)) {
                 // Maybe skip floor blocks:
                 while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
-                  fp = fpOrig + floorDataReader.readVLong();
+                  fp = fpOrig + (floorDataReader.readVLong() >>> 1);
                   numFollowFloorBlocks--;
                   if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
                   if (numFollowFloorBlocks != 0) {
@@ -1333,6 +1333,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       @Override
       public boolean seekExact(final BytesRef target, final boolean useCache) throws IOException {
+
         if (index == null) {
           throw new IllegalStateException("terms index was not loaded");
         }
@@ -2348,10 +2349,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           long newFP = fpOrig;
           while (true) {
-            newFP = fpOrig + floorDataReader.readVLong();
-
-            // We don't store hasTerms for the follow floor blocks:
-            hasTerms = true;
+            final long code = floorDataReader.readVLong();
+            newFP = fpOrig + (code >>> 1);
+            hasTerms = (code & 1) != 0;
             //if (DEBUG) {
             //System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
             //}

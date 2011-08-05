@@ -1,3 +1,8 @@
+
+FAIL: ant test-core -Dtestcase=TestBlockTree -Dtestmethod=testEasy -Dtests.seed=-7181425274859016595:531125480476701899
+
+TestFieldCache can spin w/ -codec Pulsing!?
+
 perf tests:
   - GRRR -- indexing MUCH slower now?
     trunk:

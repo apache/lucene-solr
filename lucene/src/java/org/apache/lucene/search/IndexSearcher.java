@@ -850,8 +850,6 @@ public class IndexSearcher implements Closeable {
       } catch (InterruptedException e) {
         throw new ThreadInterruptedException(e);
       } catch (ExecutionException e) {
-        // nocommit
-        e.getCause().printStackTrace(System.out);
         throw new RuntimeException(e.getCause());
       } finally {
         --numTasks;
