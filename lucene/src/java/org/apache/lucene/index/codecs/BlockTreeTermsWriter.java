@@ -550,10 +550,6 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             //System.out.println("    = " + pendingCount);
             pendingCount = 0;
 
-            // nocommit -- not valid?  but if i change this
-            // to allow the case where the sub did have
-            // "many" floor'd sub-blocks somehow... then
-            // it's valid?
             assert minItemsInBlock == 1 || subCount > 1: "minItemsInBlock=" + minItemsInBlock + " subCount=" + subCount + " sub=" + sub + " of " + numSubs + " subTermCount=" + subTermCountSums[sub] + " subSubCount=" + subSubCounts[sub] + " depth=" + prefixLength;
             subCount = 0;
             startLabel = subBytes[sub+1];

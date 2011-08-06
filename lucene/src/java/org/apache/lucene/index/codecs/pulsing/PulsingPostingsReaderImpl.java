@@ -131,16 +131,6 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    final PulsingTermState termState = (PulsingTermState) _termState;
-    if (termState.inlinedBytes != null) {
-      termState.inlinedBytesReader.rewind();
-    }
-    termState.wrappedTermState.termBlockOrd = 0;
-    wrappedPostingsReader.resetTermsBlock(fieldInfo, termState.wrappedTermState);
-  }
-
-  @Override
   public BlockTermState newTermState() throws IOException {
     PulsingTermState state = new PulsingTermState();
     state.wrappedTermState = wrappedPostingsReader.newTermState();

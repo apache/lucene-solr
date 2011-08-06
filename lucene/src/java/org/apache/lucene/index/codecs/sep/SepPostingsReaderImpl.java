@@ -234,14 +234,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    //System.out.println("SEPR.resetTermsBlock ts=" + _termState);
-    final SepTermState termState = (SepTermState) _termState;
-    assert termState.bytes != null;
-    termState.bytesReader.rewind();
-  }
-
-  @Override
   public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
     final boolean isFirstTerm = termState.termBlockOrd == 0;

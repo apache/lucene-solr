@@ -99,7 +99,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   // Open input to the main terms dict file (_X.tib)
   private final IndexInput in;
 
-  public static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
@@ -263,11 +263,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
   // for debugging
   String brToString(BytesRef b) {
-    final String s;
-    try {
-      return b.utf8ToString() + " " + b;
-    } catch (Throwable t) {
-      return b.toString();
+    if (b == null) {
+      return "null";
+    } else {
+      final String s;
+      try {
+        return b.utf8ToString() + " " + b;
+      } catch (Throwable t) {
+        return b.toString();
+      }
     }
   }
 
@@ -746,7 +750,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       // regexp foo*bar must be at least length 6 bytes
       public IntersectEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
         if (DEBUG) {
-          System.out.println("\nintEnum.init seg=" + segment);
+          System.out.println("\nintEnum.init seg=" + segment + " commonSuffix=" + brToString(compiled.commonSuffixRef));
         }
         runAutomaton = compiled.runAutomaton;
         compiledAutomaton = compiled;
@@ -829,9 +833,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
         BytesRef output = currentFrame.outputPrefix;
         while (idx < f.prefix) {
           final int target = term.bytes[idx] & 0xff;
-          // nocommit -- not efficient; caller should
-          // provide the first step in the arc; else we do
-          // O(n^2) here!
+          // TODO: we could be more efficient for the next()
+          // case by using current arc as starting point,
+          // passed to findTargetArc
           arc = index.findTargetArc(target, arc, getArc(1+idx));
           assert arc != null;
           output = fstOutputs.add(output, arc.output);
@@ -1027,6 +1031,36 @@ public class BlockTreeTermsReader extends FieldsProducer {
               currentFrame.transitionIndex++;
               currentFrame.curTransitionMax = currentFrame.transitions[currentFrame.transitionIndex].getMax();
               if (DEBUG) System.out.println("      next trans=" + currentFrame.transitions[currentFrame.transitionIndex]);
+            }
+          }
+
+          // First test the common suffix, if set:
+          if (compiledAutomaton.commonSuffixRef != null && !isSubBlock) {
+            final int termLen = currentFrame.prefix + currentFrame.suffix;
+            if (termLen < compiledAutomaton.commonSuffixRef.length) {
+              // No match
+              if (DEBUG) {
+                System.out.println("      skip: common suffix length");
+              }
+              continue nextTerm;
+            }
+
+            // nocommit -- in the case where common suffix
+            // len is > currentFrame.suffix we should check
+            // the suffix of the currentFrame.prefix too!
+            final int lenToCheck = Math.min(currentFrame.suffix, compiledAutomaton.commonSuffixRef.length);
+            final byte[] b1 = currentFrame.suffixBytes;
+            int pos1 = currentFrame.startBytePos + currentFrame.suffix - lenToCheck;
+            final byte[] b2 = compiledAutomaton.commonSuffixRef.bytes;
+            int pos2 = compiledAutomaton.commonSuffixRef.offset;
+            final int pos2End = pos2 + lenToCheck;
+            while(pos2 < pos2End) {
+              if (b1[pos1++] != b2[pos2++]) {
+                if (DEBUG) {
+                  System.out.println("      skip: common suffix mismatch");
+                }
+                continue nextTerm;
+              }
             }
           }
 
@@ -1422,7 +1456,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
             final int targetUptoMid = targetUpto;
 
             // Second compare the rest of the term, but
-            // don't save arc/output/frame:
+            // don't save arc/output/frame; we only do this
+            // to find out if the target term is before,
+            // equal or after the current term
             final int targetLimit2 = Math.min(target.length, term.length);
             while (targetUpto < targetLimit2) {
               cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
@@ -1871,9 +1907,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
             } else {
               System.out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + prefix + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<BlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? BlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
             }
-            //if (f == currentFrame) {
-            //  break;
-            //}
             if (index != null) {
               assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
               if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.bytes[f.prefix-1]&0xFF)) {
@@ -1884,8 +1917,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               if (output == null) {
                 System.out.println("      broken seek state: prefix is not final in index");
                 throw new RuntimeException("seek state is broken");
-                // nocommit -- can we do this check even w/
-                // isFloor...?
               } else if (isSeekFrame && !f.isFloor) {
                 final ByteArrayDataInput reader = new ByteArrayDataInput(output.bytes, output.offset, output.length);
                 final long codeOrig = reader.readVLong();
@@ -2241,9 +2272,19 @@ public class BlockTreeTermsReader extends FieldsProducer {
           }
         }
 
-        // nocommit -- maybe don't bother w/ this?  just
-        // reload the block?  it's gotta be rare
         void rewind() throws IOException {
+
+          // Force reload:
+          fp = fpOrig;
+          nextEnt = -1;
+          hasTerms = hasTermsOrig;
+          if (isFloor) {
+            floorDataReader.rewind();
+            numFollowFloorBlocks = floorDataReader.readVInt();
+            nextFloorLabel = floorDataReader.readByte() & 0xff;
+          }
+
+          /*
           //System.out.println("rewind");
           // Keeps the block loaded, but rewinds its state:
           if (nextEnt > 0 || fp != fpOrig) {
@@ -2251,10 +2292,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               System.out.println("      rewind frame ord=" + ord + " fpOrig=" + fpOrig + " fp=" + fp + " hasTerms?=" + hasTerms + " isFloor?=" + isFloor + " nextEnt=" + nextEnt + " prefixLen=" + prefix);
             }
             if (fp != fpOrig) {
-              // nocommit -- this is wasteful, if it's a
-              // floor block and we are gonna move fp back
-              // to the loaded fp in scanToFloorFrame; in
-              // this case we re-seek unnecessarily
               fp = fpOrig;
               nextEnt = -1;
             } else {
@@ -2279,6 +2316,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           } else if (DEBUG) {
             System.out.println("      skip rewind fp=" + fp + " fpOrig=" + fpOrig + " nextEnt=" + nextEnt + " ord=" + ord);
           }
+          */
         }
 
         public boolean next() {
@@ -2334,26 +2372,24 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // likely not worth it?  need to measure how many
         // floor blocks we "typically" get
         public void scanToFloorFrame(BytesRef target) {
-          // nocommit -- instead of taking target, can this
-          // just use term?
 
           if (!isFloor || target.length <= prefix) {
-            //if (DEBUG) {
-            //System.out.println("    scanToFloorFrame skip: isFloor=" + isFloor + " target.length=" + target.length + " vs prefix=" + prefix);
-            //}
+            if (DEBUG) {
+              System.out.println("    scanToFloorFrame skip: isFloor=" + isFloor + " target.length=" + target.length + " vs prefix=" + prefix);
+              }
             return;
           }
 
           final int targetLabel = target.bytes[target.offset + prefix] & 0xFF;
 
-          //if (DEBUG) {
-          //System.out.println("    scanToFloorFrame fpOrig=" + fpOrig + " targetLabel=" + toHex(targetLabel) + " vs nextFloorLabel=" + toHex(nextFloorLabel) + " numFollowFloorBlocks=" + numFollowFloorBlocks);
-          //}
+          if (DEBUG) {
+            System.out.println("    scanToFloorFrame fpOrig=" + fpOrig + " targetLabel=" + toHex(targetLabel) + " vs nextFloorLabel=" + toHex(nextFloorLabel) + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+          }
 
           if (targetLabel < nextFloorLabel) {
-            //if (DEBUG) {
-            //System.out.println("      already on correct block");
-            //}
+            if (DEBUG) {
+              System.out.println("      already on correct block");
+            }
             return;
           }
 
@@ -2364,25 +2400,25 @@ public class BlockTreeTermsReader extends FieldsProducer {
             final long code = floorDataReader.readVLong();
             newFP = fpOrig + (code >>> 1);
             hasTerms = (code & 1) != 0;
-            //if (DEBUG) {
-            //System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
-            //}
+            if (DEBUG) {
+              System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
+            }
             
             isLastInFloor = numFollowFloorBlocks == 1;
             numFollowFloorBlocks--;
 
             if (isLastInFloor) {
               nextFloorLabel = 256;
-              //if (DEBUG) {
-              //System.out.println("        stop!  last block nextFloorLabel=" + toHex(nextFloorLabel));
-              //}
+              if (DEBUG) {
+                System.out.println("        stop!  last block nextFloorLabel=" + toHex(nextFloorLabel));
+              }
               break;
             } else {
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               if (targetLabel < nextFloorLabel) {
-                //if (DEBUG) {
-                //System.out.println("        stop!  nextFloorLabel=" + toHex(nextFloorLabel));
-                //}
+                if (DEBUG) {
+                  System.out.println("        stop!  nextFloorLabel=" + toHex(nextFloorLabel));
+                }
                 break;
               }
             }
@@ -2390,15 +2426,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
           if (newFP != fp) {
             // Force re-load of the block:
-            //if (DEBUG) {
-            //System.out.println("      force switch to fp=" + newFP + " oldFP=" + fp);
-            //}
+            if (DEBUG) {
+              System.out.println("      force switch to fp=" + newFP + " oldFP=" + fp);
+            }
             nextEnt = -1;
             fp = newFP;
           } else {
-            //if (DEBUG) {
-            //System.out.println("      stay on same fp=" + newFP);
-            //}
+            if (DEBUG) {
+              System.out.println("      stay on same fp=" + newFP);
+            }
           }
         }
     
@@ -2450,7 +2486,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
         }
 
         // Scans to sub-block that has this target fp; only
-        // called by next()
+        // called by next(); NOTE: does not set
+        // startBytePos/suffix as a side effect
         public void scanToSubBlock(long subFP) {
           assert !isLeafBlock;
           //if (DEBUG) System.out.println("  scanToSubBlock fp=" + fp + " subFP=" + subFP + " entCount=" + entCount + " lastSubFP=" + lastSubFP);
@@ -2465,7 +2502,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
           while(true) {
             assert nextEnt < entCount;
             nextEnt++;
-            // nocommit should we also set instance startBytePos/suffix?
             final int code = suffixesReader.readVInt();
             suffixesReader.skipBytes(isLeafBlock ? code : code >>> 1);
             //if (DEBUG) System.out.println("    " + nextEnt + " (of " + entCount + ") ent isSubBlock=" + ((code&1)==1));
@@ -2483,6 +2519,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           }
         }
 
+        // NOTE: sets startBytePos/suffix as a side effect
         public SeekStatus scanToTerm(BytesRef target, boolean exactOnly) throws IOException {
           return isLeafBlock ? scanToTermLeaf(target, exactOnly) : scanToTermNonLeaf(target, exactOnly);
         }
@@ -2495,7 +2532,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // scan the entries check if the suffix matches.
         public SeekStatus scanToTermLeaf(BytesRef target, boolean exactOnly) throws IOException {
 
-          //if (DEBUG) System.out.println("    scanToTermLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
+          if (DEBUG) System.out.println("    scanToTermLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
 
           assert nextEnt != -1;
 
@@ -2518,7 +2555,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             suffix = suffixesReader.readVInt();
 
-            /*
             if (DEBUG) {
               BytesRef suffixBytesRef = new BytesRef();
               suffixBytesRef.bytes = suffixBytes;
@@ -2526,15 +2562,10 @@ public class BlockTreeTermsReader extends FieldsProducer {
               suffixBytesRef.length = suffix;
               System.out.println("      cycle: term " + (nextEnt-1) + " (of " + entCount + ") suffix=" + brToString(suffixBytesRef));
             }
-            */
 
             final int termLen = prefix + suffix;
             startBytePos = suffixesReader.getPosition();
             suffixesReader.skipBytes(suffix);
-
-            // nocommit not needed?  always == nextEnt in
-            // the leaf case
-            state.termBlockOrd++;
 
             final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
             int targetPos = target.offset + prefix;
@@ -2586,7 +2617,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
                   }
                 }
                 
-                //if (DEBUG) System.out.println("        not found");
+                if (DEBUG) System.out.println("        not found");
                 return SeekStatus.NOT_FOUND;
               } else if (stop) {
                 // Exact match!
@@ -2597,7 +2628,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
                 assert termExists;
                 fillTerm();
-                //if (DEBUG) System.out.println("        found!");
+                if (DEBUG) System.out.println("        found!");
                 return SeekStatus.FOUND;
               }
             }
@@ -2612,12 +2643,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // to the foo* block, but the last term in this block
           // was fooz (and, eg, first term in the next block will
           // bee fop).
-          //if (DEBUG) System.out.println("      block end");
+          if (DEBUG) System.out.println("      block end");
           if (exactOnly) {
             fillTerm();
           }
 
-          // nocommit -- not consistent that in the
+          // TODO: not consistent that in the
           // not-exact case we don't next() into the next
           // frame here
           return SeekStatus.END;
@@ -2627,7 +2658,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // scan the entries check if the suffix matches.
         public SeekStatus scanToTermNonLeaf(BytesRef target, boolean exactOnly) throws IOException {
 
-          //if (DEBUG) System.out.println("    scanToTermNonLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
+          if (DEBUG) System.out.println("    scanToTermNonLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
 
           assert nextEnt != -1;
 
@@ -2648,7 +2679,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             final int code = suffixesReader.readVInt();
             suffix = code >>> 1;
-            /*
             if (DEBUG) {
               BytesRef suffixBytesRef = new BytesRef();
               suffixBytesRef.bytes = suffixBytes;
@@ -2656,7 +2686,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
               suffixBytesRef.length = suffix;
               System.out.println("      cycle: " + ((code&1)==1 ? "sub-block" : "term") + " " + (nextEnt-1) + " (of " + entCount + ") suffix=" + brToString(suffixBytesRef));
             }
-            */
 
             termExists = (code & 1) == 0;
             final int termLen = prefix + suffix;
@@ -2721,7 +2750,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
                   }
                 }
                 
-                //if (DEBUG) System.out.println("        not found");
+                if (DEBUG) System.out.println("        not found");
                 return SeekStatus.NOT_FOUND;
               } else if (stop) {
                 // Exact match!
@@ -2732,7 +2761,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
                 assert termExists;
                 fillTerm();
-                //if (DEBUG) System.out.println("        found!");
+                if (DEBUG) System.out.println("        found!");
                 return SeekStatus.FOUND;
               }
             }
@@ -2747,12 +2776,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
           // to the foo* block, but the last term in this block
           // was fooz (and, eg, first term in the next block will
           // bee fop).
-          //if (DEBUG) System.out.println("      block end");
+          if (DEBUG) System.out.println("      block end");
           if (exactOnly) {
             fillTerm();
           }
 
-          // nocommit -- not consistent that in the
+          // TODO: not consistent that in the
           // not-exact case we don't next() into the next
           // frame here
           return SeekStatus.END;

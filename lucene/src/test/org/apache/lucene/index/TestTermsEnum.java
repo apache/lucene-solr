@@ -484,7 +484,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, docFreq(r, "xx"));
     assertEquals(1, docFreq(r, "aa4"));
 
-    final TermsEnum te = r.getSequentialSubReaders()[0].fields().terms(FIELD).iterator();
+    final TermsEnum te = MultiFields.getTerms(r, FIELD).iterator();
     while(te.next() != null) {
       //System.out.println("TEST: next term=" + te.term().utf8ToString());
     }
@@ -659,8 +659,6 @@ public class TestTermsEnum extends LuceneTestCase {
           System.out.println("\nTEST: valid term=" + t.utf8ToString());
         }
       }
-
-      // nocommit -- add some .termState() / seekExact(termState)
 
       // seekCeil or seekExact:
       final boolean doSeekExact = random.nextBoolean();

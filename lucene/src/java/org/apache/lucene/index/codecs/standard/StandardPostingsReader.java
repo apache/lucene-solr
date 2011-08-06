@@ -172,14 +172,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void resetTermsBlock(FieldInfo fieldInfo, BlockTermState _termState) throws IOException {
-    // if (DEBUG) System.out.println("SPR.resetTermsBlock ts=" + _termState);
-    final StandardTermState termState = (StandardTermState) _termState;
-    assert termState.bytes != null;
-    termState.bytesReader.rewind();
-  }
-
-  @Override
   public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState)
     throws IOException {
     final StandardTermState termState = (StandardTermState) _termState;

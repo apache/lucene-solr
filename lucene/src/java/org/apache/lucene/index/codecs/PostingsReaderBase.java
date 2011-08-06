@@ -62,6 +62,4 @@ public abstract class PostingsReaderBase implements Closeable {
    *  method should merely load the byte[] blob but not
    *  decode, which is done in {@link #nextTerm}. */
   public abstract void readTermsBlock(IndexInput termsIn, FieldInfo fieldInfo, BlockTermState termState) throws IOException;
-
-  public abstract void resetTermsBlock(FieldInfo fieldInfo, BlockTermState termState) throws IOException;
 }
