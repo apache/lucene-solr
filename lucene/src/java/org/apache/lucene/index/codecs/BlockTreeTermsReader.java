@@ -1052,7 +1052,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             final byte[] b1 = currentFrame.suffixBytes;
             int pos1 = currentFrame.startBytePos + currentFrame.suffix - lenToCheck;
             final byte[] b2 = compiledAutomaton.commonSuffixRef.bytes;
-            int pos2 = compiledAutomaton.commonSuffixRef.offset;
+            int pos2 = compiledAutomaton.commonSuffixRef.offset + compiledAutomaton.commonSuffixRef.length - lenToCheck;
             final int pos2End = pos2 + lenToCheck;
             while(pos2 < pos2End) {
               if (b1[pos1++] != b2[pos2++]) {
