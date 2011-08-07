@@ -320,6 +320,7 @@ public class QueryComponent extends SearchComponent
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
         boolean main = params.getBool(GroupParams.GROUP_MAIN, false);
+        boolean truncateGroups = params.getBool(GroupParams.GROUP_TRUNCATE, false);
 
         String formatStr = params.get(GroupParams.GROUP_FORMAT, Grouping.Format.grouped.name());
         Grouping.Format defaultFormat;
@@ -346,7 +347,8 @@ public class QueryComponent extends SearchComponent
             .setLimitDefault(limitDefault)
             .setDefaultTotalCount(defaultTotalCount)
             .setDocsPerGroupDefault(docsPerGroupDefault)
-            .setGroupOffsetDefault(groupOffsetDefault);
+            .setGroupOffsetDefault(groupOffsetDefault)
+            .setGetGroupedDocSet(truncateGroups);
 
         if (fields != null) {
           for (String field : fields) {

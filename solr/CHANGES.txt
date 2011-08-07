@@ -360,6 +360,10 @@ New Features
 * SOLR-2637: Added support for group result parsing in SolrJ.
   (Tao Cheng, Martijn van Groningen)
 
+* SOLR-2665: Added post group faceting. Facet counts are based on the most
+  relevant document of each group matching the query. This feature has the
+  same impact on the StatsComponent. (Martijn van Groningen)
+
 Optimizations
 ----------------------
 
