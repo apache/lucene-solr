@@ -134,8 +134,8 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    */
   protected class TemporalResult {
 
-    protected GH groupHead;
-    protected boolean stop;
+    public GH groupHead;
+    public boolean stop;
 
   }
 

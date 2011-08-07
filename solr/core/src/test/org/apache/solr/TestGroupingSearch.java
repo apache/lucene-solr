@@ -262,6 +262,44 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testGroupingGroupedBasedFaceting() throws Exception {
+    assertU(add(doc("id", "1", "value1_s1", "1", "value2_i", "1", "value3_s1", "a", "value4_s1", "1")));
+    assertU(add(doc("id", "2", "value1_s1", "1", "value2_i", "2", "value3_s1", "a", "value4_s1", "1")));
+    assertU(commit());
+    assertU(add(doc("id", "3", "value1_s1", "2", "value2_i", "3", "value3_s1", "b", "value4_s1", "2")));
+    assertU(add(doc("id", "4", "value1_s1", "1", "value2_i", "4", "value3_s1", "a", "value4_s1", "1")));
+    assertU(add(doc("id", "5", "value1_s1", "2", "value2_i", "5", "value3_s1", "b", "value4_s1", "2")));
+    assertU(commit());
+
+    // Facet counts based on documents
+    SolrQueryRequest req = req("q", "*:*", "sort", "value2_i asc", "rows", "1", "group", "true", "group.field",
+        "value1_s1", "fl", "id", "facet", "true", "facet.field", "value3_s1", "group.truncate", "false");
+    assertJQ(
+        req,
+        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]},'facet_dates':{},'facet_ranges':{}}"
+    );
+
+    // Facet counts based on groups
+    req = req("q", "*:*", "sort", "value2_i asc", "rows", "1", "group", "true", "group.field",
+        "value1_s1", "fl", "id", "facet", "true", "facet.field", "value3_s1", "group.truncate", "true");
+    assertJQ(
+        req,
+        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+    );
+
+    // Facet counts based on groups without sort on an int field.
+    req = req("q", "*:*", "rows", "1", "group", "true", "group.field", "value4_s1", "fl", "id", "facet", "true",
+        "facet.field", "value3_s1", "group.truncate", "true");
+    assertJQ(
+        req,
+        "/grouped=={'value4_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]},'facet_dates':{},'facet_ranges':{}}"
+    );
+  }
+
   static String f = "foo_s1";
   static String f2 = "foo2_i";
 
@@ -500,154 +538,196 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomGrouping() throws Exception {
-    /**
-     updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
-     assertJQ(req("q","id:77"), "/response/numFound==1");
+    try {
+      int indexIter=50 * RANDOM_MULTIPLIER;  // make >0 to enable test
+      int queryIter=100 * RANDOM_MULTIPLIER;
 
-     Doc doc = createDocObj(types);
-     updateJ(toJSON(doc), params("commit","true"));
+      while (--indexIter >= 0) {
 
-     assertJQ(req("q","id:"+doc.id), "/response/numFound==1");
-    **/
+        int indexSize = random.nextInt(25 * RANDOM_MULTIPLIER);
+        List<FldType> types = new ArrayList<FldType>();
+        types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
+        types.add(new FldType("score_s1",ONE_ONE, new SVal('a','c',1,1)));  // field used to score
+        types.add(new FldType("bar_s1",ONE_ONE, new SVal('a','z',3,5)));
+        types.add(new FldType(FOO_STRING_FIELD,ONE_ONE, new SVal('a','z',1,2)));
+        types.add(new FldType(SMALL_STRING_FIELD,ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
 
-    int indexIter=50 * RANDOM_MULTIPLIER;  // make >0 to enable test
-    int queryIter=100 * RANDOM_MULTIPLIER;
-
-    while (--indexIter >= 0) {
-
-      int indexSize = random.nextInt(25 * RANDOM_MULTIPLIER);
-//indexSize=2;
-      List<FldType> types = new ArrayList<FldType>();
-      types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
-      types.add(new FldType("score_s1",ONE_ONE, new SVal('a','c',1,1)));  // field used to score
-      types.add(new FldType("bar_s1",ONE_ONE, new SVal('a','z',3,5)));
-      types.add(new FldType(FOO_STRING_FIELD,ZERO_ONE, new SVal('a','z',1,2)));
-      types.add(new FldType(SMALL_STRING_FIELD,ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
-//      types.add(new FldType(SMALL_INT_FIELD,ZERO_ONE, new IRange(0,5+indexSize/10)));
-
-      clearIndex();
-      Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
-      //System.out.println("############### model=" + model);
-
-      // test with specific docs
-      if (false) {
         clearIndex();
-        model.clear();
-        Doc d1 = createDoc(types);
-        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
-        d1.getValues(SMALL_INT_FIELD).set(0,5);
-        d1.order = 0;
-        updateJ(toJSON(d1), params("commit","true"));
-        model.put(d1.id, d1);
+        Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
 
-        d1 = createDoc(types);
-        d1.getValues(SMALL_STRING_FIELD).set(0,"b");
-        d1.getValues(SMALL_INT_FIELD).set(0,5);
-        d1.order = 1;
-        updateJ(toJSON(d1), params("commit","false"));
-        model.put(d1.id, d1);
-
-        d1 = createDoc(types);
-        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
-        d1.getValues(SMALL_INT_FIELD).set(0,5);
-        d1.order = 2;
-        updateJ(toJSON(d1), params("commit","false"));
-        model.put(d1.id, d1);
-
-        d1 = createDoc(types);
-        d1.getValues(SMALL_STRING_FIELD).set(0,"c");
-        d1.getValues(SMALL_INT_FIELD).set(0,5);
-        d1.order = 3;
-        updateJ(toJSON(d1), params("commit","false"));
-        model.put(d1.id, d1);
-
-        d1 = createDoc(types);
-        d1.getValues(SMALL_STRING_FIELD).set(0,"b");
-        d1.getValues(SMALL_INT_FIELD).set(0,2);
-        d1.order = 4;
-        updateJ(toJSON(d1), params("commit","true"));
-        model.put(d1.id, d1);
-      }
-
-
-      for (int qiter=0; qiter<queryIter; qiter++) {
-        String groupField = types.get(random.nextInt(types.size())).fname;
-
-        int rows = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
-        int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
-        int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
-        int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
-
-        String[] stringSortA = new String[1];
-        Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
-        String sortStr = stringSortA[0];
-        Comparator<Doc> groupComparator = random.nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
-        String groupSortStr = stringSortA[0];
-
-        // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
-        // sortStr != null.
-        if (groupSortStr == null && groupSortStr != sortStr) {
-          groupSortStr = "score desc";
-        }
-
-         // Test specific case
+        // test with specific docs
         if (false) {
-          groupField=SMALL_INT_FIELD;
-          sortComparator=createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, true)));
-          sortStr = SMALL_STRING_FIELD + " asc";
-          groupComparator = createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, false)));
-          groupSortStr = SMALL_STRING_FIELD + " asc";
-          rows=1; start=0; group_offset=1; group_limit=1;
+          clearIndex();
+          model.clear();
+          Doc d1 = createDoc(types);
+          d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+          d1.getValues(SMALL_INT_FIELD).set(0,5);
+          d1.order = 0;
+          updateJ(toJSON(d1), params("commit","true"));
+          model.put(d1.id, d1);
+
+          d1 = createDoc(types);
+          d1.getValues(SMALL_STRING_FIELD).set(0,"b");
+          d1.getValues(SMALL_INT_FIELD).set(0,5);
+          d1.order = 1;
+          updateJ(toJSON(d1), params("commit","false"));
+          model.put(d1.id, d1);
+
+          d1 = createDoc(types);
+          d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+          d1.getValues(SMALL_INT_FIELD).set(0,5);
+          d1.order = 2;
+          updateJ(toJSON(d1), params("commit","false"));
+          model.put(d1.id, d1);
+
+          d1 = createDoc(types);
+          d1.getValues(SMALL_STRING_FIELD).set(0,"c");
+          d1.getValues(SMALL_INT_FIELD).set(0,5);
+          d1.order = 3;
+          updateJ(toJSON(d1), params("commit","false"));
+          model.put(d1.id, d1);
+
+          d1 = createDoc(types);
+          d1.getValues(SMALL_STRING_FIELD).set(0,"b");
+          d1.getValues(SMALL_INT_FIELD).set(0,2);
+          d1.order = 4;
+          updateJ(toJSON(d1), params("commit","true"));
+          model.put(d1.id, d1);
         }
 
-        Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
 
-        // first sort the docs in each group
-        for (Grp grp : groups.values()) {
-          Collections.sort(grp.docs, groupComparator);
-        }
+        for (int qiter=0; qiter<queryIter; qiter++) {
+          String groupField = types.get(random.nextInt(types.size())).fname;
 
-        // now sort the groups
+          int rows = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
+          int start = random.nextInt(5)==0 ? random.nextInt(model.size()+2) : random.nextInt(5); // pick a small start normally for better coverage
+          int group_limit = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(11)-1;
+          int group_offset = random.nextInt(10)==0 ? random.nextInt(model.size()+2) : random.nextInt(2); // pick a small start normally for better coverage
 
-        // if sort != group.sort, we need to find the max doc by "sort"
-        if (groupComparator != sortComparator) {
-          for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator);
-        }
+          String[] stringSortA = new String[1];
+          Comparator<Doc> sortComparator = createSort(h.getCore().getSchema(), types, stringSortA);
+          String sortStr = stringSortA[0];
+          Comparator<Doc> groupComparator = random.nextBoolean() ? sortComparator : createSort(h.getCore().getSchema(), types, stringSortA);
+          String groupSortStr = stringSortA[0];
 
-        List<Grp> sortedGroups = new ArrayList(groups.values());
-        Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
+          // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
+          // sortStr != null.
+          if (groupSortStr == null && groupSortStr != sortStr) {
+            groupSortStr = "score desc";
+          }
 
-        boolean includeNGroups = random.nextBoolean();
-        Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
+           // Test specific case
+          if (false) {
+            groupField=SMALL_INT_FIELD;
+            sortComparator=createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, true)));
+            sortStr = SMALL_STRING_FIELD + " asc";
+            groupComparator = createComparator(Arrays.asList(createComparator(SMALL_STRING_FIELD, true, true, false, false)));
+            groupSortStr = SMALL_STRING_FIELD + " asc";
+            rows=1; start=0; group_offset=1; group_limit=1;
+          }
 
-        int randomPercentage = random.nextInt(101);
-        // TODO: create a random filter too
-        SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
-            ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
-            ,(groupSortStr==null || groupSortStr==sortStr) ? "noGroupsort":"group.sort", groupSortStr==null ? "": groupSortStr
-            ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit,
-            GroupParams.GROUP_CACHE_PERCENTAGE, Integer.toString(randomPercentage), GroupParams.GROUP_TOTAL_COUNT, includeNGroups ? "true" : "false"
-        );
+          Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
 
-        String strResponse = h.query(req);
+          // first sort the docs in each group
+          for (Grp grp : groups.values()) {
+            Collections.sort(grp.docs, groupComparator);
+          }
 
-        Object realResponse = ObjectBuilder.fromJSON(strResponse);
-        String err = JSONTestUtil.matchObj("/grouped/"+groupField, realResponse, modelResponse);
-        if (err != null) {
-          log.error("GROUPING MISMATCH: " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
-           + "\n\tsorted_model="+ sortedGroups
+          // now sort the groups
+
+          // if sort != group.sort, we need to find the max doc by "sort"
+          if (groupComparator != sortComparator) {
+            for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator);
+          }
+
+          List<Grp> sortedGroups = new ArrayList<Grp>(groups.values());
+          Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
+
+          boolean includeNGroups = random.nextBoolean();
+          Object modelResponse = buildGroupedResult(h.getCore().getSchema(), sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
+
+          boolean truncateGroups = random.nextBoolean();
+          Map<String, Integer> facetCounts = new TreeMap<String, Integer>();
+          if (truncateGroups) {
+            for (Grp grp : sortedGroups) {
+              Doc doc = grp.docs.get(0);
+              if (doc.getValues(FOO_STRING_FIELD) == null) {
+                continue;
+              }
+
+              String key = doc.getFirstValue(FOO_STRING_FIELD).toString();
+              boolean exists = facetCounts.containsKey(key);
+              int count = exists ? facetCounts.get(key) : 0;
+              facetCounts.put(key, ++count);
+            }
+          } else {
+            for (Doc doc : model.values()) {
+              if (doc.getValues(FOO_STRING_FIELD) == null) {
+                continue;
+              }
+
+              for (Comparable field : doc.getValues(FOO_STRING_FIELD)) {
+                String key = field.toString();
+                boolean exists = facetCounts.containsKey(key);
+                int count = exists ? facetCounts.get(key) : 0;
+                facetCounts.put(key, ++count);
+              }
+            }
+          }
+          List<Comparable> expectedFacetResponse = new ArrayList<Comparable>();
+          for (Map.Entry<String, Integer> stringIntegerEntry : facetCounts.entrySet()) {
+            expectedFacetResponse.add(stringIntegerEntry.getKey());
+            expectedFacetResponse.add(stringIntegerEntry.getValue());
+          }
+
+          int randomPercentage = random.nextInt(101);
+          // TODO: create a random filter too
+          SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
+              ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
+              ,(groupSortStr==null || groupSortStr==sortStr) ? "noGroupsort":"group.sort", groupSortStr==null ? "": groupSortStr
+              ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit,
+              GroupParams.GROUP_CACHE_PERCENTAGE, Integer.toString(randomPercentage), GroupParams.GROUP_TOTAL_COUNT, includeNGroups ? "true" : "false",
+              "facet", "true", "facet.sort", "index", "facet.limit", "-1", "facet.field", FOO_STRING_FIELD,
+              GroupParams.GROUP_TRUNCATE, truncateGroups ? "true" : "false", "facet.mincount", "1"
           );
 
-          // re-execute the request... good for putting a breakpoint here for debugging
-          String rsp = h.query(req);
+          String strResponse = h.query(req);
 
-          fail(err);
-        }
-      } // end query iter
-    } // end index iter
+          Object realResponse = ObjectBuilder.fromJSON(strResponse);
+          String err = JSONTestUtil.matchObj("/grouped/"+groupField, realResponse, modelResponse);
+          if (err != null) {
+            log.error("GROUPING MISMATCH: " + err
+             + "\n\trequest="+req
+             + "\n\tresult="+strResponse
+             + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
+             + "\n\tsorted_model="+ sortedGroups
+            );
+
+            // re-execute the request... good for putting a breakpoint here for debugging
+            String rsp = h.query(req);
+
+            fail(err);
+          }
+
+           // assert post / pre grouping facets
+          err = JSONTestUtil.matchObj("/facet_counts/facet_fields/"+FOO_STRING_FIELD, realResponse, expectedFacetResponse);
+          if (err != null) {
+            log.error("GROUPING MISMATCH: " + err
+             + "\n\trequest="+req
+             + "\n\tresult="+strResponse
+             + "\n\texpected="+ JSONUtil.toJSON(expectedFacetResponse)
+            );
+  
+            // re-execute the request... good for putting a breakpoint here for debugging
+            h.query(req);
+            fail(err);
+          }
+        } // end query iter
+      } // end index iter
+    } finally {
+      // B/c the facet.field is also used of grouping we have the purge the FC to avoid FC insanity
+      FieldCache.DEFAULT.purgeAllCaches();
+    }
 
   }
 

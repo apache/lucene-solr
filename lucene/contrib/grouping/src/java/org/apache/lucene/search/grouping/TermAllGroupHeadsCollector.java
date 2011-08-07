@@ -307,7 +307,17 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         } else {
           if (sortOrds[compIDX] < 0) {
             // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
-            return sortValues[compIDX].compareTo(sortsIndex[compIDX].lookup[sortsIndex[compIDX].order[doc]]);
+            final String val1 = sortValues[compIDX];
+            final String val2 = sortsIndex[compIDX].lookup[sortsIndex[compIDX].order[doc]];
+            if (val1 == null) {
+              if (val2 == null) {
+                return 0;
+              }
+              return -1;
+            } else if (val2 == null) {
+              return 1;
+            }
+            return val1.compareTo(val2);
           } else {
             return sortOrds[compIDX] - sortsIndex[compIDX].order[doc];
           }
@@ -421,7 +431,17 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       public int compare(int compIDX, int doc) throws IOException {
         if (sortOrds[compIDX] < 0) {
           // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
-          return sortValues[compIDX].compareTo(sortsIndex[compIDX].lookup[sortsIndex[compIDX].order[doc]]);
+          final String val1 = sortValues[compIDX];
+          final String val2 = sortsIndex[compIDX].lookup[sortsIndex[compIDX].order[doc]];
+          if (val1 == null) {
+            if (val2 == null) {
+              return 0;
+            }
+            return -1;
+          } else if (val2 == null) {
+            return 1;
+          }
+          return val1.compareTo(val2);
         } else {
           return sortOrds[compIDX] - sortsIndex[compIDX].order[doc];
         }

@@ -23,6 +23,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -68,6 +70,7 @@ public class Grouping {
   private int maxDoc;
   private boolean needScores;
   private boolean getDocSet;
+  private boolean getGroupedDocSet;
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
   private DocSet filter;
@@ -210,6 +213,11 @@ public class Grouping {
     return this;
   }
 
+  public Grouping setGetGroupedDocSet(boolean getGroupedDocSet) {
+    this.getGroupedDocSet = getGroupedDocSet;
+    return this;
+  }
+
   public List<Command> getCommands() {
     return commands;
   }
@@ -251,16 +259,21 @@ public class Grouping {
       cmd.prepare();
     }
 
+    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<Collector>(commands.size());
     for (Command cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
-      if (collector != null)
+      if (collector != null) {
         collectors.add(collector);
+      }
+      if (getGroupedDocSet && allGroupHeadsCollector == null) {
+        collectors.add(allGroupHeadsCollector = cmd.createAllGroupCollector());
+      }
     }
 
     Collector allCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
     DocSetCollector setCollector = null;
-    if (getDocSet) {
+    if (getDocSet && allGroupHeadsCollector == null) {
       setCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, allCollectors);
       allCollectors = setCollector;
     }
@@ -284,7 +297,12 @@ public class Grouping {
       searcher.search(query, luceneFilter, allCollectors);
     }
 
-    if (getDocSet) {
+    if (getGroupedDocSet && allGroupHeadsCollector != null) {
+      FixedBitSet fixedBitSet = allGroupHeadsCollector.retrieveGroupHeads(maxDoc);
+      long[] bits = fixedBitSet.getBits();
+      OpenBitSet openBitSet = new OpenBitSet(bits, bits.length);
+      qr.setDocSet(new BitDocSet(openBitSet));
+    } else if (getDocSet) {
       qr.setDocSet(setCollector.getDocSet());
     }
 
@@ -435,6 +453,17 @@ public class Grouping {
      * @throws IOException If I/O related errors occur
      */
     protected Collector createSecondPassCollector() throws IOException {
+      return null;
+    }
+
+    /**
+     * Returns a collector that is able to return the most relevant document of all groups.
+     * Returns <code>null</code> if the command doesn't support this type of collector.
+     *
+     * @return a collector that is able to return the most relevant document of all groups.
+     * @throws IOException If I/O related errors occur
+     */
+    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       return null;
     }
 
@@ -626,6 +655,15 @@ public class Grouping {
       } else {
         return secondPass;
       }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+      Sort sortWithinGroup = groupSort != null ? groupSort : new Sort();
+      return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
     }
 
     /**
