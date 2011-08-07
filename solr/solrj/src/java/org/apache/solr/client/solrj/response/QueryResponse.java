@@ -211,7 +211,7 @@ public class QueryResponse extends SolrResponseBase
             SimpleOrderedMap grpMap = (SimpleOrderedMap) oGrp;
             Object sGroupValue = grpMap.get( "groupValue");
             SolrDocumentList doclist = (SolrDocumentList) grpMap.get( "doclist");
-            Group group = new Group(sGroupValue.toString(), doclist) ;
+            Group group = new Group(sGroupValue != null ? sGroupValue.toString() : null, doclist) ;
             groupedCommand.add(group);
           }
 
