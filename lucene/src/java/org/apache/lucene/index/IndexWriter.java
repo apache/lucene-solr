@@ -750,7 +750,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     SegmentReader reader = readerPool.getIfExists(info);
     try {
       if (reader != null) {
-        return reader.numDeletedDocs();
+        // the pulled reader could be from an in-flight merge 
+        // while the info we see has already new applied deletes after a commit
+        // we max out the delets since deletes never shrink
+        return Math.max(info.getDelCount(), reader.numDeletedDocs());
       } else {
         return info.getDelCount();
       }
