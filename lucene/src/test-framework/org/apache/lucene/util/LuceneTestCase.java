@@ -322,24 +322,24 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static class TwoLongs {
-    public final long l1, l2;
+  private static class ThreeLongs {
+    public final long l1, l2, l3;
 
-    public TwoLongs(long l1, long l2) {
+    public ThreeLongs(long l1, long l2, long l3) {
       this.l1 = l1;
       this.l2 = l2;
+      this.l3 = l3;
     }
 
     @Override
     public String toString() {
-      return l1 + ":" + l2;
+      return Long.toString(l1, 16) + ":" + Long.toString(l2, 16) + ":" + Long.toString(l3, 16);
     }
 
-    public static TwoLongs fromString(String s) {
-      final int i = s.indexOf(':');
-      assert i != -1;
-      return new TwoLongs(Long.parseLong(s.substring(0, i)),
-                          Long.parseLong(s.substring(1+i)));
+    public static ThreeLongs fromString(String s) {
+      String parts[] = s.split(":");
+      assert parts.length == 3;
+      return new ThreeLongs(Long.parseLong(parts[0], 16), Long.parseLong(parts[1], 16), Long.parseLong(parts[2], 16));
     }
   }
 
@@ -349,7 +349,7 @@ public abstract class LuceneTestCase extends Assert {
 
   private static void initRandom() {
     assert !random.initialized;
-    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
+    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     random.initialized = true;
   }
@@ -359,6 +359,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    initRandom();
     state = State.INITIAL;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
@@ -566,7 +567,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @Before
   public void setUp() throws Exception {
-    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
+    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     if (!testsFailed) {
       assertTrue("ensure your tearDown() calls super.tearDown()!!!", (state == State.INITIAL || state == State.TEARDOWN));
@@ -1344,7 +1345,7 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName()
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed)
         + reproduceWithExtraParams());
   }
 
@@ -1426,14 +1427,17 @@ public abstract class LuceneTestCase extends Assert {
   /** optionally filters the tests to be run by TEST_METHOD */
   public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     private List<FrameworkMethod> testMethods;
+    private static final long runnerSeed;
+    static {
+      runnerSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l3;
+    }
 
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
       
-      initRandom();
-      Random r = new Random(random.nextLong());
+      Random r = new Random(runnerSeed);
 
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
       testMethods = new ArrayList<FrameworkMethod>();
