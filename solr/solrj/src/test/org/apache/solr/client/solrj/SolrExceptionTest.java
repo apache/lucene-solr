@@ -40,7 +40,7 @@ public class SolrExceptionTest extends LuceneTestCase {
       // set a 1ms timeout to let the connection fail faster.
       HttpClient httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
       httpClient.getParams().setParameter("http.connection.timeout", new Integer(1));
-      SolrServer client = new CommonsHttpSolrServer("http://localhost:11235/solr/", httpClient);
+      SolrServer client = new CommonsHttpSolrServer("http://[ff01::114]:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
     } catch (SolrServerException sse) {
