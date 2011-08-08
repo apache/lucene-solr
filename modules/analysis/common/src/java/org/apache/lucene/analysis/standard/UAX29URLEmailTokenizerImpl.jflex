@@ -17,16 +17,7 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
-
 
 /**
  * This class implements Word Break rules from the Unicode Text Segmentation 
@@ -49,19 +40,13 @@ import org.apache.lucene.util.AttributeSource;
 %%
 
 %unicode 6.0
+%integer
 %final
 %public
-%apiprivate
-%class UAX29URLEmailTokenizer
-%extends Tokenizer
-%type boolean
+%class UAX29URLEmailTokenizerImpl
+%implements StandardTokenizerInterface
 %function getNextToken
 %char
-
-%init{
-  super(in);
-%init}
-
 
 %include src/java/org/apache/lucene/analysis/standard/SUPPLEMENTARY.jflex-macro
 ALetter = ([\p{WB:ALetter}] | {ALetterSupp})
@@ -89,6 +74,8 @@ MidLetterEx    = ({MidLetter} | {MidNumLet})   ({Format} | {Extend})*
 MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
 ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
+HanEx = {Han} ({Format} | {Extend})*
+HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 // URL and E-mail syntax specifications:
 //
@@ -170,16 +157,10 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 %{
   /** Alphanumeric sequences */
-  public static final String WORD_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ALPHANUM];
+  public static final int WORD_TYPE = UAX29URLEmailTokenizer.ALPHANUM;
   
   /** Numbers */
-  public static final String NUMERIC_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.NUM];
-  
-  /** URLs with scheme: HTTP(S), FTP, or FILE; no-scheme URLs match HTTP syntax */
-  public static final String URL_TYPE = "<URL>";
-  
-  /** E-mail addresses */
-  public static final String EMAIL_TYPE = "<EMAIL>";
+  public static final int NUMERIC_TYPE = UAX29URLEmailTokenizer.NUM;
   
   /**
    * Chars in class \p{Line_Break = Complex_Context} are from South East Asian
@@ -189,114 +170,30 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
    * <p>
    * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
    */
-  public static final String SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.SOUTHEAST_ASIAN];
+  public static final int SOUTH_EAST_ASIAN_TYPE = UAX29URLEmailTokenizer.SOUTHEAST_ASIAN;
   
-  public static final String IDEOGRAPHIC_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.IDEOGRAPHIC];
+  public static final int IDEOGRAPHIC_TYPE = UAX29URLEmailTokenizer.IDEOGRAPHIC;
   
-  public static final String HIRAGANA_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HIRAGANA];
+  public static final int HIRAGANA_TYPE = UAX29URLEmailTokenizer.HIRAGANA;
   
-  public static final String KATAKANA_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.KATAKANA];
+  public static final int KATAKANA_TYPE = UAX29URLEmailTokenizer.KATAKANA;
+  
+  public static final int HANGUL_TYPE = UAX29URLEmailTokenizer.HANGUL;
+  
+  public static final int EMAIL_TYPE = UAX29URLEmailTokenizer.EMAIL;
+  
+  public static final int URL_TYPE = UAX29URLEmailTokenizer.URL;
 
-  public static final String HANGUL_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HANGUL];
-
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt 
-    = addAttribute(PositionIncrementAttribute.class);
-  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  
-  private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
-  private int posIncr;
-
-  
-  /**
-   * @param source The AttributeSource to use
-   * @param input The input reader
-   */
-  public UAX29URLEmailTokenizer(AttributeSource source, Reader input) {
-    super(source, input);
-    zzReader = input;
-  }
-  
-  /**
-   * @param factory The AttributeFactory to use
-   * @param input The input reader
-   */
-  public UAX29URLEmailTokenizer(AttributeFactory factory, Reader input) {
-    super(factory, input); 
-    zzReader = input;
-  }
-  
-  /** 
-   * Set the max allowed token length.  Any token longer than this is skipped.
-   * @param length the new max allowed token length
-   */
-  public void setMaxTokenLength(int length) {
-    this.maxTokenLength = length;
+  public final int yychar()
+  {
+    return yychar;
   }
 
   /**
-   * Returns the max allowed token length.  Any token longer than this is 
-   * skipped.
-   * @return the max allowed token length 
+   * Fills CharTermAttribute with the current token text.
    */
-  public int getMaxTokenLength() {
-    return maxTokenLength;
-  }
-
-  @Override
-  public final void end() {
-    // set final offset
-    int finalOffset = correctOffset(yychar + yylength());
-    offsetAtt.setOffset(finalOffset, finalOffset);
-  }
-
-  @Override
-  public void reset(Reader reader) throws IOException {
-    super.reset(reader);
-    yyreset(reader);
-  }
-
-  @Override
-  public final boolean incrementToken() throws IOException {
-    // This method is required because of two JFlex limitations:
-    // 1. No way to insert code at the beginning of the generated scanning
-    //    get-next-token method; and
-    // 2. No way to declare @Override on the generated scanning method.
-    clearAttributes();
-    posIncr = 1;
-    return getNextToken();
-  }
-
-  /**
-   * Populates this TokenStream's CharTermAttribute and OffsetAttribute from
-   * the current match, the TypeAttribute from the passed-in tokenType, and
-   * the PositionIncrementAttribute to one, unless the immediately previous
-   * token(s) was/were skipped because maxTokenLength was exceeded, in which
-   * case the PositionIncrementAttribute is set to one plus the number of
-   * skipped overly long tokens. 
-   * <p/> 
-   * If maxTokenLength is exceeded, the CharTermAttribute is set back to empty
-   * and false is returned.
-   * 
-   * @param tokenType The type of the matching token
-   * @return true there is a token available (not too long); false otherwise 
-   */
-  private boolean populateAttributes(String tokenType) {
-    boolean isTokenAvailable = false;
-    if (yylength() > maxTokenLength) {
-      // When we skip a too-long token, we treat it like a stopword, introducing
-      // a position increment gap
-      ++posIncr;
-    } else {
-      termAtt.copyBuffer(zzBuffer, zzStartRead, yylength());
-      posIncrAtt.setPositionIncrement(posIncr);
-      offsetAtt.setOffset(correctOffset(yychar),
-                          correctOffset(yychar + yylength()));
-      typeAtt.setType(tokenType);
-      isTokenAvailable = true;
-    }
-    return isTokenAvailable;
+  public final void getText(CharTermAttribute t) {
+    t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
 %}
 
@@ -305,10 +202,10 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 // UAX#29 WB1. 	sot 	÷ 	
 //        WB2. 		÷ 	eot
 //
-<<EOF>> { return false; }
+<<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
-{URL}   { if (populateAttributes(URL_TYPE)) return true; }
-{EMAIL} {if (populateAttributes(EMAIL_TYPE)) return true; }
+{URL}   { return URL_TYPE; }
+{EMAIL} { return EMAIL_TYPE; }
 
 // UAX#29 WB8.   Numeric × Numeric
 //        WB11.  Numeric (MidNum | MidNumLet) × Numeric
@@ -320,14 +217,14 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
                               | {MidNumericEx} {NumericEx} 
                               | {NumericEx})*
 {ExtendNumLetEx}* 
-  { if (populateAttributes(NUMERIC_TYPE)) return true; }
+  { return NUMERIC_TYPE; }
 
 // subset of the below for typing purposes only!
 {HangulEx}+
-  { if (populateAttributes(HANGUL_TYPE)) return true; }
+  { return HANGUL_TYPE; }
 
 {KatakanaEx}+
-  { if (populateAttributes(KATAKANA_TYPE)) return true; }
+  { return KATAKANA_TYPE; }
 
 // UAX#29 WB5.   ALetter × ALetter
 //        WB6.   ALetter × (MidLetter | MidNumLet) ALetter
@@ -345,7 +242,7 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
                    | ( {NumericEx}  ({ExtendNumLetEx}+ {NumericEx} | {MidNumericEx} {NumericEx} | {NumericEx})*
                      | {ALetterEx}  ({ExtendNumLetEx}+ {ALetterEx} | {MidLetterEx}  {ALetterEx} | {ALetterEx})* )+ ) )*
 {ExtendNumLetEx}*  
-  { if (populateAttributes(WORD_TYPE)) return true; }
+  { return WORD_TYPE; }
 
 
 // From UAX #29:
@@ -367,12 +264,12 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 //
 //    http://www.unicode.org/reports/tr14/#SA
 //
-{ComplexContext}+ { if (populateAttributes(SOUTH_EAST_ASIAN_TYPE)) return true; }
+{ComplexContext}+ { return SOUTH_EAST_ASIAN_TYPE; }
 
 // UAX#29 WB14.  Any ÷ Any
 //
-{Han} { if (populateAttributes(IDEOGRAPHIC_TYPE)) return true; }
-{Hiragana} { if (populateAttributes(HIRAGANA_TYPE)) return true; }
+{HanEx} { return IDEOGRAPHIC_TYPE; }
+{HiraganaEx} { return HIRAGANA_TYPE; }
 
 
 // UAX#29 WB3.   CR × LF

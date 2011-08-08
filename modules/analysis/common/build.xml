@@ -56,7 +56,7 @@
            nobak="on"/>
   </target>
 
-  <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
@@ -76,8 +76,11 @@
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
-    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizer.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/UAX29URLEmailTokenizerImpl31.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard/std31"
            nobak="on" />
   </target>
   
@@ -86,7 +89,7 @@
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="**/*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>
