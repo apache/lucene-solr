@@ -436,7 +436,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents
         (String fieldName, Reader reader) {
 
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_31, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };

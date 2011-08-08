@@ -87,54 +87,6 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     "<EMAIL>",
   };
 
-  /** Alphanumeric sequences
-   * @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String WORD_TYPE = TOKEN_TYPES[ALPHANUM];
-  
-  /** Numbers 
-   * @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String NUMERIC_TYPE = TOKEN_TYPES[NUM];
-  
-  /** URLs with scheme: HTTP(S), FTP, or FILE; no-scheme URLs match HTTP syntax 
-   * @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String URL_TYPE = TOKEN_TYPES[URL];
-  
-  /** E-mail addresses 
-   * @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String EMAIL_TYPE = TOKEN_TYPES[EMAIL];
-  
-  /**
-   * Chars in class \p{Line_Break = Complex_Context} are from South East Asian
-   * scripts (Thai, Lao, Myanmar, Khmer, etc.).  Sequences of these are kept 
-   * together as as a single token rather than broken up, because the logic
-   * required to break them at word boundaries is too complex for UAX#29.
-   * <p>
-   * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
-   * @deprecated use {@link #TOKEN_TYPES} instead
-   */
-  @Deprecated
-  public static final String SOUTH_EAST_ASIAN_TYPE = TOKEN_TYPES[SOUTHEAST_ASIAN];
-  
-  /** @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String IDEOGRAPHIC_TYPE = TOKEN_TYPES[IDEOGRAPHIC];
-  
-  /** @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String HIRAGANA_TYPE = TOKEN_TYPES[HIRAGANA];
-  
-  /** @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String KATAKANA_TYPE = TOKEN_TYPES[KATAKANA];
-
-  /** @deprecated use {@link #TOKEN_TYPES} instead */
-  @Deprecated
-  public static final String HANGUL_TYPE = TOKEN_TYPES[HANGUL];
-
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
@@ -146,30 +98,6 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   /** @see #setMaxTokenLength */
   public int getMaxTokenLength() {
     return maxTokenLength;
-  }
-  
-  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, Reader)} instead. */
-  @Deprecated
-  public UAX29URLEmailTokenizer(Reader input) {
-    this(Version.LUCENE_31, input);
-  }
-  
-  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, Reader)} instead. */
-  @Deprecated
-  public UAX29URLEmailTokenizer(InputStream input) {
-    this(Version.LUCENE_31, new InputStreamReader(input));
-  }
-  
-  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, AttributeSource, Reader)} instead. */
-  @Deprecated
-  public UAX29URLEmailTokenizer(AttributeSource source, Reader input) {
-    this(Version.LUCENE_31, source, input);
-  }
-  
-  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, AttributeFactory, Reader)} instead. */
-  @Deprecated
-  public UAX29URLEmailTokenizer(AttributeFactory factory, Reader input) {
-    this(Version.LUCENE_31, factory, input);
   }
 
   /**
