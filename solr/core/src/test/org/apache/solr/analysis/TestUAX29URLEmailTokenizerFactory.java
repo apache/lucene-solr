@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -172,5 +173,23 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenTestCase {
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"one", "two", "three", longWord, "four", "five", "six" });
+  }
+  
+  /** @deprecated nuke this test in lucene 5.0 */
+  @Deprecated
+  public void testMatchVersion() throws Exception {
+    Reader reader = new StringReader("ざ");
+    UAX29URLEmailTokenizerFactory factory = new UAX29URLEmailTokenizerFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
+    Tokenizer stream = factory.create(reader);
+    assertTokenStreamContents(stream, 
+        new String[] {"ざ"});
+    
+    reader = new StringReader("ざ");
+    factory = new UAX29URLEmailTokenizerFactory();
+    factory.init(Collections.singletonMap("luceneMatchVersion", "3.1"));
+    stream = factory.create(reader);
+    assertTokenStreamContents(stream, 
+        new String[] {"さ"}); // old broken behavior
   }
 }

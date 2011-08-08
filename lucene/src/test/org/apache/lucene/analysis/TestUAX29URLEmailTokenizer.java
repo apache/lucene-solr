@@ -1,7 +1,9 @@
 package org.apache.lucene.analysis;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,7 +40,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(new StringReader(input));
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
@@ -47,7 +49,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     protected TokenStreamComponents createComponents
       (String fieldName, Reader reader) {
 
-      Tokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+      Tokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, reader);
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -63,7 +65,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     public final boolean incrementToken() throws java.io.IOException {
       boolean isTokenAvailable = false;
       while (input.incrementToken()) {
-        if (typeAtt.type() == UAX29URLEmailTokenizer.URL_TYPE) {
+        if (typeAtt.type() == UAX29URLEmailTokenizer.TOKEN_TYPES[UAX29URLEmailTokenizer.URL]) {
           isTokenAvailable = true;
           break;
         }
@@ -82,7 +84,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     public final boolean incrementToken() throws java.io.IOException {
       boolean isTokenAvailable = false;
       while (input.incrementToken()) {
-        if (typeAtt.type() == UAX29URLEmailTokenizer.EMAIL_TYPE) {
+        if (typeAtt.type() == UAX29URLEmailTokenizer.TOKEN_TYPES[UAX29URLEmailTokenizer.EMAIL]) {
           isTokenAvailable = true;
           break;
         }
@@ -94,7 +96,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   private Analyzer urlAnalyzer = new ReusableAnalyzerBase() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, reader);
       tokenizer.setMaxTokenLength(Integer.MAX_VALUE);  // Tokenize arbitrary length URLs
       TokenFilter filter = new URLFilter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
@@ -104,7 +106,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   private Analyzer emailAnalyzer = new ReusableAnalyzerBase() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+      UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(TEST_VERSION_CURRENT, reader);
       TokenFilter filter = new EmailFilter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
     }
@@ -412,7 +414,32 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
         new String[] { "仮", "名", "遣", "い", "カタカナ" },
         new String[] { "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<HIRAGANA>", "<KATAKANA>" });
   }
-  
+
+  public void testCombiningMarks() throws Exception {
+    checkOneTerm(a, "ざ", "ざ"); // hiragana
+    checkOneTerm(a, "ザ", "ザ"); // katakana
+    checkOneTerm(a, "壹゙", "壹゙"); // ideographic
+    checkOneTerm(a, "아゙",  "아゙"); // hangul
+  }
+
+  /** @deprecated remove this and sophisticated backwards layer in 5.0 */
+  @Deprecated
+  public void testCombiningMarksBackwards() throws Exception {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents
+        (String fieldName, Reader reader) {
+
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(reader);
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+    checkOneTerm(a, "ざ", "さ"); // hiragana Bug
+    checkOneTerm(a, "ザ", "ザ"); // katakana Works
+    checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
+    checkOneTerm(a, "아゙",  "아゙"); // hangul Works
+  }
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random, a, 10000*RANDOM_MULTIPLIER);

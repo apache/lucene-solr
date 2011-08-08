@@ -17,24 +17,24 @@ package org.apache.lucene.analysis.standard.std31;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * This class implements StandardTokenizer, except with a bug 
+ * This class implements UAX29URLEmailTokenizer, except with a bug 
  * (https://issues.apache.org/jira/browse/LUCENE-3358) where Han and Hiragana
  * characters would be split from combining characters:
  * @deprecated This class is only for exact backwards compatibility
  */
-@Deprecated
+ @Deprecated
 %%
 
 %unicode 6.0
 %integer
 %final
 %public
-%class StandardTokenizerImpl31
+%class UAX29URLEmailTokenizerImpl31
 %implements StandardTokenizerInterface
 %function getNextToken
 %char
@@ -66,12 +66,90 @@ MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
 ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
 
+// URL and E-mail syntax specifications:
+//
+//     RFC-952:  DOD INTERNET HOST TABLE SPECIFICATION
+//     RFC-1035: DOMAIN NAMES - IMPLEMENTATION AND SPECIFICATION
+//     RFC-1123: Requirements for Internet Hosts - Application and Support
+//     RFC-1738: Uniform Resource Locators (URL)
+//     RFC-3986: Uniform Resource Identifier (URI): Generic Syntax
+//     RFC-5234: Augmented BNF for Syntax Specifications: ABNF
+//     RFC-5321: Simple Mail Transfer Protocol
+//     RFC-5322: Internet Message Format
+
+%include src/java/org/apache/lucene/analysis/standard/std31/ASCIITLD.jflex-macro
+
+DomainLabel = [A-Za-z0-9] ([-A-Za-z0-9]* [A-Za-z0-9])?
+DomainNameStrict = {DomainLabel} ("." {DomainLabel})* {ASCIITLD}
+DomainNameLoose  = {DomainLabel} ("." {DomainLabel})*
+
+IPv4DecimalOctet = "0"{0,2} [0-9] | "0"? [1-9][0-9] | "1" [0-9][0-9] | "2" ([0-4][0-9] | "5" [0-5])
+IPv4Address  = {IPv4DecimalOctet} ("." {IPv4DecimalOctet}){3} 
+IPv6Hex16Bit = [0-9A-Fa-f]{1,4}
+IPv6LeastSignificant32Bits = {IPv4Address} | ({IPv6Hex16Bit} ":" {IPv6Hex16Bit})
+IPv6Address =                                                  ({IPv6Hex16Bit} ":"){6} {IPv6LeastSignificant32Bits}
+            |                                             "::" ({IPv6Hex16Bit} ":"){5} {IPv6LeastSignificant32Bits}
+            |                            {IPv6Hex16Bit}?  "::" ({IPv6Hex16Bit} ":"){4} {IPv6LeastSignificant32Bits}
+            | (({IPv6Hex16Bit} ":"){0,1} {IPv6Hex16Bit})? "::" ({IPv6Hex16Bit} ":"){3} {IPv6LeastSignificant32Bits}
+            | (({IPv6Hex16Bit} ":"){0,2} {IPv6Hex16Bit})? "::" ({IPv6Hex16Bit} ":"){2} {IPv6LeastSignificant32Bits}
+            | (({IPv6Hex16Bit} ":"){0,3} {IPv6Hex16Bit})? "::"  {IPv6Hex16Bit} ":"     {IPv6LeastSignificant32Bits}
+            | (({IPv6Hex16Bit} ":"){0,4} {IPv6Hex16Bit})? "::"                         {IPv6LeastSignificant32Bits}
+            | (({IPv6Hex16Bit} ":"){0,5} {IPv6Hex16Bit})? "::"                         {IPv6Hex16Bit}
+            | (({IPv6Hex16Bit} ":"){0,6} {IPv6Hex16Bit})? "::"
+
+URIunreserved = [-._~A-Za-z0-9]
+URIpercentEncoded = "%" [0-9A-Fa-f]{2}
+URIsubDelims = [!$&'()*+,;=]
+URIloginSegment = ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims})*
+URIlogin = {URIloginSegment} (":" {URIloginSegment})? "@"
+URIquery    = "?" ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims} | [:@/?])*
+URIfragment = "#" ({URIunreserved} | {URIpercentEncoded} | {URIsubDelims} | [:@/?])*
+URIport = ":" [0-9]{1,5}
+URIhostStrict = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameStrict}  
+URIhostLoose  = ("[" {IPv6Address} "]") | {IPv4Address} | {DomainNameLoose} 
+
+URIauthorityStrict =             {URIhostStrict} {URIport}?
+URIauthorityLoose  = {URIlogin}? {URIhostLoose}  {URIport}?
+
+HTTPsegment = ({URIunreserved} | {URIpercentEncoded} | [;:@&=])*
+HTTPpath = ("/" {HTTPsegment})*
+HTTPscheme = [hH][tT][tT][pP][sS]? "://"
+HTTPurlFull = {HTTPscheme} {URIauthorityLoose}  {HTTPpath}? {URIquery}? {URIfragment}?
+// {HTTPurlNoScheme} excludes {URIlogin}, because it could otherwise accept e-mail addresses
+HTTPurlNoScheme =          {URIauthorityStrict} {HTTPpath}? {URIquery}? {URIfragment}?
+HTTPurl = {HTTPurlFull} | {HTTPurlNoScheme}
+
+FTPorFILEsegment = ({URIunreserved} | {URIpercentEncoded} | [?:@&=])*
+FTPorFILEpath = "/" {FTPorFILEsegment} ("/" {FTPorFILEsegment})*
+FTPtype = ";" [tT][yY][pP][eE] "=" [aAiIdD]
+FTPscheme = [fF][tT][pP] "://"
+FTPurl = {FTPscheme} {URIauthorityLoose} {FTPorFILEpath} {FTPtype}? {URIfragment}?
+
+FILEscheme = [fF][iI][lL][eE] "://"
+FILEurl = {FILEscheme} {URIhostLoose}? {FTPorFILEpath} {URIfragment}?
+
+URL = {HTTPurl} | {FTPurl} | {FILEurl}
+
+EMAILquotedString = [\"] ([\u0001-\u0008\u000B\u000C\u000E-\u0021\u0023-\u005B\u005D-\u007E] | [\\] [\u0000-\u007F])* [\"]
+EMAILatomText = [A-Za-z0-9!#$%&'*+-/=?\^_`{|}~]
+EMAILlabel = {EMAILatomText}+ | {EMAILquotedString}
+EMAILlocalPart = {EMAILlabel} ("." {EMAILlabel})*
+EMAILdomainLiteralText = [\u0001-\u0008\u000B\u000C\u000E-\u005A\u005E-\u007F] | [\\] [\u0000-\u007F]
+// DFA minimization allows {IPv6Address} and {IPv4Address} to be included 
+// in the {EMAILbracketedHost} definition without incurring any size penalties, 
+// since {EMAILdomainLiteralText} recognizes all valid IP addresses.
+// The IP address regexes are included in {EMAILbracketedHost} simply as a 
+// reminder that they are acceptable bracketed host forms.
+EMAILbracketedHost = "[" ({EMAILdomainLiteralText}* | {IPv4Address} | [iI][pP][vV] "6:" {IPv6Address}) "]"
+EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
+
+
 %{
   /** Alphanumeric sequences */
-  public static final int WORD_TYPE = StandardTokenizer.ALPHANUM;
+  public static final int WORD_TYPE = UAX29URLEmailTokenizer.ALPHANUM;
   
   /** Numbers */
-  public static final int NUMERIC_TYPE = StandardTokenizer.NUM;
+  public static final int NUMERIC_TYPE = UAX29URLEmailTokenizer.NUM;
   
   /**
    * Chars in class \p{Line_Break = Complex_Context} are from South East Asian
@@ -81,15 +159,19 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
    * <p>
    * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
    */
-  public static final int SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.SOUTHEAST_ASIAN;
+  public static final int SOUTH_EAST_ASIAN_TYPE = UAX29URLEmailTokenizer.SOUTHEAST_ASIAN;
   
-  public static final int IDEOGRAPHIC_TYPE = StandardTokenizer.IDEOGRAPHIC;
+  public static final int IDEOGRAPHIC_TYPE = UAX29URLEmailTokenizer.IDEOGRAPHIC;
   
-  public static final int HIRAGANA_TYPE = StandardTokenizer.HIRAGANA;
+  public static final int HIRAGANA_TYPE = UAX29URLEmailTokenizer.HIRAGANA;
   
-  public static final int KATAKANA_TYPE = StandardTokenizer.KATAKANA;
+  public static final int KATAKANA_TYPE = UAX29URLEmailTokenizer.KATAKANA;
   
-  public static final int HANGUL_TYPE = StandardTokenizer.HANGUL;
+  public static final int HANGUL_TYPE = UAX29URLEmailTokenizer.HANGUL;
+  
+  public static final int EMAIL_TYPE = UAX29URLEmailTokenizer.EMAIL;
+  
+  public static final int URL_TYPE = UAX29URLEmailTokenizer.URL;
 
   public final int yychar()
   {
@@ -111,6 +193,9 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 //
 <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
+{URL}   { return URL_TYPE; }
+{EMAIL} { return EMAIL_TYPE; }
+
 // UAX#29 WB8.   Numeric × Numeric
 //        WB11.  Numeric (MidNum | MidNumLet) × Numeric
 //        WB12.  Numeric × (MidNum | MidNumLet) Numeric
@@ -126,7 +211,7 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 // subset of the below for typing purposes only!
 {HangulEx}+
   { return HANGUL_TYPE; }
-  
+
 {KatakanaEx}+
   { return KATAKANA_TYPE; }
 
