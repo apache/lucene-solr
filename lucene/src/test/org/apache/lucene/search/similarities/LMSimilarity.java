@@ -67,7 +67,7 @@ public abstract class LMSimilarity extends EasySimilarity {
 
   @Override
   protected void explain(Explanation expl, EasyStats stats, int doc,
-      float freq, byte norm) {
+      float freq, int docLen) {
     expl.addDetail(new Explanation(collectionModel.computeProbability(stats),
                                    "collection probability"));
   }

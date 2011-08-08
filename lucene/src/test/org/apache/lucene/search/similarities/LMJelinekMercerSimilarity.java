@@ -26,6 +26,9 @@ import org.apache.lucene.search.similarities.LMSimilarity.LMStats;
  * models applied to Ad Hoc information retrieval. In Proceedings of the 24th
  * annual international ACM SIGIR conference on Research and development in
  * information retrieval (SIGIR '01). ACM, New York, NY, USA, 334-342.
+ * <p>The model has a single parameter, &lambda;. According to said paper, the
+ * optimal value depends on both the collection and the query. The optimal value
+ * is around {@code 0.1} for title queries and {@code 0.7} for long queries.</p>
  *
  * @lucene.experimental
  */
@@ -46,20 +49,20 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, byte norm) {
+  protected float score(EasyStats stats, float freq, int docLen) {
     return stats.getTotalBoost() *
         (float)Math.log(1 +
-            ((1 - lambda) * freq / decodeNormValue(norm)) /
+            ((1 - lambda) * freq / docLen) /
             (lambda * ((LMStats)stats).getCollectionProbability()));
   }
   
   @Override
   protected void explain(Explanation expl, EasyStats stats, int doc,
-      float freq, byte norm) {
+      float freq, int docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }
-    super.explain(expl, stats, doc, freq, norm);
+    super.explain(expl, stats, doc, freq, docLen);
   }
 
   /** Returns the &lambda; parameter. */

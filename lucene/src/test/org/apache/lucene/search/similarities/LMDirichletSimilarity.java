@@ -54,16 +54,16 @@ public class LMDirichletSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, byte norm) {
+  protected float score(EasyStats stats, float freq, int docLen) {
     return stats.getTotalBoost() *
         (float)(Math.log(1 + freq /
             (mu * ((LMStats)stats).getCollectionProbability())) +
-        Math.log(mu / (decodeNormValue(norm) + mu)));
+        Math.log(mu / (docLen + mu)));
   }
   
   @Override
   protected void explain(Explanation expl, EasyStats stats, int doc,
-      float freq, byte norm) {
+      float freq, int docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }
@@ -75,8 +75,8 @@ public class LMDirichletSimilarity extends LMSimilarity {
     weightExpl.setDescription("term weight");
     expl.addDetail(weightExpl);
     expl.addDetail(new Explanation(
-        (float)Math.log(mu / (decodeNormValue(norm) + mu)), "document norm"));
-    super.explain(expl, stats, doc, freq, norm);
+        (float)Math.log(mu / (docLen + mu)), "document norm"));
+    super.explain(expl, stats, doc, freq, docLen);
   }
 
   /** Returns the &mu; parameter. */

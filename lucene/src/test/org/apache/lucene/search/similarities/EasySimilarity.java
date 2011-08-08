@@ -39,6 +39,27 @@ public abstract class EasySimilarity extends Similarity {
   /** For {@link #log2(double)}. Precomputed for efficiency reasons. */
   private static final double LOG_2 = Math.log(2);
   
+  /** @see #setDiscountOverlaps */
+  protected boolean discountOverlaps = true;
+  
+  /** Determines whether overlap tokens (Tokens with
+   *  0 position increment) are ignored when computing
+   *  norm.  By default this is true, meaning overlap
+   *  tokens do not count when computing norms.
+   *
+   *  @lucene.experimental
+   *
+   *  @see #computeNorm
+   */
+  public void setDiscountOverlaps(boolean v) {
+    discountOverlaps = v;
+  }
+
+  /** @see #setDiscountOverlaps */
+  public boolean getDiscountOverlaps() {
+    return discountOverlaps;
+  }
+  
   /**
    * Calls {@link #fillEasyStats(EasyStats, IndexSearcher, String, TermContext...)}.
    * Subclasses that override this method may invoke {@code fillStats} with any
@@ -83,10 +104,10 @@ public abstract class EasySimilarity extends Similarity {
    * <p>Subclasses must apply their scoring formula in this class.</p>
    * @param stats the corpus level statistics.
    * @param freq the term frequency.
-   * @param norm the current document's field norm.
+   * @param docLen the document length.
    * @return the score.
    */
-  protected abstract float score(EasyStats stats, float freq, byte norm);
+  protected abstract float score(EasyStats stats, float freq, int docLen);
   
   /**
    * Subclasses should implement this method to explain the score. {@code expl}
@@ -99,10 +120,10 @@ public abstract class EasySimilarity extends Similarity {
    * @param stats the corpus level statistics.
    * @param doc the document id.
    * @param freq the term frequency.
-   * @param norm the current document's field norm.
+   * @param docLen the document length.
    */
   protected void explain(
-      Explanation expl, EasyStats stats, int doc, float freq, byte norm) {}
+      Explanation expl, EasyStats stats, int doc, float freq, int docLen) {}
   
   /**
    * Explains the score. The implementation here provides a basic explanation
@@ -116,18 +137,18 @@ public abstract class EasySimilarity extends Similarity {
    * @param stats the corpus level statistics.
    * @param doc the document id.
    * @param freq the term frequency and its explanation.
-   * @param norm the current document's field norm.
+   * @param docLen the document length.
    * @return the explanation.
    */
   protected Explanation explain(
-      EasyStats stats, int doc, Explanation freq, byte norm) {
+      EasyStats stats, int doc, Explanation freq, int docLen) {
     Explanation result = new Explanation(); 
-    result.setValue(score(stats, freq.getValue(), norm));
+    result.setValue(score(stats, freq.getValue(), docLen));
     result.setDescription("score(" + getClass().getSimpleName() +
         ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:");
     result.addDetail(freq);
     
-    explain(result, stats, doc, freq.getValue(), norm);
+    explain(result, stats, doc, freq.getValue(), docLen);
     
     return result;
   }
@@ -148,24 +169,24 @@ public abstract class EasySimilarity extends Similarity {
 
   // ------------------------------ Norm handling ------------------------------
   
-  /** Cache of decoded bytes. */
-  private static final float[] NORM_TABLE = new float[256];
+  /** Norm -> document length map. */
+  private static final int[] NORM_TABLE = new int[256];
 
   static {
-    for (int i = 0; i < 256; i++)
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
+    for (int i = 0; i < 256; i++) {
+      float floatNorm = SmallFloat.byte315ToFloat((byte)i);
+      NORM_TABLE[i] = (int)(1.0 / (floatNorm * floatNorm));
+    }
   }
 
   /** Encodes the document length in the same way as {@link TFIDFSimilarity}. */
   @Override
   public byte computeNorm(FieldInvertState state) {
-    final int numTerms;
-    // nocommit: to include discountOverlaps?
-//    if (discountOverlaps)
-//      numTerms = state.getLength() - state.getNumOverlap();
-//    else
-      numTerms = state.getLength();
-//    return encodeNormValue(state.getBoost() * ((float) (1.0 / Math.sqrt(numTerms))));
+    final float numTerms;
+    if (discountOverlaps)
+      numTerms = state.getLength() - state.getNumOverlap();
+    else
+      numTerms = state.getLength() / state.getBoost();
     return encodeNormValue(numTerms);
   }
   
@@ -173,15 +194,13 @@ public abstract class EasySimilarity extends Similarity {
    * @see #encodeNormValue(float)
    */
   // nocommit to protected?
-  // nocommit is int OK?
   public int decodeNormValue(byte norm) {
-    float floatNorm = NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
-    return (int)(1.0 / (floatNorm * floatNorm));  
+    return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
   
   /** Encodes the length to a byte via SmallFloat. */
   // nocommit to protected?
-  public byte encodeNormValue(int length) {
+  public byte encodeNormValue(float length) {
     return SmallFloat.floatToByte315((float)(1.0 / Math.sqrt(length)));
   }
   
@@ -212,12 +231,13 @@ public abstract class EasySimilarity extends Similarity {
     
     @Override
     public float score(int doc, int freq) {
-      return EasySimilarity.this.score(stats, freq, norms[doc]);
+      return EasySimilarity.this.score(stats, freq, decodeNormValue(norms[doc]));
     }
     
     @Override
     public Explanation explain(int doc, Explanation freq) {
-      return EasySimilarity.this.explain(stats, doc, freq, norms[doc]);
+      return EasySimilarity.this.explain(
+          stats, doc, freq, decodeNormValue(norms[doc]));
     }
   }
   
@@ -239,11 +259,12 @@ public abstract class EasySimilarity extends Similarity {
     // todo: optimize
     @Override
     public float score(int doc, float freq) {
-      return EasySimilarity.this.score(stats, freq, norms[doc]);
+      return EasySimilarity.this.score(stats, freq, decodeNormValue(norms[doc]));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
-      return EasySimilarity.this.explain(stats, doc, freq, norms[doc]);
+      return EasySimilarity.this.explain(
+          stats, doc, freq, decodeNormValue(norms[doc]));
     }
 
     @Override

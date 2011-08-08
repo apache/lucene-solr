@@ -63,22 +63,21 @@ public class IBSimilarity extends EasySimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, byte norm) {
+  protected float score(EasyStats stats, float freq, int docLen) {
     return stats.getTotalBoost() *
         distribution.score(
             stats,
-            normalization.tfn(stats, freq, decodeNormValue(norm)),
+            normalization.tfn(stats, freq, docLen),
             lambda.lambda(stats));
   }
 
   @Override
   protected void explain(
-      Explanation expl, EasyStats stats, int doc, float freq, byte norm) {
+      Explanation expl, EasyStats stats, int doc, float freq, int docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }
-    int len = decodeNormValue(norm);
-    Explanation normExpl = normalization.explain(stats, freq, len);
+    Explanation normExpl = normalization.explain(stats, freq, docLen);
     Explanation lambdaExpl = lambda.explain(stats);
     expl.addDetail(normExpl);
     expl.addDetail(lambdaExpl);
