@@ -166,7 +166,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     this(Version.LUCENE_31, source, input);
   }
   
-  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, AttributeFactory, Reader)} instead. */
+  /** @deprecated use {@link #UAX29URLEmailTokenizer(Version, AttributeSource.AttributeFactory, Reader)} instead. */
   @Deprecated
   public UAX29URLEmailTokenizer(AttributeFactory factory, Reader input) {
     this(Version.LUCENE_31, factory, input);
