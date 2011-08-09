@@ -290,7 +290,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       } else if (cmd.expungeDeletes) {
         writer.expungeDeletes();
       }
-      
+
       if (!cmd.softCommit) {
         writer.commit();
         numDocsPending.set(0);
@@ -304,10 +304,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         callPostOptimizeCallbacks();
       }
 
-      if (cmd.softCommit) {
-        core.getSearcher(true,false,waitSearcher, true);
-      } else {
-        core.getSearcher(true,false,waitSearcher);
+
+      synchronized (this) {
+        if (cmd.softCommit) {
+          core.getSearcher(true,false,waitSearcher, true);
+        } else {
+          core.getSearcher(true,false,waitSearcher);
+        }
       }
 
       // reset commit tracking

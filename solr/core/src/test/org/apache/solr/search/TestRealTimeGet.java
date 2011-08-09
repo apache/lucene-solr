@@ -77,10 +77,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   final String field = "val_l";
   Object[] syncArr;
 
-
-  final ConcurrentHashMap<Integer,Long> sanityModel = new ConcurrentHashMap<Integer,Long>();
-
-
   private void initModel(int ndocs) {
     snapshotCount = 0;
     committedModelClock = 0;
@@ -105,11 +101,12 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     final int deleteByQueryPercent = 4;
     final int ndocs = 100;
     int nWriteThreads = 10;
-    final int maxConcurrentCommits = 2;   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+
+    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
     // query variables
     final int percentRealtimeQuery = 0;   // realtime get is not implemented yet
-    final AtomicLong operations = new AtomicLong(1000);  // number of query operations to perform in total       // TODO: once lucene level passes, we can move on to the solr level
+    final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
     int nReadThreads = 10;
 
     initModel(ndocs);
