@@ -30,8 +30,6 @@ import org.apache.lucene.util.SmallFloat;
  * BM25 Similarity.
  */
 public class MockBM25Similarity extends Similarity {
-  // TODO: the norm table can probably be per-sim so you can configure these
-  // its also pretty nice that we don't bake the parameter into the index... you can tune it at runtime.
   private final float k1;
   private final float b;
   
@@ -51,18 +49,10 @@ public class MockBM25Similarity extends Similarity {
     this.b  = 0.75f;
   }
 
-  /**
-   * Our normalization is k1 * ((1 - b) + b * numTerms / avgNumTerms)
-   * currently we put doclen into the boost byte (divided by boost) for simple quantization
-   * our decoder precomputes the full formula into the norm table
-   * 
-   * this is pretty crappy for doc/field boosting, but with a static schema you can boost per-field
-   * in your sim anyway (sorta dumb to bake into the index)
-   */
   @Override
   public byte computeNorm(FieldInvertState state) {
     final int numTerms = state.getLength() - state.getNumOverlap();
-    return encodeNormValue(numTerms / state.getBoost());
+    return encodeNormValue(state.getBoost() / (float) Math.sqrt(numTerms));
   }
   
   /** Cache of decoded bytes. */
@@ -70,7 +60,8 @@ public class MockBM25Similarity extends Similarity {
 
   static {
     for (int i = 0; i < 256; i++) {
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
+      float f = SmallFloat.byte315ToFloat((byte)i);
+      NORM_TABLE[i] = 1.0f / (f*f);
     }
   }
   
