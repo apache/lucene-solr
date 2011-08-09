@@ -372,7 +372,8 @@ class BufferedDeletesStream {
     DocsEnum docs = null;
 
     assert checkDeleteTerm(null);
-
+    
+    //System.out.println(Thread.currentThread().getName() + " del terms reader=" + reader);
     for (Term term : termsIter) {
       // Since we visit terms sorted, we gain performance
       // by re-using the same TermsEnum and seeking only
@@ -401,6 +402,7 @@ class BufferedDeletesStream {
         if (docsEnum != null) {
           while (true) {
             final int docID = docsEnum.nextDoc();
+            //System.out.println(Thread.currentThread().getName() + " del term=" + term + " doc=" + docID);
             if (docID == DocsEnum.NO_MORE_DOCS) {
               break;
             }

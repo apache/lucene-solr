@@ -354,7 +354,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     poolReaders = true;
     final IndexReader r;
     doBeforeFlush();
-    final boolean anySegmentFlushed;
+    boolean anySegmentFlushed = false;
     /*
      * for releasing a NRT reader we must ensure that 
      * DW doesn't add any segments or deletes until we are
@@ -382,9 +382,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             message("return reader version=" + r.getVersion() + " reader=" + r);
           }
         }
+      } catch (OutOfMemoryError oom) {
+        handleOOM(oom, "getReader");
+        // never reached but javac disagrees:
+        return null;
       } finally {
         if (!success && infoStream != null) {
-          message("hit exception during while NRT reader");
+          message("hit exception during NRT reader");
         }
         // Done: finish the full flush!
         docWriter.finishFullFlush(success);
@@ -2341,6 +2345,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
     // Lock order IW -> BDS
     synchronized (bufferedDeletesStream) {
+      if (infoStream != null) {
+        message("publishFlushedSegment");  
+      }
+      
       if (globalPacket != null && globalPacket.any()) {
         bufferedDeletesStream.push(globalPacket);
       } 
@@ -2353,6 +2361,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Since we don't have a delete packet to apply we can get a new
         // generation right away
         nextGen = bufferedDeletesStream.getNextGen();
+      }
+      if (infoStream != null) {
+        message("publish sets newSegment delGen=" + nextGen);
       }
       newSegment.setBufferedDeletesGen(nextGen);
       segmentInfos.add(newSegment);
@@ -2710,19 +2721,82 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public final void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
+    if (infoStream != null) {
+      message("prepareCommit: flush");
+      message("  index before flush " + segString());
+    }
+
     if (hitOOM) {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
     }
 
-    if (pendingCommit != null)
+    if (pendingCommit != null) {
       throw new IllegalStateException("prepareCommit was already called with no corresponding call to commit");
+    }
 
-    if (infoStream != null)
-      message("prepareCommit: flush");
+    doBeforeFlush();
+    assert testPoint("startDoFlush");
+    SegmentInfos toCommit = null;
+    boolean anySegmentsFlushed = false;
 
-    flush(true, true);
+    // This is copied from doFlush, except it's modified to
+    // clone & incRef the flushed SegmentInfos inside the
+    // sync block:
 
-    startCommit(commitUserData);
+    try {
+
+      synchronized (fullFlushLock) {
+        boolean flushSuccess = false;
+        boolean success = false;
+        try {
+          anySegmentsFlushed = docWriter.flushAllThreads();
+          if (!anySegmentsFlushed) {
+            // prevent double increment since docWriter#doFlush increments the flushcount
+            // if we flushed anything.
+            flushCount.incrementAndGet();
+          }
+          flushSuccess = true;
+
+          synchronized(this) {
+            maybeApplyDeletes(true);
+
+            readerPool.commit(segmentInfos);
+
+            // Must clone the segmentInfos while we still
+            // hold fullFlushLock and while sync'd so that
+            // no partial changes (eg a delete w/o
+            // corresponding add from an updateDocument) can
+            // sneak into the commit point:
+            toCommit = (SegmentInfos) segmentInfos.clone();
+
+            pendingCommitChangeCount = changeCount;
+
+            // This protects the segmentInfos we are now going
+            // to commit.  This is important in case, eg, while
+            // we are trying to sync all referenced files, a
+            // merge completes which would otherwise have
+            // removed the files we are now syncing.
+            deleter.incRef(toCommit, false);
+          }
+          success = true;
+        } finally {
+          if (!success && infoStream != null) {
+            message("hit exception during prepareCommit");
+          }
+          // Done: finish the full flush!
+          docWriter.finishFullFlush(flushSuccess);
+          doAfterFlush();
+        }
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "prepareCommit");
+    }
+
+    if (anySegmentsFlushed) {
+      maybeMerge();
+    }
+
+    startCommit(toCommit, commitUserData);
   }
 
   // Used only by commit, below; lock order is commitLock -> IW
@@ -2913,13 +2987,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } else if (infoStream != null) {
       message("don't apply deletes now delTermCount=" + bufferedDeletesStream.numTerms() + " bytesUsed=" + bufferedDeletesStream.bytesUsed());
     }
-
   }
   
   final synchronized void applyAllDeletes() throws IOException {
     flushDeletesCount.incrementAndGet();
-    final BufferedDeletesStream.ApplyDeletesResult result = bufferedDeletesStream
-      .applyDeletes(readerPool, segmentInfos.asList());
+    final BufferedDeletesStream.ApplyDeletesResult result;
+    result = bufferedDeletesStream.applyDeletes(readerPool, segmentInfos.asList());
     if (result.anyDeletes) {
       checkpoint();
     }
@@ -3811,7 +3884,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(Map<String,String> commitUserData) throws IOException {
+  private void startCommit(final SegmentInfos toSync, final Map<String,String> commitUserData) throws IOException {
 
     assert testPoint("startStartCommit");
     assert pendingCommit == null;
@@ -3822,44 +3895,31 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
     try {
 
-      if (infoStream != null)
+      if (infoStream != null) {
         message("startCommit(): start");
-
-      final SegmentInfos toSync;
-      final long myChangeCount;
+      }
 
       synchronized(this) {
 
         assert lastCommitChangeCount <= changeCount;
-        myChangeCount = changeCount;
 
-        if (changeCount == lastCommitChangeCount) {
-          if (infoStream != null)
+        if (pendingCommitChangeCount == lastCommitChangeCount) {
+          if (infoStream != null) {
             message("  skip startCommit(): no changes pending");
+          }
+          deleter.decRef(toSync);
           return;
         }
 
-        // First, we clone & incref the segmentInfos we intend
-        // to sync, then, without locking, we sync() all files
-        // referenced by toSync, in the background.
-
-        if (infoStream != null)
-          message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
-
-        readerPool.commit(segmentInfos);
-        toSync = (SegmentInfos) segmentInfos.clone();
+        if (infoStream != null) {
+          message("startCommit index=" + segString(toSync) + " changeCount=" + changeCount);
+        }
 
         assert filesExist(toSync);
 
-        if (commitUserData != null)
+        if (commitUserData != null) {
           toSync.setUserData(commitUserData);
-
-        // This protects the segmentInfos we are now going
-        // to commit.  This is important in case, eg, while
-        // we are trying to sync all referenced files, a
-        // merge completes which would otherwise have
-        // removed the files we are now syncing.
-        deleter.incRef(toSync, false);
+        }
       }
 
       assert testPoint("midStartCommit");
@@ -3884,19 +3944,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // an exception)
           toSync.prepareCommit(directory);
 
-          pendingCommit = toSync;
           pendingCommitSet = true;
-          pendingCommitChangeCount = myChangeCount;
+          pendingCommit = toSync;
         }
 
-        if (infoStream != null)
+        if (infoStream != null) {
           message("done all syncs");
+        }
 
         assert testPoint("midStartCommitSuccess");
 
       } finally {
         synchronized(this) {
-
           // Have our master segmentInfos record the
           // generations we just prepared.  We do this
           // on error or success so we don't
@@ -3908,6 +3967,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
               message("hit exception committing segments file");
             }
 
+            // Hit exception
             deleter.decRef(toSync);
           }
         }

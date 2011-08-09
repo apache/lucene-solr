@@ -548,6 +548,10 @@ Bug fixes
   lucene version, you get the old buggy behavior for backwards compatibility.  
   (Trejkaz, Robert Muir)
 
+* LUCENE-3348: Fix thread safety hazards in IndexWriter that could
+  rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
+  Simon Willnauer, Mike McCandless)
+
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 

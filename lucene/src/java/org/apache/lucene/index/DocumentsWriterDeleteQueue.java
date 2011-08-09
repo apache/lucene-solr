@@ -16,6 +16,8 @@ package org.apache.lucene.index;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -110,6 +112,7 @@ final class DocumentsWriterDeleteQueue {
    */
   void add(Term term, DeleteSlice slice) {
     final TermNode termNode = new TermNode(term);
+//    System.out.println(Thread.currentThread().getName() + ": push " + termNode + " this=" + this);
     add(termNode);
     /*
      * this is an update request where the term is the updated documents
@@ -175,13 +178,14 @@ final class DocumentsWriterDeleteQueue {
   void tryApplyGlobalSlice() {
     if (globalBufferLock.tryLock()) {
       /*
-       * The global buffer must be locked but we don't need to upate them if
+       * The global buffer must be locked but we don't need to update them if
        * there is an update going on right now. It is sufficient to apply the
        * deletes that have been added after the current in-flight global slices
        * tail the next time we can get the lock!
        */
       try {
         if (updateSlice(globalSlice)) {
+//          System.out.println(Thread.currentThread() + ": apply globalSlice");
           globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
         }
       } finally {
@@ -210,6 +214,7 @@ final class DocumentsWriterDeleteQueue {
         globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
       }
 
+//      System.out.println(Thread.currentThread().getName() + ": now freeze global buffer " + globalBufferedDeletes);
       final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(
           globalBufferedDeletes, false);
       globalBufferedDeletes.clear();
@@ -262,6 +267,7 @@ final class DocumentsWriterDeleteQueue {
         current = current.next;
         assert current != null : "slice property violated between the head on the tail must not be a null node";
         current.apply(del, docIDUpto);
+//        System.out.println(Thread.currentThread().getName() + ": pull " + current + " docIDUpto=" + docIDUpto);
       } while (current != sliceTail);
       reset();
     }
@@ -330,6 +336,11 @@ final class DocumentsWriterDeleteQueue {
     void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
       bufferedDeletes.addTerm(item, docIDUpto);
     }
+
+    @Override
+    public String toString() {
+      return "del=" + item;
+    }
   }
 
   private static final class QueryArrayNode extends Node<Query[]> {
@@ -355,6 +366,11 @@ final class DocumentsWriterDeleteQueue {
       for (Term term : item) {
         bufferedDeletes.addTerm(term, docIDUpto);  
       }
+    }
+
+    @Override
+    public String toString() {
+      return "dels=" + Arrays.toString(item);
     }
   }
 

@@ -93,7 +93,7 @@ class BufferedDeletes {
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
-        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + terms.size() + ")";
+        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + terms.size() + ") terms=" + terms.keySet();
       }
       if (queries.size() != 0) {
         s += " " + queries.size() + " deleted queries";

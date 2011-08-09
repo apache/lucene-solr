@@ -47,7 +47,7 @@ public class DocumentsWriterPerThread {
   abstract static class IndexingChain {
     abstract DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread);
   }
-
+  
 
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
@@ -131,7 +131,7 @@ public class DocumentsWriterPerThread {
     hasAborted = aborting = true;
     try {
       if (infoStream != null) {
-        message("docWriter: now abort");
+        message("now abort");
       }
       try {
         consumer.abort();
@@ -146,11 +146,11 @@ public class DocumentsWriterPerThread {
     } finally {
       aborting = false;
       if (infoStream != null) {
-        message("docWriter: done abort");
+        message("done abort");
       }
     }
   }
-
+  private final static boolean INFO_VERBOSE = false;
   final DocumentsWriter parent;
   final IndexWriter writer;
   final Directory directory;
@@ -223,8 +223,14 @@ public class DocumentsWriterPerThread {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
       assert numDocsInRAM == 0;
+      if (INFO_VERBOSE) {
+        message(Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  
+      }
+      
     }
-
+    if (INFO_VERBOSE) {
+      message(Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segment);
+    }
     boolean success = false;
     try {
       try {
@@ -265,8 +271,13 @@ public class DocumentsWriterPerThread {
       // this call is synchronized on IndexWriter.segmentInfos
       segment = writer.newSegmentName();
       assert numDocsInRAM == 0;
+      if (INFO_VERBOSE) {
+        message(Thread.currentThread().getName() + " init seg=" + segment + " delQueue=" + deleteQueue);  
+      }
     }
-
+    if (INFO_VERBOSE) {
+      message(Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segment);
+    }
     int docCount = 0;
     try {
       for(Document doc : docs) {
@@ -551,5 +562,12 @@ public class DocumentsWriterPerThread {
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
     docState.infoStream = infoStream;
+  }
+
+  @Override
+  public String toString() {
+    return "DocumentsWriterPerThread [pendingDeletes=" + pendingDeletes
+        + ", segment=" + segment + ", aborting=" + aborting + ", numDocsInRAM="
+        + numDocsInRAM + ", deleteQueue=" + deleteQueue + "]";
   }
 }

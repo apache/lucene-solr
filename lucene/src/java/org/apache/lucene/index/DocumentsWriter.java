@@ -165,7 +165,7 @@ final class DocumentsWriter {
   }
   
   private void applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    if (deleteQueue != null) {
+    if (deleteQueue != null && !flushControl.isFullFlush()) {
       synchronized (ticketQueue) {
         // Freeze and insert the delete flush ticket in the queue
         ticketQueue.add(new FlushTicket(deleteQueue.freezeGlobalBuffer(null), false));
@@ -220,7 +220,7 @@ final class DocumentsWriter {
 
     try {
       if (infoStream != null) {
-        message("docWriter: abort");
+        message("DW: abort");
       }
 
       final Iterator<ThreadState> threadsIterator = perThreadPool.getActivePerThreadsIterator();
@@ -324,7 +324,7 @@ final class DocumentsWriter {
                           final Term delTerm) throws CorruptIndexException, IOException {
     boolean maybeMerge = preUpdate();
 
-    final ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(), this);
+    final ThreadState perThread = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
     
     try {
@@ -356,7 +356,8 @@ final class DocumentsWriter {
 
     boolean maybeMerge = preUpdate();
 
-    final ThreadState perThread = perThreadPool.getAndLock(Thread.currentThread(), this);
+    final ThreadState perThread = flushControl.obtainAndLock();
+
     final DocumentsWriterPerThread flushingDWPT;
     
     try {
@@ -513,6 +514,9 @@ final class DocumentsWriter {
     assert newSegment != null;
     final SegmentInfo segInfo = indexWriter.prepareFlushedSegment(newSegment);
     final BufferedDeletes deletes = newSegment.segmentDeletes;
+    if (infoStream != null) {
+      message(Thread.currentThread().getName() + ": publishFlushedSegment seg-private deletes=" + deletes);  
+    }
     FrozenBufferedDeletes packet = null;
     if (deletes != null && deletes.any()) {
       // Segment private delete
@@ -542,7 +546,10 @@ final class DocumentsWriter {
   final boolean flushAllThreads()
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
-
+    if (infoStream != null) {
+      message(Thread.currentThread().getName() + " startFullFlush");
+    }
+    
     synchronized (this) {
       flushingDeleteQueue = deleteQueue;
       /* Cutover to a new delete queue.  This must be synced on the flush control
@@ -564,6 +571,9 @@ final class DocumentsWriter {
       // If a concurrent flush is still in flight wait for it
       flushControl.waitForFlush();  
       if (!anythingFlushed) { // apply deletes if we did not flush any document
+        if (infoStream != null) {
+         message(Thread.currentThread().getName() + ": flush naked frozen global deletes");
+        }
         synchronized (ticketQueue) {
           ticketQueue.add(new FlushTicket(flushingDeleteQueue.freezeGlobalBuffer(null), false));
         }
@@ -576,6 +586,9 @@ final class DocumentsWriter {
   }
   
   final void finishFullFlush(boolean success) {
+    if (infoStream != null) {
+      message(Thread.currentThread().getName() + " finishFullFlush success=" + success);
+    }
     assert setFlushingDeleteQueue(null);
     if (success) {
       // Release the flush lock
@@ -609,7 +622,7 @@ final class DocumentsWriter {
       next.lock();
       try {
         assert !next.isActive();
-      } finally  {
+      } finally {
         next.unlock();
       }
     }
