@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -33,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -530,7 +532,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
         try {
-          info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader(), false));
+          SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader(), false);
+          long size = getIndexSize(core);
+          indexInfo.add("sizeInBytes", size);
+          indexInfo.add("size", NumberUtils.readableSize(size));
+          info.add("index", indexInfo);
         } finally {
           searcher.decref();
         }
@@ -539,6 +545,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
     }
     return info;
+  }
+  
+  private long getIndexSize(SolrCore core) {
+    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
   }
 
   protected static String normalizePath(String path) {

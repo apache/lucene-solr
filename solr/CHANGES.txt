@@ -287,6 +287,9 @@ Other Changes
 
 * SOLR-2331,SOLR-2691: Refactor CoreContainer's SolrXML serialization code and improve testing
   (Yury Kats, hossman, Mark Miller)
+  
+* SOLR-2698: Enhance CoreAdmin STATUS command to return index size.
+  (Yury Kats, hossman, Mark Miller)
 
 Documentation
 ----------------------

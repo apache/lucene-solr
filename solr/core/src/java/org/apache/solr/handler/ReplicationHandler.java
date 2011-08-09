@@ -16,6 +16,30 @@
  */
 package org.apache.solr.handler;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
+import java.util.zip.DeflaterOutputStream;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
@@ -26,27 +50,20 @@ import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.*;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrDeletionPolicy;
+import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.text.NumberFormat;
-import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.Adler32;
-import java.util.zip.Checksum;
-import java.util.zip.DeflaterOutputStream;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. <p/> </p>
@@ -423,18 +440,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   long getIndexSize() {
-    return computeIndexSize(new File(core.getIndexDir()));
-  }
-
-  private long computeIndexSize(File f) {
-    if (f.isFile())
-      return f.length();
-    File[] files = f.listFiles();
-    long size = 0;
-    if (files != null && files.length > 0) {
-      for (File file : files) size += file.length();
-    }
-    return size;
+    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
   }
 
   /**
@@ -468,20 +474,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return "$Revision$";
   }
 
-  String readableSize(long size) {
-    NumberFormat formatter = NumberFormat.getNumberInstance();
-    formatter.setMaximumFractionDigits(2);
-    if (size / (1024 * 1024 * 1024) > 0) {
-      return formatter.format(size * 1.0d / (1024 * 1024 * 1024)) + " GB";
-    } else if (size / (1024 * 1024) > 0) {
-      return formatter.format(size * 1.0d / (1024 * 1024)) + " MB";
-    } else if (size / 1024 > 0) {
-      return formatter.format(size * 1.0d / 1024) + " KB";
-    } else {
-      return String.valueOf(size) + " bytes";
-    }
-  }
-
   private long[] getIndexVersion() {
     long version[] = new long[2];
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
@@ -501,7 +493,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public NamedList getStatistics() {
     NamedList list = super.getStatistics();
     if (core != null) {
-      list.add("indexSize", readableSize(getIndexSize()));
+      list.add("indexSize", NumberUtils.readableSize(getIndexSize()));
       long[] versionGen = getIndexVersion();
       list.add("indexVersion", versionGen[0]);
       list.add(GENERATION, versionGen[1]);
@@ -555,7 +547,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     NamedList<Object> master = new SimpleOrderedMap<Object>();
     NamedList<Object> slave = new SimpleOrderedMap<Object>();
 
-    details.add("indexSize", readableSize(getIndexSize()));
+    details.add("indexSize", NumberUtils.readableSize(getIndexSize()));
     details.add("indexPath", core.getIndexDir());
     details.add(CMD_SHOW_COMMITS, getCommits());
     details.add("isMaster", String.valueOf(isMaster));
@@ -631,7 +623,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           slave.add("filesToDownload", filesToDownload);
           slave.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
-          slave.add("bytesToDownload", readableSize(bytesToDownload));
+          slave.add("bytesToDownload", NumberUtils.readableSize(bytesToDownload));
 
           long bytesDownloaded = 0;
           List<String> filesDownloaded = new ArrayList<String>();
@@ -681,13 +673,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             downloadSpeed = (bytesDownloaded / elapsed);
           if (currFile != null)
             slave.add("currentFile", currFile);
-          slave.add("currentFileSize", readableSize(currFileSize));
-          slave.add("currentFileSizeDownloaded", readableSize(currFileSizeDownloaded));
+          slave.add("currentFileSize", NumberUtils.readableSize(currFileSize));
+          slave.add("currentFileSizeDownloaded", NumberUtils.readableSize(currFileSizeDownloaded));
           slave.add("currentFileSizePercent", String.valueOf(percentDownloaded));
-          slave.add("bytesDownloaded", readableSize(bytesDownloaded));
+          slave.add("bytesDownloaded", NumberUtils.readableSize(bytesDownloaded));
           slave.add("totalPercent", String.valueOf(totalPercent));
           slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
-          slave.add("downloadSpeed", readableSize(downloadSpeed));
+          slave.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
         } catch (Exception e) {
           LOG.error("Exception while writing replication details: ", e);
         }
