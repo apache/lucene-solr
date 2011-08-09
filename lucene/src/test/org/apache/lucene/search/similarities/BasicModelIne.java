@@ -29,7 +29,7 @@ public class BasicModelIne extends BasicModel {
   public final float score(EasyStats stats, float tfn) {
     int N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
-    double ne = N * (1 - Math.pow((N - 1) / N, F));
+    double ne = N * (1 - Math.pow((N - 1) / (double)N, F));
     return tfn * (float)(log2((N + 1) / (ne + 0.5)));
   }
 }
