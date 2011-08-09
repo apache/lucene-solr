@@ -26,7 +26,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
 public class BasicModelG extends BasicModel {
   @Override
   public final float score(EasyStats stats, float tfn) {
-    double lambda = stats.getTotalTermFreq() / stats.getNumberOfDocuments();
+    double lambda = stats.getTotalTermFreq() / (double) stats.getNumberOfDocuments();
     // -log(1 / (lambda + 1)) -> log(lambda + 1)
     return (float)(log2(lambda + 1) + tfn * log2((1 + lambda) / lambda));
   }
