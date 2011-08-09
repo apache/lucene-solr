@@ -67,8 +67,8 @@ public class LMDirichletSimilarity extends LMSimilarity {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }
-    
-    // nocommit: mu?
+
+    expl.addDetail(new Explanation(mu, "mu"));
     Explanation weightExpl = new Explanation();
     weightExpl.setValue((float)Math.log(1 + freq /
         (mu * ((LMStats)stats).getCollectionProbability())));

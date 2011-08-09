@@ -27,7 +27,7 @@ import org.apache.lucene.search.Similarity;
  */
 public class EasyStats extends Similarity.Stats {
   /** The number of documents. */
-  protected int numberOfDocuments;	// TODO: to long?
+  protected int numberOfDocuments;
   /** The total number of tokens in the field. */
   protected long numberOfFieldTokens;
   /** The average field length. */
@@ -36,9 +36,6 @@ public class EasyStats extends Similarity.Stats {
   protected int docFreq;
   /** The total number of occurrences of this term across all documents. */
   protected long totalTermFreq;
-  /** The number of unique terms. */
-  // nocommit might be per-segment only
-  protected long uniqueTermCount;
   
   // -------------------------- Boost-related stuff --------------------------
   
@@ -112,16 +109,6 @@ public class EasyStats extends Similarity.Stats {
   /** Sets the total number of occurrences of this term across all documents. */
   public void setTotalTermFreq(long totalTermFreq) {
     this.totalTermFreq = totalTermFreq;
-  }
-  
-  /** Returns the number of unique terms. */
-  public long getUniqueTermCount() {
-    return uniqueTermCount;
-  }
-  
-  /** Sets the number of unique terms. */
-  public void setUniqueTermCount(long uniqueTermCount) {
-    this.uniqueTermCount = uniqueTermCount;
   }
   
   // -------------------------- Boost-related stuff --------------------------

@@ -82,13 +82,13 @@ public abstract class EasySimilarity extends Similarity {
         fieldName).getSumTotalTermFreq();
     float avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
     
-    // nocommit This is for phrases, and it doesn't really work... have to
-    // find a method that makes sense
-    int docFreq = 0;
-    long totalTermFreq = 0;
+    // nocommit Take the minimum of term frequencies for phrases. This is not
+    // correct though, we'll need something like a scorePhrase(MultiStats ...)
+    int docFreq = Integer.MAX_VALUE;
+    long totalTermFreq = Integer.MAX_VALUE;
     for (final TermContext context : termContexts) {
-      docFreq += context.docFreq();
-      totalTermFreq += context.totalTermFreq();
+      docFreq = Math.min(docFreq, context.docFreq());
+      totalTermFreq = Math.min(totalTermFreq, context.totalTermFreq());
     }
     
     stats.setNumberOfDocuments(numberOfDocuments);
@@ -96,7 +96,6 @@ public abstract class EasySimilarity extends Similarity {
     stats.setAvgFieldLength(avgFieldLength);
     stats.setDocFreq(docFreq);
     stats.setTotalTermFreq(totalTermFreq);
-    // nocommit uniqueTermCount? (LUCENE-3290)
   }
   
   /**
@@ -193,14 +192,12 @@ public abstract class EasySimilarity extends Similarity {
   /** Decodes a normalization factor (document length) stored in an index.
    * @see #encodeNormValue(float)
    */
-  // nocommit to protected?
-  public int decodeNormValue(byte norm) {
+  protected int decodeNormValue(byte norm) {
     return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
   
   /** Encodes the length to a byte via SmallFloat. */
-  // nocommit to protected?
-  public byte encodeNormValue(float length) {
+  protected byte encodeNormValue(float length) {
     return SmallFloat.floatToByte315((float)(1.0 / Math.sqrt(length)));
   }
   
@@ -208,7 +205,7 @@ public abstract class EasySimilarity extends Similarity {
   
   /** Returns the base two logarithm of {@code x}. */
   public static double log2(double x) {
-    // Put this to a 'util' class?
+    // Put this to a 'util' class if we need more of these.
     return Math.log(x) / LOG_2;
   }
   
@@ -216,8 +213,8 @@ public abstract class EasySimilarity extends Similarity {
   
   /** Delegates the {@link #score(int, int)} and
    * {@link #explain(int, Explanation)} methods to
-   * {@link EasySimilarity#score(EasyStats, float, byte)} and
-   * {@link EasySimilarity#explain(EasyStats, int, Explanation, byte)},
+   * {@link EasySimilarity#score(EasyStats, float, int)} and
+   * {@link EasySimilarity#explain(EasyStats, int, Explanation, int)},
    * respectively.
    */
   private class EasyExactDocScorer extends ExactDocScorer {
@@ -243,8 +240,8 @@ public abstract class EasySimilarity extends Similarity {
   
   /** Delegates the {@link #score(int, int)} and
    * {@link #explain(int, Explanation)} methods to
-   * {@link EasySimilarity#score(EasyStats, float, byte)} and
-   * {@link EasySimilarity#explain(EasyStats, int, Explanation, byte)},
+   * {@link EasySimilarity#score(EasyStats, float, int)} and
+   * {@link EasySimilarity#explain(EasyStats, int, Explanation, int)},
    * respectively.
    */
   private class EasySloppyDocScorer extends SloppyDocScorer {
@@ -256,7 +253,6 @@ public abstract class EasySimilarity extends Similarity {
       this.norms = norms;
     }
     
-    // todo: optimize
     @Override
     public float score(int doc, float freq) {
       return EasySimilarity.this.score(stats, freq, decodeNormValue(norms[doc]));
@@ -272,7 +268,6 @@ public abstract class EasySimilarity extends Similarity {
       return 1.0f / (distance + 1);
     }
 
-    // nocommit: do we care about exposing this?
     @Override
     public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
       return 1f;

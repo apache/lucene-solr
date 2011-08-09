@@ -62,6 +62,7 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }
+    expl.addDetail(new Explanation(lambda, "lambda"));
     super.explain(expl, stats, doc, freq, docLen);
   }
 
