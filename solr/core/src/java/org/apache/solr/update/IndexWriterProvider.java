@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.core.SolrCore;
 
 public interface IndexWriterProvider {
   
@@ -32,5 +33,7 @@ public interface IndexWriterProvider {
   public void incref();
 
   public void rollbackIndexWriter() throws IOException;
+  
+  public void updateCore(SolrCore core);
   
 }

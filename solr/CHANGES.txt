@@ -223,6 +223,9 @@ Bug Fixes
   
 * SOLR-2193, SOLR-2565, SOLR-2651: SolrCores now properly share IndexWriters across SolrCore reloads.
   (Mark Miller, Robert Muir)
+  Additional Work:
+  SOLR-2705: On reload, IndexWriterProvider holds onto the initial SolrCore it was created with.
+  (Yury Kats, Mark Miller)
 
 * SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
   exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)

@@ -76,5 +76,10 @@ public final class DefaultIndexWriterProvider implements IndexWriterProvider {
         core.getDirectoryFactory(), removeAllExisting, core.getSchema(),
         core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
   }
+
+  @Override
+  public synchronized void updateCore(SolrCore core) {
+    this.core = core;
+  }
   
 }

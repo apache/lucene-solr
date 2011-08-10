@@ -96,6 +96,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     super(core);
     if (updateHandler instanceof DirectUpdateHandler2) {
       this.indexWriterProvider = ((DirectUpdateHandler2)updateHandler).indexWriterProvider;
+      this.indexWriterProvider.updateCore(core);
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();
