@@ -551,7 +551,11 @@ Bug fixes
 * LUCENE-3348: Fix thread safety hazards in IndexWriter that could
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
-
+  
+* LUCENE-3365: Create or Append mode determined before obtaining write lock
+  can cause IndexWriter overriding an existing index.
+  (Geoff Cooney via Simon Willnauer)
+  
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 

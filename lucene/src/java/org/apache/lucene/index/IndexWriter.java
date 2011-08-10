@@ -835,6 +835,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     bufferedDeletesStream.setInfoStream(infoStream);
     poolReaders = conf.getReaderPooling();
 
+    writeLock = directory.makeLock(WRITE_LOCK_NAME);
+
+    if (!writeLock.obtain(conf.getWriteLockTimeout())) // obtain write lock
+      throw new LockObtainFailedException("Index locked for write: " + writeLock);
+
     OpenMode mode = conf.getOpenMode();
     boolean create;
     if (mode == OpenMode.CREATE) {
@@ -845,12 +850,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // CREATE_OR_APPEND - create only if an index does not exist
       create = !IndexReader.indexExists(directory);
     }
-
-    writeLock = directory.makeLock(WRITE_LOCK_NAME);
-
-    if (!writeLock.obtain(conf.getWriteLockTimeout())) // obtain write lock
-      throw new LockObtainFailedException("Index locked for write: " + writeLock);
-
     boolean success = false;
 
     // If index is too old, reading the segments will throw
