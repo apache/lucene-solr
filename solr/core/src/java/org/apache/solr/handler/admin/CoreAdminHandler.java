@@ -403,12 +403,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         @Override
         public void postClose(SolrCore core) {
           File dataDir = new File(core.getIndexDir());
-          for (File file : dataDir.listFiles()) {
-            if (!file.delete()) {
-              log.error(file.getAbsolutePath() + " could not be deleted on core unload");
+          File[] files = dataDir.listFiles();
+          if (files != null) {
+            for (File file : files) {
+              if (!file.delete()) {
+                log.error(file.getAbsolutePath()
+                    + " could not be deleted on core unload");
+              }
             }
+            if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
+                + " could not be deleted on core unload");
+          } else {
+            log.error(dataDir.getAbsolutePath()
+                + " could not be deleted on core unload");
           }
-          if (!dataDir.delete()) log.error(dataDir.getAbsolutePath() + " could not be deleted on core unload");
         }
       });
     }
