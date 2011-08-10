@@ -2790,9 +2790,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "prepareCommit");
     }
-
-    if (anySegmentsFlushed) {
-      maybeMerge();
+ 
+    boolean success = false;
+    try {
+      if (anySegmentsFlushed) {
+        maybeMerge();
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        deleter.decRef(toCommit);
+      }
     }
 
     startCommit(toCommit, commitUserData);
