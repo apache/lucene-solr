@@ -512,6 +512,10 @@ Bug fixes
   after another with 0 posIncr.  (David Smiley, Kurosaka Teruhiko via Mike
   McCandless)
 
+* LUCENE-3348: Fix thread safety hazards in IndexWriter that could
+  rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
+  Simon Willnauer, Mike McCandless)
+
 ======================= Lucene 3.x (not yet released) ================
 
 Bug fixes
@@ -548,9 +552,8 @@ Bug fixes
   lucene version, you get the old buggy behavior for backwards compatibility.  
   (Trejkaz, Robert Muir)
 
-* LUCENE-3348: Fix thread safety hazards in IndexWriter that could
-  rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
-  Simon Willnauer, Mike McCandless)
+* LUCENE-3368: IndexWriter commits segments without applying their buffered
+  deletes when flushing concurrently. (Simon Willnauer, Mike McCandless)
   
 * LUCENE-3365: Create or Append mode determined before obtaining write lock
   can cause IndexWriter overriding an existing index.
