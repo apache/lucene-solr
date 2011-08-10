@@ -38,6 +38,9 @@ Bug fixes
   this is fixed if you supply Version >= 3.4 If you supply a previous 
   lucene version, you get the old buggy behavior for backwards compatibility.  
   (Trejkaz, Robert Muir)
+  
+* LUCENE-3368: IndexWriter commits segments without applying their buffered
+  deletes when flushing concurrently. (Simon Willnauer, Mike McCandless)
 
 New Features
 
