@@ -20,31 +20,29 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.store.Directory;
-
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.io.IOException;
-import java.net.URL;
-
-import org.apache.solr.search.QParser;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -79,7 +77,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
    
-    indexWriterProvider = new DefaultIndexWriterProvider(core);
+    indexWriterProvider = new DefaultIndexWriterProvider();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
@@ -96,11 +94,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     super(core);
     if (updateHandler instanceof DirectUpdateHandler2) {
       this.indexWriterProvider = ((DirectUpdateHandler2)updateHandler).indexWriterProvider;
-      this.indexWriterProvider.updateCore(core);
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();
-      indexWriterProvider = new DefaultIndexWriterProvider(core);
+      indexWriterProvider = new DefaultIndexWriterProvider();
     }
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -117,18 +114,18 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   private void deleteAll() throws IOException {
     SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
-    indexWriterProvider.getIndexWriter().deleteAll();
+    indexWriterProvider.getIndexWriter(core).deleteAll();
   }
 
   protected void rollbackWriter() throws IOException {
     numDocsPending.set(0);
-    indexWriterProvider.rollbackIndexWriter();
+    indexWriterProvider.rollbackIndexWriter(core);
     
   }
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter();
+    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
@@ -193,7 +190,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
+    indexWriterProvider.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
     if (commitTracker.timeUpperBound > 0) {
       commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
@@ -222,7 +219,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (delAll) {
         deleteAll();
       } else {
-        indexWriterProvider.getIndexWriter().deleteDocuments(q);
+        indexWriterProvider.getIndexWriter(core).deleteDocuments(q);
       }
       
       madeIt = true;
@@ -250,7 +247,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     
     IndexReader[] readers = cmd.readers;
     if (readers != null && readers.length > 0) {
-      indexWriterProvider.getIndexWriter().addIndexes(readers);
+      indexWriterProvider.getIndexWriter(core).addIndexes(readers);
       rc = 1;
     } else {
       rc = 0;
@@ -269,7 +266,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter();
+    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
     } else {
@@ -352,7 +349,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(), true);
+    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(core), true);
   
     
     if (newReader == currentReader) {
@@ -364,7 +361,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   
   @Override
   public void newIndexWriter() throws IOException {
-    indexWriterProvider.newIndexWriter();
+    indexWriterProvider.newIndexWriter(core);
   }
   
   /**

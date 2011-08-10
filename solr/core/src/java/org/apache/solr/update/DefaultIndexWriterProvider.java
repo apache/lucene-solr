@@ -25,26 +25,25 @@ import org.apache.solr.core.SolrCore;
 public final class DefaultIndexWriterProvider implements IndexWriterProvider {
   private int refCnt = 1;
   private IndexWriter indexWriter = null;
-  private SolrCore core;
 
-  public DefaultIndexWriterProvider(SolrCore core) {
-    this.core = core;
+  public DefaultIndexWriterProvider() {
+
   }
   
   @Override
-  public synchronized IndexWriter getIndexWriter() throws IOException {
+  public synchronized IndexWriter getIndexWriter(SolrCore core) throws IOException {
     if (indexWriter == null) {
-      indexWriter = createMainIndexWriter("DirectUpdateHandler2", false);
+      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
     }
     return indexWriter;
   }
 
   @Override
-  public synchronized void newIndexWriter() throws IOException {
+  public synchronized void newIndexWriter(SolrCore core) throws IOException {
     if (indexWriter != null) {
       indexWriter.close();
     }
-    indexWriter = createMainIndexWriter("DirectUpdateHandler2",
+    indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
         false);
   }
 
@@ -65,21 +64,16 @@ public final class DefaultIndexWriterProvider implements IndexWriterProvider {
   }
 
   @Override
-  public synchronized void rollbackIndexWriter() throws IOException {
+  public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
     indexWriter.rollback();
-    newIndexWriter();
+    newIndexWriter(core);
   }
   
-  protected SolrIndexWriter createMainIndexWriter(String name,
+  protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name,
       boolean removeAllExisting) throws IOException {
     return new SolrIndexWriter(name, core.getNewIndexDir(),
         core.getDirectoryFactory(), removeAllExisting, core.getSchema(),
         core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
-  }
-
-  @Override
-  public synchronized void updateCore(SolrCore core) {
-    this.core = core;
   }
   
 }
