@@ -40,19 +40,49 @@ public class MockBM25Similarity extends Similarity {
   
   /** Sets the default values for BM25:
    * <ul>
-   *   <li>{@code k1 = 2.0},
+   *   <li>{@code k1 = 1.2},
    *   <li>{@code b = 0.75}.</li>
    * </ul>
    */
   public MockBM25Similarity() {
-    this.k1 = 2.0f;
+    this.k1 = 1.2f;
     this.b  = 0.75f;
+  }
+  
+  /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
+  public float idf(int docFreq, int numDocs) {
+    return (float) Math.log(1 + ((numDocs - docFreq + 0.5D)/(docFreq + 0.5D)));
+  }
+  
+  /** Implemented as <code>1 / (distance + 1)</code>. */
+  public float sloppyFreq(int distance) {
+    return 1.0f / (distance + 1);
+  }
+  
+  /** The default implementation returns <code>1</code> */
+  public float scorePayload(int doc, int start, int end, BytesRef payload) {
+    return 1;
+  }
+  
+  /** return avg doc length across the field (or 1 if the codec does not store sumTotalTermFreq) */
+  public float avgFieldLength(IndexSearcher searcher, String field) throws IOException {
+    long sumTotalTermFreq = MultiFields.getTerms(searcher.getIndexReader(), field).getSumTotalTermFreq();
+    long maxdoc = searcher.getIndexReader().maxDoc();
+    return sumTotalTermFreq == -1 ? 1f : (float) (sumTotalTermFreq / (double) maxdoc);
   }
 
   @Override
   public byte computeNorm(FieldInvertState state) {
     final int numTerms = state.getLength() - state.getNumOverlap();
     return encodeNormValue(state.getBoost() / (float) Math.sqrt(numTerms));
+  }
+  
+  public float decodeNormValue(byte b) {
+    return NORM_TABLE[b & 0xFF];
+  }
+
+  public byte encodeNormValue(float f) {
+    return SmallFloat.floatToByte315(f);
   }
   
   /** Cache of decoded bytes. */
@@ -64,63 +94,36 @@ public class MockBM25Similarity extends Similarity {
       NORM_TABLE[i] = 1.0f / (f*f);
     }
   }
-  
-  public float decodeNormValue(byte b) {
-    return NORM_TABLE[b & 0xFF];
-  }
 
-  public byte encodeNormValue(float f) {
-    return SmallFloat.floatToByte315(f);
-  }
-
-  // weight for a term as log(1 + ((n - dfj + 0.5F)/(dfj + 0.5F)))
-  // TODO: are we summing this in the right place for phrase estimation????
   @Override
   public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
     float value = 0.0f;
-    final StringBuilder exp = new StringBuilder();
-
     final int max = searcher.maxDoc();
     
     for (final TermContext stat : termStats ) {
-      final int dfj = stat.docFreq();
-      value += Math.log(1 + ((max - dfj + 0.5F)/(dfj + 0.5F)));
-      exp.append(" ");
-      exp.append(dfj);
+      value += idf(stat.docFreq(), max);
     }
     
-    return new BM25Stats(value, queryBoost, avgDocumentLength(searcher, fieldName));
+    return new BM25Stats(value, queryBoost, avgFieldLength(searcher, fieldName));
   }
 
   @Override
-  public ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+  public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
     return new ExactBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
   }
 
   @Override
-  public SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
+  public final SloppyDocScorer sloppyDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
     return new SloppyBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
   }
   
-  /** return avg doc length across the field (or 1 if the codec does not store sumTotalTermFreq) */
-  private float avgDocumentLength(IndexSearcher searcher, String field) throws IOException {
-    if (!searcher.reader.hasNorms(field)) {
-      return 0f;
-    } else {
-      long sumTotalTermFreq = MultiFields.getTerms(searcher.reader, field).getSumTotalTermFreq();
-      long maxdoc = searcher.reader.maxDoc();
-      return sumTotalTermFreq == -1 ? 1f : (float) (sumTotalTermFreq / (double) maxdoc);
-    }
-  }
-
   private class ExactBM25DocScorer extends ExactDocScorer {
     private final float weightValue;
     private final byte[] norms;
     private final float avgdl;
     
     ExactBM25DocScorer(BM25Stats stats, byte norms[]) {
-      // we incorporate boost here up front... maybe we should multiply by tf instead?
-      this.weightValue = stats.idf * stats.queryBoost * stats.topLevelBoost;
+      this.weightValue = stats.weight;
       this.avgdl = stats.avgdl;
       this.norms = norms;
     }
@@ -128,7 +131,8 @@ public class MockBM25Similarity extends Similarity {
     // todo: optimize
     @Override
     public float score(int doc, int freq) {
-      float norm = norms == null ? 0 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
+      // if there are no norms, we act as if b=0
+      float norm = norms == null ? k1 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
       return weightValue * (freq * (k1 + 1)) / (freq + norm);
     }
   }
@@ -139,8 +143,7 @@ public class MockBM25Similarity extends Similarity {
     private final float avgdl;
     
     SloppyBM25DocScorer(BM25Stats stats, byte norms[]) {
-      // we incorporate boost here up front... maybe we should multiply by tf instead?
-      this.weightValue = stats.idf * stats.queryBoost * stats.topLevelBoost;
+      this.weightValue = stats.weight;
       this.avgdl = stats.avgdl;
       this.norms = norms;
     }
@@ -148,33 +151,34 @@ public class MockBM25Similarity extends Similarity {
     // todo: optimize
     @Override
     public float score(int doc, float freq) {
-      float norm = norms == null ? 0 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
+      // if there are no norms, we act as if b=0
+      float norm = norms == null ? k1 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
       return weightValue * (freq * (k1 + 1)) / (freq + norm);
     }
 
     @Override
     public float computeSlopFactor(int distance) {
-      return 1.0f / (distance + 1);
+      return sloppyFreq(distance);
     }
 
     @Override
     public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return 1;
+      return scorePayload(doc, start, end, payload);
     }
   }
   
   /** Collection statistics for the BM25 model. */
-  public static class BM25Stats extends Stats {
+  private static class BM25Stats extends Stats {
     /** BM25's idf */
     private final float idf;
     /** The average document length. */
     private final float avgdl;
     /** query's inner boost */
     private final float queryBoost;
-    /** any outer query's boost */
-    private float topLevelBoost;
+    /** weight (idf * boost) */
+    private float weight;
 
-    public BM25Stats(float idf, float queryBoost, float avgdl) {
+    BM25Stats(float idf, float queryBoost, float avgdl) {
       this.idf = idf;
       this.queryBoost = queryBoost;
       this.avgdl = avgdl;
@@ -190,7 +194,7 @@ public class MockBM25Similarity extends Similarity {
     @Override
     public void normalize(float queryNorm, float topLevelBoost) {
       // we don't normalize with queryNorm at all, we just capture the top-level boost
-      this.topLevelBoost = topLevelBoost;
+      this.weight = idf * queryBoost * topLevelBoost;
     } 
   }
 }
