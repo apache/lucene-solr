@@ -42,6 +42,10 @@ Bug fixes
 * LUCENE-3368: IndexWriter commits segments without applying their buffered
   deletes when flushing concurrently. (Simon Willnauer, Mike McCandless)
 
+* LUCENE-3365: Create or Append mode determined before obtaining write lock
+  can cause IndexWriter overriding an existing index.
+  (Geoff Cooney via Simon Willnauer)
+  
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 
