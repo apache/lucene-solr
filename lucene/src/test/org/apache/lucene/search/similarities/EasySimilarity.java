@@ -91,6 +91,19 @@ public abstract class EasySimilarity extends Similarity {
       totalTermFreq = Math.min(totalTermFreq, context.totalTermFreq());
     }
     
+    // nocommit: we have to provide something if codec doesnt supply these measures,
+    // or if someone omitted frequencies for the field... negative values cause
+    // NaN/Inf for some scorers.
+    
+    if (numberOfFieldTokens == -1) {
+      numberOfFieldTokens = 1;
+      avgFieldLength = 1;
+    }
+    
+    if (totalTermFreq == -1) {
+      totalTermFreq = 1;
+    }
+    
     stats.setNumberOfDocuments(numberOfDocuments);
     stats.setNumberOfFieldTokens(numberOfFieldTokens);
     stats.setAvgFieldLength(avgFieldLength);
@@ -235,7 +248,8 @@ public abstract class EasySimilarity extends Similarity {
     
     @Override
     public float score(int doc, int freq) {
-      return EasySimilarity.this.score(stats, freq, decodeNormValue(norms[doc]));
+      // nocommit: we have to supply something in case norms are omitted
+      return EasySimilarity.this.score(stats, freq, norms == null ? 1 : decodeNormValue(norms[doc]));
     }
     
     @Override
@@ -262,7 +276,8 @@ public abstract class EasySimilarity extends Similarity {
     
     @Override
     public float score(int doc, float freq) {
-      return EasySimilarity.this.score(stats, freq, decodeNormValue(norms[doc]));
+      // nocommit: we have to supply something in case norms are omitted
+      return EasySimilarity.this.score(stats, freq, norms == null ? 1 : decodeNormValue(norms[doc]));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
