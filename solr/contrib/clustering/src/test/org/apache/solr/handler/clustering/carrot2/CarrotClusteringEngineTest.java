@@ -190,7 +190,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 				wordsToCheck);
 
 		// "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
-		// stoplabels.en, so we're expecting only one cluster with label "online".
+		// stoplabels.mt, so we're expecting only one cluster with label "online".
 		final List<NamedList<Object>> clusters = checkEngine(
 				getClusteringEngine(engineName), 1, params);
 		assertEquals(getLabels(clusters.get(0)), ImmutableList.of("online"));
