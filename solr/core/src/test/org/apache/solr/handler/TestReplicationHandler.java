@@ -628,7 +628,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     reloadCore(masterClient, "collection1");
     
     assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
-    assertEquals(commits, getCommits(masterClient));
+    assertEquals(commits.get("commits"), getCommits(masterClient).get("commits"));
     
     index(masterClient, "id", 110, "name", "name = 1");
     index(masterClient, "id", 120, "name", "name = 2");
