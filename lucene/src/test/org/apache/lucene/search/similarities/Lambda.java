@@ -30,4 +30,13 @@ public abstract class Lambda {
   public abstract float lambda(EasyStats stats);
   /** Explains the lambda parameter. */
   public abstract Explanation explain(EasyStats stats);
+  
+  /**
+   * Subclasses must override this method to return the code of the lambda
+   * formula. Since the original paper is not very clear on this matter, and
+   * also uses the DFR naming scheme incorrectly, the codes here were chosen
+   * arbitrarily.
+   */
+  @Override
+  public abstract String toString();
 }

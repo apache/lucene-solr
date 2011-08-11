@@ -21,17 +21,26 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
 
 /**
  * Implements the approximation of the binomial model with the divergence
- * for DFR.
+ * for DFR. The formula used in Lucene differs slightly from the one in the
+ * original paper: to avoid underflow for small values of {@code N} and
+ * {@code F}, {@code N} is increased by {@code 1} and
+ * {@code F} is ensured to be at least {@code tfn + 1}.
  * @lucene.experimental
  */
 public class BasicModelD extends BasicModel {
   @Override
   public final float score(EasyStats stats, float tfn) {
-    long F = stats.getTotalTermFreq();
+    long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);
+//    long F = stats.getTotalTermFreq() + 1;
     double phi = (double)tfn / F;
     double nphi = 1 - phi;
-    double p = 1.0 / stats.getNumberOfDocuments();
+    double p = 1.0 / (stats.getNumberOfDocuments() + 1);
     double D = phi * log2(phi / p) + nphi * log2(nphi / (1 - p));
     return (float)(D * F + 0.5 * log2(2 * Math.PI * tfn * nphi));
+  }
+  
+  @Override
+  public String toString() {
+    return "D";
   }
 }

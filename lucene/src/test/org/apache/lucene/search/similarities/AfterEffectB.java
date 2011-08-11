@@ -41,4 +41,9 @@ public class AfterEffectB extends AfterEffect {
     result.addDetail(new Explanation(stats.getDocFreq(), "docFreq"));
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "B";
+  }
 }

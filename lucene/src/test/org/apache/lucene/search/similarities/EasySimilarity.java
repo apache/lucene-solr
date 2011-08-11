@@ -165,6 +165,13 @@ public abstract class EasySimilarity extends Similarity {
     return new EasySloppyDocScorer((EasyStats) stats,
                                    context.reader.norms(fieldName));
   }
+  
+  /**
+   * Subclasses must override this method to return the name of the Similarity
+   * and preferably the values of parameters (if any) as well.
+   */
+  @Override
+  public abstract String toString();  // nocommit: to Similarity?
 
   // ------------------------------ Norm handling ------------------------------
   

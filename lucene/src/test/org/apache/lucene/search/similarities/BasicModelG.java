@@ -30,4 +30,9 @@ public class BasicModelG extends BasicModel {
     // -log(1 / (lambda + 1)) -> log(lambda + 1)
     return (float)(log2(lambda + 1) + tfn * log2((1 + lambda) / lambda));
   }
+
+  @Override
+  public String toString() {
+    return "G";
+  }
 }

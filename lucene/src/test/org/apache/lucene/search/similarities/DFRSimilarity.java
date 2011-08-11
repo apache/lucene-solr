@@ -97,4 +97,10 @@ public class DFRSimilarity extends EasySimilarity {
     expl.addDetail(basicModel.explain(stats, tfn));
     expl.addDetail(afterEffect.explain(stats, tfn));
   }
+
+  @Override
+  public String toString() {
+    return "DFR " + basicModel.toString() + afterEffect.toString()
+                  + normalization.toString();
+  }
 }

@@ -32,4 +32,9 @@ public class BasicModelIne extends BasicModel {
     double ne = N * (1 - Math.pow((N - 1) / (double)N, F));
     return tfn * (float)(log2((N + 1) / (ne + 0.5)));
   }
+
+  @Override
+  public String toString() {
+    return "I(ne)";
+  }
 }

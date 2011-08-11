@@ -71,6 +71,30 @@ public abstract class LMSimilarity extends EasySimilarity {
     expl.addDetail(new Explanation(collectionModel.computeProbability(stats),
                                    "collection probability"));
   }
+  
+  /**
+   * Returns the name of the LM method. The values of the parameters should be
+   * included as well.
+   * <p>Used in {@link #toString()}</p>.
+   */
+  public abstract String getName();
+  
+  /**
+   * Returns the name of the LM method. If a custom collection model strategy is
+   * used, its name is included as well.
+   * @see #getName()
+   * @see CollectionModel#getName()
+   * @see DefaultCollectionModel 
+   */
+  @Override
+  public String toString() {
+    String coll = collectionModel.getName();
+    if (coll != null) {
+      return String.format("LM %s - %s", getName(), coll);
+    } else {
+      return String.format("LM %s", getName());
+    }
+  }
 
   /** Stores the collection distribution of the current term. */
   public static class LMStats extends EasyStats {
@@ -105,6 +129,9 @@ public abstract class LMSimilarity extends EasySimilarity {
      * strategy for the current term.
      */
     public float computeProbability(EasyStats stats);
+    
+    /** The name of the collection model strategy. */
+    public String getName();
   }
   
   /**
@@ -115,6 +142,11 @@ public abstract class LMSimilarity extends EasySimilarity {
     @Override
     public float computeProbability(EasyStats stats) {
       return (float)stats.getTotalTermFreq() / stats.getNumberOfFieldTokens();
+    }
+    
+    @Override
+    public String getName() {
+      return null;
     }
   }
 }

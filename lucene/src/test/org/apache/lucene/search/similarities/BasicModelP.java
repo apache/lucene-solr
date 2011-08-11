@@ -31,4 +31,9 @@ public class BasicModelP extends BasicModel {
         + (lambda + 1 / 12 / tfn - tfn) * log2(Math.E)
         + 0.5 * log2(2 * Math.PI * tfn));
   }
+
+  @Override
+  public String toString() {
+    return "P";
+  }
 }

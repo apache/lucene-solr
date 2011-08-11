@@ -47,5 +47,17 @@ public abstract class AfterEffect {
     public final Explanation explain(EasyStats stats, float tfn) {
       return new Explanation(1, "no aftereffect");
     }
+    
+    @Override
+    public String toString() {
+      return "";
+    }
   }
+  
+  /**
+   * Subclasses must override this method to return the code of the
+   * after effect formula. Refer to the original paper for the list. 
+   */
+  @Override
+  public abstract String toString();
 }

@@ -59,5 +59,17 @@ public abstract class Normalization {
     public final Explanation explain(EasyStats stats, float tf, int len) {
       return new Explanation(1, "no normalization");
     }
+    
+    @Override
+    public String toString() {
+      return "";
+    }
   }
+  
+  /**
+   * Subclasses must override this method to return the code of the
+   * normalization formula. Refer to the original paper for the list. 
+   */
+  @Override
+  public abstract String toString();
 }

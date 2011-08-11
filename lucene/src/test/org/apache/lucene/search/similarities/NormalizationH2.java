@@ -28,4 +28,9 @@ public class NormalizationH2 extends Normalization {
   public final float tfn(EasyStats stats, float tf, int len) {
     return (float)(tf * log2(1 + stats.getAvgFieldLength() / len));
   }
+
+  @Override
+  public String toString() {
+    return "2";
+  }
 }

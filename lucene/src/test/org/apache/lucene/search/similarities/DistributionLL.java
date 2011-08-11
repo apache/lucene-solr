@@ -29,4 +29,9 @@ public class DistributionLL extends Distribution {
   public final float score(EasyStats stats, float tfn, float lambda) {
     return (float)-Math.log(lambda / (tfn + lambda));
   }
+  
+  @Override
+  public String toString() {
+    return "LL";
+  }
 }

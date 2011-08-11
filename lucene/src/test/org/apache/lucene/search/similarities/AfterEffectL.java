@@ -37,4 +37,9 @@ public class AfterEffectL extends AfterEffect {
     result.addDetail(new Explanation(tfn, "tfn"));
     return result;
   }
+  
+  @Override
+  public String toString() {
+    return "L";
+  }
 }

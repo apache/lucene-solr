@@ -70,4 +70,9 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   public float getLambda() {
     return lambda;
   }
+
+  @Override
+  public String getName() {
+    return String.format("Jelinek-Mercer(%f)", getLambda());
+  }
 }

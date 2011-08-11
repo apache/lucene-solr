@@ -51,6 +51,7 @@ public class EasyStats extends Similarity.Stats {
   /** Constructor. Sets the query boost. */
   public EasyStats(float queryBoost) {
     this.queryBoost = queryBoost;
+    this.totalBoost = queryBoost;
   }
   
   // ------------------------- Getter/setter methods -------------------------

@@ -20,14 +20,18 @@ package org.apache.lucene.search.similarities;
 import static org.apache.lucene.search.similarities.EasySimilarity.log2;
 
 /**
- * Limiting form of the Bose-Einstein model.
+ * Limiting form of the Bose-Einstein model. The formula used in Lucene differs
+ * slightly from the one in the original paper: to avoid underflow for small
+ * values of {@code N} and {@code F}, {@code N} is increased by {@code 1} and
+ * {@code F} is ensured to be at least {@code tfn + 1}. 
  * @lucene.experimental
  */
 public class BasicModelBE extends BasicModel {
   @Override
   public final float score(EasyStats stats, float tfn) {
-    long N = stats.getNumberOfDocuments();
-    long F = stats.getTotalTermFreq();
+    long N = stats.getNumberOfDocuments() + 1;
+//    long F = stats.getTotalTermFreq() + 1;
+    long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);
     return (float)(-log2((N - 1) * Math.E)
         + f(N + F -1, N + F - tfn - 2) - f(F, F - tfn));
   }
@@ -35,5 +39,10 @@ public class BasicModelBE extends BasicModel {
   /** The <em>f</em> helper function defined for <em>B<sub>E</sub></em>. */
   private final double f(long n, float m) {
     return (m + 0.5) * log2((double)n / m) + (n - m) * log2(n);
+  }
+  
+  @Override
+  public String toString() {
+    return "Be";
   }
 }

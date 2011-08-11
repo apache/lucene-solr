@@ -84,4 +84,16 @@ public class IBSimilarity extends EasySimilarity {
     expl.addDetail(distribution.explain(
         stats, normExpl.getValue(), lambdaExpl.getValue()));
   }
+  
+  /**
+   * The name of IB methods follow the pattern
+   * {@code IB <distribution> <lambda><normalization>}. The name of the
+   * distribution is the same as in the original paper; for the names of lambda
+   * parameters, refer to the javadoc of the {@link Lambda} classes.
+   */
+  @Override
+  public String toString() {
+    return "IB " + distribution.toString() + "-" + lambda.toString()
+                 + normalization.toString();
+  }
 }

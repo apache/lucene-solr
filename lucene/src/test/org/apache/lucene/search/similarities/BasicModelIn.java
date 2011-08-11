@@ -44,4 +44,9 @@ public class BasicModelIn extends BasicModel {
         new Explanation(stats.getDocFreq(), "docFreq"));
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "I(n)";
+  }
 }

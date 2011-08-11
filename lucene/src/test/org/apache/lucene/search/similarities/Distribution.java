@@ -35,4 +35,11 @@ public abstract class Distribution {
     return new Explanation(
         score(stats, tfn, lambda), getClass().getSimpleName());
   }
+  
+  /**
+   * Subclasses must override this method to return the name of the
+   * distribution. 
+   */
+  @Override
+  public abstract String toString();
 }

@@ -28,7 +28,15 @@ package org.apache.lucene.search.similarities;
 public class DistributionSPL extends Distribution {
   @Override
   public final float score(EasyStats stats, float tfn, float lambda) {
+    if (lambda == 1f) {
+      lambda = 0.99f;
+    }
     return (float)-Math.log(
         (Math.pow(lambda, (tfn / (tfn + 1))) - lambda) / (1 - lambda));
+  }
+  
+  @Override
+  public String toString() {
+    return "SPL";
   }
 }

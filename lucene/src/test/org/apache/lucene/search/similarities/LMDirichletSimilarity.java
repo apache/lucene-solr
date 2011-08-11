@@ -83,4 +83,9 @@ public class LMDirichletSimilarity extends LMSimilarity {
   public float getMu() {
     return mu;
   }
+  
+  @Override
+  public String getName() {
+    return String.format("Dirichlet(%f)", getMu());
+  }
 }

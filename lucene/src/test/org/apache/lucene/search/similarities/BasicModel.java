@@ -50,4 +50,11 @@ public abstract class BasicModel {
         new Explanation(stats.getTotalTermFreq(), "totalTermFreq"));
     return result;
   }
+  
+  /**
+   * Subclasses must override this method to return the code of the
+   * basic model formula. Refer to the original paper for the list. 
+   */
+  @Override
+  public abstract String toString();
 }
