@@ -173,8 +173,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           @Override
           public IResource[] getAll(final String resource) {
             final SolrResourceLoader resourceLoader = core.getResourceLoader();
-            final String carrot2ResourcesDir = resourceLoader.getConfigDir()
-                + initParams.get(CarrotParams.LEXICAL_RESOURCES_DIR, CARROT_RESOURCES_PREFIX);
+            final String carrot2ResourcesDir = initParams.get(
+                CarrotParams.LEXICAL_RESOURCES_DIR, CARROT_RESOURCES_PREFIX);
             try {
               log.debug("Looking for " + resource + " in "
                   + carrot2ResourcesDir);
