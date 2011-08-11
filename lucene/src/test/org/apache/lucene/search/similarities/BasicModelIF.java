@@ -28,7 +28,7 @@ public class BasicModelIF extends BasicModel {
   public final float score(EasyStats stats, float tfn) {
     int N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
-    return tfn * (float)(log2((N + 1) / (F + 0.5)));
+    return tfn * (float)(log2(1 + (N + 1) / (F + 0.5)));
   }
 
   @Override
