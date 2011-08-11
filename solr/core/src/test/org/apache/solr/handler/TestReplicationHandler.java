@@ -622,7 +622,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
     
+    Object version = getIndexVersion(masterClient).get("indexversion");
+    NamedList<Object> commits = getCommits(masterClient);
+    
     reloadCore(masterClient, "collection1");
+    
+    assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
+    assertEquals(commits, getCommits(masterClient));
     
     index(masterClient, "id", 110, "name", "name = 1");
     index(masterClient, "id", 120, "name", "name = 2");
