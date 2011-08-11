@@ -13,6 +13,9 @@ $Id$
 
 ================== Release 3.4.0-dev ==============
 
+SOLR-2706: The carrot.lexicalResourcesDir parameter now works 
+   with absolute directories (Stanislaw Osinski)
+  
 SOLR-2692: Typo in param name fixed: "carrot.fragzise" changed to 
   "carrot.fragSize" (Stanislaw Osinski).
 
