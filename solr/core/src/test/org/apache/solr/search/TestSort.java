@@ -47,12 +47,6 @@ public class TestSort extends SolrTestCaseJ4 {
 
   final Random r = random;
 
-  int ndocs = 77;
-  int iter = 50;
-  int qiter = 1000;
-  int commitCount = ndocs/5 + 1;
-  int maxval = ndocs*2;
-
   static class MyDoc {
     int doc;
     String val;
@@ -151,42 +145,44 @@ public class TestSort extends SolrTestCaseJ4 {
 
 
   public void testSort() throws Exception {
+    int iter =100;
+    int qiter = 1000;
+
     Directory dir = new RAMDirectory();
-    Field f = new Field("f","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
-    Field f2 = new Field("f2","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+    Field f = new Field("f","0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+    Field f2 = new Field("f2","0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
 
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
+      int ndocs = random.nextInt(100)+1;
+      int maxval = random.nextInt(ndocs)+random.nextInt(ndocs)+1;
+
       IndexWriter iw = new IndexWriter(
           dir,
           new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).
               setOpenMode(IndexWriterConfig.OpenMode.CREATE));
-      final MyDoc[] mydocs = new MyDoc[ndocs];
 
-      int v1EmptyPercent = 50;
-      int v2EmptyPercent = 50;
+      int v1EmptyPercent = random.nextInt(40)+random.nextInt(40);
+      int v2EmptyPercent = random.nextInt(40)+random.nextInt(40);
 
-      int commitCountdown = commitCount;
       for (int i=0; i< ndocs; i++) {
-        MyDoc mydoc = new MyDoc();
-        mydoc.doc = i;
-        mydocs[i] = mydoc;
-
         Document document = new Document();
         if (r.nextInt(100) < v1EmptyPercent) {
-          mydoc.val = Integer.toString(r.nextInt(maxval));
-          f.setValue(mydoc.val);
+          String val = Integer.toString(r.nextInt(maxval));
+          f.setValue(val);
           document.add(f);
         }
         if (r.nextInt(100) < v2EmptyPercent) {
-          mydoc.val2 = Integer.toString(r.nextInt(maxval));
-          f2.setValue(mydoc.val2);
+          String val2 = Integer.toString(r.nextInt(maxval));
+          f2.setValue(val2);
           document.add(f2);
         }
 
-
         iw.addDocument(document);
-        if (--commitCountdown <= 0) {
-          commitCountdown = commitCount;
+        // duplicate a certain percent
+        if (r.nextInt(100) < 10) {
+          iw.addDocument(document);
+        }
+        if (random.nextInt(100) < 10) {
           iw.commit();
         }
       }
@@ -194,8 +190,20 @@ public class TestSort extends SolrTestCaseJ4 {
 
 
       IndexSearcher searcher = new IndexSearcher(dir, true);
-      // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
-      assertTrue(searcher.getIndexReader().getSequentialSubReaders().length > 1);
+
+      // build our model
+      int maxDoc = searcher.maxDoc();
+      final MyDoc[] mydocs = new MyDoc[maxDoc];
+      for (int i=0; i<maxDoc; i++) {
+        if (searcher.getIndexReader().isDeleted(i)) continue;
+        Document doc = searcher.doc(i);
+        MyDoc mydoc = new MyDoc();
+        mydocs[i] = mydoc;
+        mydoc.doc = i;
+        mydoc.val = doc.get("f");
+        mydoc.val2 = doc.get("f2");
+      }
+
 
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {
@@ -294,7 +302,8 @@ public class TestSort extends SolrTestCaseJ4 {
           if (id != collectedDocs.get(j).doc) {
             log.error("Error at pos " + j
             + "\n\tsortMissingFirst=" + sortMissingFirst + " sortMissingLast=" + sortMissingLast + " reverse=" + reverse
-            + "\n\tEXPECTED=" + collectedDocs 
+            + "\n\tsecondary="+secondary + "sortMissingFirst=" + sortMissingFirst2 + " sortMissingLast=" + sortMissingLast2 + " reverse=" + reverse2
+            + "\n\tEXPECTED=" + collectedDocs
             );
           }
           assertEquals(id, collectedDocs.get(j).doc);
