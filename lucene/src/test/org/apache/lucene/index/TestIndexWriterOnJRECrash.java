@@ -51,7 +51,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   public void testNRTThreads() throws Exception {
     String vendor = Constants.JAVA_VENDOR;
     assumeTrue(vendor + " JRE not supported.", 
-        vendor.startsWith("Sun") || vendor.startsWith("Apple"));
+        vendor.startsWith("Oracle") || vendor.startsWith("Sun") || vendor.startsWith("Apple"));
     
     // if we are not the fork
     if (System.getProperty("tests.crashmode") == null) {
