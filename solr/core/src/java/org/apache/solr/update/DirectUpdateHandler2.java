@@ -83,11 +83,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
@@ -104,11 +104,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
   }
 
@@ -137,15 +137,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      boolean triggered = commitTracker.addedDocument( cmd.commitWithin );
-    
-      if (!triggered) {
-        // if we hard commit, don't soft commit
-        softCommitTracker.addedDocument( cmd.commitWithin );
-      } else {
-        // still inc softCommit
-        softCommitTracker.docsSinceCommit++;
-      }
+      commitTracker.addedDocument( cmd.commitWithin );
+      softCommitTracker.addedDocument( cmd.commitWithin );
 
       if (cmd.overwrite) {
         Term updateTerm;

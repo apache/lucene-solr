@@ -60,9 +60,12 @@ final class CommitTracker implements Runnable {
 
   private boolean softCommit;
   private boolean waitSearcher;
+
+  private String name;
   
-  public CommitTracker(SolrCore core, int docsUpperBound, int timeUpperBound, boolean waitSearcher, boolean softCommit) {
+  public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean waitSearcher, boolean softCommit) {
     this.core = core;
+    this.name = name;
     docsSinceCommit = 0;
     pending = null;
     
@@ -72,7 +75,7 @@ final class CommitTracker implements Runnable {
     this.softCommit = softCommit;
     this.waitSearcher = waitSearcher;
 
-    SolrCore.log.info("AutoCommit: " + this);
+    SolrCore.log.info(name + " AutoCommit: " + this);
   }
   
   public void close() {
@@ -121,7 +124,7 @@ final class CommitTracker implements Runnable {
       _scheduleCommitWithin(ctime);
       triggered = true;
     }
-    
+
     return triggered;
   }
   
