@@ -240,11 +240,8 @@ public class MemoryIndex {
   /**
    * Convenience method; Tokenizes the given field text and adds the resulting
    * terms to the index; Equivalent to adding an indexed non-keyword Lucene
-   * {@link org.apache.lucene.document.Field} that is
-   * {@link org.apache.lucene.document.Field.Index#ANALYZED tokenized},
-   * {@link org.apache.lucene.document.Field.Store#NO not stored},
-   * {@link org.apache.lucene.document.Field.TermVector#WITH_POSITIONS termVectorStored with positions} (or
-   * {@link org.apache.lucene.document.Field.TermVector#WITH_POSITIONS termVectorStored with positions and offsets}),
+   * {@link org.apache.lucene.document.Field} that is tokenized, not stored,
+   * termVectorStored with positions (or termVectorStored with positions and offsets),
    * 
    * @param fieldName
    *            a name to be associated with the text

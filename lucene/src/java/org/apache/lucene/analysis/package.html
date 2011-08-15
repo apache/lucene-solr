@@ -172,7 +172,7 @@ the source code of any one of the many samples located in this package.
 </p>
 <h3>Field Section Boundaries</h3>
 <p>
-  When {@link org.apache.lucene.document.Document#add(org.apache.lucene.document.Fieldable) document.add(field)}
+  When {@link org.apache.lucene.document.Document#add(org.apache.lucene.index.IndexableField) document.add(field)}
   is called multiple times for the same field name, we could say that each such call creates a new 
   section for that field in that document. 
   In fact, a separate call to 

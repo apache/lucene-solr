@@ -241,11 +241,7 @@ public class Field implements IndexableField {
    * into the score of all hits on this this field of this document.
    * 
    * <p>
-   * The boost is multiplied by
-   * {@link org.apache.lucene.document.Document#getBoost()} of the document
-   * containing this field. If a document has multiple fields with the same
-   * name, all such values are multiplied together. This product is then used to
-   * compute the norm factor for the field. By default, in the
+   * Boost is used to compute the norm factor for the field. By default, in the
    * {@link org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)}
    * method, the boost value is multiplied by the length normalization factor
    * and then rounded by
@@ -253,7 +249,6 @@ public class Field implements IndexableField {
    * it is stored in the index. One should attempt to ensure that this product
    * does not overflow the range of that encoding.
    * 
-   * @see org.apache.lucene.document.Document#setBoost(float)
    * @see org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)
    * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
    */

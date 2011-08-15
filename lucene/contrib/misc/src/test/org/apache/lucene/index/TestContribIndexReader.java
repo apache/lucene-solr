@@ -152,10 +152,10 @@ public class TestContribIndexReader extends LuceneTestCase {
     lazyFields.add("bin1");
     FieldSelector sel = new SetBasedFieldSelector(new HashSet<String>(), lazyFields);
     doc2 = getDocument(reader, reader.maxDoc() - 1, sel);
-    IndexableField[] fieldables = doc2.getFields("bin1");
-    assertNotNull(fieldables);
-    assertEquals(1, fieldables.length);
-    IndexableField fb1 = fieldables[0];
+    fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    IndexableField fb1 = fields[0];
     assertTrue(fb1.binaryValue(null)!=null);
     bytesRef = fb1.binaryValue(null);
     assertEquals(bin.length, bytesRef.bytes.length);

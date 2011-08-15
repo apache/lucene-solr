@@ -929,11 +929,11 @@ public class TestIndexReader extends LuceneTestCase
         if (delDocs1 == null || !delDocs1.get(i)) {
           Document doc1 = index1.document(i);
           Document doc2 = index2.document(i);
-          List<IndexableField> fieldable1 = doc1.getFields();
-          List<IndexableField> fieldable2 = doc2.getFields();
-          assertEquals("Different numbers of fields for doc " + i + ".", fieldable1.size(), fieldable2.size());
-          Iterator<IndexableField> itField1 = fieldable1.iterator();
-          Iterator<IndexableField> itField2 = fieldable2.iterator();
+          List<IndexableField> field1 = doc1.getFields();
+          List<IndexableField> field2 = doc2.getFields();
+          assertEquals("Different numbers of fields for doc " + i + ".", field1.size(), field2.size());
+          Iterator<IndexableField> itField1 = field1.iterator();
+          Iterator<IndexableField> itField2 = field2.iterator();
           while (itField1.hasNext()) {
             Field curField1 = (Field) itField1.next();
             Field curField2 = (Field) itField2.next();

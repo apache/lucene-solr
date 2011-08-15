@@ -56,7 +56,6 @@ import org.apache.lucene.util.Version;
  * "word" field, and if present there will be fields named "syn"
  * for every synonym. What's tricky here is that there could be <b>multiple</b>
  * fields with the same name, in the general case for words that have multiple synonyms.
- * That's not a problem with Lucene, you just use {@link org.apache.lucene.document.Document#getValues}
  * </p>
  * <p>
  * While the WordNet file distinguishes groups of synonyms with

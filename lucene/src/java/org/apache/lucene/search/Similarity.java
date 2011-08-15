@@ -453,12 +453,8 @@ import org.apache.lucene.util.SmallFloat;
  *      <b><i>norm(t,d)</i></b> encapsulates a few (indexing time) boost and length factors:
  *
  *      <ul>
- *        <li><b>Document boost</b> - set by calling
- *        {@link org.apache.lucene.document.Document#setBoost(float) doc.setBoost()}
- *        before adding the document to the index.
- *        </li>
  *        <li><b>Field boost</b> - set by calling
- *        {@link org.apache.lucene.document.Fieldable#setBoost(float) field.setBoost()}
+ *        {@link org.apache.lucene.document.Field#setBoost(float) field.setBoost()}
  *        before adding the field to a document.
  *        </li>
  *        <li><b>lengthNorm</b> - computed
@@ -478,9 +474,6 @@ import org.apache.lucene.util.SmallFloat;
  *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
  *        <tr>
  *          <td valign="middle" align="right" rowspan="1">
- *            norm(t,d) &nbsp; = &nbsp;
- *            {@link org.apache.lucene.document.Document#getBoost() doc.getBoost()}
- *            &nbsp;&middot;&nbsp;
  *            lengthNorm
  *            &nbsp;&middot;&nbsp;
  *          </td>
@@ -488,7 +481,7 @@ import org.apache.lucene.util.SmallFloat;
  *            <big><big><big>&prod;</big></big></big>
  *          </td>
  *          <td valign="middle" align="right" rowspan="1">
- *            {@link org.apache.lucene.document.Fieldable#getBoost() f.getBoost}()
+ *            {@link org.apache.lucene.index.IndexableField#boost() f.getBoost}()
  *          </td>
  *        </tr>
  *        <tr valigh="top">

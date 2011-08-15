@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -175,7 +176,7 @@ public class CheckIndex {
 
       /** True if at least one of the fields in this segment
        *  does not omitTermFreqAndPositions.
-       *  @see AbstractField#setOmitTermFreqAndPositions */
+       *  @see FieldType#setOmitTermFreqAndPositions */
       public boolean hasProx;
 
       /** Map that includes certain

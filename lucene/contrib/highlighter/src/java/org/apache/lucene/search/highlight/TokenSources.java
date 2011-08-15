@@ -60,7 +60,7 @@ public class TokenSources {
    * @param analyzer The analyzer to use for creating the TokenStream if the
    *        vector doesn't exist
    * @return The {@link org.apache.lucene.analysis.TokenStream} for the
-   *         {@link org.apache.lucene.document.Fieldable} on the
+   *         {@link org.apache.lucene.index.IndexableField} on the
    *         {@link org.apache.lucene.document.Document}
    * @throws IOException if there was an error loading
    */
