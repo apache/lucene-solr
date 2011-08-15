@@ -137,28 +137,28 @@ public class DocMakerTest extends BenchmarkTestCase {
     
     // Don't set anything, use the defaults
     doc = createTestNormsDocument(false, false, false, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getField(DocMaker.TITLE_FIELD).omitNorms());
+    assertFalse(doc.getField(DocMaker.BODY_FIELD).omitNorms());
     
     // Set norms to false
     doc = createTestNormsDocument(true, false, false, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getField(DocMaker.TITLE_FIELD).omitNorms());
+    assertFalse(doc.getField(DocMaker.BODY_FIELD).omitNorms());
     
     // Set norms to true
     doc = createTestNormsDocument(true, true, false, false);
-    assertFalse(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertFalse(doc.getField(DocMaker.TITLE_FIELD).omitNorms());
+    assertFalse(doc.getField(DocMaker.BODY_FIELD).omitNorms());
     
     // Set body norms to false
     doc = createTestNormsDocument(false, false, true, false);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertTrue(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getField(DocMaker.TITLE_FIELD).omitNorms());
+    assertTrue(doc.getField(DocMaker.BODY_FIELD).omitNorms());
     
     // Set body norms to true
     doc = createTestNormsDocument(false, false, true, true);
-    assertTrue(doc.getField(DocMaker.TITLE_FIELD).getOmitNorms());
-    assertFalse(doc.getField(DocMaker.BODY_FIELD).getOmitNorms());
+    assertTrue(doc.getField(DocMaker.TITLE_FIELD).omitNorms());
+    assertFalse(doc.getField(DocMaker.BODY_FIELD).omitNorms());
   }
   
 }

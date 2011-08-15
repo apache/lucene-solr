@@ -24,7 +24,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.FieldCache.*;
@@ -91,8 +92,9 @@ public class TestEntryCreators extends LuceneTestCase {
       for( NumberTypeTester tester : typeTests ) {
         if (random.nextInt(20) != 17 && i > 1) {
           tester.values[i] = 10 + random.nextInt( 20 ); // get some field overlap
-          doc.add(newField(tester.field, String.valueOf(tester.values[i]), 
-              Field.Store.NO, Field.Index.NOT_ANALYZED ));
+          FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+          customType.setTokenized(false);
+          doc.add(newField(tester.field, String.valueOf(tester.values[i]), customType));
         }
       }
       writer.addDocument(doc);

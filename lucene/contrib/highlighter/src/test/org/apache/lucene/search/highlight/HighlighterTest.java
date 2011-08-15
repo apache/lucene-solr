@@ -44,9 +44,9 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -1637,7 +1637,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, v, Store.YES, Index.ANALYZED ) );
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add( new Field( f, customType, v));
     return doc;
   }
   
@@ -1698,7 +1700,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * QueryFragmentScorer(query));
    * 
    * for (int i = 0; i < hits.totalHits; i++) { String text =
-   * searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME); TokenStream
+   * searcher.doc2(hits.scoreDocs[i].doc).get(FIELD_NAME); TokenStream
    * tokenStream=bigramAnalyzer.tokenStream(FIELD_NAME,new StringReader(text));
    * String highlightedText = highlighter.getBestFragment(tokenStream,text);
    * System.out.println(highlightedText); } }
@@ -1752,21 +1754,23 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    FieldType storedNumericType = new FieldType(NumericField.TYPE_UNSTORED);
+    storedNumericType.setStored(true);
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(1);
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(3);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(5);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
     nfield.setIntValue(7);
     doc = new Document();
     doc.add(nfield);
@@ -1787,7 +1791,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
-    Field f = new Field(FIELD_NAME, text, Field.Store.YES, Field.Index.ANALYZED);
+
+    FieldType storedType = new FieldType(TextField.TYPE_UNSTORED);
+    storedType.setStored(true);
+    Field f = new Field(FIELD_NAME, storedType, text);
     d.add(f);
     writer.addDocument(d);
 

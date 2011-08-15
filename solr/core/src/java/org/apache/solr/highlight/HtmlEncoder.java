@@ -42,7 +42,11 @@ public class HtmlEncoder extends HighlightingPluginBase implements SolrEncoder {
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

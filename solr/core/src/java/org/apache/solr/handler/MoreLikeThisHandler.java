@@ -353,7 +353,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       realMLTQuery = new BooleanQuery();
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(
-          new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getFieldable(uniqueKeyField.getName())))), 
+          new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getField(uniqueKeyField.getName())))), 
             BooleanClause.Occur.MUST_NOT);
       
       DocListAndSet results = new DocListAndSet();
@@ -424,7 +424,11 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
+<<<<<<<
     return "$Revision$";
+=======
+    return "$Revision$";
+>>>>>>>
   }
 
   @Override
@@ -434,12 +438,20 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 
   @Override
   public String getSourceId() {
+<<<<<<<
     return "$Id$";
+=======
+    return "$Id$";
+>>>>>>>
   }
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

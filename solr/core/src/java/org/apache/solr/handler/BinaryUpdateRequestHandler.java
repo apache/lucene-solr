@@ -125,7 +125,11 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

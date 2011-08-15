@@ -23,7 +23,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
@@ -128,16 +129,18 @@ public class TestFilterIndexReader extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     Document d1 = new Document();
-    d1.add(newField("default","one two", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("default","one two", customType));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(newField("default","one three", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("default","one three", customType));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(newField("default","two four", Field.Store.YES, Field.Index.ANALYZED));
+    d3.add(newField("default","two four", customType));
     writer.addDocument(d3);
 
     writer.close();

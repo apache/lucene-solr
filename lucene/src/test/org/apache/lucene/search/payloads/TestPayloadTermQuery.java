@@ -46,8 +46,13 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+<<<<<<<
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+=======
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
+>>>>>>>
 
 import java.io.Reader;
 import java.io.IOException;
@@ -117,13 +122,15 @@ public class TestPayloadTermQuery extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
                                                      .setSimilarityProvider(similarityProvider).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED);
+      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), customType);
       //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
-      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field", English.intToEnglish(i), customType));
+      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), customType));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

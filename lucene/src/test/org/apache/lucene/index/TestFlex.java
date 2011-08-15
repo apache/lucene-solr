@@ -39,10 +39,10 @@ public class TestFlex extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       if (iter == 0) {
         Document doc = new Document();
-        doc.add(newField("field1", "this is field1", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(newField("field2", "this is field2", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(newField("field3", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-        doc.add(newField("field4", "bbb", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("field1", "this is field1", TextField.TYPE_UNSTORED));
+        doc.add(newField("field2", "this is field2", TextField.TYPE_UNSTORED));
+        doc.add(newField("field3", "aaa", TextField.TYPE_UNSTORED));
+        doc.add(newField("field4", "bbb", TextField.TYPE_UNSTORED));
         for(int i=0;i<DOC_COUNT;i++) {
           w.addDocument(doc);
         }
@@ -66,7 +66,7 @@ public class TestFlex extends LuceneTestCase {
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                              new MockAnalyzer(random)).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
-    doc.add(newField("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("f", "a b c", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     TermsEnum terms = r.getSequentialSubReaders()[0].fields().terms("f").iterator();

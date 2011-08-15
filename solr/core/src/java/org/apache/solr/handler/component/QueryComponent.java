@@ -426,7 +426,9 @@ public class QueryComponent extends SearchComponent
       Sort sort = searcher.weightSort(rb.getSortSpec().getSort());
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       NamedList sortVals = new NamedList(); // order is important for the sort fields
-      Field field = new Field("dummy", "", Field.Store.YES, Field.Index.NO); // a dummy Field
+      org.apache.lucene.document.FieldType docft = new org.apache.lucene.document.FieldType();
+      docft.setStored(true);
+      Field field = new Field("dummy", docft, ""); // a dummy Field
       ReaderContext topReaderContext = searcher.getTopReaderContext();
       AtomicReaderContext[] leaves = ReaderUtil.leaves(topReaderContext);
       AtomicReaderContext currentLeaf = null;
@@ -816,17 +818,29 @@ public class QueryComponent extends SearchComponent
 
   @Override
   public String getVersion() {
+<<<<<<<
     return "$Revision$";
+=======
+    return "$Revision$";
+>>>>>>>
   }
 
   @Override
   public String getSourceId() {
+<<<<<<<
     return "$Id$";
+=======
+    return "$Id$";
+>>>>>>>
   }
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

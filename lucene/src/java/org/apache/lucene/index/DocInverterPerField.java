@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -61,26 +60,29 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   }
 
   @Override
-  public void processFields(final Fieldable[] fields,
+  public void processFields(final IndexableField[] fields,
                             final int count) throws IOException {
 
-    fieldState.reset(docState.doc.getBoost());
+    fieldState.reset();
 
     final boolean doInvert = consumer.start(fields, count);
 
     for(int i=0;i<count;i++) {
 
-      final Fieldable field = fields[i];
+      final IndexableField field = fields[i];
 
       // TODO FI: this should be "genericized" to querying
       // consumer if it wants to see this particular field
       // tokenized.
-      if (field.isIndexed() && doInvert) {
+      if (field.indexed() && doInvert) {
         
         if (i > 0)
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
-        if (!field.isTokenized()) {		  // un-tokenized field
+        // nocommit -- this logic should be outside of
+        // indexer
+
+        if (!field.tokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           final int valueLength = stringValue.length();
           parent.singleToken.reinit(stringValue, 0, valueLength);
@@ -103,17 +105,17 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           final TokenStream stream;
           final TokenStream streamValue = field.tokenStreamValue();
 
-          if (streamValue != null) 
+          if (streamValue != null) {
             stream = streamValue;
-          else {
+          } else {
             // the field does not have a TokenStream,
             // so we have to obtain one from the analyzer
             final Reader reader;			  // find or make Reader
             final Reader readerValue = field.readerValue();
 
-            if (readerValue != null)
+            if (readerValue != null) {
               reader = readerValue;
-            else {
+            } else {
               String stringValue = field.stringValue();
               if (stringValue == null) {
                 throw new IllegalArgumentException("field must have either TokenStream, String or Reader value");
@@ -188,8 +190,13 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
         }
 
+<<<<<<<
         fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
         fieldState.boost *= field.getBoost();
+=======
+        fieldState.offset += docState.analyzer.getOffsetGap(field);
+        fieldState.boost *= field.boost();
+>>>>>>>
       }
 
       // LUCENE-2387: don't hang onto the field, so GC can

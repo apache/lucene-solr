@@ -8,6 +8,7 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.Locale;
 
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**

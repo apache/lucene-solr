@@ -25,7 +25,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 
 /**
  * Tests {@link PrefixQuery} class.
@@ -41,7 +41,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(newField("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("category", categories[i], StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();

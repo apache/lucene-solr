@@ -30,6 +30,9 @@ import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 
 /** Minimal port of contrib/benchmark's LneDocSource +
  * DocMaker, so tests can enum docs from a line file created
@@ -117,19 +120,24 @@ public class LineFileDocs implements Closeable {
     public DocState() {
       doc = new Document();
       
-      title = new Field("title", "", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+      title = new StringField("title", "");
       doc.add(title);
 
-      titleTokenized = new Field("titleTokenized", "", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+      FieldType ft = new FieldType(TextField.TYPE_STORED);
+      ft.setStoreTermVectors(true);
+      ft.setStoreTermVectorOffsets(true);
+      ft.setStoreTermVectorPositions(true);
+      
+      titleTokenized = new Field("titleTokenized", ft, "");
       doc.add(titleTokenized);
 
-      body = new Field("body", "", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+      body = new Field("body", ft, "");
       doc.add(body);
 
-      id = new Field("docid", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      id = new Field("docid", StringField.TYPE_STORED, "");
       doc.add(id);
 
-      date = new Field("date", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      date = new Field("date", StringField.TYPE_STORED, "");
       doc.add(date);
     }
   }

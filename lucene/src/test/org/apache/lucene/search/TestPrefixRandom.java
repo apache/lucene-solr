@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -53,7 +54,7 @@ public class TestPrefixRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field field = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(field);
 
     // we generate aweful prefixes: good for testing.

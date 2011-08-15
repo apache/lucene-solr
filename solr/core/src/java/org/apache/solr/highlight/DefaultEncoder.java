@@ -42,7 +42,11 @@ public class DefaultEncoder extends HighlightingPluginBase implements
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

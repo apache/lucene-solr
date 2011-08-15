@@ -21,7 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -50,10 +51,13 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
       System.out.println("TEST: create initial index");
       writer.setInfoStream(System.out);
     }
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setTokenized(false);
     for(int i=0;i<157;i++) {
       Document d = new Document();
-      d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      d.add(newField("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
+      d.add(newField("id", Integer.toString(i), customType));
+      d.add(newField("content", "aaa " + i, TextField.TYPE_UNSTORED));
       writer.addDocument(d);
       if (0==i%10)
         writer.commit();

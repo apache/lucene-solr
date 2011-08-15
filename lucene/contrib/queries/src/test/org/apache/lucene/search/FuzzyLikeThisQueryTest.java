@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -59,8 +60,21 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     searcher.close();
     reader.close();
     directory.close();
+<<<<<<<
     super.tearDown();
   }
+=======
+	private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException
+	{
+		Document doc=new Document();
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+		doc.add(newField("name",name,customType));
+		doc.add(newField("id",id,customType));
+		writer.addDocument(doc);
+	}
+	
+>>>>>>>
 
   private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException {
     Document doc = new Document();

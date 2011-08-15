@@ -20,6 +20,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -54,12 +57,17 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         index = newDirectory();
         RandomIndexWriter w = new RandomIndexWriter(random, index);
 
+        FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+        customType.setStored(true);
+        FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+        customType2.setStored(true);
+        
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(newField("id", String.valueOf(i), Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id",String.valueOf(i)));
-            doc.add(newField("all", "all", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("all","all"));
+            doc.add(newField("id", String.valueOf(i), customType));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(newField("all", "all", customType));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(newField("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
+                doc.add(newField("data", data[i], customType2));//Field.Text("data",data[i]));
             }
             w.addDocument(doc);
         }

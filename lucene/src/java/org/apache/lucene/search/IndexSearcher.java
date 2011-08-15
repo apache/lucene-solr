@@ -31,11 +31,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Weight.ScorerContext;
 import org.apache.lucene.store.Directory;
@@ -239,16 +239,16 @@ public class IndexSearcher implements Closeable {
     }
   }
 
-  /* Sugar for .getIndexReader().document(docID) */
+  /* Sugar for <code>.getIndexReader().document(docID)</code> */
   public Document doc(int docID) throws CorruptIndexException, IOException {
     return reader.document(docID);
   }
-  
-  /* Sugar for .getIndexReader().document(docID, fieldSelector) */
-  public Document doc(int docID, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
-    return reader.document(docID, fieldSelector);
+
+  /* Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
+  public void doc(int docID, StoredFieldVisitor fieldVisitor) throws CorruptIndexException, IOException {
+    reader.document(docID, fieldVisitor);
   }
-  
+
   /** Expert: Set the SimilarityProvider implementation used by this Searcher.
    *
    */

@@ -22,7 +22,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -261,7 +261,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   private void addDoc(IndexWriter writer, String value) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", value, Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", value, TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
   }
 }

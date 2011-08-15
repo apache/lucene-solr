@@ -27,6 +27,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -41,8 +43,9 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new BugReproAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("eng", "Six drunken" /*This shouldn't matter. */, 
-                      Field.Store.YES, Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(new Field("eng", customType, "Six drunken" /*This shouldn't matter. */));
     riw.addDocument(doc);
     riw.close();
     dir.close();

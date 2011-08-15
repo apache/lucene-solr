@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -56,6 +57,21 @@ public class BooleanFilterTest extends LuceneTestCase {
     reader.close();
     directory.close();
     super.tearDown();
+<<<<<<<
+=======
+	private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
+	{
+		Document doc=new Document();
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+		doc.add(newField("accessRights",accessRights,customType));
+		doc.add(newField("price",price,customType));
+		doc.add(newField("date",date,customType));
+		doc.add(newField("inStock",inStock,customType));
+		writer.addDocument(doc);
+	}
+	
+>>>>>>>
   }
 
   private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException {

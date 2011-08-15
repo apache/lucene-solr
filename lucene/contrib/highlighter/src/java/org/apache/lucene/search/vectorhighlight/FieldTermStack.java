@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
@@ -46,8 +47,12 @@ public class FieldTermStack {
   //  Directory dir = new RAMDirectory();
   //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
   //  Document doc = new Document();
-  //  doc.add( new Field( "f", "a a a b b c a b b c d e f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
-  //  doc.add( new Field( "f", "b a b a f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+  //  FieldType ft = new FieldType(TextField.TYPE_STORED);
+  //  ft.setStoreTermVectors(true);
+  //  ft.setStoreTermVectorOffsets(true);
+  //  ft.setStoreTermVectorPositions(true);
+  //  doc.add( new Field( "f", ft, "a a a b b c a b b c d e f" ) );
+  //  doc.add( new Field( "f", ft, "b a b a f" ) );
   //  writer.addDocument( doc );
   //  writer.close();
     
@@ -67,7 +72,7 @@ public class FieldTermStack {
    */
   public FieldTermStack( IndexReader reader, int docId, String fieldName, final FieldQuery fieldQuery ) throws IOException {
     this.fieldName = fieldName;
-
+    
     TermFreqVector tfv = reader.getTermFreqVector( docId, fieldName );
     if( tfv == null ) return; // just return to make null snippets
     TermPositionVector tpv = null;

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
@@ -321,8 +321,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    doc.add(newField("body", "blah the footest blah", Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("body", "blah the footest blah", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
     iw.close();
 

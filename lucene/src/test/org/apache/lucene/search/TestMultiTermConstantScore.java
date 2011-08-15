@@ -20,7 +20,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -64,16 +66,14 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
             new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMergePolicy(newLogMergePolicy()));
 
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setTokenized(false);
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", String.valueOf(i), Field.Store.YES,
-          Field.Index.NOT_ANALYZED));// Field.Keyword("id",String.valueOf(i)));
-      doc
-          .add(newField("all", "all", Field.Store.YES,
-              Field.Index.NOT_ANALYZED));// Field.Keyword("all","all"));
+      doc.add(newField("id", String.valueOf(i), customType));// Field.Keyword("id",String.valueOf(i)));
+      doc.add(newField("all", "all", customType));// Field.Keyword("all","all"));
       if (null != data[i]) {
-        doc.add(newField("data", data[i], Field.Store.YES,
-            Field.Index.ANALYZED));// Field.Text("data",data[i]));
+        doc.add(newField("data", data[i], TextField.TYPE_STORED));// Field.Text("data",data[i]));
       }
       writer.addDocument(doc);
     }

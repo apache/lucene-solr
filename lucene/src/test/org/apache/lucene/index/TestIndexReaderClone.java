@@ -22,7 +22,8 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
@@ -500,7 +501,9 @@ public class TestIndexReaderClone extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();
-    doc.add(newField("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("field", "yes it's stored", customType));
     w.addDocument(doc);
     w.close();
     IndexReader r1 = IndexReader.open(dir, false);

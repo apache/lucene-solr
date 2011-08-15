@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
 /**

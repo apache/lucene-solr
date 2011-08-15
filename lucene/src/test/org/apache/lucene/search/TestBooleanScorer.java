@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -40,9 +42,11 @@ public class TestBooleanScorer extends LuceneTestCase
     String[] values = new String[] { "1", "2", "3", "4" };
 
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc.add(newField(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(FIELD, values[i], customType));
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();

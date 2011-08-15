@@ -24,11 +24,18 @@ import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+<<<<<<<
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.search.QParser;
 import org.apache.lucene.document.Fieldable;
+=======
+import org.apache.solr.search.function.FieldCacheSource;
+import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.StringIndexDocValues;
+>>>>>>>
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -65,7 +72,7 @@ public class SortableIntField extends FieldType {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -82,12 +89,12 @@ public class SortableIntField extends FieldType {
   }
 
   @Override
-  public Integer toObject(Fieldable f) {
+  public Integer toObject(IndexableField f) {
     return NumberUtils.SortableStr2int(f.stringValue(), 0, 3);    
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String sval = f.stringValue();
     writer.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
   }

@@ -27,7 +27,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 import java.io.*;
@@ -230,8 +231,11 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   private void addDoc(IndexWriter writer, int id) throws IOException
   {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(newField("id", Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setIndexed(true);
+    customType.setTokenized(false);
+    doc.add(newField("id", Integer.toString(id), customType));
     writer.addDocument(doc);
   }
 }

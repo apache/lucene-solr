@@ -28,9 +28,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -135,12 +134,14 @@ public class TestPayloadProcessorProvider extends LuceneTestCase {
     );
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
     for (int i = 0; i < NUM_DOCS; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "doc" + i, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(newField("content", "doc content " + i, Store.NO, Index.ANALYZED));
-      doc.add(new Field("p", payloadTS1));
-      doc.add(new Field("p", payloadTS2));
+      doc.add(newField("id", "doc" + i, customType));
+      doc.add(newField("content", "doc content " + i, TextField.TYPE_UNSTORED));
+      doc.add(new TextField("p", payloadTS1));
+      doc.add(new TextField("p", payloadTS2));
       writer.addDocument(doc);
       if (multipleCommits && (i % 4 == 0)) {
         writer.commit();

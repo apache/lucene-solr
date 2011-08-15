@@ -24,7 +24,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
@@ -112,9 +113,11 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      doc.add(newField("field", English.intToEnglish(i), customType));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(newField("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field2",  txt, customType));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

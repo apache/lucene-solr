@@ -17,8 +17,14 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+<<<<<<<
+=======
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermRangeQuery;
+>>>>>>>
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StringIndexDocValues;
@@ -186,7 +192,7 @@ public class DateField extends FieldType {
     }
   }
 
-  public Fieldable createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     // Convert to a string before indexing
     if(value instanceof Date) {
       value = toInternal( (Date)value ) + Z;
@@ -211,7 +217,7 @@ public class DateField extends FieldType {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -220,7 +226,7 @@ public class DateField extends FieldType {
   }
 
   @Override
-  public Date toObject(Fieldable f) {
+  public Date toObject(IndexableField f) {
     try {
       return parseDate( toExternal(f) );
     }
@@ -235,7 +241,7 @@ public class DateField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }
 

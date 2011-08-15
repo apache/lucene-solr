@@ -26,7 +26,6 @@ import java.text.NumberFormat;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
@@ -90,7 +89,7 @@ public class DocumentsWriterPerThread {
     PrintStream infoStream;
     SimilarityProvider similarityProvider;
     int docID;
-    Document doc;
+    Iterable<? extends IndexableField> doc;
     String maxTermPrefix;
 
     DocState(DocumentsWriterPerThread docWriter) {
@@ -213,7 +212,7 @@ public class DocumentsWriterPerThread {
     return retval;
   }
 
-  public void updateDocument(Document doc, Analyzer analyzer, Term delTerm) throws IOException {
+  public void updateDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocument start");
     assert deleteQueue != null;
     docState.doc = doc;
@@ -263,7 +262,7 @@ public class DocumentsWriterPerThread {
     finishDocument(delTerm);
   }
   
-  public int updateDocuments(Iterable<Document> docs, Analyzer analyzer, Term delTerm) throws IOException {
+  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException {
     assert writer.testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -280,7 +279,7 @@ public class DocumentsWriterPerThread {
     }
     int docCount = 0;
     try {
-      for(Document doc : docs) {
+      for(Iterable<? extends IndexableField> doc : docs) {
         docState.doc = doc;
         docState.docID = numDocsInRAM;
         docCount++;

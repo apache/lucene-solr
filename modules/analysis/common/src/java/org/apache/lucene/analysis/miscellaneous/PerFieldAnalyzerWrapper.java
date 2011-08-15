@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -119,10 +119,11 @@ public final class PerFieldAnalyzerWrapper extends Analyzer {
 
   /** Return the offsetGap from the analyzer assigned to field */
   @Override
-  public int getOffsetGap(Fieldable field) {
+  public int getOffsetGap(IndexableField field) {
     Analyzer analyzer = analyzerMap.get(field.name());
-    if (analyzer == null)
+    if (analyzer == null) {
       analyzer = defaultAnalyzer;
+    }
     return analyzer.getOffsetGap(field);
   }
   

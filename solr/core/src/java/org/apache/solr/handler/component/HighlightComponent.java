@@ -199,7 +199,11 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
   
   @Override

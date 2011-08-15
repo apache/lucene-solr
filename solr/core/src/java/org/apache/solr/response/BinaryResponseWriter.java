@@ -17,7 +17,7 @@
 package org.apache.solr.response;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -159,7 +159,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (Fieldable f : doc.getFields()) {
+      for (IndexableField f : doc) {
         String fieldName = f.name();
         if( !returnFields.wantsField(fieldName) ) 
           continue;
@@ -168,7 +168,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         if(sf != null) ft =sf.getType();
         Object val;
         if (ft == null) {  // handle fields not in the schema
-          if (f.isBinary()) val = f.getBinaryValue();
+          if (f.binaryValue(null)!=null) val = f.binaryValue(null).bytes;
           else val = f.stringValue();
         } else {
           try {

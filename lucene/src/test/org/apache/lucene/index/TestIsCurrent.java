@@ -18,8 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 
@@ -43,7 +43,9 @@ public class TestIsCurrent extends LuceneTestCase {
 
     // write document
     Document doc = new Document();
-    doc.add(newField("UUID", "1", Store.YES, Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(newField("UUID", "1", customType));
     writer.addDocument(doc);
     writer.commit();
   }

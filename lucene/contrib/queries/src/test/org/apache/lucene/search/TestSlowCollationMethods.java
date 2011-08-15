@@ -6,6 +6,8 @@ import java.util.Locale;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -56,7 +58,11 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       String value = _TestUtil.randomUnicodeString(random);
-      Field field = newField("field", value, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      customType.setOmitNorms(true);
+      customType.setTokenized(false);
+      Field field = newField("field", value, customType);
       doc.add(field);
       iw.addDocument(doc);
     }

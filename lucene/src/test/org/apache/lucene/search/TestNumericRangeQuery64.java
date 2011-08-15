@@ -57,6 +57,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         .setMergePolicy(newLogMergePolicy()));
     
     NumericField
+<<<<<<<
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
       field6 = new NumericField("field6", 6, Field.Store.YES, true),
       field4 = new NumericField("field4", 4, Field.Store.YES, true),
@@ -66,6 +67,17 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       ascfield6 = new NumericField("ascfield6", 6, Field.Store.NO, true),
       ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
       ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
+=======
+      field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
+      field6 = new NumericField("field6", 6, NumericField.TYPE_STORED),
+      field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
+      field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, NumericField.TYPE_STORED),
+      ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
+      ascfield6 = new NumericField("ascfield6", 6, NumericField.TYPE_UNSTORED),
+      ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
+      ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
+>>>>>>>
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality

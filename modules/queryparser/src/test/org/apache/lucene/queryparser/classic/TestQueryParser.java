@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -1092,7 +1092,7 @@ public class TestQueryParser extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, a));
     Document doc = new Document();
-    doc.add(newField("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("f", "the wizard of ozzy", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     IndexReader r = IndexReader.open(w, true);
     w.close();

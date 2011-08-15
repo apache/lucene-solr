@@ -38,7 +38,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -56,9 +58,11 @@ public class TestSpans extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, docFields[i], customType));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -452,8 +456,12 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( newField("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
-    doc.add( newField("text", text, Field.Store.YES, Field.Index.ANALYZED) );
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    FieldType customType2 = new FieldType(StringField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    doc.add( newField("id", id, customType2) );
+    doc.add( newField("text", text, customType) );
     writer.addDocument(doc);
   }
 

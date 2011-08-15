@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -69,7 +69,8 @@ public class TestTermdocPerf extends LuceneTestCase {
     };
 
     Document doc = new Document();
-    doc.add(newField(field,val, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+    
+    doc.add(newField(field,val, StringField.TYPE_UNSTORED));
     IndexWriter writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).

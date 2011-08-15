@@ -349,7 +349,11 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   public static final String ENABLE_DEBUG = "enableDebug";

@@ -11,6 +11,8 @@ import javax.xml.transform.TransformerException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -128,13 +130,15 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	{
 		org.apache.lucene.document.Document result=new org.apache.lucene.document.Document();
 		StringTokenizer st=new StringTokenizer(nameValuePairs,"\t=");
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
 		while(st.hasMoreTokens())
 		{
 			String name=st.nextToken().trim();
 			if(st.hasMoreTokens())
 			{
 				String value=st.nextToken().trim();
-				result.add(newField(name,value,Field.Store.YES,Field.Index.ANALYZED));
+				result.add(newField(name,value,customType));
 			}
 		}
 		return result;

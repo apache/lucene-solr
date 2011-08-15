@@ -36,10 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -1108,12 +1105,11 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
   
-  /** Returns a new field instance. 
-   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
-  public static Field newField(String name, String value, Index index) {
-    return newField(random, name, value, index);
+  public static org.apache.lucene.document.Field newField(String name, String value, FieldType type) {
+    return newField(random, name, value, type);
   }
   
+<<<<<<<
   /** Returns a new field instance. 
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(String name, String value, Store store, Index index) {
@@ -1149,44 +1145,53 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
   public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
     
+=======
+  public static org.apache.lucene.document.Field newField(Random random, String name, String value, FieldType type) {
+>>>>>>>
     if (usually(random)) {
       // most of the time, don't modify the params
+<<<<<<<
       return new Field(name, value, store, index, tv);
     }
 
     if (random.nextBoolean()) {
       // tickle any code still relying on field names being interned:
       name = new String(name);
+=======
+      return new org.apache.lucene.document.Field(name, type, value);
+>>>>>>>
     }
 
-    if (!index.isIndexed())
-      return new Field(name, value, store, index, tv);
-
-    if (!store.isStored() && random.nextBoolean())
-      store = Store.YES; // randomly store it
-
-    tv = randomTVSetting(random, tv);
-
-    return new Field(name, value, store, index, tv);
-  }
-
-  static final TermVector tvSettings[] = {
-    TermVector.NO, TermVector.YES, TermVector.WITH_OFFSETS,
-    TermVector.WITH_POSITIONS, TermVector.WITH_POSITIONS_OFFSETS
-  };
-
-  private static TermVector randomTVSetting(Random random, TermVector minimum) {
-    switch(minimum) {
-      case NO: return tvSettings[_TestUtil.nextInt(random, 0, tvSettings.length-1)];
-      case YES: return tvSettings[_TestUtil.nextInt(random, 1, tvSettings.length-1)];
-      case WITH_OFFSETS: return random.nextBoolean() ? TermVector.WITH_OFFSETS
-          : TermVector.WITH_POSITIONS_OFFSETS;
-      case WITH_POSITIONS: return random.nextBoolean() ? TermVector.WITH_POSITIONS
-          : TermVector.WITH_POSITIONS_OFFSETS;
-      default: return TermVector.WITH_POSITIONS_OFFSETS;
+    FieldType newType = new FieldType(type);
+    if (!newType.stored() && random.nextBoolean()) {
+      newType.setStored(true); // randomly store it
     }
-  }
 
+    if (newType.indexed() && !newType.storeTermVectors()) {
+      newType.setStoreTermVectors(random.nextBoolean());
+    }
+
+    if (!newType.storeTermVectors()) {
+      if (!newType.storeTermVectorOffsets()) {
+        newType.setStoreTermVectorOffsets(random.nextBoolean());
+      }
+      if (!newType.storeTermVectorPositions()) {
+        newType.setStoreTermVectorPositions(random.nextBoolean());
+      }
+    }
+
+    // TODO: we need to do this, but smarter, ie, most of
+    // the time we set the same value for a given field but
+    // sometimes (rarely) we change it up:
+    /*
+    if (newType.omitNorms()) {
+      newType.setOmitNorms(random.nextBoolean());
+    }
+    */
+    
+    return new org.apache.lucene.document.Field(name, newType, value);
+  }
+  
   /** return a random Locale from the available locales on the system */
   public static Locale randomLocale(Random random) {
     Locale locales[] = Locale.getAvailableLocales();

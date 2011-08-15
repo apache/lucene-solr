@@ -31,9 +31,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
@@ -168,12 +169,21 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, false);
     try {
       int M = 3;
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStored(true);
+      customType.setTokenized(false);
+      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+      customType2.setStored(true);
+      customType2.setTokenized(false);
+      customType2.setOmitNorms(true);
+      FieldType customType3 = new FieldType();
+      customType3.setStored(true);
       for (int i=0; i<4; i++) {
         for (int j=0; j<M; j++) {
           Document doc = new Document();
-          doc.add(newField("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
-          doc.add(newField("id2", i+"_"+j, Store.YES, Index.NOT_ANALYZED_NO_NORMS));
-          doc.add(newField("id3", i+"_"+j, Store.YES, Index.NO));
+          doc.add(newField("id", i+"_"+j, customType));
+          doc.add(newField("id2", i+"_"+j, customType2));
+          doc.add(newField("id3", i+"_"+j, customType3));
           iwriter.addDocument(doc);
           if (i>0) {
             int k = i-1;
@@ -957,13 +967,21 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     Document doc = new Document();
     sb.append("a");
     sb.append(n);
-    doc.add(new Field("field1", sb.toString(), Store.YES, Index.ANALYZED));
-    doc.add(new Field("fielda", sb.toString(), Store.YES, Index.NOT_ANALYZED_NO_NORMS));
-    doc.add(new Field("fieldb", sb.toString(), Store.YES, Index.NO));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    customType2.setStored(true);
+    customType2.setTokenized(false);
+    customType2.setOmitNorms(true);
+    FieldType customType3 = new FieldType();
+    customType3.setStored(true);
+    doc.add(new Field("field1", customType, sb.toString()));
+    doc.add(new Field("fielda", customType2, sb.toString()));
+    doc.add(new Field("fieldb", customType3, sb.toString()));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i+1), sb.toString(), Store.YES, Index.ANALYZED));
+      doc.add(new Field("field" + (i+1), customType, sb.toString()));
     }
     return doc;
   }
@@ -1178,7 +1196,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     );
     for(int i=0;i<4;i++) {
       Document doc = new Document();
-      doc.add(newField("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("id", ""+i, StringField.TYPE_UNSTORED));
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");
@@ -1239,7 +1257,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document doc = new Document();
-    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("number", "17", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
     writer.commit();
 

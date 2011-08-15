@@ -17,19 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.AbstractField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import java.io.IOException;
+
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+<<<<<<<
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
@@ -37,6 +32,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+=======
+>>>>>>>
 
 /**
  * Class responsible for access to stored document fields.
@@ -68,7 +65,6 @@ public final class FieldsReader implements Cloneable, Closeable {
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
 
-  private CloseableThreadLocal<IndexInput> fieldsStreamTL = new CloseableThreadLocal<IndexInput>();
   private boolean isOriginal = false;
 
   /** Returns a cloned FieldsReader that shares open
@@ -200,50 +196,52 @@ public final class FieldsReader implements Cloneable, Closeable {
     indexStream.seek(FORMAT_SIZE + (docID + docStoreOffset) * 8L);
   }
 
-  public final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+  public final void visitDocument(int n, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     seekIndex(n);
-    long position = indexStream.readLong();
-    fieldsStream.seek(position);
+    fieldsStream.seek(indexStream.readLong());
 
-    Document doc = new Document();
-    int numFields = fieldsStream.readVInt();
-    out: for (int i = 0; i < numFields; i++) {
+    final int numFields = fieldsStream.readVInt();
+    for (int fieldIDX = 0; fieldIDX < numFields; fieldIDX++) {
       int fieldNumber = fieldsStream.readVInt();
-      FieldInfo fi = fieldInfos.fieldInfo(fieldNumber);
-      FieldSelectorResult acceptField = fieldSelector == null ? FieldSelectorResult.LOAD : fieldSelector.accept(fi.name);
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
       
       int bits = fieldsStream.readByte() & 0xFF;
-      assert bits <= (FieldsWriter.FIELD_IS_NUMERIC_MASK | FieldsWriter.FIELD_IS_TOKENIZED | FieldsWriter.FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
+      assert bits <= (FieldsWriter.FIELD_IS_NUMERIC_MASK | FieldsWriter.FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
 
-      boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
-      boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
+      final boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
       final int numeric = bits & FieldsWriter.FIELD_IS_NUMERIC_MASK;
 
-      switch (acceptField) {
-        case LOAD:
-          addField(doc, fi, binary, tokenize, numeric);
+      final boolean doStop;
+      if (binary) {
+        final int numBytes = fieldsStream.readVInt();
+        doStop = visitor.binaryField(fieldInfo, fieldsStream, numBytes);
+      } else if (numeric != 0) {
+        switch(numeric) {
+        case FieldsWriter.FIELD_IS_NUMERIC_INT:
+          doStop = visitor.intField(fieldInfo, fieldsStream.readInt());
           break;
-        case LOAD_AND_BREAK:
-          addField(doc, fi, binary, tokenize, numeric);
-          break out; //Get out of this loop
-        case LAZY_LOAD:
-          addFieldLazy(doc, fi, binary, tokenize, true, numeric);
+        case FieldsWriter.FIELD_IS_NUMERIC_LONG:
+          doStop = visitor.longField(fieldInfo, fieldsStream.readLong());
           break;
-        case LATENT:
-          addFieldLazy(doc, fi, binary, tokenize, false, numeric);
+        case FieldsWriter.FIELD_IS_NUMERIC_FLOAT:
+          doStop = visitor.floatField(fieldInfo, Float.intBitsToFloat(fieldsStream.readInt()));
           break;
-        case SIZE:
-          skipFieldBytes(addFieldSize(doc, fi, binary, numeric));
+        case FieldsWriter.FIELD_IS_NUMERIC_DOUBLE:
+          doStop = visitor.doubleField(fieldInfo, Double.longBitsToDouble(fieldsStream.readLong()));
           break;
-        case SIZE_AND_BREAK:
-          addFieldSize(doc, fi, binary, numeric);
-          break out; //Get out of this loop
         default:
-          skipField(numeric);
+          throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
+        }
+      } else {
+        // Text:
+        final int numUTF8Bytes = fieldsStream.readVInt();
+        doStop = visitor.stringField(fieldInfo, fieldsStream, numUTF8Bytes);
+      }
+
+      if (doStop) {
+        return;
       }
     }
-
-    return doc;
   }
 
   /** Returns the length in bytes of each raw document in a
@@ -271,6 +269,7 @@ public final class FieldsReader implements Cloneable, Closeable {
 
     return fieldsStream;
   }
+<<<<<<<
 
   /**
    * Skip the field.  We still have to read some of the information about the field, but can skip past the actual content.
@@ -521,4 +520,6 @@ public final class FieldsReader implements Cloneable, Closeable {
         return null;     
     }
   }
+=======
+>>>>>>>
 }

@@ -4,7 +4,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+<<<<<<<
 import org.apache.lucene.document.Fieldable;
+=======
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.RandomIndexWriter;
+>>>>>>>
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
@@ -128,23 +134,26 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
 
   private static void addDoc(RandomIndexWriter iw, int i) throws Exception {
     Document d = new Document();
-    Fieldable f;
+    Field f;
     int scoreAndID = i + 1;
 
-    f = newField(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
-    f.setOmitNorms(true);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    customType.setTokenized(false);
+    customType.setOmitNorms(true);
+    
+    f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
 
-    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
-    f.setOmitNorms(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    customType2.setOmitNorms(true);
+    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);
 
-    f = newField(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
-    f.setOmitNorms(true);
+    f = newField(INT_FIELD, "" + scoreAndID, customType); // for function scoring
     d.add(f);
 
-    f = newField(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
-    f.setOmitNorms(true);
+    f = newField(FLOAT_FIELD, scoreAndID + ".000", customType); // for function scoring
     d.add(f);
 
     iw.addDocument(d);

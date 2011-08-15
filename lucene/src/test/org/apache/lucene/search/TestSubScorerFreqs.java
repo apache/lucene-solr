@@ -46,12 +46,11 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     int num = atLeast(31);
     for (int i = 0; i < num; i++) {
       Document doc = new Document();
-      doc.add(newField("f", "a b c d b c d c d d", Field.Store.NO,
-          Field.Index.ANALYZED));
+      doc.add(newField("f", "a b c d b c d c d d", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
 
       doc = new Document();
-      doc.add(newField("f", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("f", "a b c d", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
 

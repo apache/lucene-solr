@@ -28,11 +28,15 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -137,6 +141,7 @@ public class TestSort extends LuceneTestCase {
               IndexDocValuesField.set(new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_32)
                               :  new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED);
           doc.add(f);
+<<<<<<<
         }
         if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -152,6 +157,30 @@ public class TestSort extends LuceneTestCase {
         if (data[i][10] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.setBoost(2);  // produce some scores above 1.0
+=======
+    dirs.add(indexStore);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+    
+    for (int i=0; i<data.length; ++i) {
+      if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
+        Document doc = new Document();
+        doc.add (new Field ("tracer", customType, data[i][0]));
+        doc.add (new TextField ("contents", data[i][1]));
+        if (data[i][2] != null) doc.add (new StringField ("int",      data[i][2]));
+        if (data[i][3] != null) doc.add (new StringField ("float",    data[i][3]));
+        if (data[i][4] != null) doc.add (new StringField ("string",   data[i][4]));
+        if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5]));
+        if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6]));
+        if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7]));
+        if (data[i][8] != null) doc.add (new StringField ("double",     data[i][8]));
+        if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9]));
+        if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10]));
+        if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11]));
+        //doc.setBoost(2);  // produce some scores above 1.0
+>>>>>>>
         writer.addDocument (doc);
       }
     }
@@ -176,16 +205,18 @@ public class TestSort extends LuceneTestCase {
             setMaxBufferedDocs(4).
             setMergePolicy(newLogMergePolicy(97))
     );
+    FieldType customType = new FieldType();
+    customType.setStored(true);
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
-        doc.add (new Field ("tracer", num, Field.Store.YES, Field.Index.NO));
+        doc.add (new Field ("tracer", customType, num));
         //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
-        doc.add (new Field ("string", num, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add (new StringField ("string", num));
         String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
-        doc.add (new Field ("string2", num2, Field.Store.NO, Field.Index.NOT_ANALYZED));
-        doc.add (new Field ("tracer2", num2, Field.Store.YES, Field.Index.NO));
-        doc.setBoost(2);  // produce some scores above 1.0
+        doc.add (new StringField ("string2", num2));
+        doc.add (new Field ("tracer2", customType, num2));
+       // doc.setBoost(2);  // produce some scores above 1.0
         writer.addDocument (doc);
       
     }
@@ -387,17 +418,17 @@ public class TestSort extends LuceneTestCase {
     boolean fail = false;
     for (int x = 0; x < n; ++x) {
       Document doc2 = searcher.doc(result[x].doc);
-      String[] v = doc2.getValues("tracer");
-      String[] v2 = doc2.getValues("tracer2");
+      IndexableField[] v = doc2.getFields("tracer");
+      IndexableField[] v2 = doc2.getFields("tracer2");
       for (int j = 0; j < v.length; ++j) {
         if (last != null) {
-          int cmp = v[j].compareTo(last);
+          int cmp = v[j].stringValue().compareTo(last);
           if (!(cmp >= 0)) { // ensure first field is in order
             fail = true;
             System.out.println("fail:" + v[j] + " < " + last);
           }
           if (cmp == 0) { // ensure second field is in reverse order
-            cmp = v2[j].compareTo(lastSub);
+            cmp = v2[j].stringValue().compareTo(lastSub);
             if (cmp > 0) {
               fail = true;
               System.out.println("rev field fail:" + v2[j] + " > " + lastSub);
@@ -409,8 +440,8 @@ public class TestSort extends LuceneTestCase {
             }
           }
         }
-        last = v[j];
-        lastSub = v2[j];
+        last = v[j].stringValue();
+        lastSub = v2[j].stringValue();
         lastDocId = result[x].doc;
         buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+") ");
       }
@@ -1051,9 +1082,9 @@ public class TestSort extends LuceneTestCase {
     int n = result.length;
     for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(result[i].doc);
-      String[] v = doc.getValues("tracer");
+      IndexableField[] v = doc.getFields("tracer");
       for (int j=0; j<v.length; ++j) {
-        buff.append (v[j]);
+        buff.append (v[j].stringValue());
       }
     }
     assertEquals (msg, expectedResult, buff.toString());
@@ -1064,12 +1095,12 @@ public class TestSort extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
                         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    doc.add(newField("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
-    doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("f", "", StringField.TYPE_UNSTORED));
+    doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
     w.addDocument(doc);
     w.commit();
     doc = new Document();
-    doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("t", "1", StringField.TYPE_UNSTORED));
     w.addDocument(doc);
 
     IndexReader r = IndexReader.open(w, true);
@@ -1091,8 +1122,8 @@ public class TestSort extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
-        doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
-        doc.add (new Field ("string", "b"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add (new StringField ("string", "a"+i));
+        doc.add (new StringField ("string", "b"+i));
         writer.addDocument (doc);
     }
     writer.optimize(); // enforce one segment to have a higher unique term count in all cases
@@ -1112,8 +1143,8 @@ public class TestSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i=0; i<5; i++) {
       Document doc = new Document();
-      doc.add (new Field ("string", "a"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add (new Field ("string", "b"+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add (new StringField ("string", "a"+i));
+      doc.add (new StringField ("string", "b"+i));
       writer.addDocument (doc);
     }
     IndexReader reader = writer.getReader();

@@ -25,8 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DefaultSimilarityProvider;
@@ -220,7 +219,7 @@ public class TestNorms extends LuceneTestCase {
     Document d = new Document();
     float boost = nextNorm("anyfield"); // in this test the same similarity is used for all fields so it does not matter what field is passed
     for (int i = 0; i < 10; i++) {
-      Field f = newField("f"+i,"v"+i,Store.NO,Index.NOT_ANALYZED);
+      Field f = newField("f"+i,"v"+i,TextField.TYPE_UNSTORED);
       f.setBoost(boost);
       d.add(f);
     }
@@ -277,8 +276,8 @@ public class TestNorms extends LuceneTestCase {
     });
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
     Document doc = new Document();
-    Field foo = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);
-    Field bar = newField("bar", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field foo = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field bar = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(foo);
     doc.add(bar);
     

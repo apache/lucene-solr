@@ -20,39 +20,41 @@ package org.apache.lucene.document;
  *  Provides information about what should be done with this Field 
  *
  **/
+import org.apache.lucene.index.IndexableField; // for javadocs
+
 public enum FieldSelectorResult {
 
     /**
      * Load this {@link Field} every time the {@link Document} is loaded, reading in the data as it is encountered.
-     *  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should not return null.
+     *  {@link Document#getField(String)} should not return null.
      *<p/>
-     * {@link Document#add(Fieldable)} should be called by the Reader.
+     * {@link Document#add(IndexableField)} should be called by the Reader.
      */
   LOAD,
 
     /**
      * Lazily load this {@link Field}.  This means the {@link Field} is valid, but it may not actually contain its data until
-     * invoked.  {@link Document#getField(String)} SHOULD NOT BE USED.  {@link Document#getFieldable(String)} is safe to use and should
-     * return a valid instance of a {@link Fieldable}.
+     * invoked.  {@link Document#getField(String)} is safe to use and should
+     * return a valid instance of a {@link IndexableField}.
      *<p/>
-     * {@link Document#add(Fieldable)} should be called by the Reader.
+     * {@link Document#add(IndexableField)} should be called by the Reader.
      */
   LAZY_LOAD,
 
     /**
-     * Do not load the {@link Field}.  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should return null.
-     * {@link Document#add(Fieldable)} is not called.
+     * Do not load the {@link Field}.  {@link Document#getField(String)} should return null.
+     * {@link Document#add(IndexableField)} is not called.
      * <p/>
-     * {@link Document#add(Fieldable)} should not be called by the Reader.
+     * {@link Document#add(IndexableField)} should not be called by the Reader.
      */
   NO_LOAD,
 
     /**
      * Load this field as in the {@link #LOAD} case, but immediately return from {@link Field} loading for the {@link Document}.  Thus, the
-     * Document may not have its complete set of Fields.  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should
+     * Document may not have its complete set of Fields.  {@link Document#getField(String)} should
      * both be valid for this {@link Field}
      * <p/>
-     * {@link Document#add(Fieldable)} should be called by the Reader.
+     * {@link Document#add(IndexableField)} should be called by the Reader.
      */
   LOAD_AND_BREAK,
 
@@ -67,10 +69,10 @@ public enum FieldSelectorResult {
 
   /**
      * Lazily load this {@link Field}, but do not cache the result.  This means the {@link Field} is valid, but it may not actually contain its data until
-     * invoked.  {@link Document#getField(String)} SHOULD NOT BE USED.  {@link Document#getFieldable(String)} is safe to use and should
-     * return a valid instance of a {@link Fieldable}.
+     * invoked.  {@link Document#getField(String)} is safe to use and should
+     * return a valid instance of a {@link IndexableField}.
      *<p/>
-     * {@link Document#add(Fieldable)} should be called by the Reader.
+     * {@link Document#add(IndexableField)} should be called by the Reader.
      */
   LATENT
 }

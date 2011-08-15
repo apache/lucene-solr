@@ -19,9 +19,9 @@ package org.apache.solr.update;
 
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
@@ -104,6 +104,15 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+<<<<<<<
+=======
+    // Right now, single valued fields that require value transformation from external to internal (indexed)
+    // form have that transformation already performed and stored as the field value.
+    IndexableField[] id = doc.getFields( idField.getName() );
+    if (id == null || id.length < 1)
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + idField.getName());
+    if( id.length > 1 )
+>>>>>>>
   public UpdateHandler(SolrCore core)  {
     this.core=core;
     schema = core.getSchema();
@@ -129,6 +138,15 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    */
   public abstract void newIndexWriter() throws IOException;
 
+<<<<<<<
+=======
+  protected final String getIndexedIdOptional(Document doc) {
+    if (idField == null) return null;
+    IndexableField f = doc.getField(idField.getName());
+    if (f == null) return null;
+    return idFieldType.storedToIndexed(f);
+  }
+>>>>>>>
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;

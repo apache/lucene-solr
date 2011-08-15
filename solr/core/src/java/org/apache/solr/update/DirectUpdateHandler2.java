@@ -432,7 +432,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   public URL[] getDocs() {

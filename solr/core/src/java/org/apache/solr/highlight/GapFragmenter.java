@@ -61,7 +61,11 @@ public class GapFragmenter extends HighlightingPluginBase implements SolrFragmen
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 }
 

@@ -3,8 +3,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -33,7 +33,9 @@ public class TestSegmentInfo extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(new Field("a", "value", Store.YES, Index.ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStored(true);
+    doc.add(new Field("a", customType, "value"));
     writer.addDocument(doc);
     writer.close();
     

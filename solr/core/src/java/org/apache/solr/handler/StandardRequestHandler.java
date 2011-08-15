@@ -62,7 +62,11 @@ public class StandardRequestHandler extends SearchHandler
 
   @Override
   public String getSource() {
+<<<<<<<
     return "$URL$";
+=======
+    return "$URL$";
+>>>>>>>
   }
 
   @Override

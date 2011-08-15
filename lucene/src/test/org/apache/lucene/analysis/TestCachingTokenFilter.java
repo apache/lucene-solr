@@ -23,8 +23,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -60,7 +59,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     
     stream = new CachingTokenFilter(stream);
     
-    doc.add(new Field("preanalyzed", stream, TermVector.NO));
+    doc.add(new TextField("preanalyzed", stream));
     
     // 1) we consume all tokens twice before we add the doc to the index
     checkTokens(stream);

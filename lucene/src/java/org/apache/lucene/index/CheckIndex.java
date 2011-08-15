@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -24,6 +25,12 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+<<<<<<<
+=======
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+>>>>>>>
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -186,8 +193,13 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
+<<<<<<<
        *  has position data
        *  @see AbstractField#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
+=======
+       *  does not omitTermFreqAndPositions.
+       *  @see FieldType#setOmitTermFreqAndPositions */
+>>>>>>>
       public boolean hasProx;
 
       /** Map that includes certain

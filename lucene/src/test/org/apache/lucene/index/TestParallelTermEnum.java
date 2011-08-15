@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
@@ -41,11 +41,11 @@ public class TestParallelTermEnum extends LuceneTestCase {
         IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
         doc = new Document();
-        doc.add(newField("field1", "the quick brown fox jumps", Store.YES,
-            Index.ANALYZED));
-        doc.add(newField("field2", "the quick brown fox jumps", Store.YES,
-            Index.ANALYZED));
-        doc.add(newField("field4", "", Store.NO, Index.ANALYZED));
+        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+        customType.setStored(true);
+        doc.add(newField("field1", "the quick brown fox jumps", customType));
+        doc.add(newField("field2", "the quick brown fox jumps", customType));
+        doc.add(newField("field4", "", TextField.TYPE_UNSTORED));
         iw1.addDocument(doc);
 
         iw1.close();
@@ -53,11 +53,9 @@ public class TestParallelTermEnum extends LuceneTestCase {
         IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
         doc = new Document();
-        doc.add(newField("field0", "", Store.NO, Index.ANALYZED));
-        doc.add(newField("field1", "the fox jumps over the lazy dog",
-            Store.YES, Index.ANALYZED));
-        doc.add(newField("field3", "the fox jumps over the lazy dog",
-            Store.YES, Index.ANALYZED));
+        doc.add(newField("field0", "", TextField.TYPE_UNSTORED));
+        doc.add(newField("field1", "the fox jumps over the lazy dog", customType));
+        doc.add(newField("field3", "the fox jumps over the lazy dog", customType));
         iw2.addDocument(doc);
 
         iw2.close();
