@@ -163,7 +163,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   
 
   /**
-   * @return a string representing a Fieldable's flags.  
+   * @return a string representing a IndexableField's flags.  
    */
   private static String getFieldFlags( IndexableField f )
   {
@@ -237,34 +237,34 @@ public class LukeRequestHandler extends RequestHandlerBase
     final CharsRef spare = new CharsRef();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for( Object o : doc.getFields() ) {
-      Field fieldable = (Field)o;
+      Field field = (Field)o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
       
-      SchemaField sfield = schema.getFieldOrNull( fieldable.name() );
+      SchemaField sfield = schema.getFieldOrNull( field.name() );
       FieldType ftype = (sfield==null)?null:sfield.getType();
 
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
-      f.add( "flags", getFieldFlags( fieldable ) );
+      f.add( "flags", getFieldFlags( field ) );
 
-      Term t = new Term(fieldable.name(), ftype!=null ? ftype.storedToIndexed(fieldable) : fieldable.stringValue());
+      Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
 
-      f.add( "value", (ftype==null)?null:ftype.toExternal( fieldable ) );
+      f.add( "value", (ftype==null)?null:ftype.toExternal( field ) );
 
       // TODO: this really should be "stored"
-      f.add( "internal", fieldable.stringValue() );  // may be a binary number
+      f.add( "internal", field.stringValue() );  // may be a binary number
 
-      BytesRef bytes = fieldable.binaryValue(null);
+      BytesRef bytes = field.binaryValue(null);
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      f.add( "boost", fieldable.boost() );
+      f.add( "boost", field.boost() );
       f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
             
       // If we have a term vector, return that
-      if( fieldable.storeTermVectors() ) {
+      if( field.storeTermVectors() ) {
         try {
-          TermFreqVector v = reader.getTermFreqVector( docId, fieldable.name() );
+          TermFreqVector v = reader.getTermFreqVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
             for( int i=0; i<v.size(); i++ ) {
@@ -278,7 +278,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         }
       }
       
-      finfo.add( fieldable.name(), f );
+      finfo.add( field.name(), f );
     }
     return finfo;
   }

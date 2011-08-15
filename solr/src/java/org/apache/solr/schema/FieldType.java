@@ -262,40 +262,6 @@ public abstract class FieldType extends FieldProperties {
     return createField(field.getName(), val, newType, boost);
   }
 
-  /*protected Fieldable createField(String name, String val, org.apache.lucene.document.Field.Store storage, org.apache.lucene.document.Field.Index index,
-      org.apache.lucene.document.Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
-    org.apache.lucene.document.Field f = new org.apache.lucene.document.Field(name,
-                        val,
-                        storage,
-                        index,
-                        vec);
-    f.setOmitNorms(omitNorms);
-    f.setOmitTermFreqAndPositions(omitTFPos);
-    f.setBoost(boost);
-    return f;
-  }
-
-  public Fieldable createField2(SchemaField field, Object value, float boost) {
-    if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
-      return null;
-    }
-    
-    String val;
-    try {
-      val = toInternal(value.toString());
-    } catch (RuntimeException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + value + "'", e, false);
-    }
-    if (val==null) return null;
-
-    return createField(field.getName(), val, getFieldStore(field, val),
-            getFieldIndex(field, val), getFieldTermVec(field, val), field.omitNorms(),
-            field.omitTf(), boost);
-  }
-  */
-
   /**
    * Create the field from native Lucene parts.  Mostly intended for use by FieldTypes outputing multiple
    * Fields per SchemaField
