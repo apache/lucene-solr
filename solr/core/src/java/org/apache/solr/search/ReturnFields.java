@@ -112,8 +112,8 @@ public class ReturnFields
       augmenters.addTransformer( new RenameFieldsTransformer( rename ) );
     }
 
-    // Legacy behavior? "score" == "*,score"  Distributed tests for this
-    if( fields.size() == 1 && _wantsScore ) {
+    // Legacy behavior: "score" == "*,score"  
+    if( fields.size() == 1 && _wantsScore && augmenters.size() == 1 && globs.isEmpty() ) {
       _wantsAllFields = true;
     }
 
