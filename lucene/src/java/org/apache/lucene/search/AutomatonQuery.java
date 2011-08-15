@@ -28,7 +28,6 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.apache.lucene.util.automaton.MinimizationOperations;
 import org.apache.lucene.util.automaton.SpecialOperations;
 
 /**
@@ -41,7 +40,7 @@ import org.apache.lucene.util.automaton.SpecialOperations;
  * the standard Lucene wildcard syntax with {@link WildcardQuery}.
  * </p>
  * <p>
- * When the query is executed, it will create an equivalent minimal DFA of the
+ * When the query is executed, it will create an equivalent DFA of the
  * finite-state machine, and will enumerate the term dictionary in an
  * intelligent way to reduce the number of comparisons. For example: the regular
  * expression of <code>[dl]og?</code> will make approximately four comparisons:
@@ -78,7 +77,6 @@ public class AutomatonQuery extends MultiTermQuery {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
-    MinimizationOperations.minimize(automaton);
     
     if (BasicOperations.isEmpty(automaton)) {
       // matches nothing

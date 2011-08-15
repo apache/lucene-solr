@@ -49,8 +49,6 @@ import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.automaton.SpecialOperations;
 
-import org.junit.Ignore;
-
 public class TestTermsEnum2 extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
@@ -97,8 +95,6 @@ public class TestTermsEnum2 extends LuceneTestCase {
   }
   
   /** tests a pre-intersected automaton against the original */
-  // nocommit -- OOME w/ ant test-core -Dtestcase=TestTermsEnum2 -Dtestmethod=testFiniteVersusInfinite -Dtests.seed=-2577608857970454726:-2463580050179334504
-  @Ignore
   public void testFiniteVersusInfinite() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
@@ -111,7 +107,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       }
 
       Automaton alternate = DaciukMihovAutomatonBuilder.build(matchedTerms);
-      //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states");
+      //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
       //AutomatonTestUtil.minimizeSimple(alternate);
       //System.out.println("minmize done");
       AutomatonQuery a1 = new AutomatonQuery(new Term("field", ""), automaton);

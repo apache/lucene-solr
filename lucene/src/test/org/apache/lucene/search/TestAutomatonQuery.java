@@ -154,9 +154,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertEquals(a1, a2);
     
     assertEquals(a1, a3);
-    
-    assertEquals(a1.toString(), a3.toString());
-    
+  
     // different class
     AutomatonQuery w1 = new WildcardQuery(newTerm("foobar"));
     // different class
