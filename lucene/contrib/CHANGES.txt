@@ -78,9 +78,9 @@ New Features
    documents must be indexed as a document block, using
    IndexWriter.add/UpdateDocuments (Mark Harwood, Mike McCandless)
 
- * LUCENE-3233: Added SynonymFilter for applying multi-word synonyms
+ * LUCENE-3233, LUCENE-3375: Added SynonymFilter for applying multi-word synonyms
    during indexing or querying (with parsers for wordnet and solr formats).
-   Removed contrib/wordnet.  (Robert Muir, Mike McCandless)
+   Removed contrib/wordnet.  (Simon Rosenthal, Robert Muir, Mike McCandless)
 
 API Changes
 
