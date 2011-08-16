@@ -132,6 +132,7 @@ public final class SynonymFilter extends TokenFilter {
     final CharsRef term = new CharsRef();
     AttributeSource.State state;
     boolean keepOrig;
+    boolean matched;
     boolean consumed = true;
     int startOffset;
     int endOffset;
@@ -140,6 +141,7 @@ public final class SynonymFilter extends TokenFilter {
       state = null;
       consumed = true;
       keepOrig = false;
+      matched = false;
     }
   };
 
@@ -388,7 +390,7 @@ public final class SynonymFilter extends TokenFilter {
     if (matchOutput != null) {
       //System.out.println("  add matchLength=" + matchInputLength + " output=" + matchOutput);
       inputSkipCount = matchInputLength;
-      addOutput(matchOutput);
+      addOutput(matchOutput, matchInputLength);
     } else if (nextRead != nextWrite) {
       // Even though we had no match here, we set to 1
       // because we need to skip current input token before
@@ -402,7 +404,7 @@ public final class SynonymFilter extends TokenFilter {
   }
 
   // Interleaves all output tokens onto the futureOutputs:
-  private void addOutput(BytesRef bytes) {
+  private void addOutput(BytesRef bytes, int matchInputLength) {
     bytesReader.reset(bytes.bytes, bytes.offset, bytes.length);
 
     final int code = bytesReader.readVInt();
@@ -426,12 +428,18 @@ public final class SynonymFilter extends TokenFilter {
           futureOutputs[outputUpto].add(scratchChars.chars, lastStart, outputLen);
           //System.out.println("      " + new String(scratchChars.chars, lastStart, outputLen) + " outputUpto=" + outputUpto);
           lastStart = 1+chIDX;
-          futureInputs[outputUpto].keepOrig |= keepOrig;
           //System.out.println("  slot=" + outputUpto + " keepOrig=" + keepOrig);
           outputUpto = rollIncr(outputUpto);
           assert futureOutputs[outputUpto].posIncr == 1: "outputUpto=" + outputUpto + " vs nextWrite=" + nextWrite;
         }
       }
+    }
+
+    int upto = nextRead;
+    for(int idx=0;idx<matchInputLength;idx++) {
+      futureInputs[upto].keepOrig |= keepOrig;
+      futureInputs[upto].matched = true;
+      upto = rollIncr(upto);
     }
   }
 
@@ -471,7 +479,7 @@ public final class SynonymFilter extends TokenFilter {
         
         //System.out.println("  cycle nextRead=" + nextRead + " nextWrite=" + nextWrite + " inputSkipCount="+ inputSkipCount + " input.keepOrig=" + input.keepOrig + " input.consumed=" + input.consumed + " input.state=" + input.state);
 
-        if (!input.consumed && (input.keepOrig || outputs.count == 0)) {
+        if (!input.consumed && (input.keepOrig || !input.matched)) {
           if (input.state != null) {
             // Return a previously saved token (because we
             // had to lookahead):
