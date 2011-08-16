@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.cache.EntryCreator;
@@ -652,6 +653,18 @@ public interface FieldCache {
    *  subsequent calls will share the same cache entry. */
   public DocTermsIndex getTermsIndex (IndexReader reader, String field, boolean fasterButMoreRAM)
   throws IOException;
+
+  /**
+   * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
+   * in <code>field</code> and returns a {@link DocTermOrds} instance, providing a method to retrieve
+   * the terms (as ords) per document.
+   *
+   * @param reader  Used to build a {@link DocTermOrds} instance
+   * @param field   Which field contains the strings.
+   * @return a {@link DocTermOrds} instance
+   * @throws IOException  If any error occurs.
+   */
+  public DocTermOrds getDocTermOrds(IndexReader reader, String field) throws IOException;
 
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 

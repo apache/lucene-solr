@@ -17,31 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.cache.*;
+import org.apache.lucene.search.cache.CachedArray.*;
+import org.apache.lucene.util.FieldCacheSanityChecker;
+
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.cache.ByteValuesCreator;
-import org.apache.lucene.search.cache.DocTermsCreator;
-import org.apache.lucene.search.cache.DocTermsIndexCreator;
-import org.apache.lucene.search.cache.DoubleValuesCreator;
-import org.apache.lucene.search.cache.EntryCreator;
-import org.apache.lucene.search.cache.FloatValuesCreator;
-import org.apache.lucene.search.cache.IntValuesCreator;
-import org.apache.lucene.search.cache.LongValuesCreator;
-import org.apache.lucene.search.cache.ShortValuesCreator;
-import org.apache.lucene.search.cache.CachedArray.ByteValues;
-import org.apache.lucene.search.cache.CachedArray.DoubleValues;
-import org.apache.lucene.search.cache.CachedArray.FloatValues;
-import org.apache.lucene.search.cache.CachedArray.IntValues;
-import org.apache.lucene.search.cache.CachedArray.LongValues;
-import org.apache.lucene.search.cache.CachedArray.ShortValues;
-import org.apache.lucene.util.FieldCacheSanityChecker;
+import java.util.*;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -70,6 +54,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     caches.put(Double.TYPE, new Cache<DoubleValues>(this));
     caches.put(DocTermsIndex.class, new Cache<DocTermsIndex>(this));
     caches.put(DocTerms.class, new Cache<DocTerms>(this));
+    caches.put(DocTermOrds.class, new Cache<DocTermOrds>(this));
   }
   
   public synchronized void purgeAllCaches() {
@@ -391,6 +376,11 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   @SuppressWarnings("unchecked")
   public DocTerms getTerms(IndexReader reader, String field, EntryCreator<DocTerms> creator) throws IOException {
     return (DocTerms)caches.get(DocTerms.class).get(reader, new Entry(field, creator));
+  }
+
+  @SuppressWarnings("unchecked")
+  public DocTermOrds getDocTermOrds(IndexReader reader, String field) throws IOException {
+    return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new Entry(field, new DocTermOrdsCreator(field, 0)));
   }
 
   private volatile PrintStream infoStream;

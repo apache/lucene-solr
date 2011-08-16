@@ -473,6 +473,8 @@ New features
   different usecases like merging, flushing and reading.
   (Simon Willnauer, Mike McCandless, Varun Thacker)
 
+* LUCENE-3354: FieldCache can cache DocTermOrds. (Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

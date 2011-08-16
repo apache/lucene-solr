@@ -19,28 +19,33 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.BytesRef;
-import java.io.IOException;
+
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
   private int NUM_DOCS;
+  private int NUM_ORDS;
   private String[] unicodeStrings;
+  private BytesRef[][] multiValued;
   private Directory directory;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     NUM_DOCS = atLeast(1000);
+    NUM_ORDS = atLeast(2);
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
@@ -50,6 +55,7 @@ public class TestFieldCache extends LuceneTestCase {
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
     unicodeStrings = new String[NUM_DOCS];
+    multiValued = new BytesRef[NUM_DOCS][NUM_ORDS];
     if (VERBOSE) {
       System.out.println("TEST: setUp");
     }
@@ -65,20 +71,18 @@ public class TestFieldCache extends LuceneTestCase {
 
       // sometimes skip the field:
       if (random.nextInt(40) != 17) {
-        String s = null;
-        if (i > 0 && random.nextInt(3) == 1) {
-          // reuse past string -- try to find one that's not null
-          for(int iter=0;iter<10 && s==null;iter++) {
-            s = unicodeStrings[random.nextInt(i)];
-          }
-          if (s == null) {
-            s = _TestUtil.randomUnicodeString(random, 250);
-          }
-        } else {
-          s = _TestUtil.randomUnicodeString(random, 250);
-        }
-        unicodeStrings[i] = s;
+        unicodeStrings[i] = generateString(i);
         doc.add(newField("theRandomUnicodeString", unicodeStrings[i], Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+      }
+
+      // sometimes skip the field:
+      if (random.nextInt(10) != 8) {
+        for (int j = 0; j < NUM_ORDS; j++) {
+          String newValue = generateString(i);
+          multiValued[i][j] = new BytesRef(newValue);
+          doc.add(newField("theRandomUnicodeMultiValuedField", newValue, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        }
+        Arrays.sort(multiValued[i]);
       }
       writer.addDocument(doc);
     }
@@ -210,6 +214,47 @@ public class TestFieldCache extends LuceneTestCase {
     // test bad field
     terms = cache.getTerms(reader, "bogusfield");
 
+    // getDocTermOrds
+    DocTermOrds termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    TermsEnum termsEnum = termOrds.getOrdTermsEnum(reader);
+    assertSame("Second request to cache return same DocTermOrds", termOrds, cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField"));
+    DocTermOrds.TermOrdsIterator reuse = null;
+    for (int i = 0; i < NUM_DOCS; i++) {
+      reuse = termOrds.lookup(i, reuse);
+      final int[] buffer = new int[5];
+      // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
+      List<BytesRef> values = new ArrayList<BytesRef>(new LinkedHashSet<BytesRef>(Arrays.asList(multiValued[i])));
+      for (;;) {
+        int chunk = reuse.read(buffer);
+        if (chunk == 0) {
+          for (int ord = 0; ord < values.size(); ord++) {
+            BytesRef term = values.get(ord);
+            assertNull(String.format("Document[%d] misses field must be null. Has value %s for ord %d", i, term, ord), term);
+          }
+          break;
+        }
+
+        for(int idx=0; idx < chunk; idx++) {
+          int key = buffer[idx];
+          termsEnum.seekExact((long) key);
+          String actual = termsEnum.term().utf8ToString();
+          String expected = values.get(idx).utf8ToString();
+          if (!expected.equals(actual)) {
+              reuse = termOrds.lookup(i, reuse);
+              reuse.read(buffer);
+          }
+          assertTrue(String.format("Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
+        }
+
+        if (chunk < buffer.length) {
+          break;
+        }
+      }
+    }
+
+    // test bad field
+    termOrds = cache.getDocTermOrds(reader, "bogusfield");
+
     FieldCache.DEFAULT.purge(reader);
   }
 
@@ -223,4 +268,21 @@ public class TestFieldCache extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
+  private String generateString(int i) {
+    String s = null;
+    if (i > 0 && random.nextInt(3) == 1) {
+      // reuse past string -- try to find one that's not null
+      for(int iter = 0; iter < 10 && s == null;iter++) {
+        s = unicodeStrings[random.nextInt(i)];
+      }
+      if (s == null) {
+        s = _TestUtil.randomUnicodeString(random, 250);
+      }
+    } else {
+      s = _TestUtil.randomUnicodeString(random, 250);
+    }
+    return s;
+  }
+
 }
