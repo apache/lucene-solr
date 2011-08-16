@@ -39,10 +39,10 @@ public final class SingleTermsEnum extends FilteredTermsEnum {
    * After calling the constructor the enumeration is already pointing to the term,
    * if it exists.
    */
-  public SingleTermsEnum(TermsEnum tenum, Term singleTerm) throws IOException {
+  public SingleTermsEnum(TermsEnum tenum, BytesRef termText) throws IOException {
     super(tenum);
-    singleRef = singleTerm.bytes();
-    setInitialSeekTerm(singleRef);
+    singleRef = termText;
+    setInitialSeekTerm(termText);
   }
 
   @Override

@@ -1,8 +1,4 @@
 
-FAIL: ant test-core -Dtestcase=TestBlockTree -Dtestmethod=testEasy -Dtests.seed=-7181425274859016595:531125480476701899
-
-TestFieldCache can spin w/ -codec Pulsing!?
-
 perf tests:
   - GRRR -- indexing MUCH slower now?
     trunk:
@@ -16,13 +12,8 @@ perf tests:
 
   - test perf on single seg index too!
   - try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
-  - run fuzzy q under profiler
 
-test if cutting over prefix query to .intersect is faster
-
-"upgrade" postings reader/writer API to match block tree; then non-tree codec uses it too and we only need 1 impl of each postings
-
-what to do about short terms that "force" a block to mark itself has hasTerms!!??
+what to do about short terms that "force" a block to mark itself as hasTerms!!??
   - maybe instead of "isLeafBlock" bit we encode "countUntilNextTerm"?  this way, for a block that only has empty string term we can stop scanning quickly?
   - maybe make a "terms block cache" that holds low-prefix LRU term blocks in ram...?
   - maybe a cache holding all short-length terms will be big perf boost?  it saves having to scan the low-depth blocks... or... maybe a bit noting whether this block contains any terms != empty string suffix; or, we separately hold all 'short'/'straggler' terms in a map, enabling the low-depth blocks to then 'lie' and say they have no terms?
@@ -30,11 +21,8 @@ what to do about short terms that "force" a block to mark itself has hasTerms!!?
 
 try forcing no hasTerms if depth < 2?
 
-automaton q should apply maxlength test on each scan'd term
-
-intersect should use suffix ref
-
 LATER:
+  - test if cutting over prefix query to .intersect is faster
   - maybe blocks should NOT store sub-block pointers?  it's reudundant w/ the index...
   - hmm: maybe switch PKLookupTask to intersect!?  do we have fast string builder?
   - hmm -- fix DOT when there are multiple outputs!?  oh, maybe not -- it just works?

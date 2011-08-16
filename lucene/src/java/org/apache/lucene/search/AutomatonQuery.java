@@ -51,19 +51,9 @@ import org.apache.lucene.util.automaton.SpecialOperations;
 public class AutomatonQuery extends MultiTermQuery {
   /** the automaton to match index terms against */
   protected final Automaton automaton;
+  protected final CompiledAutomaton compiled;
   /** term containing the field, and possibly some pattern structure */
   protected final Term term;
-
-  /** 
-   * abstraction for returning a termsenum:
-   * in the ctor the query computes one of these, the actual
-   * implementation depends upon the automaton's structure.
-   */
-  private abstract class TermsEnumFactory {
-    protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
-  }
-  
-  private final TermsEnumFactory factory;
 
   /**
    * Create a new AutomatonQuery from an {@link Automaton}.
@@ -77,72 +67,12 @@ public class AutomatonQuery extends MultiTermQuery {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
-    
-    if (BasicOperations.isEmpty(automaton)) {
-      // matches nothing
-      factory = new TermsEnumFactory() {
-        @Override
-        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-          return TermsEnum.EMPTY;
-        }
-      };
-    } else if (BasicOperations.isTotal(automaton)) {
-      // matches all possible strings
-      factory = new TermsEnumFactory() {
-        @Override
-        protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-          return terms.iterator();
-        }
-      };
-    } else {
-      final String singleton;
-      final String commonPrefix;
-      
-      if (automaton.getSingleton() == null) {
-        commonPrefix = SpecialOperations.getCommonPrefix(automaton);
-        if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
-          singleton = commonPrefix;
-        } else {
-          singleton = null;
-        }
-      } else {
-        commonPrefix = null;
-        singleton = automaton.getSingleton();
-      }
-      
-      if (singleton != null) {
-        // matches a fixed string in singleton or expanded representation
-        factory = new TermsEnumFactory() {
-          @Override
-          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return new SingleTermsEnum(terms.iterator(), new Term(field, singleton));
-          }
-        };
-      } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
-          BasicAutomata.makeString(commonPrefix), BasicAutomata.makeAnyString()))) {
-        // matches a constant prefix
-        factory = new TermsEnumFactory() {
-          @Override
-          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return new PrefixTermsEnum(terms.iterator(), new Term(field, commonPrefix));
-          }
-        };
-      } else {
-        final CompiledAutomaton compiled = 
-          new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton));
-        factory = new TermsEnumFactory() {
-          @Override
-          protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-            return terms.intersect(compiled, null);
-          }
-        };
-      }
-    }
+    this.compiled = new CompiledAutomaton(automaton);
   }
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    return factory.getTermsEnum(terms, atts);
+    return compiled.getTermsEnum(terms);
   }
 
   @Override

@@ -423,8 +423,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         // First pass: count up how many items fall under
         // each unique label after the prefix.
         
-        // nocommit: this is wasteful since the builder had
-        // already done this but we discarded it...
+        // TODO: this is wasteful since the builder had
+        // already done this (partitioned these sub-terms
+        // according to their leading prefix byte)
         
         final List<Object> slice = pending.subList(pending.size()-count, pending.size());
         int lastLabel = -1;

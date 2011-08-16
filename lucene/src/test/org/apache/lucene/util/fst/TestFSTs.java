@@ -1707,6 +1707,7 @@ public class TestFSTs extends LuceneTestCase {
     StringWriter w = new StringWriter();
     Util.toDot(fst, w, false, false);
     w.close();
+    //System.out.println(w.toString());
     assertTrue(w.toString().indexOf("label=\"t/[7]\"") != -1);
   }
 
@@ -1721,6 +1722,7 @@ public class TestFSTs extends LuceneTestCase {
     //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
     Util.toDot(fst, w, false, false);
     w.close();
+    //System.out.println(w.toString());
     assertTrue(w.toString().indexOf("6 [shape=doublecircle") != -1);
   }
 

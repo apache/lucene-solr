@@ -270,7 +270,7 @@ public class TestTermsEnum extends LuceneTestCase {
         }
         a = DaciukMihovAutomatonBuilder.build(sortedAcceptTerms);
       }
-      final CompiledAutomaton c = new CompiledAutomaton(a, true);
+      final CompiledAutomaton c = new CompiledAutomaton(a, true, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
       final Set<BytesRef> acceptTermsSet = new HashSet<BytesRef>();

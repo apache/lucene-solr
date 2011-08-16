@@ -55,6 +55,9 @@ public abstract class Terms {
     // TODO: eventually we could support seekCeil/Exact on
     // the returned enum, instead of only being able to seek
     // at the start
+    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+    }
     if (startTerm == null) {
       return new AutomatonTermsEnum(iterator(), compiled);
     } else {

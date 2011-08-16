@@ -17,10 +17,17 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
   
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.search.PrefixTermsEnum;
+import org.apache.lucene.search.SingleTermsEnum;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -31,29 +38,106 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public class CompiledAutomaton {
+  public enum AUTOMATON_TYPE {NONE, ALL, SINGLE, PREFIX, NORMAL};
+  public final AUTOMATON_TYPE type;
+
+  // For PREFIX, this is the prefix term; for SINGLE this is
+  // the singleton term:
+  public final BytesRef term;
+
+  // NOTE: the next 4 members are only non-null if type ==
+  // NORMAL:
   public final ByteRunAutomaton runAutomaton;
   // TODO: would be nice if these sortedTransitions had "int
   // to;" instead of "State to;" somehow:
   public final Transition[][] sortedTransitions;
   public final BytesRef commonSuffixRef;
-  public final boolean finite;
+  public final Boolean finite;
 
-  // nocommit -- move pulling of a TermsEnum into here, so
-  // that we can optimize for cases where a simpler enume
-  // (prefix enum, all terms, no terms, etc.) can be used
-    
-  public CompiledAutomaton(Automaton automaton, boolean finite) {
+  public CompiledAutomaton(Automaton automaton) {
+    this(automaton, null, true);
+  }
+
+  public CompiledAutomaton(Automaton automaton, Boolean finite, boolean simplify) {
+
+    if (simplify) {
+      // Test whether the automaton is a "simple" form and
+      // if so, don't create a runAutomaton.  Note that on a
+      // large automaton these tests could be costly:
+      if (BasicOperations.isEmpty(automaton)) {
+        // matches nothing
+        type = AUTOMATON_TYPE.NONE;
+        term = null;
+        commonSuffixRef = null;
+        runAutomaton = null;
+        sortedTransitions = null;
+        this.finite = null;
+        return;
+      } else if (BasicOperations.isTotal(automaton)) {
+        // matches all possible strings
+        type = AUTOMATON_TYPE.ALL;
+        term = null;
+        commonSuffixRef = null;
+        runAutomaton = null;
+        sortedTransitions = null;
+        this.finite = null;
+        return;
+      } else {
+        final String commonPrefix;
+        final String singleton;
+        if (automaton.getSingleton() == null) {
+          commonPrefix = SpecialOperations.getCommonPrefix(automaton);
+          if (commonPrefix.length() > 0 && BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
+            singleton = commonPrefix;
+          } else {
+            singleton = null;
+          }
+        } else {
+          commonPrefix = null;
+          singleton = automaton.getSingleton();
+        }
+      
+        if (singleton != null) {
+          // matches a fixed string in singleton or expanded
+          // representation
+          type = AUTOMATON_TYPE.SINGLE;
+          term = new BytesRef(singleton);
+          commonSuffixRef = null;
+          runAutomaton = null;
+          sortedTransitions = null;
+          this.finite = null;
+          return;
+        } else if (BasicOperations.sameLanguage(automaton, BasicOperations.concatenate(
+                                                                                       BasicAutomata.makeString(commonPrefix), BasicAutomata.makeAnyString()))) {
+          // matches a constant prefix
+          type = AUTOMATON_TYPE.PREFIX;
+          term = new BytesRef(commonPrefix);
+          commonSuffixRef = null;
+          runAutomaton = null;
+          sortedTransitions = null;
+          this.finite = null;
+          return;
+        }
+      }
+    }
+
+    type = AUTOMATON_TYPE.NORMAL;
+    term = null;
+    if (finite == null) {
+      this.finite = SpecialOperations.isFinite(automaton);
+    } else {
+      this.finite = finite;
+    }
     Automaton utf8 = new UTF32ToUTF8().convert(automaton);
-    runAutomaton = new ByteRunAutomaton(utf8, true);
-    sortedTransitions = utf8.getSortedTransitions();
-    this.finite = finite;
-    if (finite) {
+    if (this.finite) {
       commonSuffixRef = null;
     } else {
       commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
     }
+    runAutomaton = new ByteRunAutomaton(utf8, true);
+    sortedTransitions = utf8.getSortedTransitions();
   }
-
+  
   private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   private BytesRef addTail(int state, BytesRef term, int idx, int leadLabel) {
@@ -106,6 +190,29 @@ public class CompiledAutomaton {
         state = lastTransition.to.getNumber();
         idx++;
       }
+    }
+  }
+
+  // TODO: should this take startTerm too?  This way
+  // Terms.intersect could forward to this method if type !=
+  // NORMAL:
+  public TermsEnum getTermsEnum(Terms terms) throws IOException {
+    switch(type) {
+    case NONE:
+      return TermsEnum.EMPTY;
+    case ALL:
+      return terms.iterator();
+    case SINGLE:
+      return new SingleTermsEnum(terms.iterator(), term);
+    case PREFIX:
+      // TODO: this is very likely faster than .intersect,
+      // but we should test and maybe cutover
+      return new PrefixTermsEnum(terms.iterator(), term);
+    case NORMAL:
+      return terms.intersect(this, null);
+    default:
+      // unreachable
+      throw new RuntimeException("unhandled case");
     }
   }
 

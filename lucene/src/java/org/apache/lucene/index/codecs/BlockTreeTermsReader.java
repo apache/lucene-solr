@@ -270,6 +270,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
       try {
         return b.utf8ToString() + " " + b;
       } catch (Throwable t) {
+        // If BytesRef isn't actually UTF8, or it's eg a
+        // prefix of UTF8 that ends mid-unicode-char, we
+        // fallback to hex:
         return b.toString();
       }
     }
@@ -482,9 +485,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-      // nocommit -- must check suffix ref
-      // nocommit -- if A is infinte maybe fallback to ATE?
-      // need to test...
+      if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+        throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+      }
       return new IntersectEnum(compiled, startTerm);
     }
     
@@ -1045,17 +1048,40 @@ public class BlockTreeTermsReader extends FieldsProducer {
               continue nextTerm;
             }
 
-            // nocommit -- in the case where common suffix
-            // len is > currentFrame.suffix we should check
-            // the suffix of the currentFrame.prefix too!
-            final int lenToCheck = Math.min(currentFrame.suffix, compiledAutomaton.commonSuffixRef.length);
-            final byte[] b1 = currentFrame.suffixBytes;
-            int pos1 = currentFrame.startBytePos + currentFrame.suffix - lenToCheck;
-            final byte[] b2 = compiledAutomaton.commonSuffixRef.bytes;
-            int pos2 = compiledAutomaton.commonSuffixRef.offset + compiledAutomaton.commonSuffixRef.length - lenToCheck;
-            final int pos2End = pos2 + lenToCheck;
-            while(pos2 < pos2End) {
-              if (b1[pos1++] != b2[pos2++]) {
+            final byte[] suffixBytes = currentFrame.suffixBytes;
+            final byte[] commonSuffixBytes = compiledAutomaton.commonSuffixRef.bytes;
+
+            final int lenInPrefix = compiledAutomaton.commonSuffixRef.length - currentFrame.suffix;
+            final int suffixLenToCheck;
+            assert compiledAutomaton.commonSuffixRef.offset == 0;
+            int suffixBytesPos;
+            int commonSuffixBytesPos = 0;
+
+            if (lenInPrefix > 0) {
+              // A prefix of the common suffix overlaps with
+              // the suffix of the block prefix so we first
+              // test whether the prefix part matches:
+              final byte[] termBytes = term.bytes;
+              int termBytesPos = currentFrame.prefix - lenInPrefix;
+              assert termBytesPos >= 0;
+              final int termBytesPosEnd = currentFrame.prefix;
+              while (termBytesPos < termBytesPosEnd) {
+                if (termBytes[termBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
+                  if (DEBUG) {
+                    System.out.println("      skip: common suffix mismatch (in prefix)");
+                  }
+                  continue nextTerm;
+                }
+              }
+              suffixBytesPos = currentFrame.startBytePos;
+            } else {
+              suffixBytesPos = currentFrame.startBytePos + currentFrame.suffix - compiledAutomaton.commonSuffixRef.length;
+            }
+
+            // Test overlapping suffix part:
+            final int commonSuffixBytesPosEnd = compiledAutomaton.commonSuffixRef.length;
+            while (commonSuffixBytesPos < commonSuffixBytesPosEnd) {
+              if (suffixBytes[suffixBytesPos++] != commonSuffixBytes[commonSuffixBytesPos++]) {
                 if (DEBUG) {
                   System.out.println("      skip: common suffix mismatch");
                 }
@@ -1063,6 +1089,12 @@ public class BlockTreeTermsReader extends FieldsProducer {
               }
             }
           }
+
+          // TODO: maybe we should do the same linear test
+          // that AutomatonTermsEnum does, so that if we
+          // reach a part of the automaton where .* is
+          // "temporarily" accepted, we just blindly .next()
+          // until the limit
 
           // See if the term prefix matches the automaton:
           int state = currentFrame.state;

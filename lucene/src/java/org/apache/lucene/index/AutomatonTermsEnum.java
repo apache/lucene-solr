@@ -83,6 +83,7 @@ class AutomatonTermsEnum extends FilteredTermsEnum {
     super(tenum);
     this.finite = compiled.finite;
     this.runAutomaton = compiled.runAutomaton;
+    assert this.runAutomaton != null;
     this.commonSuffixRef = compiled.commonSuffixRef;
     this.allTransitions = compiled.sortedTransitions;
 

@@ -89,13 +89,13 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     
       // for assert:
       private BytesRef lastTerm;
-      private boolean compareToLastTerm(BytesRef t) {
+      private boolean compareToLastTerm(BytesRef t) throws IOException {
         if (lastTerm == null && t != null) {
           lastTerm = new BytesRef(t);
         } else if (t == null) {
           lastTerm = null;
         } else {
-          assert lastTerm.compareTo(t) < 0: "lastTerm=" + lastTerm + " t=" + t;
+          assert termsEnum.getComparator().compare(lastTerm, t) < 0: "lastTerm=" + lastTerm + " t=" + t;
           lastTerm.copy(t);
         }
         return true;
@@ -106,10 +106,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
         final float boost = boostAtt.getBoost();
 
         // make sure within a single seg we always collect
-        // terms in order -- nocommit dangerous, if codec
-        // uses its own termComp?  should we nuke that
-        // ability?  terms must always be "unsigned byte[]
-        // order"?
+        // terms in order
         assert compareToLastTerm(bytes);
 
         //System.out.println("TTR.collect term=" + bytes.utf8ToString() + " boost=" + boost + " ord=" + readerContext.ord);
@@ -160,11 +157,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
     final Q q = getTopLevelQuery();
     final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
     ArrayUtil.mergeSort(scoreTerms, scoreTermSortByTermComp);
-    // nocommit -- how come I see 2 seekExacts for the same
-    // term in a row in the terms dict, around here...?
     
-    // could this be if we are using a non-intersect() capable terms impl (e.g. preflex)
-    // that its the off-by-one regarding 'start term' ? are we seeking backwards!!!!!!
     for (final ScoreTerm st : scoreTerms) {
       final Term term = new Term(query.field, st.bytes);
       assert reader.docFreq(term) == st.termState.docFreq() : "reader DF is " + reader.docFreq(term) + " vs " + st.termState.docFreq() + " term=" + term;

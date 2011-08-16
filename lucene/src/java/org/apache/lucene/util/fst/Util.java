@@ -318,7 +318,6 @@ public final class Util {
             }
 
             if (!fst.targetHasArcs(arc) && arc.isFinal() && arc.nextFinalOutput != NO_OUTPUT) {
-              // nocommit -- this is broken again?
               // Tricky special case: sometimes, due to
               // pruning, the builder can [sillily] produce
               // an FST with an arc into the final end state

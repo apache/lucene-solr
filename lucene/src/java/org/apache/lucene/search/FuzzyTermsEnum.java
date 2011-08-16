@@ -172,7 +172,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
             UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
-        runAutomata.add(new CompiledAutomaton(a, true));
+        runAutomata.add(new CompiledAutomaton(a, true, false));
       }
     }
     return runAutomata;

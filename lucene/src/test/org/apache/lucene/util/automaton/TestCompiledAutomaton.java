@@ -36,7 +36,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     }
     Automaton a = BasicOperations.union(as);
     a.determinize();
-    return new CompiledAutomaton(a, true);
+    return new CompiledAutomaton(a, true, false);
   }
 
   private void testFloor(CompiledAutomaton c, String input, String expected) {

@@ -165,7 +165,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton));
+      CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
       Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
       TreeSet<BytesRef> found = new TreeSet<BytesRef>();

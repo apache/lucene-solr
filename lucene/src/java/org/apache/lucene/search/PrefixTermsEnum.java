@@ -34,9 +34,9 @@ public class PrefixTermsEnum extends FilteredTermsEnum {
 
   private final BytesRef prefixRef;
 
-  public PrefixTermsEnum(TermsEnum tenum, Term prefix) throws IOException {
+  public PrefixTermsEnum(TermsEnum tenum, BytesRef prefixText) throws IOException {
     super(tenum);
-    setInitialSeekTerm(prefixRef = prefix.bytes());
+    setInitialSeekTerm(this.prefixRef = prefixText);
   }
 
   @Override
