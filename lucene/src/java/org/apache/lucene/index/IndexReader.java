@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -977,39 +976,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return visitor.getDocument();
   }
 
-  /**
-   * Get the {@link org.apache.lucene.document.Document} at the <code>n</code>
-   * <sup>th</sup> position. The {@link FieldSelector} may be used to determine
-   * what {@link org.apache.lucene.document.Field}s to load and how they should
-   * be loaded. <b>NOTE:</b> If this Reader (more specifically, the underlying
-   * <code>FieldsReader</code>) is closed before the lazy
-   * {@link org.apache.lucene.document.Field} is loaded an exception may be
-   * thrown. If you want the value of a lazy
-   * {@link org.apache.lucene.document.Field} to be available after closing you
-   * must explicitly load it or fetch the Document again with a new loader.
-   * <p>
-   * <b>NOTE:</b> for performance reasons, this method does not check if the
-   * requested document is deleted, and therefore asking for a deleted document
-   * may yield unspecified results. Usually this is not required, however you
-   * can test if the doc is deleted by checking the {@link
-   * Bits} returned from {@link MultiFields#getLiveDocs}.
-   * 
-   * @param n Get the document at the <code>n</code><sup>th</sup> position
-   * @param fieldSelector The {@link FieldSelector} to use to determine what
-   *        Fields should be loaded on the Document. May be null, in which case
-   *        all Fields will be loaded.
-   * @return The stored fields of the
-   *         {@link org.apache.lucene.document.Document} at the nth position
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @see org.apache.lucene.document.Fieldable
-   * @see org.apache.lucene.document.FieldSelector
-   * @see org.apache.lucene.document.SetBasedFieldSelector
-   * @see org.apache.lucene.document.LoadFirstFieldSelector
-   */
-  // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
-  public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
-  
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 
@@ -1030,13 +996,8 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract byte[] norms(String field) throws IOException;
 
   /** Expert: Resets the normalization factor for the named field of the named
-<<<<<<<
-   * document.  By default, The norm represents the product of the field's {@link
-   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its
-=======
-   * document.  The norm represents the product of the field's {@link
+   * document.  By default, the norm represents the product of the field's {@link
    * org.apache.lucene.document.Field#setBoost(float) boost} and its
->>>>>>>
    * length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *

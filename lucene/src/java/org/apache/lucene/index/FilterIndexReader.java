@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
