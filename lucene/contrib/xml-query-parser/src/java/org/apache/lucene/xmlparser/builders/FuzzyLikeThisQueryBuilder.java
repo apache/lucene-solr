@@ -28,40 +28,39 @@ import org.w3c.dom.NodeList;
  */
 
 /**
- * 
+ *
  */
-public class FuzzyLikeThisQueryBuilder implements QueryBuilder
-{
-	int defaultMaxNumTerms=50;
-	float defaultMinSimilarity=FuzzyQuery.defaultMinSimilarity;
-	int defaultPrefixLength=1;
-	boolean defaultIgnoreTF=false;
-	private Analyzer analyzer;
-	
-	public FuzzyLikeThisQueryBuilder(Analyzer analyzer)
-	{
-		this.analyzer=analyzer;
-	}
+public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
 
-	public Query getQuery(Element e) throws ParserException
-	{
-		NodeList nl = e.getElementsByTagName("Field");
-		int maxNumTerms=DOMUtils.getAttribute(e,"maxNumTerms",defaultMaxNumTerms);
-		FuzzyLikeThisQuery fbq=new FuzzyLikeThisQuery(maxNumTerms,analyzer);
-		fbq.setIgnoreTF(DOMUtils.getAttribute(e,"ignoreTF",defaultIgnoreTF));
-		for(int i=0;i<nl.getLength();i++)
-		{
-			Element fieldElem=(Element) nl.item(i);
-			float minSimilarity=DOMUtils.getAttribute(fieldElem,"minSimilarity",defaultMinSimilarity);
-			int prefixLength=DOMUtils.getAttribute(fieldElem,"prefixLength",defaultPrefixLength);
-			String fieldName=DOMUtils.getAttributeWithInheritance(fieldElem,"fieldName");
-			
-			String value=DOMUtils.getText(fieldElem);
-			fbq.addTerms(value,fieldName,minSimilarity,prefixLength);
-		}
-		fbq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+  private static final int DEFAULT_MAX_NUM_TERMS = 50;
+  private static final float DEFAULT_MIN_SIMILARITY = FuzzyQuery.defaultMinSimilarity;
+  private static final int DEFAULT_PREFIX_LENGTH = 1;
+  private static final boolean DEFAULT_IGNORE_TF = false;
 
-		return fbq;
-	}
+  private final Analyzer analyzer;
+
+  public FuzzyLikeThisQueryBuilder(Analyzer analyzer) {
+    this.analyzer = analyzer;
+  }
+
+  public Query getQuery(Element e) throws ParserException {
+    NodeList nl = e.getElementsByTagName("Field");
+    int maxNumTerms = DOMUtils.getAttribute(e, "maxNumTerms", DEFAULT_MAX_NUM_TERMS);
+    FuzzyLikeThisQuery fbq = new FuzzyLikeThisQuery(maxNumTerms, analyzer);
+    fbq.setIgnoreTF(DOMUtils.getAttribute(e, "ignoreTF", DEFAULT_IGNORE_TF));
+
+    for (int i = 0; i < nl.getLength(); i++) {
+      Element fieldElem = (Element) nl.item(i);
+      float minSimilarity = DOMUtils.getAttribute(fieldElem, "minSimilarity", DEFAULT_MIN_SIMILARITY);
+      int prefixLength = DOMUtils.getAttribute(fieldElem, "prefixLength", DEFAULT_PREFIX_LENGTH);
+      String fieldName = DOMUtils.getAttributeWithInheritance(fieldElem, "fieldName");
+
+      String value = DOMUtils.getText(fieldElem);
+      fbq.addTerms(value, fieldName, minSimilarity, prefixLength);
+    }
+
+    fbq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return fbq;
+  }
 
 }

@@ -24,37 +24,32 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class BoostingQueryBuilder implements QueryBuilder
-{
-	
-	private QueryBuilder factory;
-	float defaultBoost=0.01f;
+public class BoostingQueryBuilder implements QueryBuilder {
 
-	public BoostingQueryBuilder (QueryBuilder factory)
-	{
-		this.factory=factory;
-	}
+  private static float DEFAULT_BOOST = 0.01f;
+  
+  private final QueryBuilder factory;
 
-	public Query getQuery(Element e) throws ParserException
-	{
-		
-        Element mainQueryElem=DOMUtils.getChildByTagOrFail(e,"Query");
- 		mainQueryElem=DOMUtils.getFirstChildOrFail(mainQueryElem);
-  		Query mainQuery=factory.getQuery(mainQueryElem);
+  public BoostingQueryBuilder(QueryBuilder factory) {
+    this.factory = factory;
+  }
 
- 		Element boostQueryElem=DOMUtils.getChildByTagOrFail(e,"BoostQuery");
-  		float boost=DOMUtils.getAttribute(boostQueryElem,"boost",defaultBoost);
- 		boostQueryElem=DOMUtils.getFirstChildOrFail(boostQueryElem);
-  		Query boostQuery=factory.getQuery(boostQueryElem);
-  		
-  		BoostingQuery bq = new BoostingQuery(mainQuery,boostQuery,boost);
+  public Query getQuery(Element e) throws ParserException {
+    Element mainQueryElem = DOMUtils.getChildByTagOrFail(e, "Query");
+    mainQueryElem = DOMUtils.getFirstChildOrFail(mainQueryElem);
+    Query mainQuery = factory.getQuery(mainQueryElem);
 
-  		bq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return bq;
+    Element boostQueryElem = DOMUtils.getChildByTagOrFail(e, "BoostQuery");
+    float boost = DOMUtils.getAttribute(boostQueryElem, "boost", DEFAULT_BOOST);
+    boostQueryElem = DOMUtils.getFirstChildOrFail(boostQueryElem);
+    Query boostQuery = factory.getQuery(boostQueryElem);
 
-	}
+    BoostingQuery bq = new BoostingQuery(mainQuery, boostQuery, boost);
 
+    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return bq;
 
+  }
 }

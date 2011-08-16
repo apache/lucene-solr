@@ -25,26 +25,22 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class ConstantScoreQueryBuilder implements QueryBuilder
-{
-	private FilterBuilderFactory filterFactory;
+public class ConstantScoreQueryBuilder implements QueryBuilder {
 
-	public ConstantScoreQueryBuilder(FilterBuilderFactory filterFactory)
-	{
-		this.filterFactory=filterFactory;
-	}
+  private final FilterBuilderFactory filterFactory;
 
-	public Query getQuery(Element e) throws ParserException
-	{
- 		Element filterElem=DOMUtils.getFirstChildOrFail(e);
-  		Query q=new ConstantScoreQuery(filterFactory.getFilter(filterElem));
+  public ConstantScoreQueryBuilder(FilterBuilderFactory filterFactory) {
+    this.filterFactory = filterFactory;
+  }
 
-  		q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+  public Query getQuery(Element e) throws ParserException {
+    Element filterElem = DOMUtils.getFirstChildOrFail(e);
 
-  		return q;
-		
-	}
+    Query q = new ConstantScoreQuery(filterFactory.getFilter(filterElem));
+    q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return q;
+  }
 
 }

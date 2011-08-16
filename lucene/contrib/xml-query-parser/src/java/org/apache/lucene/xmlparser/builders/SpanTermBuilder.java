@@ -24,20 +24,17 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class SpanTermBuilder extends SpanBuilderBase
-{
+public class SpanTermBuilder extends SpanBuilderBase {
 
-	public SpanQuery getSpanQuery(Element e) throws ParserException
-	{
- 		String fieldName=DOMUtils.getAttributeWithInheritanceOrFail(e,"fieldName");
- 		String value=DOMUtils.getNonBlankTextOrFail(e);
-  		SpanTermQuery stq = new SpanTermQuery(new Term(fieldName,value));
-  		
-  		stq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return stq;		
-		
-	}
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    String value = DOMUtils.getNonBlankTextOrFail(e);
+    SpanTermQuery stq = new SpanTermQuery(new Term(fieldName, value));
+
+    stq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return stq;
+  }
 
 }

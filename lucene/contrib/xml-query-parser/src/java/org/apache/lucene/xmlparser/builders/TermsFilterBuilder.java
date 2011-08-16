@@ -1,8 +1,5 @@
 package org.apache.lucene.xmlparser.builders;
 
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -14,6 +11,9 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Element;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,51 +33,46 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class TermsFilterBuilder implements FilterBuilder
-{
-	Analyzer analyzer;
-	
-	/**
-	 * @param analyzer
-	 */
-	public TermsFilterBuilder(Analyzer analyzer)
-	{
-		this.analyzer = analyzer;
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
-	 */
-	public Filter getFilter(Element e) throws ParserException
-	{
-		TermsFilter tf = new TermsFilter();
-		String text = DOMUtils.getNonBlankTextOrFail(e);
-		String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    
-		try
-		{
-	    TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
-	    TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-			Term term = null;
+public class TermsFilterBuilder implements FilterBuilder {
+
+  private final Analyzer analyzer;
+
+  /**
+   * @param analyzer
+   */
+  public TermsFilterBuilder(Analyzer analyzer) {
+    this.analyzer = analyzer;
+  }
+
+  /*
+    * (non-Javadoc)
+    *
+    * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
+    */
+  public Filter getFilter(Element e) throws ParserException {
+    TermsFilter tf = new TermsFilter();
+    String text = DOMUtils.getNonBlankTextOrFail(e);
+    String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+
+    try {
+      TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+      Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
-	      while (ts.incrementToken()) {
-	        termAtt.fillBytesRef();
-				term = new Term(fieldName, new BytesRef(bytes));
-				tf.addTerm(term);
-			}
-	    ts.end();
-	    ts.close();
-		} 
-		catch (IOException ioe)
-		{
-			throw new RuntimeException("Error constructing terms from index:"
-					+ ioe);
-		}
-		return tf;
-	}
+      while (ts.incrementToken()) {
+        termAtt.fillBytesRef();
+        term = new Term(fieldName, new BytesRef(bytes));
+        tf.addTerm(term);
+      }
+      ts.end();
+      ts.close();
+    }
+    catch (IOException ioe) {
+      throw new RuntimeException("Error constructing terms from index:" + ioe);
+    }
+    return tf;
+  }
 }

@@ -1,8 +1,5 @@
 package org.apache.lucene.xmlparser.builders;
 
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -16,6 +13,9 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
 import org.w3c.dom.Element;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,52 +33,44 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Builds a BooleanQuery from all of the terms found in the XML element using the choice of analyzer
  */
 public class TermsQueryBuilder implements QueryBuilder {
 
-	Analyzer analyzer;
+  private final Analyzer analyzer;
 
-		
-	public TermsQueryBuilder(Analyzer analyzer)
-	{
-		this.analyzer = analyzer;
-	}
+  public TermsQueryBuilder(Analyzer analyzer) {
+    this.analyzer = analyzer;
+  }
 
+  public Query getQuery(Element e) throws ParserException {
+    String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    String text = DOMUtils.getNonBlankTextOrFail(e);
 
-
-	public Query getQuery(Element e) throws ParserException {
-		
-        String fieldName=DOMUtils.getAttributeWithInheritanceOrFail(e,"fieldName");
- 		String text=DOMUtils.getNonBlankTextOrFail(e);
- 		
-		BooleanQuery bq=new BooleanQuery(DOMUtils.getAttribute(e,"disableCoord",false));
-		bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e,"minimumNumberShouldMatch",0));
-		try
-		{
-	    TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
-		  TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
-			Term term = null;
+    BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
+    bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));
+    try {
+      TokenStream ts = analyzer.reusableTokenStream(fieldName, new StringReader(text));
+      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+      Term term = null;
       BytesRef bytes = termAtt.getBytesRef();
       ts.reset();
-			while (ts.incrementToken()) {
+      while (ts.incrementToken()) {
         termAtt.fillBytesRef();
         term = new Term(fieldName, new BytesRef(bytes));
-				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
-			}
-			ts.end();
-			ts.close();
-		} 
-		catch (IOException ioe)
-		{
-			throw new RuntimeException("Error constructing terms from index:"
-					+ ioe);
-		}
-  		bq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+        bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
+      }
+      ts.end();
+      ts.close();
+    }
+    catch (IOException ioe) {
+      throw new RuntimeException("Error constructing terms from index:" + ioe);
+    }
 
-  		return bq;
-		
-	}
+    bq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return bq;
+  }
 
 }

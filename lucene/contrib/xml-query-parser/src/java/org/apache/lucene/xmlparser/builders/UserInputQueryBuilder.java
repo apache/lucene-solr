@@ -4,11 +4,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
 import org.w3c.dom.Element;
-import org.apache.lucene.util.Version;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,62 +35,59 @@ import org.apache.lucene.util.Version;
  */
 public class UserInputQueryBuilder implements QueryBuilder {
 
-	QueryParser unSafeParser;
-	private Analyzer analyzer;
-	private String defaultField;
-	
-	/**
-	 * This constructor has the disadvantage of not being able to change choice of default field name
-	 * @param parser thread un-safe query parser
-	 */
-	public UserInputQueryBuilder(QueryParser parser) {
-		this.unSafeParser = parser;
-	}
+  private QueryParser unSafeParser;
+  private Analyzer analyzer;
+  private String defaultField;
 
-	public UserInputQueryBuilder(String defaultField, Analyzer analyzer) {
-		this.analyzer = analyzer;
-		this.defaultField = defaultField;
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
-	 */
-	public Query getQuery(Element e) throws ParserException {
-		String text=DOMUtils.getText(e);
-		try {
-			Query q = null;
-			if(unSafeParser!=null)
-			{
-				//synchronize on unsafe parser
-				synchronized (unSafeParser)
-				{
-					q = unSafeParser.parse(text);
-				}
-			}
-			else
-			{
-				String fieldName=DOMUtils.getAttribute(e, "fieldName", defaultField);
-				//Create new parser
-				QueryParser parser=createQueryParser(fieldName, analyzer);
-				q = parser.parse(text);				
-			}
-			// use the boost of the original query here, too and multiply (which may be != 1.0f):
-			q.setBoost(q.getBoost()*DOMUtils.getAttribute(e,"boost",1.0f));
-			return q;
-		} catch (ParseException e1) {
-			throw new ParserException(e1.getMessage());
-		}
-	}
-	
-	/**
-	 * Method to create a QueryParser - designed to be overridden
-	 * @param fieldName
-	 * @param analyzer
-	 * @return QueryParser
-	 */
-	protected QueryParser createQueryParser(String fieldName, Analyzer analyzer)
-	{
-		return new QueryParser(Version.LUCENE_CURRENT, fieldName,analyzer);
+  /**
+   * This constructor has the disadvantage of not being able to change choice of default field name
+   *
+   * @param parser thread un-safe query parser
+   */
+  public UserInputQueryBuilder(QueryParser parser) {
+    this.unSafeParser = parser;
+  }
+
+  public UserInputQueryBuilder(String defaultField, Analyzer analyzer) {
+    this.analyzer = analyzer;
+    this.defaultField = defaultField;
+  }
+
+  /* (non-Javadoc)
+    * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
+    */
+
+  public Query getQuery(Element e) throws ParserException {
+    String text = DOMUtils.getText(e);
+    try {
+      Query q = null;
+      if (unSafeParser != null) {
+        //synchronize on unsafe parser
+        synchronized (unSafeParser) {
+          q = unSafeParser.parse(text);
+        }
+      } else {
+        String fieldName = DOMUtils.getAttribute(e, "fieldName", defaultField);
+        //Create new parser
+        QueryParser parser = createQueryParser(fieldName, analyzer);
+        q = parser.parse(text);
+      }
+      q.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+      return q;
+    } catch (ParseException e1) {
+      throw new ParserException(e1.getMessage());
+    }
+  }
+
+  /**
+   * Method to create a QueryParser - designed to be overridden
+   *
+   * @param fieldName
+   * @param analyzer
+   * @return QueryParser
+   */
+  protected QueryParser createQueryParser(String fieldName, Analyzer analyzer) {
+    return new QueryParser(Version.LUCENE_CURRENT, fieldName, analyzer);
 	}
 
 }
