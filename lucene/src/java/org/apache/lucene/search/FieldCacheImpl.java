@@ -45,7 +45,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     init();
   }
   private synchronized void init() {
-    caches = new HashMap<Class<?>,Cache>(7);
+    caches = new HashMap<Class<?>,Cache>(9);
     caches.put(Byte.TYPE, new Cache<ByteValues>(this));
     caches.put(Short.TYPE, new Cache<ShortValues>(this));
     caches.put(Integer.TYPE, new Cache<IntValues>(this));
