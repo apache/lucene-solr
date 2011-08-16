@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -62,9 +64,10 @@ public class Test2BPostings extends LuceneTestCase {
     }
 
     Document doc = new Document();
-    Field field = new Field("field", new MyTokenStream());
-    field.setIndexOptions(IndexOptions.DOCS_ONLY);
-    field.setOmitNorms(true);
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setOmitNorms(true);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    Field field = new Field("field", ft, new MyTokenStream());
     doc.add(field);
     
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;

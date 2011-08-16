@@ -27,15 +27,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
-<<<<<<<
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
-=======
 import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.search.Similarity;
->>>>>>>
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -979,7 +977,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return visitor.getDocument();
   }
 
-<<<<<<<
   /**
    * Get the {@link org.apache.lucene.document.Document} at the <code>n</code>
    * <sup>th</sup> position. The {@link FieldSelector} may be used to determine
@@ -1013,8 +1010,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
   public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
   
-=======
->>>>>>>
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 

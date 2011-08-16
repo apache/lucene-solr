@@ -35,11 +35,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.document.Document;
-<<<<<<<
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-=======
->>>>>>>
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.FieldInfos;
@@ -428,16 +425,9 @@ public class _TestUtil {
   
   /** Adds field info for a Document. */
   public static void add(Document doc, FieldInfos fieldInfos) {
-<<<<<<<
-    List<Fieldable> fields = doc.getFields();
-    for (Fieldable field : fields) {
-      fieldInfos.addOrUpdate(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
-=======
     for (IndexableField field : doc) {
       fieldInfos.addOrUpdate(field.name(), field.indexed(), field.storeTermVectors(), field.storeTermVectorPositions(),
-              field.storeTermVectorOffsets(), field.omitNorms(), false, field.omitTermFreqAndPositions());
->>>>>>>
+              field.storeTermVectorOffsets(), field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
     }
   }
   
@@ -514,15 +504,13 @@ public class _TestUtil {
   // TODO: is there a pre-existing way to do this!!!
   public static Document cloneDocument(Document doc1) {
     final Document doc2 = new Document();
-    for(Fieldable f : doc1.getFields()) {
+    for(IndexableField f : doc1) {
       Field field1 = (Field) f;
       
       Field field2 = new Field(field1.name(),
-                               field1.stringValue(),
-                               field1.isStored() ? Field.Store.YES : Field.Store.NO,
-                               field1.isIndexed() ? (field1.isTokenized() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED) : Field.Index.NO);
-      field2.setOmitNorms(field1.getOmitNorms());
-      field2.setIndexOptions(field1.getIndexOptions());
+                               field1.getFieldType(),
+                               field1.stringValue()
+                               );
       doc2.add(field2);
     }
 

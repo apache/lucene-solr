@@ -476,8 +476,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
      public void run() {
        try {
          Document doc = new Document();
-         Field field = newField("field", "testData", Field.Store.YES,
-             Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+         Field field = newField("field", "testData", TextField.TYPE_STORED);
          doc.add(field);
          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
              TEST_VERSION_CURRENT, new MockAnalyzer(random)));

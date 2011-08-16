@@ -24,13 +24,9 @@ import java.util.HashSet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;

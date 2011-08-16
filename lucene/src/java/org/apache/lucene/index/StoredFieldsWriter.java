@@ -19,11 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-<<<<<<<
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IOContext;
-=======
->>>>>>>
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 

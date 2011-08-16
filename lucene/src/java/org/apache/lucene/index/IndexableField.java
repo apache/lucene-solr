@@ -22,6 +22,9 @@ import java.io.Reader;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.NumericField.DataType;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 
 // nocommit jdocs
@@ -78,9 +81,15 @@ public interface IndexableField {
   // yet decoupled)
   public boolean tokenized();
   public boolean omitNorms();
-  public boolean omitTermFreqAndPositions();
+  public IndexOptions getIndexOptions();
 
   public boolean storeTermVectors();
   public boolean storeTermVectorOffsets();
   public boolean storeTermVectorPositions();
+  
+  // doc values
+  public PerDocFieldValues getDocValues();
+  public void setDocValues(PerDocFieldValues docValues);
+  public boolean hasDocValues();  
+  public ValueType docValuesType();
 }

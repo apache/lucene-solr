@@ -22,11 +22,8 @@ import java.util.Comparator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-<<<<<<<
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
->>>>>>>
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermStats;

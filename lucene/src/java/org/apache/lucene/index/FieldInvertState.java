@@ -56,12 +56,8 @@ public final class FieldInvertState {
     numOverlap = 0;
     offset = 0;
     maxTermFrequency = 0;
-<<<<<<<
     uniqueTermCount = 0;
-    boost = docBoost;
-=======
     boost = 1.0f;
->>>>>>>
     attributeSource = null;
   }
 

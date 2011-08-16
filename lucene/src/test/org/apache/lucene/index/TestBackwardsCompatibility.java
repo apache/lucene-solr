@@ -31,11 +31,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-<<<<<<<
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -620,25 +617,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
-<<<<<<<
-    Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
-    f.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setOmitTermFreqAndPositions(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setIndexOptions(IndexOptions.DOCS_ONLY);
     Field f = new Field("content3", customType, "aaa");
->>>>>>>
     doc.add(f);
-<<<<<<<
-    f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
-    f.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
-    customType2.setOmitTermFreqAndPositions(true);
+    customType2.setIndexOptions(IndexOptions.DOCS_ONLY);
     f = new Field("content4", customType2, "aaa");
->>>>>>>
     doc.add(f);
     writer.addDocument(doc);
   }

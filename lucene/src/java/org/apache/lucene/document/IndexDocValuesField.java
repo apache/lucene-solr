@@ -20,9 +20,6 @@ import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
@@ -73,7 +70,7 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-public class IndexDocValuesField extends AbstractField implements PerDocFieldValues {
+public class IndexDocValuesField extends Field implements PerDocFieldValues {
 
   protected BytesRef bytes;
   protected double doubleValue;
@@ -85,7 +82,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
    * Creates a new {@link IndexDocValuesField} with the given name.
    */
   public IndexDocValuesField(String name) {
-    super(name, Store.NO, Index.NO, TermVector.NO);
+    super(name, new FieldType());
     setDocValues(this);
   }
 
@@ -329,7 +326,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
    * returns the given field. Any modifications to this instance will be visible
    * to the given field.
    */
-  public <T extends AbstractField> T set(T field) {
+  public <T extends Field> T set(T field) {
     field.setDocValues(this);
     return field;
   }
@@ -339,7 +336,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
    * given type and returns it.
    * 
    */
-  public static <T extends AbstractField> T set(T field, ValueType type) {
+  public static <T extends Field> T set(T field, ValueType type) {
     if (field instanceof IndexDocValuesField)
       return field;
     final IndexDocValuesField valField = new IndexDocValuesField();

@@ -19,12 +19,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-<<<<<<<
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
 
@@ -32,8 +32,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
-=======
->>>>>>>
 
 /**
  * Class responsible for access to stored document fields.
@@ -46,7 +44,8 @@ public final class FieldsReader implements Cloneable, Closeable {
   private final static int FORMAT_SIZE = 4;
 
   private final FieldInfos fieldInfos;
-
+  private CloseableThreadLocal<IndexInput> fieldsStreamTL = new CloseableThreadLocal<IndexInput>();
+  
   // The main fieldStream, used only for cloning.
   private final IndexInput cloneableFieldsStream;
 
@@ -269,7 +268,6 @@ public final class FieldsReader implements Cloneable, Closeable {
 
     return fieldsStream;
   }
-<<<<<<<
 
   /**
    * Skip the field.  We still have to read some of the information about the field, but can skip past the actual content.
@@ -300,6 +298,7 @@ public final class FieldsReader implements Cloneable, Closeable {
     fieldsStream.seek(fieldsStream.getFilePointer() + toRead);
   }
 
+  /*
   private NumericField loadNumericField(FieldInfo fi, int numeric) throws IOException {
     assert numeric != 0;
     switch(numeric) {
@@ -315,7 +314,9 @@ public final class FieldsReader implements Cloneable, Closeable {
         throw new FieldReaderException("Invalid numeric type: " + Integer.toHexString(numeric));
     }
   }
-
+  */
+  
+  /*
   private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean tokenize, boolean cacheResult, int numeric) throws IOException {
     final AbstractField f;
     if (binary) {
@@ -397,11 +398,12 @@ public final class FieldsReader implements Cloneable, Closeable {
     doc.add(new Field(fi.name, sizebytes));
     return size;
   }
+  */
 
   /**
    * A Lazy implementation of Fieldable that defers loading of fields until asked for, instead of when the Document is
    * loaded.
-   */
+   *
   private class LazyField extends AbstractField implements Fieldable {
     private int toRead;
     private long pointer;
@@ -438,9 +440,9 @@ public final class FieldsReader implements Cloneable, Closeable {
       return localFieldsStream;
     }
 
-    /** The value of the field as a Reader, or null.  If null, the String value,
+     ** The value of the field as a Reader, or null.  If null, the String value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. *
     public Reader readerValue() {
       ensureOpen();
       return null;
@@ -448,7 +450,7 @@ public final class FieldsReader implements Cloneable, Closeable {
 
     /** The value of the field as a TokenStream, or null.  If null, the Reader value,
      * String value, or binary value is used. Exactly one of stringValue(), 
-     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. *
     public TokenStream tokenStreamValue() {
       ensureOpen();
       return null;
@@ -456,7 +458,7 @@ public final class FieldsReader implements Cloneable, Closeable {
 
     /** The value of the field as a String, or null.  If null, the Reader value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. *
     public String stringValue() {
       ensureOpen();
       if (isBinary)
@@ -520,6 +522,5 @@ public final class FieldsReader implements Cloneable, Closeable {
         return null;     
     }
   }
-=======
->>>>>>>
+  */
 }

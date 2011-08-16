@@ -24,11 +24,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-<<<<<<<
 import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
-=======
->>>>>>>
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.ValueType;
@@ -125,15 +122,10 @@ public class RandomIndexWriter implements Closeable {
    * Adds a Document.
    * @see IndexWriter#addDocument(Iterable)
    */
-<<<<<<<
-  public void addDocument(final Document doc) throws IOException {
-    if (doDocValues) {
-      randomPerDocFieldValues(r, doc);
-    }
-
-=======
   public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
->>>>>>>
+    if (doDocValues) {
+      randomPerDocFieldValues(r, (Document) doc);
+    }
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
@@ -141,15 +133,9 @@ public class RandomIndexWriter implements Closeable {
       // addDocuments?  Would be better testing.
       w.addDocuments(new Iterable<Iterable<T>>() {
 
-<<<<<<<
-        @Override
-        public Iterator<Document> iterator() {
-          return new Iterator<Document>() {
-=======
         // @Override -- not until Java 1.6
         public Iterator<Iterable<T>> iterator() {
           return new Iterator<Iterable<T>>() {
->>>>>>>
             boolean done;
             
             @Override
@@ -162,13 +148,8 @@ public class RandomIndexWriter implements Closeable {
               throw new UnsupportedOperationException();
             }
 
-<<<<<<<
-            @Override
-            public Document next() {
-=======
             // @Override -- not until Java 1.6
             public Iterable<T> next() {
->>>>>>>
               if (done) {
                 throw new IllegalStateException();
               }
@@ -190,7 +171,7 @@ public class RandomIndexWriter implements Closeable {
     ValueType[] values = ValueType.values();
     ValueType type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getFieldable(name) != null)
+    if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getField(name) != null)
         return;
     IndexDocValuesField docValuesField = new IndexDocValuesField(name);
     switch (type) {
@@ -270,27 +251,16 @@ public class RandomIndexWriter implements Closeable {
    * Updates a document.
    * @see IndexWriter#updateDocument(Term, Iterable)
    */
-<<<<<<<
-  public void updateDocument(final Term t, final Document doc) throws IOException {
-    if (doDocValues) {
-      randomPerDocFieldValues(r, doc);
-    }
-    
-=======
   public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
->>>>>>>
+    if (doDocValues) {
+      randomPerDocFieldValues(r, (Document) doc);
+    }
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Iterable<T>>() {
 
-<<<<<<<
-        @Override
-        public Iterator<Document> iterator() {
-          return new Iterator<Document>() {
-=======
         // @Override -- not until Java 1.6
         public Iterator<Iterable<T>> iterator() {
           return new Iterator<Iterable<T>>() {
->>>>>>>
             boolean done;
             
             @Override
@@ -303,13 +273,8 @@ public class RandomIndexWriter implements Closeable {
               throw new UnsupportedOperationException();
             }
 
-<<<<<<<
-            @Override
-            public Document next() {
-=======
             // @Override -- not until Java 1.6
             public Iterable<T> next() {
->>>>>>>
               if (done) {
                 throw new IllegalStateException();
               }

@@ -90,39 +90,33 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field != null);
     assertTrue(field.storeTermVectors() == true);
 
-<<<<<<<
-    assertTrue(field.isStoreOffsetWithTermVector() == true);
-    assertTrue(field.isStorePositionWithTermVector() == true);
-    assertTrue(field.getOmitNorms() == false);
-    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-=======
     assertTrue(field.storeTermVectorOffsets() == true);
     assertTrue(field.storeTermVectorPositions() == true);
->>>>>>>
+    assertTrue(field.omitNorms() == false);
+    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = (Field) doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
-<<<<<<<
-    assertTrue(field.isTermVectorStored() == false);
-    assertTrue(field.isStoreOffsetWithTermVector() == false);
-    assertTrue(field.isStorePositionWithTermVector() == false);
-    assertTrue(field.getOmitNorms() == true);
-    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-=======
     assertTrue(field.storeTermVectors() == false);
     assertTrue(field.storeTermVectorOffsets() == false);
     assertTrue(field.storeTermVectorPositions() == false);
->>>>>>>
+    assertTrue(field.omitNorms() == true);
+    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = (Field) doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
-<<<<<<<
-    assertTrue(field.isTermVectorStored() == false);
-    assertTrue(field.isStoreOffsetWithTermVector() == false);
-    assertTrue(field.isStorePositionWithTermVector() == false);
-    assertTrue(field.getOmitNorms() == false);
+    assertTrue(field.storeTermVectors() == false);
+    assertTrue(field.storeTermVectorOffsets() == false);
+    assertTrue(field.storeTermVectorPositions() == false);
+    assertTrue(field.omitNorms() == false);
     assertTrue(field.getIndexOptions() == IndexOptions.DOCS_ONLY);
     reader.close();
+
+    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
+    reader.document(0, visitor);
+    final List<IndexableField> fields = visitor.getDocument().getFields();
+    assertEquals(1, fields.size());
+    assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
   }
 
 
@@ -174,17 +168,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue("calling binaryValue() twice should give same reference", field.getBinaryValue() == field.getBinaryValue());
     for (int i = 0; i < bytes.length; i++) {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
-=======
-    assertTrue(field.storeTermVectors() == false);
-    assertTrue(field.storeTermVectorOffsets() == false);
-    assertTrue(field.storeTermVectorPositions() == false);
-
-    DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
-    reader.document(0, visitor);
-    final List<IndexableField> fields = visitor.getDocument().getFields();
-    assertEquals(1, fields.size());
-    assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
->>>>>>>
 
     reader.close();
   }

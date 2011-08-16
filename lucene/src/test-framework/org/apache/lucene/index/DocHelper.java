@@ -29,13 +29,9 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -109,14 +105,10 @@ class DocHelper {
   public static final String NO_TF_KEY = "omitTermFreqAndPositions";
   public static Field noTFField;
   static {
-<<<<<<<
-    noTFField.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     customType6 = new FieldType(TextField.TYPE_UNSTORED);
-    customType6.setOmitTermFreqAndPositions(true);
+    customType6.setIndexOptions(IndexOptions.DOCS_ONLY);
     customType6.setStored(true);
     noTFField = new Field(NO_TF_KEY, customType6, NO_TF_TEXT);
->>>>>>>
   }
 
   public static final FieldType customType7;
@@ -228,15 +220,10 @@ class DocHelper {
       if (f.indexed() && !f.storeTermVectors()) add(notermvector,f);
       if (f.stored()) add(stored,f);
       else add(unstored,f);
-<<<<<<<
-      if (f.getOmitNorms()) add(noNorms,f);
       if (f.getIndexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
-      if (f.isLazy()) add(lazy, f);
-=======
       if (f.omitNorms()) add(noNorms,f);
-      if (f.omitTermFreqAndPositions()) add(noTf,f);
+      if (f.getIndexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
       //if (f.isLazy()) add(lazy, f);
->>>>>>>
     }
   }
 

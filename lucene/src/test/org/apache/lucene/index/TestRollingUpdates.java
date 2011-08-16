@@ -19,11 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-<<<<<<<
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.index.codecs.CodecProvider;
-=======
->>>>>>>
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.Test;

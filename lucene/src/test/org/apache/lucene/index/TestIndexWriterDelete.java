@@ -31,13 +31,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-<<<<<<<
 import org.apache.lucene.document.Field;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -971,7 +968,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     while(true) {
       Document doc = new Document();
-      doc.add(new Field("id", count+"", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(new StringField("id", count+""));
       final Term delTerm;
       if (count == 1010) {
         // This is the only delete that applies
@@ -1017,7 +1014,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int count = 0;
     while(true) {
       Document doc = new Document();
-      doc.add(new Field("id", count+"", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(new StringField("id", count+""));
       final Term delTerm;
       if (count == 1010) {
         // This is the only delete that applies
@@ -1071,8 +1068,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         w.deleteDocuments(new Term("id", "0"));
       }
       Document doc = new Document();
-      doc.add(newField("id", ""+id, Field.Index.NOT_ANALYZED));
-      doc.add(newField("body", sb.toString(), Field.Index.ANALYZED));
+      doc.add(newField("id", ""+id, StringField.TYPE_UNSTORED));
+      doc.add(newField("body", sb.toString(), TextField.TYPE_UNSTORED));
       w.updateDocument(new Term("id", ""+id), doc);
       docsInSegment.incrementAndGet();
       if (dir.fileExists("_0_1.del")) {

@@ -46,15 +46,9 @@ public class TestRollback extends LuceneTestCase {
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       String value = Integer.toString(i);
-<<<<<<<
-      doc.add(newField("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
-      doc.add(newField("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
-      w.updateDocument(new Term("pk", value), doc);
-=======
       doc.add(newField("pk", value, customType));
       doc.add(newField("text", "foo", customType));
-      w.updateDocument(pkTerm.createTerm(value), doc);
->>>>>>>
+      w.updateDocument(new Term("pk", value), doc);
     }
     w.rollback();
 

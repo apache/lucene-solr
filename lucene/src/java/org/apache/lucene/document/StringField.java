@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,13 +26,13 @@ public final class StringField extends Field {
   static {
     TYPE_UNSTORED.setIndexed(true);
     TYPE_UNSTORED.setOmitNorms(true);
-    TYPE_UNSTORED.setOmitTermFreqAndPositions(true);
+    TYPE_UNSTORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_UNSTORED.freeze();
 
     TYPE_STORED.setIndexed(true);
     TYPE_STORED.setStored(true);
     TYPE_STORED.setOmitNorms(true);
-    TYPE_STORED.setOmitTermFreqAndPositions(true);
+    TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_STORED.freeze();
   }
   

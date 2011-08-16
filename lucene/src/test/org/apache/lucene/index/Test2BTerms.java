@@ -177,18 +177,12 @@ public class Test2BTerms extends LuceneTestCase {
 
       Document doc = new Document();
       final MyTokenStream ts = new MyTokenStream(random, TERMS_PER_DOC);
-<<<<<<<
-      Field field = new Field("field", ts);
-      field.setIndexOptions(IndexOptions.DOCS_ONLY);
-      field.setOmitNorms(true);
-=======
 
       FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
       customType.setStored(true);
-      customType.setOmitTermFreqAndPositions(true);
+      customType.setIndexOptions(IndexOptions.DOCS_ONLY);
       customType.setOmitNorms(true);
       Field field = new Field("field", customType, ts);
->>>>>>>
       doc.add(field);
       //w.setInfoStream(System.out);
       final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);

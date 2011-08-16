@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.codecs.Codec;
@@ -1105,61 +1106,14 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
   
-  public static org.apache.lucene.document.Field newField(String name, String value, FieldType type) {
+  public static Field newField(String name, String value, FieldType type) {
     return newField(random, name, value, type);
   }
   
-<<<<<<<
-  /** Returns a new field instance. 
-   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
-  public static Field newField(String name, String value, Store store, Index index) {
-    return newField(random, name, value, store, index);
-  }
-  
-  /**
-   * Returns a new Field instance. Use this when the test does not
-   * care about some specific field settings (most tests)
-   * <ul>
-   *  <li>If the store value is set to Store.NO, sometimes the field will be randomly stored.
-   *  <li>More term vector data than you ask for might be indexed, for example if you choose YES
-   *      it might index term vectors with offsets too.
-   * </ul>
-   */
-  public static Field newField(String name, String value, Store store, Index index, TermVector tv) {
-    return newField(random, name, value, store, index, tv);
-  }
-  
-  /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
-  public static Field newField(Random random, String name, String value, Index index) {
-    return newField(random, name, value, Store.NO, index);
-  }
-  
-  /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
-  public static Field newField(Random random, String name, String value, Store store, Index index) {
-    return newField(random, name, value, store, index, TermVector.NO);
-  }
-  
-  /** Returns a new field instance, using the specified random. 
-   * See {@link #newField(String, String, Field.Store, Field.Index, Field.TermVector)} for more information */
-  public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
-    
-=======
-  public static org.apache.lucene.document.Field newField(Random random, String name, String value, FieldType type) {
->>>>>>>
+  public static Field newField(Random random, String name, String value, FieldType type) {
     if (usually(random)) {
       // most of the time, don't modify the params
-<<<<<<<
-      return new Field(name, value, store, index, tv);
-    }
-
-    if (random.nextBoolean()) {
-      // tickle any code still relying on field names being interned:
-      name = new String(name);
-=======
-      return new org.apache.lucene.document.Field(name, type, value);
->>>>>>>
+      return new Field(name, type, value);
     }
 
     FieldType newType = new FieldType(type);
@@ -1189,7 +1143,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     */
     
-    return new org.apache.lucene.document.Field(name, newType, value);
+    return new Field(name, newType, value);
   }
   
   /** return a random Locale from the available locales on the system */

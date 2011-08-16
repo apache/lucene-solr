@@ -25,12 +25,9 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-<<<<<<<
-=======
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
->>>>>>>
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -41,7 +38,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
@@ -193,13 +189,8 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
-<<<<<<<
        *  has position data
-       *  @see AbstractField#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
-=======
-       *  does not omitTermFreqAndPositions.
-       *  @see FieldType#setOmitTermFreqAndPositions */
->>>>>>>
+       *  @see FieldType#setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions) */
       public boolean hasProx;
 
       /** Map that includes certain

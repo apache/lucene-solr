@@ -24,19 +24,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-<<<<<<<
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-=======
 import org.apache.lucene.util.ArrayUtil;
-
-
->>>>>>>
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 
 
@@ -230,15 +223,9 @@ final class DocFieldProcessor extends DocConsumer {
         // needs to be more "pluggable" such that if I want
         // to have a new "thing" my Fields can do, I can
         // easily add it
-<<<<<<<
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
-                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
-=======
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.indexed(), field.storeTermVectors(),
                                               field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
-                                              field.omitNorms(), false, field.omitTermFreqAndPositions());
->>>>>>>
+                                              field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -249,15 +236,9 @@ final class DocFieldProcessor extends DocConsumer {
           rehash();
         }
       } else {
-<<<<<<<
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
-                            field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
-=======
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.indexed(), field.storeTermVectors(),
                                field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
-                               field.omitNorms(), false, field.omitTermFreqAndPositions());
->>>>>>>
+                               field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {

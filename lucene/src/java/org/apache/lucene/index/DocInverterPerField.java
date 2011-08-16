@@ -190,13 +190,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           }
         }
 
-<<<<<<<
         fieldState.offset += docState.analyzer == null ? 0 : docState.analyzer.getOffsetGap(field);
-        fieldState.boost *= field.getBoost();
-=======
-        fieldState.offset += docState.analyzer.getOffsetGap(field);
         fieldState.boost *= field.boost();
->>>>>>>
       }
 
       // LUCENE-2387: don't hang onto the field, so GC can

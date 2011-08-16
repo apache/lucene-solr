@@ -27,12 +27,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -63,7 +60,7 @@ public class TestOmitTf extends LuceneTestCase {
   private static final FieldType normalType = new FieldType(TextField.TYPE_UNSTORED);
   
   static {
-    omitType.setOmitTermFreqAndPositions(true);
+    omitType.setIndexOptions(IndexOptions.DOCS_ONLY);
   }
 
   // Tests whether the DocumentWriter correctly enable the
@@ -79,12 +76,7 @@ public class TestOmitTf extends LuceneTestCase {
     d.add(f1);
        
     // this field will NOT have Tf
-<<<<<<<
-    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
->>>>>>>
     d.add(f2);
         
     writer.addDocument(d);
@@ -94,18 +86,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverse
-<<<<<<<
-    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     f1 = newField("f1", "This field has term freqs", omitType);
->>>>>>>
     d.add(f1);
         
-<<<<<<<
-    f2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);        
-=======
     f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
->>>>>>>
     d.add(f2);
         
     writer.addDocument(d);
@@ -143,12 +127,7 @@ public class TestOmitTf extends LuceneTestCase {
     d.add(f1);
        
     // this field will NOT have Tf
-<<<<<<<
-    Field f2 = newField("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     Field f2 = newField("f2", "This field has NO Tf in all docs", omitType);
->>>>>>>
     d.add(f2);
 
     for(int i=0;i<30;i++)
@@ -159,18 +138,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-<<<<<<<
-    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     f1 = newField("f1", "This field has term freqs", omitType);
->>>>>>>
     d.add(f1);
         
-<<<<<<<
-    f2.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);        
-=======
     f2 = newField("f2", "This field has NO Tf in all docs", normalType);     
->>>>>>>
     d.add(f2);
         
     for(int i=0;i<30;i++)
@@ -215,11 +186,6 @@ public class TestOmitTf extends LuceneTestCase {
     for(int i=0;i<5;i++)
       writer.addDocument(d);
 
-<<<<<<<
-    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
-        
-=======
->>>>>>>
     for(int i=0;i<20;i++)
       writer.addDocument(d);
 
@@ -257,12 +223,7 @@ public class TestOmitTf extends LuceneTestCase {
     lmp.setUseCompoundFile(false);
     Document d = new Document();
         
-<<<<<<<
-    Field f1 = newField("f1", "This field has no term freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     Field f1 = newField("f1", "This field has term freqs", omitType);
->>>>>>>
     d.add(f1);
 
     for(int i=0;i<30;i++)
@@ -274,7 +235,7 @@ public class TestOmitTf extends LuceneTestCase {
     
     // now add some documents with positions, and check there is no prox after optimization
     d = new Document();
-    f1 = newField("f1", "This field has positions", Field.Store.NO, Field.Index.ANALYZED);
+    f1 = newField("f1", "This field has positions", TextField.TYPE_UNSTORED);
     d.add(f1);
     
     for(int i=0;i<30;i++)
@@ -308,12 +269,7 @@ public class TestOmitTf extends LuceneTestCase {
       Document d = new Document();
       sb.append(term).append(" ");
       String content  = sb.toString();
-<<<<<<<
-      Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
-      noTf.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
       Field noTf = newField("noTf", content + (i%2==0 ? "" : " notf"), omitType);
->>>>>>>
       d.add(noTf);
           
       Field tf = newField("tf", content + (i%2==0 ? " tf" : ""), normalType);

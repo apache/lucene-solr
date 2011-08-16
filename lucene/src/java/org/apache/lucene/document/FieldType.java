@@ -17,6 +17,8 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+
 public class FieldType {
 
   private boolean indexed;
@@ -26,7 +28,7 @@ public class FieldType {
   private boolean storeTermVectorOffsets;
   private boolean storeTermVectorPositions;
   private boolean omitNorms;
-  private boolean omitTermFreqsAndPositions;
+  private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
   private boolean lazy;
   private boolean frozen;
 
@@ -38,7 +40,7 @@ public class FieldType {
     this.storeTermVectorOffsets = ref.storeTermVectorOffsets();
     this.storeTermVectorPositions = ref.storeTermVectorPositions();
     this.omitNorms = ref.omitNorms();
-    this.omitTermFreqsAndPositions = ref.omitTermFreqAndPositions();
+    this.indexOptions = ref.indexOptions();
     this.lazy = ref.lazy();
   }
   
@@ -118,13 +120,13 @@ public class FieldType {
     this.omitNorms = value;
   }
 
-  public boolean omitTermFreqAndPositions() {
-    return this.omitTermFreqsAndPositions;
+  public IndexOptions indexOptions() {
+    return this.indexOptions;
   }
   
-  public void setOmitTermFreqAndPositions(boolean value) {
+  public void setIndexOptions(IndexOptions value) {
     checkIfFrozen();
-    this.omitTermFreqsAndPositions = value;
+    this.indexOptions = value;
   }
 
   public boolean lazy() {
@@ -171,8 +173,9 @@ public class FieldType {
     if (omitNorms()) {
       result.append(",omitNorms");
     }
-    if (omitTermFreqAndPositions()) {
-      result.append(",omitTermFreqAndPositions");
+    if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+      result.append(",indexOptions=");
+      result.append(indexOptions);
     }
     if (lazy()){
       result.append(",lazy");

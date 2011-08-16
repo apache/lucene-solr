@@ -674,18 +674,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
     public void indexDoc() throws IOException {
       Document d = new Document();
 
-      FieldType customType1 = new FieldType(TextField.TYPE_UNSTORED);
-      customType1.setStored(true);
+      FieldType customType1 = new FieldType(TextField.TYPE_STORED);
       customType1.setTokenized(false);
       customType1.setOmitNorms(true);
       
       ArrayList<Field> fields = new ArrayList<Field>();      
       String idString = getIdString();
-<<<<<<<
-      Field idField =  newField("id", idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
-=======
-      Field idField =  newField(idTerm.field(), idString, customType1);
->>>>>>>
+      Field idField =  newField("id", idString, customType1);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);

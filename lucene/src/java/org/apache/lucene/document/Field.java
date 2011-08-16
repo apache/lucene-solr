@@ -20,15 +20,14 @@ package org.apache.lucene.document;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
-<<<<<<<
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-=======
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.values.PerDocFieldValues;
+import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
->>>>>>>
 
 /**
  * A field is a section of a Document. Each field has two parts, a name and a
@@ -50,6 +49,7 @@ public class Field implements IndexableField {
   // length/offset for all primitive types
   protected int binaryLength;
   protected int binaryOffset;
+  protected PerDocFieldValues docValues;
   
   protected float boost = 1.0f;
 
@@ -64,7 +64,7 @@ public class Field implements IndexableField {
     if (reader == null)
       throw new NullPointerException("reader cannot be null");
     
-    this.name = StringHelper.intern(name);        // field names are interned
+    this.name = name;        // field names are interned
     this.fieldsData = reader;
     this.type = type;
   }
@@ -75,7 +75,7 @@ public class Field implements IndexableField {
     if (tokenStream == null)
       throw new NullPointerException("tokenStream cannot be null");
     
-    this.name = StringHelper.intern(name);        // field names are interned
+    this.name = name;        // field names are interned
     this.fieldsData = null;
     this.tokenStream = tokenStream;
     this.type = type;
@@ -91,7 +91,7 @@ public class Field implements IndexableField {
     this.type = type;
     this.binaryOffset = offset;
     this.binaryLength = length;
-    this.name = StringHelper.intern(name);
+    this.name = name;
   }
   
   public Field(String name, FieldType type, String value) {
@@ -117,9 +117,6 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
     this.fieldsData = value;
-    
-    if (internName) // field names are optionally interned
-      name = StringHelper.intern(name);
   }
 
   public boolean isNumeric() {
@@ -237,63 +234,6 @@ public class Field implements IndexableField {
     return name;
   }
   
-<<<<<<<
-  /**
-   * Create a field by specifying its name, value and how it will
-   * be saved in the index.
-   * 
-   * @param name The name of the field
-   * @param value The string to process
-   * @param store Whether <code>value</code> should be stored in the index
-   * @param index Whether the field should be indexed, and if so, if it should
-   *  be tokenized before indexing 
-   * @param termVector Whether term vector should be stored
-   * @throws NullPointerException if name or value is <code>null</code>
-   * @throws IllegalArgumentException in any of the following situations:
-   * <ul> 
-   *  <li>the field is neither stored nor indexed</li> 
-   *  <li>the field is not indexed but termVector is <code>TermVector.YES</code></li>
-   * </ul> 
-   */ 
-  public Field(String name, String value, Store store, Index index, TermVector termVector) {
-    if (name == null)
-      throw new NullPointerException("name cannot be null");
-    if (value == null)
-      throw new NullPointerException("value cannot be null");
-    if (name.length() == 0 && value.length() == 0)
-      throw new IllegalArgumentException("name and value cannot both be empty");
-    if (index == Index.NO && store == Store.NO)
-      throw new IllegalArgumentException("it doesn't make sense to have a field that "
-         + "is neither indexed nor stored");
-    if (index == Index.NO && termVector != TermVector.NO)
-      throw new IllegalArgumentException("cannot store term vector information "
-         + "for a field that is not indexed");
-          
-    this.name = name; 
-    
-    this.fieldsData = value;
-
-    this.isStored = store.isStored();
-   
-    this.isIndexed = index.isIndexed();
-    this.isTokenized = index.isAnalyzed();
-    this.omitNorms = index.omitNorms();
-    if (index == Index.NO) {
-      // note: now this reads even wierder than before
-      this.indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    }    
-
-    this.isBinary = false;
-
-    setStoreTermVector(termVector);
-  }
-  
-  /**
-   * Create a tokenized and indexed field that is not stored. Term vectors will
-   * not be stored.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
-   * has been called.
-=======
   public float boost() {
     return boost;
   }
@@ -310,7 +250,6 @@ public class Field implements IndexableField {
    * {@link org.apache.lucene.search.Similarity#encodeNormValue(float)} before
    * it is stored in the index. One should attempt to ensure that this product
    * does not overflow the range of that encoding.
->>>>>>>
    * 
    * @see org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)
    * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
@@ -323,83 +262,20 @@ public class Field implements IndexableField {
     return false;
   }
 
-<<<<<<<
-  /**
-   * Create a tokenized and indexed field that is not stored, optionally with 
-   * storing term vectors.  The Reader is read only when the Document is added to the index,
-   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
-   * has been called.
-   * 
-   * @param name The name of the field
-   * @param reader The reader with the content
-   * @param termVector Whether term vector should be stored
-   * @throws NullPointerException if name or reader is <code>null</code>
-   */ 
-  public Field(String name, Reader reader, TermVector termVector) {
-    if (name == null)
-      throw new NullPointerException("name cannot be null");
-    if (reader == null)
-      throw new NullPointerException("reader cannot be null");
-    
-    this.name = name;
-    this.fieldsData = reader;
-    
-    this.isStored = false;
-    
-    this.isIndexed = true;
-    this.isTokenized = true;
-    
-    this.isBinary = false;
-    
-    setStoreTermVector(termVector);
-=======
   public Number numericValue() {
     return null;
->>>>>>>
   }
 
   public NumericField.DataType numericDataType() {
     return null;
   }
   
-<<<<<<<
-  /**
-   * Create a tokenized and indexed field that is not stored, optionally with 
-   * storing term vectors.  This is useful for pre-analyzed fields.
-   * The TokenStream is read only when the Document is added to the index,
-   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
-   * has been called.
-   * 
-   * @param name The name of the field
-   * @param tokenStream The TokenStream with the content
-   * @param termVector Whether term vector should be stored
-   * @throws NullPointerException if name or tokenStream is <code>null</code>
-   */ 
-  public Field(String name, TokenStream tokenStream, TermVector termVector) {
-    if (name == null)
-      throw new NullPointerException("name cannot be null");
-    if (tokenStream == null)
-      throw new NullPointerException("tokenStream cannot be null");
-    
-    this.name = name;
-    this.fieldsData = null;
-    this.tokenStream = tokenStream;
-
-    this.isStored = false;
-    
-    this.isIndexed = true;
-    this.isTokenized = true;
-    
-    this.isBinary = false;
-    
-    setStoreTermVector(termVector);
-=======
   private byte[] getBinaryValue(byte[] result /* unused */) {
     if (isBinary || fieldsData instanceof byte[]) return (byte[]) fieldsData;
     else return null;
   }
   
-  private byte[] getBinaryValue() {
+  protected byte[] getBinaryValue() {
     return getBinaryValue(null);
   }
   
@@ -417,7 +293,6 @@ public class Field implements IndexableField {
     } else {
       return null;
     }
->>>>>>>
   }
   
   /**
@@ -426,7 +301,7 @@ public class Field implements IndexableField {
    * 
    * @return length of byte[] segment that represents this Field value
    */
-  private int getBinaryLength() {
+  protected int getBinaryLength() {
     if (isBinary) {
       return binaryLength;
     } else if (fieldsData instanceof byte[]) return ((byte[]) fieldsData).length;
@@ -466,8 +341,8 @@ public class Field implements IndexableField {
     return type.omitNorms();
   }
   
-  public boolean omitTermFreqAndPositions() {
-    return type.omitTermFreqAndPositions();
+  public IndexOptions getIndexOptions() {
+    return type.indexOptions();
   }
   
   public boolean storeTermVectors() {
@@ -495,33 +370,32 @@ public class Field implements IndexableField {
     result.append(name);
     result.append(':');
 
-<<<<<<<
-    if (name == null)
-      throw new IllegalArgumentException("name cannot be null");
-    if (value == null)
-      throw new IllegalArgumentException("value cannot be null");
-    
-    this.name = name;
-    fieldsData = value;
-    
-    isStored = true;
-    isIndexed   = false;
-    isTokenized = false;
-    indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    omitNorms = true;
-    
-    isBinary    = true;
-    binaryLength = length;
-    binaryOffset = offset;
-    
-    setStoreTermVector(TermVector.NO);
-=======
     if (fieldsData != null && type.lazy() == false) {
       result.append(fieldsData);
     }
 
     result.append('>');
     return result.toString();
->>>>>>>
+  }
+  
+  public PerDocFieldValues getDocValues() {
+    return docValues;
+  }
+  
+  public void setDocValues(PerDocFieldValues docValues) {
+    this.docValues = docValues;
+  }
+  
+  public boolean hasDocValues() {
+    return docValues != null && docValues.type() != null;
+  }
+  
+  public ValueType docValuesType() {
+    return docValues == null? null : docValues.type();
+  }
+
+  public FieldType getFieldType() {
+    // get a copy
+    return new FieldType(type);
   }
 }

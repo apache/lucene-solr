@@ -30,16 +30,9 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IOContext.Context;
@@ -325,15 +318,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(newField("f1", "v1", customType));
     doc.add(newField("f1", "v2", customType2));
     // f2 has no TF
-<<<<<<<
-    Field f = newField("f2", "v1", Store.NO, Index.ANALYZED);
-    f.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
     FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
-    customType3.setStored(true);
-    customType3.setOmitTermFreqAndPositions(true);
+    customType3.setIndexOptions(IndexOptions.DOCS_ONLY);
     Field f = newField("f2", "v1", customType3);
->>>>>>>
     doc.add(f);
     doc.add(newField("f2", "v2", customType2));
 

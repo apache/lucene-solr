@@ -33,12 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -75,27 +72,6 @@ public class TestNRTThreads extends LuceneTestCase {
   }
 
   @Test
-<<<<<<<
-=======
-  // TODO: is there a pre-existing way to do this!!!
-  private Document cloneDoc(Document doc1) {
-    final Document doc2 = new Document();
-    for(IndexableField field1 : doc1.getFields()) {
-      
-      FieldType ft = new FieldType();
-      ft.setStored(field1.stored());
-      ft.setIndexed(field1.indexed());
-      ft.setTokenized(field1.tokenized());
-      ft.setOmitNorms(field1.omitNorms());
-      ft.setOmitTermFreqAndPositions(field1.omitTermFreqAndPositions());
-      
-      Field field2 = new Field(field1.name(),
-                               ft,
-                               field1.stringValue());
-      doc2.add(field2);
-    }
-
->>>>>>>
   public void testNRTThreads() throws Exception {
 
     final long t0 = System.currentTimeMillis();
