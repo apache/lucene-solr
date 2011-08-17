@@ -277,10 +277,10 @@ public class TestFieldCache extends LuceneTestCase {
         s = unicodeStrings[random.nextInt(i)];
       }
       if (s == null) {
-        s = _TestUtil.randomUnicodeString(random, 250);
+        s = _TestUtil.randomUnicodeString(random);
       }
     } else {
-      s = _TestUtil.randomUnicodeString(random, 250);
+      s = _TestUtil.randomUnicodeString(random);
     }
     return s;
   }
