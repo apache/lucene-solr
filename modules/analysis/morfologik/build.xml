@@ -41,13 +41,5 @@
     <path refid="base.classpath"/>
   </path>
 
-  <path id="test.classpath">
-    <path refid="classpath"/>
-    <pathelement location="../../../lucene/build/classes/test-framework/"/>
-    <pathelement location="../../../lucene/build/classes/test/"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
-  </path>
-
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
 </project>
