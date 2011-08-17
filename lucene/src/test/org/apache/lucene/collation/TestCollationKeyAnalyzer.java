@@ -19,6 +19,7 @@ package org.apache.lucene.collation;
 
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CollationTestBase;
 
 import java.text.Collator;
 import java.util.Locale;
