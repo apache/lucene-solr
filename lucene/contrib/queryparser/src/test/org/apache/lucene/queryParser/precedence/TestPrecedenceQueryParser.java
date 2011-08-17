@@ -40,7 +40,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
-import org.apache.lucene.queryParser.TestQueryParser;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryNodeParseException;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
@@ -61,12 +60,14 @@ import org.apache.lucene.util.LuceneTestCase;
  * This test case tests {@link PrecedenceQueryParser}.
  * </p>
  * <p>
- * It contains all tests from {@link TestQueryParser} with some adjusted to 
+ * It contains all tests from {@link QueryParserTestBase} with some adjusted to 
  * fit the precedence requirement, plus some precedence test cases. 
  * </p>
  * 
- * @see TestQueryParser
+ * @see QueryParserTestBase
  */
+// TODO: refactor this to actually extend that class, overriding the tests
+// that it adjusts to fit the precedence requirement, adding its extra tests.
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

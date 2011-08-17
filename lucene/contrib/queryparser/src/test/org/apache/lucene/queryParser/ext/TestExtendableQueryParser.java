@@ -20,10 +20,9 @@ package org.apache.lucene.queryParser.ext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.TestQueryParser;
+import org.apache.lucene.queryParser.QueryParserTestBase;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -32,7 +31,7 @@ import org.apache.lucene.search.TermQuery;
 /**
  * Testcase for the class {@link ExtendableQueryParser}
  */
-public class TestExtendableQueryParser extends TestQueryParser {
+public class TestExtendableQueryParser extends QueryParserTestBase {
   private static char[] DELIMITERS = new char[] {
       Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, '-', '|' };
 

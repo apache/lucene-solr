@@ -41,7 +41,6 @@
   <path id="test.base.classpath">
     <path refid="classpath"/>
     <pathelement location="${common.dir}/build/classes/test-framework"/>
-    <pathelement location="${common.dir}/build/classes/test"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>
