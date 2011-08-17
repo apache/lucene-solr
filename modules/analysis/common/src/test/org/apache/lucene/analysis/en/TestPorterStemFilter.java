@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.*;
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Test the PorterStemFilter with Martin Porter's test data.

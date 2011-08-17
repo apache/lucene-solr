@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.*;
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Test the snowball filters against the snowball data tests

@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.pt;
  * limitations under the License.
  */
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.assertVocabulary;
+import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
 import java.io.IOException;
 import java.io.Reader;

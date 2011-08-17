@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.*;
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Simple tests for {@link FrenchMinimalStemFilter}

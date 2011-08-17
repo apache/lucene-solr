@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.*;
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
