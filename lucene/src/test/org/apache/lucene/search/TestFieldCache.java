@@ -45,8 +45,7 @@ public class TestFieldCache extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     NUM_DOCS = atLeast(1000);
-    System.out.println("WARNING: NUM_ORDS is wired to 2, test fails otherwise!!!!!!!!!!!!!!!!!!!!!");
-    NUM_ORDS = 2; //atLeast(2);
+    NUM_ORDS = atLeast(2);
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     long theLong = Long.MAX_VALUE;
@@ -247,7 +246,7 @@ public class TestFieldCache extends LuceneTestCase {
           assertTrue(String.format("Expected value %s for doc %d and ord %d, but was %s", expected, i, idx, actual), expected.equals(actual));
         }
 
-        if (chunk < buffer.length) {
+        if (chunk <= buffer.length) {
           break;
         }
       }
