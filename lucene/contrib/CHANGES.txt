@@ -31,9 +31,6 @@ New Features
     
  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
    from the term dictionary using levenshtein automata.  (Robert Muir)
-
- * LUCENE-2836: Add FieldCacheRewriteMethod, which rewrites MultiTermQueries
-   using the FieldCache's TermsEnum.  (Robert Muir)
   
 API Changes
 

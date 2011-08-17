@@ -91,7 +91,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
           //int n = random.nextInt(2);
           if (type == 0) {
             int i = seq.addAndGet(1);
-            Document doc = TestIndexWriterReader.createDocument(i, "index1", 10);
+            Document doc = DocHelper.createDocument(i, "index1", 10);
             writer.addDocument(doc);
             addCount++;
           } else if (type == 1) {

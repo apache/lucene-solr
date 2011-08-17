@@ -46,14 +46,14 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, iwc);
     writer.setInfoStream(VERBOSE ? System.out : null);
     for (int x = 0; x < 5; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "1", 2));
+      writer.addDocument(DocHelper.createDocument(x, "1", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     //System.out.println("commit1");
     writer.commit();
     assertEquals(1, writer.segmentInfos.size());
     for (int x = 5; x < 10; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "2", 2));
+      writer.addDocument(DocHelper.createDocument(x, "2", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     //System.out.println("commit2");
@@ -61,7 +61,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     assertEquals(2, writer.segmentInfos.size());
 
     for (int x = 10; x < 15; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "3", 2));
+      writer.addDocument(DocHelper.createDocument(x, "3", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
 
@@ -174,12 +174,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
   **/
   void part2(IndexWriter writer, RangeMergePolicy fsmp) throws Exception {
     for (int x = 20; x < 25; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "5", 2));
+      writer.addDocument(DocHelper.createDocument(x, "5", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     writer.flush(false, false);
     for (int x = 25; x < 30; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "5", 2));
+      writer.addDocument(DocHelper.createDocument(x, "5", 2));
       //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     writer.flush(false, false);
