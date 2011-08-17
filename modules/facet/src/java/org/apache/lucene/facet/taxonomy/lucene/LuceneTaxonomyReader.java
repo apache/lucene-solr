@@ -295,8 +295,9 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
       if (catID<0 || catID>=indexReader.maxDoc()) {
         return null;
       }
-      ret = indexReader.document(catID, Consts.fullPathSelector)
-      .get(Consts.FULL);
+      final LoadFullPathOnly loader = new LoadFullPathOnly();
+      indexReader.document(catID, loader);
+      ret = loader.getFullPath();
     } finally {
       indexReaderLock.readLock().unlock();
     }
