@@ -25,12 +25,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-<<<<<<<
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -404,13 +401,10 @@ public class TestGrouping extends LuceneTestCase {
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
       // So we can pull filter marking last doc in block:
-<<<<<<<
-      final Field groupEnd = newField("groupend", "x", Field.Index.NOT_ANALYZED);
-      groupEnd.setIndexOptions(IndexOptions.DOCS_ONLY);
-      groupEnd.setOmitNorms(true);
-=======
-      final Field groupEnd = newField("groupend", "x", StringField.TYPE_UNSTORED);
->>>>>>>
+      FieldType ft = new FieldType(StringField.TYPE_UNSTORED);
+      ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+      ft.setOmitNorms(true);
+      final Field groupEnd = newField("groupend", "x", ft);
       docs.get(docs.size()-1).add(groupEnd);
       // Add as a doc block:
       w.addDocuments(docs);

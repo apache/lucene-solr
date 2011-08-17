@@ -26,12 +26,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
-=======
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.StringHelper;
->>>>>>>
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;

@@ -23,13 +23,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.solr.search.QParser;
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
-=======
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.IntFieldSource;
 import org.apache.lucene.index.IndexableField;
->>>>>>>
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;

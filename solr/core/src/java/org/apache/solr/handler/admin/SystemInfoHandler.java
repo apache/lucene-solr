@@ -292,11 +292,7 @@ public class SystemInfoHandler extends RequestHandlerBase
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
   
   private static final long ONE_KB = 1024;

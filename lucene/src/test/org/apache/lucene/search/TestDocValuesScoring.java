@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IndexDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -50,11 +51,11 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    Field field = newField("foo", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("foo", "", TextField.TYPE_UNSTORED);
     doc.add(field);
     IndexDocValuesField dvField = new IndexDocValuesField("foo_boost");
     doc.add(dvField);
-    Field field2 = newField("bar", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field2);
     
     field.setValue("quick brown fox");

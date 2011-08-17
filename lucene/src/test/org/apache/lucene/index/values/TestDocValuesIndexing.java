@@ -25,12 +25,12 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.AbstractField;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IndexDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -81,7 +81,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       IndexDocValuesField valuesField = new IndexDocValuesField("docId");
       valuesField.setInt(i);
       doc.add(valuesField);
-      doc.add(new Field("docId", "" + i, Store.NO, Index.ANALYZED));
+      doc.add(new TextField("docId", "" + i));
       writer.addDocument(doc);
     }
     writer.commit();
@@ -480,20 +480,25 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       ValueType.FLOAT_32,
       ValueType.FLOAT_64);
 
-  private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
-      Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
-      Index.NO };
-
   private FixedBitSet indexValues(IndexWriter w, int numValues, ValueType value,
       List<ValueType> valueVarList, boolean withDeletions, int bytesSize)
       throws CorruptIndexException, IOException {
     final boolean isNumeric = NUMERICS.contains(value);
     FixedBitSet deleted = new FixedBitSet(numValues);
     Document doc = new Document();
-    Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
-    AbstractField field = random.nextBoolean() ? new IndexDocValuesField(value.name())
+    FieldType ft = new FieldType();
+    ft.setIndexed(random.nextBoolean());
+    if (ft.indexed()) {
+      ft.setTokenized(random.nextBoolean());
+      ft.setOmitNorms(random.nextBoolean());
+    }
+    else {
+      ft.setStored(true);
+    }
+    
+    Field field = random.nextBoolean() ? new IndexDocValuesField(value.name())
         : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
-            10), idx == Index.NO ? Store.YES : Store.NO, idx);
+            10), ft);
     doc.add(field);
     IndexDocValuesField valField = new IndexDocValuesField("prototype");
     final BytesRef bytesRef = new BytesRef();
@@ -543,8 +548,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         }
       }
       doc.removeFields("id");
-      doc.add(new Field("id", idBase + i, Store.YES,
-          Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field("id", StringField.TYPE_STORED, idBase + i));
       valField.set(field);
       w.addDocument(doc);
 

@@ -97,11 +97,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }
 

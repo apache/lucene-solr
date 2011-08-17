@@ -46,13 +46,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-<<<<<<<
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-=======
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
->>>>>>>
 
 import java.io.Reader;
 import java.io.IOException;

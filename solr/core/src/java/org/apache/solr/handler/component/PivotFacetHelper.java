@@ -249,11 +249,7 @@ public class PivotFacetHelper
 //  }
 //
 //  public String getSource() {
-<<<<<<<
 //    return "$URL$";
-=======
-//    return "$URL$";
->>>>>>>
 //  }
 //
 //  public String getVersion() {

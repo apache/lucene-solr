@@ -121,11 +121,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   }
 
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   public Category getCategory() {

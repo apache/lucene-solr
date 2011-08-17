@@ -7,9 +7,7 @@ import java.util.Collection;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -130,8 +128,7 @@ public class FacetTestUtils {
     cps.add(cp);
     Document d = new Document();
     new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
-    d.add(new Field("content", "alpha", Store.YES, Index.ANALYZED,
-        TermVector.NO));
+    d.add(new Field("content", TextField.TYPE_STORED, "alpha"));
     iw.addDocument(d);
   }
 

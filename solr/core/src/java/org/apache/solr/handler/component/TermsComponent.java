@@ -483,11 +483,7 @@ public class TermsComponent extends SearchComponent {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   @Override

@@ -587,10 +587,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }

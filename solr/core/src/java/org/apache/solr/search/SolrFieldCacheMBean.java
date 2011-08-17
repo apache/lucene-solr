@@ -50,11 +50,7 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
     return "$Id$"; 
   }
   public String getSource() { 
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
   public URL[] getDocs() {
     return null;

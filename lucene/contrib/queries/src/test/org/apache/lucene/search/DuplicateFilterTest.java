@@ -19,15 +19,11 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-<<<<<<<
-import org.apache.lucene.document.Field;
-=======
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
->>>>>>>
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -79,26 +75,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException {
     Document doc = new Document();
-    doc.add(newField(KEY_FIELD, url, Field.Store.YES, Field.Index.NOT_ANALYZED));
-    doc.add(newField("text", text, Field.Store.YES, Field.Index.ANALYZED));
-<<<<<<<
-    doc.add(newField("date", date, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(KEY_FIELD, url, StringField.TYPE_STORED));
+    doc.add(newField("text", text, TextField.TYPE_STORED));
+    doc.add(newField("date", date, TextField.TYPE_STORED));
     writer.addDocument(doc);
   }
-=======
-	private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException
-	{
-		Document doc=new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-		doc.add(newField(KEY_FIELD,url,customType));
-		doc.add(newField("text",text,TextField.TYPE_UNSTORED));
-		doc.add(newField("date",date,TextField.TYPE_UNSTORED));
-		writer.addDocument(doc);
-	}
-		
->>>>>>>
 
   public void testDefaultFilter() throws Throwable {
     DuplicateFilter df = new DuplicateFilter(KEY_FIELD);
@@ -109,17 +90,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       assertFalse("No duplicate urls should be returned", results.contains(url));
-<<<<<<<
       results.add(url);
-=======
-		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
-		for(int i=0;i<hits.length;i++)
-		{
-		  Document d=searcher.doc(hits[i].doc);
-			String url=d.get(KEY_FIELD);
-			assertFalse("No duplicate urls should be returned",results.contains(url));
-			results.add(url);
->>>>>>>
     }
   }
 
@@ -133,17 +104,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
       Document d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       if (!dupsFound)
-<<<<<<<
         dupsFound = results.contains(url);
-=======
-		boolean dupsFound=false;
-		for(int i=0;i<hits.length;i++)
-		{
-		  Document d=searcher.doc(hits[i].doc);
-			String url=d.get(KEY_FIELD);
-			if(!dupsFound)
-				dupsFound=results.contains(url);
->>>>>>>
       results.add(url);
     }
     assertTrue("Default searching should have found duplicate urls", dupsFound);
@@ -161,17 +122,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
       String url = d.get(KEY_FIELD);
       assertFalse("No duplicate urls should be returned", results.contains(url));
       results.add(url);
-<<<<<<<
     }
-=======
-		assertTrue("Filtered searching should have found some matches",hits.length>0);
-		for(int i=0;i<hits.length;i++)
-		{
-		  Document d=searcher.doc(hits[i].doc);
-			String url=d.get(KEY_FIELD);
-			assertFalse("No duplicate urls should be returned",results.contains(url));
-			results.add(url);
->>>>>>>
     assertEquals("Two urls found", 2, results.size());
   }
 
@@ -186,17 +137,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
       DocsEnum td = MultiFields.getTermDocsEnum(reader,
           MultiFields.getLiveDocs(reader),
           KEY_FIELD,
-<<<<<<<
           new BytesRef(url));
-=======
-		assertTrue("Filtered searching should have found some matches",hits.length>0);
-		for(int i=0;i<hits.length;i++)
-		{
-		  Document d=searcher.doc(hits[i].doc);
-			String url=d.get(KEY_FIELD);
-                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                                  MultiFields.getDeletedDocs(reader),
->>>>>>>
       int lastDoc = 0;
       while (td.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         lastDoc = td.docID();
@@ -220,17 +161,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
           new BytesRef(url));
       int lastDoc = 0;
       td.nextDoc();
-<<<<<<<
       lastDoc = td.docID();
-=======
-		assertTrue("Filtered searching should have found some matches",hits.length>0);
-		for(int i=0;i<hits.length;i++)
-		{
-		  Document d=searcher.doc(hits[i].doc);
-			String url=d.get(KEY_FIELD);
-                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
-                                                                  MultiFields.getDeletedDocs(reader),
->>>>>>>
       assertEquals("Duplicate urls should return first doc", lastDoc, hit.doc);
     }
   }

@@ -118,11 +118,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   // ================================================= Helper methods ================================================

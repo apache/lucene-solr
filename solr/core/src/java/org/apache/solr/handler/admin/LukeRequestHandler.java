@@ -34,12 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.Field;
->>>>>>>
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -514,29 +510,17 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-<<<<<<<
     return "$Revision$";
-=======
-    return "$Revision$";
->>>>>>>
   }
 
   @Override
   public String getSourceId() {
-<<<<<<<
     return "$Id$";
-=======
-    return "$Id$";
->>>>>>>
   }
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   @Override

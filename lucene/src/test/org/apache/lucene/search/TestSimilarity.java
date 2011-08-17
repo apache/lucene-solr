@@ -30,12 +30,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-<<<<<<<
 import org.apache.lucene.document.Field;
-=======
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.Explanation.IDFExplanation;
->>>>>>>
 
 /** Similarity unit test.
  *

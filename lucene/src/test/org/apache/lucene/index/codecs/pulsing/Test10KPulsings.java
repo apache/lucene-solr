@@ -26,6 +26,8 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -60,14 +62,15 @@ public class Test10KPulsings extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
     
     Document document = new Document();
-    Field field = newField("field", "", Field.Store.YES, Field.Index.ANALYZED);
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
     
     switch(_TestUtil.nextInt(random, 0, 2)) {
-      case 0: field.setIndexOptions(IndexOptions.DOCS_ONLY); break;
-      case 1: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
-      default: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
+      case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+      case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
+      default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
     }
 
+    Field field = newField("field", "", ft);
     document.add(field);
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -111,14 +114,15 @@ public class Test10KPulsings extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
     
     Document document = new Document();
-    Field field = newField("field", "", Field.Store.YES, Field.Index.ANALYZED);
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
     
     switch(_TestUtil.nextInt(random, 0, 2)) {
-      case 0: field.setIndexOptions(IndexOptions.DOCS_ONLY); break;
-      case 1: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
-      default: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
+      case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+      case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
+      default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
     }
 
+    Field field = newField("field", "", ft);
     document.add(field);
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));

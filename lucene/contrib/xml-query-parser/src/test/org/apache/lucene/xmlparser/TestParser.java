@@ -77,86 +77,6 @@ public class TestParser extends LuceneTestCase {
       }     
       d.close();
       writer.close();
-<<<<<<<
-		reader=IndexReader.open(dir, true);
-		searcher=newSearcher(reader);
-		
-	}
-	
-	
-	
-	
-	@AfterClass
-	public static void afterClass() throws Exception {
-		reader.close();
-		searcher.close();
-		dir.close();
-		reader = null;
-		searcher = null;
-		dir = null;
-		builder = null;
-	}
-	
-	public void testSimpleXML() throws ParserException, IOException
-	{
-			Query q=parse("TermQuery.xml");
-			dumpResults("TermQuery", q, 5);
-	}
-	public void testSimpleTermsQueryXML() throws ParserException, IOException
-	{
-			Query q=parse("TermsQuery.xml");
-			dumpResults("TermsQuery", q, 5);
-	}
-	public void testBooleanQueryXML() throws ParserException, IOException
-	{
-			Query q=parse("BooleanQuery.xml");
-			dumpResults("BooleanQuery", q, 5);
-	}
-	public void testRangeFilterQueryXML() throws ParserException, IOException
-	{
-			Query q=parse("RangeFilterQuery.xml");
-			dumpResults("RangeFilter", q, 5);
-	}
-	public void testUserQueryXML() throws ParserException, IOException
-	{
-			Query q=parse("UserInputQuery.xml");
-			dumpResults("UserInput with Filter", q, 5);
-	}
-	
-	public void testCustomFieldUserQueryXML() throws ParserException, IOException
-	{
-			Query q=parse("UserInputQueryCustomField.xml");
-			assertEquals(20.0f, q.getBoost());
-			int h = searcher.search(q, null, 1000).totalHits;
-			assertEquals("UserInputQueryCustomField should produce 0 result ", 0,h);
-	}
-	
-	public void testLikeThisQueryXML() throws Exception
-	{
-			Query q=parse("LikeThisQuery.xml");
-			dumpResults("like this", q, 5);
-	}
-	public void testBoostingQueryXML() throws Exception
-	{
-			Query q=parse("BoostingQuery.xml");
-			dumpResults("boosting ",q, 5);
-	}
-	public void testFuzzyLikeThisQueryXML() throws Exception
-	{
-			Query q=parse("FuzzyLikeThisQuery.xml");
-			//show rewritten fuzzyLikeThisQuery - see what is being matched on
-			if(VERBOSE)
-			{
-				System.out.println(q.rewrite(reader));
-			}
-			dumpResults("FuzzyLikeThis", q, 5);
-	}
-	public void testTermsFilterXML() throws Exception
-	{
-			Query q=parse("TermsFilterQuery.xml");
-			dumpResults("Terms Filter",q, 5);
-	}
-=======
     reader=IndexReader.open(dir, true);
     searcher=newSearcher(reader);
     
@@ -234,7 +154,6 @@ public class TestParser extends LuceneTestCase {
       Query q=parse("TermsFilterQuery.xml");
       dumpResults("Terms Filter",q, 5);
   }
->>>>>>>
   public void testBoostingTermQueryXML() throws Exception
   {
       Query q=parse("BoostingTermQuery.xml");

@@ -24,16 +24,9 @@ import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-<<<<<<<
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.document.Fieldable;
-=======
-import org.apache.solr.search.function.FieldCacheSource;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.StringIndexDocValues;
->>>>>>>
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;

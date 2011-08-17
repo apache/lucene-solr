@@ -72,14 +72,6 @@ public class AddUpdateCommand extends UpdateCommand {
        IndexSchema schema = req.getSchema();
        SchemaField sf = schema.getUniqueKeyField();
        if (sf != null) {
-<<<<<<<
-=======
-         if (doc != null) {
-           schema.getUniqueKeyField();
-           IndexableField storedId = doc.getField(sf.getName());
-           indexedId = sf.getType().storedToIndexed(storedId);
-         }
->>>>>>>
          if (solrDoc != null) {
            SolrInputField field = solrDoc.getField(sf.getName());
 

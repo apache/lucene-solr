@@ -7,8 +7,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -84,10 +83,10 @@ public class DrillDownTest extends LuceneTestCase {
       ArrayList<CategoryPath> paths = new ArrayList<CategoryPath>();
       Document doc = new Document();
       if (i % 2 == 0) { // 50
-        doc.add(new Field("content", "foo", Store.NO, Index.ANALYZED));
+        doc.add(new TextField("content", "foo"));
       }
       if (i % 3 == 0) { // 33
-        doc.add(new Field("content", "bar", Store.NO, Index.ANALYZED));
+        doc.add(new TextField("content", "bar"));
       }
       if (i % 4 == 0) { // 25
         paths.add(new CategoryPath("a"));

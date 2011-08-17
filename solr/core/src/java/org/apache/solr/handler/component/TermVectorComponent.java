@@ -11,11 +11,8 @@ import java.util.Map;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-<<<<<<<
-=======
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
->>>>>>>
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.index.Terms;
@@ -423,29 +420,17 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getVersion() {
-<<<<<<<
     return "$Revision$";
-=======
-    return "$Revision$";
->>>>>>>
   }
 
   @Override
   public String getSourceId() {
-<<<<<<<
     return "$Id$";
-=======
-    return "$Id$";
->>>>>>>
   }
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   @Override

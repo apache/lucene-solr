@@ -107,11 +107,7 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }
 

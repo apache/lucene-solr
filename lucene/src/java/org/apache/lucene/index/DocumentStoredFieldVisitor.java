@@ -81,6 +81,8 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
       ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
       ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setOmitNorms(fieldInfo.omitNorms);
+      ft.setIndexOptions(fieldInfo.indexOptions);
       doc.add(new Field(fieldInfo.name,
                         false,
                         ft,

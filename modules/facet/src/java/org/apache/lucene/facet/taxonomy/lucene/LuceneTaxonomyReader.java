@@ -21,6 +21,7 @@ import org.apache.lucene.store.FSDirectory;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.lucene.Consts.LoadFullPathOnly;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.collections.LRUHashMap;

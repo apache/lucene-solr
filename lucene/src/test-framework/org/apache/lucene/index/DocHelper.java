@@ -45,8 +45,7 @@ class DocHelper {
   public static final String TEXT_FIELD_1_KEY = "textField1";
   public static Field textField1;
   static {
-    customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    customType = new FieldType(TextField.TYPE_STORED);
     textField1 = new Field(TEXT_FIELD_1_KEY, customType, FIELD_1_TEXT);
   }
 
@@ -57,8 +56,7 @@ class DocHelper {
   public static final String TEXT_FIELD_2_KEY = "textField2";
   public static Field textField2;
   static {
-    customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
     customType2.setStoreTermVectorPositions(true);
     customType2.setStoreTermVectorOffsets(true);
@@ -71,8 +69,7 @@ class DocHelper {
   public static Field textField3;
   
   static {
-    customType3 = new FieldType(TextField.TYPE_UNSTORED);
-    customType3.setStored(true);
+    customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setOmitNorms(true);
     textField3 = new Field(TEXT_FIELD_3_KEY, customType3, FIELD_3_TEXT);
   }

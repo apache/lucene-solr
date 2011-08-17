@@ -21,13 +21,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-<<<<<<<
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
->>>>>>>
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -178,12 +176,9 @@ public class IndexFiles {
           // field that is indexed (i.e. searchable), but don't tokenize 
           // the field into separate words and don't index term frequency
           // or positional information:
-<<<<<<<
-          Field pathField = new Field("path", file.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
-          pathField.setIndexOptions(IndexOptions.DOCS_ONLY);
-=======
+          FieldType ft = new FieldType(TextField.TYPE_STORED);
+          ft.setIndexOptions(IndexOptions.DOCS_ONLY);
           Field pathField = new Field("path", StringField.TYPE_STORED, file.getPath());
->>>>>>>
           doc.add(pathField);
 
           // Add the last modified date of the file a field named "modified".

@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -47,57 +49,57 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
 
     // 0
     Document doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(newField("content", "random text", TextField.TYPE_STORED));
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text blob", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(newField("content", "some more random text blob", TextField.TYPE_STORED));
+    doc.add(newField("id", "2", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random textual data", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "3", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author1", TextField.TYPE_STORED));
+    doc.add(newField("content", "some more random textual data", TextField.TYPE_STORED));
+    doc.add(newField("id", "3", StringField.TYPE_STORED));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    doc.add(new Field(groupField, "author2", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "4", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author2", TextField.TYPE_STORED));
+    doc.add(newField("content", "some random text", TextField.TYPE_STORED));
+    doc.add(newField("id", "4", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "5", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author3", TextField.TYPE_STORED));
+    doc.add(newField("content", "some more random text", TextField.TYPE_STORED));
+    doc.add(newField("id", "5", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random blob", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(groupField, "author3", TextField.TYPE_STORED));
+    doc.add(newField("content", "random blob", TextField.TYPE_STORED));
+    doc.add(newField("id", "6", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(newField("id", "6", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "7", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("content", "random word stuck in alot of other text", TextField.TYPE_STORED));
+    doc.add(newField("id", "7", StringField.TYPE_STORED));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -182,18 +184,18 @@ public class TermAllGroupHeadsCollectorTest extends LuceneTestCase {
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      Field group = newField("group", "", Field.Index.NOT_ANALYZED);
+      Field group = newField("group", "", StringField.TYPE_UNSTORED);
       doc.add(group);
-      Field sort1 = newField("sort1", "", Field.Index.NOT_ANALYZED);
+      Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newField("sort2", "", Field.Index.NOT_ANALYZED);
+      Field sort2 = newField("sort2", "", StringField.TYPE_UNSTORED);
       doc.add(sort2);
       docNoGroup.add(sort2);
-      Field sort3 = newField("sort3", "", Field.Index.NOT_ANALYZED);
+      Field sort3 = newField("sort3", "", StringField.TYPE_UNSTORED);
       doc.add(sort3);
       docNoGroup.add(sort3);
-      Field content = newField("content", "", Field.Index.ANALYZED);
+      Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
       NumericField id = new NumericField("id");

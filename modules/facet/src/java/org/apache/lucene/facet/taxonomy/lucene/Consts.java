@@ -1,6 +1,10 @@
 package org.apache.lucene.facet.taxonomy.lucene;
 
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

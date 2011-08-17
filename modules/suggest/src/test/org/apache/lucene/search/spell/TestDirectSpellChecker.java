@@ -151,7 +151,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
 

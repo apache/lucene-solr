@@ -1711,11 +1711,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   public URL[] getDocs() {

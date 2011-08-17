@@ -59,11 +59,7 @@ public class JsonUpdateRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }
 

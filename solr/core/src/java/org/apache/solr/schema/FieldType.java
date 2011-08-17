@@ -22,12 +22,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-=======
 import org.apache.lucene.index.IndexableField;
->>>>>>>
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
@@ -254,24 +250,17 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
-<<<<<<<
-    return createField(field.getName(), val, 
-                       getFieldStore(field, val), getFieldIndex(field, val), 
-                       getFieldTermVec(field, val), field.omitNorms(),
-                       getIndexOptions(field, val), boost);
-=======
     org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
     newType.setIndexed(field.indexed());
     newType.setTokenized(field.isTokenized());
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
-    newType.setOmitTermFreqAndPositions(field.omitTf());
+    newType.setIndexOptions(getIndexOptions(field, val));
     newType.setStoreTermVectors(field.storeTermVector());
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
     
     return createField(field.getName(), val, newType, boost);
->>>>>>>
   }
 
   /**
@@ -279,36 +268,15 @@ public abstract class FieldType extends FieldProperties {
    * Fields per SchemaField
    * @param name The name of the field
    * @param val The _internal_ value to index
-<<<<<<<
-   * @param storage {@link org.apache.lucene.document.Field.Store}
-   * @param index {@link org.apache.lucene.document.Field.Index}
-   * @param vec {@link org.apache.lucene.document.Field.TermVector}
    * @param omitNorms true if norms should be omitted
    * @param options options for what should be indexed in the postings
-=======
    * @param type {@link org.apache.lucene.document.FieldType}
->>>>>>>
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-<<<<<<<
-  protected Fieldable createField(String name, String val, Field.Store storage, Field.Index index,
-                                    Field.TermVector vec, boolean omitNorms, IndexOptions options, float boost){
-    Field f = new Field(name,
-                        val,
-                        storage,
-                        index,
-                        vec);
-    if (index.isIndexed()) {
-      f.setOmitNorms(omitNorms);
-      f.setIndexOptions(options);
-      f.setBoost(boost);
-    }
-=======
   protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
     Field f = new Field(name, type, val);
     f.setBoost(boost);
->>>>>>>
     return f;
   }
 
@@ -326,13 +294,6 @@ public abstract class FieldType extends FieldProperties {
     IndexableField f = createField( field, value, boost);
     return f==null ? new IndexableField[]{} : new IndexableField[]{f};
   }
-<<<<<<<
-=======
-  
-  /**
-   * Convert an external value (from XML update command or from query string)
-   * into the internal format for both storing and indexing (which can be modified by any analyzers).
->>>>>>>
   protected IndexOptions getIndexOptions(SchemaField field,
                                          String internalVal) {
     IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;

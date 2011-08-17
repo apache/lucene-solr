@@ -17,13 +17,10 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.NumericField;
-<<<<<<<
-=======
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.DoubleValuesCreator;
->>>>>>>
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -494,7 +491,7 @@ public class TrieField extends FieldType {
     ft.setTokenized(true);
     ft.setIndexed(indexed);
     ft.setOmitNorms(field.omitNorms());
-    ft.setOmitTermFreqAndPositions(field.omitTf());
+    ft.setIndexOptions(getIndexOptions(field, value.toString()));
     
     final org.apache.lucene.document.NumericField f = new org.apache.lucene.document.NumericField(field.getName(), precisionStep, ft);
     switch (type) {
@@ -532,11 +529,6 @@ public class TrieField extends FieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
 
-<<<<<<<
-    f.setOmitNorms(field.omitNorms());
-    f.setIndexOptions(getIndexOptions(field, value.toString()));
-=======
->>>>>>>
     f.setBoost(boost);
     return f;
   }

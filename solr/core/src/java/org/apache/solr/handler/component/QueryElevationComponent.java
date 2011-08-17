@@ -451,11 +451,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   @Override

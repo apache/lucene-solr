@@ -125,62 +125,42 @@ public class TestSort extends LuceneTestCase {
     dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
 
+    FieldType ft1 = new FieldType();
+    ft1.setStored(true);
+    FieldType ft2 = new FieldType();
+    ft2.setIndexed(true);
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
-        doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
-        doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
+        doc.add (new Field ("tracer", ft1, data[i][0]));
+        doc.add (new TextField ("contents", data[i][1]));
         if (data[i][2] != null) {
           Field f = supportsDocValues ? 
-              IndexDocValuesField.set(new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.VAR_INTS)
-                               : new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED);
+              IndexDocValuesField.set(new StringField ("int", data[i][2]), ValueType.VAR_INTS)
+                               : new StringField ("int", data[i][2]);
           doc.add(f);
         }
         if (data[i][3] != null) {
           Field f = supportsDocValues ?
-              IndexDocValuesField.set(new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_32)
-                              :  new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED);
-          doc.add(f);
-<<<<<<<
-        }
-        if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][8] != null) {
-          Field f = supportsDocValues ?
-              IndexDocValuesField.set(new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED), ValueType.FLOAT_64)
-                              :  new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED);
+              IndexDocValuesField.set(new StringField ("float", data[i][3]), ValueType.FLOAT_32)
+                              :  new StringField ("float", data[i][3]);
           doc.add(f);
         }
-        if (data[i][9] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][10] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        doc.setBoost(2);  // produce some scores above 1.0
-=======
-    dirs.add(indexStore);
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-
-    FieldType customType = new FieldType();
-    customType.setStored(true);
-    
-    for (int i=0; i<data.length; ++i) {
-      if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
-        Document doc = new Document();
-        doc.add (new Field ("tracer", customType, data[i][0]));
-        doc.add (new TextField ("contents", data[i][1]));
-        if (data[i][2] != null) doc.add (new StringField ("int",      data[i][2]));
-        if (data[i][3] != null) doc.add (new StringField ("float",    data[i][3]));
         if (data[i][4] != null) doc.add (new StringField ("string",   data[i][4]));
         if (data[i][5] != null) doc.add (new StringField ("custom",   data[i][5]));
         if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6]));
         if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7]));
-        if (data[i][8] != null) doc.add (new StringField ("double",     data[i][8]));
+        if (data[i][8] != null) {
+          Field f = supportsDocValues ?
+              IndexDocValuesField.set(new StringField ("double", data[i][8]), ValueType.FLOAT_64)
+                              :  new StringField ("double", data[i][8]);
+          doc.add(f);
+        }
         if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9]));
         if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10]));
         if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11]));
         //doc.setBoost(2);  // produce some scores above 1.0
->>>>>>>
+
         writer.addDocument (doc);
       }
     }

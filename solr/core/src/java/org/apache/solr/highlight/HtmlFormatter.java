@@ -60,10 +60,6 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }

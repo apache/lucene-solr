@@ -16,12 +16,8 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-<<<<<<<
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.queries.function.ValueSource;
-=======
 import org.apache.lucene.index.IndexableField;
->>>>>>>
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;

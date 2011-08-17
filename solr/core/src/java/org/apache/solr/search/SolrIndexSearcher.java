@@ -1870,19 +1870,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   public String getSourceId() {
-<<<<<<<
     return "$Id$";
-=======
-    return "$Id$";
->>>>>>>
   }
 
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   public URL[] getDocs() {

@@ -17,13 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-<<<<<<<
-=======
 import java.util.HashSet;
 
->>>>>>>
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -59,23 +57,10 @@ public class TermsFilterTest extends LuceneTestCase {
     String fieldName = "field1";
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, rd);
-<<<<<<<
     for (int i = 0; i < 100; i++) {
-=======
-		for (int i = 0; i < 100; i++) {
-			Document doc=new Document();
-			int term=i*10; //terms are units of 10;
-	    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-	    customType.setStored(true);
-	    customType.setTokenized(false);
-			doc.add(newField(fieldName,""+term,customType));
-			w.addDocument(doc);			
-		}
-		IndexReader reader = new SlowMultiReaderWrapper(w.getReader());
->>>>>>>
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
-      doc.add(newField(fieldName, "" + term, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(fieldName, "" + term, StringField.TYPE_STORED));
       w.addDocument(doc);
     }
     IndexReader reader = new SlowMultiReaderWrapper(w.getReader());

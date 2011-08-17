@@ -50,13 +50,10 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermVectorMapper;
-<<<<<<<
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.codecs.PerDocValues;
-=======
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
->>>>>>>
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;

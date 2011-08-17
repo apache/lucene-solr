@@ -70,11 +70,7 @@ public class CSVRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 }
 

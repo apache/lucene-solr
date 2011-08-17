@@ -42,11 +42,7 @@ public class SimpleFragmentsBuilder extends SolrFragmentsBuilder {
 
   @Override
   public String getSource() {
-<<<<<<<
     return "$URL$";
-=======
-    return "$URL$";
->>>>>>>
   }
 
   @Override

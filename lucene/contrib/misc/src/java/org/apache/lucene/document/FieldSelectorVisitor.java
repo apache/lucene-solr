@@ -120,7 +120,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
 		FieldType ft = new FieldType(NumericField.TYPE_STORED);
 		ft.setIndexed(fieldInfo.isIndexed);
 		ft.setOmitNorms(fieldInfo.omitNorms);
-		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+		ft.setIndexOptions(fieldInfo.indexOptions);
     return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setIntValue(value));
   }
 
@@ -129,7 +129,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
 		FieldType ft = new FieldType(NumericField.TYPE_STORED);
 		ft.setIndexed(fieldInfo.isIndexed);
 		ft.setOmitNorms(fieldInfo.omitNorms);
-		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+		ft.setIndexOptions(fieldInfo.indexOptions);
     return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setLongValue(value));
   }
 
@@ -138,7 +138,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
 		FieldType ft = new FieldType(NumericField.TYPE_STORED);
 		ft.setIndexed(fieldInfo.isIndexed);
 		ft.setOmitNorms(fieldInfo.omitNorms);
-		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+		ft.setIndexOptions(fieldInfo.indexOptions);
     return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setFloatValue(value));
   }
 
@@ -147,7 +147,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
 		FieldType ft = new FieldType(NumericField.TYPE_STORED);
 		ft.setIndexed(fieldInfo.isIndexed);
 		ft.setOmitNorms(fieldInfo.omitNorms);
-		ft.setOmitTermFreqAndPositions(fieldInfo.omitTermFreqAndPositions);
+		ft.setIndexOptions(fieldInfo.indexOptions);
     return addNumericField(fieldInfo, new NumericField(fieldInfo.name, ft).setDoubleValue(value));
   }
 
@@ -179,7 +179,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     FieldType ft = new FieldType();
     ft.setStored(true);
     ft.setOmitNorms(fi.omitNorms);
-    ft.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+    ft.setIndexOptions(fi.indexOptions);
     ft.setLazy(true);
     
     if (binary) {

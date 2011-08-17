@@ -60,26 +60,13 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     searcher.close();
     reader.close();
     directory.close();
-<<<<<<<
     super.tearDown();
   }
-=======
-	private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException
-	{
-		Document doc=new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-		doc.add(newField("name",name,customType));
-		doc.add(newField("id",id,customType));
-		writer.addDocument(doc);
-	}
-	
->>>>>>>
 
   private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException {
     Document doc = new Document();
-    doc.add(newField("name", name, Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField("id", id, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("name", name, TextField.TYPE_STORED));
+    doc.add(newField("id", id, TextField.TYPE_STORED));
     writer.addDocument(doc);
   }
 

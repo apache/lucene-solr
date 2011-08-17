@@ -13,6 +13,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -104,7 +105,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     for (int i = 0; i < data.length; i++) {
       dts.setIdx(i);
       Document doc = new Document();
-      doc.add(new Field("f", dts));
+      doc.add(new TextField("f", dts));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -155,10 +156,10 @@ public class CategoryListIteratorTest extends LuceneTestCase {
       dts.setIdx(i);
       Document doc = new Document();
       if (i==0 || i == 2) {
-        doc.add(new Field("f", dts)); // only docs 0 & 2 have payloads!
+        doc.add(new TextField("f", dts)); // only docs 0 & 2 have payloads!
       }
       dts2.setIdx(i);
-      doc.add(new Field("f", dts2));
+      doc.add(new TextField("f", dts2));
       writer.addDocument(doc);
       writer.commit();
     }
@@ -168,7 +169,7 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     for (int i = 0; i < 10; ++i) {
       Document d = new Document();
       dts.setIdx(2);
-      d.add(new Field("f", dts2));
+      d.add(new TextField("f", dts2));
       writer.addDocument(d);
       if (i %10 == 0) {
         writer.commit();

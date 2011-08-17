@@ -10,6 +10,8 @@ import java.util.Map.Entry;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 
 import org.apache.lucene.DocumentBuilder;
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
@@ -183,7 +185,9 @@ public class CategoryDocumentBuilder implements DocumentBuilder {
       // Finally creating a suitable field with stream and adding it to a
       // master field-list, used during the build process (see
       // super.build())
-      fieldList.add(new Field(e.getKey(), stream));
+      FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+      ft.setOmitNorms(true);
+      fieldList.add(new Field(e.getKey(), ft, stream));
     }
 
     return this;
@@ -289,7 +293,6 @@ public class CategoryDocumentBuilder implements DocumentBuilder {
    */
   public Document build(Document doc) {
     for (Field f : fieldList) {
-      f.setOmitNorms(true);
       doc.add(f);
     }
     return doc;

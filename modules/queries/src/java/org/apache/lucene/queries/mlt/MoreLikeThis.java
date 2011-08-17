@@ -19,6 +19,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -706,10 +707,10 @@ public final class MoreLikeThis {
       // field does not store term vector info
       if (vector == null) {
         Document d = ir.document(docNum);
-        String text[] = d.getValues(fieldName);
-        if (text != null) {
-          for (int j = 0; j < text.length; j++) {
-            addTermFrequencies(new StringReader(text[j]), termFreqMap, fieldName);
+        IndexableField fields[] = d.getFields(fieldName);
+        if (fields != null) {
+          for (int j = 0; j < fields.length; j++) {
+            addTermFrequencies(new StringReader(fields[j].stringValue()), termFreqMap, fieldName);
           }
         }
       } else {
