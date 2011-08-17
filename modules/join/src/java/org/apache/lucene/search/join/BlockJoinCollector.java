@@ -18,9 +18,12 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -31,6 +34,7 @@ import org.apache.lucene.search.FieldValueHitQueue;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreCachingWrappingScorer;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -281,6 +285,20 @@ public class BlockJoinCollector extends Collector {
     return false;
   }
 
+  private void enroll(BlockJoinQuery query, BlockJoinQuery.BlockJoinScorer scorer) {
+    final Integer slot = joinQueryID.get(query);
+    if (slot == null) {
+      joinQueryID.put(query, joinScorers.length);
+      //System.out.println("found JQ: " + query + " slot=" + joinScorers.length);
+      final BlockJoinQuery.BlockJoinScorer[] newArray = new BlockJoinQuery.BlockJoinScorer[1+joinScorers.length];
+      System.arraycopy(joinScorers, 0, newArray, 0, joinScorers.length);
+      joinScorers = newArray;
+      joinScorers[joinScorers.length-1] = scorer;
+    } else {
+      joinScorers[slot] = scorer;
+    }
+  }
+  
   @Override
   public void setScorer(Scorer scorer) {
     //System.out.println("C.setScorer scorer=" + scorer);
@@ -293,49 +311,17 @@ public class BlockJoinCollector extends Collector {
     }
     Arrays.fill(joinScorers, null);
 
-    // Find any BlockJoinScorers out there:
-    scorer.visitScorers(new Scorer.ScorerVisitor<Query,Query,Scorer>() {
-        private void enroll(BlockJoinQuery query, BlockJoinQuery.BlockJoinScorer scorer) {
-          final Integer slot = joinQueryID.get(query);
-          if (slot == null) {
-            joinQueryID.put(query, joinScorers.length);
-            //System.out.println("found JQ: " + query + " slot=" + joinScorers.length);
-            final BlockJoinQuery.BlockJoinScorer[] newArray = new BlockJoinQuery.BlockJoinScorer[1+joinScorers.length];
-            System.arraycopy(joinScorers, 0, newArray, 0, joinScorers.length);
-            joinScorers = newArray;
-            joinScorers[joinScorers.length-1] = scorer;
-          } else {
-            joinScorers[slot] = scorer;
-          }
-        }
+    Queue<Scorer> queue = new LinkedList<Scorer>();
+    queue.add(scorer);
+    while ((scorer = queue.poll()) != null) {
+      if (scorer instanceof BlockJoinQuery.BlockJoinScorer) {
+        enroll((BlockJoinQuery) scorer.getWeight().getQuery(), (BlockJoinQuery.BlockJoinScorer)scorer);
+      }
 
-        @Override
-        public void visitOptional(Query parent, Query child, Scorer scorer) {
-          //System.out.println("visitOpt");
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
-          }
-        }
-
-        @Override
-        public void visitRequired(Query parent, Query child, Scorer scorer) {
-          //System.out.println("visitReq parent=" + parent + " child=" + child + " scorer=" + scorer);
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
-          }
-        }
-
-        @Override
-        public void visitProhibited(Query parent, Query child, Scorer scorer) {
-          //System.out.println("visitProh");
-          if (child instanceof BlockJoinQuery) {
-            enroll((BlockJoinQuery) child,
-                   (BlockJoinQuery.BlockJoinScorer) scorer);
-          }
-        }
-      });
+      for (ChildScorer sub : scorer.getChildren()) {
+        queue.add(sub.child);
+      }
+    }
   }
 
   private final static class FakeScorer extends Scorer {

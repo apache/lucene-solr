@@ -18,8 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
-import org.apache.lucene.search.BooleanClause.Occur;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -101,83 +101,30 @@ public abstract class Scorer extends DocIdSetIterator {
   public float freq() throws IOException {
     throw new UnsupportedOperationException(this + " does not implement freq()");
   }
-
-  /**
-   * A callback to gather information from a scorer and its sub-scorers. Each
-   * the top-level scorer as well as each of its sub-scorers are passed to
-   * either one of the visit methods depending on their boolean relationship in
-   * the query.
+  
+  /** returns parent Weight
    * @lucene.experimental
    */
-  public static abstract class ScorerVisitor<P extends Query, C extends Query, S extends Scorer> {
-    /**
-     * Invoked for all optional scorer 
-     * 
-     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
-     * @param child the query of the currently visited scorer
-     * @param scorer the current scorer
-     */
-    public void visitOptional(P parent, C child, S scorer) {}
-    
-    /**
-     * Invoked for all required scorer 
-     * 
-     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
-     * @param child the query of the currently visited scorer
-     * @param scorer the current scorer
-     */
-    public void visitRequired(P parent, C child, S scorer) {}
-    
-    /**
-     * Invoked for all prohibited scorer 
-     * 
-     * @param parent the parent query of the child query or <code>null</code> if the child is a top-level query
-     * @param child the query of the currently visited scorer
-     * @param scorer the current scorer
-     */
-    public void visitProhibited(P parent, C child, S scorer) {}
-  } 
-
-  /**
-   * Expert: call this to gather details for all sub-scorers for this query.
-   * This can be used, in conjunction with a custom {@link Collector} to gather
-   * details about how each sub-query matched the current hit.
-   * 
-   * @param visitor a callback executed for each sub-scorer
-   * @lucene.experimental
-   */
-  public void visitScorers(ScorerVisitor<Query, Query, Scorer> visitor) {
-    visitSubScorers(null, Occur.MUST/*must id default*/, visitor);
+  public Weight getWeight() {
+    return weight;
   }
-
-  /**
-   * {@link Scorer} subclasses should implement this method if the subclass
-   * itself contains multiple scorers to support gathering details for
-   * sub-scorers via {@link ScorerVisitor}
-   * <p>
-   * Note: this method will throw {@link UnsupportedOperationException} if no
-   * associated {@link Weight} instance is provided to
-   * {@link #Scorer(Weight)}
-   * </p>
-   * 
-   * @lucene.experimental
-   */
-  protected void visitSubScorers(Query parent, Occur relationship,
-      ScorerVisitor<Query, Query, Scorer> visitor) {
-    if (weight == null)
-      throw new UnsupportedOperationException();
-
-    final Query q = weight.getQuery();
-    switch (relationship) {
-    case MUST:
-      visitor.visitRequired(parent, q, this);
-      break;
-    case MUST_NOT:
-      visitor.visitProhibited(parent, q, this);
-      break;
-    case SHOULD:
-      visitor.visitOptional(parent, q, this);
-      break;
+  
+  /** Returns child sub-scorers
+   * @lucene.experimental */
+  public Collection<ChildScorer> getChildren() {
+    return Collections.emptyList();
+  }
+  
+  /** a child Scorer and its relationship to its parent.
+   * the meaning of the relationship depends upon the parent query. 
+   * @lucene.experimental */
+  public static class ChildScorer {
+    public final Scorer child;
+    public final String relationship;
+    
+    public ChildScorer(Scorer child, String relationship) {
+      this.child = child;
+      this.relationship = relationship;
     }
   }
 }

@@ -19,10 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
+import org.apache.lucene.search.Scorer.ChildScorer;
 
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
@@ -318,17 +320,17 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
-  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
-    super.visitSubScorers(parent, relationship, visitor);
-    final Query q = weight.getQuery();
+  public Collection<ChildScorer> getChildren() {
+    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>();
     for (Scorer s : optionalScorers) {
-      s.visitSubScorers(q, Occur.SHOULD, visitor);
+      children.add(new ChildScorer(s, Occur.SHOULD.toString()));
     }
     for (Scorer s : prohibitedScorers) {
-      s.visitSubScorers(q, Occur.MUST_NOT, visitor);
+      children.add(new ChildScorer(s, Occur.MUST_NOT.toString()));
     }
     for (Scorer s : requiredScorers) {
-      s.visitSubScorers(q, Occur.MUST, visitor);
+      children.add(new ChildScorer(s, Occur.MUST.toString()));
     }
+    return children;
   }
 }

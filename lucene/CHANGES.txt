@@ -162,6 +162,10 @@ Changes in backwards compatibility policy
   See MIGRATE.txt for more details.
   (David Nemeskey, Simon Willnauer, Mike Mccandless, Robert Muir)
 
+* LUCENE-3330: The expert visitor API in Scorer has been simplified and extended to support
+  arbitrary relationships. To navigate to a scorer's children, call Scorer.getChildren().
+  (Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-2846: omitNorms now behaves like omitTermFrequencyAndPositions, if you

@@ -18,6 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -353,26 +355,11 @@ final class BooleanScorer extends Scorer {
   }
   
   @Override
-  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
-    super.visitSubScorers(parent, relationship, visitor);
-    final Query q = weight.getQuery();
-    SubScorer sub = scorers;
-    while(sub != null) {
-      // TODO: re-enable this if BQ ever sends us required
-      //clauses
-      //if (sub.required) {
-      //relationship = Occur.MUST;
-      if (!sub.prohibited) {
-        relationship = Occur.SHOULD;
-      } else {
-        // TODO: maybe it's pointless to do this, but, it is
-        // possible the doc may still be collected, eg foo
-        // OR (bar -fee)
-        relationship = Occur.MUST_NOT;
-      }
-      sub.scorer.visitSubScorers(q, relationship, visitor);
-      sub = sub.next;
+  public Collection<ChildScorer> getChildren() {
+    List<ChildScorer> children = new ArrayList<ChildScorer>();
+    for (SubScorer sub = scorers; sub != null; sub = sub.next) {
+      children.add(new ChildScorer(sub.scorer, sub.prohibited ? Occur.MUST_NOT.toString() : Occur.SHOULD.toString()));
     }
+    return children;
   }
-
 }

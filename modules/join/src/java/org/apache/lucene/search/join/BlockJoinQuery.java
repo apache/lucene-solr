@@ -18,6 +18,8 @@ package org.apache.lucene.search.join;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -32,6 +34,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
@@ -210,11 +213,8 @@ public class BlockJoinQuery extends Query {
     }
 
     @Override
-    public void visitSubScorers(Query parent, BooleanClause.Occur relationship,
-                                ScorerVisitor<Query, Query, Scorer> visitor) {
-      super.visitSubScorers(parent, relationship, visitor);
-      //childScorer.visitSubScorers(weight.getQuery(), BooleanClause.Occur.MUST, visitor);
-      childScorer.visitScorers(visitor);
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singletonList(new ChildScorer(childScorer, "BLOCK_JOIN"));
     }
 
     int getChildCount() {
