@@ -41,7 +41,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 {
   // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
-
+  private File dataDir2;
+  
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
   
   @Override public String getSchemaFile()     { return getSolrHome()+"/core0/conf/schema.xml";     }
@@ -52,6 +53,26 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     cores = h.getCoreContainer();
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
+    
+    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+        + System.currentTimeMillis());
+    dataDir2.mkdirs();
+    
+    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    
+    String skip = System.getProperty("solr.test.leavedatadir");
+    if (null != skip && 0 != skip.trim().length()) {
+      System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
+    } else {
+      if (!recurseDelete(dataDir2)) {
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+      }
+    }
   }
 
   @Override

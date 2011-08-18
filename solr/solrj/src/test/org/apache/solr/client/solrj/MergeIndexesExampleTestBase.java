@@ -27,6 +27,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -38,6 +39,7 @@ import java.io.IOException;
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
+  private File dataDir2;
 
   @Override
   public String getSolrHome() {
@@ -54,12 +56,37 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     return getSolrHome() + "/core0/conf/solrconfig.xml";
   }
 
-  @Override
   public void setUp() throws Exception {
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
+
     cores = h.getCoreContainer();
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
+    
+    // setup datadirs
+    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
+    
+    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+        + System.currentTimeMillis());
+    dataDir2.mkdirs();
+    
+    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    
+    String skip = System.getProperty("solr.test.leavedatadir");
+    if (null != skip && 0 != skip.trim().length()) {
+      System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
+    } else {
+      if (!recurseDelete(dataDir2)) {
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+      }
+    }
+
   }
 
   @Override
