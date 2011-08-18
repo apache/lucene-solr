@@ -5,7 +5,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermsFilter;
+import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;

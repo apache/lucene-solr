@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,6 +21,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;

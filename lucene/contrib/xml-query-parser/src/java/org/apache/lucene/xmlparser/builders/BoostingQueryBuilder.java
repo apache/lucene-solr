@@ -1,6 +1,6 @@
 package org.apache.lucene.xmlparser.builders;
 
-import org.apache.lucene.search.BoostingQuery;
+import org.apache.lucene.queries.BoostingQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;

@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;

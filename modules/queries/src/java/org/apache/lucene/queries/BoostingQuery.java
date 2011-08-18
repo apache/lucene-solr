@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.*;
 
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 

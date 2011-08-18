@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Filter;
 
 /**
  * A Filter that wrapped with an indication of how that filter

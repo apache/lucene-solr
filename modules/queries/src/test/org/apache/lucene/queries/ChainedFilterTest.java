@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

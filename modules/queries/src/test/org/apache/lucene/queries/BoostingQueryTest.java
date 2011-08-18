@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.queries;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BoostingQueryTest extends LuceneTestCase {

@@ -3,7 +3,7 @@
  */
 package org.apache.lucene.xmlparser.builders;
 
-import org.apache.lucene.search.DuplicateFilter;
+import org.apache.lucene.queries.DuplicateFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
