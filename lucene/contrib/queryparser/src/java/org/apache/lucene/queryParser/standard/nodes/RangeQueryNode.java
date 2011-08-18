@@ -80,7 +80,7 @@ public class RangeQueryNode extends TermRangeQueryNode {
    * 
    * @throws IllegalArgumentException if lower or upper are not instance of {@link ParametricQueryNode}
    * 
-   * @see TermRangeQueryNode#setBounds(FieldQueryNode, FieldQueryNode, boolean, boolean)
+   * @see AbstractRangeQueryNode#setBounds
    */
   @Override
   public void setBounds(FieldQueryNode lower, FieldQueryNode upper,

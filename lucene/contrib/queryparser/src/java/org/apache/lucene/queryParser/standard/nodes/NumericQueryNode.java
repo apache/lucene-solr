@@ -27,10 +27,10 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax.Type;
 
 /**
  * This query node represents a field query that holds a numeric value. It is
- * similar to {@link FieldQueryNode}, however the {@link #getValue()} returns a
- * {@link Number}.
+ * similar to {@link org.apache.lucene.queryParser.core.nodes.FieldQueryNode},
+ * however the {@link #getValue()} returns a {@link Number}.
  * 
- * @see NumericConfig
+ * @see org.apache.lucene.queryParser.standard.config.NumericConfig
  */
 public class NumericQueryNode extends QueryNodeImpl implements
     FieldValuePairQueryNode<Number> {

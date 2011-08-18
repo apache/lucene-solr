@@ -53,7 +53,7 @@ public abstract class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?
    * 
    * @return the field associated with this node
    * 
-   * @see FieldableNode
+   * @see org.apache.lucene.queryParser.core.nodes.FieldableNode
    */
   public CharSequence getField() {
     CharSequence field = null;
