@@ -156,7 +156,7 @@ public class DocumentObjectBinder {
           gname = "get" + gname.substring(3);
           try {
             getter = setter.getDeclaringClass().getMethod(gname, (Class[]) null);
-          } catch( Exception ex ) {
+          } catch (Exception ex) {
             // no getter -- don't worry about it...
             if (type == Boolean.class) {
               gname = "is" + setter.getName().substring(3);
@@ -183,7 +183,7 @@ public class DocumentObjectBinder {
             name = setter.getName();
           }
         }
-      } else if(annotation.value().indexOf('*') >= 0){ //dynamic fields are annotated as @Field("categories_*")
+      } else if (annotation.value().indexOf('*') >= 0) { //dynamic fields are annotated as @Field("categories_*")
         //if the field was annotated as a dynamic field, convert the name into a pattern
         //the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of replaceFirst
         name = annotation.value().replaceFirst("\\*", "\\.*");
@@ -226,14 +226,14 @@ public class DocumentObjectBinder {
               //Raw and primitive types
               if (types[1] instanceof Class) {
                 //the value could be multivalued then it is a List, Collection, ArrayList
-                if(types[1]== Collection.class || types[1] == List.class || types[1] == ArrayList.class){
+                if (types[1]== Collection.class || types[1] == List.class || types[1] == ArrayList.class) {
                   type = Object.class;
                   isList = true;
-                } else{
+                } else {
                   //else assume it is a primitive and put in the source type itself
                   type = (Class) types[1];
                 }
-              } else if( types[1] instanceof ParameterizedType) { //Of all the Parameterized types, only List is supported
+              } else if (types[1] instanceof ParameterizedType) { //Of all the Parameterized types, only List is supported
                 Type rawType = ((ParameterizedType)types[1]).getRawType();
                 if(rawType== Collection.class || rawType == List.class || rawType == ArrayList.class){
                   type = Object.class;
@@ -260,62 +260,64 @@ public class DocumentObjectBinder {
      * and <code>Map<String, List<Object>></code> for a dynamic field. The key is all matching fieldName's.
      */
     @SuppressWarnings("unchecked")
-    private Object getFieldValue(SolrDocument sdoc){
-      Object fieldValue = sdoc.getFieldValue(name);
+    private Object getFieldValue(SolrDocument solrDocument) {
+      Object fieldValue = solrDocument.getFieldValue(name);
       if (fieldValue != null) {
-        //this is not a dynamic field. so return te value
+        //this is not a dynamic field. so return the value
         return fieldValue;
       }
+
+      if (dynamicFieldNamePatternMatcher == null) {
+        return null;
+      }
+
       //reading dynamic field values
-      if (dynamicFieldNamePatternMatcher != null) {
-        Map<String, Object> allValuesMap = null;
-        List allValuesList = null;
-        if (isContainedInMap) {
-         allValuesMap = new HashMap<String, Object>();
-        } else {
-          allValuesList = new ArrayList();
-        }
+      Map<String, Object> allValuesMap = null;
+      List allValuesList = null;
+      if (isContainedInMap) {
+        allValuesMap = new HashMap<String, Object>();
+      } else {
+        allValuesList = new ArrayList();
+      }
 
-        for (String field : sdoc.getFieldNames()) {
-          if (dynamicFieldNamePatternMatcher.matcher(field).find()) {
-            Object val = sdoc.getFieldValue(field);
-            if (val == null) {
-              continue;
-            }
+      for (String field : solrDocument.getFieldNames()) {
+        if (dynamicFieldNamePatternMatcher.matcher(field).find()) {
+          Object val = solrDocument.getFieldValue(field);
+          if (val == null) {
+            continue;
+          }
 
-            if (isContainedInMap) {
-              if (isList) {
-                if (!(val instanceof List)) {
-                  List al = new ArrayList();
-                  al.add(val);
-                  val = al;
-                }
-              } else if (isArray) {
-                if (!(val instanceof List)) {
-                  Object[] arr= (Object[]) Array.newInstance(type,1);
-                  arr[0] = val;
-                  val= arr;
-                } else {
-                  val = Array.newInstance(type,((List)val).size());
-                }
+          if (isContainedInMap) {
+            if (isList) {
+              if (!(val instanceof List)) {
+                List al = new ArrayList();
+                al.add(val);
+                val = al;
               }
-              allValuesMap.put(field, val);
-            } else {
-              if (val instanceof Collection) {
-                allValuesList.addAll((Collection) val);
+            } else if (isArray) {
+              if (!(val instanceof List)) {
+                Object[] arr = (Object[]) Array.newInstance(type, 1);
+                arr[0] = val;
+                val = arr;
               } else {
-                allValuesList.add(val);
+                val = Array.newInstance(type, ((List) val).size());
               }
+            }
+            allValuesMap.put(field, val);
+          } else {
+            if (val instanceof Collection) {
+              allValuesList.addAll((Collection) val);
+            } else {
+              allValuesList.add(val);
             }
           }
         }
-        if (isContainedInMap) {
-          return allValuesMap.isEmpty() ? null : allValuesMap;
-        } else {
-          return allValuesList.isEmpty() ? null : allValuesList;
-        }
       }
-      return null;
+      if (isContainedInMap) {
+        return allValuesMap.isEmpty() ? null : allValuesMap;
+      } else {
+        return allValuesList.isEmpty() ? null : allValuesList;
+      }
     }
 
     <T> void inject(T obj, SolrDocument sdoc) {
@@ -327,7 +329,7 @@ public class DocumentObjectBinder {
       if (isArray && !isContainedInMap) {
         List list;
         if (val.getClass().isArray()) {
-          set(obj,val);
+          set(obj, val);
           return;
         } else if (val instanceof List) {
           list = (List) val;
@@ -335,7 +337,7 @@ public class DocumentObjectBinder {
           list = new ArrayList();
           list.add(val);
         }
-        set(obj, list.toArray((Object[]) Array.newInstance(type,list.size())));
+        set(obj, list.toArray((Object[]) Array.newInstance(type, list.size())));
       } else if (isList && !isContainedInMap) {
         if (!(val instanceof List)) {
           List list = new ArrayList();
@@ -352,7 +354,6 @@ public class DocumentObjectBinder {
       }
 
     }
-
 
     private void set(Object obj, Object v) {
       if (v != null && type == ByteBuffer.class && v.getClass() == byte[].class) {
