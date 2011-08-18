@@ -104,6 +104,11 @@ Bug Fixes
    
  * LUCENE-3347: XML query parser did not always incorporate boosts from
    UserQuery elements.  (Moogie, Uwe Schindler)
+   
+ * LUCENE-3382: Fixed a bug where NRTCachingDirectory's listAll() would wrongly
+   throw NoSuchDirectoryException when all files written so far have been
+   cached to RAM and the directory still has not yet been created on the
+   filesystem.  (Robert Muir)
 
 ======================= Lucene 3.3.0 =======================
 

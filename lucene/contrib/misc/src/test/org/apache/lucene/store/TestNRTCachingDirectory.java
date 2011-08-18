@@ -18,7 +18,9 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -116,5 +118,69 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     dir.deleteFile("foo.txt");
     assertEquals(0, dir.listAll().length);
     dir.close();
+  }
+  
+  // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
+  public void testNoDir() throws Throwable {
+    Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("doesnotexist")), 2.0, 25.0);
+    try {
+      IndexReader.open(dir, true);
+      fail("did not hit expected exception");
+    } catch (NoSuchDirectoryException nsde) {
+      // expected
+    }
+    dir.close();
+  }
+  
+  // LUCENE-3382 test that we can add a file, and then when we call list() we get it back
+  public void testDirectoryFilter() throws IOException {
+    Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("foo")), 2.0, 25.0);
+    String name = "file";
+    try {
+      dir.createOutput(name, newIOContext(random)).close();
+      assertTrue(dir.fileExists(name));
+      assertTrue(Arrays.asList(dir.listAll()).contains(name));
+    } finally {
+      dir.close();
+    }
+  }
+  
+  // LUCENE-3382 test that delegate compound files correctly.
+  public void testCompoundFileAppendTwice() throws IOException {
+    Directory newDir = new NRTCachingDirectory(newDirectory(), 2.0, 25.0);
+    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs", newIOContext(random));
+    createSequenceFile(newDir, "d1", (byte) 0, 15);
+    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random));
+    out.writeInt(0);
+    try {
+      newDir.copy(csw, "d1", "d1", newIOContext(random));
+      fail("file does already exist");
+    } catch (IOException e) {
+      //
+    }
+    out.close();
+    assertEquals(1, csw.listAll().length);
+    assertEquals("d.xyz", csw.listAll()[0]);
+   
+    csw.close();
+
+    CompoundFileDirectory cfr = newDir.openCompoundInput("d.cfs", newIOContext(random));
+    assertEquals(1, cfr.listAll().length);
+    assertEquals("d.xyz", cfr.listAll()[0]);
+    cfr.close();
+    newDir.close();
+  }
+  
+  /** Creates a file of the specified size with sequential data. The first
+   *  byte is written as the start byte provided. All subsequent bytes are
+   *  computed as start + offset where offset is the number of the byte.
+   */
+  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
+      IndexOutput os = dir.createOutput(name, newIOContext(random));
+      for (int i=0; i < size; i++) {
+          os.writeByte(start);
+          start ++;
+      }
+      os.close();
   }
 }
