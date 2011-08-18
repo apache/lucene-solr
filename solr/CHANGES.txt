@@ -229,6 +229,9 @@ Bug Fixes
 
 * SOLR-2682: Remove addException() in SimpleFacet. FacetComponent no longer catches and embeds
   exceptions occurred during facet processing, it throws HTTP 400 or 500 exceptions instead. (koji)
+
+* SOLR-2654: Directorys used by a SolrCore are now closed when they are no longer used.
+  (Mark Miller)
   
 Other Changes
 ----------------------
@@ -293,7 +296,11 @@ Other Changes
   
 * SOLR-2698: Enhance CoreAdmin STATUS command to return index size.
   (Yury Kats, hossman, Mark Miller)
-
+  
+* SOLR-2654: The same Directory instance is now always used across a SolrCore so that
+  it's easier to add other DirectoryFactory's without static caching hacks.
+  (Mark Miller)
+  
 Documentation
 ----------------------
 

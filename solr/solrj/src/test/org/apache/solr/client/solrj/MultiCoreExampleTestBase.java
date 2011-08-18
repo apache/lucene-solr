@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -26,11 +28,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
-
-import java.io.File;
 
 
 /**
@@ -42,7 +41,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
   private File dataDir2;
-  
+
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
   
   @Override public String getSchemaFile()     { return getSolrHome()+"/core0/conf/schema.xml";     }

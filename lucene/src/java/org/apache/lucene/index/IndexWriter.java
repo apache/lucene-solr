@@ -1180,8 +1180,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
-    // Pass false because the flush during closing calls getDirectory
-    ensureOpen(false);
     return directory;
   }
 

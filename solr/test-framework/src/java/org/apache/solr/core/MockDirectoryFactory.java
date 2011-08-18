@@ -26,10 +26,10 @@ import org.apache.lucene.util.LuceneTestCase;
 /**
  * Opens a directory with {@link LuceneTestCase#newFSDirectory(File)}
  */
-public class MockDirectoryFactory extends DirectoryFactory {
+public class MockDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
-  public Directory open(String path) throws IOException {
+  public Directory create(String path) throws IOException {
     return LuceneTestCase.newFSDirectory(new File(path));
   }
 }

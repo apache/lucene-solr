@@ -52,7 +52,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler {
-  protected IndexWriterProvider indexWriterProvider;
+  protected SolrCoreState indexWriterProvider;
 
   // stats
   AtomicLong addCommands = new AtomicLong();
@@ -77,7 +77,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
    
-    indexWriterProvider = new DefaultIndexWriterProvider();
+    indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
@@ -97,7 +97,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();
-      indexWriterProvider = new DefaultIndexWriterProvider();
+      indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
     }
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
@@ -348,8 +348,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     if (newReader == currentReader) {
       currentReader.incRef();
     }
-    
-    return new SolrIndexSearcher(core, schema, "main", newReader, true, true);
+
+    return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());
   }
   
   @Override
@@ -401,6 +401,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     softCommitTracker.close();
 
     numDocsPending.set(0);
+
     indexWriterProvider.decref();
     
     log.info("closed " + this);
@@ -478,7 +479,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     return "DirectUpdateHandler2" + getStatistics();
   }
   
-  public IndexWriterProvider getIndexWriterProvider() {
+  public SolrCoreState getIndexWriterProvider() {
     return indexWriterProvider;
   }
 

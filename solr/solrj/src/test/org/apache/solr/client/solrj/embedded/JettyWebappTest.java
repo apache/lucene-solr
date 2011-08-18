@@ -77,7 +77,6 @@ public class JettyWebappTest extends LuceneTestCase
     try {
       server.stop();
     } catch( Exception ex ) {}
-    SolrTestCaseJ4.closeDirectories();
     super.tearDown();
   }
   

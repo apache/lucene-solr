@@ -17,11 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.EventParams;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.TestExtendedDismaxParser;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,8 +75,7 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
     assertNotNull("Mock is null", mock);
     assertNull("Req (firstsearcher) is not null", mock.req);
 
-    Directory dir = currentSearcher.getIndexReader().directory();
-    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getSchema(), "testQuerySenderNoQuery", dir, true, false);
+    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getSchema(), core.getSolrConfig().mainIndexConfig, "testQuerySenderNoQuery", true, false, core.getDirectoryFactory());
 
     qsl.newSearcher(newSearcher, currentSearcher); // get newSearcher.
     assertNull("Req (newsearcher) is not null", mock.req);

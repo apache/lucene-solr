@@ -17,12 +17,51 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
@@ -31,6 +70,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -41,13 +81,9 @@ import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.update.SolrIndexConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -99,40 +135,31 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
-
-
-  /*
-   * Creates a searcher searching the index in the provided directory. Note:
-   * uses the main IndexReaderFactory for the specified SolrCore.
-   * 
-   * @see SolrCore#getMainIndexReaderFactory
-   */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name,
-      Directory directory, boolean enableCache) throws IOException {
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directory, false), true, enableCache);
-  }
+  private DirectoryFactory directoryFactory;
   
-  /** Creates a searcher searching the index in the provided directory. */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean readOnly, boolean enableCache) throws IOException {
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directory, readOnly), true, enableCache);
+  public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean readOnly, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
+    // we don't need to reserve the directory because we get it from the factory
+    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType), readOnly), true, enableCache, false, directoryFactory);
   }
 
-  /** Creates a searcher searching the provided index. */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean enableCache) {
-    this(core, schema,name,r, false, enableCache);
-  }
-
-
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) {
     super(r);
+    this.directoryFactory = directoryFactory;
     this.reader = getIndexReader();
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
     log.info("Opening " + this.name);
 
-    if (r.directory() instanceof FSDirectory) {
-      FSDirectory fsDirectory = (FSDirectory) r.directory();
+    Directory dir = r.directory();
+    
+    if (reserveDirectory) {
+      // keep the directory from being released while we use it
+      directoryFactory.incRef(dir);
+    }
+    
+    if (dir instanceof FSDirectory) {
+      FSDirectory fsDirectory = (FSDirectory) dir;
       indexDir = fsDirectory.getDirectory().getAbsolutePath();
     }
 
@@ -188,7 +215,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     numOpens.incrementAndGet();
   }
 
-
   @Override
   public String toString() {
     return name;
@@ -241,6 +267,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       cache.close();
     }
 
+
+    directoryFactory.release(getIndexReader().directory());
+   
+    
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
   }

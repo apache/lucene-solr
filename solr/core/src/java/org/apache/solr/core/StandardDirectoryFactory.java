@@ -23,13 +23,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 /**
- * Directory provider which mimics original Solr FSDirectory based behavior.
+ * Directory provider which mimics original Solr 
+ * {@link org.apache.lucene.store.FSDirectory} based behavior.
  * 
  */
-public class StandardDirectoryFactory extends DirectoryFactory {
+public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
-  public Directory open(String path) throws IOException {
+  protected Directory create(String path) throws IOException {
     return FSDirectory.open(new File(path));
   }
 }

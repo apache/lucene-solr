@@ -17,10 +17,11 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
+
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test-case for RAMDirectoryFactory
@@ -33,28 +34,28 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
   }
 
   private void dotestOpenReturnsTheSameForSamePath() throws IOException {
-    final Directory directory = new RefCntRamDirectory();
+    final Directory directory = new RAMDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
-      Directory openNew(String path) throws IOException {
+      protected Directory create(String path) throws IOException {
         return directory;
       }
     };
     String path = "/fake/path";
-    Directory dir1 = factory.open(path);
-    Directory dir2 = factory.open(path);
+    Directory dir1 = factory.get(path, null);
+    Directory dir2 = factory.get(path, null);
     assertEquals("RAMDirectoryFactory should not create new instance of RefCntRamDirectory " +
-        "every time open() is called for the same path", directory, dir1);
-    assertEquals("RAMDirectoryFactory should not create new instance of RefCntRamDirectory " +
-        "every time open() is called for the same path", directory, dir2);
-    dir1.close();
-    dir2.close();
+        "every time open() is called for the same path", dir1, dir2);
+
+    factory.release(dir1);
+    factory.release(dir2);
   }
 
   private void dotestOpenSucceedForEmptyDir() throws IOException {
     RAMDirectoryFactory factory = new RAMDirectoryFactory();
-    Directory dir = factory.open("/fake/path");
+    Directory dir = factory.get("/fake/path", null);
     assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
         "to index directory on the file system", dir);
+    factory.release(dir);
   }
 }

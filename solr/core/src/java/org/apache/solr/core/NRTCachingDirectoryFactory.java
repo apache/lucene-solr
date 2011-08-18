@@ -17,48 +17,21 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NRTCachingDirectory;
 
-public class RefCntRamDirectory extends RAMDirectory {
-
-  private final AtomicInteger refCount = new AtomicInteger();
-
-  public RefCntRamDirectory() {
-    super();
-    refCount.set(1);
-  }
-
-  public RefCntRamDirectory(Directory dir) throws IOException {
-    this();
-    for (String file : dir.listAll()) {
-      dir.copy(this, file, file, IOContext.DEFAULT);
-    }
-  }
-
-  public void incRef() {
-    ensureOpen();
-    refCount.incrementAndGet();
-  }
-
-  public void decRef() {
-    ensureOpen();
-    if (refCount.getAndDecrement() == 1) {
-      super.close();
-    }
-  }
+/**
+ * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
+ */
+public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  public final synchronized void close() {
-    decRef();
-  }
-
-  public boolean isOpen() {
-    return isOpen;
+  protected Directory create(String path) throws IOException {
+    return new NRTCachingDirectory(FSDirectory.open(new File(path)), 4, 48);
   }
 
 }

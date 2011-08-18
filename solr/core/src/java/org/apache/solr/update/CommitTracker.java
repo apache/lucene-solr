@@ -83,7 +83,7 @@ final class CommitTracker implements Runnable {
       pending.cancel(true);
       pending = null;
     }
-    scheduler.shutdown();
+    scheduler.shutdownNow();
   }
   
   /** schedule individual commits */

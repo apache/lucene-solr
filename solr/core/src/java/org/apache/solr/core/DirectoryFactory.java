@@ -1,4 +1,5 @@
 package org.apache.solr.core;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,33 +17,84 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
- * Provides access to a Directory implementation. 
- * 
+ * Provides access to a Directory implementation. You must release every
+ * Directory that you get.
  */
-public abstract class DirectoryFactory implements NamedListInitializedPlugin {
-
+public abstract class DirectoryFactory implements NamedListInitializedPlugin,
+    Closeable {
+  
   /**
-   * Opens a Lucene directory
+   * Close the this and all of the Directories it contains.
    * 
    * @throws IOException
    */
-  public abstract Directory open(String path) throws IOException;
+  public abstract void close() throws IOException;
   
-  public boolean exists(String path) {
-    // back compat behavior
-    File dirFile = new File(path);
-    return dirFile.canRead();
-  }
-
+  /**
+   * Creates a new Directory for a given path.
+   * 
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  protected abstract Directory create(String path) throws IOException;
   
-  public void init(NamedList args) {
-  }
+  /**
+   * Returns true if a Directory exists for a given path.
+   * 
+   * @param path
+   * @return
+   */
+  public abstract boolean exists(String path);
+  
+  /**
+   * Returns the Directory for a given path, using the specified rawLockType.
+   * Will return the same Directory instance for the same path.
+   * 
+   * @param path
+   * @param rawLockType
+   * @return
+   * @throws IOException
+   */
+  public abstract Directory get(String path, String rawLockType)
+      throws IOException;
+  
+  /**
+   * Returns the Directory for a given path, using the specified rawLockType.
+   * Will return the same Directory instance for the same path unless forceNew,
+   * in which case a new Directory is returned.
+   * 
+   * @param path
+   * @param rawLockType
+   * @param forceNew
+   * @return
+   * @throws IOException
+   */
+  public abstract Directory get(String path, String rawLockType,
+      boolean forceNew) throws IOException;
+  
+  /**
+   * Increment the number of references to the given Directory. You must call
+   * release for every call to this method.
+   * 
+   * @param directory
+   */
+  public abstract void incRef(Directory directory);
+  
+  /**
+   * Releases the Directory so that it may be closed when it is no longer
+   * referenced.
+   * 
+   * @param directory
+   * @throws IOException
+   */
+  public abstract void release(Directory directory) throws IOException;
+  
 }

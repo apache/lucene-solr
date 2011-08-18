@@ -17,16 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.store.*;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.schema.IndexSchema;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,8 +24,17 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.store.Directory;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.schema.IndexSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
@@ -51,41 +50,11 @@ public class SolrIndexWriter extends IndexWriter {
 
   String name;
   private PrintStream infoStream;
+  private DirectoryFactory directoryFactory;
 
-  public static Directory getDirectory(String path, DirectoryFactory directoryFactory, SolrIndexConfig config) throws IOException {
-    
-    Directory d = directoryFactory.open(path);
-
-    String rawLockType = (null == config) ? null : config.lockType;
-    if (null == rawLockType) {
-      // we default to "simple" for backwards compatibility
-      log.warn("No lockType configured for " + path + " assuming 'simple'");
-      rawLockType = "simple";
-    }
-    final String lockType = rawLockType.toLowerCase(Locale.ENGLISH).trim();
-
-    if ("simple".equals(lockType)) {
-      // multiple SimpleFSLockFactory instances should be OK
-      d.setLockFactory(new SimpleFSLockFactory(path));
-    } else if ("native".equals(lockType)) {
-      d.setLockFactory(new NativeFSLockFactory(path));
-    } else if ("single".equals(lockType)) {
-      if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
-        d.setLockFactory(new SingleInstanceLockFactory());
-    } else if ("none".equals(lockType)) {
-      // Recipe for disaster
-      log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
-      d.setLockFactory(NoLockFactory.getNoLockFactory());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Unrecognized lockType: " + rawLockType);
-    }
-    return d;
-  }
-  
-  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, CodecProvider codecProvider) throws IOException {
+  public SolrIndexWriter(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, CodecProvider codecProvider, boolean forceNewDirectory) throws IOException {
     super(
-        getDirectory(path, dirFactory, config),
+        directoryFactory.get(path, config.lockType, forceNewDirectory),
         config.toIndexWriterConfig(schema).
             setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
             setIndexDeletionPolicy(delPolicy).setCodecProvider(codecProvider)
@@ -93,10 +62,11 @@ public class SolrIndexWriter extends IndexWriter {
     log.debug("Opened Writer " + name);
     this.name = name;
 
+    this.directoryFactory = directoryFactory;
     setInfoStream(config);
     numOpens.incrementAndGet();
   }
-
+  
   private void setInfoStream(SolrIndexConfig config)
       throws IOException {
     String infoStreamFile = config.infoStreamFile;
@@ -142,9 +112,13 @@ public class SolrIndexWriter extends IndexWriter {
    * ****
    */
   private volatile boolean isClosed = false;
+
+  
   @Override
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
+    Directory directory = getDirectory();
+    
     try {
       super.close();
       if(infoStream != null) {
@@ -152,6 +126,9 @@ public class SolrIndexWriter extends IndexWriter {
       }
     } finally {
       isClosed = true;
+
+      directoryFactory.release(directory);
+     
       numCloses.incrementAndGet();
     }
   }

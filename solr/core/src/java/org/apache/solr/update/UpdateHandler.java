@@ -18,25 +18,20 @@
 package org.apache.solr.update;
 
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Vector;
 import java.io.IOException;
+import java.util.Vector;
 
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.core.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <code>UpdateHandler</code> handles requests to change the index
@@ -129,6 +124,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    */
   public abstract void newIndexWriter() throws IOException;
 
+  public abstract SolrCoreState getIndexWriterProvider();
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;

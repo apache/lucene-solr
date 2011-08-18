@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -183,6 +184,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     RefCounted<SolrIndexSearcher>[] searchers = null;
     // stores readers created from indexDir param values
     IndexReader[] readersToBeClosed = null;
+    Directory[] dirsToBeReleased = null;
     if (core != null) {
       try {
         String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
@@ -203,9 +205,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
         } else  {
           readersToBeClosed = new IndexReader[dirNames.length];
+          dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
-            readersToBeClosed[i] = IndexReader.open(dirFactory.open(dirNames[i]), true);
+            Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().mainIndexConfig.lockType);
+            dirsToBeReleased[i] = dir;
+            readersToBeClosed[i] = IndexReader.open(dir, true);
           }
         }
 
@@ -241,6 +246,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
         }
         if (readersToBeClosed != null) IOUtils.closeSafely(true, readersToBeClosed);
+        if (dirsToBeReleased != null) {
+          for (Directory dir : dirsToBeReleased) {
+            DirectoryFactory dirFactory = core.getDirectoryFactory();
+            dirFactory.release(dir);
+          }
+        }
         if (wrappedReq != null) wrappedReq.close();
         core.close();
       }

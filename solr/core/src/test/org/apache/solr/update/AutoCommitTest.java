@@ -373,7 +373,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     // too low of a number can cause a slow host to commit before the test code checks that it
     // isn't there... causing a failure at "shouldn't find any"
-    softTracker.timeUpperBound = 1000;
+    softTracker.timeUpperBound = 1200;
     softTracker.docsUpperBound = -1;
     hardTracker.timeUpperBound = 3000;
     hardTracker.docsUpperBound = -1;
@@ -435,8 +435,12 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     req.setContentStreams( toContentStreams(
       adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
-    assertEquals( 2, softTracker.getCommitCount() );
-    assertEquals( 1, hardTracker.getCommitCount() );
+    
+    // depending on timing, you might see 2 or 3 soft commits
+    int softCommitCnt = softTracker.getCommitCount();
+    assertTrue("commit cnt:" + softCommitCnt, softCommitCnt == 2
+        || softCommitCnt == 3);
+    assertEquals(1, hardTracker.getCommitCount());
     
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
     assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );

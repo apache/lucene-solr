@@ -20,20 +20,22 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 
-public final class DefaultIndexWriterProvider implements IndexWriterProvider {
+public final class DefaultSolrCoreState extends SolrCoreState {
   private int refCnt = 1;
-  private IndexWriter indexWriter = null;
+  private SolrIndexWriter indexWriter = null;
+  private DirectoryFactory directoryFactory;
 
-  public DefaultIndexWriterProvider() {
-
+  public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
+    this.directoryFactory = directoryFactory;
   }
   
   @Override
   public synchronized IndexWriter getIndexWriter(SolrCore core) throws IOException {
     if (indexWriter == null) {
-      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
+      indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false, false);
     }
     return indexWriter;
   }
@@ -44,14 +46,17 @@ public final class DefaultIndexWriterProvider implements IndexWriterProvider {
       indexWriter.close();
     }
     indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2",
-        false);
+        false, true);
   }
 
   @Override
   public synchronized void decref() throws IOException {
     refCnt--;
-    if (refCnt == 0 && indexWriter != null) {
-      indexWriter.close();
+    if (refCnt == 0) {
+      if (indexWriter != null) {
+        indexWriter.close();
+      }
+      directoryFactory.close();
     }
   }
 
@@ -70,10 +75,15 @@ public final class DefaultIndexWriterProvider implements IndexWriterProvider {
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name,
-      boolean removeAllExisting) throws IOException {
+      boolean removeAllExisting, boolean forceNewDirectory) throws IOException {
     return new SolrIndexWriter(name, core.getNewIndexDir(),
         core.getDirectoryFactory(), removeAllExisting, core.getSchema(),
-        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider());
+        core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy(), core.getCodecProvider(), forceNewDirectory);
+  }
+
+  @Override
+  public DirectoryFactory getDirectoryFactory() {
+    return directoryFactory;
   }
   
 }

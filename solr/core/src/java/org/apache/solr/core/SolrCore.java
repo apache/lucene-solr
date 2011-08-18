@@ -320,7 +320,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name, boolean readOnly) throws IOException {
-    return new SolrIndexSearcher(this, schema, name, directoryFactory.open(getIndexDir()), readOnly, false);
+    return new SolrIndexSearcher(this, getNewIndexDir(), schema, getSolrConfig().mainIndexConfig, name, readOnly, false, directoryFactory);
   }
 
 
@@ -355,7 +355,6 @@ public final class SolrCore implements SolrInfoMBean {
 
   void initIndex() {
     try {
-      initDirectoryFactory();
       String indexDir = getNewIndexDir();
       boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
@@ -369,13 +368,13 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = SolrIndexWriter.getDirectory(indexDir, getDirectoryFactory(), solrConfig.mainIndexConfig);
+        Directory dir = directoryFactory.get(indexDir, getSolrConfig().mainIndexConfig.lockType);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
             log.warn(logid+"WARNING: Solr index directory '" + indexDir+ "' is locked.  Unlocking...");
             IndexWriter.unlock(dir);
           }
-          dir.close();
+          directoryFactory.release(dir);
         }
       }
 
@@ -384,7 +383,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy, codecProvider);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy, codecProvider, false);
         writer.close();
       }
 
@@ -490,20 +489,18 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.0
    */
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
-    this(null, dataDir, new SolrConfig(), schema, null );
+    this(null, dataDir, new SolrConfig(), schema, null);
   }
   
   /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
-   * 
-   * @param name
-   * @param dataDir the index directory
-   * @param config a solr config instance
-   * @param schema a solr schema instance
-   * @param cd
-   * 
-   * @since solr 1.3
+   *@param dataDir the index directory
+   *@param config a solr config instance
+   *@param schema a solr schema instance
+   *@param updateHandler
+   *
+   *@since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
     this(name, dataDir, config, schema, cd, null);
@@ -559,6 +556,13 @@ public final class SolrCore implements SolrInfoMBean {
     initDeletionPolicy();
 
     this.codecProvider = initCodecProvider(solrConfig, schema);
+    
+    if (updateHandler == null) {
+      initDirectoryFactory();
+    } else {
+      directoryFactory = updateHandler.getIndexWriterProvider().getDirectoryFactory();
+    }
+    
     initIndex();
 
     initWriters();
@@ -601,7 +605,6 @@ public final class SolrCore implements SolrInfoMBean {
         this.updateHandler = createUpdateHandler(updateHandlerClass == null ? DirectUpdateHandler2.class
             .getName() : updateHandlerClass);
       } else {
-        
         this.updateHandler = createUpdateHandler(
             updateHandlerClass == null ? DirectUpdateHandler2.class.getName()
                 : updateHandlerClass, updateHandler);
@@ -737,11 +740,7 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (Exception e) {
       SolrException.log(log, e);
     }
-    try {
-      updateHandler.close();
-    } catch (Exception e) {
-      SolrException.log(log,e);
-    }
+
     try {
       searcherExecutor.shutdown();
       if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -763,6 +762,12 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
 
+    try {
+      updateHandler.close();
+    } catch (Exception e) {
+      SolrException.log(log,e);
+    }
+    
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          try {
@@ -1114,12 +1119,11 @@ public final class SolrCore implements SolrInfoMBean {
             currentReader.incRef();
           }
           
-          tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
+          tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true, true, directoryFactory);
         }
 
       } else {
-        IndexReader reader = getIndexReaderFactory().newReader(getDirectoryFactory().open(newIndexDir), true);
-        tmp = new SolrIndexSearcher(this, schema, "main", reader, true, true);
+        tmp = new SolrIndexSearcher(this, newIndexDir, schema, getSolrConfig().mainIndexConfig, "main", true, true, directoryFactory);
       }
     } catch (Throwable th) {
       synchronized(searcherLock) {
