@@ -377,6 +377,10 @@ New Features
   relevant document of each group matching the query. This feature has the
   same impact on the StatsComponent. (Martijn van Groningen)
 
+* SOLR-2675: CoreAdminHandler now allows arbitrary properties to be
+  specified when CREATEing a new SolrCore using property.* request
+  params.  (Yury Kats, hossman)
+
 Optimizations
 ----------------------
 

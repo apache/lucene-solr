@@ -46,6 +46,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Properties;
 
 /**
  *
@@ -319,8 +321,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (opts != null)
           cd.setShardId(opts);
       }
-
-      dcore.setCoreProperties(null);
+      
+      // Process all property.name=value parameters and set them as name=value core properties
+      Properties coreProperties = new Properties();
+      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
+      while (parameterNamesIterator.hasNext()) {
+          String parameterName = parameterNamesIterator.next();
+          if(parameterName.startsWith(CoreAdminParams.PROPERTY_PREFIX)) {
+              String parameterValue = params.get(parameterName);
+              String propertyName = parameterName.substring(CoreAdminParams.PROPERTY_PREFIX.length()); // skip prefix
+              coreProperties.put(propertyName, parameterValue);
+          }
+      }
+      dcore.setCoreProperties(coreProperties);
+      
       SolrCore core = coreContainer.create(dcore);
       coreContainer.register(name, core, false);
       rsp.add("core", core.getName());
