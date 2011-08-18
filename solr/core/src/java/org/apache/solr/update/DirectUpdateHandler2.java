@@ -137,8 +137,15 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      commitTracker.addedDocument( cmd.commitWithin );
-      softCommitTracker.addedDocument( cmd.commitWithin );
+      boolean triggered = commitTracker.addedDocument( cmd.commitWithin );
+    
+      if (!triggered) {
+        // if we hard commit, don't soft commit
+        softCommitTracker.addedDocument( cmd.commitWithin );
+      } else {
+        // still inc softCommit
+        softCommitTracker.docsSinceCommit++;
+      }
 
       if (cmd.overwrite) {
         Term updateTerm;
