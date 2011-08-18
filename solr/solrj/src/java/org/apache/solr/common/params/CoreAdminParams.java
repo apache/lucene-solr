@@ -68,6 +68,9 @@ public interface CoreAdminParams
 
   /** The shard id in solr cloud */
   public final static String SHARD = "shard";
+  
+  /** Prefix for core property name=value pair **/
+  public final static String PROPERTY_PREFIX = "property.";
 
   /** If you unload a core, delete the index too */
   public final static String DELETE_INDEX = "deleteIndex";
