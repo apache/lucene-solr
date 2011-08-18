@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.xmlparser.webdemo;
+package org.apache.lucene.demo.xmlparser;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;

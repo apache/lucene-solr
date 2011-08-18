@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="demo" default="jar-core" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="demo" default="default" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <description>
     Lucene Demo
@@ -33,7 +33,27 @@
 	 <pathelement path="${analyzers-common.jar}"/>
    <pathelement path="${queryparser.jar}"/>
    <pathelement path="${lucene-core.jar}"/>
+   <pathelement path="${xml-query-parser.jar}"/>
+   <pathelement location="lib/servlet-api-2.4.jar"/>
   </path>
 
-  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,common.compile-core" />
+  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,jar-xml-query-parser,common.compile-core" />
+
+  <target name="default" depends="jar-core,build-web-demo"/>
+
+  <target name="build-artifacts-and-tests" depends="jar, compile-test,build-web-demo" />
+
+  <target name="build-web-demo"  description="Compiles demo">
+    <echo>Compiling XML QueryParser Demo WAR</echo>
+
+    <war destfile="${build.dir}/lucene-xml-query-demo.war" webxml="src/resources/org/apache/lucene/demo/xmlparser/WEB-INF/web.xml">
+      <fileset dir="src/resources/org/apache/lucene/demo/xmlparser/"/>
+      <lib dir="${build.dir}">
+        <include name="${final.name}.jar"/>
+      </lib>
+      <lib file="${queries.jar}"/>
+      <lib file="${lucene-core.jar}"/>
+    </war>
+  </target>
+  
 </project>

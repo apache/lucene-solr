@@ -13,6 +13,8 @@ Build
 
  * LUCENE-3285: Moved contrib/queryparser into modules/queryparser
 
+ * LUCENE-3285: Moved contrib/xml-query-parser's demo into contrib/demo
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.

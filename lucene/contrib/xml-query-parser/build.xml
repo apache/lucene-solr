@@ -25,9 +25,6 @@
 
   <import file="../contrib-build.xml"/>
 
-  <property name="servlet.jar" location="${common.dir}/lib/servlet-api-2.4.jar"/>
-  <available property="servlet.jar.present" type="file" file="${servlet.jar}"/>
-
   <path id="classpath">
     <pathelement path="${queries-contrib.jar}"/>
     <pathelement path="${queryparser.jar}"/>
@@ -35,41 +32,5 @@
     <path refid="base.classpath"/>
   </path>
 
-  <path id="web-classpath">
-    <pathelement path="${queries-contrib.jar}"/>
-    <pathelement path="${queryparser.jar}"/>
-    <pathelement path="${queries.jar}"/>
-    <pathelement path="${servlet.jar}"/>
-    <pathelement path="${build.dir}/${final.name}.jar"/>
-    <path refid="base.classpath"/>
-  </path>
-
   <target name="compile-core" depends="jar-queries-contrib,jar-queryparser,jar-queries,common.compile-core" />
-
-  <!-- override contrib-build.xml target to also build web demo -->
-  <target name="build-artifacts-and-tests" depends="jar, compile-test,build-web-demo" />
-
-  <target name="default" depends="jar-lucene-core,jar-core,build-web-demo"/>
-
-  <target name="build-web-demo"  description="Compiles demo" if="servlet.jar.present">
-
-    <echo>XML Parser compiling web demo</echo>
-
-    <compile
-      srcdir="src/demo/java"
-      destdir="${build.dir}/classes/webdemo">
-      <classpath refid="web-classpath"/>
-    </compile>
-
-    <war destfile="${build.dir}/xml-query-demo.war" webxml="src/demo/WebContent/WEB-INF/web.xml">
-      <fileset dir="src/demo/WebContent"/>
-      <lib dir="${build.dir}">
-        <include name="${final.name}.jar"/>
-      </lib>
-      <lib file="${queries.jar}"/>
-      <lib file="${lucene-core.jar}"/>
-      <classes dir="${build.dir}/classes/webdemo"/>
-    </war>
-
-  </target>
 </project>
