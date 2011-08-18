@@ -31,6 +31,7 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.standard.builders.StandardQueryTreeBuilder;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute;
 import org.apache.lucene.queryParser.standard.config.FuzzyConfig;
+import org.apache.lucene.queryParser.standard.config.NumericConfig;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
@@ -112,7 +113,7 @@ import org.apache.lucene.search.Query;
  * @see StandardQueryTreeBuilder
  */
 public class StandardQueryParser extends QueryParserHelper {
-
+  
   /**
    * Constructs a {@link StandardQueryParser} object.
    */
@@ -121,7 +122,7 @@ public class StandardQueryParser extends QueryParserHelper {
         new StandardQueryNodeProcessorPipeline(null),
         new StandardQueryTreeBuilder());
   }
-
+  
   /**
    * Constructs a {@link StandardQueryParser} object and sets an
    * {@link Analyzer} to it. The same as:
@@ -136,15 +137,16 @@ public class StandardQueryParser extends QueryParserHelper {
    */
   public StandardQueryParser(Analyzer analyzer) {
     this();
-
+    
     this.setAnalyzer(analyzer);
   }
   
   @Override
-  public String toString(){
-    return "<StandardQueryParser config=\"" + this.getQueryConfigHandler() + "\"/>";
+  public String toString() {
+    return "<StandardQueryParser config=\"" + this.getQueryConfigHandler()
+        + "\"/>";
   }
-
+  
   /**
    * Overrides {@link QueryParserHelper#parse(String, String)} so it casts the
    * return object to {@link Query}. For more reference about this method, check
@@ -163,11 +165,11 @@ public class StandardQueryParser extends QueryParserHelper {
   @Override
   public Query parse(String query, String defaultField)
       throws QueryNodeException {
-
+    
     return (Query) super.parse(query, defaultField);
-
+    
   }
-
+  
   /**
    * Gets implicit operator setting, which will be either {@link Operator#AND}
    * or {@link Operator#OR}.
@@ -175,7 +177,7 @@ public class StandardQueryParser extends QueryParserHelper {
   public StandardQueryConfigHandler.Operator getDefaultOperator() {
     return getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
   }
-
+  
   /**
    * Sets the collator used to determine index term inclusion in ranges for
    * RangeQuerys.
@@ -235,7 +237,7 @@ public class StandardQueryParser extends QueryParserHelper {
   public void setDefaultOperator(org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.Operator operator) {
     getQueryConfigHandler().set(ConfigurationKeys.DEFAULT_OPERATOR, operator);
   }
-
+  
   /**
    * Set to <code>true</code> to allow leading wildcard characters.
    * <p>
@@ -248,7 +250,7 @@ public class StandardQueryParser extends QueryParserHelper {
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
     getQueryConfigHandler().set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms);
   }
-
+  
   /**
    * @see #setLowercaseExpandedTerms(boolean)
    */
@@ -263,7 +265,7 @@ public class StandardQueryParser extends QueryParserHelper {
     }
     
   }
-
+  
   /**
    * Set to <code>true</code> to allow leading wildcard characters.
    * <p>
@@ -276,7 +278,7 @@ public class StandardQueryParser extends QueryParserHelper {
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     getQueryConfigHandler().set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, allowLeadingWildcard);
   }
-
+  
   /**
    * Set to <code>true</code> to enable position increments in result query.
    * <p>
@@ -289,7 +291,7 @@ public class StandardQueryParser extends QueryParserHelper {
   public void setEnablePositionIncrements(boolean enabled) {
     getQueryConfigHandler().set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, enabled);
   }
-
+  
   /**
    * @see #setEnablePositionIncrements(boolean)
    */
@@ -304,7 +306,7 @@ public class StandardQueryParser extends QueryParserHelper {
     }
     
   }
-
+  
   /**
    * By default, it uses
    * {@link MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} when creating a
@@ -318,14 +320,14 @@ public class StandardQueryParser extends QueryParserHelper {
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
     getQueryConfigHandler().set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, method);
   }
-
+  
   /**
    * @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod)
    */
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
     return getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
   }
-
+  
   /**
    * Set the fields a query should be expanded to when the field is
    * <code>null</code>
@@ -333,15 +335,15 @@ public class StandardQueryParser extends QueryParserHelper {
    * @param fields the fields used to expand the query
    */
   public void setMultiFields(CharSequence[] fields) {
-
+    
     if (fields == null) {
       fields = new CharSequence[0];
     }
 
     getQueryConfigHandler().set(ConfigurationKeys.MULTI_FIELDS, fields);
-
+    
   }
-
+  
   /**
    * Returns the fields used to expand the query when the field for a
    * certain query is <code>null</code>
@@ -370,21 +372,29 @@ public class StandardQueryParser extends QueryParserHelper {
     fuzzyConfig.setPrefixLength(fuzzyPrefixLength);
     
   }
-
+  
+  public void setNumericConfigMap(Map<String,NumericConfig> numericConfigMap) {
+    getQueryConfigHandler().set(ConfigurationKeys.NUMERIC_CONFIG_MAP, numericConfigMap);
+  }
+  
+  public Map<String,NumericConfig> getNumericConfigMap() {
+    return getQueryConfigHandler().get(ConfigurationKeys.NUMERIC_CONFIG_MAP);
+  }
+  
   /**
    * Set locale used by date range parsing.
    */
   public void setLocale(Locale locale) {
     getQueryConfigHandler().set(ConfigurationKeys.LOCALE, locale);
   }
-
+  
   /**
    * Returns current locale, allowing access by subclasses.
    */
   public Locale getLocale() {
     return getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
   }
-
+  
   /**
    * Sets the default slop for phrases. If zero, then exact phrase matches are
    * required. Default value is zero.
@@ -408,10 +418,10 @@ public class StandardQueryParser extends QueryParserHelper {
     getQueryConfigHandler().set(ConfigurationKeys.ANALYZER, analyzer);
   }
   
-  public Analyzer getAnalyzer() {    
+  public Analyzer getAnalyzer() {
     return getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);       
   }
-
+  
   /**
    * @see #setAllowLeadingWildcard(boolean)
    */
@@ -425,7 +435,7 @@ public class StandardQueryParser extends QueryParserHelper {
       return allowLeadingWildcard;
     }
   }
-
+  
   /**
    * Get the minimal similarity for fuzzy queries.
    */
@@ -438,7 +448,7 @@ public class StandardQueryParser extends QueryParserHelper {
       return fuzzyConfig.getMinSimilarity();
     }
   }
-
+  
   /**
    * Get the prefix length for fuzzy queries.
    * 
@@ -453,7 +463,7 @@ public class StandardQueryParser extends QueryParserHelper {
       return fuzzyConfig.getPrefixLength();
     }
   }
-
+  
   /**
    * Gets the default slop for phrases.
    */
@@ -467,7 +477,7 @@ public class StandardQueryParser extends QueryParserHelper {
       return phraseSlop;
     }
   }
-
+  
   /**
    * Set the minimum similarity for fuzzy queries. Default is defined on
    * {@link FuzzyQuery#defaultMinSimilarity}.

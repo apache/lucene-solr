@@ -52,6 +52,8 @@ public class StandardQueryNodeProcessorPipeline extends
     add(new MultiFieldQueryNodeProcessor());
     add(new FuzzyQueryNodeProcessor());
     add(new MatchAllDocsQueryNodeProcessor());
+    add(new NumericQueryNodeProcessor());
+    add(new NumericRangeQueryNodeProcessor());
     add(new LowercaseExpandedTermsQueryNodeProcessor());
     add(new ParametricRangeQueryNodeProcessor());
     add(new AllowLeadingWildcardProcessor());    

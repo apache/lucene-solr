@@ -31,9 +31,12 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.NumericQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.NumericRangeQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.Query;
@@ -49,12 +52,14 @@ import org.apache.lucene.search.Query;
  */
 public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
     StandardQueryBuilder {
-
+  
   public StandardQueryTreeBuilder() {
     setBuilder(GroupQueryNode.class, new GroupQueryNodeBuilder());
     setBuilder(FieldQueryNode.class, new FieldQueryNodeBuilder());
     setBuilder(BooleanQueryNode.class, new BooleanQueryNodeBuilder());
     setBuilder(FuzzyQueryNode.class, new FuzzyQueryNodeBuilder());
+    setBuilder(NumericQueryNode.class, new DummyQueryNodeBuilder());
+    setBuilder(NumericRangeQueryNode.class, new NumericRangeQueryNodeBuilder());
     setBuilder(BoostQueryNode.class, new BoostQueryNodeBuilder());
     setBuilder(ModifierQueryNode.class, new ModifierQueryNodeBuilder());
     setBuilder(WildcardQueryNode.class, new WildcardQueryNodeBuilder());
@@ -63,6 +68,7 @@ public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
     setBuilder(PrefixWildcardQueryNode.class,
         new PrefixWildcardQueryNodeBuilder());
     setBuilder(RangeQueryNode.class, new RangeQueryNodeBuilder());
+    setBuilder(TermRangeQueryNode.class, new TermRangeQueryNodeBuilder());
     setBuilder(SlopQueryNode.class, new SlopQueryNodeBuilder());
     setBuilder(StandardBooleanQueryNode.class,
         new StandardBooleanQueryNodeBuilder());

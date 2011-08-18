@@ -22,7 +22,11 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 /**
  * A {@link ParametricQueryNode} represents LE, LT, GE, GT, EQ, NE query.
  * Example: date >= "2009-10-10" OR price = 200
+ * 
+ * @deprecated this class will be removed in future. {@link FieldQueryNode} 
+ * should be used instead.
  */
+@Deprecated
 public class ParametricQueryNode extends FieldQueryNode {
 
   private static final long serialVersionUID = -5770038129741218116L;

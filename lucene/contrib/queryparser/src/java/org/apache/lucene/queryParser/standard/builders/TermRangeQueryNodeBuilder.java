@@ -18,56 +18,43 @@ package org.apache.lucene.queryParser.standard.builders;
  */
 
 import org.apache.lucene.queryParser.core.QueryNodeException;
-import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
+import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
-import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
+import org.apache.lucene.queryParser.core.util.StringUtils;
+import org.apache.lucene.queryParser.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryParser.standard.processors.MultiTermRewriteMethodProcessor;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 
 /**
- * Builds a {@link TermRangeQuery} object from a {@link RangeQueryNode} object.
+ * Builds a {@link TermRangeQuery} object from a {@link TermRangeQueryNode}
+ * object.
  */
-public class RangeQueryNodeBuilder implements StandardQueryBuilder {
-
-  public RangeQueryNodeBuilder() {
-    // empty constructor
+public class TermRangeQueryNodeBuilder implements StandardQueryBuilder {
+  
+  public TermRangeQueryNodeBuilder() {
+  // empty constructor
   }
-
+  
   public TermRangeQuery build(QueryNode queryNode) throws QueryNodeException {
-    RangeQueryNode rangeNode = (RangeQueryNode) queryNode;
-    ParametricQueryNode upper = rangeNode.getUpperBound();
-    ParametricQueryNode lower = rangeNode.getLowerBound();
-
-    boolean lowerInclusive = false;
-    boolean upperInclusive = false;
-
-    if (upper.getOperator() == CompareOperator.LE) {
-      upperInclusive = true;
-    }
-
-    if (lower.getOperator() == CompareOperator.GE) {
-      lowerInclusive = true;
-    }
-
-    String field = rangeNode.getField().toString();
-
+    TermRangeQueryNode rangeNode = (TermRangeQueryNode) queryNode;
+    FieldQueryNode upper = rangeNode.getUpperBound();
+    FieldQueryNode lower = rangeNode.getLowerBound();
+    
+    String field = StringUtils.toString(rangeNode.getField());
+    
     TermRangeQuery rangeQuery = new TermRangeQuery(field, lower
-        .getTextAsString(), upper.getTextAsString(), lowerInclusive,
-        upperInclusive, rangeNode.getCollator());
+        .getTextAsString(), upper.getTextAsString(), rangeNode
+        .isLowerInclusive(), rangeNode.isUpperInclusive());
     
     MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode
         .getTag(MultiTermRewriteMethodProcessor.TAG_ID);
-    
     if (method != null) {
       rangeQuery.setRewriteMethod(method);
     }
-
+    
     return rangeQuery;
-
+    
   }
   
-  
-
 }

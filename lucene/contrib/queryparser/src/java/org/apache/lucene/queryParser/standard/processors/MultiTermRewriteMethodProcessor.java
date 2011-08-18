@@ -23,6 +23,7 @@ import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryParser.standard.nodes.AbstractRangeQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.MultiTermQuery;
 
@@ -42,7 +43,7 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
     // set setMultiTermRewriteMethod for WildcardQueryNode and
     // PrefixWildcardQueryNode
     if (node instanceof WildcardQueryNode
-        || node instanceof ParametricRangeQueryNode) {
+        || node instanceof AbstractRangeQueryNode) {
 
 
       // read the attribute value and use a TAG to take the value to the Builder

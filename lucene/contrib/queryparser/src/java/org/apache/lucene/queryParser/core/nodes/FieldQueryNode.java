@@ -25,8 +25,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax.Type;
 /**
  * A {@link FieldQueryNode} represents a element that contains field/text tuple
  */
-public class FieldQueryNode extends QueryNodeImpl implements TextableQueryNode,
-    FieldableNode {
+public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQueryNode<CharSequence>, TextableQueryNode {
 
   private static final long serialVersionUID = 3634521145130758265L;
 
@@ -181,5 +180,13 @@ public class FieldQueryNode extends QueryNodeImpl implements TextableQueryNode,
     return fqn;
 
   }
+
+	public CharSequence getValue() {
+		return getText();
+	}
+
+	public void setValue(CharSequence value) {
+		setText(value);
+	}
 
 }

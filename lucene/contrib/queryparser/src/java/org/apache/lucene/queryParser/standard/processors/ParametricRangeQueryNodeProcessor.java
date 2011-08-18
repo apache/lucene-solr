@@ -56,18 +56,18 @@ import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
  * 
  * @see ConfigurationKeys#DATE_RESOLUTION
  * @see ConfigurationKeys#LOCALE
- * @see RangeQueryNode
+ * @see TermRangeQueryNode
  * @see ParametricRangeQueryNode
  */
 public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
-
+  
   public ParametricRangeQueryNodeProcessor() {
-    // empty constructor
+  // empty constructor
   }
-
+  
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
-
+    
     if (node instanceof ParametricRangeQueryNode) {
       ParametricRangeQueryNode parametricRangeNode = (ParametricRangeQueryNode) node;
       ParametricQueryNode upper = parametricRangeNode.getUpperBound();

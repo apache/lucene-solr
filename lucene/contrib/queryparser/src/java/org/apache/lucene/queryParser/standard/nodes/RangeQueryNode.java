@@ -19,8 +19,9 @@ package org.apache.lucene.queryParser.standard.nodes;
 
 import java.text.Collator;
 
+import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
-import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
 
@@ -31,8 +32,12 @@ import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNod
  * @see ParametricRangeQueryNodeProcessor
  * @see ConfigurationKeys#RANGE_COLLATOR
  * @see org.apache.lucene.search.TermRangeQuery
+ * 
+ * @deprecated this class will be removed in future, {@link TermRangeQueryNode} should
+ * be used instead
  */
-public class RangeQueryNode extends ParametricRangeQueryNode {
+@Deprecated
+public class RangeQueryNode extends TermRangeQueryNode {
 
   private static final long serialVersionUID = 7400866652044314657L;
 
@@ -42,13 +47,61 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
    * @param lower
    * @param upper
    */
-  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper, Collator collator) {
-    super(lower, upper);
-
+  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper,
+      Collator collator) {
+    
+    super(lower, upper, lower.getOperator() == CompareOperator.LE, upper
+        .getOperator() == CompareOperator.GE);
+    
     this.collator = collator;
-
+    
   }
-
+  
+  @Override
+  public ParametricQueryNode getLowerBound() {
+    return (ParametricQueryNode) super.getLowerBound();
+  }
+  
+  @Override
+  public ParametricQueryNode getUpperBound() {
+    return (ParametricQueryNode) super.getUpperBound();
+  }
+  
+  /**
+   * Sets lower and upper bounds. The method signature expects
+   * {@link FieldQueryNode} objects as lower and upper, however,
+   * an {@link IllegalArgumentException} will be thrown at runtime
+   * if a non {@link ParametricQueryNode} is passed as lower and upper.
+   * 
+   * @param lower a {@link ParametricQueryNode} object
+   * @param upper a {@link ParametricQueryNode} object
+   * @param lowerInclusive <code>true</code> if lower bound is inclusive, otherwise, <code>false</code>
+   * @param upperInclusive <code>true</code> if upper bound is inclusive, otherwise, <code>false</code>
+   * 
+   * @throws IllegalArgumentException if lower or upper are not instance of {@link ParametricQueryNode}
+   * 
+   * @see TermRangeQueryNode#setBounds(FieldQueryNode, FieldQueryNode, boolean, boolean)
+   */
+  @Override
+  public void setBounds(FieldQueryNode lower, FieldQueryNode upper,
+      boolean lowerInclusive, boolean upperInclusive) {
+    
+    if (lower != null && !(lower instanceof ParametricQueryNode)) {
+      throw new IllegalArgumentException("lower should be an instance of "
+          + ParametricQueryNode.class.getCanonicalName() + ", but found "
+          + lower.getClass().getCanonicalName());
+    }
+    
+    if (upper != null && !(upper instanceof ParametricQueryNode)) {
+      throw new IllegalArgumentException("upper should be an instance of "
+          + ParametricQueryNode.class.getCanonicalName() + ", but found "
+          + lower.getClass().getCanonicalName());
+    }
+    
+    super.setBounds(lower, upper, lowerInclusive, upperInclusive);
+    
+  }
+  
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("<range>\n\t");
@@ -66,5 +119,5 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
   public Collator getCollator() {
     return this.collator;
   }
-
+  
 }

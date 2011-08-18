@@ -27,7 +27,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * Example: date >= "2009-10-10" OR price = 200
  */
 public class ParametricRangeQueryNode extends QueryNodeImpl implements
-    FieldableNode {
+    RangeQueryNode<ParametricQueryNode> {
 
   private static final long serialVersionUID = 7120958816535573935L;
 
@@ -118,4 +118,12 @@ public class ParametricRangeQueryNode extends QueryNodeImpl implements
 
   }
 
+  public boolean isLowerInclusive() {
+    return getUpperBound().getOperator() == CompareOperator.GE;
+  }
+  
+  public boolean isUpperInclusive() {
+    return getLowerBound().getOperator() == CompareOperator.LE;
+  }
+  
 }
