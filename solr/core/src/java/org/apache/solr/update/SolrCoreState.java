@@ -43,8 +43,6 @@ public abstract class SolrCoreState {
    * Get the current IndexWriter. If a new IndexWriter must be created, use the
    * settings from the given {@link SolrCore}.
    * 
-   * @param core
-   * @return
    * @throws IOException
    */
   public abstract IndexWriter getIndexWriter(SolrCore core) throws IOException;
