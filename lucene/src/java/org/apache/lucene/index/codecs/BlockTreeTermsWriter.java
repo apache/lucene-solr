@@ -759,6 +759,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
             final int suffix = block.prefix.length - prefixLength;
 
             assert suffix > 0;
+
+            // For non-leaf block we borrow 1 bit to record
+            // if entry is term or sub-block
             bytesWriter.writeVInt((suffix<<1)|1);
             bytesWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
             assert block.fp < startFP;

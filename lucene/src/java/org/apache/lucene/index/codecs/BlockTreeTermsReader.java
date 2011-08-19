@@ -765,6 +765,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
         for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
           arcs[arcIdx] = new FST.Arc<BytesRef>();
         }
+
+        // TODO: if the automaon is "smallish" we really
+        // should use the terms index to seek at least to
+        // the initial term and likely to subsequent terms
+        // (or, maybe just fallback to ATE for such cases).
+        // Else the seek cost of loading the frames will be
+        // too costly.
+
         final FST.Arc<BytesRef> arc = index.getFirstArc(arcs[0]);
         // Empty string prefix must have an output in the index!
         assert arc.isFinal();

@@ -10,7 +10,6 @@ perf tests:
       Indexer: net bytes indexed 9635556306
       Indexer: 30.824156883707392 GB/hour plain text
 
-  - test perf on single seg index too!
   - try *larger* maxItemsInBlock: could give better net perf?  ie less seeking and more scanning
 
 what to do about short terms that "force" a block to mark itself as hasTerms!!??
