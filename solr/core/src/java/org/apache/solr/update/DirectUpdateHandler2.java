@@ -137,15 +137,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      boolean triggered = commitTracker.addedDocument( cmd.commitWithin );
-    
-      if (!triggered) {
-        // if we hard commit, don't soft commit
-        softCommitTracker.addedDocument( cmd.commitWithin );
-      } else {
-        // still inc softCommit
-        softCommitTracker.docsSinceCommit++;
-      }
+      commitTracker.addedDocument( cmd.commitWithin );
+      softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
 
       if (cmd.overwrite) {
         Term updateTerm;
@@ -192,10 +185,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     indexWriterProvider.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
-    if (commitTracker.timeUpperBound > 0) {
-      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-    } else if (softCommitTracker.timeUpperBound > 0) {
-      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+    if (commitTracker.getTimeUpperBound() > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+    } else if (softCommitTracker.getTimeUpperBound() > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
     }
   }
 
@@ -224,10 +217,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       
       madeIt = true;
       
-      if (commitTracker.timeUpperBound > 0) {
-        commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-      } else if (softCommitTracker.timeUpperBound > 0) {
-        softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+      if (commitTracker.getTimeUpperBound() > 0) {
+        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+      } else if (softCommitTracker.getTimeUpperBound()> 0) {
+        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
       }
       
     } finally {
@@ -255,10 +248,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("end_mergeIndexes");
 
     // TODO: consider soft commit issues
-    if (rc == 1 && commitTracker.timeUpperBound > 0) {
-      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-    } else if (rc == 1 && softCommitTracker.timeUpperBound > 0) {
-      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+    if (rc == 1 && commitTracker.getTimeUpperBound() > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+    } else if (rc == 1 && softCommitTracker.getTimeUpperBound() > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
     }
 
     return rc;
@@ -450,20 +443,20 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (commitTracker.docsUpperBound > 0) {
-      lst.add("autocommit maxDocs", commitTracker.docsUpperBound);
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxDocs", commitTracker.getTimeUpperBound());
     }
-    if (commitTracker.timeUpperBound > 0) {
-      lst.add("autocommit maxTime", "" + commitTracker.timeUpperBound + "ms");
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
     }
-    lst.add("autocommits", commitTracker.autoCommitCount);
-    if (softCommitTracker.docsUpperBound > 0) {
-      lst.add("soft autocommit maxDocs", softCommitTracker.docsUpperBound);
+    lst.add("autocommits", commitTracker.getCommitCount());
+    if (softCommitTracker.getTimeUpperBound() > 0) {
+      lst.add("soft autocommit maxDocs", softCommitTracker.getTimeUpperBound());
     }
-    if (softCommitTracker.timeUpperBound > 0) {
-      lst.add("soft autocommit maxTime", "" + softCommitTracker.timeUpperBound + "ms");
+    if (softCommitTracker.getTimeUpperBound() > 0) {
+      lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
     }
-    lst.add("soft autocommits", softCommitTracker.autoCommitCount);
+    lst.add("soft autocommits", softCommitTracker.getCommitCount());
     lst.add("optimizes", optimizeCommands.get());
     lst.add("rollbacks", rollbackCommands.get());
     lst.add("expungeDeletes", expungeDeleteCommands.get());

@@ -21,6 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -44,29 +46,28 @@ final class CommitTracker implements Runnable {
   public final int DOC_COMMIT_DELAY_MS = 250;
   
   // settings, not final so we can change them in testing
-  int docsUpperBound;
-  long timeUpperBound;
+  private int docsUpperBound;
+  private long timeUpperBound;
   
   private final ScheduledExecutorService scheduler = Executors
       .newScheduledThreadPool(1);
   private ScheduledFuture pending;
   
   // state
-  long docsSinceCommit;
-  int autoCommitCount = 0;
-  long lastAddedTime = -1;
+  private AtomicLong docsSinceCommit = new AtomicLong(0);
+  private AtomicInteger autoCommitCount = new AtomicInteger(0);
+  private volatile long lastAddedTime = -1;
   
-  private SolrCore core;
+  private final SolrCore core;
 
-  private boolean softCommit;
-  private boolean waitSearcher;
+  private final boolean softCommit;
+  private final boolean waitSearcher;
 
   private String name;
   
   public CommitTracker(String name, SolrCore core, int docsUpperBound, int timeUpperBound, boolean waitSearcher, boolean softCommit) {
     this.core = core;
     this.name = name;
-    docsSinceCommit = 0;
     pending = null;
     
     this.docsUpperBound = docsUpperBound;
@@ -78,7 +79,7 @@ final class CommitTracker implements Runnable {
     SolrCore.log.info(name + " AutoCommit: " + this);
   }
   
-  public void close() {
+  public synchronized void close() {
     if (pending != null) {
       pending.cancel(true);
       pending = null;
@@ -91,7 +92,7 @@ final class CommitTracker implements Runnable {
     _scheduleCommitWithin(commitMaxTime);
   }
   
-  private void _scheduleCommitWithin(long commitMaxTime) {
+  private synchronized void _scheduleCommitWithin(long commitMaxTime) {
     // Check if there is a commit already scheduled for longer then this time
     if (pending != null
         && pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime) {
@@ -109,17 +110,18 @@ final class CommitTracker implements Runnable {
    * Indicate that documents have been added
    */
   public boolean addedDocument(int commitWithin) {
-    docsSinceCommit++;
+    docsSinceCommit.incrementAndGet();
     lastAddedTime = System.currentTimeMillis();
     boolean triggered = false;
     // maxDocs-triggered autoCommit
-    if (docsUpperBound > 0 && (docsSinceCommit > docsUpperBound)) {
+    if (docsUpperBound > 0 && (docsSinceCommit.get() > docsUpperBound)) {
       _scheduleCommitWithin(DOC_COMMIT_DELAY_MS);
       triggered = true;
     }
     
     // maxTime-triggered autoCommit
     long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
+
     if (ctime > 0) {
       _scheduleCommitWithin(ctime);
       triggered = true;
@@ -134,7 +136,7 @@ final class CommitTracker implements Runnable {
       pending.cancel(false);
       pending = null; // let it start another one
     }
-    docsSinceCommit = 0;
+    docsSinceCommit.set(0);
   }
   
   /** Inform tracker that a rollback has occurred, cancel any pending commits */
@@ -143,7 +145,7 @@ final class CommitTracker implements Runnable {
       pending.cancel(false);
       pending = null; // let it start another one
     }
-    docsSinceCommit = 0;
+    docsSinceCommit.set(0);
   }
   
   /** This is the worker part for the ScheduledFuture **/
@@ -157,7 +159,7 @@ final class CommitTracker implements Runnable {
       command.softCommit = softCommit;
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing
       core.getUpdateHandler().commit(command);
-      autoCommitCount++;
+      autoCommitCount.incrementAndGet();
     } catch (Exception e) {
       log.error("auto commit error...");
       e.printStackTrace();
@@ -168,7 +170,7 @@ final class CommitTracker implements Runnable {
     
     // check if docs have been submitted since the commit started
     if (lastAddedTime > started) {
-      if (docsUpperBound > 0 && docsSinceCommit > docsUpperBound) {
+      if (docsUpperBound > 0 && docsSinceCommit.get() > docsUpperBound) {
         pending = scheduler.schedule(this, 100, TimeUnit.MILLISECONDS);
       } else if (timeUpperBound > 0) {
         pending = scheduler.schedule(this, timeUpperBound,
@@ -178,8 +180,8 @@ final class CommitTracker implements Runnable {
   }
   
   // to facilitate testing: blocks if called during commit
-  public synchronized int getCommitCount() {
-    return autoCommitCount;
+  public int getCommitCount() {
+    return autoCommitCount.get();
   }
   
   @Override
@@ -193,5 +195,21 @@ final class CommitTracker implements Runnable {
     } else {
       return "disabled";
     }
+  }
+
+  public long getTimeUpperBound() {
+    return timeUpperBound;
+  }
+
+  int getDocsUpperBound() {
+    return docsUpperBound;
+  }
+
+  void setDocsUpperBound(int docsUpperBound) {
+    this.docsUpperBound = docsUpperBound;
+  }
+
+  void setTimeUpperBound(long timeUpperBound) {
+    this.timeUpperBound = timeUpperBound;
   }
 }
