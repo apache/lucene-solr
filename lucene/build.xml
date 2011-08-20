@@ -255,7 +255,7 @@
           <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
-          <packageset dir="contrib/queries/src/java"/>
+          <packageset dir="contrib/sandbox/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
           <!-- end alpha sort -->
@@ -272,7 +272,7 @@
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
-          <group title="contrib: Queries" packages="org.apache.lucene.search.similar*:org.apache.lucene.search.regex*:org.apache.regexp*"/>
+          <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
           

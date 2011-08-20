@@ -240,17 +240,6 @@
     <property name="queries.uptodate" value="true"/>
   </target>
 
-  <property name="queries-contrib.jar" value="${common.dir}/build/contrib/queries-contrib/lucene-queries-contrib-${version}.jar"/>
-  <target name="check-queries-contrib-uptodate" unless="queries-contrib.uptodate">
-    <contrib-uptodate name="queries-contrib" jarfile="${queries-contrib.jar}" contrib-src-name="queries" property="queries-contrib.uptodate"/>
-  </target>
-  <target name="jar-queries-contrib" unless="queries-contrib.uptodate" depends="check-queries-contrib-uptodate">
-    <ant dir="${common.dir}/contrib/queries" target="jar-core" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="queries-contrib.uptodate" value="true"/>
-  </target>
-
   <property name="queryparser.jar" value="${common.dir}/../modules/queryparser/build/lucene-queryparser-${version}.jar"/>
   <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
     <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
@@ -260,6 +249,17 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="queryparser.uptodate" value="true"/>
+  </target>
+
+  <property name="sandbox.jar" value="${common.dir}/build/contrib/sandbox/lucene-sandbox-${version}.jar"/>
+  <target name="check-sandbox-uptodate" unless="sandbox.uptodate">
+    <contrib-uptodate name="sandbox" jarfile="${sandbox.jar}" property="sandbox.uptodate"/>
+  </target>
+  <target name="jar-sandbox" unless="sandbox.uptodate" depends="check-sandbox-uptodate">
+  	<ant dir="${common.dir}/contrib/sandbox" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="sandbox.uptodate" value="true"/>
   </target>
 
   <property name="spatial.jar" value="${common.dir}/build/contrib/spatial/lucene-spatial-${version}.jar"/>

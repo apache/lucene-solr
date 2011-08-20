@@ -24,7 +24,6 @@
     <orderEntry type="module" module-name="grouping" />
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="icu" />
-    <orderEntry type="module" module-name="queries-contrib" />
     <orderEntry type="module" module-name="queries" />
     <orderEntry type="module" module-name="misc" />
     <orderEntry type="module" module-name="phonetic" />

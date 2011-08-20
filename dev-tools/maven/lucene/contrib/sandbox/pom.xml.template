@@ -27,13 +27,13 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-spatial</artifactId>
+  <artifactId>lucene-sandbox</artifactId>
   <packaging>jar</packaging>
-  <name>Lucene Spatial</name>
-  <description>Spatial search package</description>
+  <name>Lucene Sandbox</name>
+  <description>Lucene Sandbox</description>
   <properties>
-    <module-directory>lucene/contrib/spatial</module-directory>
-    <build-directory>../../build/contrib/spatial</build-directory>
+    <module-directory>lucene/contrib/sandbox</module-directory>
+    <build-directory>../../build/contrib/sandbox</build-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -46,11 +46,6 @@
       <artifactId>lucene-test-framework</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-queries</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

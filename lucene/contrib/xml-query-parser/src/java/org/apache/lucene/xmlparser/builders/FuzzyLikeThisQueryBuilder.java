@@ -1,7 +1,7 @@
 package org.apache.lucene.xmlparser.builders;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.search.FuzzyLikeThisQuery;
+import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;

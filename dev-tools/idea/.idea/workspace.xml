@@ -127,13 +127,6 @@
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
-    <configuration default="false" name="queries contrib" type="JUnit" factoryName="JUnit">
-      <module name="queries-contrib" />
-      <option name="TEST_OBJECT" value="package" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/queries" />
-      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
-      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
-    </configuration>
     <configuration default="false" name="queries module" type="JUnit" factoryName="JUnit">
       <module name="queries" />
       <option name="TEST_OBJECT" value="package" />
@@ -145,6 +138,13 @@
       <module name="queryparser" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/modules/queries/build" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
+    <configuration default="false" name="sandbox contrib" type="JUnit" factoryName="JUnit">
+      <module name="sandbox" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/contrib/sandbox" />
       <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
@@ -216,9 +216,9 @@
       <item index="15" class="java.lang.String" itemvalue="JUnit.misc contrib" />
       <item index="16" class="java.lang.String" itemvalue="JUnit.morfologik analysis module" />
       <item index="17" class="java.lang.String" itemvalue="JUnit.phonetic analysis module" />
-      <item index="18" class="java.lang.String" itemvalue="JUnit.queries contrib" />
-      <item index="19" class="java.lang.String" itemvalue="JUnit.queries module" />
-      <item index="20" class="java.lang.String" itemvalue="JUnit.queryparser module" />
+      <item index="18" class="java.lang.String" itemvalue="JUnit.queries module" />
+      <item index="19" class="java.lang.String" itemvalue="JUnit.queryparser module" />
+      <item index="20" class="java.lang.String" itemvalue="JUnit.sandbox contrib" />
       <item index="21" class="java.lang.String" itemvalue="JUnit.smartcn analysis module" />
       <item index="22" class="java.lang.String" itemvalue="JUnit.solr" />
       <item index="23" class="java.lang.String" itemvalue="JUnit.spatial contrib" />

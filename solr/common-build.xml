@@ -84,7 +84,6 @@
   	<pathelement path="${highlighter.jar}"/>
   	<pathelement path="${memory.jar}"/>
   	<pathelement path="${misc.jar}"/>
-  	<pathelement path="${queries-contrib.jar}"/>
   	<pathelement path="${spatial.jar}"/>
   	<pathelement path="${suggest.jar}"/>
     <pathelement path="${grouping.jar}"/>
@@ -171,7 +170,7 @@
 
   <target name="prep-lucene-jars" 
   	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-queries-contrib, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
+  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
@@ -192,7 +191,6 @@
       <fileset file="${highlighter.jar}" />
       <fileset file="${memory.jar}" />
       <fileset file="${misc.jar}" />
-      <fileset file="${queries-contrib.jar}" />
       <fileset file="${spatial.jar}" />
     </copy>
     </sequential>

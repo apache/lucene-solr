@@ -55,7 +55,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
-import org.apache.lucene.search.regex.RegexQuery;
 import org.apache.lucene.search.spans.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -337,7 +336,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testSpanRegexQuery() throws Exception {
-    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(new Term(FIELD_NAME, "ken.*"))));
+    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(new RegexpQuery(new Term(FIELD_NAME, "ken.*"))));
     searcher = new IndexSearcher(ramDir, true);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -361,7 +360,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testRegexQuery() throws Exception {
-    query = new RegexQuery(new Term(FIELD_NAME, "ken.*"));
+    query = new RegexpQuery(new Term(FIELD_NAME, "ken.*"));
     searcher = new IndexSearcher(ramDir, true);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;

@@ -26,10 +26,9 @@
   <import file="../contrib-build.xml"/>
 
   <path id="classpath">
-    <pathelement path="${queries-contrib.jar}"/>
     <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="jar-queries-contrib, jar-queries, common.compile-core" />
+  <target name="compile-core" depends="jar-queries, common.compile-core" />
 </project>

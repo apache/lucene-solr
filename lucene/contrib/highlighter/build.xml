@@ -27,9 +27,8 @@
 
   <path id="classpath">
     <pathelement path="${memory.jar}"/>
-    <pathelement path="${queries-contrib.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="jar-memory, jar-queries-contrib, common.compile-core" />
+  <target name="compile-core" depends="jar-memory, common.compile-core" />
 </project>
