@@ -24,12 +24,19 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  * @lucene.experimental
  */
 public class BasicModelP extends BasicModel {
+  /** {@code log2(Math.E)}, precomputed. */
+  protected static double LOG2_E = log2(Math.E);
+  
   @Override
   public final float score(EasyStats stats, float tfn) {
     float lambda = (float)stats.getTotalTermFreq() / stats.getNumberOfDocuments();
-    return (float)(tfn * log2(tfn / lambda)
-        + (lambda + 1 / 12 / tfn - tfn) * log2(Math.E)
+//    System.out.printf("tfn=%f, lambda=%f, log1=%f, log2=%f%n", tfn, lambda,
+//        tfn / lambda, 2 * Math.PI * tfn);
+    // nocommit
+    float score = (float)(tfn * log2(tfn / lambda)
+        + (lambda + 1 / (12 * tfn) - tfn) * LOG2_E
         + 0.5 * log2(2 * Math.PI * tfn));
+    return score > 0.0f ? score : 0.0f;
   }
 
   @Override

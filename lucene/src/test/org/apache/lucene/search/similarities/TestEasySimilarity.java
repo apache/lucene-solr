@@ -27,6 +27,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimilarityProvider;
@@ -37,11 +39,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TermContext;
 
 /**
- * Tests the {@link EasySimilarity}-based Similarities. Contains unit tests and
- * integration tests as well. This class maintains a list of
+ * Tests the {@link EasySimilarity}-based Similarities. Contains unit tests and 
+ * integration tests for all Similarities and correctness tests for a select
+ * few.
+ * <p>This class maintains a list of
  * {@code EasySimilarity} subclasses. Each test case performs its test on all
  * items in the list. If a test case fails, the name of the Similarity that
- * caused the failure is returned as part of the assertion error message.
+ * caused the failure is returned as part of the assertion error message.</p>
  * <p>Unit testing is performed by constructing statistics manually and calling
  * the {@link EasySimilarity#score(EasyStats, float, int)} method of the
  * Similarities. The statistics represent corner cases of corpus distributions.
@@ -53,10 +57,18 @@ import org.apache.lucene.util.TermContext;
  * <p>Note: the list of Similarities is maintained by hand. If a new Similarity
  * is added to the {@code org.apache.lucene.search.similarities} package, the
  * list should be updated accordingly.</p>
+ * <p>
+ * In the correctness tests, the score is verified against the result of manual
+ * computation. Since it would be impossible to test all Similarities
+ * (e.g. all possible DFR combinations, all parameter values for LM), only 
+ * the best performing setups in the original papers are verified.
+ * </p>
  */
 public class TestEasySimilarity extends LuceneTestCase {
   private static String FIELD_BODY = "body";
   private static String FIELD_ID = "id";
+  /** The tolerance range for float equality. */
+  private static float FLOAT_EPSILON = 1e-5f;
   /** The DFR basic models to test. */
   private static BasicModel[] BASIC_MODELS;
   /** The DFR aftereffects to test. */
@@ -183,23 +195,14 @@ public class TestEasySimilarity extends LuceneTestCase {
     for (EasySimilarity sim : sims) {
       EasyStats realStats = sim.computeStats(new SpoofIndexSearcher(stats),
           "spoof", stats.getTotalBoost(), tc);
-//      System.out.printf("Before: %d %d %f %d %d%n",
-//          realStats.getNumberOfDocuments(), realStats.getNumberOfFieldTokens(),
-//          realStats.getAvgFieldLength(), realStats.getDocFreq(),
-//          realStats.getTotalTermFreq());
-//      realStats.setNumberOfDocuments(stats.getNumberOfDocuments());
-//      realStats.setNumberOfFieldTokens(stats.getNumberOfFieldTokens());
-//      realStats.setAvgFieldLength(stats.getAvgFieldLength());
-//      realStats.setDocFreq(stats.getDocFreq());
-//      realStats.setTotalTermFreq(stats.getTotalTermFreq());
-//      System.out.printf("After: %d %d %f %d %d%n",
-//          realStats.getNumberOfDocuments(), realStats.getNumberOfFieldTokens(),
-//          realStats.getAvgFieldLength(), realStats.getDocFreq(),
-//          realStats.getTotalTermFreq());
       float score = sim.score(realStats, freq, docLen);
+      float explScore = sim.explain(
+          realStats, 1, new Explanation(freq, "freq"), docLen).getValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
       assertFalse("Score NaN: " + sim.toString(), Float.isNaN(score));
       assertTrue("Score negative: " + sim.toString(), score >= 0);
+      assertEquals("score() and explain() return different values: "
+          + sim.toString(), score, explScore, FLOAT_EPSILON);
     }
   }
   
@@ -217,7 +220,7 @@ public class TestEasySimilarity extends LuceneTestCase {
     stats.setNumberOfFieldTokens(stats.getNumberOfDocuments());
     stats.setTotalTermFreq(stats.getDocFreq());
     stats.setAvgFieldLength(
-        stats.getNumberOfFieldTokens() / stats.getNumberOfDocuments());
+        (float)stats.getNumberOfFieldTokens() / stats.getNumberOfDocuments());
     unitTestCore(stats, FREQ, DOC_LEN);
   }
 
@@ -230,10 +233,10 @@ public class TestEasySimilarity extends LuceneTestCase {
     stats.setNumberOfFieldTokens(stats.getNumberOfDocuments() * 2 / 3);
     stats.setTotalTermFreq(stats.getDocFreq());
     stats.setAvgFieldLength(
-        stats.getNumberOfFieldTokens() / stats.getNumberOfDocuments());
+        (float)stats.getNumberOfFieldTokens() / stats.getNumberOfDocuments());
     unitTestCore(stats, FREQ, DOC_LEN);
   }
-
+  
   /**
    * Tests correct behavior when
    * {@code NumberOfDocuments = 1}.
@@ -383,6 +386,155 @@ public class TestEasySimilarity extends LuceneTestCase {
     unitTestCore(stats, FREQ, (int)stats.getAvgFieldLength());
   }
   
+  // ---------------------------- Correctness tests ----------------------------
+  
+  /** Correctness test for the Dirichlet LM model. */
+  public void testLMDirichlet() throws IOException {
+    float p =
+        (FREQ + 2000.0f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f)) /
+        (DOC_LEN + 2000.0f);
+    float a = 2000.0f / (DOC_LEN + 2000.0f);
+    float gold = (float)(
+        Math.log(p / (a * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f))) +
+        Math.log(a));
+    correctnessTestCore(new LMDirichletSimilarity(), gold);
+  }
+  
+  /** Correctness test for the Jelinek-Mercer LM model. */
+  public void testLMJelinekMercer() throws IOException {
+    float p = (1 - 0.1f) * FREQ / DOC_LEN +
+              0.1f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f);
+    float gold = (float)(Math.log(
+        p / (0.1f * TOTAL_TERM_FREQ / (NUMBER_OF_FIELD_TOKENS + 1.0f))));
+    correctnessTestCore(new LMJelinekMercerSimilarity(0.1f), gold);
+  }
+  
+  /**
+   * Correctness test for the LL IB model with DF-based lambda and
+   * no normalization.
+   */
+  public void testLLForIB() throws IOException {
+    EasySimilarity sim = new IBSimilarity(new DistributionLL(), new LambdaDF());
+    correctnessTestCore(sim, 4.26267987704f);
+  }
+  
+  /**
+   * Correctness test for the SPL IB model with TTF-based lambda and
+   * no normalization.
+   */
+  public void testSPLForIB() throws IOException {
+    EasySimilarity sim =
+      new IBSimilarity(new DistributionSPL(), new LambdaTTF());
+    correctnessTestCore(sim, 2.24069910825f);
+  }
+  
+  /** Correctness test for the PL2 DFR model. */
+  public void testPL2() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelP(), new AfterEffectL(), new NormalizationH2());
+    float tfn = (float)(FREQ * EasySimilarity.log2(
+        1 + AVG_FIELD_LENGTH / DOC_LEN));  // 8.1894750101
+    float l = 1.0f / (tfn + 1.0f);         // 0.108820144666
+    float lambda = (1.0f * TOTAL_TERM_FREQ) / NUMBER_OF_DOCUMENTS;  // 0.7
+    float p = (float)(tfn * EasySimilarity.log2(tfn / lambda) +
+              (lambda + 1 / (12 * tfn) - tfn) * EasySimilarity.log2(Math.E) +
+              0.5 * EasySimilarity.log2(2 * Math.PI * tfn)); // 21.1113611585
+    float gold = l * p;                    // 2.29734137536
+    correctnessTestCore(sim, gold);
+  }
+
+  /** Correctness test for the IneB2 DFR model. */
+  public void testIneB2() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
+    correctnessTestCore(sim, 6.23455315685f);
+  }
+  
+  /** Correctness test for the GL1 DFR model. */
+  public void testGL1() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelG(), new AfterEffectL(), new NormalizationH1());
+    correctnessTestCore(sim, 1.22733118352f);
+  }
+  
+  /** Correctness test for the BEB1 DFR model. */
+  public void testBEB1() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelBE(), new AfterEffectB(), new NormalizationH1());
+    float tfn = FREQ * AVG_FIELD_LENGTH / DOC_LEN;  // 8.75
+    float b = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (tfn + 1));  // 0.728205128205
+    float n1 = NUMBER_OF_DOCUMENTS + 1 + TOTAL_TERM_FREQ - 1;        // 170
+    float m1 = NUMBER_OF_DOCUMENTS + 1 + TOTAL_TERM_FREQ - tfn - 2;  // 160.25
+    float n2 = TOTAL_TERM_FREQ;                                      // 70
+    float m2 = TOTAL_TERM_FREQ - tfn;                                // 61.25
+    float be = (float)(-EasySimilarity.log2(NUMBER_OF_DOCUMENTS + 1 - 1) -
+               EasySimilarity.log2(Math.E) +                   // -8.08655123066
+               ((m1 + 0.5f) * EasySimilarity.log2(n1 / m1) +
+                (n1 - m1) * EasySimilarity.log2(n1)) -         // 85.9391317425
+               ((m2 + 0.5f) * EasySimilarity.log2(n2 / m2) +
+                (n2 - m2) * EasySimilarity.log2(n2)));         // 65.5270599612
+               // 12.3255205506
+    float gold = b * be;                                       // 8.97550727277
+    correctnessTestCore(sim, gold);
+  }
+
+  /** Correctness test for the D DFR model (basic model only). */
+  public void testD() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(new BasicModelD());
+    double p = 1.0 / (NUMBER_OF_DOCUMENTS + 1);                // 0.009900990099
+    double phi = FREQ / TOTAL_TERM_FREQ;                       // 0.1
+    double D = phi * EasySimilarity.log2(phi / p) +            // 0.209745318365
+              (1 - phi) * EasySimilarity.log2((1 - phi) / (1 - p));
+    float gold = (float)(TOTAL_TERM_FREQ * D + 0.5 * EasySimilarity.log2(
+                 1 + 2 * Math.PI * FREQ * (1 - phi)));         // 17.3535930644
+    correctnessTestCore(sim, gold);
+  }
+  
+  /** Correctness test for the In2 DFR model with no aftereffect. */
+  public void testIn2() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelIn(), new NormalizationH2());
+    float tfn = (float)(FREQ * EasySimilarity.log2(            // 8.1894750101
+                1 + AVG_FIELD_LENGTH / DOC_LEN));
+    float gold = (float)(tfn * EasySimilarity.log2(            // 26.7459577898
+                 (NUMBER_OF_DOCUMENTS + 1) / (DOC_FREQ + 0.5)));
+    correctnessTestCore(sim, gold);
+  }
+  
+  /** Correctness test for the IFB DFR model with no normalization. */
+  public void testIFB() throws IOException {
+    EasySimilarity sim = new DFRSimilarity(
+        new BasicModelIF(), new AfterEffectB());
+    float B = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (FREQ + 1)); // 0.8875
+    float IF = (float)(FREQ * EasySimilarity.log2(             // 8.97759389642
+               1 + (NUMBER_OF_DOCUMENTS + 1) / (TOTAL_TERM_FREQ + 0.5)));
+    float gold = B * IF;                                       // 7.96761458307
+    correctnessTestCore(sim, gold);
+  }
+  
+  /**
+   * The generic test core called by all correctness test methods. It calls the
+   * {@link EasySimilarity#score(EasyStats, float, int)} method of all
+   * Similarities in {@link #sims} and compares the score against the manually
+   * computed {@code gold}.
+   */
+  private void correctnessTestCore(EasySimilarity sim, float gold)
+      throws IOException {
+    // We have to fake everything, because computeStats() can be overridden and
+    // there is no way to inject false data after fillEasyStats().
+    EasyStats stats = createStats();
+    SpoofIndexSearcher searcher = new SpoofIndexSearcher(stats);
+    TermContext tc = new TermContext(
+        searcher.getIndexReader().getTopReaderContext(),
+        new OrdTermState(), 0, stats.getDocFreq(), stats.getTotalTermFreq());
+    
+    EasyStats realStats = sim.computeStats(
+        searcher, "spoof", stats.getTotalBoost(), tc);
+    float score = sim.score(realStats, FREQ, DOC_LEN);
+    assertEquals(
+        sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);
+  }
+  
   // ---------------------------- Integration tests ----------------------------
 
   /** The "collection" for the integration tests. */
@@ -413,6 +565,9 @@ public class TestEasySimilarity extends LuceneTestCase {
   
   /** Test whether all similarities return document 3 before documents 7 and 8. */
   public void testHeartRanking() throws IOException {
+    assumeFalse("PreFlex codec does not support the stats necessary for this test!", 
+        "PreFlex".equals(CodecProvider.getDefault().getDefaultFieldCodec()));
+
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (EasySimilarity sim : sims) {

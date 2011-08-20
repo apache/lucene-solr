@@ -136,12 +136,12 @@ public abstract class LMSimilarity extends EasySimilarity {
   
   /**
    * Models {@code p(w|C)} as the number of occurrences of the term in the
-   * collection, divided by the total number of tokens.
+   * collection, divided by the total number of tokens {@code + 1}.
    */
   public static class DefaultCollectionModel implements CollectionModel {
     @Override
     public float computeProbability(EasyStats stats) {
-      return (float)stats.getTotalTermFreq() / stats.getNumberOfFieldTokens();
+      return (float)stats.getTotalTermFreq() / (stats.getNumberOfFieldTokens() +1);
     }
     
     @Override

@@ -36,7 +36,8 @@ public class BasicModelD extends BasicModel {
     double nphi = 1 - phi;
     double p = 1.0 / (stats.getNumberOfDocuments() + 1);
     double D = phi * log2(phi / p) + nphi * log2(nphi / (1 - p));
-    return (float)(D * F + 0.5 * log2(2 * Math.PI * tfn * nphi));
+    // nocommit return (float)(D * F + 0.5 * log2(2 * Math.PI * tfn * nphi));
+    return (float)(D * F + 0.5 * log2(1 + 2 * Math.PI * tfn * nphi));
   }
   
   @Override

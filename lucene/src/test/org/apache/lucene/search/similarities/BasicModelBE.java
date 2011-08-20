@@ -33,7 +33,7 @@ public class BasicModelBE extends BasicModel {
 //    long F = stats.getTotalTermFreq() + 1;
     long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);
     return (float)(-log2((N - 1) * Math.E)
-        + f(N + F -1, N + F - tfn - 2) - f(F, F - tfn));
+        + f(N + F - 1, N + F - tfn - 2) - f(F, F - tfn));
   }
   
   /** The <em>f</em> helper function defined for <em>B<sub>E</sub></em>. */

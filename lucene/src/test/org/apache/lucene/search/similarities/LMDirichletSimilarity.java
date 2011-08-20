@@ -25,6 +25,12 @@ import org.apache.lucene.search.Explanation;
  * Ad Hoc information retrieval. In Proceedings of the 24th annual international
  * ACM SIGIR conference on Research and development in information retrieval
  * (SIGIR '01). ACM, New York, NY, USA, 334-342.
+ * <p>
+ * The formula as defined the paper assigns a negative score to documents that
+ * contain the term, but with fewer occurrences than predicted by the collection
+ * language model. The Lucene implementation returns {@code 0} for such
+ * documents.
+ * </p>
  * 
  * @lucene.experimental
  */
@@ -55,10 +61,10 @@ public class LMDirichletSimilarity extends LMSimilarity {
   
   @Override
   protected float score(EasyStats stats, float freq, int docLen) {
-    return stats.getTotalBoost() *
-        (float)(Math.log(1 + freq /
-            (mu * ((LMStats)stats).getCollectionProbability())) +
+    float score = stats.getTotalBoost() * (float)(Math.log(1 + freq /
+        (mu * ((LMStats)stats).getCollectionProbability())) +
         Math.log(mu / (docLen + mu)));
+    return score > 0.0f ? score : 0.0f;
   }
   
   @Override

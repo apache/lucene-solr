@@ -91,17 +91,15 @@ public abstract class EasySimilarity extends Similarity {
       totalTermFreq = Math.min(totalTermFreq, context.totalTermFreq());
     }
     
-    // nocommit: we have to provide something if codec doesnt supply these measures,
+    // We have to provide something if codec doesnt supply these measures,
     // or if someone omitted frequencies for the field... negative values cause
     // NaN/Inf for some scorers.
-    
     if (numberOfFieldTokens == -1) {
-      numberOfFieldTokens = 1;
+      numberOfFieldTokens = docFreq;
       avgFieldLength = 1;
     }
-    
     if (totalTermFreq == -1) {
-      totalTermFreq = 1;
+      totalTermFreq = docFreq;
     }
     
     stats.setNumberOfDocuments(numberOfDocuments);
@@ -248,14 +246,15 @@ public abstract class EasySimilarity extends Similarity {
     
     @Override
     public float score(int doc, int freq) {
-      // nocommit: we have to supply something in case norms are omitted
-      return EasySimilarity.this.score(stats, freq, norms == null ? 1 : decodeNormValue(norms[doc]));
+      // We have to supply something in case norms are omitted
+      return EasySimilarity.this.score(stats, freq,
+          norms == null ? (int)(freq + 0.5) : decodeNormValue(norms[doc]));
     }
     
     @Override
     public Explanation explain(int doc, Explanation freq) {
-      return EasySimilarity.this.explain(
-          stats, doc, freq, decodeNormValue(norms[doc]));
+      return EasySimilarity.this.explain(stats, doc, freq,
+          norms == null ? (int)(freq.getValue() + 0.5) : decodeNormValue(norms[doc]));
     }
   }
   
@@ -276,13 +275,14 @@ public abstract class EasySimilarity extends Similarity {
     
     @Override
     public float score(int doc, float freq) {
-      // nocommit: we have to supply something in case norms are omitted
-      return EasySimilarity.this.score(stats, freq, norms == null ? 1 : decodeNormValue(norms[doc]));
+      // We have to supply something in case norms are omitted
+      return EasySimilarity.this.score(stats, freq,
+          norms == null ? (int)(freq + 0.5) : decodeNormValue(norms[doc]));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
-      return EasySimilarity.this.explain(
-          stats, doc, freq, decodeNormValue(norms[doc]));
+      return EasySimilarity.this.explain(stats, doc, freq,
+          norms == null ? (int)(freq.getValue() + 0.5) : decodeNormValue(norms[doc]));
     }
 
     @Override
