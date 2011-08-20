@@ -130,16 +130,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
           FileUtils.contentEquals(threeXml, fourXml));
       
     } finally {
+      // y is closed by the container, but
+      // x has been removed from the container
       if (x != null) {
         try {
           x.close();
-        } catch (Exception e) {
-          log.error("", e);
-        }
-      }
-      if (y != null) {
-        try {
-          y.close();
         } catch (Exception e) {
           log.error("", e);
         }
