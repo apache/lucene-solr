@@ -18,6 +18,10 @@ Build
  * LUCENE-3271: Moved contrib/queries BooleanFilter, BoostingQuery, 
    ChainedFilter, FilterClause and TermsFilter into modules/queries
 
+ * LUCENE-3381: Moved contrib/queries regex.*, DuplicateFilter,
+   FuzzyLikeThisQuery and SlowCollated* into contrib/sandbox.
+   Removed contrib/queries.
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
