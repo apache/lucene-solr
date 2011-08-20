@@ -15,6 +15,9 @@ Build
 
  * LUCENE-3285: Moved contrib/xml-query-parser's demo into contrib/demo
 
+ * LUCENE-3271: Moved contrib/queries BooleanFilter, BoostingQuery, 
+   ChainedFilter, FilterClause and TermsFilter into modules/queries
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
