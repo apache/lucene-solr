@@ -117,7 +117,7 @@ public abstract class EasySimilarity extends Similarity {
    * @param docLen the document length.
    * @return the score.
    */
-  protected abstract float score(EasyStats stats, float freq, int docLen);
+  protected abstract float score(EasyStats stats, float freq, float docLen);
   
   /**
    * Subclasses should implement this method to explain the score. {@code expl}
@@ -133,7 +133,7 @@ public abstract class EasySimilarity extends Similarity {
    * @param docLen the document length.
    */
   protected void explain(
-      Explanation expl, EasyStats stats, int doc, float freq, int docLen) {}
+      Explanation expl, EasyStats stats, int doc, float freq, float docLen) {}
   
   /**
    * Explains the score. The implementation here provides a basic explanation
@@ -151,7 +151,7 @@ public abstract class EasySimilarity extends Similarity {
    * @return the explanation.
    */
   protected Explanation explain(
-      EasyStats stats, int doc, Explanation freq, int docLen) {
+      EasyStats stats, int doc, Explanation freq, float docLen) {
     Explanation result = new Explanation(); 
     result.setValue(score(stats, freq.getValue(), docLen));
     result.setDescription("score(" + getClass().getSimpleName() +
@@ -187,12 +187,12 @@ public abstract class EasySimilarity extends Similarity {
   // ------------------------------ Norm handling ------------------------------
   
   /** Norm -> document length map. */
-  private static final int[] NORM_TABLE = new int[256];
+  private static final float[] NORM_TABLE = new float[256];
 
   static {
     for (int i = 0; i < 256; i++) {
       float floatNorm = SmallFloat.byte315ToFloat((byte)i);
-      NORM_TABLE[i] = (int)(1.0 / (floatNorm * floatNorm));
+      NORM_TABLE[i] = 1.0f / (floatNorm * floatNorm);
     }
   }
 
@@ -210,7 +210,7 @@ public abstract class EasySimilarity extends Similarity {
   /** Decodes a normalization factor (document length) stored in an index.
    * @see #encodeNormValue(float)
    */
-  protected int decodeNormValue(byte norm) {
+  protected float decodeNormValue(byte norm) {
     return NORM_TABLE[norm & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
   
@@ -248,13 +248,13 @@ public abstract class EasySimilarity extends Similarity {
     public float score(int doc, int freq) {
       // We have to supply something in case norms are omitted
       return EasySimilarity.this.score(stats, freq,
-          norms == null ? (int)(freq + 0.5) : decodeNormValue(norms[doc]));
+          norms == null ? freq : decodeNormValue(norms[doc]));
     }
     
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return EasySimilarity.this.explain(stats, doc, freq,
-          norms == null ? (int)(freq.getValue() + 0.5) : decodeNormValue(norms[doc]));
+          norms == null ? freq.getValue() : decodeNormValue(norms[doc]));
     }
   }
   
@@ -277,12 +277,12 @@ public abstract class EasySimilarity extends Similarity {
     public float score(int doc, float freq) {
       // We have to supply something in case norms are omitted
       return EasySimilarity.this.score(stats, freq,
-          norms == null ? (int)(freq + 0.5) : decodeNormValue(norms[doc]));
+          norms == null ? freq : decodeNormValue(norms[doc]));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return EasySimilarity.this.explain(stats, doc, freq,
-          norms == null ? (int)(freq.getValue() + 0.5) : decodeNormValue(norms[doc]));
+          norms == null ? freq.getValue() : decodeNormValue(norms[doc]));
     }
 
     @Override

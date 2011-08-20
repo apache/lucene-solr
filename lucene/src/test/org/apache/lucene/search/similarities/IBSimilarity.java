@@ -63,7 +63,7 @@ public class IBSimilarity extends EasySimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, int docLen) {
+  protected float score(EasyStats stats, float freq, float docLen) {
     return stats.getTotalBoost() *
         distribution.score(
             stats,
@@ -73,7 +73,7 @@ public class IBSimilarity extends EasySimilarity {
 
   @Override
   protected void explain(
-      Explanation expl, EasyStats stats, int doc, float freq, int docLen) {
+      Explanation expl, EasyStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }

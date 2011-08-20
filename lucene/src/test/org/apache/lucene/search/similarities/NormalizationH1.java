@@ -22,7 +22,7 @@ package org.apache.lucene.search.similarities;
  */
 public class NormalizationH1 extends Normalization {
   @Override
-  public final float tfn(EasyStats stats, float tf, int len) {
+  public final float tfn(EasyStats stats, float tf, float len) {
     return tf * stats.getAvgFieldLength() / len;
   }
 

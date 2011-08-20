@@ -78,7 +78,7 @@ public class DFRSimilarity extends EasySimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, int docLen) {
+  protected float score(EasyStats stats, float freq, float docLen) {
     float tfn = normalization.tfn(stats, freq, docLen);
     return stats.getTotalBoost() *
         basicModel.score(stats, tfn) * afterEffect.score(stats, tfn);
@@ -86,7 +86,7 @@ public class DFRSimilarity extends EasySimilarity {
 
   @Override
   protected void explain(Explanation expl,
-      EasyStats stats, int doc, float freq, int docLen) {
+      EasyStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }

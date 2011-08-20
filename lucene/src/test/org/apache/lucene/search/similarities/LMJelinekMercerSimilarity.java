@@ -49,7 +49,7 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, int docLen) {
+  protected float score(EasyStats stats, float freq, float docLen) {
     return stats.getTotalBoost() *
         (float)Math.log(1 +
             ((1 - lambda) * freq / docLen) /
@@ -58,7 +58,7 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   
   @Override
   protected void explain(Explanation expl, EasyStats stats, int doc,
-      float freq, int docLen) {
+      float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }

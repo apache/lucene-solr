@@ -25,7 +25,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */
 public class NormalizationH2 extends Normalization {
   @Override
-  public final float tfn(EasyStats stats, float tf, int len) {
+  public final float tfn(EasyStats stats, float tf, float len) {
     return (float)(tf * log2(1 + stats.getAvgFieldLength() / len));
   }
 
