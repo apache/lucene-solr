@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,20 +20,22 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;
+import org.apache.lucene.util.TermContext;
 
 /**
  * BM25 Similarity.
  */
-public class MockBM25Similarity extends Similarity {
+public class BM25Similarity extends Similarity {
   private final float k1;
   private final float b;
   
-  public MockBM25Similarity(float k1, float b) {
+  public BM25Similarity(float k1, float b) {
     this.k1 = k1;
     this.b  = b;
   }
@@ -44,7 +46,7 @@ public class MockBM25Similarity extends Similarity {
    *   <li>{@code b = 0.75}.</li>
    * </ul>
    */
-  public MockBM25Similarity() {
+  public BM25Similarity() {
     this.k1 = 1.2f;
     this.b  = 0.75f;
   }

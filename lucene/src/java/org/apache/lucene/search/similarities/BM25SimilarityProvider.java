@@ -1,4 +1,6 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
+
+import org.apache.lucene.search.DefaultSimilarityProvider;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,16 +19,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-public class MockBM25SimilarityProvider extends DefaultSimilarityProvider {
+public class BM25SimilarityProvider extends DefaultSimilarityProvider {
 
-  private MockBM25Similarity impl = new MockBM25Similarity();
+  private BM25Similarity impl = new BM25Similarity();
 
-  public MockBM25Similarity get(String field) {
+  public BM25Similarity get(String field) {
     return impl;
   }
   
   /** Sets the {@code Similarity} returned by {@link #get}. */
-  public void set(MockBM25Similarity sim) {
+  public void set(BM25Similarity sim) {
     impl = sim;
   }
 }
