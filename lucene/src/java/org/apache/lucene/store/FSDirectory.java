@@ -448,6 +448,7 @@ public abstract class FSDirectory extends Directory {
     /** output methods: */
     @Override
     public void flushBuffer(byte[] b, int offset, int size) throws IOException {
+      assert isOpen;
       if (rateLimiter != null) {
         rateLimiter.pause(size);
       }

@@ -65,6 +65,18 @@ public final class BytesRef implements Comparable<BytesRef> {
     this.bytes = new byte[capacity];
   }
 
+  /** Incoming IntsRef values must be Byte.MIN_VALUE -
+   *  Byte.MAX_VALUE. */
+  public BytesRef(IntsRef intsRef) {
+    bytes = new byte[intsRef.length];
+    for(int idx=0;idx<intsRef.length;idx++) {
+      final int v = intsRef.ints[intsRef.offset + idx];
+      assert v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE;
+      bytes[idx] = (byte) v;
+    }
+    length = intsRef.length;
+  }
+
   /**
    * @param text Initialize the byte[] from the UTF8 bytes
    * for the provided Sring.  This must be well-formed

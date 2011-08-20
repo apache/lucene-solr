@@ -106,7 +106,7 @@ public class BlockTermsReader extends FieldsProducer {
     }
   }
   
-  //private String segment;
+  // private String segment;
   
   public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, int codecId)
@@ -115,7 +115,7 @@ public class BlockTermsReader extends FieldsProducer {
     this.postingsReader = postingsReader;
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
-    //this.segment = segment;
+    // this.segment = segment;
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, BlockTermsWriter.TERMS_EXTENSION),
                        context);
 
@@ -321,6 +321,9 @@ public class BlockTermsReader extends FieldsProducer {
       /* Common prefix used for all terms in this block. */
       private int termBlockPrefix;
 
+      /* How many terms in current block */
+      private int blockTermCount;
+
       private byte[] docFreqBytes;
       private final ByteArrayDataInput freqReader = new ByteArrayDataInput();
       private int metaDataUpto;
@@ -358,16 +361,14 @@ public class BlockTermsReader extends FieldsProducer {
           throw new IllegalStateException("terms index was not loaded");
         }
    
-        /*
-        System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " useCache=" + useCache + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " divisor=" + indexReader.getDivisor() + " this="  + this);
+        //System.out.println("BTR.seek seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + term().utf8ToString() + " " + term() + " useCache=" + useCache + " indexIsCurrent=" + indexIsCurrent + " didIndexNext=" + didIndexNext + " seekPending=" + seekPending + " divisor=" + indexReader.getDivisor() + " this="  + this);
         if (didIndexNext) {
           if (nextIndexTerm == null) {
-            System.out.println("  nextIndexTerm=null");
+            //System.out.println("  nextIndexTerm=null");
           } else {
-            System.out.println("  nextIndexTerm=" + nextIndexTerm.utf8ToString());
+            //System.out.println("  nextIndexTerm=" + nextIndexTerm.utf8ToString());
           }
         }
-        */
 
         // Check cache
         if (useCache) {
@@ -444,7 +445,7 @@ public class BlockTermsReader extends FieldsProducer {
           //System.out.println("  seek: term=" + term.utf8ToString());
         } else {
           //System.out.println("  skip seek");
-          if (state.termCount == state.blockTermCount && !nextBlock()) {
+          if (state.termBlockOrd == blockTermCount && !nextBlock()) {
             indexIsCurrent = false;
             return SeekStatus.END;
           }
@@ -480,9 +481,9 @@ public class BlockTermsReader extends FieldsProducer {
               // but it could be in next block.  We
               // must scan to end-of-block to set common
               // prefix for next block:
-              if (state.termCount < state.blockTermCount) {
-                while(state.termCount < state.blockTermCount-1) {
-                  state.termCount++;
+              if (state.termBlockOrd < blockTermCount) {
+                while(state.termBlockOrd < blockTermCount-1) {
+                  state.termBlockOrd++;
                   state.ord++;
                   termSuffixesReader.skipBytes(termSuffixesReader.readVInt());
                 }
@@ -505,7 +506,7 @@ public class BlockTermsReader extends FieldsProducer {
               // Target's prefix is before the common prefix
               // of this block, so we position to start of
               // block and return NOT_FOUND:
-              assert state.termCount == 0;
+              assert state.termBlockOrd == 0;
 
               final int suffix = termSuffixesReader.readVInt();
               term.length = termBlockPrefix + suffix;
@@ -523,7 +524,7 @@ public class BlockTermsReader extends FieldsProducer {
 
           // Test every term in this block
           while (true) {
-            state.termCount++;
+            state.termBlockOrd++;
             state.ord++;
 
             final int suffix = termSuffixesReader.readVInt();
@@ -581,7 +582,7 @@ public class BlockTermsReader extends FieldsProducer {
               }
             }
 
-            if (state.termCount == state.blockTermCount) {
+            if (state.termBlockOrd == blockTermCount) {
               // Must pre-fill term for next block's common prefix
               term.length = termBlockPrefix + suffix;
               if (term.bytes.length < term.length) {
@@ -613,7 +614,7 @@ public class BlockTermsReader extends FieldsProducer {
 
       @Override
       public BytesRef next() throws IOException {
-        //System.out.println("BTR.next() seekPending=" + seekPending + " pendingSeekCount=" + state.termCount);
+        //System.out.println("BTR.next() seekPending=" + seekPending + " pendingSeekCount=" + state.termBlockOrd);
 
         // If seek was previously called and the term was cached,
         // usually caller is just going to pull a D/&PEnum or get
@@ -623,7 +624,7 @@ public class BlockTermsReader extends FieldsProducer {
         if (seekPending) {
           assert !indexIsCurrent;
           in.seek(state.blockFilePointer);
-          final int pendingSeekCount = state.termCount;
+          final int pendingSeekCount = state.termBlockOrd;
           boolean result = nextBlock();
 
           final long savOrd = state.ord;
@@ -633,7 +634,7 @@ public class BlockTermsReader extends FieldsProducer {
           // on a real term:
           assert result;
 
-          while(state.termCount < pendingSeekCount) {
+          while(state.termBlockOrd < pendingSeekCount) {
             BytesRef nextResult = _next();
             assert nextResult != null;
           }
@@ -647,8 +648,8 @@ public class BlockTermsReader extends FieldsProducer {
          metadata, ie docFreq, totalTermFreq or pulls a D/&PEnum, we then (lazily)
          decode all metadata up to the current term. */
       private BytesRef _next() throws IOException {
-        //System.out.println("BTR._next seg=" + segment + " this=" + this + " termCount=" + state.termCount + " (vs " + state.blockTermCount + ")");
-        if (state.termCount == state.blockTermCount && !nextBlock()) {
+        //System.out.println("BTR._next seg=" + segment + " this=" + this + " termCount=" + state.termBlockOrd + " (vs " + blockTermCount + ")");
+        if (state.termBlockOrd == blockTermCount && !nextBlock()) {
           //System.out.println("  eof");
           indexIsCurrent = false;
           return null;
@@ -663,12 +664,12 @@ public class BlockTermsReader extends FieldsProducer {
           term.grow(term.length);
         }
         termSuffixesReader.readBytes(term.bytes, termBlockPrefix, suffix);
-        state.termCount++;
+        state.termBlockOrd++;
 
         // NOTE: meaningless in the non-ord case
         state.ord++;
 
-        //System.out.println("  return term=" + fieldInfo.name + ":" + term.utf8ToString() + " " + term);
+        //System.out.println("  return term=" + fieldInfo.name + ":" + term.utf8ToString() + " " + term + " tbOrd=" + state.termBlockOrd);
         return term;
       }
 
@@ -695,9 +696,10 @@ public class BlockTermsReader extends FieldsProducer {
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse) throws IOException {
         //System.out.println("BTR.docs this=" + this);
         decodeMetaData();
-        //System.out.println("  state.docFreq=" + state.docFreq);
+        //System.out.println("BTR.docs:  state.docFreq=" + state.docFreq);
         final DocsEnum docsEnum = postingsReader.docs(fieldInfo, state, liveDocs, reuse);
         assert docsEnum != null;
+        //System.out.println("BTR.docs:  return docsEnum=" + docsEnum);
         return docsEnum;
       }
 
@@ -716,7 +718,7 @@ public class BlockTermsReader extends FieldsProducer {
 
       @Override
       public void seekExact(BytesRef target, TermState otherState) throws IOException {
-        //System.out.println("BTR.seek termState target=" + target.utf8ToString() + " " + target + " this=" + this);
+        //System.out.println("BTR.seekExact termState target=" + target.utf8ToString() + " " + target + " this=" + this);
         assert otherState != null && otherState instanceof BlockTermState;
         assert !doOrd || ((BlockTermState) otherState).ord < numTerms;
         state.copyFrom(otherState);
@@ -800,9 +802,9 @@ public class BlockTermsReader extends FieldsProducer {
 
         //System.out.println("BTR.nextBlock() fp=" + in.getFilePointer() + " this=" + this);
         state.blockFilePointer = in.getFilePointer();
-        state.blockTermCount = in.readVInt();
-        //System.out.println("  blockTermCount=" + state.blockTermCount);
-        if (state.blockTermCount == 0) {
+        blockTermCount = in.readVInt();
+        //System.out.println("  blockTermCount=" + blockTermCount);
+        if (blockTermCount == 0) {
           return false;
         }
         termBlockPrefix = in.readVInt();
@@ -826,7 +828,7 @@ public class BlockTermsReader extends FieldsProducer {
         freqReader.reset(docFreqBytes, 0, len);
         metaDataUpto = 0;
 
-        state.termCount = 0;
+        state.termBlockOrd = 0;
 
         postingsReader.readTermsBlock(in, fieldInfo, state);
 
@@ -838,7 +840,7 @@ public class BlockTermsReader extends FieldsProducer {
       }
      
       private void decodeMetaData() throws IOException {
-        //System.out.println("BTR.decodeMetadata mdUpto=" + metaDataUpto + " vs termCount=" + state.termCount + " state=" + state);
+        //System.out.println("BTR.decodeMetadata mdUpto=" + metaDataUpto + " vs termCount=" + state.termBlockOrd + " state=" + state);
         if (!seekPending) {
           // TODO: cutover to random-access API
           // here.... really stupid that we have to decode N
@@ -846,10 +848,10 @@ public class BlockTermsReader extends FieldsProducer {
           // that we really need...
 
           // lazily catch up on metadata decode:
-          final int limit = state.termCount;
+          final int limit = state.termBlockOrd;
           // We must set/incr state.termCount because
           // postings impl can look at this
-          state.termCount = metaDataUpto;
+          state.termBlockOrd = metaDataUpto;
           // TODO: better API would be "jump straight to term=N"???
           while (metaDataUpto < limit) {
             //System.out.println("  decode mdUpto=" + metaDataUpto);
@@ -870,9 +872,9 @@ public class BlockTermsReader extends FieldsProducer {
 
             postingsReader.nextTerm(fieldInfo, state);
             metaDataUpto++;
-            state.termCount++;
+            state.termBlockOrd++;
           }
-        //} else {
+        } else {
           //System.out.println("  skip! seekPending");
         }
       }

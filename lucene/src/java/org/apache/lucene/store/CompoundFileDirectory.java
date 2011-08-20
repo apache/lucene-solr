@@ -19,10 +19,6 @@ package org.apache.lucene.store;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 
 import java.util.Collection;
@@ -189,14 +185,14 @@ public abstract class CompoundFileDirectory extends Directory {
   }
   
   @Override
-  public synchronized IndexInput openInput(String id, IOContext context) throws IOException {
+  public synchronized IndexInput openInput(String fileName, IOContext context) throws IOException {
     ensureOpen();
     assert !openForWrite;
-    id = IndexFileNames.stripSegmentName(id);
+    final String id = IndexFileNames.stripSegmentName(fileName);
     final FileEntry entry = entries.get(id);
-    if (entry == null)
-      throw new IOException("No sub-file with id " + id + " found (files: " + entries.keySet() + ")");
-    
+    if (entry == null) {
+      throw new IOException("No sub-file with id " + id + " found (fileName=" + fileName + " files: " + entries.keySet() + ")");
+    }
     return openInputSlice(id, entry.offset, entry.length, readBufferSize);
   }
   

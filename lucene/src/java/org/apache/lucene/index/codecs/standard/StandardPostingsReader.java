@@ -27,8 +27,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.codecs.BlockTermState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.BlockTermState;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -46,22 +46,23 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
   private final IndexInput freqIn;
   private final IndexInput proxIn;
+  // public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   int skipInterval;
   int maxSkipLevels;
   int skipMinimum;
 
-  //private String segment;
+  // private String segment;
 
-  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext context, int codecId) throws IOException {
+  public StandardPostingsReader(Directory dir, SegmentInfo segmentInfo, IOContext ioContext, int codecId) throws IOException {
     freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.FREQ_EXTENSION),
-                           context);
-    //this.segment = segmentInfo.name;
+                           ioContext);
+    // this.segment = segmentInfo.name;
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
         proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, codecId, StandardCodec.PROX_EXTENSION),
-                               context);
+                               ioContext);
         success = true;
       } finally {
         if (!success) {
@@ -73,10 +74,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
     }
   }
 
-  public static void files(Directory dir, SegmentInfo segmentInfo, int id, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.FREQ_EXTENSION));
+  public static void files(Directory dir, SegmentInfo segmentInfo, int codecID, Collection<String> files) throws IOException {
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, id, StandardCodec.PROX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, codecID, StandardCodec.PROX_EXTENSION));
     }
   }
 
@@ -100,7 +101,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     // Only used by the "primary" TermState -- clones don't
     // copy this (basically they are "transient"):
-    ByteArrayDataInput bytesReader;
+    ByteArrayDataInput bytesReader;  // TODO: should this NOT be in the TermState...?
     byte[] bytes;
 
     @Override
@@ -155,7 +156,8 @@ public class StandardPostingsReader extends PostingsReaderBase {
     final StandardTermState termState = (StandardTermState) _termState;
 
     final int len = termsIn.readVInt();
-    //System.out.println("SPR.readTermsBlock termsIn.fp=" + termsIn.getFilePointer());
+
+    // if (DEBUG) System.out.println("  SPR.readTermsBlock bytes=" + len + " ts=" + _termState);
     if (termState.bytes == null) {
       termState.bytes = new byte[ArrayUtil.oversize(len, 1)];
       termState.bytesReader = new ByteArrayDataInput();
@@ -171,21 +173,25 @@ public class StandardPostingsReader extends PostingsReaderBase {
   public void nextTerm(FieldInfo fieldInfo, BlockTermState _termState)
     throws IOException {
     final StandardTermState termState = (StandardTermState) _termState;
-    //System.out.println("StandardR.nextTerm seg=" + segment);
-    final boolean isFirstTerm = termState.termCount == 0;
+    // if (DEBUG) System.out.println("SPR: nextTerm seg=" + segment + " tbOrd=" + termState.termBlockOrd + " bytesReader.fp=" + termState.bytesReader.getPosition());
+    final boolean isFirstTerm = termState.termBlockOrd == 0;
 
     if (isFirstTerm) {
       termState.freqOffset = termState.bytesReader.readVLong();
     } else {
       termState.freqOffset += termState.bytesReader.readVLong();
     }
-    //System.out.println("  dF=" + termState.docFreq);
-    //System.out.println("  freqFP=" + termState.freqOffset);
+    /*
+    if (DEBUG) {
+      System.out.println("  dF=" + termState.docFreq);
+      System.out.println("  freqFP=" + termState.freqOffset);
+    }
+    */
     assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
       termState.skipOffset = termState.bytesReader.readVInt();
-      //System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
+      // if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
       // undefined
@@ -197,7 +203,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       } else {
         termState.proxOffset += termState.bytesReader.readVLong();
       }
-      //System.out.println("  proxFP=" + termState.proxOffset);
+      // if (DEBUG) System.out.println("  proxFP=" + termState.proxOffset);
     }
   }
     
@@ -215,6 +221,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         docsEnum = new SegmentDocsEnum(freqIn);
       }
     }
+    // if (DEBUG) System.out.println("SPR.docs ts=" + termState);
     return docsEnum.reset(fieldInfo, (StandardTermState) termState, liveDocs);
   }
 
@@ -300,7 +307,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
       assert limit > 0;
       ord = 0;
       doc = 0;
-      //System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
+      // if (DEBUG) System.out.println("  sde limit=" + limit + " freqFP=" + freqOffset);
 
       skipped = false;
 
@@ -309,8 +316,10 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
+      //if (DEBUG) System.out.println("    stpr.nextDoc seg=" + segment + " fp=" + freqIn.getFilePointer());
       while(true) {
         if (ord == limit) {
+          //if (DEBUG) System.out.println("      return doc=" + NO_MORE_DOCS);
           return doc = NO_MORE_DOCS;
         }
 
@@ -318,6 +327,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
         // Decode next doc/freq pair
         final int code = freqIn.readVInt();
+        // if (DEBUG) System.out.println("      code=" + code);
         if (omitTF) {
           doc += code;
         } else {
@@ -334,6 +344,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
         }
       }
 
+      //if (DEBUG) System.out.println("    stpr.nextDoc return doc=" + doc);
       return doc;
     }
 
@@ -480,16 +491,17 @@ public class StandardPostingsReader extends PostingsReaderBase {
       freqOffset = termState.freqOffset;
       proxOffset = termState.proxOffset;
       skipOffset = termState.skipOffset;
-      //System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
+      // if (DEBUG) System.out.println("StandardR.D&PE reset seg=" + segment + " limit=" + limit + " freqFP=" + freqOffset + " proxFP=" + proxOffset);
 
       return this;
     }
 
     @Override
     public int nextDoc() throws IOException {
+      // if (DEBUG) System.out.println("SPR.nextDoc seg=" + segment + " freqIn.fp=" + freqIn.getFilePointer());
       while(true) {
         if (ord == limit) {
-          //System.out.println("StandardR.D&PE seg=" + segment + " nextDoc return doc=END");
+          // if (DEBUG) System.out.println("  return END");
           return doc = NO_MORE_DOCS;
         }
 
@@ -513,7 +525,7 @@ public class StandardPostingsReader extends PostingsReaderBase {
 
       position = 0;
 
-      //System.out.println("StandardR.D&PE nextDoc seg=" + segment + " return doc=" + doc);
+      // if (DEBUG) System.out.println("  return doc=" + doc);
       return doc;
     }
 

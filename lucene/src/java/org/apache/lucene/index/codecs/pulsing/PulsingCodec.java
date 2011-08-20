@@ -22,28 +22,23 @@ import java.util.Set;
 
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
-import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.BlockTermsReader;
-import org.apache.lucene.index.codecs.BlockTermsWriter;
-import org.apache.lucene.index.codecs.TermsIndexReaderBase;
-import org.apache.lucene.index.codecs.TermsIndexWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
+import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
 
 /** This codec "inlines" the postings for terms that have
  *  low docFreq.  It wraps another codec, which is used for
@@ -56,64 +51,52 @@ import org.apache.lucene.util.IOUtils;
 public class PulsingCodec extends Codec {
 
   private final int freqCutoff;
+  private final int minBlockSize;
+  private final int maxBlockSize;
 
-  /**
-   * Creates a {@link PulsingCodec} with <tt>freqCutoff = 1</tt>
-   * 
-   * @see PulsingCodec#PulsingCodec(int)
-   */
   public PulsingCodec() {
     this(1);
   }
   
-  /** @lucene.internal */
-  public int getFreqCutoff() {
-    return freqCutoff;
+  public PulsingCodec(int freqCutoff) {
+    this(freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
   /** Terms with freq <= freqCutoff are inlined into terms
    *  dict. */
-  public PulsingCodec(int freqCutoff) {
+  public PulsingCodec(int freqCutoff, int minBlockSize, int maxBlockSize) {
     super("Pulsing");
     this.freqCutoff = freqCutoff;
+    this.minBlockSize = minBlockSize;
+    assert minBlockSize > 1;
+    this.maxBlockSize = maxBlockSize;
   }
 
   @Override
   public String toString() {
-    return name + "(freqCutoff=" + freqCutoff + ")";
+    return name + "(freqCutoff=" + freqCutoff + " minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    // We wrap StandardPostingsWriter, but any StandardPostingsWriter
+    // We wrap StandardPostingsWriter, but any PostingsWriterBase
     // will work:
+
     PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
 
     // Terms that have <= freqCutoff number of docs are
     // "pulsed" (inlined):
-    PostingsWriterBase pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
-
-    // Terms dict index
-    TermsIndexWriterBase indexWriter;
-    boolean success = false;
-    try {
-      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNTermSelector(state.termIndexInterval));
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeSafely(true, pulsingWriter);
-      }
-    }
+    PostingsWriterBase pulsingWriter = new PulsingPostingsWriter(freqCutoff, docsWriter);
 
     // Terms dict
-    success = false;
+    boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, pulsingWriter);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, pulsingWriter, minBlockSize, maxBlockSize);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, pulsingWriter, indexWriter);
+        pulsingWriter.close();
       }
     }
   }
@@ -124,53 +107,34 @@ public class PulsingCodec extends Codec {
     // We wrap StandardPostingsReader, but any StandardPostingsReader
     // will work:
     PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
-    PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
-
-    // Terms dict index reader
-    TermsIndexReaderBase indexReader;
+    PostingsReaderBase pulsingReader = new PulsingPostingsReader(docsReader);
 
     boolean success = false;
     try {
-      indexReader = new VariableGapTermsIndexReader(state.dir,
-                                                    state.fieldInfos,
-                                                    state.segmentInfo.name,
-                                                    state.termsIndexDivisor,
-                                                    state.codecId, state.context);
+      FieldsProducer ret = new BlockTreeTermsReader(
+                                                    state.dir, state.fieldInfos, state.segmentInfo.name,
+                                                    pulsingReader,
+                                                    state.context,
+                                                    state.codecId,
+                                                    state.termsIndexDivisor);
       success = true;
+      return ret;
     } finally {
       if (!success) {
         pulsingReader.close();
       }
     }
+  }
 
-    // Terms dict reader
-    success = false;
-    try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir, state.fieldInfos, state.segmentInfo.name,
-                                                pulsingReader,
-                                                state.context,
-                                                StandardCodec.TERMS_CACHE_SIZE,
-                                                state.codecId);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        try {
-          pulsingReader.close();
-        } finally {
-          indexReader.close();
-        }
-      }
-    }
+  public int getFreqCutoff() {
+    return freqCutoff;
   }
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, id, files);
-    BlockTermsReader.files(dir, segmentInfo, id, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
+    StandardPostingsReader.files(dir, segmentInfo, codecID, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files, getDocValuesUseCFS());
   }
 
   @Override
@@ -178,7 +142,7 @@ public class PulsingCodec extends Codec {
     StandardCodec.getStandardExtensions(extensions);
     DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());
   }
-  
+
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
     return new DefaultDocValuesConsumer(state, getDocValuesSortComparator(), getDocValuesUseCFS());

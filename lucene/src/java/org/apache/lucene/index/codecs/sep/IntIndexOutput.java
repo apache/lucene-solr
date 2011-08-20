@@ -44,7 +44,7 @@ public abstract class IntIndexOutput implements Closeable {
     public abstract void mark() throws IOException;
 
     /** Copies index from other */
-    public abstract void set(Index other) throws IOException;
+    public abstract void copyFrom(Index other, boolean copyLast) throws IOException;
 
     /** Writes "location" of current output pointer of primary
      *  output to different output (out) */

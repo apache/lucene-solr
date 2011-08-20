@@ -133,6 +133,6 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
 
   @Override
   public String outputToString(BytesRef output) {
-    return output.utf8ToString();
+    return output.toString();
   }
 }

@@ -19,9 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Comparator;
+
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Access to the terms in a specific field.  See {@link Fields}.
@@ -37,7 +39,40 @@ public abstract class Terms {
   /** Returns an iterator that will step through all
    *  terms. This method will not return null.*/
   public abstract TermsEnum iterator() throws IOException;
-  
+
+  /** Returns a TermsEnum that iterates over all terms that
+   *  are accepted by the provided {@link
+   *  CompiledAutomaton}.  If the <code>startTerm</code> is
+   *  provided then the returned enum will only accept terms
+   *  > <code>startTerm</code>, but you still must call
+   *  next() first to get to the first term.  Note that the
+   *  provided <code>startTerm</code> must be accepted by
+   *  the automaton.
+   *
+   * <p><b>NOTE</b>: the returned TermsEnum cannot
+   * seek</p>. */
+  public TermsEnum intersect(CompiledAutomaton compiled, final BytesRef startTerm) throws IOException {
+    // TODO: eventually we could support seekCeil/Exact on
+    // the returned enum, instead of only being able to seek
+    // at the start
+    if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+      throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+    }
+    if (startTerm == null) {
+      return new AutomatonTermsEnum(iterator(), compiled);
+    } else {
+      return new AutomatonTermsEnum(iterator(), compiled) {
+        @Override
+        protected BytesRef nextSeekTerm(BytesRef term) throws IOException {
+          if (term == null) {
+            term = startTerm;
+          }
+          return super.nextSeekTerm(term);
+        }
+      };
+    }
+  }
+
   /** Return the BytesRef Comparator used to sort terms
    *  provided by the iterator.  This method may return null
    *  if there are no terms.  This method may be invoked

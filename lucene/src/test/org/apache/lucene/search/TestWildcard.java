@@ -135,7 +135,7 @@ public class TestWildcard
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
     assertFalse(wq.getTermsEnum(terms) instanceof PrefixTermsEnum);
-    assertFalse(wq.getTermsEnum(terms) instanceof AutomatonTermsEnum);
+    assertFalse(wq.getTermsEnum(terms).getClass().getSimpleName().contains("AutomatonTermsEnum"));
     searcher.close();
     indexStore.close();
   }

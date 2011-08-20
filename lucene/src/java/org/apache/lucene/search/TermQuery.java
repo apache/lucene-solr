@@ -98,17 +98,18 @@ public class TermQuery extends Query {
     TermsEnum getTermsEnum(AtomicReaderContext context) throws IOException {
       final TermState state = termStates.get(context.ord);
       if (state == null) { // term is not present in that reader
-        assert termNotInReader(context.reader, term.field(), term.bytes()) : "no termstate found but term exists in reader";
+        assert termNotInReader(context.reader, term.field(), term.bytes()) : "no termstate found but term exists in reader term=" + term;
         return null;
       }
-      final TermsEnum termsEnum = context.reader.terms(term.field())
-          .getThreadTermsEnum();
+      //System.out.println("LD=" + reader.getLiveDocs() + " set?=" + (reader.getLiveDocs() != null ? reader.getLiveDocs().get(0) : "null"));
+      final TermsEnum termsEnum = context.reader.terms(term.field()).getThreadTermsEnum();
       termsEnum.seekExact(term.bytes(), state);
       return termsEnum;
     }
     
     private boolean termNotInReader(IndexReader reader, String field, BytesRef bytes) throws IOException {
       // only called from assert
+      //System.out.println("TQ.termNotInReader reader=" + reader + " term=" + field + ":" + bytes.utf8ToString());
       final Terms terms = reader.terms(field);
       return terms == null || terms.docFreq(bytes) == 0;
     }

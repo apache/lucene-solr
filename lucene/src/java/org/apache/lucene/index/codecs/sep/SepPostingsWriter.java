@@ -18,6 +18,8 @@ package org.apache.lucene.index.codecs.sep;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -38,8 +40,8 @@ import org.apache.lucene.util.IOUtils;
  *  to .pyl, skip data to .skp
  *
  * @lucene.experimental */
-public final class SepPostingsWriterImpl extends PostingsWriterBase {
-  final static String CODEC = "SepDocFreqSkip";
+public final class SepPostingsWriter extends PostingsWriterBase {
+  final static String CODEC = "SepPostingsWriter";
 
   final static String DOC_EXTENSION = "doc";
   final static String SKIP_EXTENSION = "skp";
@@ -89,26 +91,22 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   boolean storePayloads;
   IndexOptions indexOptions;
 
-  long lastSkipFP;
-
   FieldInfo fieldInfo;
 
   int lastPayloadLength;
   int lastPosition;
   long payloadStart;
-  long lastPayloadStart;
   int lastDocID;
   int df;
-  private int pendingTermCount;
 
   // Holds pending byte[] blob for the current terms block
   private final RAMOutputStream indexBytesWriter = new RAMOutputStream();
 
-  public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
+  public SepPostingsWriter(SegmentWriteState state, IntStreamFactory factory) throws IOException {
     this(state, factory, DEFAULT_SKIP_INTERVAL);
   }
 
-  public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory, int skipInterval) throws IOException {
+  public SepPostingsWriter(SegmentWriteState state, IntStreamFactory factory, int skipInterval) throws IOException {
     freqOut = null;
     freqIndex = null;
     posOut = null;
@@ -171,6 +169,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   @Override
   public void startTerm() throws IOException {
     docIndex.mark();
+    //System.out.println("SEPW: startTerm docIndex=" + docIndex);
 
     if (indexOptions != IndexOptions.DOCS_ONLY) {
       freqIndex.mark();
@@ -201,7 +200,7 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
   public void startDoc(int docID, int termDocFreq) throws IOException {
 
     final int delta = docID - lastDocID;
-    //System.out.println("SepW startDoc: write doc=" + docID + " delta=" + delta);
+    //System.out.println("SEPW: startDoc: write doc=" + docID + " delta=" + delta + " out.fp=" + docOut);
 
     if (docID < 0 || (df > 0 && delta <= 0)) {
       throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )");
@@ -221,15 +220,6 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
       //System.out.println("    sepw startDoc: write freq=" + termDocFreq);
       freqOut.write(termDocFreq);
     }
-  }
-
-  @Override
-  public void flushTermsBlock() throws IOException {
-    //System.out.println("SepW.flushTermsBlock: pendingTermCount=" + pendingTermCount + " bytesUsed=" + indexBytesWriter.getFilePointer());
-    termsOut.writeVLong((int) indexBytesWriter.getFilePointer());
-    indexBytesWriter.writeTo(termsOut);
-    indexBytesWriter.reset();
-    pendingTermCount = 0;
   }
 
   /** Add a new position & payload */
@@ -269,6 +259,24 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     lastPosition = 0;
   }
 
+  private static class PendingTerm {
+    public final IntIndexOutput.Index docIndex;
+    public final IntIndexOutput.Index freqIndex;
+    public final IntIndexOutput.Index posIndex;
+    public final long payloadFP;
+    public final long skipFP;
+
+    public PendingTerm(IntIndexOutput.Index docIndex, IntIndexOutput.Index freqIndex, IntIndexOutput.Index posIndex, long payloadFP, long skipFP) {
+      this.docIndex = docIndex;
+      this.freqIndex = freqIndex;
+      this.posIndex = posIndex;
+      this.payloadFP = payloadFP;
+      this.skipFP = skipFP;
+    }
+  }
+
+  private final List<PendingTerm> pendingTerms = new ArrayList<PendingTerm>();
+
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(TermStats stats) throws IOException {
@@ -276,50 +284,107 @@ public final class SepPostingsWriterImpl extends PostingsWriterBase {
     assert stats.docFreq > 0;
     assert stats.docFreq == df;
 
-    final boolean isFirstTerm = pendingTermCount == 0;  
-    //System.out.println("SepW.finishTerm: isFirstTerm=" + isFirstTerm);
+    final IntIndexOutput.Index docIndexCopy = docOut.index();
+    docIndexCopy.copyFrom(docIndex, false);
 
-    docIndex.write(indexBytesWriter, isFirstTerm);
-    //System.out.println("  docIndex=" + docIndex);
-
+    final IntIndexOutput.Index freqIndexCopy;
+    final IntIndexOutput.Index posIndexCopy;
     if (indexOptions != IndexOptions.DOCS_ONLY) {
-      freqIndex.write(indexBytesWriter, isFirstTerm);
-      //System.out.println("  freqIndex=" + freqIndex);
-    }
-
-    if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      posIndex.write(indexBytesWriter, isFirstTerm);
-      //System.out.println("  posIndex=" + posIndex);
-      if (storePayloads) {
-        if (isFirstTerm) {
-          indexBytesWriter.writeVLong(payloadStart);
-        } else {
-          indexBytesWriter.writeVLong(payloadStart - lastPayloadStart);
-        }
-        lastPayloadStart = payloadStart;
-        //System.out.println("  payloadFP=" + payloadStart);
-      }
-    }
-
-    if (df >= skipMinimum) {
-      //System.out.println("  skipFP=" + skipStart);
-      final long skipFP = skipOut.getFilePointer();
-      skipListWriter.writeSkip(skipOut);
-      //System.out.println("   writeSkip @ " + indexBytesWriter.getFilePointer());
-      if (isFirstTerm) {
-        indexBytesWriter.writeVLong(skipFP);
+      freqIndexCopy = freqOut.index();
+      freqIndexCopy.copyFrom(freqIndex, false);
+      if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+        posIndexCopy = posOut.index();
+        posIndexCopy.copyFrom(posIndex, false);
       } else {
-        indexBytesWriter.writeVLong(skipFP - lastSkipFP);
+        posIndexCopy = null;
       }
-      lastSkipFP = skipFP;
-    } else if (isFirstTerm) {
-      // lazily write an absolute delta if a term in this block requires skip data.
-      lastSkipFP = 0;
+    } else {
+      freqIndexCopy = null;
+      posIndexCopy = null;
+    }
+
+    final long skipFP;
+    if (df >= skipMinimum) {
+      skipFP = skipOut.getFilePointer();
+      //System.out.println("  skipFP=" + skipFP);
+      skipListWriter.writeSkip(skipOut);
+      //System.out.println("    numBytes=" + (skipOut.getFilePointer()-skipFP));
+    } else {
+      skipFP = -1;
     }
 
     lastDocID = 0;
     df = 0;
-    pendingTermCount++;
+
+    pendingTerms.add(new PendingTerm(docIndexCopy,
+                                     freqIndexCopy,
+                                     posIndexCopy,
+                                     payloadStart,
+                                     skipFP));
+  }
+
+  @Override
+  public void flushTermsBlock(int start, int count) throws IOException {
+    //System.out.println("SEPW: flushTermsBlock: start=" + start + " count=" + count + " pendingTerms.size()=" + pendingTerms.size() + " termsOut.fp=" + termsOut.getFilePointer());
+    assert indexBytesWriter.getFilePointer() == 0;
+    final int absStart = pendingTerms.size() - start;
+    final List<PendingTerm> slice = pendingTerms.subList(absStart, absStart+count);
+
+    long lastPayloadFP = 0;
+    long lastSkipFP = 0;
+
+    if (count == 0) {
+      termsOut.writeByte((byte) 0);
+      return;
+    }
+
+    final PendingTerm firstTerm = slice.get(0);
+    final IntIndexOutput.Index docIndexFlush = firstTerm.docIndex;
+    final IntIndexOutput.Index freqIndexFlush = firstTerm.freqIndex;
+    final IntIndexOutput.Index posIndexFlush = firstTerm.posIndex;
+
+    for(int idx=0;idx<slice.size();idx++) {
+      final boolean isFirstTerm = idx == 0;
+      final PendingTerm t = slice.get(idx);
+      //System.out.println("  write idx=" + idx + " docIndex=" + t.docIndex);
+      docIndexFlush.copyFrom(t.docIndex, false);
+      docIndexFlush.write(indexBytesWriter, isFirstTerm);
+      if (indexOptions != IndexOptions.DOCS_ONLY) {
+        freqIndexFlush.copyFrom(t.freqIndex, false);
+        freqIndexFlush.write(indexBytesWriter, isFirstTerm);
+        //System.out.println("    freqIndex=" + t.freqIndex);
+        if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
+          posIndexFlush.copyFrom(t.posIndex, false);
+          posIndexFlush.write(indexBytesWriter, isFirstTerm);
+          //System.out.println("    posIndex=" + t.posIndex);
+          if (storePayloads) {
+            //System.out.println("    payloadFP=" + t.payloadFP);
+            if (isFirstTerm) {
+              indexBytesWriter.writeVLong(t.payloadFP);
+            } else {
+              indexBytesWriter.writeVLong(t.payloadFP - lastPayloadFP);
+            }
+            lastPayloadFP = t.payloadFP;
+          }
+        }
+      }
+
+      if (t.skipFP != -1) {
+        if (isFirstTerm) {
+          indexBytesWriter.writeVLong(t.skipFP);
+        } else {
+          indexBytesWriter.writeVLong(t.skipFP - lastSkipFP);
+        }
+        lastSkipFP = t.skipFP;
+        //System.out.println("    skipFP=" + t.skipFP);
+      }
+    }
+
+    //System.out.println("  numBytes=" + indexBytesWriter.getFilePointer());
+    termsOut.writeVLong((int) indexBytesWriter.getFilePointer());
+    indexBytesWriter.writeTo(termsOut);
+    indexBytesWriter.reset();
+    slice.clear();
   }
 
   @Override

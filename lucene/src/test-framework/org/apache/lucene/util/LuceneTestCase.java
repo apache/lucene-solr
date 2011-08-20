@@ -280,7 +280,11 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     swapCodec(new MockSepCodec(), cp);
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20)), cp);
+    // TODO: make it possible to specify min/max iterms per
+    // block via CL:
+    int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+    int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
@@ -307,7 +311,7 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     cp.unregister(cp.lookup("MockRandom"));
-    swapCodec(new PulsingCodec(1), cp);
+    swapCodec(new PulsingCodec(), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
   }
 
@@ -485,7 +489,7 @@ public abstract class LuceneTestCase extends Assert {
       System.err.println("NOTE: test params are: codec=" + codecDescription +
         ", locale=" + locale +
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
-    if (testsFailed) {
+    if (VERBOSE || testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
       System.err.println("NOTE: " + System.getProperty("os.name") + " "
@@ -1561,9 +1565,17 @@ public abstract class LuceneTestCase extends Assert {
 
     RandomCodecProvider(Random random) {
       this.perFieldSeed = random.nextInt();
-      register(randomizCodec(random, new StandardCodec()));
+      // TODO: make it possible to specify min/max iterms per
+      // block via CL:
+      int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+      int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
+      register(randomizCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new PreFlexCodec()));
-      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20))));
+      // TODO: make it possible to specify min/max iterms per
+      // block via CL:
+      minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+      maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
+      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new SimpleTextCodec()));
       register(randomizCodec(random, new MemoryCodec()));
       Collections.shuffle(knownCodecs, random);

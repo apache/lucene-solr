@@ -33,7 +33,11 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
 
   public abstract void startTerm() throws IOException;
 
-  public abstract void flushTermsBlock() throws IOException;
+  /** Flush count terms starting at start "backwards", as a
+   *  block. start is a negative offset from the end of the
+   *  terms stack, ie bigger start means further back in
+   *  the stack. */
+  public abstract void flushTermsBlock(int start, int count) throws IOException;
 
   /** Finishes the current term */
   public abstract void finishTerm(TermStats stats) throws IOException;

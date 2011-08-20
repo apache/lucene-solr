@@ -194,7 +194,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
   public void testRandomDocs() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+                                                     newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
+    writer.w.setInfoStream(VERBOSE ? System.out : null);
     int numDocs = atLeast(49);
     int max = 15678;
     int term = random.nextInt(max);
@@ -290,7 +291,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
-    // now do seaches
+    // now do searches
     IndexReader reader = writer.getReader();
     writer.close();
 

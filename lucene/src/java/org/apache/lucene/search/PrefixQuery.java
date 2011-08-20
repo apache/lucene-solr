@@ -51,7 +51,7 @@ public class PrefixQuery extends MultiTermQuery {
       // no prefix -- match all terms for this field:
       return tenum;
     }
-    return new PrefixTermsEnum(tenum, prefix);
+    return new PrefixTermsEnum(tenum, prefix.bytes());
   }
 
   /** Prints a user-readable version of this query. */

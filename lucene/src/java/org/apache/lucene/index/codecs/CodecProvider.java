@@ -84,7 +84,7 @@ public class CodecProvider {
   public synchronized Codec lookup(String name) {
     final Codec codec = codecs.get(name);
     if (codec == null) {
-      throw new IllegalArgumentException("required codec '" + name + "' not found");
+      throw new IllegalArgumentException("required codec '" + name + "' not found; known codecs: " + codecs.keySet());
     }
     return codec;
   }

@@ -39,8 +39,8 @@ import org.apache.lucene.store.DataOutput;
 public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
   public final static class TwoLongs {
-    final long first;
-    final long second;
+    public final long first;
+    public final long second;
 
     public TwoLongs(long first, long second) {
       this.first = first;

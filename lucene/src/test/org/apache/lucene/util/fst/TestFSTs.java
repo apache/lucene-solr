@@ -24,19 +24,25 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
@@ -456,7 +462,8 @@ public class TestFSTs extends LuceneTestCase {
                                                 prune1==0 && prune2==0,
                                                 allowRandomSuffixSharing ? random.nextBoolean() : true,
                                                 allowRandomSuffixSharing ? _TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
-                                                outputs);
+                                                outputs,
+                                                null);
 
       for(InputOutput<T> pair : pairs) {
         if (pair.output instanceof UpToTwoPositiveIntOutputs.TwoLongs) {
@@ -872,15 +879,15 @@ public class TestFSTs extends LuceneTestCase {
         }
       }
 
-      //System.out.println("TEST: after prune");
-      /*
-        for(Map.Entry<BytesRef,CountMinOutput> ent : prefixes.entrySet()) {
-        System.out.println("  " + inputToString(inputMode, ent.getKey()) + ": isLeaf=" + ent.getValue().isLeaf + " isFinal=" + ent.getValue().isFinal);
-        if (ent.getValue().isFinal) {
-        System.out.println("    finalOutput=" + outputs.outputToString(ent.getValue().finalOutput));
+      if (VERBOSE) {
+        System.out.println("TEST: after prune");
+        for(Map.Entry<IntsRef,CountMinOutput<T>> ent : prefixes.entrySet()) {
+          System.out.println("  " + inputToString(inputMode, ent.getKey()) + ": isLeaf=" + ent.getValue().isLeaf + " isFinal=" + ent.getValue().isFinal);
+          if (ent.getValue().isFinal) {
+            System.out.println("    finalOutput=" + outputs.outputToString(ent.getValue().finalOutput));
+          }
         }
-        }
-      */
+      }
 
       if (prefixes.size() <= 1) {
         assertNull(fst);
@@ -1081,7 +1088,7 @@ public class TestFSTs extends LuceneTestCase {
           final BytesRef randomTerm = new BytesRef(getRandomString());
         
           if (VERBOSE) {
-            System.out.println("TEST: seek " + randomTerm.utf8ToString() + " " + randomTerm);
+            System.out.println("TEST: seek non-exist " + randomTerm.utf8ToString() + " " + randomTerm);
           }
 
           final TermsEnum.SeekStatus seekResult = termsEnum.seekCeil(randomTerm);
@@ -1133,10 +1140,10 @@ public class TestFSTs extends LuceneTestCase {
       assertEquals(termsEnum.term().utf8ToString() + " != " + fstEnum.current().input.utf8ToString(), termsEnum.term(), fstEnum.current().input);
       if (storeOrd) {
         // fst stored the ord
-        assertEquals(termsEnum.ord(), ((Long) fstEnum.current().output).longValue());
+        assertEquals("term=" + termsEnum.term().utf8ToString() + " " + termsEnum.term(), termsEnum.ord(), ((Long) fstEnum.current().output).longValue());
       } else {
         // fst stored the docFreq
-        assertEquals(termsEnum.docFreq(), (int) (((Long) fstEnum.current().output).longValue()));
+        assertEquals("term=" + termsEnum.term().utf8ToString() + " " + termsEnum.term(), termsEnum.docFreq(), (int) (((Long) fstEnum.current().output).longValue()));
       }
     }
   }
@@ -1154,7 +1161,7 @@ public class TestFSTs extends LuceneTestCase {
       this.inputMode = inputMode;
       this.outputs = outputs;
       
-      builder = new Builder<T>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs);
+      builder = new Builder<T>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, null);
     }
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
@@ -1254,7 +1261,7 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  // java -cp build/classes/test:build/classes/java:build/classes/test-framework:lib/junit-4.7.jar org.apache.lucene.util.fst.TestFSTs /x/tmp/allTerms3.txt out
+  // java -cp build/classes/test:build/classes/test-framework:build/classes/java:lib/junit-4.7.jar org.apache.lucene.util.automaton.fst.TestFSTs /x/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
     int prune = 0;
     int limit = Integer.MAX_VALUE;
@@ -1411,6 +1418,198 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(42, (long) seekResult.output);
   }
 
+  public void testPrimaryKeys() throws Exception {
+    Directory dir = newDirectory();
+
+    for(int cycle=0;cycle<2;cycle++) {
+      if (VERBOSE) {
+        System.out.println("TEST: cycle=" + cycle);
+      }
+      RandomIndexWriter w = new RandomIndexWriter(random, dir,
+                                                  newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+      Document doc = new Document();
+      Field idField = newField("id", "", Field.Index.NOT_ANALYZED);
+      doc.add(idField);
+      
+      final int NUM_IDS = (int) (1000*RANDOM_MULTIPLIER*(1.0+random.nextDouble()));
+      //final int NUM_IDS = (int) (377 * (1.0+random.nextDouble()));
+      if (VERBOSE) {
+        System.out.println("TEST: NUM_IDS=" + NUM_IDS);
+      }
+      final Set<String> allIDs = new HashSet<String>();
+      for(int id=0;id<NUM_IDS;id++) {
+        String idString;
+        if (cycle == 0) {
+          // PKs are assigned sequentially
+          idString = String.format("%07d", id);
+        } else {
+          while(true) {
+            final String s = Long.toString(random.nextLong());
+            if (!allIDs.contains(s)) {
+              idString = s;
+              break;
+            }
+          }
+        }
+        allIDs.add(idString);
+        idField.setValue(idString);
+        w.addDocument(doc);
+      }
+
+      //w.optimize();
+
+      // turn writer into reader:
+      final IndexReader r = w.getReader();
+      final IndexSearcher s = new IndexSearcher(r);
+      w.close();
+
+      final List<String> allIDsList = new ArrayList<String>(allIDs);
+      final List<String> sortedAllIDsList = new ArrayList<String>(allIDsList);
+      Collections.sort(sortedAllIDsList);
+
+      // Sprinkle in some non-existent PKs:
+      Set<String> outOfBounds = new HashSet<String>();
+      for(int idx=0;idx<NUM_IDS/10;idx++) {
+        String idString;
+        if (cycle == 0) {
+          idString = String.format("%07d", (NUM_IDS + idx));
+        } else {
+          while(true) {
+            idString = Long.toString(random.nextLong());
+            if (!allIDs.contains(idString)) {
+              break;
+            }
+          }
+        }
+        outOfBounds.add(idString);
+        allIDsList.add(idString);
+      }
+
+      // Verify w/ TermQuery
+      for(int iter=0;iter<2*NUM_IDS;iter++) {
+        final String id = allIDsList.get(random.nextInt(allIDsList.size()));
+        final boolean exists = !outOfBounds.contains(id);
+        if (VERBOSE) {
+          System.out.println("TEST: TermQuery " + (exists ? "" : "non-exist ") + " id=" + id);
+        }
+        assertEquals((exists ? "" : "non-exist ") + "id=" + id, exists ? 1 : 0, s.search(new TermQuery(new Term("id", id)), 1).totalHits);
+      }
+
+      // Verify w/ MultiTermsEnum
+      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+      for(int iter=0;iter<2*NUM_IDS;iter++) {
+        final String id;
+        final String nextID;
+        final boolean exists;
+
+        if (random.nextBoolean()) {
+          id = allIDsList.get(random.nextInt(allIDsList.size()));
+          exists = !outOfBounds.contains(id);
+          nextID = null;
+          if (VERBOSE) {
+            System.out.println("TEST: exactOnly " + (exists ? "" : "non-exist ") + "id=" + id);
+          }
+        } else {
+          // Pick ID between two IDs:
+          exists = false;
+          final int idv = random.nextInt(NUM_IDS-1);
+          if (cycle == 0) {
+            id = String.format("%07da", idv);
+            nextID = String.format("%07d", idv+1);
+          } else {
+            id = sortedAllIDsList.get(idv) + "a";
+            nextID = sortedAllIDsList.get(idv+1);
+          }
+          if (VERBOSE) {
+            System.out.println("TEST: not exactOnly id=" + id + " nextID=" + nextID);
+          }
+        }
+
+        final boolean useCache = random.nextBoolean();
+        if (VERBOSE) {
+          System.out.println("  useCache=" + useCache);
+        }
+
+        final TermsEnum.SeekStatus status;
+        if (nextID == null) {
+          if (termsEnum.seekExact(new BytesRef(id), useCache)) {
+            status = TermsEnum.SeekStatus.FOUND;
+          } else {
+            status = TermsEnum.SeekStatus.NOT_FOUND;
+          }
+        } else {
+          status = termsEnum.seekCeil(new BytesRef(id), useCache);
+        }
+
+        if (nextID != null) {
+          assertEquals(TermsEnum.SeekStatus.NOT_FOUND, status);
+          assertEquals("expected=" + nextID + " actual=" + termsEnum.term().utf8ToString(), new BytesRef(nextID), termsEnum.term());
+        } else if (!exists) {
+          assertTrue(status == TermsEnum.SeekStatus.NOT_FOUND ||
+                     status == TermsEnum.SeekStatus.END);
+        } else {
+          assertEquals(TermsEnum.SeekStatus.FOUND, status);
+        }
+      }
+
+      r.close();
+    }
+    dir.close();
+  }
+
+  public void testRandomTermLookup() throws Exception {
+    Directory dir = newDirectory();
+
+    RandomIndexWriter w = new RandomIndexWriter(random, dir,
+                                                newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    w.w.setInfoStream(VERBOSE ? System.out : null);
+
+    Document doc = new Document();
+    Field f = newField("field", "", Field.Index.NOT_ANALYZED);
+    doc.add(f);
+      
+    final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random.nextDouble()));
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_TERMS=" + NUM_TERMS);
+    }
+
+    final Set<String> allTerms = new HashSet<String>();
+    while(allTerms.size() < NUM_TERMS) {
+      allTerms.add(simpleRandomString(random));
+    }
+
+    for(String term : allTerms) {
+      f.setValue(term);
+      w.addDocument(doc);
+    }
+
+    // turn writer into reader:
+    if (VERBOSE) {
+      System.out.println("TEST: get reader");
+    }
+    IndexReader r = w.getReader();
+    if (VERBOSE) {
+      System.out.println("TEST: got reader=" + r);
+    }
+    IndexSearcher s = new IndexSearcher(r);
+    w.close();
+
+    final List<String> allTermsList = new ArrayList<String>(allTerms);
+    Collections.shuffle(allTermsList, random);
+
+    // verify exact lookup
+    for(String term : allTermsList) {
+      if (VERBOSE) {
+        System.out.println("TEST: term=" + term);
+      }
+      assertEquals("term=" + term, 1, s.search(new TermQuery(new Term("field", term)), 1).totalHits);
+    }
+
+    r.close();
+    dir.close();
+  }
+
+
   /**
    * Test state expansion (array format) on close-to-root states. Creates
    * synthetic input that has one expanded state on each level.
@@ -1490,6 +1689,36 @@ public class TestFSTs extends LuceneTestCase {
     FST<Object> fst = s.compile(input);
     FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
     s.verifyStateAndBelow(fst, arc, 1);
+  }
+
+  public void testFinalOutputOnEndState() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, null);
+    builder.add("stat", outputs.get(17));
+    builder.add("station", outputs.get(10));
+    final FST<Long> fst = builder.finish();
+    //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
+    StringWriter w = new StringWriter();
+    Util.toDot(fst, w, false, false);
+    w.close();
+    //System.out.println(w.toString());
+    assertTrue(w.toString().indexOf("label=\"t/[7]\"") != -1);
+  }
+
+  public void testInternalFinalState() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null);
+    builder.add(new BytesRef("stat"), outputs.getNoOutput());
+    builder.add(new BytesRef("station"), outputs.getNoOutput());
+    final FST<Long> fst = builder.finish();
+    StringWriter w = new StringWriter();
+    //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
+    Util.toDot(fst, w, false, false);
+    w.close();
+    //System.out.println(w.toString());
+    assertTrue(w.toString().indexOf("6 [shape=doublecircle") != -1);
   }
 
   // Make sure raw FST can differentiate between final vs

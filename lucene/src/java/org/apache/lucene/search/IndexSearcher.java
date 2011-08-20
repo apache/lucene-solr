@@ -882,6 +882,6 @@ public class IndexSearcher implements Closeable {
 
   @Override
   public String toString() {
-    return "IndexSearcher(" + reader + ")";
+    return "IndexSearcher(" + reader + "; executor=" + executor + ")";
   }
 }

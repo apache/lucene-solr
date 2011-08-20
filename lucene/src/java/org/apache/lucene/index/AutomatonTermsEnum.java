@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,14 +20,12 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.FilteredTermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
-import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Transition;
-import org.apache.lucene.util.automaton.UTF32ToUTF8;
 
 /**
  * A FilteredTermsEnum that enumerates terms based upon what is accepted by a
@@ -46,7 +44,7 @@ import org.apache.lucene.util.automaton.UTF32ToUTF8;
  * </p>
  * @lucene.experimental
  */
-public class AutomatonTermsEnum extends FilteredTermsEnum {
+class AutomatonTermsEnum extends FilteredTermsEnum {
   // a tableized array-based form of the DFA
   private final ByteRunAutomaton runAutomaton;
   // common suffix of the automaton
@@ -81,6 +79,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     super(tenum);
     this.finite = compiled.finite;
     this.runAutomaton = compiled.runAutomaton;
+    assert this.runAutomaton != null;
     this.commonSuffixRef = compiled.commonSuffixRef;
     this.allTransitions = compiled.sortedTransitions;
 
@@ -110,6 +109,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   
   @Override
   protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
+    //System.out.println("ATE.nextSeekTerm term=" + term);
     if (term == null) {
       assert seekBytesRef.length == 0;
       // return the empty term, as its valid
@@ -317,27 +317,5 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       }
     }
     return -1; /* all solutions exhausted */
-  }
-  
-  /**
-   * immutable class with everything this enum needs.
-   */
-  public static class CompiledAutomaton {
-    public final ByteRunAutomaton runAutomaton;
-    public final Transition[][] sortedTransitions;
-    public final BytesRef commonSuffixRef;
-    public final boolean finite;
-    
-    public CompiledAutomaton(Automaton automaton, boolean finite) {
-      Automaton utf8 = new UTF32ToUTF8().convert(automaton);
-      runAutomaton = new ByteRunAutomaton(utf8, true);
-      sortedTransitions = utf8.getSortedTransitions();
-      this.finite = finite;
-      if (finite) {
-        commonSuffixRef = null;
-      } else {
-        commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(utf8);
-      }
-    }
   }
 }

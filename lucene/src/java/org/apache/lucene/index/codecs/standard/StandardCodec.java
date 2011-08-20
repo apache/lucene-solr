@@ -22,31 +22,37 @@ import java.util.Set;
 
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
+import org.apache.lucene.index.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
+import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PerDocConsumer;
-import org.apache.lucene.index.codecs.DefaultDocValuesConsumer;
 import org.apache.lucene.index.codecs.PerDocValues;
-import org.apache.lucene.index.codecs.PostingsWriterBase;
-import org.apache.lucene.index.codecs.PostingsReaderBase;
-import org.apache.lucene.index.codecs.TermsIndexWriterBase;
-import org.apache.lucene.index.codecs.TermsIndexReaderBase;
-import org.apache.lucene.index.codecs.VariableGapTermsIndexWriter;
-import org.apache.lucene.index.codecs.VariableGapTermsIndexReader;
-import org.apache.lucene.index.codecs.BlockTermsWriter;
-import org.apache.lucene.index.codecs.BlockTermsReader;
-import org.apache.lucene.index.codecs.DefaultDocValuesProducer;
 import org.apache.lucene.store.Directory;
 
 /** Default codec. 
  *  @lucene.experimental */
 public class StandardCodec extends Codec {
 
+  private final int minBlockSize;
+  private final int maxBlockSize;
+
   public StandardCodec() {
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+  }
+
+  public StandardCodec(int minBlockSize, int maxBlockSize) {
     super("Standard");
+    this.minBlockSize = minBlockSize;
+    assert minBlockSize > 1;
+    this.maxBlockSize = maxBlockSize;
   }
 
   @Override
@@ -57,29 +63,14 @@ public class StandardCodec extends Codec {
     // pluggable?  Ie so that this codec would record which
     // index impl was used, and switch on loading?
     // Or... you must make a new Codec for this?
-    TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNTermSelector(state.termIndexInterval));
-      success = true;
-    } finally {
-      if (!success) {
-        docs.close();
-      }
-    }
-
-    success = false;
-    try {
-      FieldsConsumer ret = new BlockTermsWriter(indexWriter, state, docs);
+      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        try {
-          docs.close();
-        } finally {
-          indexWriter.close();
-        }
+        docs.close();
       }
     }
   }
@@ -89,41 +80,22 @@ public class StandardCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     PostingsReaderBase postings = new StandardPostingsReader(state.dir, state.segmentInfo, state.context, state.codecId);
-    TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
-      indexReader = new VariableGapTermsIndexReader(state.dir,
+      FieldsProducer ret = new BlockTreeTermsReader(
+                                                    state.dir,
                                                     state.fieldInfos,
                                                     state.segmentInfo.name,
-                                                    state.termsIndexDivisor,
-                                                    state.codecId, state.context);
-      success = true;
-    } finally {
-      if (!success) {
-        postings.close();
-      }
-    }
-
-    success = false;
-    try {
-      FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
-                                                state.fieldInfos,
-                                                state.segmentInfo.name,
-                                                postings,
-                                                state.context,
-                                                TERMS_CACHE_SIZE,
-                                                state.codecId);
+                                                    postings,
+                                                    state.context,
+                                                    state.codecId,
+                                                    state.termsIndexDivisor);
       success = true;
       return ret;
     } finally {
       if (!success) {
-        try {
-          postings.close();
-        } finally {
-          indexReader.close();
-        }
+        postings.close();
       }
     }
   }
@@ -135,11 +107,10 @@ public class StandardCodec extends Codec {
   static final String PROX_EXTENSION = "prx";
 
   @Override
-  public void files(Directory dir, SegmentInfo segmentInfo, int id, Set<String> files) throws IOException {
-    StandardPostingsReader.files(dir, segmentInfo, id, files);
-    BlockTermsReader.files(dir, segmentInfo, id, files);
-    VariableGapTermsIndexReader.files(dir, segmentInfo, id, files);
-    DefaultDocValuesConsumer.files(dir, segmentInfo, id, files, getDocValuesUseCFS());
+  public void files(Directory dir, SegmentInfo segmentInfo, int codecID, Set<String> files) throws IOException {
+    StandardPostingsReader.files(dir, segmentInfo, codecID, files);
+    BlockTreeTermsReader.files(dir, segmentInfo, codecID, files);
+    DefaultDocValuesConsumer.files(dir, segmentInfo, codecID, files, getDocValuesUseCFS());
   }
 
   @Override
@@ -151,8 +122,12 @@ public class StandardCodec extends Codec {
   public static void getStandardExtensions(Set<String> extensions) {
     extensions.add(FREQ_EXTENSION);
     extensions.add(PROX_EXTENSION);
-    BlockTermsReader.getExtensions(extensions);
-    VariableGapTermsIndexReader.getIndexExtensions(extensions);
+    BlockTreeTermsReader.getExtensions(extensions);
+  }
+
+  @Override
+  public String toString() {
+    return name + "(minBlockSize=" + minBlockSize + " maxBlockSize=" + maxBlockSize + ")";
   }
 
   @Override

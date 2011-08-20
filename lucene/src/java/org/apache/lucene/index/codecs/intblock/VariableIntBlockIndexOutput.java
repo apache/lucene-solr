@@ -77,10 +77,14 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
     }
 
     @Override
-    public void set(IntIndexOutput.Index other) throws IOException {
+    public void copyFrom(IntIndexOutput.Index other, boolean copyLast) throws IOException {
       Index idx = (Index) other;
-      lastFP = fp = idx.fp;
-      lastUpto = upto = idx.upto;
+      fp = idx.fp;
+      upto = idx.upto;
+      if (copyLast) {
+        lastFP = fp;
+        lastUpto = upto;
+      }
     }
 
     @Override

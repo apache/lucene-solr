@@ -124,12 +124,12 @@ class SepSkipListWriter extends MultiLevelSkipListWriter {
     Arrays.fill(lastSkipDoc, 0);
     Arrays.fill(lastSkipPayloadLength, -1);  // we don't have to write the first length in the skip list
     for(int i=0;i<numberOfSkipLevels;i++) {
-      docIndex[i].set(topDocIndex);
+      docIndex[i].copyFrom(topDocIndex, true);
       if (freqOutput != null) {
-        freqIndex[i].set(topFreqIndex);
+        freqIndex[i].copyFrom(topFreqIndex, true);
       }
       if (posOutput != null) {
-        posIndex[i].set(topPosIndex);
+        posIndex[i].copyFrom(topPosIndex, true);
       }
     }
     if (payloadOutput != null) {
