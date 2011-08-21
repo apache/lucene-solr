@@ -158,11 +158,6 @@ public class TestTermsEnum extends LuceneTestCase {
     d.close();
   }
 
-  private String randomString() {
-    //return _TestUtil.randomSimpleString(random);
-    return _TestUtil.randomRealisticUnicodeString(random);
-  }
-
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
     doc.add(new NumericField("id").setIntValue(id));
@@ -199,7 +194,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final Map<BytesRef,Integer> termToID = new HashMap<BytesRef,Integer>();
     int id = 0;
     while(terms.size() != numTerms) {
-      final String s = randomString();
+      final String s = getRandomString();
       if (!terms.contains(s)) {
         terms.add(s);
         pendingTerms.add(s);
@@ -259,7 +254,7 @@ public class TestTermsEnum extends LuceneTestCase {
           if (random.nextDouble() <= keepPct) {
             s2 = s;
           } else {
-            s2 = randomString();
+            s2 = getRandomString();
           }
           acceptTerms.add(s2);
           sortedAcceptTerms.add(new BytesRef(s2));
@@ -290,11 +285,22 @@ public class TestTermsEnum extends LuceneTestCase {
       for(int iter2=0;iter2<100;iter2++) {
         final BytesRef startTerm = acceptTermsArray.length == 0 || random.nextBoolean() ? null : acceptTermsArray[random.nextInt(acceptTermsArray.length)];
 
-        final TermsEnum te = MultiFields.getTerms(r, "f").intersect(c, startTerm);
-
         if (VERBOSE) {
           System.out.println("\nTEST: iter2=" + iter2 + " startTerm=" + (startTerm == null ? "<null>" : startTerm.utf8ToString()));
+
+          if (startTerm != null) {
+            int state = c.runAutomaton.getInitialState();
+            for(int idx=0;idx<startTerm.length;idx++) {
+              final int label = startTerm.bytes[startTerm.offset+idx] & 0xff;
+              System.out.println("  state=" + state + " label=" + label);
+              state = c.runAutomaton.step(state, label);
+              assertTrue(state != -1);
+            }
+            System.out.println("  state=" + state);
+          }
         }
+
+        final TermsEnum te = MultiFields.getTerms(r, "f").intersect(c, startTerm);
 
         int loc;
         if (startTerm == null) {

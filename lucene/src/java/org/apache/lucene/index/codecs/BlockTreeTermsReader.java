@@ -922,7 +922,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             final boolean isSubBlock = currentFrame.next();
 
-            //if (DEBUG) System.out.println("    cycle ent=" + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" + currentFrame.suffix);
+            //if (DEBUG) System.out.println("    cycle ent=" + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" + currentFrame.suffix + " isBlock=" + isSubBlock + " firstLabel=" + (currentFrame.suffix == 0 ? "" : (currentFrame.suffixBytes[currentFrame.startBytePos])&0xff));
             term.length = currentFrame.prefix + currentFrame.suffix;
             if (term.bytes.length < term.length) {
               term.bytes = ArrayUtil.grow(term.bytes, term.length);
@@ -931,6 +931,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
             if (isSubBlock && target.startsWith(term)) {
               // Recurse
+              //if (DEBUG) System.out.println("      recurse!");
               currentFrame = pushFrame(getState());
               break;
             } else {
@@ -964,14 +965,11 @@ public class BlockTreeTermsReader extends FieldsProducer {
                 currentFrame.termState.termBlockOrd = saveTermBlockOrd;
                 System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
                 term.length = currentFrame.prefix + currentFrame.suffix;
-                if (lastIsSubBlock) {
-                  // Recurse
-                  currentFrame = pushFrame(getState());
-                  break;
-                } else {
-                  //if (DEBUG) System.out.println("  fallback return term=" + brToString(term) + " curFrame.nextEnt=" + currentFrame.nextEnt);
-                  return;
-                }
+                // If the last entry was a block we don't
+                // need to bother recursing and pushing to
+                // the last term under it because the first
+                // next() will simply skip the frame anyway
+                return;
               }
             }
           }
