@@ -17,7 +17,6 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.index.IndexableField;

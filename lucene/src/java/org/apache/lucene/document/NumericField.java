@@ -76,7 +76,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  *
  * <p>By default, a <code>NumericField</code>'s value is not stored but
  * is indexed for range filtering and sorting.  You can use
- * the {@link #NumericField(String,Field.Store,boolean)}
+ * the {@link #NumericField(String, FieldType)}
  * constructor if you need to change these defaults.</p>
  *
  * <p>You may add the same field name as a <code>NumericField</code> to
@@ -104,7 +104,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * default value, 4, was selected for a reasonable tradeoff
  * of disk space consumption versus performance.  You can
  * use the expert constructor {@link
- * #NumericField(String,int,Field.Store,boolean)} if you'd
+ * #NumericField(String,int,FieldType)} if you'd
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
  * NumericRangeQuery} or {@link NumericRangeFilter}.

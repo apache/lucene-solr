@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * This class provides a {@link AbstractField} that enables storing of typed
+ * This class provides a {@link Field} that enables storing of typed
  * per-document values for scoring, sorting or value retrieval. Here's an
  * example usage, adding an int value:
  * 
@@ -51,9 +51,9 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * <p>
- * If doc values are stored in addition to an indexed ({@link Index}) or stored
- * ({@link Store}) value it's recommended to use the {@link IndexDocValuesField}'s
- * {@link #set(AbstractField)} API:
+ * If doc values are stored in addition to an indexed ({@link FieldType#setIndexed(boolean)}) or stored
+ * ({@link FieldType#setStored(boolean)}) value it's recommended to use the {@link IndexDocValuesField}'s
+ * {@link #set(Field)} API:
  * 
  * <pre>
  *  IndexDocValuesField field = new IndexDocValuesField(name);
@@ -322,7 +322,7 @@ public class IndexDocValuesField extends Field implements PerDocFieldValues {
   }
 
   /**
-   * Sets this {@link IndexDocValuesField} to the given {@link AbstractField} and
+   * Sets this {@link IndexDocValuesField} to the given {@link Field} and
    * returns the given field. Any modifications to this instance will be visible
    * to the given field.
    */

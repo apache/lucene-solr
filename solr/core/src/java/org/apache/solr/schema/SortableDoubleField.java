@@ -27,7 +27,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;

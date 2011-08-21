@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.DocValues;

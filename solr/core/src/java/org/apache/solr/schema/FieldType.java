@@ -268,8 +268,6 @@ public abstract class FieldType extends FieldProperties {
    * Fields per SchemaField
    * @param name The name of the field
    * @param val The _internal_ value to index
-   * @param omitNorms true if norms should be omitted
-   * @param options options for what should be indexed in the postings
    * @param type {@link org.apache.lucene.document.FieldType}
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.

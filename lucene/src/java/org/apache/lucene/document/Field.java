@@ -237,22 +237,20 @@ public class Field implements IndexableField {
   public float boost() {
     return boost;
   }
-  
-  /**
-   * Sets the boost factor hits on this field. This value will be multiplied
-   * into the score of all hits on this this field of this document.
-   * 
-   * <p>
-   * Boost is used to compute the norm factor for the field. By default, in the
-   * {@link org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)}
-   * method, the boost value is multiplied by the length normalization factor
-   * and then rounded by
-   * {@link org.apache.lucene.search.Similarity#encodeNormValue(float)} before
-   * it is stored in the index. One should attempt to ensure that this product
-   * does not overflow the range of that encoding.
-   * 
+
+  /** Sets the boost factor hits on this field.  This value will be
+   * multiplied into the score of all hits on this this field of this
+   * document.
+   *
+   * <p>The boost is used to compute the norm factor for the field.  By
+   * default, in the {@link org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)} method, 
+   * the boost value is multiplied by the length normalization factor and then
+   * rounded by {@link org.apache.lucene.search.DefaultSimilarity#encodeNormValue(float)} before it is stored in the
+   * index.  One should attempt to ensure that this product does not overflow
+   * the range of that encoding.
+   *
    * @see org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)
-   * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
+   * @see org.apache.lucene.search.DefaultSimilarity#encodeNormValue(float)
    */
   public void setBoost(float boost) {
     this.boost = boost;
