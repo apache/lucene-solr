@@ -412,7 +412,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     // too low of a number can cause a slow host to commit before the test code checks that it
     // isn't there... causing a failure at "shouldn't find any"
-    softTracker.setTimeUpperBound(300);
+    softTracker.setTimeUpperBound(500);
     softTracker.setDocsUpperBound(-1);
     hardTracker.setTimeUpperBound(1200);
     hardTracker.setDocsUpperBound(-1);
