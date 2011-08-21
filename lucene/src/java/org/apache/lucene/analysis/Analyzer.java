@@ -137,7 +137,6 @@ public abstract class Analyzer implements Closeable {
    * @param field the field just indexed
    * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
-  // nocommit cut to IndexableField
   public int getOffsetGap(IndexableField field) {
     if (field.tokenized()) {
       return 1;

@@ -563,8 +563,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
     Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy, only works for Non-Numeric fields currently (if you change schema behind test, this may fail)
-    assertFalse( ((Field) d.getField("test_hlt")).lazy() );
-    assertFalse( ((Field) d.getField("title")).lazy() );
+    assertFalse( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
+    assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
     req.close();
   }
 
@@ -587,8 +587,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
     System.out.println(d.getField("test_hlt").getClass());
-    assertTrue( ((Field) d.getField("test_hlt")).lazy() );
-    assertFalse( ((Field) d.getField("title")).lazy() );
+    assertTrue( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
+    assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
     req.close();
   } 
             

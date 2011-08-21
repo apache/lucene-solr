@@ -426,7 +426,7 @@ public class _TestUtil {
   public static void add(Document doc, FieldInfos fieldInfos) {
     for (IndexableField field : doc) {
       fieldInfos.addOrUpdate(field.name(), field.indexed(), field.storeTermVectors(), field.storeTermVectorPositions(),
-              field.storeTermVectorOffsets(), field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
+              field.storeTermVectorOffsets(), field.omitNorms(), false, field.indexOptions(), field.docValuesType());
     }
   }
   

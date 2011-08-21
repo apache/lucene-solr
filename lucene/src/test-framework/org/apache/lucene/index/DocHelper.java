@@ -217,9 +217,9 @@ class DocHelper {
       if (f.indexed() && !f.storeTermVectors()) add(notermvector,f);
       if (f.stored()) add(stored,f);
       else add(unstored,f);
-      if (f.getIndexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
+      if (f.indexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
       if (f.omitNorms()) add(noNorms,f);
-      if (f.getIndexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
+      if (f.indexOptions() == IndexOptions.DOCS_ONLY) add(noTf,f);
       //if (f.isLazy()) add(lazy, f);
     }
   }

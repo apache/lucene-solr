@@ -21,33 +21,21 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit jdocs
+// TODO: how to handle versioning here...?
 
-// nocommit maybe abstract class instead...?  or maybe we
-// have versioned interfaces over time, so indexer can
-// consume JARs w/ older doc/field impls?  IndexableField1,
-// IndexableField2, ...?
+/** Represents a single field for indexing.  IndexWriter
+ *  consumes Iterable<IndexableField> as a document.
+ *
+ *  @lucene.experimental */
 
-// nocommit maybe take this further and push analysis into Document
-
-// nocommit what to do about multi-valued fields?  really,
-// indexer should not know?
-
-// nocommit make test case showing how you can index
-// Iterable<IndexableField> that is not a Document
-// instance...
-
-/** @lucene.experimental */
 public interface IndexableField {
-  // nocommit: attrs?
-  // nocommit: doc values?
-  // nocommit: sorted?
+
+  // TODO: add attrs to this API?
 
   public String name();
 
@@ -57,39 +45,30 @@ public interface IndexableField {
   
   public boolean stored();
 
-  // nocommit -- isBinary?
   public BytesRef binaryValue(BytesRef reuse);
   public String stringValue();
   public Reader readerValue();
 
-  // nocommit -- decouple analyzers here: field impl should
-  // go and ask analyzer for the token stream, so indexer
-  // doesn't have to ask for string/reader value and then consult
-  // analyzer 
   public TokenStream tokenStreamValue();
 
   // Numeric field:
   public boolean numeric();
-  public DataType numericDataType();
+  public NumericField.DataType numericDataType();
   public Number numericValue();
 
   // If this returns true then we index this field:
   public boolean indexed();
 
-  // nocommit maybe remove?  only needed because stored
-  // fields records this!  (well, and because analysis isn't
-  // yet decoupled)
   public boolean tokenized();
   public boolean omitNorms();
-  public IndexOptions getIndexOptions();
+  public IndexOptions indexOptions();
 
   public boolean storeTermVectors();
   public boolean storeTermVectorOffsets();
   public boolean storeTermVectorPositions();
   
   // doc values
-  public PerDocFieldValues getDocValues();
-  public void setDocValues(PerDocFieldValues docValues);
   public boolean hasDocValues();  
+  public PerDocFieldValues docValues();
   public ValueType docValuesType();
 }

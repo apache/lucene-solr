@@ -140,7 +140,7 @@ final class FieldsWriter {
     int bits = 0;
     final BytesRef bytes;
     final String string;
-    // nocommit -- maybe a field should serialize itself?
+    // TODO: maybe a field should serialize itself?
     // this way we don't bake into indexer all these
     // specific encodings for different fields?  and apps
     // can customize...

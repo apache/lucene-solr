@@ -80,7 +80,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.storeTermVectorOffsets() == true);
     assertTrue(field.storeTermVectorPositions() == true);
     assertTrue(field.omitNorms() == false);
-    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    assertTrue(field.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = (Field) doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
@@ -88,7 +88,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.storeTermVectorOffsets() == false);
     assertTrue(field.storeTermVectorPositions() == false);
     assertTrue(field.omitNorms() == true);
-    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    assertTrue(field.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
     field = (Field) doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
@@ -96,7 +96,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.storeTermVectorOffsets() == false);
     assertTrue(field.storeTermVectorPositions() == false);
     assertTrue(field.omitNorms() == false);
-    assertTrue(field.getIndexOptions() == IndexOptions.DOCS_ONLY);
+    assertTrue(field.indexOptions() == IndexOptions.DOCS_ONLY);
 
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);

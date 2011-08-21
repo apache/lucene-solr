@@ -119,10 +119,6 @@ public class Field implements IndexableField {
     this.fieldsData = value;
   }
 
-  public boolean isNumeric() {
-    return false;
-  }
-  
   /**
    * The value of the field as a String, or null. If null, the Reader value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
@@ -339,7 +335,7 @@ public class Field implements IndexableField {
     return type.omitNorms();
   }
   
-  public IndexOptions getIndexOptions() {
+  public IndexOptions indexOptions() {
     return type.indexOptions();
   }
   
@@ -353,10 +349,6 @@ public class Field implements IndexableField {
   
   public boolean storeTermVectorPositions() {
     return type.storeTermVectorPositions();
-  }
-  
-  public boolean lazy() {
-    return type.lazy();
   }
   
   /** Prints a Field for human consumption. */
@@ -376,7 +368,7 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  public PerDocFieldValues getDocValues() {
+  public PerDocFieldValues docValues() {
     return docValues;
   }
   

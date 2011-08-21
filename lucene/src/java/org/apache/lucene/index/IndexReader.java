@@ -950,11 +950,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  {@link DocumentStoredFieldVisitor}.  */
   public abstract void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException;
   
-  // nocommit -- the new document(int docID) API should
-  // clearly advertise that only field types/values are
-  // preserved -- index time metadata like boost, omitNorm,
-  // IndexOptions, tokenized are not preserved
-
   /**
    * Returns the stored fields of the <code>n</code><sup>th</sup>
    * <code>Document</code> in this index.  This is just
@@ -965,11 +960,19 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * may yield unspecified results. Usually this is not required, however you
    * can test if the doc is deleted by checking the {@link
    * Bits} returned from {@link MultiFields#getLiveDocs}.
+   *
+   * <b>NOTE:</b> only the content of a field is returned,
+   * if that field was stored during indexing.  Metadata
+   * like boost, omitNorm, IndexOptions, tokenized, etc.,
+   * are not preserved.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public org.apache.lucene.document.Document document(int docID) throws CorruptIndexException, IOException {
+  // TODO: we need a separate StoredField, so that the
+  // Document returned here contains that class not
+  // IndexableField
+  public Document document(int docID) throws CorruptIndexException, IOException {
     ensureOpen();
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);

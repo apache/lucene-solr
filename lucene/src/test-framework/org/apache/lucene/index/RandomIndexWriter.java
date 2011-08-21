@@ -123,7 +123,7 @@ public class RandomIndexWriter implements Closeable {
    * @see IndexWriter#addDocument(Iterable)
    */
   public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
-    if (doDocValues) {
+    if (doDocValues && doc instanceof Document) {
       randomPerDocFieldValues(r, (Document) doc);
     }
     if (r.nextInt(5) == 3) {

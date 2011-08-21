@@ -79,8 +79,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         if (i > 0)
           fieldState.position += docState.analyzer == null ? 0 : docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
-        // nocommit -- this logic should be outside of
-        // indexer
+        // TODO (LUCENE-2309): this analysis logic should be
+        // outside of indexer -- field should simply give us
+        // a TokenStream, even for multi-valued fields
 
         if (!field.tokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();

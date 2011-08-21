@@ -225,7 +225,7 @@ final class DocFieldProcessor extends DocConsumer {
         // easily add it
         FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.indexed(), field.storeTermVectors(),
                                               field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
-                                              field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
+                                              field.omitNorms(), false, field.indexOptions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -238,7 +238,7 @@ final class DocFieldProcessor extends DocConsumer {
       } else {
         fieldInfos.addOrUpdate(fp.fieldInfo.name, field.indexed(), field.storeTermVectors(),
                                field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
-                               field.omitNorms(), false, field.getIndexOptions(), field.docValuesType());
+                               field.omitNorms(), false, field.indexOptions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -264,7 +264,7 @@ final class DocFieldProcessor extends DocConsumer {
       }
       if (field.hasDocValues()) {
         final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo);
-        docValuesConsumer.add(docState.docID, field.getDocValues());
+        docValuesConsumer.add(docState.docID, field.docValues());
       }
     }
 
