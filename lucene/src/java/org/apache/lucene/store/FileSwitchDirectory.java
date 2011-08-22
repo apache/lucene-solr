@@ -190,20 +190,4 @@ public class FileSwitchDirectory extends Directory {
   public IndexInput openInput(String name) throws IOException {
     return getDirectory(name).openInput(name);
   }
-
-  // final due to LUCENE-3380: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return super.openCompoundInput(name, bufferSize);
-  }
-  
-  // final due to LUCENE-3380: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory createCompoundOutput(String name) throws IOException {
-    return super.createCompoundOutput(name);
-  }
 }

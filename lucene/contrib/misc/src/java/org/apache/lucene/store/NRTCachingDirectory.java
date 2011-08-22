@@ -257,22 +257,6 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
-  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return super.openCompoundInput(name, bufferSize);
-  }
-  
-  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory createCompoundOutput(String name) throws IOException {
-    return super.createCompoundOutput(name);
-  }
-
   @Override
   public synchronized IndexInput openInput(String name, int bufferSize) throws IOException {
     if (cache.fileExists(name)) {

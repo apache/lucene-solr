@@ -112,44 +112,4 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
       dir.close();
     }
   }
-  
-  // LUCENE-3380 test that delegate compound files correctly.
-  public void testCompoundFileAppendTwice() throws IOException {
-    Directory newDir = newFSSwitchDirectory(Collections.singleton("cfs"));
-    CompoundFileDirectory csw = newDir.createCompoundOutput("d.cfs");
-    createSequenceFile(newDir, "d1", (byte) 0, 15);
-    IndexOutput out = csw.createOutput("d.xyz");
-    out.writeInt(0);
-    try {
-      newDir.copy(csw, "d1", "d1");
-      fail("file does already exist");
-    } catch (IOException e) {
-      //
-    }
-    out.close();
-    assertEquals(1, csw.listAll().length);
-    assertEquals("d.xyz", csw.listAll()[0]);
-   
-    csw.close();
-
-    CompoundFileDirectory cfr = newDir.openCompoundInput("d.cfs", 1024);
-    assertEquals(1, cfr.listAll().length);
-    assertEquals("d.xyz", cfr.listAll()[0]);
-    cfr.close();
-    newDir.close();
-  }
-  
-  /** Creates a file of the specified size with sequential data. The first
-   *  byte is written as the start byte provided. All subsequent bytes are
-   *  computed as start + offset where offset is the number of the byte.
-   */
-  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-      IndexOutput os = dir.createOutput(name);
-      for (int i=0; i < size; i++) {
-          os.writeByte(start);
-          start ++;
-      }
-      os.close();
-  }
-
 }

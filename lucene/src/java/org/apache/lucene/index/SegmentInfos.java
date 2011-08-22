@@ -289,12 +289,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
           Directory dir = directory;
           if (si.getDocStoreOffset() != -1) {
             if (si.getDocStoreIsCompoundFile()) {
-              dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
+              dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
                   si.getDocStoreSegment(),
                   IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), 1024);
             }
           } else if (si.getUseCompoundFile()) {
-            dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
+            dir = new CompoundFileReader(dir, IndexFileNames.segmentFileName(
                 si.name, IndexFileNames.COMPOUND_FILE_EXTENSION), 1024);
           }
 

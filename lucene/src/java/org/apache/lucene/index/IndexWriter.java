@@ -48,7 +48,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
@@ -1209,7 +1208,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     Directory cfsDir = null;
     try {
       if (info.getUseCompoundFile()) {
-        cfsDir = directory.openCompoundInput(IndexFileNames.segmentFileName(info.name, IndexFileNames.COMPOUND_FILE_EXTENSION), 1024);
+        cfsDir = new CompoundFileReader(directory, IndexFileNames.segmentFileName(info.name, IndexFileNames.COMPOUND_FILE_EXTENSION));
       } else {
         cfsDir = directory;
       }
@@ -3236,24 +3235,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private void copySegmentIntoCFS(SegmentInfo info, String segName) throws IOException {
     String segFileName = IndexFileNames.segmentFileName(segName, IndexFileNames.COMPOUND_FILE_EXTENSION);
     Collection<String> files = info.files();
-    final Directory cfsDir = directory.createCompoundOutput(segFileName);
-    IOException prior = null;
-    try {
-      for (String file : files) {
-        String newFileName = segName + IndexFileNames.stripSegmentName(file);
-        if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
-            && !IndexFileNames.isSeparateNormsFile(file)) {
-          info.dir.copy(cfsDir, file, file);
-        } else {
-          assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
-          info.dir.copy(directory, file, newFileName);
-        }
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, segFileName);
+    for (String file : files) {
+      String newFileName = segName + IndexFileNames.stripSegmentName(file);
+      if (!IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION)
+          && !IndexFileNames.isSeparateNormsFile(file)) {
+        cfsWriter.addFile(file, info.dir);
+      } else {
+        assert !directory.fileExists(newFileName): "file \"" + newFileName + "\" already exists";
+        info.dir.copy(directory, file, newFileName);
       }
-    } catch(IOException ex) {
-      prior = ex;
-    } finally {
-      IOUtils.closeSafely(prior, cfsDir);
     }
+    
+    // Create the .cfs
+    cfsWriter.close();
+    
     info.dir = directory;
     info.name = segName;
     info.setUseCompoundFile(true);

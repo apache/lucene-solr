@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 
@@ -52,8 +51,8 @@ final class SegmentCoreReaders {
   TermInfosReader tis;
   FieldsReader fieldsReaderOrig;
   TermVectorsReader termVectorsReaderOrig;
-  CompoundFileDirectory cfsReader;
-  CompoundFileDirectory storeCFSReader;
+  CompoundFileReader cfsReader;
+  CompoundFileReader storeCFSReader;
 
   SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
     segment = si.name;
@@ -65,7 +64,7 @@ final class SegmentCoreReaders {
     try {
       Directory dir0 = dir;
       if (si.getUseCompoundFile()) {
-        cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+        cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         dir0 = cfsReader;
       }
       cfsDir = dir0;
@@ -146,7 +145,7 @@ final class SegmentCoreReaders {
         // terms reader with index, the segment has switched
         // to CFS
         if (cfsReader == null) {
-          cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         }
         dir0 = cfsReader;
       } else {
@@ -212,7 +211,7 @@ final class SegmentCoreReaders {
       if (si.getDocStoreOffset() != -1) {
         if (si.getDocStoreIsCompoundFile()) {
           assert storeCFSReader == null;
-          storeCFSReader = dir.openCompoundInput(
+          storeCFSReader = new CompoundFileReader(dir,
               IndexFileNames.segmentFileName(si.getDocStoreSegment(), IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
                                                   readBufferSize);
           storeDir = storeCFSReader;
@@ -226,7 +225,7 @@ final class SegmentCoreReaders {
         // was not used, but then we are asked to open doc
         // stores after the segment has switched to CFS
         if (cfsReader == null) {
-          cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         }
         storeDir = cfsReader;
         assert storeDir != null;

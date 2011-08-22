@@ -32,7 +32,6 @@ import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
@@ -214,47 +213,9 @@ public class MMapDirectory extends FSDirectory {
     File f = new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
-      return new MMapIndexInput(raf, 0, raf.length(), chunkSizePower);
+      return new MMapIndexInput(raf, chunkSizePower);
     } finally {
       raf.close();
-    }
-  }
-  
-  @Override
-  public CompoundFileDirectory openCompoundInput(String name, int bufferSize) throws IOException {
-    return new MMapCompoundFileDirectory(name, bufferSize);
-  }
-  
-  private final class MMapCompoundFileDirectory extends CompoundFileDirectory {
-    private RandomAccessFile raf = null;
-
-    public MMapCompoundFileDirectory(String fileName, int readBufferSize) throws IOException {
-      super(MMapDirectory.this, fileName, readBufferSize);
-      IndexInput stream = null;
-      try {
-        File f = new File(MMapDirectory.this.getDirectory(), fileName);
-        raf = new RandomAccessFile(f, "r");
-        stream = new MMapIndexInput(raf, 0, raf.length(), chunkSizePower);
-        initForRead(CompoundFileDirectory.readEntries(stream, MMapDirectory.this, fileName));
-        stream.close();
-      } catch (IOException e) {
-        // throw our original exception
-        IOUtils.closeSafely(e, raf, stream);
-      }
-    }
-
-    @Override
-    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
-      return new MMapIndexInput(raf, offset, length, chunkSizePower);
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-      try {
-        raf.close();
-      } finally {
-        super.close();
-      }
     }
   }
 
@@ -274,8 +235,8 @@ public class MMapDirectory extends FSDirectory {
   
     private boolean isClone = false;
     
-    MMapIndexInput(RandomAccessFile raf, long offset, long length, int chunkSizePower) throws IOException {
-      this.length = length;
+    MMapIndexInput(RandomAccessFile raf, int chunkSizePower) throws IOException {
+      this.length = raf.length();
       this.chunkSizePower = chunkSizePower;
       this.chunkSize = 1L << chunkSizePower;
       this.chunkSizeMask = chunkSize - 1L;
@@ -300,7 +261,7 @@ public class MMapDirectory extends FSDirectory {
           ? chunkSize
           : (length - bufferStart)
         );
-        this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY, offset + bufferStart, bufSize);
+        this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY, bufferStart, bufSize);
         bufferStart += bufSize;
       }
       seek(0L);

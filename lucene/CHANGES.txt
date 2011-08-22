@@ -75,13 +75,6 @@ New Features
 
 Optimizations
   
-* LUCENE-3201, LUCENE-3218: CompoundFileSystem code has been consolidated 
-  into a Directory implementation. Reading is optimized for MMapDirectory,
-  NIOFSDirectory and SimpleFSDirectory to only map requested parts of the
-  CFS into an IndexInput. Writing to a CFS now tries to append to the CF
-  directly if possible and merges separately written files on the fly instead
-  of during close. (Simon Willnauer, Robert Muir)
-
 * LUCENE-3289: When building an FST you can now tune how aggressively
   the FST should try to share common suffixes.  Typically you can
   greatly reduce RAM required during building, and CPU consumed, at

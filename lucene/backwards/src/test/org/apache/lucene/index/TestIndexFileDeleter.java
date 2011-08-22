@@ -55,8 +55,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
             setMergePolicy(mergePolicy)
     );
 
-    writer.setInfoStream(VERBOSE ? System.out : null);
-
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
@@ -154,9 +152,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     copyFile(dir, "segments_2", "segments_1");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
-    assertTrue(dir.fileExists("_3.fdt"));
-    assertTrue(!dir.fileExists("_3.cfs"));
-    copyFile(dir, "_1.cfs", "_3.cfs");
+    copyFile(dir, "_1.cfs", "_2.cfs");
     
     String[] filesPre = dir.listAll();
 

@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitVector;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -598,17 +597,11 @@ final class DocumentsWriter {
           message("flush: create compound file \"" + cfsFileName + "\"");
         }
 
-        final Directory cfsDir = directory.createCompoundOutput(cfsFileName);
-        IOException prior = null;
-        try {
-          for (String fileName : newSegment.files()) {
-            directory.copy(cfsDir, fileName, fileName);
-          }
-        } catch (IOException ex) {
-          prior = ex;
-        } finally {
-          IOUtils.closeSafely(prior, cfsDir);
+        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, cfsFileName);
+        for(String fileName : newSegment.files()) {
+          cfsWriter.addFile(fileName);
         }
+        cfsWriter.close();
         deleter.deleteNewFiles(newSegment.files());
         newSegment.setUseCompoundFile(true);
       }
