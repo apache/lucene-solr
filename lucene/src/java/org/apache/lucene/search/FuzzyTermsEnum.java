@@ -86,7 +86,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * After calling the constructor the enumeration is already pointing to the first 
    * valid term if such a term exists. 
    * 
-   * @param tenum Delivers terms.
+   * @param terms Delivers terms.
    * @param atts {@link AttributeSource} created by the rewrite method of {@link MultiTermQuery}
    * thats contains information about competitive boosts during rewrite. It is also used
    * to cache DFAs between segment transitions.

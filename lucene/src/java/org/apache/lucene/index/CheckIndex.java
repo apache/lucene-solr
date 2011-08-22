@@ -299,7 +299,7 @@ public class CheckIndex {
     this.verbose = verbose;
   }
 
-  /** Set infoStream where messages should go. See {@link setInfoStream(PrintStream,boolean)}. */
+  /** Set infoStream where messages should go. See {@link #setInfoStream(PrintStream,boolean)}. */
   public void setInfoStream(PrintStream out) {
     setInfoStream(out, false);
   }

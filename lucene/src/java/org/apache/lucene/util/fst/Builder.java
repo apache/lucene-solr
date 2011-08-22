@@ -85,7 +85,7 @@ public class Builder<T> {
 
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs)} with 
+   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs, FreezeTail)} with
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {

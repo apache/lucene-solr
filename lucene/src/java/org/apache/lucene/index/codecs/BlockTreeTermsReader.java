@@ -63,7 +63,7 @@ import org.apache.lucene.util.fst.Util;
  *  terms to variable length blocks according to how they
  *  share prefixes.  The terms index is a prefix trie
  *  whose leaves are term blocks.  The advantage of this
- *  approach is that {@link #seekExact} is often able to
+ *  approach is that seekExact is often able to
  *  determine a term cannot exist without doing any IO, and
  *  intersection with Automata is very fast.  Note that this
  *  terms dictionary has it's own fixed terms index (ie, it
@@ -80,7 +80,7 @@ import org.apache.lucene.util.fst.Util;
  *  but with added logic to break up too-large blocks of all
  *  terms sharing a given prefix into smaller ones.</p>
  *
- *  <p>Use {@link CheckIndex} with the <code>-verbose</code>
+ *  <p>Use {@link org.apache.lucene.index.CheckIndex} with the <code>-verbose</code>
  *  option to see summary statistics on the blocks in the
  *  dictionary.
  *
