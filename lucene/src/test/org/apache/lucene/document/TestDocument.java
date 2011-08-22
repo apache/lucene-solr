@@ -15,6 +15,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -54,14 +55,14 @@ public class TestDocument extends LuceneTestCase {
     doc.add(stringFld);
     doc.add(binaryFld);
     
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     
-    assertTrue(binaryFld.binaryValue(null) != null);
+    assertTrue(binaryFld.binaryValue() != null);
     assertTrue(binaryFld.stored());
     assertFalse(binaryFld.indexed());
     assertFalse(binaryFld.tokenized());
     
-    String binaryTest = new String(doc.getBinaryValue("binary"));
+    String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));
     
     String stringTest = doc.get("string");
@@ -69,14 +70,14 @@ public class TestDocument extends LuceneTestCase {
     
     doc.add(binaryFld2);
     
-    assertEquals(3, doc.fields.size());
+    assertEquals(3, doc.getFields().size());
     
-    byte[][] binaryTests = doc.getBinaryValues("binary");
+    BytesRef[] binaryTests = doc.getBinaryValues("binary");
     
     assertEquals(2, binaryTests.length);
     
-    binaryTest = new String(binaryTests[0]);
-    String binaryTest2 = new String(binaryTests[1]);
+    binaryTest = binaryTests[0].utf8ToString();
+    String binaryTest2 = binaryTests[1].utf8ToString();
     
     assertFalse(binaryTest.equals(binaryTest2));
     
@@ -84,10 +85,10 @@ public class TestDocument extends LuceneTestCase {
     assertTrue(binaryTest2.equals(binaryVal2));
     
     doc.removeField("string");
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     
     doc.removeFields("binary");
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
   }
   
   /**
@@ -98,29 +99,29 @@ public class TestDocument extends LuceneTestCase {
    */
   public void testRemoveForNewDocument() throws Exception {
     Document doc = makeDocumentWithFields();
-    assertEquals(8, doc.fields.size());
+    assertEquals(8, doc.getFields().size());
     doc.removeFields("keyword");
-    assertEquals(6, doc.fields.size());
+    assertEquals(6, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
     doc.removeFields("keyword"); // removing a field more than once
-    assertEquals(6, doc.fields.size());
+    assertEquals(6, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(5, doc.fields.size());
+    assertEquals(5, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeField("doesnotexists"); // removing non-existing fields is
                                       // siltenlty ignored
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeFields("unindexed");
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     doc.removeFields("unstored");
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
   }
   
   public void testConstructorExceptions() {

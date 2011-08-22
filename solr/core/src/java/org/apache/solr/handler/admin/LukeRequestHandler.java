@@ -178,7 +178,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.storeTermVectorPositions()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
     flags.append( (f != null && f.omitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
     flags.append( (f != null && f.getClass().getSimpleName().equals("LazyField")) ? FieldFlag.LAZY.getAbbreviation() : '-' );
-    flags.append( (f != null && f.binaryValue(null)!=null)                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.binaryValue()!=null)                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
@@ -257,7 +257,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // TODO: this really should be "stored"
       f.add( "internal", field.stringValue() );  // may be a binary number
 
-      BytesRef bytes = field.binaryValue(null);
+      BytesRef bytes = field.binaryValue();
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }

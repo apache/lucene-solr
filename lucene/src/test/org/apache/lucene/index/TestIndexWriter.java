@@ -26,17 +26,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -59,7 +55,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
@@ -68,12 +63,9 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -1002,11 +994,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Document doc = new Document();
     Field f = new BinaryField("binary", b, 10, 17);
-    byte[] bx = f.binaryValue(null).bytes;
+    byte[] bx = f.binaryValue().bytes;
     assertTrue(bx != null);
     assertEquals(50, bx.length);
-    assertEquals(10, f.binaryValue(null).offset);
-    assertEquals(17, f.binaryValue(null).length);
+    assertEquals(10, f.binaryValue().offset);
+    assertEquals(17, f.binaryValue().length);
     doc.add(f);
     w.addDocument(doc);
     w.close();
@@ -1014,7 +1006,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = IndexReader.open(dir, true);
     Document doc2 = ir.document(0);
     IndexableField f2 = doc2.getField("binary");
-    b = f2.binaryValue(null).bytes;
+    b = f2.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);
@@ -1285,14 +1277,14 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexReader ir = IndexReader.open(dir, true);
     Document doc2 = ir.document(0);
     IndexableField f3 = doc2.getField("binary");
-    b = f3.binaryValue(null).bytes;
+    b = f3.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
     assertEquals(87, b[0]);
 
-    assertTrue(ir.document(0).getField("binary").binaryValue(null)!=null);
-    assertTrue(ir.document(1).getField("binary").binaryValue(null)!=null);
-    assertTrue(ir.document(2).getField("binary").binaryValue(null)!=null);
+    assertTrue(ir.document(0).getField("binary").binaryValue()!=null);
+    assertTrue(ir.document(1).getField("binary").binaryValue()!=null);
+    assertTrue(ir.document(2).getField("binary").binaryValue()!=null);
 
     assertEquals("value", ir.document(0).get("string"));
     assertEquals("value", ir.document(1).get("string"));

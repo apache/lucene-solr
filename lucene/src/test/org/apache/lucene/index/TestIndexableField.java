@@ -17,70 +17,26 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField.DataType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
@@ -109,7 +65,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public BytesRef binaryValue(BytesRef reuse) {
+    public BytesRef binaryValue() {
       if ((counter%10) == 3) {
         final byte[] bytes = new byte[10];
         for(int idx=0;idx<bytes.length;idx++) {
@@ -205,11 +161,6 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public PerDocFieldValues docValues() {
       return null;
-    }
-
-    @Override
-    public boolean hasDocValues() {
-      return false;
     }
 
     @Override
@@ -311,7 +262,7 @@ public class TestIndexableField extends LuceneTestCase {
           assertNotNull("doc " + id + " doesn't have field f" + counter, f);
           if (binary) {
             assertNotNull("doc " + id + " doesn't have field f" + counter, f);
-            final BytesRef b = f.binaryValue(null);
+            final BytesRef b = f.binaryValue();
             assertNotNull(b);
             assertEquals(10, b.length);
             for(int idx=0;idx<10;idx++) {

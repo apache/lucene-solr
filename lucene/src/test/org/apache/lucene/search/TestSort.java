@@ -135,15 +135,17 @@ public class TestSort extends LuceneTestCase {
         doc.add (new Field ("tracer", ft1, data[i][0]));
         doc.add (new TextField ("contents", data[i][1]));
         if (data[i][2] != null) {
-          Field f = supportsDocValues ? 
-              IndexDocValuesField.set(new StringField ("int", data[i][2]), ValueType.VAR_INTS)
-                               : new StringField ("int", data[i][2]);
+          Field f = new StringField ("int", data[i][2]);
+          if (supportsDocValues) {
+            f = IndexDocValuesField.build(f, ValueType.VAR_INTS);
+          };
           doc.add(f);
         }
         if (data[i][3] != null) {
-          Field f = supportsDocValues ?
-              IndexDocValuesField.set(new StringField ("float", data[i][3]), ValueType.FLOAT_32)
-                              :  new StringField ("float", data[i][3]);
+          Field f = new StringField ("float", data[i][3]);
+          if (supportsDocValues) {
+            f = IndexDocValuesField.build(f, ValueType.FLOAT_32);
+          }
           doc.add(f);
         }
         if (data[i][4] != null) doc.add (new StringField ("string",   data[i][4]));
@@ -151,15 +153,19 @@ public class TestSort extends LuceneTestCase {
         if (data[i][6] != null) doc.add (new StringField ("i18n",     data[i][6]));
         if (data[i][7] != null) doc.add (new StringField ("long",     data[i][7]));
         if (data[i][8] != null) {
-          Field f = supportsDocValues ?
-              IndexDocValuesField.set(new StringField ("double", data[i][8]), ValueType.FLOAT_64)
-                              :  new StringField ("double", data[i][8]);
+          Field f = new StringField ("double", data[i][8]);
+          if (supportsDocValues) {
+            f = IndexDocValuesField.build(f, ValueType.FLOAT_64);
+          }
           doc.add(f);
         }
         if (data[i][9] != null) doc.add (new StringField ("short",     data[i][9]));
         if (data[i][10] != null) doc.add (new StringField ("byte",     data[i][10]));
         if (data[i][11] != null) doc.add (new StringField ("parser",     data[i][11]));
-        //doc.setBoost(2);  // produce some scores above 1.0
+
+        for(IndexableField f : doc.getFields()) {
+          ((Field) f).setBoost(2.0f);
+        }
 
         writer.addDocument (doc);
       }
@@ -196,9 +202,10 @@ public class TestSort extends LuceneTestCase {
         String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
         doc.add (new StringField ("string2", num2));
         doc.add (new Field ("tracer2", customType, num2));
-       // doc.setBoost(2);  // produce some scores above 1.0
+        for(IndexableField f : doc.getFields()) {
+          ((Field) f).setBoost(2.0f);
+        }
         writer.addDocument (doc);
-      
     }
     //writer.optimize ();
     //System.out.println(writer.getSegmentCount());

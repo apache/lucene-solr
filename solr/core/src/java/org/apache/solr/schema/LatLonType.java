@@ -79,8 +79,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     if (field.stored()) {
       FieldType customType = new FieldType();
       customType.setStored(true);
-      customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-      
       f[f.length - 1] = createField(field.getName(), externalVal, customType, boost);
     }
     return f;

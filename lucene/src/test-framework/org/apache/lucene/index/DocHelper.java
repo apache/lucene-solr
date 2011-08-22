@@ -294,6 +294,6 @@ class DocHelper {
   }
 
   public static int numFields(Document doc) {
-    return doc.size();
+    return doc.getFields().size();
   }
 }

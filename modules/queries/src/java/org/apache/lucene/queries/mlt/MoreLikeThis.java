@@ -824,22 +824,8 @@ public final class MoreLikeThis {
    * </ol>
    * This is a somewhat "advanced" routine, and in general only the 1st entry in the array is of interest.
    * This method is exposed so that you can identify the "interesting words" in a document.
-<<<<<<<
    * For an easier method to call see {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
    *
-=======
-            // field does not store term vector info
-            if (vector == null) {
-            	Document d=ir.document(docNum);
-            	IndexableField text[]=d.getFields(fieldName);
-            	if(text!=null)
-            	{
-                for (int j = 0; j < text.length; j++) {
-                  addTermFrequencies(new StringReader(text[j].stringValue()), termFreqMap, fieldName);
-                }
-            	}
-            }
->>>>>>>
    * @param r the reader that has the content of the document
    * @param fieldName field passed to the analyzer to use when analyzing the content
    * @return the most interesting words in the document ordered by score, with the highest scoring, or best entry, first

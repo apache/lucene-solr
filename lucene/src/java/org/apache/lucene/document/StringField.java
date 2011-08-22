@@ -36,12 +36,8 @@ public final class StringField extends Field {
     TYPE_STORED.freeze();
   }
   
-  public StringField(String name, boolean internName, String value) {
-    super(name, StringField.TYPE_UNSTORED, value);
-  }
-  
   public StringField(String name, String value) {
-    this(name, true, value);
+    super(name, TYPE_UNSTORED, value);
   }
   
   @Override

@@ -69,8 +69,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
       // index is allowed to have exactly one document or 0.
       if (numDocs == 1) {
         Document doc = r.document(r.maxDoc() - 1);
-        Field sid = (Field) doc.getField(SNAPSHOTS_ID);
-        if (sid == null) {
+        if (doc.getField(SNAPSHOTS_ID) == null) {
           throw new IllegalStateException("directory is not a valid snapshots store!");
         }
         doc.removeField(SNAPSHOTS_ID);

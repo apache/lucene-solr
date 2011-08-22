@@ -17,11 +17,13 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -31,15 +33,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util._TestUtil;
-
-import org.apache.solr.request.SolrQueryRequest;
-
 import org.apache.solr.SolrTestCaseJ4;
-
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.util.*;
 
 public class TestSort extends SolrTestCaseJ4 {
   @BeforeClass
@@ -154,11 +150,8 @@ public class TestSort extends SolrTestCaseJ4 {
 
   public void testSort() throws Exception {
     Directory dir = new RAMDirectory();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setTokenized(false);
-    customType.setOmitNorms(false);
-    Field f = new Field("f",customType,"0");
-    Field f2 = new Field("f2",customType,"0");
+    Field f = new Field("f",StringField.TYPE_UNSTORED,"0");
+    Field f2 = new Field("f2",StringField.TYPE_UNSTORED,"0");
 
     for (int iterCnt = 0; iterCnt<iter; iterCnt++) {
       IndexWriter iw = new IndexWriter(

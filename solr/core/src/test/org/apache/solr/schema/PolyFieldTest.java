@@ -88,7 +88,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     //first two fields contain the values, third is just stored and contains the original
     for (int i = 0; i < 3; i++) {
       boolean hasValue = fields[1].tokenStreamValue() != null
-              || fields[1].binaryValue(null) != null
+              || fields[1].binaryValue() != null
               || fields[1].stringValue() != null;
       assertTrue("Doesn't have a value: " + fields[1], hasValue);
     }

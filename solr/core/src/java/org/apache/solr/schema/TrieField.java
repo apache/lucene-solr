@@ -117,19 +117,19 @@ public class TrieField extends FieldType {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytes = f.binaryValue(null);
+      final BytesRef bytes = f.binaryValue();
       if (bytes==null) return badFieldString(f);
       switch (type) {
         case INTEGER:
-          return toInt(bytes.bytes);
+          return toInt(bytes.bytes, bytes.offset);
         case FLOAT:
-          return Float.intBitsToFloat(toInt(bytes.bytes));
+          return Float.intBitsToFloat(toInt(bytes.bytes, bytes.offset));
         case LONG:
-          return toLong(bytes.bytes);
+          return toLong(bytes.bytes, bytes.offset);
         case DOUBLE:
-          return Double.longBitsToDouble(toLong(bytes.bytes));
+          return Double.longBitsToDouble(toLong(bytes.bytes, bytes.offset));
         case DATE:
-          return new Date(toLong(bytes.bytes));
+          return new Date(toLong(bytes.bytes, bytes.offset));
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
@@ -285,14 +285,14 @@ public class TrieField extends FieldType {
   }
 
   @Deprecated
-  static int toInt(byte[] arr) {
-    return (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
+  static int toInt(byte[] arr, int offset) {
+    return (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
   }
   
   @Deprecated
-  static long toLong(byte[] arr) {
-    int high = (arr[0]<<24) | ((arr[1]&0xff)<<16) | ((arr[2]&0xff)<<8) | (arr[3]&0xff);
-    int low = (arr[4]<<24) | ((arr[5]&0xff)<<16) | ((arr[6]&0xff)<<8) | (arr[7]&0xff);
+  static long toLong(byte[] arr, int offset) {
+    int high = (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
+    int low = (arr[offset+4]<<24) | ((arr[offset+5]&0xff)<<16) | ((arr[offset+6]&0xff)<<8) | (arr[offset+7]&0xff);
     return (((long)high)<<32) | (low&0x0ffffffffL);
   }
 
@@ -439,31 +439,31 @@ public class TrieField extends FieldType {
       }
     } else {
       // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytesRef = f.binaryValue(null);
+      final BytesRef bytesRef = f.binaryValue();
       if (bytesRef==null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {
         case INTEGER:
-          NumericUtils.intToPrefixCoded(toInt(bytesRef.bytes), 0, bytes);
+          NumericUtils.intToPrefixCoded(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case FLOAT: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
           // copied from NumericUtils to not convert to/from float two times
           // code in next 2 lines is identical to: int v = NumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
-          int v = toInt(bytesRef.bytes);
+          int v = toInt(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffff;
           NumericUtils.intToPrefixCoded(v, 0, bytes);
           break;
         }
         case LONG: //fallthrough!
         case DATE:
-          NumericUtils.longToPrefixCoded(toLong(bytesRef.bytes), 0, bytes);
+          NumericUtils.longToPrefixCoded(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case DOUBLE: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
           // copied from NumericUtils to not convert to/from double two times
           // code in next 2 lines is identical to: long v = NumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
-          long v = toLong(bytesRef.bytes);
+          long v = toLong(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffffffffffffL;
           NumericUtils.longToPrefixCoded(v, 0, bytes);
           break;

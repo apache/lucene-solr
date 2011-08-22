@@ -133,7 +133,7 @@ public class RandomIndexWriter implements Closeable {
       // addDocuments?  Would be better testing.
       w.addDocuments(new Iterable<Iterable<T>>() {
 
-        // @Override -- not until Java 1.6
+        @Override
         public Iterator<Iterable<T>> iterator() {
           return new Iterator<Iterable<T>>() {
             boolean done;
@@ -148,7 +148,7 @@ public class RandomIndexWriter implements Closeable {
               throw new UnsupportedOperationException();
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public Iterable<T> next() {
               if (done) {
                 throw new IllegalStateException();
@@ -258,7 +258,7 @@ public class RandomIndexWriter implements Closeable {
     if (r.nextInt(5) == 3) {
       w.updateDocuments(t, new Iterable<Iterable<T>>() {
 
-        // @Override -- not until Java 1.6
+        @Override
         public Iterator<Iterable<T>> iterator() {
           return new Iterator<Iterable<T>>() {
             boolean done;
@@ -273,7 +273,7 @@ public class RandomIndexWriter implements Closeable {
               throw new UnsupportedOperationException();
             }
 
-            // @Override -- not until Java 1.6
+            @Override
             public Iterable<T> next() {
               if (done) {
                 throw new IllegalStateException();

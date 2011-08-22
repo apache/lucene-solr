@@ -1,7 +1,5 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.Document;
@@ -11,6 +9,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,7 +52,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     doc.add(stringFldStored);
 
     /** test for field count */
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     
     /** add the doc to a ram index */
     Directory dir = newDirectory();
@@ -65,7 +65,9 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertTrue(docFromReader != null);
     
     /** fetch the binary stored field and compare it's content with the original one */
-    String binaryFldStoredTest = new String(docFromReader.getBinaryValue("binaryStored"));
+    BytesRef bytes = docFromReader.getBinaryValue("binaryStored");
+    assertNotNull(bytes);
+    String binaryFldStoredTest = new String(bytes.bytes, bytes.offset, bytes.length);
     assertTrue(binaryFldStoredTest.equals(binaryValStored));
     
     /** fetch the string field and compare it's content with the original one */

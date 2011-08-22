@@ -423,13 +423,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       listFields.add(field.stringValue());
     }
 
-    String[] docTexts;
-    if (listFields.size() == 0) {
-      docTexts = new String[0];
-    }
-    else {
-      docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
-    }
+    String[] docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
    
     // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
     if (docTexts.length == 0) return;
@@ -554,17 +548,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       IndexableField[] docFields = doc.getFields(alternateField);
       List<String> listFields = new ArrayList<String>();
       for (IndexableField field : docFields) {
-        if (field.binaryValue(null) == null)
+        if (field.binaryValue() == null)
           listFields.add(field.stringValue());
       }
 
-      String[] altTexts;
-      if (listFields.size() == 0) {
-        altTexts = new String[0];
-      }
-      else {
-        altTexts = listFields.toArray(new String[listFields.size()]);
-      }
+      String[] altTexts = listFields.toArray(new String[listFields.size()]);
+
       if (altTexts != null && altTexts.length > 0){
         int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
         if( alternateFieldLen <= 0 ){

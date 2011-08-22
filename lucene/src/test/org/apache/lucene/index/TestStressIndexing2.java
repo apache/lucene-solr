@@ -17,7 +17,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ import org.apache.lucene.util.*;
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -263,7 +261,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Collections.sort(fields, fieldNameComparator2);
       
       Document d1 = new Document();
-      //d1.setBoost(d.getBoost());
       for (int i=0; i<fields.size(); i++) {
         d1.add(fields.get(i));
       }
@@ -527,8 +524,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     for (int i=0; i<ff1.size(); i++) {
       IndexableField f1 = ff1.get(i);
       IndexableField f2 = ff2.get(i);
-      if (f1.binaryValue(null) != null) {
-        assert(f2.binaryValue(null) != null);
+      if (f1.binaryValue() != null) {
+        assert(f2.binaryValue() != null);
       } else {
         String s1 = f1.stringValue();
         String s2 = f2.stringValue();

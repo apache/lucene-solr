@@ -496,7 +496,7 @@ public class InstantiatedIndexWriter implements Closeable {
       if (field.stored()) {
         fieldSetting.stored = true;
       }
-      if (field.binaryValue(null) != null) {
+      if (field.binaryValue() != null) {
         fieldSetting.isBinary = true;
       }
       if (field.storeTermVectors()) {

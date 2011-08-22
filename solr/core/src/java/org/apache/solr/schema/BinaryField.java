@@ -30,7 +30,7 @@ import org.apache.solr.response.TextResponseWriter;
 
 public class BinaryField extends FieldType  {
 
-  private String  toBase64String(ByteBuffer buf) {
+  private String toBase64String(ByteBuffer buf) {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
   }
 
@@ -52,7 +52,7 @@ public class BinaryField extends FieldType  {
 
   @Override
   public ByteBuffer toObject(IndexableField f) {
-    BytesRef bytes = f.binaryValue(null);
+    BytesRef bytes = f.binaryValue();
     return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 

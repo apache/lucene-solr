@@ -215,6 +215,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     private long pointer;
     private final boolean cacheResult;
     private final IndexInput in;
+    private boolean isBinary;
 
     public LazyField(IndexInput in, String name, FieldType ft, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
       super(name, ft);
@@ -223,8 +224,6 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
       this.pointer = pointer;
       this.isBinary = isBinary;
       this.cacheResult = cacheResult;
-      if (isBinary)
-        binaryLength = toRead;
     }
 
     @Override
@@ -249,6 +248,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     /** The value of the field as a Reader, or null.  If null, the String value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
      * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+    @Override
     public Reader readerValue() {
       return null;
     }
@@ -256,6 +256,7 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     /** The value of the field as a TokenStream, or null.  If null, the Reader value,
      * String value, or binary value is used. Exactly one of stringValue(), 
      * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+    @Override
     public TokenStream tokenStreamValue() {
       return null;
     }
@@ -263,10 +264,11 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     /** The value of the field as a String, or null.  If null, the Reader value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
      * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+    @Override
     synchronized public String stringValue() {
-      if (isBinary)
+      if (isBinary) {
         return null;
-      else {
+      } else {
         if (fieldsData == null) {
           String result = null;
           IndexInput localFieldsStream = getFieldStream();
@@ -288,15 +290,12 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
       }
     }
 
-    synchronized private byte[] getBinaryValue(byte[] result) {
+    @Override
+    synchronized public BytesRef binaryValue() {
       if (isBinary) {
         if (fieldsData == null) {
           // Allocate new buffer if result is null or too small
-          final byte[] b;
-          if (result == null || result.length < toRead)
-            b = new byte[toRead];
-          else
-            b = result;
+          final byte[] b = new byte[toRead];
    
           IndexInput localFieldsStream = getFieldStream();
 
@@ -309,24 +308,15 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
             throw new FieldReaderException(e);
           }
 
-          binaryOffset = 0;
-          binaryLength = toRead;
+          final BytesRef result = new BytesRef(b);
+          result.length = toRead;
           if (cacheResult == true){
-            fieldsData = b;
+            fieldsData = result;
           }
-          return b;
+          return result;
         } else {
-          return (byte[]) fieldsData;
+          return (BytesRef) fieldsData;
         }
-      } else
-        return null;     
-    }
-
-    @Override
-    public BytesRef binaryValue(BytesRef reuse) {
-      final byte[] bytes = getBinaryValue(reuse != null ? reuse.bytes : null);
-      if (bytes != null) {
-        return new BytesRef(bytes, 0, bytes.length);
       } else {
         return null;
       }

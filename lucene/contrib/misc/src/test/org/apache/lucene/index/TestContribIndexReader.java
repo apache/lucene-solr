@@ -143,7 +143,7 @@ public class TestContribIndexReader extends LuceneTestCase {
     assertEquals(1, fields.length);
     Field b1 = (Field) fields[0];
     assertTrue(b1.isBinary());
-    BytesRef bytesRef = b1.binaryValue(null);
+    BytesRef bytesRef = b1.binaryValue();
     assertEquals(bin.length, bytesRef.length);
     for (int i = 0; i < bin.length; i++) {
       assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
@@ -156,8 +156,8 @@ public class TestContribIndexReader extends LuceneTestCase {
     assertNotNull(fields);
     assertEquals(1, fields.length);
     IndexableField fb1 = fields[0];
-    assertTrue(fb1.binaryValue(null)!=null);
-    bytesRef = fb1.binaryValue(null);
+    assertTrue(fb1.binaryValue()!=null);
+    bytesRef = fb1.binaryValue();
     assertEquals(bin.length, bytesRef.bytes.length);
     assertEquals(bin.length, bytesRef.length);
     for (int i = 0; i < bin.length; i++) {
@@ -177,7 +177,7 @@ public class TestContribIndexReader extends LuceneTestCase {
     assertEquals(1, fields.length);
     b1 = (Field) fields[0];
     assertTrue(b1.isBinary());
-    bytesRef = b1.binaryValue(null);
+    bytesRef = b1.binaryValue();
     assertEquals(bin.length, bytesRef.length);
     for (int i = 0; i < bin.length; i++) {
       assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);

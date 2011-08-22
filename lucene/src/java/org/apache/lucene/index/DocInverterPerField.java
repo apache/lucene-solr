@@ -84,7 +84,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         // a TokenStream, even for multi-valued fields
 
         if (!field.tokenized()) {		  // un-tokenized field
-          String stringValue = field.stringValue();
+          final String stringValue = field.stringValue();
+          assert stringValue != null;
           final int valueLength = stringValue.length();
           parent.singleToken.reinit(stringValue, 0, valueLength);
           fieldState.attributeSource = parent.singleToken;

@@ -43,7 +43,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -392,8 +391,8 @@ public class TestIndexReader extends LuceneTestCase
         assertNotNull(fields);
         assertEquals(1, fields.length);
         IndexableField b1 = fields[0];
-        assertTrue(b1.binaryValue(null) != null);
-        BytesRef bytesRef = b1.binaryValue(null);
+        assertTrue(b1.binaryValue() != null);
+        BytesRef bytesRef = b1.binaryValue();
         assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
           assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
@@ -411,8 +410,8 @@ public class TestIndexReader extends LuceneTestCase
         assertNotNull(fields);
         assertEquals(1, fields.length);
         b1 = fields[0];
-        assertTrue(b1.binaryValue(null) != null);
-        bytesRef = b1.binaryValue(null);
+        assertTrue(b1.binaryValue() != null);
+        bytesRef = b1.binaryValue();
         assertEquals(bin.length, bytesRef.length);
         for (int i = 0; i < bin.length; i++) {
           assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);

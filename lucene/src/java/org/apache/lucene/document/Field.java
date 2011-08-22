@@ -21,13 +21,10 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 
 /**
  * A field is a section of a Document. Each field has two parts, a name and a
@@ -42,13 +39,10 @@ public class Field implements IndexableField {
   protected FieldType type;
   protected String name = "body";
   // the data object for all different kind of field values
-  protected Object fieldsData = null;
+  protected Object fieldsData;
   // pre-analyzed tokenStream for indexed fields
   protected TokenStream tokenStream;
-  protected boolean isBinary = false;
   // length/offset for all primitive types
-  protected int binaryLength;
-  protected int binaryOffset;
   protected PerDocFieldValues docValues;
   
   protected float boost = 1.0f;
@@ -59,23 +53,27 @@ public class Field implements IndexableField {
   }
   
   public Field(String name, FieldType type, Reader reader) {
-    if (name == null)
+    if (name == null) {
       throw new NullPointerException("name cannot be null");
-    if (reader == null)
+    }
+    if (reader == null) {
       throw new NullPointerException("reader cannot be null");
+    }
     
-    this.name = name;        // field names are interned
+    this.name = name;
     this.fieldsData = reader;
     this.type = type;
   }
   
   public Field(String name, FieldType type, TokenStream tokenStream) {
-    if (name == null)
+    if (name == null) {
       throw new NullPointerException("name cannot be null");
-    if (tokenStream == null)
+    }
+    if (tokenStream == null) {
       throw new NullPointerException("tokenStream cannot be null");
+    }
     
-    this.name = name;        // field names are interned
+    this.name = name;
     this.fieldsData = null;
     this.tokenStream = tokenStream;
     this.type = type;
@@ -84,21 +82,20 @@ public class Field implements IndexableField {
   public Field(String name, FieldType type, byte[] value) {
     this(name, type, value, 0, value.length);
   }
-  
+
   public Field(String name, FieldType type, byte[] value, int offset, int length) {
-    this.isBinary = true;
-    this.fieldsData = value;
+    this.fieldsData = new BytesRef(value, offset, length);
     this.type = type;
-    this.binaryOffset = offset;
-    this.binaryLength = length;
+    this.name = name;
+  }
+
+  public Field(String name, FieldType type, BytesRef bytes) {
+    this.fieldsData = bytes;
+    this.type = type;
     this.name = name;
   }
   
   public Field(String name, FieldType type, String value) {
-    this(name, true, type, value);
-  }
-  
-  public Field(String name, boolean internName, FieldType type, String value) {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
@@ -162,7 +159,7 @@ public class Field implements IndexableField {
    * </p>
    */
   public void setValue(String value) {
-    if (isBinary) {
+    if (isBinary()) {
       throw new IllegalArgumentException(
           "cannot set a String value on a binary field");
     }
@@ -174,7 +171,7 @@ public class Field implements IndexableField {
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
   public void setValue(Reader value) {
-    if (isBinary) {
+    if (isBinary()) {
       throw new IllegalArgumentException(
           "cannot set a Reader value on a binary field");
     }
@@ -190,19 +187,18 @@ public class Field implements IndexableField {
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
   public void setValue(byte[] value) {
-    if (!isBinary) {
+    if (!isBinary()) {
       throw new IllegalArgumentException(
           "cannot set a byte[] value on a non-binary field");
     }
-    fieldsData = value;
-    binaryLength = value.length;
-    binaryOffset = 0;
+    fieldsData = new BytesRef(value);
   }
   
   /**
    * Expert: change the value of this field. See <a
    * href="#setValue(java.lang.String)">setValue(String)</a>.
    */
+  /*
   public void setValue(byte[] value, int offset, int length) {
     if (!isBinary) {
       throw new IllegalArgumentException(
@@ -212,6 +208,7 @@ public class Field implements IndexableField {
     binaryLength = length;
     binaryOffset = offset;
   }
+  */
   
   /**
    * Expert: sets the token stream to be used for indexing and causes
@@ -264,60 +261,19 @@ public class Field implements IndexableField {
     return null;
   }
   
-  private byte[] getBinaryValue(byte[] result /* unused */) {
-    if (isBinary || fieldsData instanceof byte[]) return (byte[]) fieldsData;
-    else return null;
-  }
-  
-  protected byte[] getBinaryValue() {
-    return getBinaryValue(null);
-  }
-  
-  public BytesRef binaryValue(BytesRef reuse) {
-    final byte[] bytes = getBinaryValue();
-    if (bytes != null) {
-      if (reuse == null) {
-        return new BytesRef(bytes, getBinaryOffset(), getBinaryLength());
-      } else {
-        reuse.bytes = bytes;
-        reuse.offset = getBinaryOffset();
-        reuse.length = getBinaryLength();
-        return reuse;
-      }
-    } else {
+  public BytesRef binaryValue() {
+    if (!isBinary()) {
       return null;
+    } else {
+      return (BytesRef) fieldsData;
     }
   }
   
-  /**
-   * Returns length of byte[] segment that is used as value, if Field is not
-   * binary returned value is undefined
-   * 
-   * @return length of byte[] segment that represents this Field value
-   */
-  protected int getBinaryLength() {
-    if (isBinary) {
-      return binaryLength;
-    } else if (fieldsData instanceof byte[]) return ((byte[]) fieldsData).length;
-    else return 0;
-  }
-  
-  /**
-   * Returns offset into byte[] segment that is used as value, if Field is not
-   * binary returned value is undefined
-   * 
-   * @return index of the first character in byte[] segment that represents this
-   *         Field value
-   */
-  public int getBinaryOffset() {
-    return binaryOffset;
-  }
+  /** methods from inner FieldType */
   
   public boolean isBinary() {
-    return isBinary;
+    return fieldsData instanceof BytesRef;
   }
-  
-  /** methods from inner FieldType */
   
   public boolean stored() {
     return type.stored();
@@ -353,7 +309,7 @@ public class Field implements IndexableField {
   
   /** Prints a Field for human consumption. */
   @Override
-  public final String toString() {
+  public String toString() {
     StringBuilder result = new StringBuilder();
     result.append(type.toString());
     result.append('<');
@@ -368,24 +324,22 @@ public class Field implements IndexableField {
     return result.toString();
   }
   
-  public PerDocFieldValues docValues() {
-    return docValues;
-  }
-  
   public void setDocValues(PerDocFieldValues docValues) {
     this.docValues = docValues;
   }
-  
-  public boolean hasDocValues() {
-    return docValues != null && docValues.type() != null;
+
+  @Override
+  public PerDocFieldValues docValues() {
+    return null;
   }
   
+  @Override
   public ValueType docValuesType() {
-    return docValues == null? null : docValues.type();
+    return null;
   }
 
+  /** Returns FieldType for this field. */
   public FieldType getFieldType() {
-    // get a copy
-    return new FieldType(type);
+    return type;
   }
 }

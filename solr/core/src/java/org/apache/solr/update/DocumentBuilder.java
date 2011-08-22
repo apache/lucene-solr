@@ -145,10 +145,6 @@ public class DocumentBuilder {
     }
   }
 
-  public void setBoost(float boost) {
-    //doc.setBoost(boost);
-  }
-
   public void endDoc() {
   }
 
@@ -231,7 +227,7 @@ public class DocumentBuilder {
   public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
   { 
     Document out = new Document();
-    //out.setBoost( doc.getDocumentBoost() );
+    final float docBoost = doc.getDocumentBoost();
     
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
@@ -258,7 +254,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, boost);
+            addField(out, sfield, v, docBoost*boost);
           }
   
           // Check if we should copy this field to any other fields.
@@ -281,7 +277,7 @@ public class DocumentBuilder {
               val = cf.getLimitedValue((String)val);
             }
             
-            IndexableField [] fields = destinationField.createFields(val, boost);
+            IndexableField [] fields = destinationField.createFields(val, docBoost*boost);
             if (fields != null) { // null fields are not added
               for (IndexableField f : fields) {
                 if(f != null) out.add(f);
@@ -293,7 +289,7 @@ public class DocumentBuilder {
           // document boost and *all* boosts on values of that field. 
           // For multi-valued fields, we only want to set the boost on the
           // first field.
-          boost = 1.0f; 
+          boost = docBoost;
         }
       }
       catch( Exception ex ) {

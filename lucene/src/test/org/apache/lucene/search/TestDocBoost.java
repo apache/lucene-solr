@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -45,20 +44,12 @@ public class TestDocBoost extends LuceneTestCase {
 
     Document d1 = new Document();
     Document d2 = new Document();
-    Document d3 = new Document();
-    Document d4 = new Document();
-    //d3.setBoost(3.0f);
-    //d4.setBoost(2.0f);
 
     d1.add(f1);                                 // boost = 1
     d2.add(f2);                                 // boost = 2
-    //d3.add(f1);                                 // boost = 3
-    //d4.add(f2);                                 // boost = 4
 
     writer.addDocument(d1);
     writer.addDocument(d2);
-    //writer.addDocument(d3);
-    //writer.addDocument(d4);
 
     IndexReader reader = writer.getReader();
     writer.close();

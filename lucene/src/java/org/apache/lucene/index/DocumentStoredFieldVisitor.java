@@ -84,7 +84,6 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
       ft.setOmitNorms(fieldInfo.omitNorms);
       ft.setIndexOptions(fieldInfo.indexOptions);
       doc.add(new Field(fieldInfo.name,
-                        false,
                         ft,
                         new String(b, "UTF-8")));
     } else {

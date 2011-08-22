@@ -111,10 +111,10 @@ public class TestContribFieldsReader extends LuceneTestCase {
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
 
-    byte [] bytes = field.binaryValue(null).bytes;
+    byte [] bytes = field.binaryValue().bytes;
     assertTrue("bytes is null and it shouldn't be", bytes != null);
     assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
-    assertTrue("calling binaryValue() twice should give same reference", field.binaryValue(null).bytes == field.binaryValue(null).bytes);
+    assertTrue("calling binaryValue() twice should give same reference", field.binaryValue().bytes == field.binaryValue().bytes);
     for (int i = 0; i < bytes.length; i++) {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
@@ -179,9 +179,9 @@ public class TestContribFieldsReader extends LuceneTestCase {
     field = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
-    assertTrue("calling binaryValue() twice should give different references", field.binaryValue(null).bytes != field.binaryValue(null).bytes);
+    assertTrue("calling binaryValue() twice should give different references", field.binaryValue().bytes != field.binaryValue().bytes);
 
-    byte [] bytes = field.binaryValue(null).bytes;
+    byte [] bytes = field.binaryValue().bytes;
     assertTrue("bytes is null and it shouldn't be", bytes != null);
     assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
     for (int i = 0; i < bytes.length; i++) {
@@ -300,12 +300,12 @@ public class TestContribFieldsReader extends LuceneTestCase {
     IndexableField f1 = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
     IndexableField f3 = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     IndexableField fb = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
-    assertTrue(f1.binaryValue(null)!=null);
-    assertTrue(f3.binaryValue(null)==null);
-    assertTrue(fb.binaryValue(null)!=null);
-    assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.binaryValue(null).bytes);
+    assertTrue(f1.binaryValue()!=null);
+    assertTrue(f3.binaryValue()==null);
+    assertTrue(fb.binaryValue()!=null);
+    assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.binaryValue().bytes);
     assertEquals(DocHelper.FIELD_3_TEXT, f3.stringValue());
-    assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.binaryValue(null).bytes);
+    assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.binaryValue().bytes);
     
     reader.close();
   }

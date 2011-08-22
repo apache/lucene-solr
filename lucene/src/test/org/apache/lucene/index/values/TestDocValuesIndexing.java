@@ -496,11 +496,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       ft.setStored(true);
     }
     
-    Field field = random.nextBoolean() ? new IndexDocValuesField(value.name())
-        : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
-            10), ft);
-    doc.add(field);
-    IndexDocValuesField valField = new IndexDocValuesField("prototype");
+    IndexDocValuesField valField = new IndexDocValuesField(value.name());
+    doc.add(valField);
     final BytesRef bytesRef = new BytesRef();
 
     final String idBase = value.name() + "_";
@@ -549,7 +546,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
       doc.removeFields("id");
       doc.add(new Field("id", StringField.TYPE_STORED, idBase + i));
-      valField.set(field);
       w.addDocument(doc);
 
       if (i % 7 == 0) {
@@ -571,8 +567,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.commit();
 
     // TODO test unoptimized with deletions
-    if (withDeletions || random.nextBoolean())
+    if (withDeletions || random.nextBoolean()) {
       w.optimize(true);
+    }
     return deleted;
   }
 }

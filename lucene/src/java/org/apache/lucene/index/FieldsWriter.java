@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 final class FieldsWriter {
-  // NOTE: bit 0 is free here!
+  // NOTE: bit 0 is free here!  You can steal it!
   static final int FIELD_IS_BINARY = 1 << 1;
 
   // the old bit 1 << 2 was compressed, is now left out
@@ -160,7 +160,7 @@ final class FieldsWriter {
       string = null;
       bytes = null;
     } else {
-      bytes = field.binaryValue(null);
+      bytes = field.binaryValue();
       if (bytes != null) {
         bits |= FIELD_IS_BINARY;
         string = null;

@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,17 +29,18 @@ public final class BinaryField extends Field {
 
   public BinaryField(String name, byte[] value) {
     super(name, BinaryField.TYPE_STORED, value);
-    this.isBinary = true;
   }
   
   public BinaryField(String name, byte[] value, int offset, int length) {
     super(name, BinaryField.TYPE_STORED, value, offset, length);
-    this.isBinary = true;
+  }
+
+  public BinaryField(String name, BytesRef bytes) {
+    super(name, BinaryField.TYPE_STORED, bytes.bytes, bytes.offset, bytes.length);
   }
   
   public BinaryField(String name, FieldType custom, byte[] value) {
-	  super(name, custom, value);
-	  this.isBinary = true;
+    super(name, custom, value);
   }
     
   public boolean isNumeric() {

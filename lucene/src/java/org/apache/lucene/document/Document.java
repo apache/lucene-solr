@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
+import org.apache.lucene.util.BytesRef;
 
 /** Documents are the unit of indexing and search.
  *
@@ -39,25 +40,28 @@ import org.apache.lucene.search.ScoreDoc; // for javadoc
 
 public final class Document implements Iterable<IndexableField> {
 
-  List<IndexableField> fields = new ArrayList<IndexableField>();
+  private final List<IndexableField> fields = new ArrayList<IndexableField>();
 
   /** Constructs a new document with no fields. */
   public Document() {}
 
-  // @Override not until Java 1.6
+  @Override
   public Iterator<IndexableField> iterator() {
 
     return new Iterator<IndexableField>() {
       private int fieldUpto = 0;
       
+      @Override
       public boolean hasNext() {
         return fieldUpto < fields.size();
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public IndexableField next() {
         return fields.get(fieldUpto++);
       }
@@ -118,7 +122,6 @@ public final class Document implements Iterable<IndexableField> {
     }
   }
 
-  private final static byte[][] NO_BYTES = new byte[0][];
 
   /**
   * Returns an array of byte arrays for of the fields that have the name specified
@@ -129,17 +132,18 @@ public final class Document implements Iterable<IndexableField> {
   * @param name the name of the field
   * @return a <code>byte[][]</code> of binary field values
   */
-  public final byte[][] getBinaryValues(String name) {
-    List<byte[]> result = new ArrayList<byte[]>();
+  public final BytesRef[] getBinaryValues(String name) {
+    final List<BytesRef> result = new ArrayList<BytesRef>();
     for (IndexableField field : fields) {
-      if (field.name().equals(name) && ((Field) field).isBinary())
-        result.add(field.binaryValue(null).bytes);
+      if (field.name().equals(name)) {
+        final BytesRef bytes = field.binaryValue();
+        if (bytes != null) {
+          result.add(bytes);
+        }
+      }
     }
   
-    if (result.size() == 0)
-      return NO_BYTES;
-  
-    return result.toArray(new byte[result.size()][]);
+    return result.toArray(new BytesRef[result.size()]);
   }
   
   /**
@@ -151,24 +155,39 @@ public final class Document implements Iterable<IndexableField> {
   * @param name the name of the field.
   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
-  public final byte[] getBinaryValue(String name) {
+  public final BytesRef getBinaryValue(String name) {
     for (IndexableField field : fields) {
-      if (field.name().equals(name) && ((Field) field).isBinary())
-        return field.binaryValue(null).bytes;
+      if (field.name().equals(name)) {
+        final BytesRef bytes = field.binaryValue();
+        if (bytes != null) {
+          return bytes;
+        }
+      }
     }
     return null;
   }
 
+  /** Returns a field with the given name if any exist in this document, or
+   * null.  If multiple fields exists with this name, this method returns the
+   * first value added.
+   */
   public final IndexableField getField(String name) {
     for (IndexableField field : fields) {
-      if (field.name().equals(name))
+      if (field.name().equals(name)) {
         return field;
+      }
     }
     return null;
   }
 
-  private final static IndexableField[] NO_FIELDS = new IndexableField[0];
-  
+  /**
+   * Returns an array of {@link IndexablField}s with the given name.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
+   *
+   * @param name the name of the field
+   * @return a <code>Fieldable[]</code> array
+   */
   public IndexableField[] getFields(String name) {
     List<IndexableField> result = new ArrayList<IndexableField>();
     for (IndexableField field : fields) {
@@ -177,24 +196,31 @@ public final class Document implements Iterable<IndexableField> {
       }
     }
 
-    if (result.size() == 0)
-      return NO_FIELDS;
-
     return result.toArray(new IndexableField[result.size()]);
   }
   
-  public Integer size() {
-    return fields.size();
-  }
-  
+  /** Returns a List of all the fields in a document.
+   * <p>Note that fields which are <i>not</i> stored are
+   * <i>not</i> available in documents retrieved from the
+   * index, e.g. {@link IndexSearcher#doc(int)} or {@link
+   * IndexReader#document(int)}.
+   */
   public final List<IndexableField> getFields() {
     return fields;
   }
   
+  /** Returns the string value of the field with the given name if any exist in
+   * this document, or null.  If multiple fields exist with this name, this
+   * method returns the first value added. If only binary fields with this name
+   * exist, returns null.
+   * For {@link NumericField} it returns the string value of the number. If you want
+   * the actual {@code NumericField} instance back, use {@link #getFieldable}.
+   */
   public final String get(String name) {
-   for (IndexableField field : fields) {
-      if (field.name().equals(name) && (field.binaryValue(null) == null))
+    for (IndexableField field : fields) {
+      if (field.name().equals(name) && field.stringValue() != null) {
         return field.stringValue();
+      }
     }
     return null;
   }
