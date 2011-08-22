@@ -1,4 +1,6 @@
-/**
+package org.apache.lucene.analysis;
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +17,8 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.util;
-
 import java.io.IOException;
 import java.io.Reader;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper; // javadocs
 
 /**
  * An convenience subclass of Analyzer that makes it easy to implement
@@ -33,7 +26,7 @@ import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper; // java
  * <p>
  * ReusableAnalyzerBase is a simplification of Analyzer that supports easy reuse
  * for the most common use-cases. Analyzers such as
- * {@link PerFieldAnalyzerWrapper} that behave differently depending upon the
+ * PerFieldAnalyzerWrapper that behave differently depending upon the
  * field name need to subclass Analyzer directly instead.
  * </p>
  * <p>

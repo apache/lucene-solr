@@ -109,11 +109,11 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates a
-   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
    * 
    * @return A
-   *         {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link TurkishLowerCaseFilter},
    *         {@link StopFilter}, {@link KeywordMarkerFilter} if a stem

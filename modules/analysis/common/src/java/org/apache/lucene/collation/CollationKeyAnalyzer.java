@@ -19,7 +19,7 @@ package org.apache.lucene.collation;
 
 
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.IndexableBinaryStringTools; // javadoc @link
 import org.apache.lucene.util.Version;
 

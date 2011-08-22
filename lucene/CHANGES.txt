@@ -479,6 +479,9 @@ New features
 
 * LUCENE-3354: FieldCache can cache DocTermOrds. (Martijn van Groningen)
 
+* LUCENE-3376: ReusableAnalyzerBase has been moved from modules/analysis/common
+  into lucene/src/java/org/apache/lucene/analysis (Chris Male)
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms

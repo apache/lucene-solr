@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * "Tokenizes" the entire stream as a single token. This is useful
