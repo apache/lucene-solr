@@ -16,6 +16,16 @@
  */
 package org.apache.solr.handler;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
+import java.net.URL;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -25,7 +35,6 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
@@ -40,12 +49,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.io.*;
-import java.net.URL;
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * Test for ReplicationHandler
@@ -179,9 +182,66 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     return details;
   }
+  
+  private NamedList<Object> getCommits(SolrServer s) throws Exception {
+    
 
-  @Test
-  public void testDetails() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command","commits");
+    params.set("qt","/replication");
+    QueryRequest req = new QueryRequest(params);
+
+    NamedList<Object> res = s.request(req);
+
+    assertNotNull("null response from server", res);
+
+
+    return res;
+  }
+  
+  private NamedList<Object> getIndexVersion(SolrServer s) throws Exception {
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("command","indexversion");
+    params.set("qt","/replication");
+    QueryRequest req = new QueryRequest(params);
+
+    NamedList<Object> res = s.request(req);
+
+    assertNotNull("null response from server", res);
+
+
+    return res;
+  }
+  
+  private NamedList<Object> reloadCore(SolrServer s, String core) throws Exception {
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action","reload");
+    params.set("core", core);
+    params.set("qt","/admin/cores");
+    QueryRequest req = new QueryRequest(params);
+
+    NamedList<Object> res = s.request(req);
+
+    assertNotNull("null response from server", res);
+
+    return res;
+  }
+
+  public void test() throws Exception {
+    doTestReplicateAfterCoreReload();
+    doTestDetails();
+    doTestReplicateAfterWrite2Slave();
+    doTestIndexAndConfigReplication();
+    doTestStopPoll();
+    doTestSnapPullWithMasterUrl();
+    doTestReplicateAfterStartup();
+    doTestIndexAndConfigAliasReplication();
+    doTestBackup();
+  }
+
+  private void doTestDetails() throws Exception {
     { 
       NamedList<Object> details = getDetails(masterClient);
       
@@ -234,8 +294,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testReplicateAfterWrite2Slave() throws Exception {
+  private void doTestReplicateAfterWrite2Slave() throws Exception {
     clearIndexWithReplication();
     nDocs--;
     for (int i = 0; i < nDocs; i++) {
@@ -299,8 +358,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, slaveQueryResult.getNumFound());
   }
 
-  @Test
-  public void testIndexAndConfigReplication() throws Exception {
+  private void doTestIndexAndConfigReplication() throws Exception {
     clearIndexWithReplication();
 
     nDocs--;
@@ -355,8 +413,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testStopPoll() throws Exception {
+  private void doTestStopPoll() throws Exception {
     clearIndexWithReplication();
 
     // Test:
@@ -423,8 +480,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   
-  @Test
-  public void testSnapPullWithMasterUrl() throws Exception {
+  private void doTestSnapPullWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
     slave.copyConfigFile(CONF_DIR + "solrconfig-slave1.xml", "solrconfig.xml");
@@ -471,8 +527,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
 
-  @Test
-  public void testReplicateAfterStartup() throws Exception {
+  private void doTestReplicateAfterStartup() throws Exception {
     //stop slave
     slaveJetty.stop();
 
@@ -528,9 +583,83 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
 
+  private void doTestReplicateAfterCoreReload() throws Exception {
+    //stop slave
+    slaveJetty.stop();
 
-  @Test
-  public void testIndexAndConfigAliasReplication() throws Exception {
+    masterClient.deleteByQuery("*:*");
+    for (int i = 0; i < 10; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = rQuery(10, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(10, masterQueryResult.getNumFound());
+
+    //change solrconfig having 'replicateAfter startup' option on master
+    master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
+                          "solrconfig.xml");
+
+    masterJetty.stop();
+
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    slave.setTestPort(masterJetty.getLocalPort());
+    slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
+
+    //start slave
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+    
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = rQuery(10, "*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(10, slaveQueryResult.getNumFound());
+    
+    //compare results
+    String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+    
+    Object version = getIndexVersion(masterClient).get("indexversion");
+    NamedList<Object> commits = getCommits(masterClient);
+    
+    reloadCore(masterClient, "collection1");
+    
+    assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
+    assertEquals(commits.get("commits"), getCommits(masterClient).get("commits"));
+    
+    index(masterClient, "id", 110, "name", "name = 1");
+    index(masterClient, "id", 120, "name", "name = 2");
+
+    masterClient.commit();
+    
+    NamedList resp =  rQuery(12, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) resp.get("response");
+    assertEquals(12, masterQueryResult.getNumFound());
+    
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = rQuery(12, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(12, slaveQueryResult.getNumFound());
+    
+    // NOTE: revert config on master.
+    master.copyConfigFile(CONF_DIR + "solrconfig-master.xml", "solrconfig.xml");
+    masterJetty.stop();
+    masterJetty = createJetty(master);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    slave.setTestPort(masterJetty.getLocalPort());
+    slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
+
+    //start slave
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+  }
+
+  private void doTestIndexAndConfigAliasReplication() throws Exception {
     clearIndexWithReplication();
 
     nDocs--;
@@ -604,8 +733,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
   
-  @Test
-  public void testBackup() throws Exception {
+  private void doTestBackup() throws Exception {
     masterJetty.stop();
     master.copyConfigFile(CONF_DIR + "solrconfig-master1.xml", 
                           "solrconfig.xml");

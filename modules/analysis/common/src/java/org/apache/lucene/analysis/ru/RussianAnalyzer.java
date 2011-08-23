@@ -139,10 +139,10 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
    
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link KeywordMarkerFilter} if a stem exclusion set is

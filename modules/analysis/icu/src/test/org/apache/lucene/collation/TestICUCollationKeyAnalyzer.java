@@ -21,6 +21,7 @@ package org.apache.lucene.collation;
 import com.ibm.icu.text.Collator;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.BytesRef;
 

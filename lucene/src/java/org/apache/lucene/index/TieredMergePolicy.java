@@ -60,7 +60,7 @@ import java.util.ArrayList;
  *  <p><b>NOTE</b>: This policy always merges by byte size
  *  of the segments, always pro-rates by percent deletes,
  *  and does not apply any maximum segment size during
- *  optimize (unlike {@link LogByteSizeMergePolicy}.
+ *  optimize (unlike {@link LogByteSizeMergePolicy}).
  *
  *  @lucene.experimental
  */

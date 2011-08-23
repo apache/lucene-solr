@@ -49,23 +49,18 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-queries-contrib</artifactId>
+      <artifactId>lucene-queries</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-queries</artifactId>
+      <artifactId>lucene-sandbox</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>lucene-queryparser</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

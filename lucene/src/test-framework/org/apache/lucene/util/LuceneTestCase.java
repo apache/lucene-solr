@@ -280,7 +280,11 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     swapCodec(new MockSepCodec(), cp);
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20)), cp);
+    // TODO: make it possible to specify min/max iterms per
+    // block via CL:
+    int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+    int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock), cp);
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)), cp);
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
@@ -307,7 +311,7 @@ public abstract class LuceneTestCase extends Assert {
     cp.unregister(cp.lookup("MockFixedIntBlock"));
     cp.unregister(cp.lookup("MockVariableIntBlock"));
     cp.unregister(cp.lookup("MockRandom"));
-    swapCodec(new PulsingCodec(1), cp);
+    swapCodec(new PulsingCodec(), cp);
     cp.setDefaultFieldCodec(savedDefaultCodec);
   }
 
@@ -322,24 +326,24 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static class TwoLongs {
-    public final long l1, l2;
+  private static class ThreeLongs {
+    public final long l1, l2, l3;
 
-    public TwoLongs(long l1, long l2) {
+    public ThreeLongs(long l1, long l2, long l3) {
       this.l1 = l1;
       this.l2 = l2;
+      this.l3 = l3;
     }
 
     @Override
     public String toString() {
-      return l1 + ":" + l2;
+      return Long.toString(l1, 16) + ":" + Long.toString(l2, 16) + ":" + Long.toString(l3, 16);
     }
 
-    public static TwoLongs fromString(String s) {
-      final int i = s.indexOf(':');
-      assert i != -1;
-      return new TwoLongs(Long.parseLong(s.substring(0, i)),
-                          Long.parseLong(s.substring(1+i)));
+    public static ThreeLongs fromString(String s) {
+      String parts[] = s.split(":");
+      assert parts.length == 3;
+      return new ThreeLongs(Long.parseLong(parts[0], 16), Long.parseLong(parts[1], 16), Long.parseLong(parts[2], 16));
     }
   }
 
@@ -347,12 +351,20 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   private static List<String> testClassesRun = new ArrayList<String>();
 
-  @BeforeClass
-  public static void beforeClassLuceneTestCaseJ4() {
-    state = State.INITIAL;
-    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
+  private static void initRandom() {
+    assert !random.initialized;
+    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     random.initialized = true;
+  }
+  
+  @Deprecated
+  private static boolean icuTested = false;
+
+  @BeforeClass
+  public static void beforeClassLuceneTestCaseJ4() {
+    initRandom();
+    state = State.INITIAL;
     tempDirs.clear();
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     
@@ -397,7 +409,23 @@ public abstract class LuceneTestCase extends Assert {
         throw new RuntimeException(e);
       }
     }
+    
     savedLocale = Locale.getDefault();
+    
+    // START hack to init ICU safely before we randomize locales.
+    // ICU fails during classloading when a special Java7-only locale is the default
+    // see: http://bugs.icu-project.org/trac/ticket/8734
+    if (!icuTested) {
+      icuTested = true;
+      try {
+        Locale.setDefault(Locale.US);
+        Class.forName("com.ibm.icu.util.ULocale");
+      } catch (ClassNotFoundException cnfe) {
+        // ignore if no ICU is in classpath
+      }
+    }
+    // END hack
+    
     locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
     savedTimeZone = TimeZone.getDefault();
@@ -461,7 +489,7 @@ public abstract class LuceneTestCase extends Assert {
       System.err.println("NOTE: test params are: codec=" + codecDescription +
         ", locale=" + locale +
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
-    if (testsFailed) {
+    if (VERBOSE || testsFailed) {
       System.err.println("NOTE: all tests run in this JVM:");
       System.err.println(Arrays.toString(testClassesRun.toArray()));
       System.err.println("NOTE: " + System.getProperty("os.name") + " "
@@ -543,7 +571,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @Before
   public void setUp() throws Exception {
-    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
+    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     if (!testsFailed) {
       assertTrue("ensure your tearDown() calls super.tearDown()!!!", (state == State.INITIAL || state == State.TEARDOWN));
@@ -754,7 +782,7 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}, but also with some random fudge.
    */
   public static int atLeast(Random random, int i) {
-    int min = (TEST_NIGHTLY ? 5*i : i) * RANDOM_MULTIPLIER;
+    int min = (TEST_NIGHTLY ? 3*i : i) * RANDOM_MULTIPLIER;
     int max = min+(min/2);
     return _TestUtil.nextInt(random, min, max);
   }
@@ -770,9 +798,9 @@ public abstract class LuceneTestCase extends Assert {
    * is active and {@link #RANDOM_MULTIPLIER}.
    */
   public static boolean rarely(Random random) {
-    int p = TEST_NIGHTLY ? 25 : 5;
+    int p = TEST_NIGHTLY ? 10 : 5;
     p += (p * Math.log(RANDOM_MULTIPLIER));
-    int min = 100 - Math.min(p, 90); // never more than 90
+    int min = 100 - Math.min(p, 50); // never more than 50
     return random.nextInt(100) >= min;
   }
   
@@ -1321,7 +1349,7 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     System.err.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName()
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new ThreeLongs(staticSeed, seed, LuceneTestCaseRunner.runnerSeed)
         + reproduceWithExtraParams());
   }
 
@@ -1403,11 +1431,18 @@ public abstract class LuceneTestCase extends Assert {
   /** optionally filters the tests to be run by TEST_METHOD */
   public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
     private List<FrameworkMethod> testMethods;
+    private static final long runnerSeed;
+    static {
+      runnerSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l3;
+    }
 
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
+      
+      Random r = new Random(runnerSeed);
+
       testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
       testMethods = new ArrayList<FrameworkMethod>();
       for (Method m : getTestClass().getJavaClass().getMethods()) {
@@ -1457,6 +1492,15 @@ public abstract class LuceneTestCase extends Assert {
           } catch (Exception e) { throw new RuntimeException(e); }
         }
       }
+      // sort the test methods first before shuffling them, so that the shuffle is consistent
+      // across different implementations that might order the methods different originally.
+      Collections.sort(testMethods, new Comparator<FrameworkMethod>() {
+        @Override
+        public int compare(FrameworkMethod f1, FrameworkMethod f2) {
+          return f1.getName().compareTo(f2.getName());
+        }
+      });
+      Collections.shuffle(testMethods, r);
       return testMethods;
     }
 
@@ -1494,6 +1538,7 @@ public abstract class LuceneTestCase extends Assert {
 
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
       super(clazz);
+      // evil we cannot init our random here, because super() calls computeTestMethods!!!!;
       Filter f = new Filter() {
 
         @Override
@@ -1520,9 +1565,17 @@ public abstract class LuceneTestCase extends Assert {
 
     RandomCodecProvider(Random random) {
       this.perFieldSeed = random.nextInt();
-      register(randomizCodec(random, new StandardCodec()));
+      // TODO: make it possible to specify min/max iterms per
+      // block via CL:
+      int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+      int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
+      register(randomizCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new PreFlexCodec()));
-      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20))));
+      // TODO: make it possible to specify min/max iterms per
+      // block via CL:
+      minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
+      maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
+      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
       register(randomizCodec(random, new SimpleTextCodec()));
       register(randomizCodec(random, new MemoryCodec()));
       Collections.shuffle(knownCodecs, random);

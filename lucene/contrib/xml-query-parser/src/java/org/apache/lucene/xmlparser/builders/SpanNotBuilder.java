@@ -23,36 +23,33 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class SpanNotBuilder extends SpanBuilderBase
-{
-    
-    SpanQueryBuilder factory;    
+public class SpanNotBuilder extends SpanBuilderBase {
 
-    /**
-     * @param factory
-     */
-    public SpanNotBuilder(SpanQueryBuilder factory)
-    {
-        super();
-        this.factory = factory;
-    }
-	public SpanQuery getSpanQuery(Element e) throws ParserException
-	{
-  	    Element includeElem=DOMUtils.getChildByTagOrFail(e,"Include");
-        includeElem=DOMUtils.getFirstChildOrFail(includeElem);
+  private final SpanQueryBuilder factory;
 
-  	    Element excludeElem=DOMUtils.getChildByTagOrFail(e,"Exclude");
-        excludeElem=DOMUtils.getFirstChildOrFail(excludeElem);
+  /**
+   * @param factory
+   */
+  public SpanNotBuilder(SpanQueryBuilder factory) {
+    this.factory = factory;
+  }
 
-  	    SpanQuery include=factory.getSpanQuery(includeElem);
-  	    SpanQuery exclude=factory.getSpanQuery(excludeElem);
-	    
-		SpanNotQuery snq = new SpanNotQuery(include,exclude);
-		
-		snq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return snq;
-	}
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    Element includeElem = DOMUtils.getChildByTagOrFail(e, "Include");
+    includeElem = DOMUtils.getFirstChildOrFail(includeElem);
+
+    Element excludeElem = DOMUtils.getChildByTagOrFail(e, "Exclude");
+    excludeElem = DOMUtils.getFirstChildOrFail(excludeElem);
+
+    SpanQuery include = factory.getSpanQuery(includeElem);
+    SpanQuery exclude = factory.getSpanQuery(excludeElem);
+
+    SpanNotQuery snq = new SpanNotQuery(include, exclude);
+
+    snq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return snq;
+  }
 
 }

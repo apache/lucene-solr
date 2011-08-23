@@ -23,28 +23,25 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class SpanFirstBuilder extends SpanBuilderBase
-{
-    SpanQueryBuilder factory;
-    
-    public SpanFirstBuilder(SpanQueryBuilder factory)
-    {
-        super();
-        this.factory = factory;
-    }
+public class SpanFirstBuilder extends SpanBuilderBase {
 
-	public SpanQuery getSpanQuery(Element e) throws ParserException
-	{
-	    int end=DOMUtils.getAttribute(e,"end",1);
-	    Element child=DOMUtils.getFirstChildElement(e);
-	    SpanQuery q=factory.getSpanQuery(child);
-	    
-		SpanFirstQuery sfq = new SpanFirstQuery(q,end);
-		
-		sfq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return sfq;
-	}
+  private final SpanQueryBuilder factory;
+
+  public SpanFirstBuilder(SpanQueryBuilder factory) {
+    this.factory = factory;
+  }
+
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    int end = DOMUtils.getAttribute(e, "end", 1);
+    Element child = DOMUtils.getFirstChildElement(e);
+    SpanQuery q = factory.getSpanQuery(child);
+
+    SpanFirstQuery sfq = new SpanFirstQuery(q, end);
+
+    sfq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return sfq;
+  }
 
 }

@@ -39,6 +39,9 @@ import java.util.Set;
  * <p>You must specify the required {@link Version}
  * compatibility when creating StandardAnalyzer:
  * <ul>
+ *   <li> As of 3.4, Hiragana and Han characters are no longer wrongly split
+ *        from their combining characters. If you use a previous version number,
+ *        you get the exact broken behavior for backwards compatibility.
  *   <li> As of 3.1, StandardTokenizer implements Unicode text segmentation,
  *        and StopFilter correctly handles Unicode 4.0 supplementary characters
  *        in stopwords.  {@link ClassicTokenizer} and {@link ClassicAnalyzer} 

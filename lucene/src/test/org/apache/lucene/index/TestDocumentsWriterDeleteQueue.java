@@ -16,7 +16,6 @@ package org.apache.lucene.index;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -24,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -41,8 +41,8 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
-    BufferedDeletes bd1 = new BufferedDeletes(false);
-    BufferedDeletes bd2 = new BufferedDeletes(false);
+    BufferedDeletes bd1 = new BufferedDeletes();
+    BufferedDeletes bd2 = new BufferedDeletes();
     int last1 = 0;
     int last2 = 0;
     Set<Term> uniqueValues = new HashSet<Term>();
@@ -70,8 +70,13 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     assertEquals(uniqueValues, bd1.terms.keySet());
     assertEquals(uniqueValues, bd2.terms.keySet());
-    assertEquals(uniqueValues, new HashSet<Term>(Arrays.asList(queue
-        .freezeGlobalBuffer(null).terms)));
+    HashSet<Term> frozenSet = new HashSet<Term>();
+    for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
+      BytesRef bytesRef = new BytesRef();
+      bytesRef.copy(t.bytes);
+      frozenSet.add(new Term(t.field, bytesRef));
+    }
+    assertEquals(uniqueValues, frozenSet);
     assertEquals("num deletes must be 0 after freeze", 0, queue
         .numGlobalTermDeletes());
   }
@@ -129,7 +134,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       if (random.nextInt(5) == 0) {
         FrozenBufferedDeletes freezeGlobalBuffer = queue
             .freezeGlobalBuffer(null);
-        assertEquals(termsSinceFreeze, freezeGlobalBuffer.terms.length);
+        assertEquals(termsSinceFreeze, freezeGlobalBuffer.termCount);
         assertEquals(queriesSinceFreeze, freezeGlobalBuffer.queries.length);
         queriesSinceFreeze = 0;
         termsSinceFreeze = 0;
@@ -168,10 +173,17 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
-    assertEquals(uniqueValues, new HashSet<Term>(Arrays.asList(queue
-        .freezeGlobalBuffer(null).terms)));
+    Set<Term> frozenSet = new HashSet<Term>();
+    for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
+      BytesRef bytesRef = new BytesRef();
+      bytesRef.copy(t.bytes);
+      frozenSet.add(new Term(t.field, bytesRef));
+    }
     assertEquals("num deletes must be 0 after freeze", 0, queue
         .numGlobalTermDeletes());
+    assertEquals(uniqueValues.size(), frozenSet.size());
+    assertEquals(uniqueValues, frozenSet);
+   
   }
 
   private static class UpdateThread extends Thread {
@@ -188,7 +200,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       this.index = index;
       this.ids = ids;
       this.slice = queue.newSlice();
-      deletes = new BufferedDeletes(false);
+      deletes = new BufferedDeletes();
       this.latch = latch;
     }
 

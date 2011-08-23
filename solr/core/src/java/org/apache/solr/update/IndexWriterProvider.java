@@ -20,17 +20,18 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.core.SolrCore;
 
 public interface IndexWriterProvider {
   
-  public void newIndexWriter() throws IOException;
+  public void newIndexWriter(SolrCore core) throws IOException;
   
-  public IndexWriter getIndexWriter() throws IOException;
+  public IndexWriter getIndexWriter(SolrCore core) throws IOException;
 
   public void decref() throws IOException;
   
   public void incref();
 
-  public void rollbackIndexWriter() throws IOException;
+  public void rollbackIndexWriter(SolrCore core) throws IOException;
   
 }

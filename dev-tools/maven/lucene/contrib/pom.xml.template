@@ -36,7 +36,7 @@
     <module>instantiated</module>
     <module>memory</module>
     <module>misc</module>
-    <module>queries</module>
+    <module>sandbox</module>
     <module>spatial</module>
     <module>xml-query-parser</module>
   </modules>

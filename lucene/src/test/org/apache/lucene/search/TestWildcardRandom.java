@@ -63,6 +63,9 @@ public class TestWildcardRandom extends LuceneTestCase {
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
+    if (VERBOSE) {
+      System.out.println("TEST: setUp searcher=" + searcher);
+    }
   }
   
   private char N() {
@@ -85,7 +88,11 @@ public class TestWildcardRandom extends LuceneTestCase {
   
   private void assertPatternHits(String pattern, int numHits) throws Exception {
     // TODO: run with different rewrites
-    Query wq = new WildcardQuery(new Term("field", fillPattern(pattern)));
+    final String filledPattern = fillPattern(pattern);
+    if (VERBOSE) {
+      System.out.println("TEST: run wildcard pattern=" + pattern + " filled=" + filledPattern);
+    }
+    Query wq = new WildcardQuery(new Term("field", filledPattern));
     TopDocs docs = searcher.search(wq, 25);
     assertEquals("Incorrect hits for pattern: " + pattern, numHits, docs.totalHits);
   }

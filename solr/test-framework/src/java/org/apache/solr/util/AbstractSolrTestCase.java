@@ -193,7 +193,6 @@ public abstract class AbstractSolrTestCase extends LuceneTestCase {
     }
 
     if (h != null) { h.close(); }
-    SolrTestCaseJ4.closeDirectories();
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {
       System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());

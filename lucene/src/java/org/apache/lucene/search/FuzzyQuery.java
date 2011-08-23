@@ -137,12 +137,10 @@ public class FuzzyQuery extends MultiTermQuery {
 
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
-    TermsEnum tenum = terms.iterator();
-    
     if (!termLongEnough) {  // can only match if it's exact
-      return new SingleTermsEnum(tenum, term);
+      return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
-    return new FuzzyTermsEnum(tenum, atts, getTerm(), minimumSimilarity, prefixLength);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), minimumSimilarity, prefixLength);
   }
   
   /**

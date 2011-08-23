@@ -116,7 +116,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testTermIndexInterval() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter(h.getCore());
     int interval = writer.getConfig().getTermIndexInterval();
     assertEquals(256, interval);
   }

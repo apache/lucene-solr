@@ -28,14 +28,14 @@ public interface CharStream {
 
   /**
    * Returns the column position of the character last read.
-   * @deprecated (gen)
+   * @deprecated
    * @see #getEndColumn
    */
   int getColumn();
 
   /**
    * Returns the line number of the character last read.
-   * @deprecated (gen)
+   * @deprecated
    * @see #getEndLine
    */
   int getLine();
@@ -109,4 +109,4 @@ public interface CharStream {
   void Done();
 
 }
-/* JavaCC - OriginalChecksum=872eafa2c180de2e08862f87f675b2dd (do not edit this line) */
+/* JavaCC - OriginalChecksum=def574f5a8956cf01b79ebe7bce95e74 (do not edit this line) */

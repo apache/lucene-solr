@@ -54,5 +54,6 @@ public class QueryParserMessages extends NLS {
   public static String COULD_NOT_PARSE_NUMBER;
   public static String NUMBER_CLASS_NOT_SUPPORTED_BY_NUMERIC_RANGE_QUERY;
   public static String UNSUPPORTED_NUMERIC_DATA_TYPE;
+  public static String NUMERIC_CANNOT_BE_EMPTY;
 
 }

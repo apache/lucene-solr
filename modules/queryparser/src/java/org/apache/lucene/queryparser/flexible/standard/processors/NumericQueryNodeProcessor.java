@@ -29,6 +29,7 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
@@ -36,8 +37,31 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
 
+/**
+ * This processor is used to convert {@link FieldQueryNode}s to
+ * {@link NumericRangeQueryNode}s. It looks for
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} set in the {@link FieldConfig} of
+ * every {@link FieldQueryNode} found. If
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} is found, it considers that
+ * {@link FieldQueryNode} to be a numeric query and convert it to
+ * {@link NumericRangeQueryNode} with upper and lower inclusive and lower and
+ * upper equals to the value represented by the {@link FieldQueryNode} converted
+ * to {@link Number}. It means that <b>field:1</b> is converted to <b>field:[1 TO
+ * 1]</b>. <br/>
+ * <br/>
+ * Note that {@link ParametricQueryNode}s are ignored, even being a
+ * {@link FieldQueryNode}.
+ * 
+ * @see ConfigurationKeys#NUMERIC_CONFIG
+ * @see FieldQueryNode
+ * @see NumericConfig
+ * @see NumericQueryNode
+ */
 public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
   
+  /**
+   * Constructs a {@link NumericQueryNodeProcessor} object.
+   */
   public NumericQueryNodeProcessor() {
   // empty constructor
   }
@@ -46,7 +70,7 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
     
     if (node instanceof FieldQueryNode
-        && !(node instanceof ParametricQueryNode)) {
+        && !(node.getParent() instanceof ParametricRangeQueryNode)) {
       
       QueryConfigHandler config = getQueryConfigHandler();
       
@@ -62,30 +86,38 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
           if (numericConfig != null) {
             
             NumberFormat numberFormat = numericConfig.getNumberFormat();
-            Number number;
+            String text = fieldNode.getTextAsString();
+            Number number = null;
             
-            try {
-              number = numberFormat.parse(fieldNode.getTextAsString());
+            if (text.length() > 0) {
               
-            } catch (ParseException e) {
+              try {
+                number = numberFormat.parse(text);
+                
+              } catch (ParseException e) {
+                throw new QueryNodeParseException(new MessageImpl(
+                    QueryParserMessages.COULD_NOT_PARSE_NUMBER, fieldNode
+                        .getTextAsString(), numberFormat.getClass()
+                        .getCanonicalName()), e);
+              }
+              
+              switch (numericConfig.getType()) {
+                case LONG:
+                  number = number.longValue();
+                  break;
+                case INT:
+                  number = number.intValue();
+                  break;
+                case DOUBLE:
+                  number = number.doubleValue();
+                  break;
+                case FLOAT:
+                  number = number.floatValue();
+              }
+              
+            } else {
               throw new QueryNodeParseException(new MessageImpl(
-                  QueryParserMessages.COULD_NOT_PARSE_NUMBER, fieldNode
-                      .getTextAsString(), numberFormat.getClass()
-                      .getCanonicalName()), e);
-            }
-            
-            switch (numericConfig.getType()) {
-              case LONG:
-                number = number.longValue();
-                break;
-              case INT:
-                number = number.intValue();
-                break;
-              case DOUBLE:
-                number = number.doubleValue();
-                break;
-              case FLOAT:
-                number = number.floatValue();
+                  QueryParserMessages.NUMERIC_CANNOT_BE_EMPTY, fieldNode.getFieldAsString()));
             }
             
             NumericQueryNode lowerNode = new NumericQueryNode(fieldNode

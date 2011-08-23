@@ -1,0 +1,98 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- $Id: solrconfig-master2.xml 1144761 2011-07-09 23:01:53Z sarowe $
+     $Source$
+     $Name$
+  -->
+
+<config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <indexDefaults>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <lockType>single</lockType>
+  </indexDefaults>
+
+  <mainIndex>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+
+    <unlockOnStartup>true</unlockOnStartup>
+  </mainIndex>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+  </updateHandler>
+
+  <requestHandler name="standard" class="solr.StandardRequestHandler">
+    <bool name="httpCaching">true</bool>
+  </requestHandler>
+
+  <requestHandler name="/replication" class="solr.ReplicationHandler">
+    <lst name="master">
+      <str name="replicateAfter">commit</str>
+      <str name="replicateAfter">startup</str>
+      <str name="confFiles">schema.xml</str>
+    </lst>
+  </requestHandler>
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="defaults" class="solr.StandardRequestHandler">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
+
+  <!-- test query parameter defaults -->
+  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
+
+  <!-- enable streaming for testing... -->
+  <requestDispatcher handleSelect="true">
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048"/>
+    <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
+      <cacheControl>max-age=30, public</cacheControl>
+    </httpCaching>
+  </requestDispatcher>
+
+</config>

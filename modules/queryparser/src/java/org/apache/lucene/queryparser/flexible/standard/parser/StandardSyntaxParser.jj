@@ -31,14 +31,10 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
  */
 
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 
 import org.apache.lucene.messages.Message;
 import org.apache.lucene.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;
@@ -48,15 +44,12 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 
@@ -71,7 +64,7 @@ public class StandardSyntaxParser implements SyntaxParser {
    public StandardSyntaxParser() {
    	this(new StringReader(""));
   }
-     /** Parses a query string, returning a {@link org.apache.lucene.queryParser.core.nodes.QueryNode}.
+     /** Parses a query string, returning a {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
      *  @param query  the query string to be parsed.
      *  @throws ParseException if the parsing fails
      */
@@ -108,14 +101,14 @@ PARSER_END(StandardSyntaxParser)
 // every character that follows a backslash is considered as an escaped character
 | <#_ESCAPED_CHAR: "\\" ~[] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
-                           "[", "]", "\"", "{", "}", "~", "\\" ]
+                           "<", ">", "=", "[", "]", "\"", "{", "}", "~", "\\" ]
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r" | "\u3000") >
 | <#_QUOTED_CHAR: ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
 }
 
-<DEFAULT, RangeIn, RangeEx> SKIP : {
+<DEFAULT, Range> SKIP : {
   < <_WHITESPACE>>
 }
 
@@ -127,32 +120,31 @@ PARSER_END(StandardSyntaxParser)
 | <MINUS:     "-" >
 | <LPAREN:    "(" >
 | <RPAREN:    ")" >
-| <COLON:     ":" >
+| <OP_COLON:  ":" >
+| <OP_EQUAL:  "=" >
+| <OP_LESSTHAN:   "<"  >
+| <OP_LESSTHANEQ: "<=" >
+| <OP_MORETHAN:   ">"  >
+| <OP_MORETHANEQ: ">=" >
 | <CARAT:     "^" > : Boost
 | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
-| <RANGEIN_START: "[" > : RangeIn
-| <RANGEEX_START: "{" > : RangeEx
+| <RANGEIN_START: "[" > : Range
+| <RANGEEX_START: "{" > : Range
 }
 
 <Boost> TOKEN : {
 <NUMBER:    (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
 }
 
-<RangeIn> TOKEN : {
-<RANGEIN_TO: "TO">
+<Range> TOKEN : {
+<RANGE_TO: "TO">
 | <RANGEIN_END: "]"> : DEFAULT
-| <RANGEIN_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
-| <RANGEIN_GOOP: (~[ " ", "]" ])+ >
-}
-
-<RangeEx> TOKEN : {
-<RANGEEX_TO: "TO">
 | <RANGEEX_END: "}"> : DEFAULT
-| <RANGEEX_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
-| <RANGEEX_GOOP: (~[ " ", "}" ])+ >
+| <RANGE_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
+| <RANGE_GOOP: (~[ " ", "]", "}" ])+ >
 }
 
 // *   Query  ::= ( Clause )*
@@ -335,22 +327,62 @@ QueryNode ModClause(CharSequence field) : {
 
 QueryNode Clause(CharSequence field) : {
   QueryNode q;
-  Token fieldToken=null, boost=null;
+  Token fieldToken=null, boost=null, operator=null, term=null;
+  ParametricQueryNode qLower, qUpper;
+  
   boolean group = false;
 }
 {
-  [
+(
+  LOOKAHEAD(3)
+  fieldToken=<TERM> (
+    ( <OP_COLON> | <OP_EQUAL> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);} q=Term(field)
+  | ( operator=<OP_LESSTHAN> | operator=<OP_LESSTHANEQ> | operator=<OP_MORETHAN> | operator=<OP_MORETHANEQ> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}( term=<TERM> | term=<QUOTED> | term=<NUMBER> )
+    {
+        if (term.kind == QUOTED) {
+            term.image = term.image.substring(1, term.image.length()-1);
+        }
+        switch (operator.kind) {
+            case OP_LESSTHAN:
+                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                                         "*", term.beginColumn, term.endColumn);
+                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LT,
+                                         EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                break;
+            case OP_LESSTHANEQ:
+                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                                         "*", term.beginColumn, term.endColumn);
+                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                                         EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                break;
+            case OP_MORETHAN:
+                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GT,
+                                         EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                                         "*", term.beginColumn, term.endColumn);
+                break;
+            case OP_MORETHANEQ:
+                qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE,
+                                         EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE,
+                                         "*", term.beginColumn, term.endColumn);
+                break;
+            default:
+                throw new Error("Unhandled case: operator="+operator.toString());
+        }
+        q = new ParametricRangeQueryNode(qLower, qUpper);
+    }
+  )
+| [
     LOOKAHEAD(2)
-    (
-    fieldToken=<TERM> <COLON> {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}    
-    )
+    fieldToken=<TERM>
+    ( <OP_COLON> | <OP_EQUAL> ) {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}
   ]
-
   (
    q=Term(field)
    | <LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)? {group=true;}
-
   )
+)
     {
       if (boost != null) {
 		  float f = (float)1.0;
@@ -376,6 +408,8 @@ QueryNode Term(CharSequence field) : {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean fuzzy = false;
   boolean regexp = false;
+  boolean startInc=false;
+  boolean endInc=false;
   QueryNode q =null; 
   ParametricQueryNode qLower, qUpper;
   float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
@@ -405,40 +439,25 @@ QueryNode Term(CharSequence field) : {
          q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
        }
      }
-     | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
-         [ <RANGEIN_TO> ] ( goop2=<RANGEIN_GOOP>|goop2=<RANGEIN_QUOTED> )
-         <RANGEIN_END> )
+     | ( ( <RANGEIN_START> {startInc=true;} | <RANGEEX_START> )
+         ( goop1=<RANGE_GOOP>|goop1=<RANGE_QUOTED> )
+         [ <RANGE_TO> ]
+         ( goop2=<RANGE_GOOP>|goop2=<RANGE_QUOTED> )
+         ( <RANGEIN_END> {endInc=true;} | <RANGEEX_END>))
        [ <CARAT> boost=<NUMBER> ]
         {
-          if (goop1.kind == RANGEIN_QUOTED) {
+          if (goop1.kind == RANGE_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
           }
-          if (goop2.kind == RANGEIN_QUOTED) {
+          if (goop2.kind == RANGE_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
           }
           
-          qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GE, 
+          qLower = new ParametricQueryNode(field, startInc ? ParametricQueryNode.CompareOperator.GE : ParametricQueryNode.CompareOperator.GT, 
 		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
-		  qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LE, 
+		  qUpper = new ParametricQueryNode(field, endInc ? ParametricQueryNode.CompareOperator.LE : ParametricQueryNode.CompareOperator.LT, 
 		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
           q = new ParametricRangeQueryNode(qLower, qUpper);
-        }
-     | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
-         [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
-         <RANGEEX_END> )
-       [ <CARAT> boost=<NUMBER> ]
-        {
-          if (goop1.kind == RANGEEX_QUOTED) {
-            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          }
-          if (goop2.kind == RANGEEX_QUOTED) {
-            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-          }
-          qLower = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.GT, 
-		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
-		  qUpper = new ParametricQueryNode(field, ParametricQueryNode.CompareOperator.LT, 
-		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
-          q = new ParametricRangeQueryNode(qLower, qUpper);		  
         }
      | term=<QUOTED> {q = new QuotedFieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image.substring(1, term.image.length()-1)), term.beginColumn + 1, term.endColumn - 1);}
        [ fuzzySlop=<FUZZY_SLOP> ]

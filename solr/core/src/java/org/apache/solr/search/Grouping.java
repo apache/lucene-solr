@@ -28,12 +28,16 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrFieldSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +73,7 @@ public class Grouping {
   private int maxDoc;
   private boolean needScores;
   private boolean getDocSet;
+  private boolean getGroupedDocSet;
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
   private DocSet filter;
@@ -86,8 +91,8 @@ public class Grouping {
    * @param searcher
    * @param qr
    * @param cmd
-   * @param cacheSecondPassSearch Whether to cache the documents and scores from the first pass search for the second
-   *                              pass search.
+   * @param cacheSecondPassSearch    Whether to cache the documents and scores from the first pass search for the second
+   *                                 pass search.
    * @param maxDocsPercentageToCache The maximum number of documents in a percentage relative from maxdoc
    *                                 that is allowed in the cache. When this threshold is met,
    *                                 the cache is not used in the second pass search.
@@ -154,7 +159,7 @@ public class Grouping {
     Query q = parser.getQuery();
     final Grouping.Command gc;
     if (q instanceof FunctionQuery) {
-      ValueSource valueSource = ((FunctionQuery)q).getValueSource();
+      ValueSource valueSource = ((FunctionQuery) q).getValueSource();
       if (valueSource instanceof StrFieldSource) {
         String field = ((StrFieldSource) valueSource).getField();
         CommandField commandField = new CommandField();
@@ -255,6 +260,11 @@ public class Grouping {
     return this;
   }
 
+  public Grouping setGetGroupedDocSet(boolean getGroupedDocSet) {
+    this.getGroupedDocSet = getGroupedDocSet;
+    return this;
+  }
+
   public List<Command> getCommands() {
     return commands;
   }
@@ -296,16 +306,21 @@ public class Grouping {
       cmd.prepare();
     }
 
+    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<Collector>(commands.size());
     for (Command cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
-      if (collector != null)
+      if (collector != null) {
         collectors.add(collector);
+      }
+      if (getGroupedDocSet && allGroupHeadsCollector == null) {
+        collectors.add(allGroupHeadsCollector = cmd.createAllGroupCollector());
+      }
     }
 
     Collector allCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
     DocSetCollector setCollector = null;
-    if (getDocSet) {
+    if (getDocSet && allGroupHeadsCollector == null) {
       setCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, allCollectors);
       allCollectors = setCollector;
     }
@@ -329,7 +344,12 @@ public class Grouping {
       searcher.search(query, luceneFilter, allCollectors);
     }
 
-    if (getDocSet) {
+    if (getGroupedDocSet && allGroupHeadsCollector != null) {
+      FixedBitSet fixedBitSet = allGroupHeadsCollector.retrieveGroupHeads(maxDoc);
+      long[] bits = fixedBitSet.getBits();
+      OpenBitSet openBitSet = new OpenBitSet(bits, bits.length);
+      qr.setDocSet(new BitDocSet(openBitSet));
+    } else if (getDocSet) {
       qr.setDocSet(setCollector.getDocSet());
     }
 
@@ -383,8 +403,8 @@ public class Grouping {
    * Returns offset + len if len equals zero or higher. Otherwise returns max.
    *
    * @param offset The offset
-   * @param len The number of documents to return
-   * @param max The number of document to return if len < 0 or if offset + len < 0
+   * @param len    The number of documents to return
+   * @param max    The number of document to return if len < 0 or if offset + len < 0
    * @return offset + len if len equals zero or higher. Otherwise returns max
    */
   int getMax(int offset, int len, int max) {
@@ -480,6 +500,17 @@ public class Grouping {
      * @throws IOException If I/O related errors occur
      */
     protected Collector createSecondPassCollector() throws IOException {
+      return null;
+    }
+
+    /**
+     * Returns a collector that is able to return the most relevant document of all groups.
+     * Returns <code>null</code> if the command doesn't support this type of collector.
+     *
+     * @return a collector that is able to return the most relevant document of all groups.
+     * @throws IOException If I/O related errors occur
+     */
+    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       return null;
     }
 
@@ -585,7 +616,8 @@ public class Grouping {
         }
       }
 
-      int len = docsGathered - offset;int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
+      int len = docsGathered - offset;
+      int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
       float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
       DocSlice docSlice = new DocSlice(offset, len, docs, docScores, getMatches(), maxScore);
 
@@ -670,6 +702,15 @@ public class Grouping {
       } else {
         return secondPass;
       }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+      Sort sortWithinGroup = groupSort != null ? groupSort : new Sort();
+      return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
     }
 
     /**
@@ -871,6 +912,12 @@ public class Grouping {
       } else {
         return secondPass;
       }
+    }
+
+    @Override
+    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+      Sort sortWithinGroup = groupSort != null ? groupSort : new Sort();
+      return new FunctionAllGroupHeadsCollector(groupBy, context, sortWithinGroup);
     }
 
     /**
@@ -1087,6 +1134,104 @@ public class Grouping {
       docValues = groupBy.getValues(vsContext, context);
       filler = docValues.getValueFiller();
       mval = filler.getValue();
+    }
+
+  }
+
+
+  static class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollector<FunctionAllGroupHeadsCollector.GroupHead> {
+
+    private final ValueSource groupBy;
+    private final Map vsContext;
+    private final Map<MutableValue, GroupHead> groups;
+    private final Sort sortWithinGroup;
+
+    private DocValues docValues;
+    private DocValues.ValueFiller filler;
+    private MutableValue mval;
+    private AtomicReaderContext readerContext;
+    private Scorer scorer;
+
+    FunctionAllGroupHeadsCollector(ValueSource groupBy, Map vsContext, Sort sortWithinGroup) {
+      super(sortWithinGroup.getSort().length);
+      groups = new HashMap<MutableValue, GroupHead>();
+      this.sortWithinGroup = sortWithinGroup;
+      this.groupBy = groupBy;
+      this.vsContext = vsContext;
+
+      final SortField[] sortFields = sortWithinGroup.getSort();
+      for (int i = 0; i < sortFields.length; i++) {
+        reversed[i] = sortFields[i].getReverse() ? -1 : 1;
+      }
+    }
+
+    protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
+      filler.fillValue(doc);
+      GroupHead groupHead = groups.get(mval);
+      if (groupHead == null) {
+        MutableValue groupValue = mval.duplicate();
+        groupHead = new GroupHead(groupValue, sortWithinGroup, doc);
+        groups.put(groupValue, groupHead);
+        temporalResult.stop = true;
+      } else {
+        temporalResult.stop = false;
+      }
+      this.temporalResult.groupHead = groupHead;
+    }
+
+    protected Collection<GroupHead> getCollectedGroupHeads() {
+      return groups.values();
+    }
+
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      for (GroupHead groupHead : groups.values()) {
+        for (FieldComparator comparator : groupHead.comparators) {
+          comparator.setScorer(scorer);
+        }
+      }
+    }
+
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+      this.readerContext = context;
+      docValues = groupBy.getValues(vsContext, context);
+      filler = docValues.getValueFiller();
+      mval = filler.getValue();
+
+      for (GroupHead groupHead : groups.values()) {
+        for (int i = 0; i < groupHead.comparators.length; i++) {
+          groupHead.comparators[i] = groupHead.comparators[i].setNextReader(context);
+        }
+      }
+    }
+
+    class GroupHead extends AbstractAllGroupHeadsCollector.GroupHead<MutableValue> {
+
+      final FieldComparator[] comparators;
+
+      private GroupHead(MutableValue groupValue, Sort sort, int doc) throws IOException {
+        super(groupValue, doc + readerContext.docBase);
+        final SortField[] sortFields = sort.getSort();
+        comparators = new FieldComparator[sortFields.length];
+        for (int i = 0; i < sortFields.length; i++) {
+          comparators[i] = sortFields[i].getComparator(1, i).setNextReader(readerContext);
+          comparators[i].setScorer(scorer);
+          comparators[i].copy(0, doc);
+          comparators[i].setBottom(0);
+        }
+      }
+
+      public int compare(int compIDX, int doc) throws IOException {
+        return comparators[compIDX].compareBottom(doc);
+      }
+
+      public void updateDocHead(int doc) throws IOException {
+        for (FieldComparator comparator : comparators) {
+          comparator.copy(0, doc);
+          comparator.setBottom(0);
+        }
+        this.doc = doc + readerContext.docBase;
+      }
     }
 
   }

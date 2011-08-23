@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
@@ -30,6 +31,7 @@ import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   public static final String SCORE_COMP = AbstractLuceneSpellChecker.SCORE_COMP;
   public static final String FREQ_COMP = AbstractLuceneSpellChecker.FREQ_COMP;
   public static final String FIELD = AbstractLuceneSpellChecker.FIELD;
+  public static final String FIELD_TYPE = AbstractLuceneSpellChecker.FIELD_TYPE;
   public static final String STRING_DISTANCE = AbstractLuceneSpellChecker.STRING_DISTANCE;
   public static final String ACCURACY = AbstractLuceneSpellChecker.ACCURACY;
   public static final String THRESHOLD_TOKEN_FREQUENCY = IndexBasedSpellChecker.THRESHOLD_TOKEN_FREQUENCY;
@@ -91,6 +94,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   
   private DirectSpellChecker checker = new DirectSpellChecker();
   private String field;
+  private String fieldTypeName;
   
   @Override
   public String init(NamedList config, SolrCore core) {
@@ -114,6 +118,19 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
       sd = (StringDistance) core.getResourceLoader().newInstance(distClass);
 
     field = (String) config.get(FIELD);
+    // setup analyzer for field
+    if (field != null && core.getSchema().getFieldTypeNoEx(field) != null)  {
+      analyzer = core.getSchema().getFieldType(field).getQueryAnalyzer();
+    }
+    fieldTypeName = (String) config.get(FIELD_TYPE);
+    if (core.getSchema().getFieldTypes().containsKey(fieldTypeName))  {
+      FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
+      analyzer = fieldType.getQueryAnalyzer();
+    }
+    if (analyzer == null)   {
+      LOG.info("Using WhitespaceAnalyzer for dictionary: " + name);
+      analyzer = new WhitespaceAnalyzer(core.getSolrConfig().luceneMatchVersion);
+    }
     
     float minAccuracy = DEFAULT_ACCURACY;
     Float accuracy = (Float) config.get(ACCURACY);

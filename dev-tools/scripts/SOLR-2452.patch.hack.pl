@@ -30,11 +30,20 @@ use strict;
 use warnings;
 
 my @moves = (
+    'solr/contrib/analysis-extras/src/test-files/solr-analysis-extras'
+ => 'solr/contrib/analysis-extras/src/test-files/analysis-extras/solr',
+
+    'solr/contrib/analysis-extras/src/test-files'
+ => 'solr/contrib/analysis-extras/src/test-files/analysis-extras',
+
     'solr/contrib/clustering/src/test/java'
  => 'solr/contrib/clustering/src/test',
 
+    'solr/contrib/clustering/src/test/resources/solr-clustering'
+ => 'solr/contrib/clustering/src/test-files/clustering/solr',
+
     'solr/contrib/clustering/src/test/resources'
- => 'solr/contrib/clustering/src/test-files',
+ => 'solr/contrib/clustering/src/test-files/clustering',
 
     'solr/contrib/clustering/src/main/java'
  => 'solr/contrib/clustering/src/java',
@@ -42,8 +51,11 @@ my @moves = (
     'solr/contrib/dataimporthandler/src/test/java'
  => 'solr/contrib/dataimporthandler/src/test',
 
+    'solr/contrib/dataimporthandler/src/test/resources/solr-dih'
+ => 'solr/contrib/dataimporthandler/src/test-files/dih/solr',
+
     'solr/contrib/dataimporthandler/src/test/resources'
- => 'solr/contrib/dataimporthandler/src/test-files',
+ => 'solr/contrib/dataimporthandler/src/test-files/dih',
 
     'solr/contrib/dataimporthandler/src/main/java'
  => 'solr/contrib/dataimporthandler/src/java',
@@ -54,8 +66,11 @@ my @moves = (
     'solr/contrib/dataimporthandler/src/extras/test/java'
  => 'solr/contrib/dataimporthandler-extras/src/test',
 
+    'solr/contrib/dataimporthandler/src/extras/test/resources/solr-dihextras'
+ => 'solr/contrib/dataimporthandler-extras/src/test-files/dihextras/solr',
+
     'solr/contrib/dataimporthandler/src/extras/test/resources'
- => 'solr/contrib/dataimporthandler-extras/src/test-files',
+ => 'solr/contrib/dataimporthandler-extras/src/test-files/dihextras',
 
     'solr/contrib/dataimporthandler/src/extras/main/java'
  => 'solr/contrib/dataimporthandler-extras/src/java',
@@ -63,8 +78,11 @@ my @moves = (
     'solr/contrib/extraction/src/test/java'
  => 'solr/contrib/extraction/src/test',
 
+    'solr/contrib/extraction/src/test/resources/solr-extraction'
+ => 'solr/contrib/extraction/src/test-files/extraction/solr',
+
     'solr/contrib/extraction/src/test/resources'
- => 'solr/contrib/extraction/src/test-files',
+ => 'solr/contrib/extraction/src/test-files/extraction',
 
     'solr/contrib/extraction/src/main/java'
  => 'solr/contrib/extraction/src/java',
@@ -72,8 +90,11 @@ my @moves = (
     'solr/contrib/uima/src/test/java'
  => 'solr/contrib/uima/src/test',
 
+    'solr/contrib/uima/src/test/resources/solr-uima'
+ => 'solr/contrib/uima/src/test-files/uima/solr',
+
     'solr/contrib/uima/src/test/resources'
- => 'solr/contrib/uima/src/test-files',
+ => 'solr/contrib/uima/src/test-files/uima',
 
     'solr/contrib/uima/src/main/java'
  => 'solr/contrib/uima/src/java',
@@ -82,13 +103,13 @@ my @moves = (
  => 'solr/contrib/uima/src/resources',
 
     'solr/src/test-files/books.csv'
- => 'solr/solrj/src/test-files/books.csv',
+ => 'solr/solrj/src/test-files/solrj/books.csv',
 
     'solr/src/test-files/sampleDateFacetResponse.xml'
- => 'solr/solrj/src/test-files/sampleDateFacetResponse.xml',
+ => 'solr/solrj/src/test-files/solrj/sampleDateFacetResponse.xml',
 
     'solr/src/test-files/solr/shared'
- => 'solr/solrj/src/test-files/solr/shared',
+ => 'solr/solrj/src/test-files/solrj/solr/shared',
 
     'solr/src/solrj'
  => 'solr/solrj/src/java',
@@ -150,19 +171,19 @@ my @moves = (
 
 my @copies = (
     'solr/core/src/test-files/README'
- => 'solr/solrj/src/test-files/README',
+ => 'solr/solrj/src/test-files/solrj/README',
 
     'solr/core/src/test-files/solr/crazy-path-to-schema.xml'
- => 'solr/solrj/src/test-files/solr/crazy-path-to-schema.xml',
+ => 'solr/solrj/src/test-files/solrj/solr/crazy-path-to-schema.xml',
 
     'solr/core/src/test-files/solr/conf/schema.xml'
- => 'solr/solrj/src/test-files/solr/conf/schema.xml',
+ => 'solr/solrj/src/test-files/solrj/solr/conf/schema.xml',
 
     'solr/core/src/test-files/solr/conf/schema-replication1.xml'
- => 'solr/solrj/src/test-files/solr/conf/schema-replication1.xml',
+ => 'solr/solrj/src/test-files/solrj/solr/conf/schema-replication1.xml',
 
     'solr/core/src/test-files/solr/conf/solrconfig-slave1.xml'
- => 'solr/solrj/src/test-files/solr/conf/solrconfig-slave1.xml',
+ => 'solr/solrj/src/test-files/solrj/solr/conf/solrconfig-slave1.xml',
 );
 
 my $diff;

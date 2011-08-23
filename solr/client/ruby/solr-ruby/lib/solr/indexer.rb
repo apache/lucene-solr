@@ -42,7 +42,7 @@ class Solr::Indexer
     end
     add_docs(buffer) if !buffer.empty?
     
-    @solr.commit unless @debug
+    @solr.commit unless @debug  # TODO: provide option to not commit
   end
   
   def add_docs(documents)

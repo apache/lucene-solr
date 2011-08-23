@@ -38,22 +38,10 @@ import java.io.IOException;
  * </ul>
  *
  **/
-public class MMapDirectoryFactory extends DirectoryFactory {
+public class MMapDirectoryFactory extends CachingDirectoryFactory {
   private transient static Logger log = LoggerFactory.getLogger(MMapDirectoryFactory.class);
   boolean unmapHack;
   private int maxChunk;
-
-  @Override
-  public Directory open(String path) throws IOException {
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path));
-    try {
-      mapDirectory.setUseUnmap(unmapHack);
-    } catch (Exception e) {
-      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
-    }
-    mapDirectory.setMaxChunkSize(maxChunk);
-    return mapDirectory;
-  }
 
   @Override
   public void init(NamedList args) {
@@ -63,5 +51,17 @@ public class MMapDirectoryFactory extends DirectoryFactory {
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }
     unmapHack = params.getBool("unmap", true);
+  }
+
+  @Override
+  protected Directory create(String path) throws IOException {
+    MMapDirectory mapDirectory = new MMapDirectory(new File(path));
+    try {
+      mapDirectory.setUseUnmap(unmapHack);
+    } catch (Exception e) {
+      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
+    }
+    mapDirectory.setMaxChunkSize(maxChunk);
+    return mapDirectory;
   }
 }

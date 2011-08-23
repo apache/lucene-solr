@@ -33,14 +33,14 @@ public class TestPropInjectDefaults extends SolrTestCaseJ4 {
 
   @Test
   public void testMergePolicyDefaults() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter(h.getCore());
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getConfig().getMergePolicy();
     assertEquals(32.0, mp.getMaxMergeMB(), 0);
   }
   
   @Test
   public void testPropsDefaults() throws Exception {
-    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter();
+    IndexWriter writer = ((DirectUpdateHandler2)h.getCore().getUpdateHandler()).getIndexWriterProvider().getIndexWriter(h.getCore());
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getConfig().getMergeScheduler();
     assertEquals(4, cms.getMaxThreadCount());
   }

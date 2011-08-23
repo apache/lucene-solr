@@ -25,13 +25,6 @@
 
   <import file="../contrib-build.xml"/>
 
-  <module-uptodate name="analysis/icu" jarfile="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"
-	    property="analyzers-icu.uptodate" classpath.property="analyzers-icu.jar"/>
-  <module-uptodate name="analysis/smartcn" jarfile="${common.dir}/../modules/analysis/build/smartcn/lucene-analyzers-smartcn-${version}.jar"
-		property="analyzers-smartcn.uptodate" classpath.property="analyzers-smartcn.jar"/>
-  <module-uptodate name="analysis/stempel" jarfile="${common.dir}/../modules/analysis/build/stempel/lucene-analyzers-stempel-${version}.jar"
-		property="analyzers-stempel.uptodate" classpath.property="analyzers-stempel.jar"/>
-
   <path id="classpath">
   	<pathelement path="${analyzers-icu.jar}"/>
   	<pathelement path="${analyzers-smartcn.jar}"/>
@@ -39,26 +32,8 @@
     <path refid="solr.base.classpath"/>
   </path>
 
-  <target name="compile-analyzers-icu" unless="analyzers-icu.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/icu" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="compile-analyzers-smartcn" unless="analyzers-smartcn.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/smartcn" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <target name="compile-analyzers-stempel" unless="analyzers-stempel.uptodate">
-  	<ant dir="${common.dir}/../modules/analysis/stempel" target="default" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
   <target name="module-jars-to-solr"
-          depends="compile-analyzers-icu, compile-analyzers-smartcn, compile-analyzers-stempel">
+          depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel">
     <mkdir dir="${build.dir}/lucene-libs"/>
     <copy todir="${build.dir}/lucene-libs" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset file="${analyzers-icu.jar}"/>
@@ -67,5 +42,6 @@
     </copy>
   </target>
 
-  <target name="compile-core" depends="module-jars-to-solr, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="jar-analyzers-icu, jar-analyzers-smartcn, jar-analyzers-stempel, solr-contrib-build.compile-core"/>
+  <target name="dist" depends="module-jars-to-solr, common-solr.dist"/>
 </project>

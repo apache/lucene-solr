@@ -715,8 +715,14 @@ public final class SegmentInfo implements Cloneable {
       if (getHasVectors()) {
         s.append('v');
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    } catch (Throwable e) {
+      // Messy: because getHasVectors may be used in an
+      // un-thread-safe way, and may attempt to open an fnm
+      // file that has since (legitimately) been deleted by
+      // IndexWriter, instead of throwing these exceptions
+      // up, just add v? to indicate we don't know if this
+      // segment has vectors:
+      s.append("v?");
     }
     s.append(docCount);
 

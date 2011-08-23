@@ -593,10 +593,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
 
   @Override
-  public void loadTermsIndex(int indexDivisor) {
-  }
-
-  @Override
   public void close() throws IOException {
     in.close();
   }

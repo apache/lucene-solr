@@ -45,7 +45,7 @@ class DebugLogger {
   private Stack<DebugInfo> debugStack;
 
   NamedList output;
-  private final SolrWriter writer;
+//  private final SolrWriter writer1;
 
   private static final String LINE = "---------------------------------------------";
 
@@ -54,8 +54,8 @@ class DebugLogger {
 
   boolean enabled = true;
 
-  public DebugLogger(SolrWriter solrWriter) {
-    writer = solrWriter;
+  public DebugLogger() {
+//    writer = solrWriter;
     output = new NamedList();
     debugStack = new Stack<DebugInfo>() {
 
@@ -67,7 +67,7 @@ class DebugLogger {
         return super.pop();
       }
     };
-    debugStack.push(new DebugInfo(null, -1, null));
+    debugStack.push(new DebugInfo(null, DIHLogLevels.NONE, null));
     output = debugStack.peek().lst;
   }
 
@@ -75,47 +75,47 @@ class DebugLogger {
     return debugStack.isEmpty() ? null : debugStack.peek();
   }
 
-  public void log(int event, String name, Object row) {
-    if (event == SolrWriter.DISABLE_LOGGING) {
+  public void log(DIHLogLevels event, String name, Object row) {
+    if (event == DIHLogLevels.DISABLE_LOGGING) {
       enabled = false;
       return;
-    } else if (event == SolrWriter.ENABLE_LOGGING) {
+    } else if (event == DIHLogLevels.ENABLE_LOGGING) {
       enabled = true;
       return;
     }
 
-    if (!enabled && event != SolrWriter.START_ENTITY
-            && event != SolrWriter.END_ENTITY) {
+    if (!enabled && event != DIHLogLevels.START_ENTITY
+            && event != DIHLogLevels.END_ENTITY) {
       return;
     }
 
-    if (event == SolrWriter.START_DOC) {
-      debugStack.push(new DebugInfo(null, SolrWriter.START_DOC, peekStack()));
-    } else if (SolrWriter.START_ENTITY == event) {
+    if (event == DIHLogLevels.START_DOC) {
+      debugStack.push(new DebugInfo(null, DIHLogLevels.START_DOC, peekStack()));
+    } else if (DIHLogLevels.START_ENTITY == event) {
       debugStack
-              .push(new DebugInfo(name, SolrWriter.START_ENTITY, peekStack()));
-    } else if (SolrWriter.ENTITY_OUT == event
-            || SolrWriter.PRE_TRANSFORMER_ROW == event) {
-      if (debugStack.peek().type == SolrWriter.START_ENTITY
-              || debugStack.peek().type == SolrWriter.START_DOC) {
+              .push(new DebugInfo(name, DIHLogLevels.START_ENTITY, peekStack()));
+    } else if (DIHLogLevels.ENTITY_OUT == event
+            || DIHLogLevels.PRE_TRANSFORMER_ROW == event) {
+      if (debugStack.peek().type == DIHLogLevels.START_ENTITY
+              || debugStack.peek().type == DIHLogLevels.START_DOC) {
         debugStack.peek().lst.add(null, fmt.format(new Object[]{++debugStack
                 .peek().rowCount}));
         addToNamedList(debugStack.peek().lst, row);
         debugStack.peek().lst.add(null, LINE);
       }
-    } else if (event == SolrWriter.ROW_END) {
+    } else if (event == DIHLogLevels.ROW_END) {
       popAllTransformers();
-    } else if (SolrWriter.END_ENTITY == event) {
-      while (debugStack.pop().type != SolrWriter.START_ENTITY)
+    } else if (DIHLogLevels.END_ENTITY == event) {
+      while (debugStack.pop().type != DIHLogLevels.START_ENTITY)
         ;
-    } else if (SolrWriter.END_DOC == event) {
-      while (debugStack.pop().type != SolrWriter.START_DOC)
+    } else if (DIHLogLevels.END_DOC == event) {
+      while (debugStack.pop().type != DIHLogLevels.START_DOC)
         ;
-    } else if (event == SolrWriter.TRANSFORMER_EXCEPTION) {
+    } else if (event == DIHLogLevels.TRANSFORMER_EXCEPTION) {
       debugStack.push(new DebugInfo(name, event, peekStack()));
       debugStack.peek().lst.add("EXCEPTION",
               getStacktraceString((Exception) row));
-    } else if (SolrWriter.TRANSFORMED_ROW == event) {
+    } else if (DIHLogLevels.TRANSFORMED_ROW == event) {
       debugStack.push(new DebugInfo(name, event, peekStack()));
       debugStack.peek().lst.add(null, LINE);
       addToNamedList(debugStack.peek().lst, row);
@@ -124,10 +124,10 @@ class DebugLogger {
         DataImportHandlerException dataImportHandlerException = (DataImportHandlerException) row;
         dataImportHandlerException.debugged = true;
       }
-    } else if (SolrWriter.ENTITY_META == event) {
+    } else if (DIHLogLevels.ENTITY_META == event) {
       popAllTransformers();
       debugStack.peek().lst.add(name, row);
-    } else if (SolrWriter.ENTITY_EXCEPTION == event) {
+    } else if (DIHLogLevels.ENTITY_EXCEPTION == event) {
       if (row instanceof DataImportHandlerException) {
         DataImportHandlerException dihe = (DataImportHandlerException) row;
         if (dihe.debugged)
@@ -143,8 +143,8 @@ class DebugLogger {
 
   private void popAllTransformers() {
     while (true) {
-      int type = debugStack.peek().type;
-      if (type == SolrWriter.START_DOC || type == SolrWriter.START_ENTITY)
+    	DIHLogLevels type = debugStack.peek().type;
+      if (type == DIHLogLevels.START_DOC || type == DIHLogLevels.START_ENTITY)
         break;
       debugStack.pop();
     }
@@ -181,23 +181,23 @@ class DebugLogger {
 
       @Override
       public Object getData(String query) {
-        writer.log(SolrWriter.ENTITY_META, "query", query);
+        log(DIHLogLevels.ENTITY_META, "query", query);
         long start = System.currentTimeMillis();
         try {
           return ds.getData(query);
         } catch (DataImportHandlerException de) {
-          writer.log(SolrWriter.ENTITY_EXCEPTION,
+          log(DIHLogLevels.ENTITY_EXCEPTION,
                   null, de);
           throw de;
         } catch (Exception e) {
-          writer.log(SolrWriter.ENTITY_EXCEPTION,
+          log(DIHLogLevels.ENTITY_EXCEPTION,
                   null, e);
           DataImportHandlerException de = new DataImportHandlerException(
                   DataImportHandlerException.SEVERE, "", e);
           de.debugged = true;
           throw de;
         } finally {
-          writer.log(SolrWriter.ENTITY_META, "time-taken", DocBuilder
+          log(DIHLogLevels.ENTITY_META, "time-taken", DocBuilder
                   .getTimeElapsedSince(start));
         }
       }
@@ -208,18 +208,18 @@ class DebugLogger {
     return new Transformer() {
       @Override
       public Object transformRow(Map<String, Object> row, Context context) {
-        writer.log(SolrWriter.PRE_TRANSFORMER_ROW, null, row);
+        log(DIHLogLevels.PRE_TRANSFORMER_ROW, null, row);
         String tName = getTransformerName(t);
         Object result = null;
         try {
           result = t.transformRow(row, context);
-          writer.log(SolrWriter.TRANSFORMED_ROW, tName, result);
+          log(DIHLogLevels.TRANSFORMED_ROW, tName, result);
         } catch (DataImportHandlerException de) {
-          writer.log(SolrWriter.TRANSFORMER_EXCEPTION, tName, de);
+          log(DIHLogLevels.TRANSFORMER_EXCEPTION, tName, de);
           de.debugged = true;
           throw de;
         } catch (Exception e) {
-          writer.log(SolrWriter.TRANSFORMER_EXCEPTION, tName, e);
+          log(DIHLogLevels.TRANSFORMER_EXCEPTION, tName, e);
           DataImportHandlerException de = new DataImportHandlerException(DataImportHandlerException.SEVERE, "", e);
           de.debugged = true;
           throw de;
@@ -258,23 +258,23 @@ class DebugLogger {
 
     NamedList lst;
 
-    int type;
+    DIHLogLevels type;
 
     DebugInfo parent;
 
-    public DebugInfo(String name, int type, DebugInfo parent) {
+    public DebugInfo(String name, DIHLogLevels type, DebugInfo parent) {
       this.name = name;
       this.type = type;
       this.parent = parent;
       lst = new NamedList();
       if (parent != null) {
         String displayName = null;
-        if (type == SolrWriter.START_ENTITY) {
+        if (type == DIHLogLevels.START_ENTITY) {
           displayName = "entity:" + name;
-        } else if (type == SolrWriter.TRANSFORMED_ROW
-                || type == SolrWriter.TRANSFORMER_EXCEPTION) {
+        } else if (type == DIHLogLevels.TRANSFORMED_ROW
+                || type == DIHLogLevels.TRANSFORMER_EXCEPTION) {
           displayName = "transformer:" + name;
-        } else if (type == SolrWriter.START_DOC) {
+        } else if (type == DIHLogLevels.START_DOC) {
           this.name = displayName = "document#" + SolrWriter.getDocCount();
         }
         parent.lst.add(displayName, lst);

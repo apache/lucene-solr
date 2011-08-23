@@ -70,14 +70,16 @@ public class Test2BPostings extends LuceneTestCase {
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(doc);
-      if (i % 100000 == 0) {
+      if (VERBOSE && i % 100000 == 0) {
         System.out.println(i + " of " + numDocs + "...");
       }
     }
     w.optimize();
     w.close();
     CheckIndex ci = new CheckIndex(dir);
-    ci.setInfoStream(System.out);
+    if (VERBOSE) {
+      ci.setInfoStream(System.out);
+    }
     ci.checkIndex();
     dir.close();
   }

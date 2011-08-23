@@ -18,25 +18,20 @@
 package org.apache.solr.update;
 
 
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Vector;
 import java.io.IOException;
+import java.util.Vector;
 
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.core.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <code>UpdateHandler</code> handles requests to change the index
@@ -111,34 +106,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
   }
-
-  protected final Term idTerm(String readableId) {
-    // to correctly create the Term, the string needs to be run
-    // through the Analyzer for that field.
-    return new Term(idField.getName(), idFieldType.toInternal(readableId));
-  }
-
-  protected final String getIndexedId(Document doc) {
-    if (idField == null)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Operation requires schema to have a unique key field");
-
-    // Right now, single valued fields that require value transformation from external to internal (indexed)
-    // form have that transformation already performed and stored as the field value.
-    Fieldable[] id = doc.getFieldables( idField.getName() );
-    if (id == null || id.length < 1)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + idField.getName());
-    if( id.length > 1 )
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + idField.getName());
-
-    return idFieldType.storedToIndexed( id[0] );
-  }
-
-  protected final String getIndexedIdOptional(Document doc) {
-    if (idField == null) return null;
-    Fieldable f = doc.getFieldable(idField.getName());
-    if (f == null) return null;
-    return idFieldType.storedToIndexed(f);
-  }
   
   /**
    * Allows the UpdateHandler to create the SolrIndexSearcher after it
@@ -157,6 +124,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    */
   public abstract void newIndexWriter() throws IOException;
 
+  public abstract SolrCoreState getIndexWriterProvider();
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;
@@ -165,44 +133,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
   public abstract void close() throws IOException;
-
-
-  static class DeleteHitCollector extends Collector {
-    public int deleted=0;
-    public final SolrIndexSearcher searcher;
-    private int docBase;
-
-    public DeleteHitCollector(SolrIndexSearcher searcher) {
-      this.searcher = searcher;
-    }
-
-    @Override
-    public void collect(int doc) {
-      try {
-        searcher.getIndexReader().deleteDocument(doc + docBase);
-        deleted++;
-      } catch (IOException e) {
-        // don't try to close the searcher on failure for now...
-        // try { closeSearcher(); } catch (Exception ee) { SolrException.log(log,ee); }
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error deleting doc# "+doc,e,false);
-      }
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      docBase = context.docBase;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      
-    }
-  }
 
 
   /**

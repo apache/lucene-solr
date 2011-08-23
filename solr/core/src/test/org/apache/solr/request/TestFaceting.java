@@ -38,6 +38,12 @@ public class TestFaceting extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema11.xml");
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+  }
+
   @After
   @Override
   public void tearDown() throws Exception {

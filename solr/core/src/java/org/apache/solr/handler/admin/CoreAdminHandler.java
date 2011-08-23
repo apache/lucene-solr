@@ -17,7 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -33,6 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -43,6 +46,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Properties;
 
 /**
  *
@@ -181,6 +186,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     RefCounted<SolrIndexSearcher>[] searchers = null;
     // stores readers created from indexDir param values
     IndexReader[] readersToBeClosed = null;
+    Directory[] dirsToBeReleased = null;
     if (core != null) {
       try {
         String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
@@ -201,9 +207,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
         } else  {
           readersToBeClosed = new IndexReader[dirNames.length];
+          dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
-            readersToBeClosed[i] = IndexReader.open(dirFactory.open(dirNames[i]), true);
+            Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().mainIndexConfig.lockType);
+            dirsToBeReleased[i] = dir;
+            readersToBeClosed[i] = IndexReader.open(dir, true);
           }
         }
 
@@ -239,6 +248,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
         }
         if (readersToBeClosed != null) IOUtils.closeSafely(true, readersToBeClosed);
+        if (dirsToBeReleased != null) {
+          for (Directory dir : dirsToBeReleased) {
+            DirectoryFactory dirFactory = core.getDirectoryFactory();
+            dirFactory.release(dir);
+          }
+        }
         if (wrappedReq != null) wrappedReq.close();
         core.close();
       }
@@ -306,8 +321,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (opts != null)
           cd.setShardId(opts);
       }
-
-      dcore.setCoreProperties(null);
+      
+      // Process all property.name=value parameters and set them as name=value core properties
+      Properties coreProperties = new Properties();
+      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
+      while (parameterNamesIterator.hasNext()) {
+          String parameterName = parameterNamesIterator.next();
+          if(parameterName.startsWith(CoreAdminParams.PROPERTY_PREFIX)) {
+              String parameterValue = params.get(parameterName);
+              String propertyName = parameterName.substring(CoreAdminParams.PROPERTY_PREFIX.length()); // skip prefix
+              coreProperties.put(propertyName, parameterValue);
+          }
+      }
+      dcore.setCoreProperties(coreProperties);
+      
       SolrCore core = coreContainer.create(dcore);
       coreContainer.register(name, core, false);
       rsp.add("core", core.getName());
@@ -401,12 +428,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         @Override
         public void postClose(SolrCore core) {
           File dataDir = new File(core.getIndexDir());
-          for (File file : dataDir.listFiles()) {
-            if (!file.delete()) {
-              log.error(file.getAbsolutePath() + " could not be deleted on core unload");
+          File[] files = dataDir.listFiles();
+          if (files != null) {
+            for (File file : files) {
+              if (!file.delete()) {
+                log.error(file.getAbsolutePath()
+                    + " could not be deleted on core unload");
+              }
             }
+            if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
+                + " could not be deleted on core unload");
+          } else {
+            log.error(dataDir.getAbsolutePath()
+                + " could not be deleted on core unload");
           }
-          if (!dataDir.delete()) log.error(dataDir.getAbsolutePath() + " could not be deleted on core unload");
         }
       });
     }
@@ -530,7 +565,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
         try {
-          info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader(), false));
+          SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader(), false);
+          long size = getIndexSize(core);
+          indexInfo.add("sizeInBytes", size);
+          indexInfo.add("size", NumberUtils.readableSize(size));
+          info.add("index", indexInfo);
         } finally {
           searcher.decref();
         }
@@ -539,6 +578,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
     }
     return info;
+  }
+  
+  private long getIndexSize(SolrCore core) {
+    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
   }
 
   protected static String normalizePath(String path) {

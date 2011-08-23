@@ -23,7 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 import morfologik.stemming.PolishStemmer.DICTIONARY;
@@ -62,14 +62,14 @@ public class MorfologikAnalyzer extends ReusableAnalyzerBase {
 
   /**
    * Creates a
-   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    * which tokenizes all the text in the provided {@link Reader}.
    * 
    * @param field ignored field name
    * @param reader source of tokens
    * 
    * @return A
-   *         {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter} and {@link MorfologikFilter}.
    */

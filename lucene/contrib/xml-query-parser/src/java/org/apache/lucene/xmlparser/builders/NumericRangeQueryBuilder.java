@@ -80,48 +80,46 @@ import org.w3c.dom.Element;
  * <td>4</td>
  * </tr>
  * </table>
- * <p>
+ * <p/>
  * A {@link ParserException} will be thrown if an error occurs parsing the
  * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
  * specified by <tt>type</tt>.
  */
 public class NumericRangeQueryBuilder implements QueryBuilder {
 
-	public Query getQuery(Element e) throws ParserException {
-		String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-		String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
-		String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
-		boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
-		boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-		int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
+  public Query getQuery(Element e) throws ParserException {
+    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
+    String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
+    boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
+    boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
+    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
 
-		String type = DOMUtils.getAttribute(e, "type", "int");
-		try {
-			Query filter;
-			if (type.equalsIgnoreCase("int")) {
-				filter = NumericRangeQuery.newIntRange(field, precisionStep, Integer
-						.valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("long")) {
-				filter = NumericRangeQuery.newLongRange(field, precisionStep, Long
-						.valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("double")) {
-				filter = NumericRangeQuery.newDoubleRange(field, precisionStep, Double
-						.valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("float")) {
-				filter = NumericRangeQuery.newFloatRange(field, precisionStep, Float
-						.valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else {
-				throw new ParserException(
-						"type attribute must be one of: [long, int, double, float]");
-			}
-			return filter;
-		} catch (NumberFormatException nfe) {
-			throw new ParserException(
-					"Could not parse lowerTerm or upperTerm into a number", nfe);
-		}
-	}
+    String type = DOMUtils.getAttribute(e, "type", "int");
+    try {
+      Query filter;
+      if (type.equalsIgnoreCase("int")) {
+        filter = NumericRangeQuery.newIntRange(field, precisionStep, Integer
+            .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("long")) {
+        filter = NumericRangeQuery.newLongRange(field, precisionStep, Long
+            .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("double")) {
+        filter = NumericRangeQuery.newDoubleRange(field, precisionStep, Double
+            .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("float")) {
+        filter = NumericRangeQuery.newFloatRange(field, precisionStep, Float
+            .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else {
+        throw new ParserException("type attribute must be one of: [long, int, double, float]");
+      }
+      return filter;
+    } catch (NumberFormatException nfe) {
+      throw new ParserException("Could not parse lowerTerm or upperTerm into a number", nfe);
+    }
+  }
 }

@@ -17,13 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ReaderUtil;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Comparator;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Exposes flex API, merged from flex API of
@@ -56,6 +58,23 @@ public final class MultiTerms extends Terms {
     }
 
     termComp = _termComp;
+  }
+
+  @Override
+  public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
+    for(int i=0;i<subs.length;i++) {
+      final TermsEnum termsEnum = subs[i].intersect(compiled, startTerm);
+      if (termsEnum != null) {
+        termsEnums.add(new MultiTermsEnum.TermsEnumIndex(termsEnum, i));
+      }
+    }
+
+    if (termsEnums.size() > 0) {
+      return new MultiTermsEnum(subSlices).reset(termsEnums.toArray(MultiTermsEnum.TermsEnumIndex.EMPTY_ARRAY));
+    } else {
+      return TermsEnum.EMPTY;
+    }
   }
 
   @Override

@@ -14,6 +14,16 @@ var loader = {
     
 };
 
+Number.prototype.esc = function()
+{
+    return new String( this ).esc();
+}
+
+String.prototype.esc = function()
+{
+    return this.replace( /</g, '&lt;' ).replace( />/g, '&gt;' );
+}
+
 var sammy = $.sammy
 (
     function()
@@ -712,7 +722,7 @@ var sammy = $.sammy
 
                             for( var key in response.levels )
                             {
-                                var level = response.levels[key];
+                                var level = response.levels[key].esc();
                                 loglevel += '<li class="' + level + '"><a>' + level + '</a></li>' + "\n";
                             }
 
@@ -754,8 +764,8 @@ var sammy = $.sammy
                                     logger_content += '<li class="jstree-leaf">';
                                     logger_content += '<ins class="jstree-icon">&nbsp;</ins>';
                                     logger_content += '<a class="trigger ' + classes.join( ' ' ) + '" ' + "\n" +
-                                                         'title="' + logger_name + '"><span>' + "\n" +
-                                                        logger_name.split( '.' ).pop() + "\n" +
+                                                         'title="' + logger_name.esc() + '"><span>' + "\n" +
+                                                        logger_name.split( '.' ).pop().esc() + "\n" +
                                                       '</span></a>';
 
                                     logger_content += loglevel
@@ -800,7 +810,7 @@ var sammy = $.sammy
                                     function( index, element )
                                     {
                                         var element = $( element );
-                                        var effective_level = $( '.effective_level span', element ).html();
+                                        var effective_level = $( '.effective_level span', element ).text();
 
                                         element
                                             .css( 'z-index', 800 - index );
@@ -891,11 +901,11 @@ var sammy = $.sammy
                                 }
 
                                 var item_content = '<li><dl class="' + item_class + '">' + "\n" +
-                                                   '<dt>' + displayed_key + '</dt>' + "\n";
+                                                   '<dt>' + displayed_key.esc() + '</dt>' + "\n";
 
                                 for( var i in displayed_value )
                                 {
-                                    item_content += '<dd>' + displayed_value[i] + '</dd>' + "\n";
+                                    item_content += '<dd>' + displayed_value[i].esc() + '</dd>' + "\n";
                                 }
 
                                 item_content += '</dl></li>';
@@ -965,8 +975,8 @@ var sammy = $.sammy
                                     var c = 0;
                                     for( var i = 1; i < threadDumpData.length; i += 2 )
                                     {
-                                        var state = threadDumpData[i].state;
-                                        var name = '<a><span>' + threadDumpData[i].name + '</span></a>';
+                                        var state = threadDumpData[i].state.esc();
+                                        var name = '<a><span>' + threadDumpData[i].name.esc() + '</span></a>';
 
                                         var classes = [state];
                                         var details = '';
@@ -979,7 +989,7 @@ var sammy = $.sammy
                                         if( threadDumpData[i].lock )
                                         {
                                             classes.push( 'lock' );
-                                            name += "\n" + '<p title="Waiting on">' + threadDumpData[i].lock + '</p>';
+                                            name += "\n" + '<p title="Waiting on">' + threadDumpData[i].lock.esc() + '</p>';
                                         }
 
                                         if( threadDumpData[i].stackTrace && 0 !== threadDumpData[i].stackTrace.length )
@@ -987,8 +997,10 @@ var sammy = $.sammy
                                             classes.push( 'stacktrace' );
 
                                             var stack_trace = threadDumpData[i].stackTrace
-                                                                .join( '</li><li>' )
-                                                                .replace( /\(/g, '&#8203;(' );
+                                                                .join( '###' )
+                                                                .esc()
+                                                                .replace( /\(/g, '&#8203;(' )
+                                                                .replace( /###/g, '</li><li>' );
 
                                             name += '<div>' + "\n"
                                                     + '<ul>' + "\n"
@@ -1000,10 +1012,10 @@ var sammy = $.sammy
                                         var item = '<tr class="' + classes.join( ' ' ) +'">' + "\n"
 
                                                  + '<td class="ico" title="' + state +'"><span>' + state +'</span></td>' + "\n"
-                                                 + '<td class="id">' + threadDumpData[i].id + '</td>' + "\n"
+                                                 + '<td class="id">' + threadDumpData[i].id.esc() + '</td>' + "\n"
                                                  + '<td class="name">' + name + '</td>' + "\n"
-                                                 + '<td class="time">' + threadDumpData[i].cpuTime + '</td>' + "\n"
-                                                 + '<td class="time">' + threadDumpData[i].userTime + '</td>' + "\n"
+                                                 + '<td class="time">' + threadDumpData[i].cpuTime.esc() + '</td>' + "\n"
+                                                 + '<td class="time">' + threadDumpData[i].userTime.esc() + '</td>' + "\n"
 
                                                  + '</tr>';
                                         
@@ -3402,6 +3414,8 @@ var sammy = $.sammy
                         
                         var analysis_element = $( '#analysis', content_element );
                         var analysis_form = $( 'form', analysis_element );
+                        var analysis_result = $( '#analysis-result', analysis_element );
+                        analysis_result.hide();
                         
                         $.ajax
                         (
@@ -3465,10 +3479,56 @@ var sammy = $.sammy
                                 }
                             }
                         );
+                                
+                        $( '.verbose_output a', analysis_element )
+                            .die( 'click' )
+                            .live
+                            (
+                                'click',
+                                function( event )
+                                {
+                                    $( this ).parent()
+                                        .toggleClass( 'active' );
+                                    
+                                    analysis_result
+                                        .toggleClass( 'verbose_output' );
+                                    
+                                    check_empty_spacer();
+                                }
+                            );
                         
-                        var analysis_result = $( '.analysis-result', analysis_element );
-                        analysis_result_tpl = analysis_result.clone();
-                        analysis_result.remove();
+                        var check_empty_spacer = function()
+                        {
+                            var spacer_holder = $( 'td.part.data.spacer .holder', analysis_result );
+
+                            if( 0 === spacer_holder.size() )
+                            {
+                                return false;
+                            }
+
+                            var verbose_output = analysis_result.hasClass( 'verbose_output' );
+
+                            spacer_holder
+                                .each
+                                (
+                                    function( index, element )
+                                    {
+                                        element = $( element );
+
+                                        if( verbose_output )
+                                        {
+                                            var cell = element.parent();
+                                            element.height( cell.height() );
+                                        }
+                                        else
+                                        {
+                                            element.removeAttr( 'style' );
+                                        }
+                                    }
+                                );
+                        }
+
+                        var button = $( 'button', analysis_form )
                         
                         analysis_form
                             .ajaxForm
@@ -3478,10 +3538,8 @@ var sammy = $.sammy
                                     dataType : 'json',
                                     beforeSubmit : function( array, form, options )
                                     {
-                                        //loader
-                                        
-                                        $( '.analysis-result', analysis_element )
-                                            .remove();
+                                        loader.show( button );
+                                        button.attr( 'disabled', true );
                                         
                                         array.push( { name: 'analysis.showmatch', value: 'true' } );
                                         
@@ -3491,6 +3549,10 @@ var sammy = $.sammy
                                     },
                                     success : function( response, status_text, xhr, form )
                                     {
+                                        analysis_result
+                                            .empty()
+                                            .show();
+                                        
                                         for( var name in response.analysis.field_names )
                                         {
                                             build_analysis_table( 'name', name, response.analysis.field_names[name] );
@@ -3500,6 +3562,8 @@ var sammy = $.sammy
                                         {
                                             build_analysis_table( 'type', name, response.analysis.field_types[name] );
                                         }
+
+                                        check_empty_spacer();
                                     },
                                     error : function( xhr, text_status, error_thrown )
                                     {
@@ -3508,136 +3572,208 @@ var sammy = $.sammy
                                     },
                                     complete : function()
                                     {
-                                        //loader
+                                        loader.hide( $( 'button', analysis_form ) );
+                                        button.removeAttr( 'disabled' );
                                     }
                                 }
                             );
+
+                            var generate_class_name = function( type )
+                            {
+                                var classes = [type];
+                                if( 'text' !== type )
+                                {
+                                    classes.push( 'verbose_output' );
+                                }
+                                return classes.join( ' ' );
+                            }
                             
                             var build_analysis_table = function( field_or_name, name, analysis_data )
-                            {                                
-                                var analysis_result_data = analysis_result_tpl.clone();
-                                var content = [];
-                                
+                            {        
                                 for( var type in analysis_data )
                                 {
                                     var type_length = analysis_data[type].length;
                                     if( 0 !== type_length )
                                     {
-                                        var type_content = '<div class="' + type + '">' + "\n";
-                                        for( var i = 0; i < type_length; i += 2 )
+                                        var global_elements_count = 0;
+                                        for( var i = 0; i < analysis_data[type].length; i += 2 )
                                         {
-                                            type_content += '<div class="row">' + "\n";
-                                        
-                                            var analyzer_parts = analysis_data[type][i].split( '.' );
-                                            var analyzer_parts_name = analyzer_parts.pop();
-                                            var analyzer_parts_namespace = analyzer_parts.join( '.' ) + '.';
-                                                                                        
-                                            type_content += '<div class="analyzer" title="' + analysis_data[type][i] +'">' + 
-                                                            analyzer_parts_name + '</div>' + "\n";
-
-                                            var raw_parts = {
-                                                'position' : [],
-                                                'text' : [],
-                                                'type' : [],
-                                                'start-end' : []
-                                            };
-                                            
-                                            for( var k in analysis_data[type][i+1] )
+                                            if( 'string' === typeof analysis_data[type][i+1] )
                                             {
-                                                var pos = analysis_data[type][i+1][k]['position'] - 1;
-                                                var is_match = !!analysis_data[type][i+1][k]['match'];
-                                            
-                                                if( 'undefined' === typeof raw_parts['text'][pos] )
-                                                {
-                                                    raw_parts['position'][pos] = [];
-                                                    raw_parts['text'][pos] = [];
-                                                    raw_parts['type'][pos] = [];
-                                                    raw_parts['start-end'][pos] = [];
-
-                                                    raw_parts['position'][pos].push( '<div>' + analysis_data[type][i+1][k]['position'] + '</div>' );
-                                                }
-
-                                                raw_parts['text'][pos].push( '<div class="' + ( is_match ? 'match' : '' ) + '">' + analysis_data[type][i+1][k]['text'] + '</div>' );
-                                                raw_parts['type'][pos].push( '<div>' + analysis_data[type][i+1][k]['type'] + '</div>' );
-                                                raw_parts['start-end'][pos].push( '<div>' + analysis_data[type][i+1][k]['start'] + '–' + analysis_data[type][i+1][k]['end'] + '</div>' );
+                                                analysis_data[type][i+1] = [{ 'text': analysis_data[type][i+1] }]
                                             }
-
-                                            var parts = {
-                                                'position' : [],
-                                                'text' : [],
-                                                'type' : [],
-                                                'start-end' : []
-                                            };
-
-                                            for( var key in raw_parts )
-                                            {
-                                                var length = raw_parts[key].length;
-                                                for( var j = 0; j < length; j++ )
-                                                {
-                                                    if( raw_parts[key][j] )
-                                                    {
-                                                        parts[key].push( '<td>' + raw_parts[key][j].join( "\n" ) + '</td>' );
-                                                    }
-                                                    else
-                                                    {
-                                                        parts[key].push( '<td><div class="empty">&empty;</div></td>' );
-                                                    }
-                                                }
-                                            }
-
-                                            type_content += '<div class="result">' + "\n";
-                                            type_content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
-                                            
-                                            type_content += '<tr class="verbose_output">' + "\n";
-                                            type_content += '<th><abbr title="Position">P</abbr></th>' + "\n";
-                                            type_content += parts['position'].join( "\n" ) + "\n";
-                                            type_content += '</tr>' + "\n";
-                                                                                        
-                                            type_content += '<tr>' + "\n";
-                                            type_content += '<th><abbr title="Text">T</abbr></th>' + "\n";
-                                            type_content += parts['text'].join( "\n" ) + "\n";
-                                            type_content += '</tr>' + "\n";
-
-                                            type_content += '<tr class="verbose_output">' + "\n";
-                                            type_content += '<th><abbr title="Type">T</abbr></th>' + "\n";
-                                            type_content += parts['type'].join( "\n" ) + "\n";
-                                            type_content += '</tr>' + "\n";
-
-                                            type_content += '<tr class="verbose_output">' + "\n";
-                                            type_content += '<th><abbr title="Range (Start, End)">R</abbr></th>' + "\n";
-                                            type_content += parts['start-end'].join( "\n" ) + "\n";
-                                            type_content += '</tr>' + "\n";
-                                            
-                                            type_content += '</table>' + "\n";
-                                            type_content += '</div>' + "\n";
-                                            
-                                            type_content += '</div>' + "\n";
+                                            global_elements_count = Math.max( global_elements_count,
+                                                                              analysis_data[type][i+1].length );
                                         }
-                                        type_content += '</div>';
-                                        content.push( $.trim( type_content ) );
+
+                                        var content = '<div class="' + type + '">' + "\n";
+                                        content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                                        
+                                        for( var i = 0; i < analysis_data[type].length; i += 2 )
+                                        {
+                                            var colspan = 1;
+                                            var elements = analysis_data[type][i+1];
+                                            var elements_count = global_elements_count;
+                                            
+                                            if( !elements[0].positionHistory )
+                                            {
+                                                colspan = elements_count;
+                                                elements_count = 1;
+                                            }
+
+                                            var legend = [];
+                                            for( var key in elements[0] )
+                                            {
+                                                var key_parts = key.split( '#' );
+                                                var used_key = key_parts.pop();
+                                                var short_key = used_key;
+
+                                                if( 1 === key_parts.length )
+                                                {
+                                                    used_key = '<abbr title="' + key + '">' + used_key + '</abbr>';
+                                                }
+
+                                                if( 'positionHistory' === short_key || 'match' === short_key )
+                                                {
+                                                    continue;
+                                                }
+
+                                                legend.push
+                                                (
+                                                    '<tr class="' + generate_class_name( short_key ) + '">' +
+                                                    '<td>' + used_key + '</td>' +
+                                                    '</tr>'
+                                                );
+                                            }
+
+                                            content += '<tbody>' + "\n";
+                                            content += '<tr class="step">' + "\n";
+
+                                                // analyzer
+                                                var analyzer_name = analysis_data[type][i]
+                                                                        .replace( /(\$1)+$/g, '' );
+
+                                                var analyzer_short = -1 !== analyzer_name.indexOf( '$' )
+                                                                   ? analyzer_name.split( '$' )[1]
+                                                                   : analyzer_name.split( '.' ).pop();
+                                                analyzer_short = analyzer_short.match( /[A-Z]/g ).join( '' );
+
+                                                content += '<td class="part analyzer"><div>' + "\n";
+                                                content += '<abbr title="' + analysis_data[type][i] + '">' + "\n";
+                                                content += analyzer_short + '</abbr></div></td>' + "\n";
+
+                                                // legend
+                                                content += '<td class="part legend"><div class="holder">' + "\n";
+                                                content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                                                content += '<tr><td>' + "\n";
+                                                content += '<table border="0" cellspacing="0" cellpadding="0">' + "\n";
+                                                content += legend.join( "\n" ) + "\n";
+                                                content += '</table></td></tr></table></td>' + "\n";
+
+                                                // data
+                                                var cell_content = '<td class="part data spacer" '
+                                                                 + '    colspan="' + colspan + '">'
+                                                                 + '<div class="holder">&nbsp;</div>'
+                                                                 + '</td>';
+                                                var cells = new Array( elements_count + 1 ).join( cell_content );
+                                                content += cells + "\n";
+
+                                            content += '</tr>' + "\n";
+                                            content += '</tbody>' + "\n";
+                                        }
+                                        content += '</table>' + "\n";
+                                        content += '</div>' + "\n";
+
+                                        $( '.' + type, analysis_result )
+                                            .remove();
+
+                                        analysis_result
+                                            .append( content );
+                                        
+                                        var analysis_result_type = $( '.' + type, analysis_result );
+
+                                        for( var i = 0; i < analysis_data[type].length; i += 2 )
+                                        {
+                                            for( var j = 0; j < analysis_data[type][i+1].length; j += 1 )
+                                            {
+                                                var pos = analysis_data[type][i+1][j].positionHistory
+                                                        ? analysis_data[type][i+1][j].positionHistory[0]
+                                                        : 1;
+                                                var selector = 'tr.step:eq(' + ( i / 2 ) +') '
+                                                             + 'td.data:eq(' + ( pos - 1 ) + ') '
+                                                             + '.holder';
+                                                var cell = $( selector, analysis_result_type );
+
+                                                cell.parent()
+                                                    .removeClass( 'spacer' );
+
+                                                var table = $( 'table tr.details', cell );
+                                                if( 0 === table.size() )
+                                                {
+                                                    cell
+                                                        .html
+                                                        (
+                                                            '<table border="0" cellspacing="0" cellpadding="0">' + 
+                                                            '<tr class="details"></tr></table>'
+                                                        );
+                                                    var table = $( 'table tr.details', cell );
+                                                }
+
+                                                var tokens = [];
+                                                for( var key in analysis_data[type][i+1][j] )
+                                                {
+                                                    var short_key = key.split( '#' ).pop();
+                                                    
+                                                    if( 'positionHistory' === short_key || 'match' === short_key )
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    var classes = [];
+                                                    classes.push( generate_class_name( short_key ) );
+
+                                                    var data = analysis_data[type][i+1][j][key];
+                                                    if( 'object' === typeof data && data instanceof Array )
+                                                    {
+                                                        data = data.join( ' ' );
+                                                    }
+                                                    if( 'string' === typeof data )
+                                                    {
+                                                        data = data.esc();
+                                                    }
+
+                                                    if( null === data || 0 === data.length )
+                                                    {
+                                                        classes.push( 'empty' );
+                                                        data = '&empty;';
+                                                    }
+
+                                                    if( analysis_data[type][i+1][j].match && 
+                                                        ( 'text' === short_key || 'raw_bytes' === short_key ) )
+                                                    {
+                                                        classes.push( 'match' );
+                                                    }
+
+                                                    tokens.push
+                                                    (
+                                                        '<tr class="' + classes.join( ' ' ) + '">' +
+                                                        '<td>' + data + '</td>' +
+                                                        '</tr>'
+                                                    );
+                                                }
+                                                table
+                                                    .append
+                                                    (
+                                                        '<td class="details">' +
+                                                        '<table border="0" cellspacing="0" cellpadding="0">' +
+                                                        tokens.join( "\n" ) +
+                                                        '</table></td>'
+                                                    );
+                                            }
+                                        }
+                        
                                     }
                                 }
-                                
-                                $( 'h2 span', analysis_result_data )
-                                    .html( field_or_name + ': ' + name );
-                                
-                                $( 'h2 .verbose_output a', analysis_result_data )
-                                    .die( 'click' )
-                                    .live
-                                    (
-                                        'click',
-                                        function( event )
-                                        {
-                                            $( this ).parents( '.block' )
-                                                .toggleClass( 'verbose_output' );
-                                        }
-                                    );
-                                
-                                $( '.analysis-result-content', analysis_result_data )
-                                    .html( content.join( "\n" ) );
-                                
-                                analysis_element.append( analysis_result_data );
-                                
                             }
                             
                     }
@@ -4161,7 +4297,7 @@ var sammy = $.sammy
                             for( var key in memory_data )
                             {                                                        
                                 $( '.value.' + key, this )
-                                    .html( memory_data[key] );
+                                    .text( memory_data[key] );
                             }
             
                             var data = {
@@ -4184,7 +4320,7 @@ var sammy = $.sammy
                                 var value_element = $( '.' + key + ' dd', this );
 
                                 value_element
-                                    .html( data[key] );
+                                    .text( data[key] );
                                 
                                 value_element.closest( 'li' )
                                     .show();
@@ -4200,7 +4336,7 @@ var sammy = $.sammy
                                 for( var key in commandLineArgs )
                                 {
                                     cmd_arg_element = cmd_arg_element.clone();
-                                    cmd_arg_element.html( commandLineArgs[key] );
+                                    cmd_arg_element.text( commandLineArgs[key] );
 
                                     cmd_arg_key_element
                                         .after( cmd_arg_element );
@@ -4247,7 +4383,7 @@ var sammy = $.sammy
                             var headline = $( '#memory h2 span', this );
                                 
                             headline
-                                .html( headline.html() + ' (' + memory_percentage + '%)' );
+                                .text( headline.html() + ' (' + memory_percentage + '%)' );
 
                             $( '#memory-bar .value', this )
                                 .each
@@ -4266,7 +4402,7 @@ var sammy = $.sammy
                                         byte_value = byte_value.toFixed( 2 ) + ' MB';
 
                                         self
-                                            .html( byte_value );
+                                            .text( byte_value );
                                     }
                                 );
                         },

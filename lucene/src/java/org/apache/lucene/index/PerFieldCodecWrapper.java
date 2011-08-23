@@ -174,14 +174,6 @@ final class PerFieldCodecWrapper extends Codec {
     public void close() throws IOException {
       IOUtils.closeSafely(false, codecs.values());
     }
-
-    @Override
-    public void loadTermsIndex(int indexDivisor) throws IOException {
-      Iterator<FieldsProducer> it = codecs.values().iterator();
-      while (it.hasNext()) {
-        it.next().loadTermsIndex(indexDivisor);
-      }
-    }
   }
 
   @Override

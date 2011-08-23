@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.en;
  * limitations under the License.
  */
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.assertVocabulary;
+import static org.apache.lucene.analysis.VocabularyAssert.assertVocabulary;
 
 import java.io.Reader;
 
@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 /**
  * Tests for {@link KStemmer}

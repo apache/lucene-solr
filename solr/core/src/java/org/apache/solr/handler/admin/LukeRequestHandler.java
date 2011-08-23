@@ -204,9 +204,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.storeTermPositions() ) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
     flags.append( (f != null && f.omitNorms())           ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
     flags.append( (f != null && 
-        f.indexOptions() == IndexOptions.DOCS_ONLY)      ? FieldFlag.OMIT_TF.getAbbreviation() : '-' );
-    flags.append( (f != null && 
-        f.indexOptions() == IndexOptions.DOCS_AND_FREQS) ? FieldFlag.OMIT_POSITIONS.getAbbreviation() : '-' );
+                   f.omitTermFreqAndPositions() )        ? FieldFlag.OMIT_TF.getAbbreviation() : '-' );
+    flags.append( (f != null && f.omitPositions() )      ? FieldFlag.OMIT_POSITIONS.getAbbreviation() : '-' );
     flags.append( (lazy)                                 ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (binary)                               ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (f != null && f.sortMissingFirst() )   ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' );

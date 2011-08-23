@@ -87,6 +87,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             printHits(getName(), h, s);
         }
         assertEquals("result count", expected, h.length);
+        //System.out.println("TEST: now check");
         QueryUtils.check(random, q,s);
     }
 

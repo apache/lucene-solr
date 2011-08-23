@@ -522,7 +522,7 @@ public class TrieField extends FieldType {
     }
 
     f.setOmitNorms(field.omitNorms());
-    f.setIndexOptions(field.indexOptions());
+    f.setIndexOptions(getIndexOptions(field, value.toString()));
     f.setBoost(boost);
     return f;
   }

@@ -17,6 +17,8 @@
 
 package org.apache.solr.util;
 
+import java.text.NumberFormat;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -24,9 +26,19 @@ import org.apache.lucene.util.BytesRef;
  */
 public class NumberUtils {
 
-
-
-
+  public static String readableSize(long size) {
+    NumberFormat formatter = NumberFormat.getNumberInstance();
+    formatter.setMaximumFractionDigits(2);
+    if (size / (1024 * 1024 * 1024) > 0) {
+      return formatter.format(size * 1.0d / (1024 * 1024 * 1024)) + " GB";
+    } else if (size / (1024 * 1024) > 0) {
+      return formatter.format(size * 1.0d / (1024 * 1024)) + " MB";
+    } else if (size / 1024 > 0) {
+      return formatter.format(size * 1.0d / 1024) + " KB";
+    } else {
+      return String.valueOf(size) + " bytes";
+    }
+  }
 
   public static String int2sortableStr(int val) {
     char[] arr = new char[3];

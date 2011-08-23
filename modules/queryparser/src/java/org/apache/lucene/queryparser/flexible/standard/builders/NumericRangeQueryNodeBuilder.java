@@ -28,8 +28,17 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
 import org.apache.lucene.search.NumericRangeQuery;
 
+/**
+ * Builds {@link NumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
+ *
+ * @see NumericRangeQuery
+ * @see NumericRangeQueryNode
+ */
 public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   
+  /**
+   * Constructs a {@link NumericRangeQueryNodeBuilder} object.
+   */
   public NumericRangeQueryNodeBuilder() {
   // empty constructor
   }
@@ -41,19 +50,8 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
     NumericQueryNode lowerNumericNode = numericRangeNode.getLowerBound();
     NumericQueryNode upperNumericNode = numericRangeNode.getUpperBound();
     
-    Number lowerNumber, upperNumber;
-    
-    if (lowerNumericNode != null) {
-      lowerNumber = lowerNumericNode.getValue();
-    } else {
-      lowerNumber = null;
-    }
-    
-    if (upperNumericNode != null) {
-      upperNumber = upperNumericNode.getValue();
-    } else {
-      upperNumber = null;
-    }
+    Number lowerNumber = lowerNumericNode.getValue();
+    Number upperNumber = upperNumericNode.getValue();
     
     NumericConfig numericConfig = numericRangeNode.getNumericConfig();
     NumericField.DataType numberType = numericConfig.getType();

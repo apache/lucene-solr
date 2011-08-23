@@ -94,12 +94,18 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public static Query csrq(String f, String l, String h, boolean il, boolean ih) {
     TermRangeQuery query = TermRangeQuery.newStringRange(f, l, h, il, ih);
     query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    if (VERBOSE) {
+      System.out.println("TEST: query=" + query);
+    }
     return query;
   }
 
   public static Query csrq(String f, String l, String h, boolean il, boolean ih, MultiTermQuery.RewriteMethod method) {
     TermRangeQuery query = TermRangeQuery.newStringRange(f, l, h, il, ih);
     query.setRewriteMethod(method);
+    if (VERBOSE) {
+      System.out.println("TEST: query=" + query + " method=" + method);
+    }
     return query;
   }
 
@@ -274,6 +280,10 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     IndexReader reader = signedIndexReader;
     IndexSearcher search = newSearcher(reader);
+
+    if (VERBOSE) {
+      System.out.println("TEST: reader=" + reader);
+    }
 
     int medId = ((maxId - minId) / 2);
 

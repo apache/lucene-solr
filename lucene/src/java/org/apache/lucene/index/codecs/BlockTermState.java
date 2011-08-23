@@ -29,10 +29,8 @@ public class BlockTermState extends OrdTermState {
   public int docFreq;            // how many docs have this term
   public long totalTermFreq;     // total number of occurrences of this term
 
-  public int termCount;          // term ord are in the current block
-  public long blockFilePointer;  // fp into the terms dict primary file (_X.tib) that holds this term
-
-  public int blockTermCount;     // how many terms in current block
+  public int termBlockOrd;          // the term's ord in the current block
+  public long blockFilePointer;  // fp into the terms dict primary file (_X.tim) that holds this term
 
   @Override
   public void copyFrom(TermState _other) {
@@ -41,7 +39,7 @@ public class BlockTermState extends OrdTermState {
     super.copyFrom(_other);
     docFreq = other.docFreq;
     totalTermFreq = other.totalTermFreq;
-    termCount = other.termCount;
+    termBlockOrd = other.termBlockOrd;
     blockFilePointer = other.blockFilePointer;
 
     // NOTE: don't copy blockTermCount;
@@ -51,6 +49,6 @@ public class BlockTermState extends OrdTermState {
 
   @Override
   public String toString() {
-    return "ord=" + ord + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termCount=" + termCount + " blockFP=" + blockFilePointer;
+    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd + " blockFP=" + blockFilePointer;
   }
 }

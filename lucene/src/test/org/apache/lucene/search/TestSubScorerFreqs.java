@@ -25,7 +25,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Scorer.ScorerVisitor;
+import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
 import org.junit.AfterClass;
@@ -75,44 +75,31 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<Integer, Map<Query, Float>>();
 
     private final Map<Query, Scorer> subScorers = new HashMap<Query, Scorer>();
-    private final ScorerVisitor<Query, Query, Scorer> visitor = new MockScorerVisitor();
-    private final EnumSet<Occur> collect;
-
-    private class MockScorerVisitor extends ScorerVisitor<Query, Query, Scorer> {
-
-      @Override
-      public void visitOptional(Query parent, Query child, Scorer scorer) {
-        if (collect.contains(Occur.SHOULD))
-          subScorers.put(child, scorer);
-      }
-
-      @Override
-      public void visitProhibited(Query parent, Query child, Scorer scorer) {
-        if (collect.contains(Occur.MUST_NOT))
-          subScorers.put(child, scorer);
-      }
-
-      @Override
-      public void visitRequired(Query parent, Query child, Scorer scorer) {
-        if (collect.contains(Occur.MUST))
-          subScorers.put(child, scorer);
-      }
-
-    }
+    private final Set<String> relationships;
 
     public CountingCollector(Collector other) {
-      this(other, EnumSet.allOf(Occur.class));
+      this(other, new HashSet<String>(Arrays.asList(Occur.MUST.toString(), Occur.SHOULD.toString(), Occur.MUST_NOT.toString())));
     }
 
-    public CountingCollector(Collector other, EnumSet<Occur> collect) {
+    public CountingCollector(Collector other, Set<String> relationships) {
       this.other = other;
-      this.collect = collect;
+      this.relationships = relationships;
     }
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
       other.setScorer(scorer);
-      scorer.visitScorers(visitor);
+      subScorers.clear();
+      setSubScorers(scorer, "TOP");
+    }
+    
+    public void setSubScorers(Scorer scorer, String relationship) {
+      for (ChildScorer child : scorer.getChildren()) {
+        if (relationships.contains(child.relationship)) {
+          setSubScorers(child.child, child.relationship);
+        }
+      }
+      subScorers.put(scorer.getWeight().getQuery(), scorer);
     }
 
     @Override
@@ -177,14 +164,17 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner, Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    EnumSet<Occur>[] occurList = new EnumSet[] {EnumSet.of(Occur.MUST), EnumSet.of(Occur.MUST, Occur.SHOULD)};
-    for (EnumSet<Occur> occur : occurList) {
+    Set<String>[] occurList = new Set[] {
+        Collections.singleton(Occur.MUST.toString()), 
+        new HashSet<String>(Arrays.asList(Occur.MUST.toString(), Occur.SHOULD.toString()))
+    };
+    for (Set<String> occur : occurList) {
       CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
           10, true), occur);
       s.search(query, null, c);
       final int maxDocs = s.maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
-      boolean includeOptional = occur.contains(Occur.SHOULD);
+      boolean includeOptional = occur.contains(Occur.SHOULD.toString());
       for (int i = 0; i < maxDocs; i++) {
         Map<Query, Float> doc0 = c.docCounts.get(i);
         assertEquals(includeOptional ? 5 : 4, doc0.size());

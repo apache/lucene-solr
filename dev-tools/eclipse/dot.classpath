@@ -4,6 +4,7 @@
 	<classpathentry kind="src" path="lucene/src/test-framework"/>
 	<classpathentry kind="src" path="lucene/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/demo/src/resources"/>
 	<classpathentry kind="src" path="lucene/contrib/demo/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/highlighter/src/test"/>
@@ -13,8 +14,8 @@
 	<classpathentry kind="src" path="lucene/contrib/memory/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/test"/>
-	<classpathentry kind="src" path="lucene/contrib/queries/src/java"/>
-	<classpathentry kind="src" path="lucene/contrib/queries/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/sandbox/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/sandbox/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/spatial/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/xml-query-parser/src/java"/>
@@ -79,7 +80,7 @@
 	<classpathentry kind="lib" path="lucene/lib/ant-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/ant-junit-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lucene/lib/junit-4.7.jar"/>
-	<classpathentry kind="lib" path="lucene/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
+	<classpathentry kind="lib" path="lucene/contrib/sandbox/lib/jakarta-regexp-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/icu/lib/icu4j-4_8.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/phonetic/lib/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="modules/analysis/morfologik/lib/morfologik-fsa-1.5.2.jar"/>
@@ -111,7 +112,7 @@
 	<classpathentry kind="lib" path="solr/lib/velocity-1.6.4.jar"/>
 	<classpathentry kind="lib" path="solr/lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.1.jar"/>
+	<classpathentry kind="lib" path="solr/lib/zookeeper-3.3.3.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/jetty-util-6.1.26-patched-JETTY-1340.jar"/>
 	<classpathentry kind="lib" path="solr/example/lib/servlet-api-2.5-20081211.jar"/>

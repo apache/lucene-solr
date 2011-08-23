@@ -50,10 +50,11 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   }
 
   /**
-   * @return a list of fields defined in this document
+   * @return a list of field names defined in this document - this Collection is directly backed by this SolrDocument.
+   * @see #keySet
    */
   public Collection<String> getFieldNames() {
-    return _fields.keySet();
+    return this.keySet();
   }
 
   ///////////////////////////////////////////////////////////////////
@@ -73,7 +74,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
    */
   public boolean removeFields(String name) 
   {
-    return _fields.remove( name ) != null;
+    return this.remove( name ) != null;
   }
 
   /**

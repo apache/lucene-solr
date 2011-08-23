@@ -25,8 +25,7 @@ public class DistributedClusteringComponentTest extends
 
   @Override
   public String getSolrHome() {
-    // TODO: this should work with just "solr-clustering"...
-    return getFile("solr-clustering").getAbsolutePath();
+    return "clustering/solr";
   }
 
   @Override

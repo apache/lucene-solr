@@ -28,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -493,7 +492,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       fail("fake disk full IOExceptions not hit");
     } catch (IOException ioe) {
       // expected
-      assertTrue(ftdm.didFail1);
+      assertTrue(ftdm.didFail1 || ftdm.didFail2);
     }
     _TestUtil.checkIndex(dir);
     ftdm.clearDoFail();

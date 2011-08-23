@@ -39,7 +39,7 @@ import java.util.List;
  * @since solr 1.4
  */
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {
-  private static final String CONF_DIR = "." + File.separator + "solr-dih" + File.separator + "conf" + File.separator;
+  private static final String CONF_DIR = "dih/solr/conf/";
   SolrInstance instance = null;
   JettySolrRunner jetty;
 

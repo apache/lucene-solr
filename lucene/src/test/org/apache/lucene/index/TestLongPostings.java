@@ -355,7 +355,7 @@ public class TestLongPostings extends LuceneTestCase {
       }
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1);
+        System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1 + " term=" + term);
       }
         
       final DocsEnum postings = MultiFields.getTermDocsEnum(r, null, "field", new BytesRef(term));
@@ -426,7 +426,7 @@ public class TestLongPostings extends LuceneTestCase {
           
           if (random.nextInt(6) == 3) {
             final int freq = postings.freq();
-            assertTrue(freq >=1 && freq <= 4);
+            assertTrue("got invalid freq=" + freq, freq >=1 && freq <= 4);
           }
         }
       }

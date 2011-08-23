@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -408,4 +409,76 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void testIOExceptionDuringWriteSegmentWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyInWriteSegment(true));
   }
+  
+  //  LUCENE-3365: Test adding two documents with the same field from two different IndexWriters 
+  //  that we attempt to open at the same time.  As long as the first IndexWriter completes
+  //  and closes before the second IndexWriter time's out trying to get the Lock,
+  //  we should see both documents
+  public void testOpenTwoIndexWritersOnDifferentThreads() throws IOException, InterruptedException {
+     final MockDirectoryWrapper dir = newDirectory();
+     CountDownLatch oneIWConstructed = new CountDownLatch(1);
+     DelayedIndexAndCloseRunnable thread1 = new DelayedIndexAndCloseRunnable(
+         dir, oneIWConstructed);
+     DelayedIndexAndCloseRunnable thread2 = new DelayedIndexAndCloseRunnable(
+         dir, oneIWConstructed);
+
+     thread1.start();
+     thread2.start();
+     oneIWConstructed.await();
+
+     thread1.startIndexing();
+     thread2.startIndexing();
+
+     thread1.join();
+     thread2.join();
+     
+     assertFalse("Failed due to: " + thread1.failure, thread1.failed);
+     assertFalse("Failed due to: " + thread2.failure, thread2.failed);
+     // now verify that we have two documents in the index
+     IndexReader reader = IndexReader.open(dir, true);
+     assertEquals("IndexReader should have one document per thread running", 2,
+         reader.numDocs());
+     
+     reader.close();
+     dir.close();
+  }
+  
+   static class DelayedIndexAndCloseRunnable extends Thread {
+     private final Directory dir;
+     boolean failed = false;
+     Throwable failure = null;
+     private final CountDownLatch startIndexing = new CountDownLatch(1);
+     private CountDownLatch iwConstructed;
+
+     public DelayedIndexAndCloseRunnable(Directory dir,
+         CountDownLatch iwConstructed) {
+       this.dir = dir;
+       this.iwConstructed = iwConstructed;
+     }
+
+     public void startIndexing() {
+       this.startIndexing.countDown();
+     }
+
+     @Override
+     public void run() {
+       try {
+         Document doc = new Document();
+         Field field = newField("field", "testData", Field.Store.YES,
+             Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+         doc.add(field);
+         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+             TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+         iwConstructed.countDown();
+         startIndexing.await();
+         writer.addDocument(doc);
+         writer.close();
+       } catch (Throwable e) {
+         failed = true;
+         failure = e;
+         failure.printStackTrace(System.out);
+         return;
+       }
+     }
+   }
 }

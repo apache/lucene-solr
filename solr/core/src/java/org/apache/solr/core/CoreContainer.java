@@ -716,7 +716,7 @@ public class CoreContainer
   
     File instanceDir = new File(cd.getInstanceDir());
     if (!instanceDir.isAbsolute()) {
-      instanceDir = new File(getSolrHome(), instanceDir.getName());
+      instanceDir = new File(getSolrHome(), cd.getInstanceDir());
     }
     
     SolrResourceLoader solrLoader;
@@ -903,8 +903,8 @@ public class CoreContainer
     List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrCoreXMLDef>();
     
     synchronized (cores) {
-      Map<String,String> coreAttribs = new HashMap<String,String>();
       for (SolrCore solrCore : cores.values()) {
+        Map<String,String> coreAttribs = new HashMap<String,String>();
         CoreDescriptor dcore = solrCore.getCoreDescriptor();
         
         coreAttribs.put("name", dcore.name.equals("") ? defaultCoreName

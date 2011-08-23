@@ -284,6 +284,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExternalFileFieldStringKeys() throws Exception {
+    final String extField = "foo_extfs";
+    final String keyField = "sfile_s";
+    assertU(adoc("id", "991", keyField, "AAA=AAA"));
+    assertU(adoc("id", "992", keyField, "BBB"));
+    assertU(adoc("id", "993", keyField, "CCC=CCC"));
+    assertU(commit());
+    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250","UTF-8");
+    singleTest(extField,"\0",991,543210,992,-8,993,250);
+  }
+
+  @Test
   public void testGeneral() throws Exception {
     clearIndex();
     
@@ -422,9 +434,15 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testSortByFunc() throws Exception {
-    assertU(adoc("id", "1", "const_s", "xx", "x_i", "100", "1_s", "a"));
-    assertU(adoc("id", "2", "const_s", "xx", "x_i", "300", "1_s", "c"));
-    assertU(adoc("id", "3", "const_s", "xx", "x_i", "200", "1_s", "b"));
+    assertU(adoc("id",    "1",   "const_s", "xx", 
+                 "x_i",   "100", "1_s", "a",
+                 "x:x_i", "100", "1-1_s", "a"));
+    assertU(adoc("id",    "2",   "const_s", "xx", 
+                 "x_i",   "300", "1_s", "c",
+                 "x:x_i", "300", "1-1_s", "c"));
+    assertU(adoc("id",    "3",   "const_s", "xx", 
+                 "x_i",   "200", "1_s", "b",
+                 "x:x_i", "200", "1-1_s", "b"));
     assertU(commit());
 
     String desc = "/response/docs==[{'x_i':300},{'x_i':200},{'x_i':100}]";
@@ -480,6 +498,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // field name that isn't a legal java Identifier 
     // and starts with a number to trick function parser
     assertJQ(req("q",q,  "fl","x_i", "sort", "1_s asc")
+             ,asc
+    );
+    assertJQ(req("q",q,  "fl","x_i", "sort", "x:x_i desc")
+             ,desc
+    );
+    assertJQ(req("q",q,  "fl","x_i", "sort", "1-1_s asc")
              ,asc
     );
 

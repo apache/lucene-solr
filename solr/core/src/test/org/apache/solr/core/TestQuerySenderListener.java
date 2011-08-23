@@ -18,10 +18,9 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.EventParams;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.common.params.EventParams;
-import org.apache.lucene.store.Directory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,8 +74,8 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     String evt = mock.req.getParams().get(EventParams.EVENT);
     assertNotNull("Event is null", evt);
     assertTrue(evt + " is not equal to " + EventParams.FIRST_SEARCHER, evt.equals(EventParams.FIRST_SEARCHER) == true);
-    Directory dir = currentSearcher.getIndexReader().directory();
-    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getSchema(), "testQuerySenderListener", dir, true, false);
+
+    SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getSchema(), core.getSolrConfig().mainIndexConfig, "testQuerySenderListener", true, false, core.getDirectoryFactory());
 
     qsl.newSearcher(newSearcher, currentSearcher);
     evt = mock.req.getParams().get(EventParams.EVENT);

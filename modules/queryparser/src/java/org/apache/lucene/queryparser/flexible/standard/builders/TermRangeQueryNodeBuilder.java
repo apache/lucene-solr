@@ -42,9 +42,18 @@ public class TermRangeQueryNodeBuilder implements StandardQueryBuilder {
     FieldQueryNode lower = rangeNode.getLowerBound();
     
     String field = StringUtils.toString(rangeNode.getField());
+    String lowerText = lower.getTextAsString();
+    String upperText = upper.getTextAsString();
     
-    TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, lower
-        .getTextAsString(), upper.getTextAsString(), rangeNode
+    if (lowerText.length() == 0) {
+      lowerText = null;
+    }
+    
+    if (upperText.length() == 0) {
+      upperText = null;
+    }
+    
+    TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, lowerText, upperText, rangeNode
         .isLowerInclusive(), rangeNode.isUpperInclusive());
     
     MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode

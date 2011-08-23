@@ -106,9 +106,9 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     }
 
     if (adds.size() < maxNumToLog) {
-      adds.add(cmd.getPrintableId(req.getSchema()));
+      adds.add(cmd.getPrintableId());
     }
-    if (logDebug) { log.debug("add {}", cmd.getPrintableId(req.getSchema())); }
+    if (logDebug) { log.debug("add {}", cmd.getPrintableId()); }
 
     numAdds++;
 

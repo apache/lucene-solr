@@ -49,7 +49,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-queries-contrib</artifactId>
+      <artifactId>lucene-queries</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

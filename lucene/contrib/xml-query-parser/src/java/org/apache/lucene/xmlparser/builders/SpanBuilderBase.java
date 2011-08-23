@@ -21,13 +21,12 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public abstract class SpanBuilderBase implements SpanQueryBuilder
-{
-	public Query getQuery(Element e) throws ParserException
-	{
-		return getSpanQuery(e);
-	}
+public abstract class SpanBuilderBase implements SpanQueryBuilder {
+  
+  public Query getQuery(Element e) throws ParserException {
+    return getSpanQuery(e);
+  }
 
 }

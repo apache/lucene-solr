@@ -152,11 +152,14 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     }
     for (int i=1;i<10;i++) {
       query = newPhraseQuery("field", English.intToEnglish(i)+" hundred", true, new AveragePayloadFunction());
+      if (VERBOSE) {
+        System.out.println("TEST: run query=" + query);
+      }
       // all should have score = 3 because adjacent terms have payloads of 2,4
       // and all the similarity factors are set to 1
       hits = searcher.search(query, null, 100);
       assertTrue("hits is null and it shouldn't be", hits != null);
-      assertTrue("should be 100 hits", hits.totalHits == 100);
+      assertEquals("should be 100 hits", 100, hits.totalHits);
       for (int j = 0; j < hits.scoreDocs.length; j++) {
         ScoreDoc doc = hits.scoreDocs[j];
         //				System.out.println("Doc: " + doc.toString());

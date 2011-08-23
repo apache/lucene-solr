@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -69,7 +70,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * synchronize on the <code>IndexSearcher</code> instance;
  * use your own (non-Lucene) objects instead.</p>
  */
-public class IndexSearcher {
+public class IndexSearcher implements Closeable {
   final IndexReader reader; // package private for testing!
   private boolean closeReader;
   
@@ -267,6 +268,7 @@ public class IndexSearcher {
    * If the IndexReader was supplied implicitly by specifying a directory, then
    * the IndexReader is closed.
    */
+  @Override
   public void close() throws IOException {
     if (closeReader) {
       reader.close();
@@ -882,6 +884,6 @@ public class IndexSearcher {
 
   @Override
   public String toString() {
-    return "IndexSearcher(" + reader + ")";
+    return "IndexSearcher(" + reader + "; executor=" + executor + ")";
   }
 }

@@ -1,13 +1,14 @@
 package org.apache.lucene.xmlparser.builders;
 
-import java.util.ArrayList;
-
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import java.util.ArrayList;
+import java.util.List;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,32 +27,28 @@ import org.w3c.dom.Node;
  */
 
 /**
- * 
+ *
  */
-public class SpanNearBuilder extends SpanBuilderBase
-{
-	SpanQueryBuilder factory;
-	public SpanNearBuilder(SpanQueryBuilder factory)
-	{
-		this.factory=factory;
-	}
-	
-	public SpanQuery getSpanQuery(Element e) throws ParserException
-	{
- 		String slopString=DOMUtils.getAttributeOrFail(e,"slop");
-  		int slop=Integer.parseInt(slopString);
-		boolean inOrder=DOMUtils.getAttribute(e,"inOrder",false);
-		ArrayList<SpanQuery> spans=new ArrayList<SpanQuery>();
-		for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())
-		{
-				if (kid.getNodeType() == Node.ELEMENT_NODE) 
-				{
-					spans.add(factory.getSpanQuery((Element) kid));
-				}
-		}
-		SpanQuery[] spanQueries= spans.toArray(new SpanQuery[spans.size()]);
-		SpanNearQuery snq=new SpanNearQuery(spanQueries,slop,inOrder);
-		return snq;
-	}
+public class SpanNearBuilder extends SpanBuilderBase {
+
+  private final SpanQueryBuilder factory;
+
+  public SpanNearBuilder(SpanQueryBuilder factory) {
+    this.factory = factory;
+  }
+
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    String slopString = DOMUtils.getAttributeOrFail(e, "slop");
+    int slop = Integer.parseInt(slopString);
+    boolean inOrder = DOMUtils.getAttribute(e, "inOrder", false);
+    List<SpanQuery> spans = new ArrayList<SpanQuery>();
+    for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {
+      if (kid.getNodeType() == Node.ELEMENT_NODE) {
+        spans.add(factory.getSpanQuery((Element) kid));
+      }
+    }
+    SpanQuery[] spanQueries = spans.toArray(new SpanQuery[spans.size()]);
+    return new SpanNearQuery(spanQueries, slop, inOrder);
+  }
 
 }

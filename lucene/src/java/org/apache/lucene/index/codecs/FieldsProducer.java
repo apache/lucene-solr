@@ -34,7 +34,6 @@ import org.apache.lucene.index.Terms;
 
 public abstract class FieldsProducer extends Fields implements Closeable {
   public abstract void close() throws IOException;
-  public abstract void loadTermsIndex(int indexDivisor) throws IOException;
 
   public static final FieldsProducer EMPTY = new FieldsProducer() {
     
@@ -47,12 +46,7 @@ public abstract class FieldsProducer extends Fields implements Closeable {
     public FieldsEnum iterator() throws IOException {
       return FieldsEnum.EMPTY;
     }
-    
-    @Override
-    public void loadTermsIndex(int indexDivisor) throws IOException {
-      
-    }
-    
+
     @Override
     public void close() throws IOException {
       

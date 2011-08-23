@@ -30,8 +30,8 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.sep.IntStreamFactory;
 import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
-import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
-import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
+import org.apache.lucene.index.codecs.sep.SepPostingsReader;
+import org.apache.lucene.index.codecs.sep.SepPostingsWriter;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
 import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
@@ -127,7 +127,7 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new SepPostingsWriterImpl(state, new MockIntFactory(blockSize));
+    PostingsWriterBase postingsWriter = new SepPostingsWriter(state, new MockIntFactory(blockSize));
 
     boolean success = false;
     TermsIndexWriterBase indexWriter;
@@ -158,10 +158,10 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new SepPostingsReaderImpl(state.dir,
-                                                                      state.segmentInfo,
-                                                                      state.context,
-                                                                      new MockIntFactory(blockSize), state.codecId);
+    PostingsReaderBase postingsReader = new SepPostingsReader(state.dir,
+                                                              state.segmentInfo,
+                                                              state.context,
+                                                              new MockIntFactory(blockSize), state.codecId);
 
     TermsIndexReaderBase indexReader;
     boolean success = false;
@@ -204,7 +204,7 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, int codecId, Set<String> files) throws IOException {
-    SepPostingsReaderImpl.files(segmentInfo, codecId, files);
+    SepPostingsReader.files(segmentInfo, codecId, files);
     BlockTermsReader.files(dir, segmentInfo, codecId, files);
     FixedGapTermsIndexReader.files(dir, segmentInfo, codecId, files);
     DefaultDocValuesConsumer.files(dir, segmentInfo, codecId, files, getDocValuesUseCFS());
@@ -212,7 +212,7 @@ public class MockFixedIntBlockCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    SepPostingsWriterImpl.getExtensions(extensions);
+    SepPostingsWriter.getExtensions(extensions);
     BlockTermsReader.getExtensions(extensions);
     FixedGapTermsIndexReader.getIndexExtensions(extensions);
     DefaultDocValuesConsumer.getDocValuesExtensions(extensions, getDocValuesUseCFS());

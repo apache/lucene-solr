@@ -462,7 +462,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     */
 
     if (VERBOSE) {
-      System.out.println("TEST: verify prefix=" + prefixRef.utf8ToString());
+      System.out.println("TEST: verify prefix=" + (prefixRef==null ? "null" : prefixRef.utf8ToString()));
       System.out.println("TEST: all TERMS:");
       TermsEnum allTE = MultiFields.getTerms(r, "field").iterator();
       int ord = 0;

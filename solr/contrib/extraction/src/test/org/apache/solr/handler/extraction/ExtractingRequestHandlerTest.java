@@ -41,7 +41,7 @@ import org.junit.Test;
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", "solr-extraction");
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
   }
 
   @Override
@@ -56,7 +56,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testExtraction() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    loadLocal("solr-word.pdf",
+    loadLocal("extraction/solr-word.pdf",
             "fmap.created", "extractedDate",
             "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
@@ -73,7 +73,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("title:solr-word"), "//*[@numFound='1']");
 
 
-    loadLocal("simple.html", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/simple.html", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "fmap.language", "extractedLanguage",
@@ -86,7 +86,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("title:Welcome"), "//*[@numFound='1']");
 
 
-    loadLocal("simple.html",
+    loadLocal("extraction/simple.html",
       "literal.id","simple2",
       "uprefix", "t_",
       "lowernames", "true",
@@ -105,7 +105,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("+id:simple2 +t_abcxyz:[* TO *]"), "//*[@numFound='1']");
 
     // load again in the exact same way, but boost one field
-    loadLocal("simple.html",
+    loadLocal("extraction/simple.html",
       "literal.id","simple3",
       "uprefix", "t_",
       "lowernames", "true",
@@ -120,7 +120,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("+id:simple3 +t_content_type:[* TO *]"), "//*[@numFound='1']");//test lowercase and then uprefix
 
     // test capture
-     loadLocal("simple.html",
+     loadLocal("extraction/simple.html",
       "literal.id","simple4",
       "uprefix", "t_",
       "capture","p",     // capture only what is in the title element
@@ -129,7 +129,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("+id:simple4 +t_content:Solr"), "//*[@numFound='1']");
     assertQ(req("+id:simple4 +t_p:\"here is some text\""), "//*[@numFound='1']");
 
-    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "literal.id", "three",
@@ -152,7 +152,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       ignoreException("unknown field 'a'");
       ignoreException("unknown field 'meta'");  // TODO: should this exception be happening?
-      loadLocal("simple.html",
+      loadLocal("extraction/simple.html",
       "literal.id","simple2",
       "lowernames", "true",
         "captureAttr", "true",
@@ -168,7 +168,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     }
     
 
-    loadLocal("simple.html",
+    loadLocal("extraction/simple.html",
       "literal.id","simple2",
       ExtractingParams.DEFAULT_FIELD, "defaultExtr",//test that unmapped fields go to the text field when no uprefix is specified
       "lowernames", "true",
@@ -180,7 +180,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("defaultExtr:http\\://www.apache.org"), "//*[@numFound='1']");
 
     //Test when both uprefix and default are specified.
-    loadLocal("simple.html",
+    loadLocal("extraction/simple.html",
       "literal.id","simple2",
       ExtractingParams.DEFAULT_FIELD, "defaultExtr",//test that unmapped fields go to the text field when no uprefix is specified
             ExtractingParams.UNKNOWN_FIELD_PREFIX, "t_",
@@ -198,7 +198,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     //test literal
-    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
@@ -217,7 +217,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("extractionLiteralMV:two"), "//*[@numFound='1']");
 
     try {
-      loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+      loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
               "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
               "fmap.Author", "extractedAuthor",
               "fmap.content", "extractedContent",
@@ -233,7 +233,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       //nothing to see here, move along
     }
 
-    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
@@ -253,7 +253,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
 
     // Load plain text specifying MIME type:
-    loadLocal("version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "literal.id", "one",
@@ -272,13 +272,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
 
     // Load plain text specifying filename
-    loadLocal("version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "literal.id", "one",
             "fmap.language", "extractedLanguage",
             "fmap.content", "extractedContent",
-            ExtractingParams.RESOURCE_NAME, "version_control.txt"
+            ExtractingParams.RESOURCE_NAME, "extraction/version_control.txt"
     );
     assertQ(req("extractedContent:Apache"), "//*[@numFound='0']");
     assertU(commit());
@@ -292,7 +292,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testExtractOnly() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    SolrQueryResponse rsp = loadLocal("solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true");
+    SolrQueryResponse rsp = loadLocal("extraction/solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true");
     assertTrue("rsp is null and it shouldn't be", rsp != null);
     NamedList list = rsp.getValues();
 
@@ -306,7 +306,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("title is null and it shouldn't be", title != null);
     assertTrue(extraction.indexOf("<?xml") != -1);
 
-    rsp = loadLocal("solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true",
+    rsp = loadLocal("extraction/solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true",
             ExtractingParams.EXTRACT_FORMAT, ExtractingDocumentLoader.TEXT_FORMAT);
     assertTrue("rsp is null and it shouldn't be", rsp != null);
     list = rsp.getValues();
@@ -329,7 +329,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testXPath() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    SolrQueryResponse rsp = loadLocal("example.html",
+    SolrQueryResponse rsp = loadLocal("extraction/example.html",
             ExtractingParams.XPATH_EXPRESSION, "/xhtml:html/xhtml:body/xhtml:a/descendant:node()",
             ExtractingParams.EXTRACT_ONLY, "true"
     );
@@ -347,7 +347,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
 
-    loadLocal("arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+    loadLocal("extraction/arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
         "fmap.Creation-Date", "extractedDate",
         "fmap.AAPL:Keywords", "ignored_a",
@@ -368,7 +368,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
 
     try{
-      loadLocal("password-is-solrcell.docx",
+      loadLocal("extraction/password-is-solrcell.docx",
           "literal.id", "one");
       fail("TikaException is expected because of trying to extract text from password protected word file.");
     }
@@ -377,7 +377,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("*:*"), "//result[@numFound=0]");
 
     try{
-      loadLocal("password-is-solrcell.docx", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+      loadLocal("extraction/password-is-solrcell.docx", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
           "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
           "fmap.Creation-Date", "extractedDate",
           "fmap.AAPL:Keywords", "ignored_a",

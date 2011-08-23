@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -55,9 +56,9 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     //the merge factor is 100 and the maxBufferedDocs is 2, so there should be 50 segments
     for (int i = 0; i < 99; i++) {
       // Add a valid document
-      cmd.doc = new Document();
-      cmd.doc.add(new Field("id", "id_" + i, Field.Store.YES, Field.Index.NOT_ANALYZED));
-      cmd.doc.add(new Field("subject", "subject_" + i, Field.Store.NO, Field.Index.ANALYZED));
+      cmd.solrDoc = new SolrInputDocument();
+      cmd.solrDoc.addField("id", "id_" + i);
+      cmd.solrDoc.addField("subject", "subject_" + i);
       updater.addDoc(cmd);
     }
 

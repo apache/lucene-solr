@@ -24,13 +24,13 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-import static org.apache.lucene.analysis.util.VocabularyAssert.*;
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Test the PorterStemFilter with Martin Porter's test data.

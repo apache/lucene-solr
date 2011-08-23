@@ -155,9 +155,9 @@ public class Test2BTerms extends LuceneTestCase {
     List<BytesRef> savedTerms = null;
 
     MockDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BTerms"));
+    //MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setCheckIndexOnClose(false); // don't double-checkindex
-    //Directory dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
 
     if (true) {
 
@@ -169,6 +169,7 @@ public class Test2BTerms extends LuceneTestCase {
                                       .setMergePolicy(newLogMergePolicy(false, 10))
                                       .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
 
+      w.setInfoStream(VERBOSE ? System.out : null);
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
         // 1 petabyte:

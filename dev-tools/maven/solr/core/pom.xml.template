@@ -78,11 +78,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-queries-contrib</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-queryparser</artifactId>
       <version>${project.version}</version>
     </dependency>

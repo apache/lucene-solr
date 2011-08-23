@@ -120,11 +120,23 @@ public class NRTCachingDirectory extends Directory {
     for(String f : cache.listAll()) {
       files.add(f);
     }
-    for(String f : delegate.listAll()) {
-      // Cannot do this -- if lucene calls createOutput but
-      // file already exists then this falsely trips:
-      //assert !files.contains(f): "file \"" + f + "\" is in both dirs";
-      files.add(f);
+    // LUCENE-1468: our NRTCachingDirectory will actually exist (RAMDir!),
+    // but if the underlying delegate is an FSDir and mkdirs() has not
+    // yet been called, because so far everything is a cached write,
+    // in this case, we don't want to throw a NoSuchDirectoryException
+    try {
+      for(String f : delegate.listAll()) {
+        // Cannot do this -- if lucene calls createOutput but
+        // file already exists then this falsely trips:
+        //assert !files.contains(f): "file \"" + f + "\" is in both dirs";
+        files.add(f);
+      }
+    } catch (NoSuchDirectoryException ex) {
+      // however, if there are no cached files, then the directory truly
+      // does not "exist"
+      if (files.isEmpty()) {
+        throw ex;
+      }
     }
     return files.toArray(new String[files.size()]);
   }
@@ -216,25 +228,21 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
+  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
+  // by using the basic implementation and not delegating, we ensure that all 
+  // openInput/createOutput requests come thru NRTCachingDirectory.
   @Override
-  public synchronized CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    if (cache.fileExists(name)) {
-      return cache.openCompoundInput(name, context);
-    } else {
-      return delegate.openCompoundInput(name, context);
-    }
+  public final CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
+    return super.openCompoundInput(name, context);
   }
   
+  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
+  // by using the basic implementation and not delegating, we ensure that all 
+  // openInput/createOutput requests come thru NRTCachingDirectory.
   @Override
-  public synchronized CompoundFileDirectory createCompoundOutput(String name, IOContext context)
-      throws IOException {
-    if (cache.fileExists(name)) {
-      throw new IOException("File " + name + "already exists");
-    } else {
-      return delegate.createCompoundOutput(name, context);
-    }
+  public final CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
+    return super.createCompoundOutput(name, context);
   }
-
 
   /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */

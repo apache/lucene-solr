@@ -23,12 +23,11 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
-public class MatchAllDocsQueryBuilder implements QueryBuilder
-{
-	public Query getQuery(Element e) throws ParserException
-	{
-		return new MatchAllDocsQuery();
-	}
+public class MatchAllDocsQueryBuilder implements QueryBuilder {
+  
+  public Query getQuery(Element e) throws ParserException {
+    return new MatchAllDocsQuery();
+  }
 }

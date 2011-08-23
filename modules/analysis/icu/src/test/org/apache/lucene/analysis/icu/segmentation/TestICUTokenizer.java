@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 
 import java.io.IOException;
 import java.io.Reader;

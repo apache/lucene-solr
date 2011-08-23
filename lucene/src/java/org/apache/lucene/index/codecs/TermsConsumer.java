@@ -69,7 +69,9 @@ public abstract class TermsConsumer {
       MultiDocsEnum docsEnumIn = null;
 
       while((term = termsEnum.next()) != null) {
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(mergeState.multiLiveDocs, docsEnumIn);
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);
@@ -93,7 +95,9 @@ public abstract class TermsConsumer {
       postingsEnum.setMergeState(mergeState);
       MultiDocsAndPositionsEnum postingsEnumIn = null;
       while((term = termsEnum.next()) != null) {
-        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(mergeState.multiLiveDocs, postingsEnumIn);
+        // We can pass null for liveDocs, because the
+        // mapping enum will skip the non-live docs:
+        postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(null, postingsEnumIn);
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
           // set PayloadProcessor

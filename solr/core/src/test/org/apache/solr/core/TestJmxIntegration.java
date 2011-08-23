@@ -112,8 +112,6 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   public void testJmxOnCoreReload() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
     MBeanServer mbeanServer = servers.get(0);
-    log.info("Servers in testJmxUpdate: " + servers);
-    log.info(h.getCore().getInfoRegistry().toString());
 
     String coreName = h.getCore().getName();
     if (coreName.length() == 0) {
@@ -121,16 +119,43 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     }
 
     Set<ObjectInstance> oldBeans = mbeanServer.queryMBeans(null, null);
-    int oldNumberOfObjects = oldBeans.size();
-    h.getCoreContainer().reload(coreName);
-    
-    // chill for a moment, so our beans can get ready
-    Thread.sleep(1000);
-    
-    Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
-    int newNumberOfObjects = newBeans.size();
+    int oldNumberOfObjects = 0;
+    for (ObjectInstance bean : oldBeans) {
+      try {
+        if (String.valueOf(h.getCore().hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+          oldNumberOfObjects++;
+        }
+      } catch (AttributeNotFoundException e) {
+        // expected
+      }
+    }
 
-    assertEquals("Number of registered MBeans is not the same after Solr core reload", oldNumberOfObjects, newNumberOfObjects);
+    log.info("Before Reload: Size of infoRegistry: " + h.getCore().getInfoRegistry().size() + " MBeans: " + oldNumberOfObjects);
+    assertEquals("Number of registered MBeans is not the same as info registry size", h.getCore().getInfoRegistry().size(), oldNumberOfObjects);
+
+    h.getCoreContainer().reload(coreName);
+
+    Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
+    int newNumberOfObjects = 0;
+    int registrySize = 0;
+    SolrCore core = h.getCoreContainer().getCore(coreName);
+    try {
+      registrySize = core.getInfoRegistry().size();
+      for (ObjectInstance bean : newBeans) {
+        try {
+          if (String.valueOf(core.hashCode()).equals(mbeanServer.getAttribute(bean.getObjectName(), "coreHashCode"))) {
+            newNumberOfObjects++;
+          }
+        } catch (AttributeNotFoundException e) {
+          // expected
+        }
+      }
+    } finally {
+      core.close();
+    }
+
+    log.info("After Reload: Size of infoRegistry: " + registrySize + " MBeans: " + newNumberOfObjects);
+    assertEquals("Number of registered MBeans is not the same as info registry size", registrySize, newNumberOfObjects);
   }
 
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)

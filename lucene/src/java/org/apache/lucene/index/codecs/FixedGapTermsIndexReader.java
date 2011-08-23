@@ -20,7 +20,6 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentInfo;
@@ -31,7 +30,6 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Collection;
 import java.util.Comparator;
 import java.io.IOException;
@@ -74,6 +72,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     throws IOException {
 
     this.termComp = termComp;
+
+    assert indexDivisor == -1 || indexDivisor > 0;
 
     in = dir.openInput(IndexFileNames.segmentFileName(segment, codecId, FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION), context);
     
@@ -251,7 +251,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
     }
 
-    public void loadTermsIndex() throws IOException {
+    private void loadTermsIndex() throws IOException {
       if (coreIndex == null) {
         coreIndex = new CoreFieldIndex(indexStart, termsStart, packedIndexStart, packedOffsetsStart, numIndexTerms);
       }
@@ -372,29 +372,6 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
           }
         }
       }
-    }
-  }
-
-  // Externally synced in IndexWriter
-  @Override
-  public void loadTermsIndex(int indexDivisor) throws IOException {
-    if (!indexLoaded) {
-
-      if (indexDivisor < 0) {
-        this.indexDivisor = -indexDivisor;
-      } else {
-        this.indexDivisor = indexDivisor;
-      }
-      this.totalIndexInterval = indexInterval * this.indexDivisor;
-
-      Iterator<FieldIndexData> it = fields.values().iterator();
-      while(it.hasNext()) {
-        it.next().loadTermsIndex();
-      }
-
-      indexLoaded = true;
-      in.close();
-      termBytesReader = termBytes.freeze(true);
     }
   }
 

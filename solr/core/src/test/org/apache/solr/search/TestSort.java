@@ -24,21 +24,28 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.lucene.util._TestUtil;
+
+import org.apache.solr.request.SolrQueryRequest;
+
+import org.apache.solr.SolrTestCaseJ4;
+
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.*;
 
-public class TestSort extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() { return null; }
-  @Override
-  public String getSolrConfigFile() { return null; }
+public class TestSort extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-minimal.xml");
+  }
 
-  Random r = random;
+  final Random r = random;
 
   int ndocs = 77;
   int iter = 50;
@@ -56,6 +63,92 @@ public class TestSort extends AbstractSolrTestCase {
       return "{id=" +doc + " val1="+val + " val2="+val2 + "}";
     }
   }
+
+  public void testRandomFieldNameSorts() throws Exception {
+    SolrQueryRequest req = lrf.makeRequest("q", "*:*");
+
+    final int iters = atLeast(5000);
+    int numberOfOddities = 0;
+
+    for (int i = 0; i < iters; i++) {
+      final StringBuilder input = new StringBuilder();
+      final String[] names = new String[_TestUtil.nextInt(r,1,10)];
+      final boolean[] reverse = new boolean[names.length];
+      for (int j = 0; j < names.length; j++) {
+        names[j] = _TestUtil.randomRealisticUnicodeString(r, 1, 20);
+
+        // reduce the likelyhood that the random str is a valid query or func 
+        names[j] = names[j].replaceFirst("\\{","\\{\\{");
+        names[j] = names[j].replaceFirst("\\(","\\(\\(");
+        names[j] = names[j].replaceFirst("(\\\"|\\')","$1$1");
+        names[j] = names[j].replaceFirst("(\\d)","$1x");
+
+        // eliminate pesky problem chars
+        names[j] = names[j].replaceAll("\\p{Cntrl}|\\p{javaWhitespace}","");
+
+        if (0 == names[j].length()) {
+          numberOfOddities++;
+          // screw it, i'm taking my toys and going home
+          names[j] = "last_ditch_i_give_up";
+        }
+        reverse[j] = r.nextBoolean();
+
+        input.append(r.nextBoolean() ? " " : "");
+        input.append(names[j]);
+        input.append(" ");
+        input.append(reverse[j] ? "desc," : "asc,");
+      }
+      input.deleteCharAt(input.length()-1);
+      SortField[] sorts = null;
+      try {
+        sorts = QueryParsing.parseSort(input.toString(), req).getSort();
+      } catch (RuntimeException e) {
+        throw new RuntimeException("Failed to parse sort: " + input, e);
+      }
+      assertEquals("parsed sorts had unexpected size", 
+                   names.length, sorts.length);
+      for (int j = 0; j < names.length; j++) {
+        assertEquals("sorts["+j+"] had unexpected reverse: " + input,
+                     reverse[j], sorts[j].getReverse());
+
+        final Type type = sorts[j].getType();
+
+        if (Type.SCORE.equals(type)) {
+          numberOfOddities++;
+          assertEquals("sorts["+j+"] is (unexpectedly) type score : " + input,
+                       "score", names[j]);
+        } else if (Type.DOC.equals(type)) {
+          numberOfOddities++;
+          assertEquals("sorts["+j+"] is (unexpectedly) type doc : " + input,
+                       "_docid_", names[j]);
+        } else if (Type.CUSTOM.equals(type) || Type.REWRITEABLE.equals(type)) {
+          numberOfOddities++;
+
+          // our orig string better be parsable as a func/query
+          QParser qp = 
+            QParser.getParser(names[j], FunctionQParserPlugin.NAME, req);
+          try { 
+            Query q = qp.getQuery();
+            assertNotNull("sorts["+j+"] had type " + type + 
+                          " but parsed to null func/query: " + input, q);
+          } catch (Exception e) {
+            assertNull("sorts["+j+"] had type " + type + 
+                       " but errored parsing as func/query: " + input, e);
+          }
+        } else {
+          assertEquals("sorts["+j+"] had unexpected field: " + input,
+                       names[j], sorts[j].getField());
+        }
+      }
+    }
+
+    assertTrue("Over 0.2% oddities in test: " +
+               numberOfOddities + "/" + iters +
+               " have func/query parsing semenatics gotten broader?",
+               numberOfOddities < 0.002 * iters);
+  }
+
+
 
   public void testSort() throws Exception {
     Directory dir = new RAMDirectory();

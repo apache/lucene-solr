@@ -22,7 +22,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.ReturnFields;
+
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.ByteArrayInputStream;
@@ -70,4 +73,31 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
 
     req.close();
   }
+
+  public void testResolverSolrDocumentPartialFields() throws Exception {
+    LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*",
+                                                "fl", "id,xxx,ddd_s"); 
+    SolrDocument in = new SolrDocument();
+    in.addField("id", 345);
+    in.addField("aaa_s", "aaa");
+    in.addField("bbb_s", "bbb");
+    in.addField("ccc_s", "ccc");
+    in.addField("ddd_s", "ddd");
+    in.addField("eee_s", "eee");    
+
+    Resolver r = new Resolver(req, new ReturnFields(req));
+    Object o = r.resolve(in, new JavaBinCodec());
+
+    assertNotNull("obj is null", o);
+    assertTrue("obj is not doc", o instanceof SolrDocument);
+
+    SolrDocument out = (SolrDocument) o;
+    assertTrue("id not found", out.getFieldNames().contains("id"));
+    assertTrue("ddd_s not found", out.getFieldNames().contains("ddd_s"));
+    assertEquals("Wrong number of fields found", 
+                 2, out.getFieldNames().size());
+
+
+  }
+
 }

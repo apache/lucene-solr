@@ -17,6 +17,14 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
  * limitations under the License.
  */
 
-public interface FieldValuePairQueryNode<T extends Object> extends FieldableNode, ValueQueryNode<T> {
+/**
+ * This interface should be implemented by {@link QueryNode} that holds a field
+ * and an arbitrary value.
+ * 
+ * @see FieldableNode
+ * @see ValueQueryNode
+ */
+public interface FieldValuePairQueryNode<T extends Object> extends
+    FieldableNode, ValueQueryNode<T> {
 
 }

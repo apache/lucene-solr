@@ -13,6 +13,15 @@ Build
 
  * LUCENE-3285: Moved contrib/queryparser into modules/queryparser
 
+ * LUCENE-3285: Moved contrib/xml-query-parser's demo into contrib/demo
+
+ * LUCENE-3271: Moved contrib/queries BooleanFilter, BoostingQuery, 
+   ChainedFilter, FilterClause and TermsFilter into modules/queries
+
+ * LUCENE-3381: Moved contrib/queries regex.*, DuplicateFilter,
+   FuzzyLikeThisQuery and SlowCollated* into contrib/sandbox.
+   Removed contrib/queries.
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
@@ -31,9 +40,6 @@ New Features
     
  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
    from the term dictionary using levenshtein automata.  (Robert Muir)
-
- * LUCENE-2836: Add FieldCacheRewriteMethod, which rewrites MultiTermQueries
-   using the FieldCache's TermsEnum.  (Robert Muir)
   
 API Changes
 
@@ -78,11 +84,12 @@ New Features
    documents must be indexed as a document block, using
    IndexWriter.add/UpdateDocuments (Mark Harwood, Mike McCandless)
 
- * LUCENE-3233: Added SynonymFilter for applying multi-word synonyms
+ * LUCENE-3233, LUCENE-3375: Added SynonymFilter for applying multi-word synonyms
    during indexing or querying (with parsers for wordnet and solr formats).
-   Removed contrib/wordnet.  (Robert Muir, Mike McCandless)
+   Removed contrib/wordnet.  (Simon Rosenthal, Robert Muir, Mike McCandless)
 
 API Changes
+
  * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
    constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
    the target indexes. (Simon Willnauer, Jason Rutherglen)
@@ -95,6 +102,20 @@ Optimizations
       
 Bug Fixes
 
+ * LUCENE-3326: Fixed bug if you used MoreLikeThis.like(Reader), it would
+   try to re-analyze the same Reader multiple times, passing different
+   field names to the analyzer. Additionally MoreLikeThisQuery would take
+   your string and encode/decode it using the default charset, it now uses
+   a StringReader.  Finally, MoreLikeThis's methods that take File, URL, InputStream,
+   are deprecated, please create the Reader yourself. (Trejkaz, Robert Muir)
+   
+ * LUCENE-3347: XML query parser did not always incorporate boosts from
+   UserQuery elements.  (Moogie, Uwe Schindler)
+   
+ * LUCENE-3382: Fixed a bug where NRTCachingDirectory's listAll() would wrongly
+   throw NoSuchDirectoryException when all files written so far have been
+   cached to RAM and the directory still has not yet been created on the
+   filesystem.  (Robert Muir)
 
 ======================= Lucene 3.3.0 =======================
 

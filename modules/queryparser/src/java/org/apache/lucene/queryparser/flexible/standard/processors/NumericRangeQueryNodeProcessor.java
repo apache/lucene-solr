@@ -38,8 +38,25 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
 
+/**
+ * This processor is used to convert {@link ParametricRangeQueryNode}s to
+ * {@link NumericRangeQueryNode}s. It looks for
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} set in the {@link FieldConfig} of
+ * every {@link ParametricRangeQueryNode} found. If
+ * {@link ConfigurationKeys#NUMERIC_CONFIG} is found, it considers that
+ * {@link ParametricRangeQueryNode} to be a numeric range query and convert it to
+ * {@link NumericRangeQueryNode}.
+ * 
+ * @see ConfigurationKeys#NUMERIC_CONFIG
+ * @see ParametricRangeQueryNode
+ * @see NumericConfig
+ * @see NumericRangeQueryNode
+ */
 public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   
+  /**
+   * Constructs an empty {@link NumericRangeQueryNode} object.
+   */
   public NumericRangeQueryNodeProcessor() {
   // empty constructor
   }
@@ -65,45 +82,55 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
             ParametricQueryNode lower = parametricRangeNode.getLowerBound();
             ParametricQueryNode upper = parametricRangeNode.getUpperBound();
             
+            String lowerText = lower.getTextAsString();
+            String upperText = upper.getTextAsString();
             NumberFormat numberFormat = numericConfig.getNumberFormat();
-            Number lowerNumber, upperNumber;
+            Number lowerNumber = null, upperNumber = null;
             
-            try {
-              lowerNumber = numberFormat.parse(lower.getTextAsString());
+             if (lowerText.length() > 0) {
               
-            } catch (ParseException e) {
-              throw new QueryNodeParseException(new MessageImpl(
-                  QueryParserMessages.COULD_NOT_PARSE_NUMBER, lower
-                      .getTextAsString(), numberFormat.getClass()
-                      .getCanonicalName()), e);
+              try {
+                lowerNumber = numberFormat.parse(lowerText);
+                
+              } catch (ParseException e) {
+                throw new QueryNodeParseException(new MessageImpl(
+                    QueryParserMessages.COULD_NOT_PARSE_NUMBER, lower
+                        .getTextAsString(), numberFormat.getClass()
+                        .getCanonicalName()), e);
+              }
+              
             }
             
-            try {
-              upperNumber = numberFormat.parse(upper.getTextAsString());
-              
-            } catch (ParseException e) {
-              throw new QueryNodeParseException(new MessageImpl(
-                  QueryParserMessages.COULD_NOT_PARSE_NUMBER, upper
-                      .getTextAsString(), numberFormat.getClass()
-                      .getCanonicalName()), e);
+             if (upperText.length() > 0) {
+            
+              try {
+                upperNumber = numberFormat.parse(upperText);
+                
+              } catch (ParseException e) {
+                throw new QueryNodeParseException(new MessageImpl(
+                    QueryParserMessages.COULD_NOT_PARSE_NUMBER, upper
+                        .getTextAsString(), numberFormat.getClass()
+                        .getCanonicalName()), e);
+              }
+            
             }
             
             switch (numericConfig.getType()) {
               case LONG:
-                upperNumber = upperNumber.longValue();
-                lowerNumber = lowerNumber.longValue();
+                if (upperNumber != null) upperNumber = upperNumber.longValue();
+                if (lowerNumber != null) lowerNumber = lowerNumber.longValue();
                 break;
               case INT:
-                upperNumber = upperNumber.intValue();
-                lowerNumber = lowerNumber.intValue();
+                if (upperNumber != null) upperNumber = upperNumber.intValue();
+                if (lowerNumber != null) lowerNumber = lowerNumber.intValue();
                 break;
               case DOUBLE:
-                upperNumber = upperNumber.doubleValue();
-                lowerNumber = lowerNumber.doubleValue();
+                if (upperNumber != null) upperNumber = upperNumber.doubleValue();
+                if (lowerNumber != null) lowerNumber = lowerNumber.doubleValue();
                 break;
               case FLOAT:
-                upperNumber = upperNumber.floatValue();
-                lowerNumber = lowerNumber.floatValue();
+                if (upperNumber != null) upperNumber = upperNumber.floatValue();
+                if (lowerNumber != null) lowerNumber = lowerNumber.floatValue();
             }
             
             NumericQueryNode lowerNode = new NumericQueryNode(
@@ -111,8 +138,10 @@ public class NumericRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
             NumericQueryNode upperNode = new NumericQueryNode(
                 parametricRangeNode.getField(), upperNumber, numberFormat);
             
-            boolean upperInclusive = upper.getOperator() == CompareOperator.LE;
-            boolean lowerInclusive = lower.getOperator() == CompareOperator.GE;
+            boolean upperInclusive = upper == null
+                | upper.getOperator() == CompareOperator.LE;
+            boolean lowerInclusive = lower == null
+                | lower.getOperator() == CompareOperator.GE;
             
             return new NumericRangeQueryNode(lowerNode, upperNode,
                 lowerInclusive, upperInclusive, numericConfig);

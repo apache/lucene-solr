@@ -30,35 +30,34 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
 public class FilteredQueryBuilder implements QueryBuilder {
-	
-	private FilterBuilder filterFactory;
-	private QueryBuilder queryFactory;
 
-	public FilteredQueryBuilder(FilterBuilder filterFactory, QueryBuilder queryFactory)
-	{
-		this.filterFactory=filterFactory;
-		this.queryFactory=queryFactory;
-		
-	}
+  private final FilterBuilder filterFactory;
+  private final QueryBuilder queryFactory;
 
-	/* (non-Javadoc)
-	 * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
-	 */
-	public Query getQuery(Element e) throws ParserException {	
- 	    Element filterElement=DOMUtils.getChildByTagOrFail(e,"Filter");
- 	    filterElement=DOMUtils.getFirstChildOrFail(filterElement);
- 	    Filter f=filterFactory.getFilter(filterElement);
- 
- 	    Element queryElement=DOMUtils.getChildByTagOrFail(e,"Query");
- 	    queryElement=DOMUtils.getFirstChildOrFail(queryElement);
- 	    Query q=queryFactory.getQuery(queryElement);
- 	    
- 	    FilteredQuery fq = new FilteredQuery(q,f);
- 	    fq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
- 	    return fq;		
-	}
+  public FilteredQueryBuilder(FilterBuilder filterFactory, QueryBuilder queryFactory) {
+    this.filterFactory = filterFactory;
+    this.queryFactory = queryFactory;
+
+  }
+
+  /* (non-Javadoc)
+    * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
+    */
+  public Query getQuery(Element e) throws ParserException {
+    Element filterElement = DOMUtils.getChildByTagOrFail(e, "Filter");
+    filterElement = DOMUtils.getFirstChildOrFail(filterElement);
+    Filter f = filterFactory.getFilter(filterElement);
+
+    Element queryElement = DOMUtils.getChildByTagOrFail(e, "Query");
+    queryElement = DOMUtils.getFirstChildOrFail(queryElement);
+    Query q = queryFactory.getQuery(queryElement);
+
+    FilteredQuery fq = new FilteredQuery(q, f);
+    fq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return fq;
+  }
 
 }

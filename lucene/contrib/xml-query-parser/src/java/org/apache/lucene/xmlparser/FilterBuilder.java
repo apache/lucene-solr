@@ -26,5 +26,6 @@ import org.w3c.dom.Element;
  * 
  */
 public interface FilterBuilder {
+
 	 public Filter getFilter(Element e) throws ParserException;
 }

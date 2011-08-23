@@ -49,7 +49,7 @@ public class ContentStreamTest extends LuceneTestCase
 
   public void testFileStream() throws IOException 
   {
-    InputStream is = new SolrResourceLoader(null, null).openResource( "README" );
+    InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
     File file = new File(TEMP_DIR, "README");
     FileOutputStream os = new FileOutputStream(file);

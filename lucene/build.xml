@@ -32,7 +32,6 @@
   <path id="test.classpath">
   	<path refid="classpath"/>
     <path refid="junit-path"/>
-    <path refid="ant-path"/>
     <pathelement location="${build.dir}/classes/test-framework"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
@@ -75,15 +74,15 @@
 	
   <path id="backwards.junit.classpath">
     <path refid="junit-path"/>
+    <path refid="classpath"/>
     <pathelement location="${build.dir.backwards}/classes/test"/>
-    <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement path="${java.class.path}"/>
   </path>
 
   <!-- remove this -->
   <target name="test-tag" depends="test-backwards" description="deprecated"/>
   
-  <target name="compile-backwards" depends="compile-core, jar-core"
+  <target name="compile-backwards" depends="compile-core"
   	description="Runs tests of a previous Lucene version.">
 	<sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
@@ -96,22 +95,42 @@
   	</sequential>
   </target>	
 
-  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
+  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, backwards-test-warning, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
 
   <target name="junit-backwards-mkdir">
     <mkdir dir="${build.dir.backwards}/test"/>
+  </target>
+
+  <target name="check-backwards-params">
+    <condition property="backwards.ignoring.params">
+      <or>
+        <istrue value="${tests.nightly}"/>
+        <not><equals arg1="${tests.multiplier}" arg2="1"/></not>
+      </or>
+    </condition>
+  </target>
+
+  <target name="backwards-test-warning" depends="check-backwards-params" if="backwards.ignoring.params">
+    <echo>
+       Warning: Ignoring your multiplier and nightly settings for backwards tests.
+       These tests are for API compatibility only!
+    </echo>
   </target>
 
   <macrodef name="backwards-test-macro">
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
   	<sequential>
-  	  <!-- run branch tests against trunk jar -->
+  	  <!-- run branch tests against trunk jar:
+          Note: we disable multiplier/nightly because the purpose is to find API breaks
+          -->
       <test-macro 
     	dataDir="${backwards.dir}/src/test" 
     	tempDir="${build.dir.backwards}/test" 
     	junit.classpath="backwards.junit.classpath" 
     	junit.output.dir="${junit.output.dir.backwards}" 
+        tests.nightly="false"
+        tests.multiplier="1"
         threadNum="@{threadNum}" 
         threadTotal="@{threadTotal}"/>
   	</sequential>
@@ -194,9 +213,16 @@
                    failonerror="false"/>
   </target>
   	
-  <target name="javadocs-all" description="Generate javadoc for core and contrib classes" depends="build-contrib">
+  <target name="javadocs-all" description="Generate javadoc for core and contrib classes">
   	<sequential>
       <mkdir dir="${javadoc.dir}/all"/>
+      
+      <!-- TODO: remove these dependencies: -->
+      <subant target="default">
+        <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
+        <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
+        <fileset dir="${common.dir}/../modules/queries" includes="build.xml"/>
+      </subant>
 
       <path id="javadoc.classpath">
         <path refid="classpath"/>
@@ -229,7 +255,7 @@
           <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/misc/src/java"/>
-          <packageset dir="contrib/queries/src/java"/>
+          <packageset dir="contrib/sandbox/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
           <!-- end alpha sort -->
@@ -246,7 +272,7 @@
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Misc " packages="org.apache.lucene.misc*"/>
-          <group title="contrib: Queries" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
+          <group title="contrib: Sandbox" packages="org.apache.lucene.sandbox*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
           
@@ -390,7 +416,8 @@
                   classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
-      <m2-deploy pom.xml="src/test-framework/pom.xml">
+      <m2-deploy pom.xml="src/test-framework/pom.xml"
+                 jar.file="${build.dir}/lucene-test-framework-${version}.jar">
         <artifact-attachments>
           <attach file="${build.dir}/lucene-test-framework-${version}-src.jar"
                   classifier="sources"/>
@@ -533,4 +560,8 @@
             title="Lucene Search Engine: Test Framework" />
   </target>
 
+  <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-core" unless="lucene-core.uptodate">
+    <jarify/>
+  </target>
 </project>

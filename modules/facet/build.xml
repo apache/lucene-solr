@@ -29,10 +29,6 @@
   <property name="build.dir" location="build/" />
   <property name="dist.dir" location="dist/" />
 
-  <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-
   <path id="examples.classpath">
     <path refid="classpath" />
     <pathelement location="${build.dir}/classes/java" />
@@ -42,10 +38,12 @@
   <path id="test.classpath">
     <path refid="test.base.classpath" />
     <pathelement location="${build.dir}/classes/examples" />
+    <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
     <pathelement path="${analyzers-common.jar}" />
   </path>
 
   <path id="classpath">
+    <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
     <pathelement path="${analyzers-common.jar}" />
     <path refid="base.classpath"/>
   </path>
@@ -62,12 +60,6 @@
           title="Lucene Search Engine: ${ant.project.name}-examples" />
   </target>
 
-  <target name="jar-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="jar-core">
-      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-    </subant>
-  </target>
-    
   <target name="compile-core" depends="jar-analyzers-common,common.compile-core,compile-examples" description="Compiles facet classes" />
 
   <target name="jar-core" depends="common.jar-core,jar-examples" />

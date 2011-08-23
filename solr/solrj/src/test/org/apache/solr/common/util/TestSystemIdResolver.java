@@ -38,9 +38,10 @@ public class TestSystemIdResolver extends LuceneTestCase {
   }
   
   public void testResolving() throws Exception {
-    final ResourceLoader loader = new SolrResourceLoader(SolrTestCaseJ4.TEST_HOME(), this.getClass().getClassLoader());
+    final String testHome = SolrTestCaseJ4.getFile("solrj/solr/conf").getParent();
+    final ResourceLoader loader = new SolrResourceLoader(testHome, this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
-    final String fileUri = new File(SolrTestCaseJ4.TEST_HOME()+"/crazy-path-to-config.xml").toURI().toASCIIString();
+    final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     
     assertEquals("solrres:/test.xml", SystemIdResolver.createSystemIdFromResourceName("test.xml"));
     assertEquals("solrres://@/usr/local/etc/test.xml", SystemIdResolver.createSystemIdFromResourceName("/usr/local/etc/test.xml"));
@@ -60,10 +61,10 @@ public class TestSystemIdResolver extends LuceneTestCase {
     assertEntityResolving(resolver, "solrres:/schema.xml", "solrres:/solrconfig.xml", "schema.xml");
     assertEntityResolving(resolver, "solrres:/org/apache/solr/common/util/TestSystemIdResolver.class",
       "solrres:/org/apache/solr/common/ResourceLoader.class", "util/TestSystemIdResolver.class");
-    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(SolrTestCaseJ4.TEST_HOME()+"/conf/schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(SolrTestCaseJ4.TEST_HOME()+"/conf/solrconfig.xml"), "schema.xml");
-    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(SolrTestCaseJ4.TEST_HOME()+"/crazy-path-to-schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(SolrTestCaseJ4.TEST_HOME()+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
+    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/schema.xml"),
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/conf/solrconfig.xml"), "schema.xml");
+    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
     
     // test, that resolving works if somebody uses an absolute file:-URI in a href attribute, the resolver should return null (default fallback)
     assertNull(resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri));

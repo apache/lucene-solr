@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;

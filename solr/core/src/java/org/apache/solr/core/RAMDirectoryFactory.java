@@ -19,37 +19,30 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
- * Directory provider for using lucene RAMDirectory
+ * Factory to instantiate {@link org.apache.lucene.store.RAMDirectory}
  */
 public class RAMDirectoryFactory extends StandardDirectoryFactory {
-  private static Map<String, RefCntRamDirectory> directories = new HashMap<String, RefCntRamDirectory>();
 
   @Override
-  public Directory open(String path) throws IOException {
-    synchronized (RAMDirectoryFactory.class) {
-      RefCntRamDirectory directory = directories.get(path);
-      if (directory == null || !directory.isOpen()) {
-        directory = (RefCntRamDirectory) openNew(path);
-        directories.put(path, directory);
-      } else {
-        directory.incRef();
-      }
-
-      return directory;
-    }
+  protected Directory create(String path) throws IOException {
+    return new RAMDirectory();
   }
   
   @Override
   public boolean exists(String path) {
-    synchronized (RAMDirectoryFactory.class) {
-      RefCntRamDirectory directory = directories.get(path);
-      if (directory == null || !directory.isOpen()) {
+    String fullPath = new File(path).getAbsolutePath();
+    synchronized (DirectoryFactory.class) {
+      CacheValue cacheValue = byPathCache.get(fullPath);
+      Directory directory = null;
+      if (cacheValue != null) {
+        directory = cacheValue.directory;
+      }
+      if (directory == null) {
         return false;
       } else {
         return true;
@@ -57,19 +50,4 @@ public class RAMDirectoryFactory extends StandardDirectoryFactory {
     }
   }
 
-  /**
-   * Non-public for unit-test access only. Do not use directly
-   */
-  Directory openNew(String path) throws IOException {
-    Directory directory;
-    File dirFile = new File(path);
-    boolean indexExists = dirFile.canRead();
-    if (indexExists) {
-      Directory dir = super.open(path);
-      directory = new RefCntRamDirectory(dir);
-    } else {
-      directory = new RefCntRamDirectory();
-    }
-    return directory;
-  }
 }

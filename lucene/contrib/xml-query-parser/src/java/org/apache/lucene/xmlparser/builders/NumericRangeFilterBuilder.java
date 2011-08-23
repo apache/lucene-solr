@@ -17,8 +17,6 @@ package org.apache.lucene.xmlparser.builders;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
@@ -28,6 +26,8 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Element;
+
+import java.io.IOException;
 
 /**
  * Creates a {@link NumericRangeFilter}. The table below specifies the required
@@ -84,80 +84,79 @@ import org.w3c.dom.Element;
  * <td>4</td>
  * </tr>
  * </table>
- * <p>
+ * <p/>
  * If an error occurs parsing the supplied <tt>lowerTerm</tt> or
  * <tt>upperTerm</tt> into the numeric type specified by <tt>type</tt>, then the
  * error will be silently ignored and the resulting filter will not match any
  * documents.
  */
 public class NumericRangeFilterBuilder implements FilterBuilder {
-	private static final NoMatchFilter NO_MATCH_FILTER = new NoMatchFilter();
+  
+  private static final NoMatchFilter NO_MATCH_FILTER = new NoMatchFilter();
 
-	private boolean strictMode = false;
+  private boolean strictMode = false;
 
-	/**
-	 * Specifies how this {@link NumericRangeFilterBuilder} will handle errors.
-	 * <p>
-	 * If this is set to true, {@link #getFilter(Element)} will throw a
-	 * {@link ParserException} if it is unable to parse the lowerTerm or upperTerm
-	 * into the appropriate numeric type. If this is set to false, then this
-	 * exception will be silently ignored and the resulting filter will not match
-	 * any documents.
-	 * <p>
-	 * Defaults to false.
-	 * 
-	 * @param strictMode
-	 */
-	public void setStrictMode(boolean strictMode) {
-		this.strictMode = strictMode;
-	}
+  /**
+   * Specifies how this {@link NumericRangeFilterBuilder} will handle errors.
+   * <p/>
+   * If this is set to true, {@link #getFilter(Element)} will throw a
+   * {@link ParserException} if it is unable to parse the lowerTerm or upperTerm
+   * into the appropriate numeric type. If this is set to false, then this
+   * exception will be silently ignored and the resulting filter will not match
+   * any documents.
+   * <p/>
+   * Defaults to false.
+   *
+   * @param strictMode
+   */
+  public void setStrictMode(boolean strictMode) {
+    this.strictMode = strictMode;
+  }
 
-	public Filter getFilter(Element e) throws ParserException {
-		String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-		String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
-		String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
-		boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
-		boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-		int precisionStep = DOMUtils.getAttribute(e, "precisionStep",  NumericUtils.PRECISION_STEP_DEFAULT);
+  public Filter getFilter(Element e) throws ParserException {
+    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
+    String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
+    boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
+    boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
+    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", NumericUtils.PRECISION_STEP_DEFAULT);
 
-		String type = DOMUtils.getAttribute(e, "type", "int");
-		try {
-			Filter filter;
-			if (type.equalsIgnoreCase("int")) {
-				filter = NumericRangeFilter.newIntRange(field, precisionStep, Integer
-						.valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("long")) {
-				filter = NumericRangeFilter.newLongRange(field, precisionStep, Long
-						.valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("double")) {
-				filter = NumericRangeFilter.newDoubleRange(field, precisionStep, Double
-						.valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else if (type.equalsIgnoreCase("float")) {
-				filter = NumericRangeFilter.newFloatRange(field, precisionStep, Float
-						.valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
-						upperInclusive);
-			} else {
-				throw new ParserException(
-						"type attribute must be one of: [long, int, double, float]");
-			}
-			return filter;
-		} catch (NumberFormatException nfe) {
-			if (strictMode) {
-				throw new ParserException(
-						"Could not parse lowerTerm or upperTerm into a number", nfe);
-			}
-			return NO_MATCH_FILTER;
-		}
-	}
+    String type = DOMUtils.getAttribute(e, "type", "int");
+    try {
+      Filter filter;
+      if (type.equalsIgnoreCase("int")) {
+        filter = NumericRangeFilter.newIntRange(field, precisionStep, Integer
+            .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("long")) {
+        filter = NumericRangeFilter.newLongRange(field, precisionStep, Long
+            .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("double")) {
+        filter = NumericRangeFilter.newDoubleRange(field, precisionStep, Double
+            .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else if (type.equalsIgnoreCase("float")) {
+        filter = NumericRangeFilter.newFloatRange(field, precisionStep, Float
+            .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
+            upperInclusive);
+      } else {
+        throw new ParserException("type attribute must be one of: [long, int, double, float]");
+      }
+      return filter;
+    } catch (NumberFormatException nfe) {
+      if (strictMode) {
+        throw new ParserException("Could not parse lowerTerm or upperTerm into a number", nfe);
+      }
+      return NO_MATCH_FILTER;
+    }
+  }
 
-	static class NoMatchFilter extends Filter {
+  static class NoMatchFilter extends Filter {
 
-		@Override
-		public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
-			return null;
+    @Override
+    public DocIdSet getDocIdSet(AtomicReaderContext context) throws IOException {
+      return null;
 		}
 
 	}

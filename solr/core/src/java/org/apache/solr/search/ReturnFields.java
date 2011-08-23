@@ -53,9 +53,15 @@ public class ReturnFields
   public static final String SCORE = "score";
 
   private final List<String> globs = new ArrayList<String>(1);
-  private final Set<String> fields = new LinkedHashSet<String>(); // order is important for CSVResponseWriter
-  private Set<String> okFieldNames = new HashSet<String>(); // Collection of everything that could match
-
+  
+  // The lucene field names to request from the SolrIndexSearcher
+  // Order is important for CSVResponseWriter
+  private final Set<String> fields = new LinkedHashSet<String>();
+  
+  // Field names that are OK to include in the response.
+  // This will include pseudo fields, lucene fields, and matching globs
+  private Set<String> okFieldNames = new HashSet<String>(); 
+  
   private DocTransformer transformer;
   private boolean _wantsScore = false;
   private boolean _wantsAllFields = false;
@@ -112,8 +118,8 @@ public class ReturnFields
       augmenters.addTransformer( new RenameFieldsTransformer( rename ) );
     }
 
-    // Legacy behavior? "score" == "*,score"  Distributed tests for this
-    if( fields.size() == 1 && _wantsScore ) {
+    // Legacy behavior: "score" == "*,score"  
+    if( fields.size() == 1 && _wantsScore && augmenters.size() == 1 && globs.isEmpty() ) {
       _wantsAllFields = true;
     }
 
@@ -360,6 +366,7 @@ public class ReturnFields
     for( String s : globs ) {
       // TODO something better?
       if( FilenameUtils.wildcardMatch( name, s ) ) {
+        okFieldNames.add(name); // Don't calculate it again
         return true;
       }
     }

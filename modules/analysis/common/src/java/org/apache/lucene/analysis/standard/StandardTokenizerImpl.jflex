@@ -71,6 +71,8 @@ MidLetterEx    = ({MidLetter} | {MidNumLet})   ({Format} | {Extend})*
 MidNumericEx   = ({MidNum} | {MidNumLet})      ({Format} | {Extend})*
 ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
+HanEx = {Han} ({Format} | {Extend})*
+HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 %{
   /** Alphanumeric sequences */
@@ -178,8 +180,8 @@ ExtendNumLetEx = {ExtendNumLet}                ({Format} | {Extend})*
 
 // UAX#29 WB14.  Any ÷ Any
 //
-{Han} { return IDEOGRAPHIC_TYPE; }
-{Hiragana} { return HIRAGANA_TYPE; }
+{HanEx} { return IDEOGRAPHIC_TYPE; }
+{HiraganaEx} { return HIRAGANA_TYPE; }
 
 
 // UAX#29 WB3.   CR × LF

@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="demo" default="jar-core" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="demo" default="default" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
   <description>
     Lucene Demo
@@ -27,41 +27,33 @@
 
   <import file="../contrib-build.xml"/>
 
-  <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
-      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
-  <module-uptodate name="queryparser" property="queryparser.uptodate" classpath.property="queryparser.jar"/>
-  
-  <property name="lucene.jar" value="${common.dir}/build/lucene-core-${version}.jar"/>
-  <target name="lucene-jar-uptodate" unless="lucene.jar.uptodate">
-    <uptodate property="lucene.jar.uptodate" targetfile="${lucene.jar}">
-     	<srcfiles dir="${common.dir}/src/java" includes="**/*.java"/>
-    </uptodate>
-  </target>
-  <target name="jar-lucene" depends="build-lucene" unless="lucene.jar.uptodate">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="init" depends="contrib-build.init,lucene-jar-uptodate,jar-lucene"/>
+  <target name="init" depends="contrib-build.init,jar-lucene-core"/>
   
   <path id="classpath">
 	 <pathelement path="${analyzers-common.jar}"/>
    <pathelement path="${queryparser.jar}"/>
-   <pathelement path="${lucene.jar}"/>
+   <pathelement path="${lucene-core.jar}"/>
+   <pathelement path="${xml-query-parser.jar}"/>
+   <pathelement location="lib/servlet-api-2.4.jar"/>
   </path>
 
-  <target name="compile-core" depends="jar-analyzers-common,build-queryparser,common.compile-core" />
+  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,jar-xml-query-parser,common.compile-core" />
 
-  <target name="jar-analyzers-common" unless="analyzers-common.uptodate">
-    <subant target="jar-core">
-      <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
-    </subant>
-  </target>
+  <target name="default" depends="jar-core,build-web-demo"/>
 
-  <target name="build-queryparser" unless="queryparser.uptodate">
-    <echo>Demo building dependency modules/queryparser</echo>
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/queryparser" includes="build.xml"/>
-    </subant>
+  <target name="build-artifacts-and-tests" depends="jar, compile-test,build-web-demo" />
+
+  <target name="build-web-demo"  description="Compiles demo">
+    <echo>Compiling XML QueryParser Demo WAR</echo>
+
+    <war destfile="${build.dir}/lucene-xml-query-demo.war" webxml="src/resources/org/apache/lucene/demo/xmlparser/WEB-INF/web.xml">
+      <fileset dir="src/resources/org/apache/lucene/demo/xmlparser/"/>
+      <lib dir="${build.dir}">
+        <include name="${final.name}.jar"/>
+      </lib>
+      <lib file="${queries.jar}"/>
+      <lib file="${lucene-core.jar}"/>
+    </war>
   </target>
+  
 </project>

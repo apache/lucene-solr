@@ -39,6 +39,7 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.parser.ParseException;
+import org.apache.lucene.queryparser.util.QueryParserTestBase; // javadocs
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -56,12 +57,14 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  * This test case tests {@link PrecedenceQueryParser}.
  * </p>
  * <p>
- * It contains all tests from {@link org.apache.lucene.queryparser.classic.TestQueryParser}
+ * It contains all tests from {@link QueryParserTestBase}
  * with some adjusted to fit the precedence requirement, plus some precedence test cases.
  * </p>
  * 
- * @see org.apache.lucene.queryparser.classic.TestQueryParser
+ * @see QueryParserTestBase
  */
+//TODO: refactor this to actually extend that class, overriding the tests
+//that it adjusts to fit the precedence requirement, adding its extra tests.
 public class TestPrecedenceQueryParser extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

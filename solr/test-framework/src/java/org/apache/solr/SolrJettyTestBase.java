@@ -39,7 +39,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   public static JettySolrRunner createJetty(String solrHome, String configFile, String context) throws Exception {
     // creates the data dir
-    initCore(null, null);
+    initCore(null, null, solrHome);
 
     ignoreException("maxWarmingSearchers");
 

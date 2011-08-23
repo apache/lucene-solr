@@ -473,6 +473,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<Token>();
+    assert analyzer != null;
     TokenStream ts = analyzer.reusableTokenStream("", new StringReader(q));
     ts.reset();
     // TODO: support custom attributes
@@ -589,6 +590,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (initParams.getName(i).equals("spellchecker")) {
           NamedList spellchecker = (NamedList) initParams.getVal(i);
           String className = (String) spellchecker.get("classname");
+          // TODO: this is a little bit sneaky: warn if class isnt supplied
+          // so that its mandatory in a future release?
           if (className == null)
             className = IndexBasedSpellChecker.class.getName();
           SolrResourceLoader loader = core.getResourceLoader();

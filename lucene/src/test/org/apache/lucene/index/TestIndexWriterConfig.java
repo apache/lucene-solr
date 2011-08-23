@@ -69,7 +69,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
-    assertNull(conf.getFlushPolicy());
+    assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();

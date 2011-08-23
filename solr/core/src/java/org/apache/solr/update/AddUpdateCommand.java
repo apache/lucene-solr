@@ -20,6 +20,8 @@ package org.apache.solr.update;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,10 +34,7 @@ import org.apache.solr.schema.SchemaField;
 public class AddUpdateCommand extends UpdateCommand {
    // optional id in "internal" indexed form... if it is needed and not supplied,
    // it will be obtained from the doc.
-   public String indexedId;
-
-   // The Lucene document to be indexed
-   public Document doc;
+   private BytesRef indexedId;
 
    // Higher level SolrInputDocument, normally used to construct the Lucene Document
    // to index.
@@ -52,7 +51,6 @@ public class AddUpdateCommand extends UpdateCommand {
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
-     doc = null;
      solrDoc = null;
      indexedId = null;
    }
@@ -61,26 +59,32 @@ public class AddUpdateCommand extends UpdateCommand {
      return solrDoc;
    }
 
-   public Document getLuceneDocument(IndexSchema schema) {
-     if (doc == null && solrDoc != null) {
-       // TODO??  build the doc from the SolrDocument?
-     }
-     return doc;    
+  /** Creates and returns a lucene Document to index.  Any changes made to the returned Document
+   * will not be reflected in the SolrInputDocument, or future calls to this method.
+   */
+   public Document getLuceneDocument() {
+     return DocumentBuilder.toDocument(getSolrInputDocument(), req.getSchema());
    }
 
-   public String getIndexedId(IndexSchema schema) {
+  /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
+   public BytesRef getIndexedId() {
      if (indexedId == null) {
+       IndexSchema schema = req.getSchema();
        SchemaField sf = schema.getUniqueKeyField();
        if (sf != null) {
-         if (doc != null) {
-           schema.getUniqueKeyField();
-           Fieldable storedId = doc.getFieldable(sf.getName());
-           indexedId = sf.getType().storedToIndexed(storedId);
-         }
          if (solrDoc != null) {
            SolrInputField field = solrDoc.getField(sf.getName());
-           if (field != null) {
-             indexedId = sf.getType().toInternal( field.getFirstValue().toString() );
+
+           int count = field==null ? 0 : field.getValueCount();
+           if (count == 0) {
+             if (overwrite) {
+               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
+             }
+           } else if (count  > 1) {
+             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
+           } else {
+             indexedId = new BytesRef();
+             sf.getType().readableToIndexed(field.getFirstValue().toString(), indexedId);
            }
          }
        }
@@ -88,16 +92,9 @@ public class AddUpdateCommand extends UpdateCommand {
      return indexedId;
    }
 
-   public String getPrintableId(IndexSchema schema) {
+   public String getPrintableId() {
+     IndexSchema schema = req.getSchema();
      SchemaField sf = schema.getUniqueKeyField();
-     if (indexedId != null && sf != null) {
-       return sf.getType().indexedToReadable(indexedId);
-     }
-
-     if (doc != null) {
-       return schema.printableUniqueKey(doc);
-     }
-
      if (solrDoc != null && sf != null) {
        SolrInputField field = solrDoc.getField(sf.getName());
        if (field != null) {

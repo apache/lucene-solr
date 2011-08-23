@@ -45,17 +45,17 @@ public class TestIndexSplitter extends LuceneTestCase {
             setMergePolicy(mergePolicy)
     );
     for (int x=0; x < 100; x++) {
-      Document doc = TestIndexWriterReader.createDocument(x, "index", 5);
+      Document doc = DocHelper.createDocument(x, "index", 5);
       iw.addDocument(doc);
     }
     iw.commit();
     for (int x=100; x < 150; x++) {
-      Document doc = TestIndexWriterReader.createDocument(x, "index2", 5);
+      Document doc = DocHelper.createDocument(x, "index2", 5);
       iw.addDocument(doc);
     }
     iw.commit();
     for (int x=150; x < 200; x++) {
-      Document doc = TestIndexWriterReader.createDocument(x, "index3", 5);
+      Document doc = DocHelper.createDocument(x, "index3", 5);
       iw.addDocument(doc);
     }
     iw.commit();

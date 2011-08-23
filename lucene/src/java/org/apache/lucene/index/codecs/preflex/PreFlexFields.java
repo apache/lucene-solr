@@ -171,30 +171,6 @@ public class PreFlexFields extends FieldsProducer {
   }
 
   @Override
-  synchronized public void loadTermsIndex(int indexDivisor) throws IOException {
-    if (tis == null) {
-      Directory dir0;
-      if (si.getUseCompoundFile()) {
-        // In some cases, we were originally opened when CFS
-        // was not used, but then we are asked to open the
-        // terms reader with index, the segment has switched
-        // to CFS
-
-        if (!(dir instanceof CompoundFileDirectory)) {
-          dir0 = cfsReader = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
-        } else {
-          dir0 = dir;
-        }
-        dir0 = cfsReader;
-      } else {
-        dir0 = dir;
-      }
-
-      tis = new TermInfosReader(dir0, si.name, fieldInfos, context, indexDivisor);
-    }
-  }
-
-  @Override
   public void close() throws IOException {
     if (tis != null) {
       tis.close();

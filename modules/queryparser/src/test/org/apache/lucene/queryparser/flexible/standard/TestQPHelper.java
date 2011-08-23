@@ -407,6 +407,7 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testSimple() throws Exception {
+    assertQueryEquals("field=a", null, "a");
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("t�rm term term", new MockAnalyzer(random, MockTokenizer.WHITESPACE, false),
@@ -630,6 +631,22 @@ public class TestQPHelper extends LuceneTestCase {
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]", "field")).getRewriteMethod());
 
+    // test open ranges
+    assertQueryEquals("[ a TO * ]", null, "[a TO *]");
+    assertQueryEquals("[ * TO z ]", null, "[* TO z]");
+    assertQueryEquals("[ * TO * ]", null, "[* TO *]");
+    
+    assertQueryEquals("field>=a", null, "[a TO *]");
+    assertQueryEquals("field>a", null, "{a TO *]");
+    assertQueryEquals("field<=a", null, "[* TO a]");
+    assertQueryEquals("field<a", null, "[* TO a}");
+    
+    // mixing exclude and include bounds
+    assertQueryEquals("{ a TO z ]", null, "{a TO z]");
+    assertQueryEquals("[ a TO z }", null, "[a TO z}");
+    assertQueryEquals("{ a TO * ]", null, "{a TO *]");
+    assertQueryEquals("[ * TO z }", null, "[* TO z}");
+    
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
     assertQueryEquals("{ a TO z }", null, "{a TO z}");

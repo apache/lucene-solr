@@ -259,7 +259,8 @@ public abstract class QParser {
   }
 
   public Query getHighlightQuery() throws ParseException {
-    return getQuery();
+    Query query = getQuery();
+    return query instanceof WrappedQuery ? ((WrappedQuery)query).getWrappedQuery() : query;
   }
 
   public void addDebugInfo(NamedList<Object> debugInfo) {

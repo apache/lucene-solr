@@ -106,10 +106,10 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link IndicTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link IndicNormalizationFilter},
    *         {@link HindiNormalizationFilter}, {@link KeywordMarkerFilter}

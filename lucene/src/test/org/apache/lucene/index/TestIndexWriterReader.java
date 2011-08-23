@@ -74,7 +74,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     for (int i = 0; i < 97 ; i++) {
       IndexReader reader = writer.getReader();
       if (i == 0) {
-        writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+        writer.addDocument(DocHelper.createDocument(i, "x", 1 + random.nextInt(5)));
       } else {
         int previous = random.nextInt(i);
         // a check if the reader is current here could fail since there might be
@@ -83,10 +83,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
         case 0:
         case 1:
         case 2:
-          writer.addDocument(createDocument(i, "x", 1 + random.nextInt(5)));
+          writer.addDocument(DocHelper.createDocument(i, "x", 1 + random.nextInt(5)));
           break;
         case 3:
-          writer.updateDocument(new Term("id", "" + previous), createDocument(
+          writer.updateDocument(new Term("id", "" + previous), DocHelper.createDocument(
               previous, "x", 1 + random.nextInt(5)));
           break;
         case 4:
@@ -105,7 +105,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random));
     writer = new IndexWriter(dir1, iwc);
     assertTrue(reader.isCurrent());
-    writer.addDocument(createDocument(1, "x", 1+random.nextInt(5)));
+    writer.addDocument(DocHelper.createDocument(1, "x", 1+random.nextInt(5)));
     assertTrue(reader.isCurrent()); // segments in ram but IW is different to the readers one
     writer.close();
     assertFalse(reader.isCurrent()); // segments written
@@ -422,7 +422,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       addDir = newDirectory();
       IndexWriter writer = new IndexWriter(addDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
       for (int i = 0; i < NUM_INIT_DOCS; i++) {
-        Document doc = createDocument(i, "addindex", 4);
+        Document doc = DocHelper.createDocument(i, "addindex", 4);
         writer.addDocument(doc);
       }
         
@@ -543,7 +543,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(r2.maxDoc(), 100);
     // add 100 documents
     for (int x = 10000; x < 10000 + 100; x++) {
-      Document d = createDocument(x, "index1", 5);
+      Document d = DocHelper.createDocument(x, "index1", 5);
       writer.addDocument(d);
     }
     writer.flush(false, true);
@@ -575,25 +575,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     dir1.close();
   }
-
-  
-  public static Document createDocument(int n, String indexName, int numFields) {
-    StringBuilder sb = new StringBuilder();
-    Document doc = new Document();
-    doc.add(new Field("id", Integer.toString(n), Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("indexname", indexName, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    sb.append("a");
-    sb.append(n);
-    doc.add(new Field("field1", sb.toString(), Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    sb.append(" b");
-    sb.append(n);
-    for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i + 1), sb.toString(), Store.YES,
-                        Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    }
-    return doc;
-  }
-
+ 
   /*
    * Delete a document by term and return the doc id
    * 
@@ -609,7 +591,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {
-      w.addDocument(createDocument(i, indexName, 4));
+      w.addDocument(DocHelper.createDocument(i, indexName, 4));
       if (multiSegment && (i % 10) == 0) {
       }
     }
@@ -622,7 +604,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public static void createIndexNoClose(boolean multiSegment, String indexName,
       IndexWriter w) throws IOException {
     for (int i = 0; i < 100; i++) {
-      w.addDocument(createDocument(i, indexName, 4));
+      w.addDocument(DocHelper.createDocument(i, indexName, 4));
     }
     if (!multiSegment) {
       w.optimize();
@@ -662,14 +644,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
-      writer.addDocument(createDocument(i, "test", 4));
+      writer.addDocument(DocHelper.createDocument(i, "test", 4));
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
     assertTrue(warmer.warmCount > 0);
     final int count = warmer.warmCount;
 
-    writer.addDocument(createDocument(17, "test", 4));
+    writer.addDocument(DocHelper.createDocument(17, "test", 4));
     writer.optimize();
     assertTrue(warmer.warmCount > count);
     
@@ -695,7 +677,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, r1.numDocs());
 
     for (int i = 0; i < 10; i++) {
-      writer.addDocument(createDocument(i, "test", 4));
+      writer.addDocument(DocHelper.createDocument(i, "test", 4));
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
 
@@ -857,7 +839,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             do {
               try {
                 for(int docUpto=0;docUpto<10;docUpto++) {
-                  writer.addDocument(createDocument(10*count+docUpto, "test", 4));
+                  writer.addDocument(DocHelper.createDocument(10*count+docUpto, "test", 4));
                 }
                 count++;
                 final int limit = count*10;

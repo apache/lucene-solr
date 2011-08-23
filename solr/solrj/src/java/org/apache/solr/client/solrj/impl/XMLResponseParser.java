@@ -17,23 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Reader;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -41,6 +25,19 @@ import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * 
@@ -306,10 +303,10 @@ public class XMLResponseParser extends ResponseParser
         
         if( !type.isLeaf ) {
           switch( type ) {
-          case LST:    vals.add( readNamedList( parser ) ); continue;
-          case ARR:    vals.add( readArray( parser ) ); continue;
-          case RESULT: vals.add( readDocuments( parser ) ); continue;
-          case DOC:    vals.add( readDocument( parser ) ); continue;
+          case LST:    vals.add( readNamedList( parser ) ); depth--; continue;
+          case ARR:    vals.add( readArray( parser ) ); depth--; continue;
+          case RESULT: vals.add( readDocuments( parser ) ); depth--; continue;
+          case DOC:    vals.add( readDocument( parser ) ); depth--; continue;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
         }

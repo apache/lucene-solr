@@ -20,31 +20,29 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.store.Directory;
-
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.io.IOException;
-import java.net.URL;
-
-import org.apache.solr.search.QParser;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -54,7 +52,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
  */
 public class DirectUpdateHandler2 extends UpdateHandler {
-  protected IndexWriterProvider indexWriterProvider;
+  protected SolrCoreState indexWriterProvider;
 
   // stats
   AtomicLong addCommands = new AtomicLong();
@@ -79,17 +77,17 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
    
-    indexWriterProvider = new DefaultIndexWriterProvider(core);
+    indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
   }
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) throws IOException {
@@ -99,35 +97,35 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     } else {
       // the impl has changed, so we cannot use the old state - decref it
       updateHandler.decref();
-      indexWriterProvider = new DefaultIndexWriterProvider(core);
+      indexWriterProvider = new DefaultSolrCoreState(core.getDirectoryFactory());
     }
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
     int docsUpperBound = updateHandlerInfo.autoCommmitMaxDocs; // getInt("updateHandler/autoCommit/maxDocs", -1);
     int timeUpperBound = updateHandlerInfo.autoCommmitMaxTime; // getInt("updateHandler/autoCommit/maxTime", -1);
-    commitTracker = new CommitTracker(core, docsUpperBound, timeUpperBound, true, false);
+    commitTracker = new CommitTracker("Hard", core, docsUpperBound, timeUpperBound, true, false);
     
     int softCommitDocsUpperBound = updateHandlerInfo.autoSoftCommmitMaxDocs; // getInt("updateHandler/autoSoftCommit/maxDocs", -1);
     int softCommitTimeUpperBound = updateHandlerInfo.autoSoftCommmitMaxTime; // getInt("updateHandler/autoSoftCommit/maxTime", -1);
-    softCommitTracker = new CommitTracker(core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
+    softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, true, true);
     
   }
 
   private void deleteAll() throws IOException {
     SolrCore.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
-    indexWriterProvider.getIndexWriter().deleteAll();
+    indexWriterProvider.getIndexWriter(core).deleteAll();
   }
 
   protected void rollbackWriter() throws IOException {
     numDocsPending.set(0);
-    indexWriterProvider.rollbackIndexWriter();
+    indexWriterProvider.rollbackIndexWriter(core);
     
   }
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter();
+    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
@@ -139,25 +137,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
     try {
-      boolean triggered = commitTracker.addedDocument( cmd.commitWithin );
-    
-      if (!triggered) {
-        // if we hard commit, don't soft commit
-        softCommitTracker.addedDocument( cmd.commitWithin );
-      } else {
-        // still inc softCommit
-        softCommitTracker.docsSinceCommit++;
-      }
-      
-      // this is the only unsynchronized code in the iwAccess block, which
-      // should account for most of the time
-			Term updateTerm = null;
+      commitTracker.addedDocument( cmd.commitWithin );
+      softCommitTracker.addedDocument( -1 ); // TODO: support commitWithin with soft update
 
       if (cmd.overwrite) {
-        if (cmd.indexedId == null) {
-          cmd.indexedId = getIndexedId(cmd.doc);
-        }
-        Term idTerm = new Term(idField.getName(), cmd.indexedId);
+        Term updateTerm;
+        Term idTerm = new Term(idField.getName(), cmd.getIndexedId());
         boolean del = false;
         if (cmd.updateTerm == null) {
           updateTerm = idTerm;
@@ -166,7 +151,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           updateTerm = cmd.updateTerm;
         }
 
-        writer.updateDocument(updateTerm, cmd.getLuceneDocument(schema));
+        writer.updateDocument(updateTerm, cmd.getLuceneDocument());
         if(del) { // ensure id remains unique
           BooleanQuery bq = new BooleanQuery();
           bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
@@ -175,7 +160,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         }
       } else {
         // allow duplicates
-        writer.addDocument(cmd.getLuceneDocument(schema));
+        writer.addDocument(cmd.getLuceneDocument());
       }
 
       rc = 1;
@@ -192,31 +177,29 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
 
-  // could return the number of docs deleted, but is that always possible to know???
+  // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     deleteByIdCommands.incrementAndGet();
     deleteByIdCommandsCumulative.incrementAndGet();
 
-    indexWriterProvider.getIndexWriter().deleteDocuments(new Term(idField.getName(), idFieldType.toInternal(cmd.id)));
+    indexWriterProvider.getIndexWriter(core).deleteDocuments(new Term(idField.getName(), cmd.getIndexedId()));
 
-    if (commitTracker.timeUpperBound > 0) {
-      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-    } else if (softCommitTracker.timeUpperBound > 0) {
-      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+    if (commitTracker.getTimeUpperBound() > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+    } else if (softCommitTracker.getTimeUpperBound() > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
     }
   }
 
-  // why not return number of docs deleted?
-  // Depending on implementation, we may not be able to immediately determine the num...
+  // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     deleteByQueryCommands.incrementAndGet();
     deleteByQueryCommandsCumulative.incrementAndGet();
     boolean madeIt=false;
-    boolean delAll=false;
     try {
-      Query q = null;
+      Query q;
       try {
         QParser parser = QParser.getParser(cmd.query, "lucene", cmd.req);
         q = parser.getQuery();
@@ -224,20 +207,20 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
       
-      delAll = MatchAllDocsQuery.class == q.getClass();
+      boolean delAll = MatchAllDocsQuery.class == q.getClass();
       
       if (delAll) {
         deleteAll();
       } else {
-        indexWriterProvider.getIndexWriter().deleteDocuments(q);
+        indexWriterProvider.getIndexWriter(core).deleteDocuments(q);
       }
       
       madeIt = true;
       
-      if (commitTracker.timeUpperBound > 0) {
-        commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-      } else if (softCommitTracker.timeUpperBound > 0) {
-        softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+      if (commitTracker.getTimeUpperBound() > 0) {
+        commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+      } else if (softCommitTracker.getTimeUpperBound()> 0) {
+        softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
       }
       
     } finally {
@@ -251,13 +234,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
     mergeIndexesCommands.incrementAndGet();
-    int rc = -1;
+    int rc;
 
     log.info("start " + cmd);
     
     IndexReader[] readers = cmd.readers;
     if (readers != null && readers.length > 0) {
-      indexWriterProvider.getIndexWriter().addIndexes(readers);
+      indexWriterProvider.getIndexWriter(core).addIndexes(readers);
       rc = 1;
     } else {
       rc = 0;
@@ -265,10 +248,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("end_mergeIndexes");
 
     // TODO: consider soft commit issues
-    if (rc == 1 && commitTracker.timeUpperBound > 0) {
-      commitTracker.scheduleCommitWithin(commitTracker.timeUpperBound);
-    } else if (rc == 1 && softCommitTracker.timeUpperBound > 0) {
-      softCommitTracker.scheduleCommitWithin(softCommitTracker.timeUpperBound);
+    if (rc == 1 && commitTracker.getTimeUpperBound() > 0) {
+      commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
+    } else if (rc == 1 && softCommitTracker.getTimeUpperBound() > 0) {
+      softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
     }
 
     return rc;
@@ -276,7 +259,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
-    IndexWriter writer = indexWriterProvider.getIndexWriter();
+    IndexWriter writer = indexWriterProvider.getIndexWriter(core);
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
     } else {
@@ -298,10 +281,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       } else if (cmd.expungeDeletes) {
         writer.expungeDeletes();
       }
-      
+
       if (!cmd.softCommit) {
         writer.commit();
-        
+        numDocsPending.set(0);
         callPostCommitCallbacks();
       } else {
         callPostSoftCommitCallbacks();
@@ -311,14 +294,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (cmd.optimize) {
         callPostOptimizeCallbacks();
       }
-      
-      // open a new searcher in the sync block to avoid opening it
-      // after a deleteByQuery changed the index, or in between deletes
-      // and adds of another commit being done.
-      if (cmd.softCommit) {
-        core.getSearcher(true,false,waitSearcher, true);
-      } else {
-        core.getSearcher(true,false,waitSearcher);
+
+
+      synchronized (this) {
+        if (cmd.softCommit) {
+          core.getSearcher(true,false,waitSearcher, true);
+        } else {
+          core.getSearcher(true,false,waitSearcher);
+        }
       }
 
       // reset commit tracking
@@ -341,7 +324,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
-    // outside of the synchronized block so that other update operations can proceed.
+    // outside any synchronized block so that other update operations can proceed.
     if (waitSearcher!=null && waitSearcher[0] != null) {
        try {
         waitSearcher[0].get();
@@ -359,19 +342,19 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     IndexReader currentReader = previousSearcher.getIndexReader();
     IndexReader newReader;
 
-    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(), true);
+    newReader = currentReader.reopen(indexWriterProvider.getIndexWriter(core), true);
   
     
     if (newReader == currentReader) {
       currentReader.incRef();
     }
-    
-    return new SolrIndexSearcher(core, schema, "main", newReader, true, true);
+
+    return new SolrIndexSearcher(core, schema, "main", newReader, true, true, true, core.getDirectoryFactory());
   }
   
   @Override
   public void newIndexWriter() throws IOException {
-    indexWriterProvider.newIndexWriter();
+    indexWriterProvider.newIndexWriter(core);
   }
   
   /**
@@ -418,6 +401,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     softCommitTracker.close();
 
     numDocsPending.set(0);
+
     indexWriterProvider.decref();
     
     log.info("closed " + this);
@@ -459,20 +443,20 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
-    if (commitTracker.docsUpperBound > 0) {
-      lst.add("autocommit maxDocs", commitTracker.docsUpperBound);
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxDocs", commitTracker.getTimeUpperBound());
     }
-    if (commitTracker.timeUpperBound > 0) {
-      lst.add("autocommit maxTime", "" + commitTracker.timeUpperBound + "ms");
+    if (commitTracker.getTimeUpperBound() > 0) {
+      lst.add("autocommit maxTime", "" + commitTracker.getTimeUpperBound() + "ms");
     }
-    lst.add("autocommits", commitTracker.autoCommitCount);
-    if (softCommitTracker.docsUpperBound > 0) {
-      lst.add("soft autocommit maxDocs", softCommitTracker.docsUpperBound);
+    lst.add("autocommits", commitTracker.getCommitCount());
+    if (softCommitTracker.getTimeUpperBound() > 0) {
+      lst.add("soft autocommit maxDocs", softCommitTracker.getTimeUpperBound());
     }
-    if (softCommitTracker.timeUpperBound > 0) {
-      lst.add("soft autocommit maxTime", "" + softCommitTracker.timeUpperBound + "ms");
+    if (softCommitTracker.getTimeUpperBound() > 0) {
+      lst.add("soft autocommit maxTime", "" + softCommitTracker.getTimeUpperBound() + "ms");
     }
-    lst.add("soft autocommits", softCommitTracker.autoCommitCount);
+    lst.add("soft autocommits", softCommitTracker.getCommitCount());
     lst.add("optimizes", optimizeCommands.get());
     lst.add("rollbacks", rollbackCommands.get());
     lst.add("expungeDeletes", expungeDeleteCommands.get());
@@ -495,7 +479,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     return "DirectUpdateHandler2" + getStatistics();
   }
   
-  public IndexWriterProvider getIndexWriterProvider() {
+  public SolrCoreState getIndexWriterProvider() {
     return indexWriterProvider;
   }
 

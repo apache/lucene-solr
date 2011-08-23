@@ -29,7 +29,7 @@ public class RAMFile {
   private long lastModified = System.currentTimeMillis();
 
   // File used as buffer, in no RAMDirectory
-  protected RAMFile() {}
+  public RAMFile() {}
   
   RAMFile(RAMDirectory directory) {
     this.directory = directory;

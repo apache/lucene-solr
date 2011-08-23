@@ -28,6 +28,8 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 
+// TODO: move this class to oal.index
+
 /**
  * Abstract class for enumerating a subset of all terms. 
  * 
@@ -42,7 +44,7 @@ import org.apache.lucene.util.Bits;
 public abstract class FilteredTermsEnum extends TermsEnum {
 
   private BytesRef initialSeekTerm = null;
-  private boolean doSeek = true;        
+  private boolean doSeek;
   private BytesRef actualTerm = null;
 
   private final TermsEnum tenum;
@@ -64,8 +66,17 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    * @param tenum the terms enumeration to filter.
    */
   public FilteredTermsEnum(final TermsEnum tenum) {
+    this(tenum, true);
+  }
+
+  /**
+   * Creates a filtered {@link TermsEnum} on a terms enum.
+   * @param tenum the terms enumeration to filter.
+   */
+  public FilteredTermsEnum(final TermsEnum tenum, final boolean startWithSeek) {
     assert tenum != null;
     this.tenum = tenum;
+    doSeek = startWithSeek;
   }
 
   /**
@@ -190,18 +201,23 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   @SuppressWarnings("fallthrough")
   @Override
   public BytesRef next() throws IOException {
+    //System.out.println("FTE.next doSeek=" + doSeek);
+    //new Throwable().printStackTrace(System.out);
     for (;;) {
       // Seek or forward the iterator
       if (doSeek) {
         doSeek = false;
         final BytesRef t = nextSeekTerm(actualTerm);
+        //System.out.println("  seek to t=" + (t == null ? "null" : t.utf8ToString()) + " tenum=" + tenum);
         // Make sure we always seek forward:
         assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
         if (t == null || tenum.seekCeil(t, false) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
+          //System.out.println("  return null");
           return null;
         }
         actualTerm = tenum.term();
+        //System.out.println("  got term=" + actualTerm.utf8ToString());
       } else {
         actualTerm = tenum.next();
         if (actualTerm == null) {

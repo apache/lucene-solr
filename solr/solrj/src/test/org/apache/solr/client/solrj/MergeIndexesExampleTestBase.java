@@ -17,17 +17,17 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
-
-import java.io.IOException;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -38,6 +38,8 @@ import java.io.IOException;
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
+  private String saveProp;
+  private File dataDir2;
 
   @Override
   public String getSolrHome() {
@@ -56,10 +58,39 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   @Override
   public void setUp() throws Exception {
+    saveProp = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
+
     cores = h.getCoreContainer();
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
+    
+    // setup datadirs
+    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
+    
+    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+        + System.currentTimeMillis());
+    dataDir2.mkdirs();
+    
+    System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    
+    String skip = System.getProperty("solr.test.leavedatadir");
+    if (null != skip && 0 != skip.trim().length()) {
+      System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
+    } else {
+      if (!recurseDelete(dataDir)) {
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+      }
+    }
+    
+    if (saveProp == null) System.clearProperty("solr.directoryFactory");
+    else System.setProperty("solr.directoryFactory", saveProp);
   }
 
   @Override

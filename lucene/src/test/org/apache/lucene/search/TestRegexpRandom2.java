@@ -18,28 +18,27 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -143,6 +142,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     int num = CodecProvider.getDefault().getFieldCodec("field").equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : atLeast(1000);
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random);
+      if (VERBOSE) {
+        System.out.println("TEST: regexp=" + reg);
+      }
       assertSame(reg);
     }
   }
@@ -153,18 +155,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   protected void assertSame(String regexp) throws IOException {   
     RegexpQuery smart = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
     DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp), RegExp.NONE);
-    
-    // we can't compare the two if automaton rewrites to a simpler enum.
-    // for example: "a\uda07\udcc7?.*?" gets rewritten to a simpler query:
-    // a\uda07* prefixquery. Prefixquery then does the "wrong" thing, which
-    // isn't really wrong as the query was undefined to begin with... but not
-    // automatically comparable.
-    
-    // TODO: does this check even matter anymore?!
-    Terms terms = MultiFields.getTerms(searcher1.getIndexReader(), "field");
-    if (!(smart.getTermsEnum(terms) instanceof AutomatonTermsEnum))
-      return;
-    
+   
     TopDocs smartDocs = searcher1.search(smart, 25);
     TopDocs dumbDocs = searcher2.search(dumb, 25);
 

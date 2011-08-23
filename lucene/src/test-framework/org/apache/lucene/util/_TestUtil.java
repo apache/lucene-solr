@@ -154,7 +154,7 @@ public class _TestUtil {
   public static CheckIndex.Status checkIndex(Directory dir, CodecProvider codecs) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos));
+    checker.setInfoStream(new PrintStream(bos), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null, codecs);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
@@ -220,7 +220,7 @@ public class _TestUtil {
       } else if (t <= 1) {
         chars[i++] = (char) random.nextInt(0x80);
       } else if (2 == t) {
-        chars[i++] = (char) nextInt(random, 0x80, 0x800);
+        chars[i++] = (char) nextInt(random, 0x80, 0x7ff);
       } else if (3 == t) {
         chars[i++] = (char) nextInt(random, 0x800, 0xd7ff);
       } else if (4 == t) {
@@ -281,14 +281,19 @@ public class _TestUtil {
     0x2A6DF, 0x2B73F, 0x2FA1F, 0xE007F, 0xE01EF, 0xFFFFF, 0x10FFFF
   };
   
-  /** Returns random string, all codepoints within the same unicode block. */
+  /** Returns random string of length between 0-20 codepoints, all codepoints within the same unicode block. */
   public static String randomRealisticUnicodeString(Random r) {
     return randomRealisticUnicodeString(r, 20);
   }
   
-  /** Returns random string, all codepoints within the same unicode block. */
+  /** Returns random string of length up to maxLength codepoints , all codepoints within the same unicode block. */
   public static String randomRealisticUnicodeString(Random r, int maxLength) {
-    final int end = r.nextInt(maxLength);
+    return randomRealisticUnicodeString(r, 0, 20);
+  }
+
+  /** Returns random string of length between min and max codepoints, all codepoints within the same unicode block. */
+  public static String randomRealisticUnicodeString(Random r, int minLength, int maxLength) {
+    final int end = minLength + r.nextInt(maxLength);
     final int block = r.nextInt(blockStarts.length);
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < end; i++)

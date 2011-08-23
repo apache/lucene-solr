@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.BytesRef;
 
 /* Tracks the stream of {@link BufferedDeletes}.
  * When DocumentsWriterPerThread flushes, its buffered
@@ -100,7 +101,7 @@ class BufferedDeletesStream {
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream != null) {
-      message("push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size());
+      message("push deletes " + packet + " delGen=" + packet.delGen() + " packetCount=" + deletes.size() + " totBytesUsed=" + bytesUsed.get());
     }
     assert checkDeleteStats();
     return packet.delGen();
@@ -155,11 +156,6 @@ class BufferedDeletesStream {
         return 0;
       }
     }
-
-    @Override
-    public boolean equals(Object other) {
-      return sortSegInfoByDelGen == other;
-    }
   };
   
   /** Resolves the buffered deleted Term/Query/docIDs, into
@@ -187,7 +183,7 @@ class BufferedDeletesStream {
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
-    BufferedDeletes coalescedDeletes = null;
+    CoalescedDeletes coalescedDeletes = null;
     boolean anyNewDeletes = false;
 
     int infosIDX = infos2.size()-1;
@@ -205,7 +201,7 @@ class BufferedDeletesStream {
       if (packet != null && segGen < packet.delGen()) {
         //System.out.println("  coalesce");
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes(true);
+          coalescedDeletes = new CoalescedDeletes();
         }
         if (!packet.isSegmentPrivate) {
           /*
@@ -240,7 +236,7 @@ class BufferedDeletesStream {
           delCount += applyQueryDeletes(packet.queriesIterable(), reader);
           segAllDeletes = reader.numDocs() == 0;
         } finally {
-          readerPool.release(reader);
+          readerPool.release(reader, IOContext.Context.READ);
         }
         anyNewDeletes |= delCount > 0;
 
@@ -256,7 +252,7 @@ class BufferedDeletesStream {
         }
 
         if (coalescedDeletes == null) {
-          coalescedDeletes = new BufferedDeletes(true);
+          coalescedDeletes = new CoalescedDeletes();
         }
         
         /*
@@ -282,7 +278,7 @@ class BufferedDeletesStream {
             delCount += applyQueryDeletes(coalescedDeletes.queriesIterable(), reader);
             segAllDeletes = reader.numDocs() == 0;
           } finally {
-            readerPool.release(reader);
+            readerPool.release(reader, IOContext.Context.READ);
           }
           anyNewDeletes |= delCount > 0;
 
@@ -376,7 +372,8 @@ class BufferedDeletesStream {
     DocsEnum docs = null;
 
     assert checkDeleteTerm(null);
-
+    
+    //System.out.println(Thread.currentThread().getName() + " del terms reader=" + reader);
     for (Term term : termsIter) {
       // Since we visit terms sorted, we gain performance
       // by re-using the same TermsEnum and seeking only
@@ -401,10 +398,12 @@ class BufferedDeletesStream {
 
       if (termsEnum.seekExact(term.bytes(), false)) {
         DocsEnum docsEnum = termsEnum.docs(reader.getLiveDocs(), docs);
+        //System.out.println("BDS: got docsEnum=" + docsEnum);
 
         if (docsEnum != null) {
           while (true) {
             final int docID = docsEnum.nextDoc();
+            //System.out.println(Thread.currentThread().getName() + " del term=" + term + " doc=" + docID);
             if (docID == DocsEnum.NO_MORE_DOCS) {
               break;
             }
@@ -468,7 +467,8 @@ class BufferedDeletesStream {
     if (term != null) {
       assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) > 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
     }
-    lastDeleteTerm = term;
+    // TODO: we re-use term now in our merged iterable, but we shouldn't clone, instead copy for this assert
+    lastDeleteTerm = term == null ? null : new Term(term.field(), new BytesRef(term.bytes));
     return true;
   }
 

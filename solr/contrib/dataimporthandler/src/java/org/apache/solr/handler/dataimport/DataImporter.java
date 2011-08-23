@@ -18,11 +18,13 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -39,7 +41,6 @@ import org.apache.commons.io.IOUtils;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
 import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -80,26 +81,35 @@ public class DataImporter {
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
 
   private SolrCore core;
+  
+  private DIHPropertiesWriter propWriter;
 
   private ReentrantLock importLock = new ReentrantLock();
 
   private final Map<String , Object> coreScopeSession;
 
   private boolean isDeltaImportSupported = false;
+  private final String handlerName;
 
   /**
    * Only for testing purposes
    */
   DataImporter() {
     coreScopeSession = new ConcurrentHashMap<String, Object>();
+    this.propWriter = new SimplePropertiesWriter();
+    propWriter.init(this);
+    this.handlerName = "dataimport" ;
   }
 
-  DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
+  DataImporter(InputSource dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session, String handlerName) {
+      this.handlerName = handlerName;
     if (dataConfig == null)
       throw new DataImportHandlerException(SEVERE,
               "Configuration not found");
     this.core = core;
     this.schema = core.getSchema();
+    this.propWriter = new SimplePropertiesWriter();
+    propWriter.init(this);
     dataSourceProps = ds;
     if (session == null)
       session = new HashMap<String, Object>();
@@ -120,7 +130,11 @@ public class DataImporter {
     }
   }
 
-  private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
+   public String getHandlerName() {
+        return handlerName;
+    }
+
+    private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
     Map<String, SchemaField> schemaFields = schema.getFields();
     for (Map.Entry<String, SchemaField> entry : schemaFields.entrySet()) {
       SchemaField sf = entry.getValue();
@@ -353,7 +367,7 @@ public class DataImporter {
     setIndexStartTime(new Date());
 
     try {
-      docBuilder = new DocBuilder(this, writer, requestParams);
+      docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
       checkWritablePersistFile(writer);
       docBuilder.execute();
       if (!requestParams.debug)
@@ -370,11 +384,11 @@ public class DataImporter {
   }
 
   private void checkWritablePersistFile(SolrWriter writer) {
-    File persistFile = writer.getPersistFile();
-    boolean isWritable = persistFile.exists() ? persistFile.canWrite() : persistFile.getParentFile().canWrite();
-    if (isDeltaImportSupported && !isWritable) {
-      throw new DataImportHandlerException(SEVERE, persistFile.getAbsolutePath() +
-          " is not writable. Delta imports are supported by data config but will not work.");
+//  	File persistFile = propWriter.getPersistFile();
+//    boolean isWritable = persistFile.exists() ? persistFile.canWrite() : persistFile.getParentFile().canWrite();
+    if (isDeltaImportSupported && !propWriter.isWritable()) {
+      throw new DataImportHandlerException(SEVERE,
+          "Properties is not writable. Delta imports are supported by data config but will not work.");
     }
   }
 
@@ -384,7 +398,7 @@ public class DataImporter {
 
     try {
       setIndexStartTime(new Date());
-      docBuilder = new DocBuilder(this, writer, requestParams);
+      docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
       checkWritablePersistFile(writer);
       docBuilder.execute();
       if (!requestParams.debug)
@@ -503,7 +517,7 @@ public class DataImporter {
     public String command = null;
 
     public boolean debug = false;
-
+    
     public boolean verbose = false;
 
     public boolean syncMode = false;
@@ -525,6 +539,10 @@ public class DataImporter {
     public String dataConfig;
 
     public ContentStream contentStream;
+    
+    public List<SolrInputDocument> debugDocuments = Collections.synchronizedList(new ArrayList<SolrInputDocument>());
+    
+    public NamedList debugVerboseOutput = null;
 
     public RequestParams() {
     }

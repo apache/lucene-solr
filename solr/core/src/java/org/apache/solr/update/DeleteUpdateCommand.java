@@ -17,7 +17,11 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 
 /**
  *
@@ -25,10 +29,32 @@ import org.apache.solr.request.SolrQueryRequest;
 public class DeleteUpdateCommand extends UpdateCommand {
   public String id;    // external (printable) id, for delete-by-id
   public String query; // query string for delete-by-query
+  private BytesRef indexedId;
+
 
   public DeleteUpdateCommand(SolrQueryRequest req) {
     super("delete", req);
   }
+
+  public void clear() {
+    id = null;
+    query = null;
+    indexedId = null;
+  }
+
+  /** Returns the indexed ID for this delete.  The returned BytesRef is retained across multiple calls, and should not be modified. */
+  public BytesRef getIndexedId() {
+    if (indexedId == null) {
+      IndexSchema schema = req.getSchema();
+      SchemaField sf = schema.getUniqueKeyField();
+      if (sf != null && id != null) {
+        indexedId = new BytesRef();
+        sf.getType().readableToIndexed(id, indexedId);
+      }
+    }
+    return indexedId;
+  }
+
 
   @Override
   public String toString() {

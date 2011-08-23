@@ -250,9 +250,10 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
-    return createField(field.getName(), val, getFieldStore(field, val),
-            getFieldIndex(field, val), getFieldTermVec(field, val), field.omitNorms(),
-            field.indexOptions(), boost);
+    return createField(field.getName(), val, 
+                       getFieldStore(field, val), getFieldIndex(field, val), 
+                       getFieldTermVec(field, val), field.omitNorms(),
+                       getIndexOptions(field, val), boost);
   }
 
 
@@ -276,9 +277,11 @@ public abstract class FieldType extends FieldProperties {
                         storage,
                         index,
                         vec);
-    f.setOmitNorms(omitNorms);
-    f.setIndexOptions(options);
-    f.setBoost(boost);
+    if (index.isIndexed()) {
+      f.setOmitNorms(omitNorms);
+      f.setIndexOptions(options);
+      f.setBoost(boost);
+    }
     return f;
   }
 
@@ -319,6 +322,16 @@ public abstract class FieldType extends FieldProperties {
                                       String internalVal) {
     return field.indexed() ? (isTokenized() ? Field.Index.ANALYZED :
                               Field.Index.NOT_ANALYZED) : Field.Index.NO;
+  }
+  protected IndexOptions getIndexOptions(SchemaField field,
+                                         String internalVal) {
+    IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    if (field.omitTermFreqAndPositions()) {
+      options = IndexOptions.DOCS_ONLY;
+    } else if (field.omitPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS;
+    }
+    return options;
   }
 
   /**

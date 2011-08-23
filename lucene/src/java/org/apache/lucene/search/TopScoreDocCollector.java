@@ -82,8 +82,13 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       assert !Float.isNaN(score);
 
       totalHits++;
+      if (score < pqTop.score) {
+        // Doesn't compete w/ bottom entry in queue
+        return;
+      }
       doc += docBase;
-      if (score < pqTop.score || (score == pqTop.score && doc > pqTop.doc)) {
+      if (score == pqTop.score && doc > pqTop.doc) {
+        // Break tie in score by doc ID:
         return;
       }
       pqTop.doc = doc;

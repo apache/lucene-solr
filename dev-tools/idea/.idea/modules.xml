@@ -9,8 +9,8 @@
       <module filepath="$PROJECT_DIR$/lucene/contrib/instantiated/instantiated.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/memory/memory.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/misc/misc.iml" />
-      <module filepath="$PROJECT_DIR$/lucene/contrib/queries/queries-contrib.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/spatial/spatial.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/contrib/sandbox/sandbox.iml" />
       <module filepath="$PROJECT_DIR$/lucene/contrib/xml-query-parser/xml-query-parser.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/common/analysis-common.iml" />
       <module filepath="$PROJECT_DIR$/modules/analysis/icu/icu.iml" />

@@ -20,11 +20,20 @@ package org.apache.lucene.queryparser.flexible.standard.nodes;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldValuePairQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax.Type;
+import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
 
+/**
+ * This query node represents a field query that holds a numeric value. It is
+ * similar to {@link FieldQueryNode}, however the {@link #getValue()} returns a
+ * {@link Number}.
+ * 
+ * @see NumericConfig
+ */
 public class NumericQueryNode extends QueryNodeImpl implements
     FieldValuePairQueryNode<Number> {
   
@@ -34,6 +43,15 @@ public class NumericQueryNode extends QueryNodeImpl implements
   
   private Number value;
   
+  /**
+   * Creates a {@link NumericQueryNode} object using the given field,
+   * {@link Number} value and {@link NumberFormat} used to convert the value to
+   * {@link String}.
+   * 
+   * @param field the field associated with this query node
+   * @param value the value hold by this node
+   * @param numberFormat the {@link NumberFormat} used to convert the value to {@link String}
+   */
   public NumericQueryNode(CharSequence field, Number value,
       NumberFormat numberFormat) {
     
@@ -45,14 +63,32 @@ public class NumericQueryNode extends QueryNodeImpl implements
     
   }
   
+  /**
+   * Returns the field associated with this node.
+   * 
+   * @return the field associated with this node
+   */
   public CharSequence getField() {
     return this.field;
   }
   
+  /**
+   * Sets the field associated with this node.
+   * 
+   * @param fieldName the field associated with this node
+   */
   public void setField(CharSequence fieldName) {
     this.field = fieldName;
   }
   
+  /**
+   * This method is used to get the value converted to {@link String} and
+   * escaped using the given {@link EscapeQuerySyntax}.
+   * 
+   * @param escaper the {@link EscapeQuerySyntax} used to escape the value {@link String}
+   * 
+   * @return the value converte to {@link String} and escaped
+   */
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
     return escaper.escape(NumberFormat.getNumberInstance().format(this.value),
         Locale.ENGLISH, Type.NORMAL);
@@ -66,18 +102,38 @@ public class NumericQueryNode extends QueryNodeImpl implements
     }
   }
   
+  /**
+   * Sets the {@link NumberFormat} used to convert the value to {@link String}.
+   * 
+   * @param format the {@link NumberFormat} used to convert the value to {@link String}
+   */
   public void setNumberFormat(NumberFormat format) {
     this.numberFormat = format;
   }
   
+  /**
+   * Returns the {@link NumberFormat} used to convert the value to {@link String}.
+   * 
+   * @return the {@link NumberFormat} used to convert the value to {@link String}
+   */
   public NumberFormat getNumberFormat() {
     return this.numberFormat;
   }
   
+  /**
+   * Returns the numeric value as {@link Number}.
+   * 
+   * @return the numeric value
+   */
   public Number getValue() {
     return value;
   }
   
+  /**
+   * Sets the numeric value.
+   * 
+   * @param value the numeric value
+   */
   public void setValue(Number value) {
     this.value = value;
   }

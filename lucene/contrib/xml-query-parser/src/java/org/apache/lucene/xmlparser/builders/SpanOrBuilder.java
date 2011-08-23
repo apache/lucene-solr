@@ -1,13 +1,14 @@
 package org.apache.lucene.xmlparser.builders;
 
-import java.util.ArrayList;
-
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import java.util.ArrayList;
+import java.util.List;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,34 +27,28 @@ import org.w3c.dom.Node;
  */
 
 /**
- * 
+ *
  */
-public class SpanOrBuilder extends SpanBuilderBase
-{
-    
-    SpanQueryBuilder factory;
-    
-    public SpanOrBuilder(SpanQueryBuilder factory)
-    {
-        super();
-        this.factory = factory;
+public class SpanOrBuilder extends SpanBuilderBase {
+
+  private final SpanQueryBuilder factory;
+
+  public SpanOrBuilder(SpanQueryBuilder factory) {
+    this.factory = factory;
+  }
+
+  public SpanQuery getSpanQuery(Element e) throws ParserException {
+    List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
+    for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {
+      if (kid.getNodeType() == Node.ELEMENT_NODE) {
+        SpanQuery clause = factory.getSpanQuery((Element) kid);
+        clausesList.add(clause);
+      }
     }
-    
-	public SpanQuery getSpanQuery(Element e) throws ParserException
-	{
-	    ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
-		for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())
-		{
-			if (kid.getNodeType() == Node.ELEMENT_NODE) 
-			{
-				SpanQuery clause=factory.getSpanQuery((Element) kid);
-				clausesList.add(clause);				
-			}
-		}	    
-		SpanQuery[] clauses= clausesList.toArray(new SpanQuery[clausesList.size()]);
-		SpanOrQuery soq = new SpanOrQuery(clauses);		
-		soq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return soq;
-	}
+    SpanQuery[] clauses = clausesList.toArray(new SpanQuery[clausesList.size()]);
+    SpanOrQuery soq = new SpanOrQuery(clauses);
+    soq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return soq;
+  }
 
 }

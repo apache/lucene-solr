@@ -28,14 +28,6 @@
 
   <import file="../../../lucene/contrib/contrib-build.xml"/>
 	
-  <path id="test.classpath">
-    <path refid="classpath"/>
-    <pathelement location="../../../lucene/build/classes/test-framework"/>
-    <pathelement location="../../../lucene/build/classes/test/"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
-  </path>	
-
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
   <target name="jflex" depends="jflex-check,clean-jflex,gen-uax29-supp-macros,
@@ -56,7 +48,7 @@
            nobak="on"/>
   </target>
 
-  <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
@@ -67,14 +59,20 @@
     <jflex file="src/java/org/apache/lucene/analysis/standard/ClassicTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/StandardTokenizerImpl31.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard/std31"
+           nobak="on" />
   </target>
 
   <target name="jflex-UAX29URLEmailTokenizer" depends="jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
-    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizer.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/std31/UAX29URLEmailTokenizerImpl31.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard/std31"
            nobak="on" />
   </target>
   
@@ -83,7 +81,7 @@
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="**/*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>

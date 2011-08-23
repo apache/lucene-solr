@@ -121,6 +121,14 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testLiteral() throws Exception {
+    makeFile("id\n100");
+    loadLocal("stream.file",filename,"commit","true", "literal.name","LITERAL_VALUE");
+    assertQ(req("*:*"),"//doc/str[@name='name'][.='LITERAL_VALUE']");
+  }
+
+
+  @Test
   public void testCSV() throws Exception {
     lrf.args.put(CommonParams.VERSION,"2.2");
     

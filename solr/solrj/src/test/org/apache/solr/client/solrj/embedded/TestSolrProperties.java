@@ -62,7 +62,7 @@ public class TestSolrProperties extends LuceneTestCase {
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
   public String getSolrHome() {
-    return "solr/shared";
+    return "solrj/solr/shared";
   }
 
   public String getOrigSolrXml() {

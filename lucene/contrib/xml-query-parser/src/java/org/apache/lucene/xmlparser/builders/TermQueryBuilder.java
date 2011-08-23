@@ -25,19 +25,16 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ *
  */
 public class TermQueryBuilder implements QueryBuilder {
 
-	public Query getQuery(Element e) throws ParserException {
-		
-        String field=DOMUtils.getAttributeWithInheritanceOrFail(e,"fieldName");
- 		String value=DOMUtils.getNonBlankTextOrFail(e);
-  		TermQuery tq = new TermQuery(new Term(field,value));
-  		tq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-
-  		return tq;
-		
-	}
+  public Query getQuery(Element e) throws ParserException {
+    String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
+    String value = DOMUtils.getNonBlankTextOrFail(e);
+    TermQuery tq = new TermQuery(new Term(field, value));
+    tq.setBoost(DOMUtils.getAttribute(e, "boost", 1.0f));
+    return tq;
+  }
 
 }

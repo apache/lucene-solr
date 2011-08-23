@@ -40,8 +40,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -504,6 +502,9 @@ public class TestCodecs extends LuceneTestCase {
         }
 
         // Test seek to non-existent terms:
+        if (VERBOSE) {
+          System.out.println("TEST: seek non-exist terms");
+        }
         for(int i=0;i<100;i++) {
           final String text2 = _TestUtil.randomUnicodeString(random) + ".";
           status = termsEnum.seekCeil(new BytesRef(text2));
@@ -512,6 +513,9 @@ public class TestCodecs extends LuceneTestCase {
         }
 
         // Seek to each term, backwards:
+        if (VERBOSE) {
+          System.out.println("TEST: seek terms backwards");
+        }
         for(int i=field.terms.length-1;i>=0;i--) {
           assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(field.terms[i].text2)));
           assertEquals(field.terms[i].docs.length, termsEnum.docFreq());

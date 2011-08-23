@@ -10,9 +10,6 @@
   <property name="build.dir" location="build/" />
   <property name="dist.dir" location="dist/" />
 
-  <module-uptodate name="grouping" jarfile="${common.dir}/../modules/grouping/build/lucene-grouping-${version}.jar"
-		   property="grouping.uptodate" classpath.property="grouping.jar"/>
-
   <path id="classpath">
     <pathelement path="${grouping.jar}"/>
     <path refid="base.classpath"/>
@@ -27,13 +24,7 @@
   <property name="dist.dir" location="dist/" />
   <property name="maven.dist.dir" location="../dist/maven" />
 
-  <target name="compile-grouping" unless="grouping.uptodate">
-    <subant target="default">
-      <fileset dir="${common.dir}/../modules/grouping" includes="build.xml"/>
-    </subant>
-  </target>
-
-  <target name="init" depends="contrib-build.init,compile-grouping"/>
+  <target name="init" depends="contrib-build.init,jar-grouping"/>
 
   <target name="dist-maven" depends="jar-core,javadocs,contrib-build.dist-maven" />
 </project>

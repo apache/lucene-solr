@@ -21,14 +21,13 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader.ReaderContext;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 
 /**
  * Maintains a {@link IndexReader} {@link TermState} view over
@@ -44,6 +43,9 @@ public final class TermContext {
   private final TermState[] states;
   private int docFreq;
   private long totalTermFreq;
+
+  //public static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+
 
   /**
    * Creates an empty {@link TermContext} from a {@link ReaderContext}
@@ -85,7 +87,9 @@ public final class TermContext {
     final BytesRef bytes = term.bytes();
     final TermContext perReaderTermState = new TermContext(context);
     final AtomicReaderContext[] leaves = ReaderUtil.leaves(context);
+    //if (DEBUG) System.out.println("prts.build term=" + term);
     for (int i = 0; i < leaves.length; i++) {
+      //if (DEBUG) System.out.println("  r=" + leaves[i].reader);
       final Fields fields = leaves[i].reader.fields();
       if (fields != null) {
         final Terms terms = fields.terms(field);
@@ -93,6 +97,7 @@ public final class TermContext {
           final TermsEnum termsEnum = terms.getThreadTermsEnum(); // thread-private don't share!
           if (termsEnum.seekExact(bytes, cache)) { 
             final TermState termState = termsEnum.termState();
+            //if (DEBUG) System.out.println("    found");
             perReaderTermState.register(termState, leaves[i].ord, termsEnum.docFreq(), termsEnum.totalTermFreq());
           }
         }

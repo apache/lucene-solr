@@ -17,13 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -31,16 +24,25 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.codecs.BlockTreeTermsReader;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.ValuesEnum;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
@@ -237,6 +239,8 @@ public class CheckIndex {
 
       /** Exception thrown during term index test (null on success) */
       public Throwable error = null;
+
+      public Map<String,BlockTreeTermsReader.Stats> blockTreeStats = null;
     }
 
     /**
@@ -285,10 +289,19 @@ public class CheckIndex {
     infoStream = null;
   }
 
+  private boolean verbose;
+
   /** Set infoStream where messages should go.  If null, no
-   *  messages are printed */
-  public void setInfoStream(PrintStream out) {
+   *  messages are printed.  If verbose is true then more
+   *  details are printed. */
+  public void setInfoStream(PrintStream out, boolean verbose) {
     infoStream = out;
+    this.verbose = verbose;
+  }
+
+  /** Set infoStream where messages should go. See {@link #setInfoStream(PrintStream,boolean)}. */
+  public void setInfoStream(PrintStream out) {
+    setInfoStream(out, false);
   }
 
   private void msg(String msg) {
@@ -813,65 +826,73 @@ public class CheckIndex {
           }
 
           // Test skipping
-          if (docFreq >= 16) {
-            if (hasPositions) {
-              for(int idx=0;idx<7;idx++) {
-                final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-                postings = terms.docsAndPositions(liveDocs, postings);
-                final int docID = postings.advance(skipDocID);
-                if (docID == DocsEnum.NO_MORE_DOCS) {
-                  break;
-                } else {
-                  if (docID < skipDocID) {
-                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+          if (hasPositions) {
+            for(int idx=0;idx<7;idx++) {
+              final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+              postings = terms.docsAndPositions(liveDocs, postings);
+              final int docID = postings.advance(skipDocID);
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              } else {
+                if (docID < skipDocID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+                }
+                final int freq = postings.freq();
+                if (freq <= 0) {
+                  throw new RuntimeException("termFreq " + freq + " is out of bounds");
+                }
+                int lastPosition = -1;
+                for(int posUpto=0;posUpto<freq;posUpto++) {
+                  final int pos = postings.nextPosition();
+                  if (pos < 0) {
+                    throw new RuntimeException("position " + pos + " is out of bounds");
                   }
-                  final int freq = postings.freq();
-                  if (freq <= 0) {
-                    throw new RuntimeException("termFreq " + freq + " is out of bounds");
+                  if (pos < lastPosition) {
+                    throw new RuntimeException("position " + pos + " is < lastPosition " + lastPosition);
                   }
-                  int lastPosition = -1;
-                  for(int posUpto=0;posUpto<freq;posUpto++) {
-                    final int pos = postings.nextPosition();
-                    if (pos < 0) {
-                      throw new RuntimeException("position " + pos + " is out of bounds");
-                    }
-                    if (pos <= lastPosition) {
-                      throw new RuntimeException("position " + pos + " is <= lastPosition " + lastPosition);
-                    }
-                    lastPosition = pos;
-                  } 
+                  lastPosition = pos;
+                } 
 
-                  final int nextDocID = postings.nextDoc();
-                  if (nextDocID == DocsEnum.NO_MORE_DOCS) {
-                    break;
-                  }
-                  if (nextDocID <= docID) {
-                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
-                  }
+                final int nextDocID = postings.nextDoc();
+                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
+                  break;
+                }
+                if (nextDocID <= docID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
                 }
               }
-            } else {
-              for(int idx=0;idx<7;idx++) {
-                final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
-                docs = terms.docs(liveDocs, docs);
-                final int docID = docs.advance(skipDocID);
-                if (docID == DocsEnum.NO_MORE_DOCS) {
+            }
+          } else {
+            for(int idx=0;idx<7;idx++) {
+              final int skipDocID = (int) (((idx+1)*(long) maxDoc)/8);
+              docs = terms.docs(liveDocs, docs);
+              final int docID = docs.advance(skipDocID);
+              if (docID == DocsEnum.NO_MORE_DOCS) {
+                break;
+              } else {
+                if (docID < skipDocID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
+                }
+                final int nextDocID = docs.nextDoc();
+                if (nextDocID == DocsEnum.NO_MORE_DOCS) {
                   break;
-                } else {
-                  if (docID < skipDocID) {
-                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + ") returned docID=" + docID);
-                  }
-                  final int nextDocID = docs.nextDoc();
-                  if (nextDocID == DocsEnum.NO_MORE_DOCS) {
-                    break;
-                  }
-                  if (nextDocID <= docID) {
-                    throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
-                  }
+                }
+                if (nextDocID <= docID) {
+                  throw new RuntimeException("term " + term + ": advance(docID=" + skipDocID + "), then .next() returned docID=" + nextDocID + " vs prev docID=" + docID);
                 }
               }
             }
           }
+        }
+        
+        final Terms fieldTerms = fields.terms(field);
+        if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
+          final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
+          assert stats != null;
+          if (status.blockTreeStats == null) {
+            status.blockTreeStats = new HashMap<String,BlockTreeTermsReader.Stats>();
+          }
+          status.blockTreeStats.put(field, stats);
         }
 
         if (sumTotalTermFreq != 0) {
@@ -890,7 +911,7 @@ public class CheckIndex {
 
         // Test seek to last term:
         if (lastTerm != null) {
-          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+          if (terms.seekCeil(lastTerm) != TermsEnum.SeekStatus.FOUND) { 
             throw new RuntimeException("seek to last term " + lastTerm + " failed");
           }
 
@@ -952,6 +973,13 @@ public class CheckIndex {
       }
 
       msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+
+      if (verbose && status.blockTreeStats != null && infoStream != null && status.termCount > 0) {
+        for(Map.Entry<String,BlockTreeTermsReader.Stats> ent : status.blockTreeStats.entrySet()) {
+          infoStream.println("      field \"" + ent.getKey() + "\":");
+          infoStream.println("      " + ent.getValue().toString().replace("\n", "\n      "));
+        }
+      }
 
     } catch (Throwable e) {
       msg("ERROR: " + e);
@@ -1133,7 +1161,7 @@ public class CheckIndex {
     <p>
     Run it like this:
     <pre>
-    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]
+    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-verbose] [-segment X] [-segment Y]
     </pre>
     <ul>
     <li><code>-fix</code>: actually write a new segments_N file, removing any problematic segments
@@ -1163,12 +1191,16 @@ public class CheckIndex {
   public static void main(String[] args) throws IOException, InterruptedException {
 
     boolean doFix = false;
+    boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
     int i = 0;
     while(i < args.length) {
       if (args[i].equals("-fix")) {
         doFix = true;
+        i++;
+      } else if (args[i].equals("-verbose")) {
+        verbose = true;
         i++;
       } else if (args[i].equals("-segment")) {
         if (i == args.length-1) {
@@ -1192,6 +1224,7 @@ public class CheckIndex {
       System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -verbose: print additional details\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
                          "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
                          "              You can't use this with the -fix option\n" +
@@ -1233,7 +1266,7 @@ public class CheckIndex {
     }
 
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(System.out);
+    checker.setInfoStream(System.out, verbose);
 
     Status result = checker.checkIndex(onlySegments);
     if (result.missingSegments) {

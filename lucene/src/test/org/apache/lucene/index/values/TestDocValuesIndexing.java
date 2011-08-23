@@ -223,6 +223,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     return cfg;
   }
 
+  @SuppressWarnings("fallthrough")
   public void runTestNumerics(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
     Directory d = newDirectory();
