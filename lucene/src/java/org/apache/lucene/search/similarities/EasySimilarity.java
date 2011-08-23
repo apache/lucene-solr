@@ -31,7 +31,12 @@ import org.apache.lucene.util.TermContext;
 
 /**
  * A subclass of {@code Similarity} that provides a simplified API for its
- * descendants.
+ * descendants. Subclasses are only required to implement the {@link #score}
+ * and {@link #toString()} methods. Implementing
+ * {@link #explain(Explanation, EasyStats, int, float, float)} is optional,
+ * inasmuch as EasySimilarity already provides a basic explanation of the score
+ * and the term frequency. However, implementers of a subclass are encouraged to
+ * include as much detail about the scoring method as possible.
  * @lucene.experimental
  */
 public abstract class EasySimilarity extends Similarity {
@@ -138,10 +143,10 @@ public abstract class EasySimilarity extends Similarity {
    * Explains the score. The implementation here provides a basic explanation
    * in the format <em>score(name-of-similarity, doc=doc-id,
    * freq=term-frequency), computed from:</em>, and
-   * attaches the score (computed via the {@link #score(EasyStats, float, byte)}
+   * attaches the score (computed via the {@link #score(EasyStats, float, float)}
    * method) and the explanation for the term frequency. Subclasses content with
    * this format may add additional details in
-   * {@link #explain(Explanation, EasyStats, int, float, byte)}.
+   * {@link #explain(Explanation, EasyStats, int, float, float)}.
    *  
    * @param stats the corpus level statistics.
    * @param doc the document id.

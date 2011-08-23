@@ -28,7 +28,10 @@ import org.apache.lucene.util.SmallFloat;
 import org.apache.lucene.util.TermContext;
 
 /**
- * BM25 Similarity.
+ * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
+ * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
+ * In Proceedings of the Third Text REtrieval Conference (TREC 1994).
+ * Gaithersburg, USA, November 1994.
  */
 public class BM25Similarity extends Similarity {
   private final float k1;

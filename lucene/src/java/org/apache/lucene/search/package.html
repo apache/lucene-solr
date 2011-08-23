@@ -202,61 +202,16 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
     <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit) distance</a>.
     This type of query can be useful when accounting for spelling variations in the collection.
 </p>
-<a name="changingSimilarity"></a>
-<h2>Changing Similarity</h2>
 
-<p>Chances are <a href="DefaultSimilarity.html">DefaultSimilarity</a> is sufficient for all
-    your searching needs.
-    However, in some applications it may be necessary to customize your <a
-        href="Similarity.html">Similarity</a> implementation. For instance, some
-    applications do not need to
-    distinguish between shorter and longer documents (see <a
-        href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">a "fair" similarity</a>).</p>
 
-<p>To change <a href="Similarity.html">Similarity</a>, one must do so for both indexing and
-    searching, and the changes must happen before
-    either of these actions take place. Although in theory there is nothing stopping you from changing mid-stream, it
-    just isn't well-defined what is going to happen.
-</p>
+<h2>Ranking Models</h2>
 
-<p>To make this change, implement your own <a href="Similarity.html">Similarity</a> (likely
-    you'll want to simply subclass
-    <a href="DefaultSimilarity.html">DefaultSimilarity</a>) and then use the new
-    class by calling
-    <a href="../index/IndexWriter.html#setSimilarity(org.apache.lucene.search.similarities.Similarity)">IndexWriter.setSimilarity</a>
-    before indexing and
-    <a href="Searcher.html#setSimilarity(org.apache.lucene.search.similarities.Similarity)">Searcher.setSimilarity</a>
-    before searching.
-</p>
+<p>The information retrieval models used in ranking can be found in the
+{@linkplain org.apache.lucene.search.similarities similarities} package. Refer
+to the package documentation to see how to use or change
+{@linkplain org.apache.lucene.search.similarities.Similarity Similarities}.</p>
 
-<p>
-    If you are interested in use cases for changing your similarity, see the Lucene users's mailing list at <a
-        href="http://www.nabble.com/Overriding-Similarity-tf2128934.html">Overriding Similarity</a>.
-    In summary, here are a few use cases:
-    <ol>
-        <li><p><a href="api/org/apache/lucene/misc/SweetSpotSimilarity.html">SweetSpotSimilarity</a> &mdash; <a
-                href="api/org/apache/lucene/misc/SweetSpotSimilarity.html">SweetSpotSimilarity</a> gives small increases
-            as the frequency increases a small amount
-            and then greater increases when you hit the "sweet spot", i.e. where you think the frequency of terms is
-            more significant.</p></li>
-        <li><p>Overriding tf &mdash; In some applications, it doesn't matter what the score of a document is as long as a
-            matching term occurs. In these
-            cases people have overridden Similarity to return 1 from the tf() method.</p></li>
-        <li><p>Changing Length Normalization &mdash; By overriding <a
-                href="Similarity.html#lengthNorm(java.lang.String,%20int)">lengthNorm</a>,
-            it is possible to discount how the length of a field contributes
-            to a score. In <a href="DefaultSimilarity.html">DefaultSimilarity</a>,
-            lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be
-            1 / (numTerms in field), all fields will be treated
-            <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</p></li>
-    </ol>
-    In general, Chris Hostetter sums it up best in saying (from <a
-        href="http://www.gossamer-threads.com/lists/lucene/java-user/39125#39125">the Lucene users's mailing list</a>):
-    <blockquote>[One would override the Similarity in] ... any situation where you know more about your data then just
-        that
-        it's "text" is a situation where it *might* make sense to to override your
-        Similarity method.</blockquote>
-</p>
+
 <a name="scoring"></a>
 <h2>Changing Scoring &mdash; Expert Level</h2>
 
