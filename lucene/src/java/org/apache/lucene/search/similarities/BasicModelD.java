@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Implements the approximation of the binomial model with the divergence
@@ -29,7 +29,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */
 public class BasicModelD extends BasicModel {
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);
 //    long F = stats.getTotalTermFreq() + 1;
     double phi = (double)tfn / F;

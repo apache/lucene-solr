@@ -46,10 +46,11 @@ information, see {@link org.apache.lucene.search.similarities.TFIDFSimilarity}.<
 <p>{@link org.apache.lucene.search.similarities.BM25Similarity} is an optimized
 implementation of the successful Okapi BM25 model.</p>
 
-<p>{@link org.apache.lucene.search.similarities.EasySimilarity} provides a basic
+<p>{@link org.apache.lucene.search.similarities.SimilarityBase} provides a basic
 implementation of the Similarity contract and exposes a highly simplified
 interface, which makes it an ideal starting point for new ranking functions.
-Lucene ships the following EasySimilarity-based methods:
+Lucene ships the following methods built on
+{@link org.apache.lucene.search.similarities.SimilarityBase}:
 
 <a name="framework"></a>
 <ul>
@@ -60,7 +61,8 @@ Lucene ships the following EasySimilarity-based methods:
   Zhai and Lafferty's paper.</li>
 </ul>
 
-Since EasySimilarity is not optimized to the same extent as
+Since {@link org.apache.lucene.search.similarities.SimilarityBase} is not
+optimized to the same extent as
 {@link org.apache.lucene.search.similarities.DefaultSimilarity} and
 {@link org.apache.lucene.search.similarities.BM25Similarity}, a difference in
 performance is to be expected when using the methods listed above. However,
@@ -100,7 +102,7 @@ either, the query norm is defined as <code>1 / (numTerms in field)^0.5</code>.</
 <p>To make this change, implement your own {@link org.apache.lucene.search.similarities.Similarity} (likely
     you'll want to simply subclass an existing method, be it
     {@link org.apache.lucene.search.similarities.DefaultSimilarity} or a descendant of
-    {@link org.apache.lucene.search.similarities.EasySimilarity}) and
+    {@link org.apache.lucene.search.similarities.SimilarityBase}) and
     {@link org.apache.lucene.search.similarities.SimilarityProvider} (or use
     {@link org.apache.lucene.search.similarities.BasicSimilarityProvider}), and
     then register the new class by calling
@@ -110,17 +112,17 @@ either, the query norm is defined as <code>1 / (numTerms in field)^0.5</code>.</
     before searching.
 </p>
 
-<h3>Extending {@linkplain org.apache.lucene.search.similarities.EasySimilarity}</h3>
+<h3>Extending {@linkplain org.apache.lucene.search.similarities.SimilarityBase}</h3>
 <p>
 The easiest way to quickly implement a new ranking method is to extend
-{@link org.apache.lucene.search.similarities.EasySimilarity}, which provides
+{@link org.apache.lucene.search.similarities.SimilarityBase}, which provides
 basic implementations for the low level . Subclasses are only required to
-implement the {@link org.apache.lucene.search.similarities.EasySimilarity#score(EasyStats, float, float)}
-and {@link org.apache.lucene.search.similarities.EasySimilarity#toString()}
+implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, float, float)}
+and {@link org.apache.lucene.search.similarities.SimilarityBase#toString()}
 methods.</p>
 
 <p>Another options is to extend one of the <a href="#framework">frameworks</a>
-based on {@link org.apache.lucene.search.similarities.EasySimilarity}. These
+based on {@link org.apache.lucene.search.similarities.SimilarityBase}. These
 Similarities are implemented modularly, e.g.
 {@link org.apache.lucene.search.similarities.DFRSimilarity} delegates
 computation of the three parts of its formula to the classes

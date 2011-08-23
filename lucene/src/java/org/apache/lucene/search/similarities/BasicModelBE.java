@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Limiting form of the Bose-Einstein model. The formula used in Lucene differs
@@ -28,7 +28,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */
 public class BasicModelBE extends BasicModel {
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     long N = stats.getNumberOfDocuments() + 1;
 //    long F = stats.getTotalTermFreq() + 1;
     long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);

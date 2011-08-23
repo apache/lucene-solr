@@ -30,7 +30,7 @@ import org.apache.lucene.search.Explanation;
  */
 public abstract class BasicModel {
   /** Returns the informative content score. */
-  public abstract float score(EasyStats stats, float tfn);
+  public abstract float score(BasicStats stats, float tfn);
   
   /**
    * Returns an explanation for the score.
@@ -39,7 +39,7 @@ public abstract class BasicModel {
    * explanation for such models. Subclasses that use other statistics must
    * override this method.</p>
    */
-  public Explanation explain(EasyStats stats, float tfn) {
+  public Explanation explain(BasicStats stats, float tfn) {
     Explanation result = new Explanation();
     result.setDescription(getClass().getSimpleName() + ", computed from: ");
     result.setValue(score(stats, tfn));

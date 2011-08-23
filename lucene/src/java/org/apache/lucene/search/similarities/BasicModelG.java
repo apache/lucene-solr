@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Geometric as limiting form of the Bose-Einstein model.
@@ -25,7 +25,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */
 public class BasicModelG extends BasicModel {
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     double lambda = stats.getTotalTermFreq() / (double) stats.getNumberOfDocuments();
     // -log(1 / (lambda + 1)) -> log(lambda + 1)
     return (float)(log2(lambda + 1) + tfn * log2((1 + lambda) / lambda));

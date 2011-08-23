@@ -31,20 +31,20 @@ import org.apache.lucene.search.Explanation;
  */
 public abstract class AfterEffect {
   /** Returns the aftereffect score. */
-  public abstract float score(EasyStats stats, float tfn);
+  public abstract float score(BasicStats stats, float tfn);
   
   /** Returns an explanation for the score. */
-  public abstract Explanation explain(EasyStats stats, float tfn);
+  public abstract Explanation explain(BasicStats stats, float tfn);
 
   /** Implementation used when there is no aftereffect. */
   public static final class NoAfterEffect extends AfterEffect {
     @Override
-    public final float score(EasyStats stats, float tfn) {
+    public final float score(BasicStats stats, float tfn) {
       return 1f;
     }
 
     @Override
-    public final Explanation explain(EasyStats stats, float tfn) {
+    public final Explanation explain(BasicStats stats, float tfn) {
       return new Explanation(1, "no aftereffect");
     }
     

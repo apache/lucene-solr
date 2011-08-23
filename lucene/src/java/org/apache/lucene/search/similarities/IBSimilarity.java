@@ -41,7 +41,7 @@ import org.apache.lucene.search.Explanation;
  * Similarities will be merged at one point.</p>
  * @lucene.experimental 
  */
-public class IBSimilarity extends EasySimilarity {
+public class IBSimilarity extends SimilarityBase {
   /** The probabilistic distribution used to model term occurrence. */
   protected final Distribution distribution;
   /** The <em>lambda (&lambda;<sub>w</sub>)</em> parameter. */
@@ -63,7 +63,7 @@ public class IBSimilarity extends EasySimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, float docLen) {
+  protected float score(BasicStats stats, float freq, float docLen) {
     return stats.getTotalBoost() *
         distribution.score(
             stats,
@@ -73,7 +73,7 @@ public class IBSimilarity extends EasySimilarity {
 
   @Override
   protected void explain(
-      Explanation expl, EasyStats stats, int doc, float freq, float docLen) {
+      Explanation expl, BasicStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }

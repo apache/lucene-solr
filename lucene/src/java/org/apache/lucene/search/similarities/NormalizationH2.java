@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Normalization model in which the term frequency is inversely related to the
@@ -25,7 +25,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */
 public class NormalizationH2 extends Normalization {
   @Override
-  public final float tfn(EasyStats stats, float tf, float len) {
+  public final float tfn(BasicStats stats, float tf, float len) {
     return (float)(tf * log2(1 + stats.getAvgFieldLength() / len));
   }
 

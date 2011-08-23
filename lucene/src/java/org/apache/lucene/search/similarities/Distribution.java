@@ -27,11 +27,11 @@ import org.apache.lucene.search.Explanation;
  */
 public abstract class Distribution {
   /** Computes the score. */
-  public abstract float score(EasyStats stats, float tfn, float lambda);
+  public abstract float score(BasicStats stats, float tfn, float lambda);
   
   /** Explains the score. Returns the name of the model only, since
    * both {@code tfn} and {@code lambda} are explained elsewhere. */
-  public Explanation explain(EasyStats stats, float tfn, float lambda) {
+  public Explanation explain(BasicStats stats, float tfn, float lambda) {
     return new Explanation(
         score(stats, tfn, lambda), getClass().getSimpleName());
   }

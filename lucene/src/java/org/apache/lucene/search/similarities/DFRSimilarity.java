@@ -39,7 +39,7 @@ import org.apache.lucene.search.Explanation;
  * @see Normalization
  * @lucene.experimental
  */
-public class DFRSimilarity extends EasySimilarity {
+public class DFRSimilarity extends SimilarityBase {
   /** The basic model for information content. */
   protected final BasicModel basicModel;
   /** The first normalization of the information content. */
@@ -78,7 +78,7 @@ public class DFRSimilarity extends EasySimilarity {
   }
   
   @Override
-  protected float score(EasyStats stats, float freq, float docLen) {
+  protected float score(BasicStats stats, float freq, float docLen) {
     float tfn = normalization.tfn(stats, freq, docLen);
     return stats.getTotalBoost() *
         basicModel.score(stats, tfn) * afterEffect.score(stats, tfn);
@@ -86,7 +86,7 @@ public class DFRSimilarity extends EasySimilarity {
 
   @Override
   protected void explain(Explanation expl,
-      EasyStats stats, int doc, float freq, float docLen) {
+      BasicStats stats, int doc, float freq, float docLen) {
     if (stats.getTotalBoost() != 1.0f) {
       expl.addDetail(new Explanation(stats.getTotalBoost(), "boost"));
     }

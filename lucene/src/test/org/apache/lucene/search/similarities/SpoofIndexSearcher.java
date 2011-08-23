@@ -39,22 +39,22 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Index searcher implementation that takes an {@link EasyStats} instance and
+ * Index searcher implementation that takes an {@link BasicStats} instance and
  * returns statistics accordingly. Most of the methods are not implemented, so
  * it can only be used for Similarity unit testing.
  */
 public class SpoofIndexSearcher extends IndexSearcher {
-  public SpoofIndexSearcher(EasyStats stats) {
+  public SpoofIndexSearcher(BasicStats stats) {
     super(new SpoofIndexReader(stats));
   }
   
   public static class SpoofIndexReader extends IndexReader {
     /** The stats the reader has to return. */
-    protected EasyStats stats;
+    protected BasicStats stats;
     /** The fields the reader has to return. */
     protected SpoofFields fields;
     
-    public SpoofIndexReader(EasyStats stats) {
+    public SpoofIndexReader(BasicStats stats) {
       this.stats = stats;
       this.fields = new SpoofFields(stats);
     }
@@ -163,7 +163,7 @@ public class SpoofIndexSearcher extends IndexSearcher {
     /** The stats the object has to return. */
     protected SpoofTerms terms;
     
-    public SpoofFields(EasyStats stats) {
+    public SpoofFields(BasicStats stats) {
       this.terms = new SpoofTerms(stats);
     }
     
@@ -183,9 +183,9 @@ public class SpoofIndexSearcher extends IndexSearcher {
   /** Spoof Terms class for Similarity testing. */
   public static class SpoofTerms extends Terms {
     /** The stats the object has to return. */
-    protected EasyStats stats;
+    protected BasicStats stats;
     
-    public SpoofTerms(EasyStats stats) {
+    public SpoofTerms(BasicStats stats) {
       this.stats = stats;
     }
     

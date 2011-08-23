@@ -22,16 +22,9 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.similarities.Similarity.ExactDocScorer;
-import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
-import org.apache.lucene.search.similarities.Similarity.Stats;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TermContext;
 import org.apache.lucene.util.SmallFloat;

@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * An approximation of the <em>I(n<sub>e</sub>)</em> model.
@@ -25,7 +25,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */ 
 public class BasicModelIF extends BasicModel {
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     int N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
     return tfn * (float)(log2(1 + (N + 1) / (F + 0.5)));

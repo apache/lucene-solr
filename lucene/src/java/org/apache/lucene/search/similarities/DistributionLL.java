@@ -26,7 +26,7 @@ package org.apache.lucene.search.similarities;
  */
 public class DistributionLL extends Distribution {
   @Override
-  public final float score(EasyStats stats, float tfn, float lambda) {
+  public final float score(BasicStats stats, float tfn, float lambda) {
     return (float)-Math.log(lambda / (tfn + lambda));
   }
   

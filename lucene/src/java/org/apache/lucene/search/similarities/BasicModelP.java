@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Implements the Poisson approximation for the binomial model for DFR.
@@ -28,7 +28,7 @@ public class BasicModelP extends BasicModel {
   protected static double LOG2_E = log2(Math.E);
   
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     float lambda = (float)stats.getTotalTermFreq() / stats.getNumberOfDocuments();
 //    System.out.printf("tfn=%f, lambda=%f, log1=%f, log2=%f%n", tfn, lambda,
 //        tfn / lambda, 2 * Math.PI * tfn);

@@ -27,9 +27,9 @@ import org.apache.lucene.search.Explanation;
  */
 public abstract class Lambda {
   /** Computes the lambda parameter. */
-  public abstract float lambda(EasyStats stats);
+  public abstract float lambda(BasicStats stats);
   /** Explains the lambda parameter. */
-  public abstract Explanation explain(EasyStats stats);
+  public abstract Explanation explain(BasicStats stats);
   
   /**
    * Subclasses must override this method to return the code of the lambda

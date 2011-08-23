@@ -17,7 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import static org.apache.lucene.search.similarities.EasySimilarity.log2;
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 /**
  * Tf-idf model of randomness, based on a mixture of Poisson and inverse
@@ -26,7 +26,7 @@ import static org.apache.lucene.search.similarities.EasySimilarity.log2;
  */ 
 public class BasicModelIne extends BasicModel {
   @Override
-  public final float score(EasyStats stats, float tfn) {
+  public final float score(BasicStats stats, float tfn) {
     int N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
     double ne = N * (1 - Math.pow((N - 1) / (double)N, F));

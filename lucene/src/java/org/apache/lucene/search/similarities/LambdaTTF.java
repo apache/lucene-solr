@@ -25,12 +25,12 @@ import org.apache.lucene.search.Explanation;
  */
 public class LambdaTTF extends Lambda {  
   @Override
-  public final float lambda(EasyStats stats) {
+  public final float lambda(BasicStats stats) {
     return (float)stats.getTotalTermFreq() / stats.getNumberOfDocuments();
   }
 
   @Override
-  public final Explanation explain(EasyStats stats) {
+  public final Explanation explain(BasicStats stats) {
     Explanation result = new Explanation();
     result.setDescription(getClass().getSimpleName() + ", computed from: ");
     result.setValue(lambda(stats));
