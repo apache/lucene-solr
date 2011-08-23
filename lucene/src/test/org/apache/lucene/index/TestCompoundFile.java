@@ -649,4 +649,40 @@ public class TestCompoundFile extends LuceneTestCase
        
        newDir.close();
    }
+
+  // Make sure we don't somehow use more than 1 descriptor
+  // when reading a CFS with many subs:
+  public void testManySubFiles() throws IOException {
+
+    final Directory d = newFSDirectory(_TestUtil.getTempDir("CFSManySubFiles"));
+    final int FILE_COUNT = 10000;
+
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      IndexOutput out = d.createOutput("file." + fileIdx);
+      out.writeByte((byte) fileIdx);
+      out.close();
+    }
+    
+    final CompoundFileWriter cfw = new CompoundFileWriter(d, "c.cfs");
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      cfw.addFile("file." + fileIdx);
+    }
+    cfw.close();
+
+    final IndexInput[] ins = new IndexInput[FILE_COUNT];
+    final CompoundFileReader cfr = new CompoundFileReader(d, "c.cfs");
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      ins[fileIdx] = cfr.openInput("file." + fileIdx);
+    }
+
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      assertEquals((byte) fileIdx, ins[fileIdx].readByte());
+    }
+
+    for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
+      ins[fileIdx].close();
+    }
+    cfr.close();
+    d.close();
+  }
 }
