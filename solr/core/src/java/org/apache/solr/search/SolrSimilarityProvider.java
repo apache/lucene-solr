@@ -17,8 +17,8 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.DefaultSimilarityProvider;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 

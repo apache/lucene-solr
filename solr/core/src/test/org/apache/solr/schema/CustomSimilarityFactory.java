@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 public class CustomSimilarityFactory extends SimilarityFactory {
   @Override

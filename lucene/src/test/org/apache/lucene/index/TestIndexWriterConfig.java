@@ -26,8 +26,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.DefaultSimilarityProvider;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 

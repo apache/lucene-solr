@@ -19,9 +19,9 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.TFIDFSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;

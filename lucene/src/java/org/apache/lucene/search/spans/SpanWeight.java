@@ -21,7 +21,8 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
 import org.apache.lucene.util.TermContext;
 
 import java.io.IOException;

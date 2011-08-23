@@ -22,7 +22,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SimilarityProvider;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.util.Version;
 
 /**

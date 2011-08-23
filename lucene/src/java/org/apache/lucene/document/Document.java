@@ -66,7 +66,7 @@ public final class Document {
    * time was ignored - it was just combined with other indexing time factors and 
    * stored elsewhere, for better indexing and search performance. (For more 
    * information see the "norm(t,d)" part of the scoring formula in 
-   * {@link org.apache.lucene.search.Similarity Similarity}.)
+   * {@link org.apache.lucene.search.similarities.Similarity Similarity}.)
    *
    * @see #setBoost(float)
    */

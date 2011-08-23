@@ -79,15 +79,15 @@ public abstract class AbstractField implements Fieldable {
    * name, all such values are multiplied together.  This product is then
    * used to compute the norm factor for the field.  By
    * default, in the {@link
-   * org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)} method, the boost value is multiplied
+   * org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState)} method, the boost value is multiplied
    * by the length normalization factor and then
-   * rounded by {@link org.apache.lucene.search.DefaultSimilarity#encodeNormValue(float)} before it is stored in the
+   * rounded by {@link org.apache.lucene.search.similarities.DefaultSimilarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
    * the range of that encoding.
    *
    * @see org.apache.lucene.document.Document#setBoost(float)
-   * @see org.apache.lucene.search.Similarity#computeNorm(FieldInvertState)
-   * @see org.apache.lucene.search.DefaultSimilarity#encodeNormValue(float)
+   * @see org.apache.lucene.search.similarities.Similarity#computeNorm(FieldInvertState)
+   * @see org.apache.lucene.search.similarities.DefaultSimilarity#encodeNormValue(float)
    */
   public void setBoost(float boost) {
     this.boost = boost;

@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.HashSet;
 
+import org.apache.lucene.search.similarities.Similarity;
+
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
     private PhrasePositions repeats[];

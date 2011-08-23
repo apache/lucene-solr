@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.search.spans.*;
 
 /**

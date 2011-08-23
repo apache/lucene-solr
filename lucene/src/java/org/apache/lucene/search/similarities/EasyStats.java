@@ -17,9 +17,7 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.Similarity;
 
 /**
  * Stores all statistics commonly used ranking methods.

@@ -201,12 +201,12 @@
 <span class="dtd_comment">  that it factors in the value of the payload located at each of the positions where the</span>
 <span class="dtd_comment">  {@link org.apache.lucene.index.Term} occurs.</span>
 
-<span class="dtd_comment">  In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}</span>
+<span class="dtd_comment">  In order to take advantage of this, you must override {@link org.apache.lucene.search.similarities.Similarity#scorePayload(String, byte[],int,int)}</span>
 <span class="dtd_comment">  which returns 1 by default.</span>
 
 <span class="dtd_comment">  Payload scores are averaged across term occurrences in the document.</span>
 
-<span class="dtd_comment">  @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)</span>
+<span class="dtd_comment">  @see org.apache.lucene.search.similarities.Similarity#scorePayload(String, byte[], int, int)</span>
 <span class="dtd_comment">--&gt;</span>
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ELEMENT</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">BoostingTermQuery</span><span class="dtd_plain"> (</span><span class="dtd_keyword">#PCDATA</span><span class="dtd_plain">)</span><span class="dtd_tag_symbols">&gt;</span>
 <span class="dtd_comment">&lt;!-- Optional boost for matches on this query. Values &gt; 1 --&gt;</span>

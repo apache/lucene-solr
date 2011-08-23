@@ -27,7 +27,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.lucene.search.SimilarityProvider;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.FieldCache; // javadocs
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.PerDocValues;
@@ -1027,7 +1027,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *
    * @see #norms(String)
    * @see Similarity#computeNorm(FieldInvertState)
-   * @see org.apache.lucene.search.DefaultSimilarity#decodeNormValue(byte)
+   * @see org.apache.lucene.search.similarities.DefaultSimilarity#decodeNormValue(byte)
    * @throws StaleReaderException if the index has changed
    *  since this reader was opened
    * @throws CorruptIndexException if the index is corrupt

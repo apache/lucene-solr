@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 
 public class MockConfigurableSimilarity extends DefaultSimilarity {
   private String passthrough;

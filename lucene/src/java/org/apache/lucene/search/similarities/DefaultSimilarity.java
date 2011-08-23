@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.BytesRef;

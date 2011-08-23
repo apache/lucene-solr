@@ -663,7 +663,7 @@
     most applications.
   -->
   <!--
-    <similarity class="org.apache.lucene.search.DefaultSimilarity"/>
+    <similarity class="org.apache.lucene.search.similarities.DefaultSimilarity"/>
   -->
   <!--
     ... OR ... Specify a SimilarityFactory class name implementation

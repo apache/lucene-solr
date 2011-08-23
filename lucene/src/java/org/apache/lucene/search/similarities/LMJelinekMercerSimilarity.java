@@ -18,7 +18,6 @@ package org.apache.lucene.search.similarities;
  */
 
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.similarities.LMSimilarity.LMStats;
 
 /**
  * Language model based on the Jelinek-Mercer smoothing method. From Chengxiang

@@ -22,9 +22,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.SimilarityProvider;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;

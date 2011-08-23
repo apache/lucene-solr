@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.SimilarityProvider;
 
 import java.io.IOException;
 import java.util.*;

@@ -22,10 +22,10 @@ import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.DefaultSimilarity; // javadocs only
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Similarity.SloppyDocScorer;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SloppyDocScorer;
 import org.apache.lucene.search.spans.NearSpansOrdered;
 import org.apache.lucene.search.spans.NearSpansUnordered;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -52,7 +52,7 @@ import java.util.Iterator;
  * <p/>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * 
- * @see org.apache.lucene.search.Similarity.SloppyDocScorer#computePayloadFactor(int, int, int, BytesRef)
+ * @see org.apache.lucene.search.similarities.Similarity.SloppyDocScorer#computePayloadFactor(int, int, int, BytesRef)
  */
 public class PayloadNearQuery extends SpanNearQuery {
   protected String fieldName;
