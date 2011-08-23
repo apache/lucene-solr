@@ -556,7 +556,7 @@ public class TestEasySimilarity extends LuceneTestCase {
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (EasySimilarity sim : sims) {
-      searcher.setSimilarityProvider(new EasySimilarityProvider(sim));
+      searcher.setSimilarityProvider(new BasicSimilarityProvider(sim));
       TopDocs topDocs = searcher.search(q, 1000);
       assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits);
     }
@@ -570,7 +570,7 @@ public class TestEasySimilarity extends LuceneTestCase {
     Query q = new TermQuery(new Term(FIELD_BODY, "heart"));
     
     for (EasySimilarity sim : sims) {
-      searcher.setSimilarityProvider(new EasySimilarityProvider(sim));
+      searcher.setSimilarityProvider(new BasicSimilarityProvider(sim));
       TopDocs topDocs = searcher.search(q, 1000);
       assertEquals("Failed: " + sim.toString(), 2, topDocs.scoreDocs[0].doc);
     }
@@ -582,35 +582,5 @@ public class TestEasySimilarity extends LuceneTestCase {
     reader.close();
     dir.close();
     super.tearDown();
-  }
-  
-  // ------------------------- Helper class definitions ------------------------
-  
-  /**
-   * A simple Similarity provider that returns in {@code get(String field)} the
-   * object passed to its constructor.
-   */
-  // nocommit a real EasySimilarityProvider with coord and queryNorm implemented?
-  public static class EasySimilarityProvider implements SimilarityProvider {
-    private EasySimilarity sim;
-    
-    public EasySimilarityProvider(EasySimilarity sim) {
-      this.sim = sim;
-    }
-    
-    @Override
-    public float coord(int overlap, int maxOverlap) {
-      return 1f;
-    }
-
-    @Override
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1f;
-    }
-
-    @Override
-    public EasySimilarity get(String field) {
-      return sim;
-    }
   }
 }

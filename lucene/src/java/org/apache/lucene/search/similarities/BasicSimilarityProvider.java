@@ -17,16 +17,32 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-public class BM25SimilarityProvider extends DefaultSimilarityProvider {
-
-  private BM25Similarity impl = new BM25Similarity();
-
-  public BM25Similarity get(String field) {
-    return impl;
+/**
+ * A simple {@link Similarity} provider that returns in
+ * {@code get(String field)} the object passed to its constructor. This class
+ * is aimed at non-VSM models, and therefore both the {@link #coord} and
+ * {@link #queryNorm} methods return {@code 1}. Use
+ * {@link DefaultSimilarityProvider} for {@link DefaultSimilarity}.
+ */
+public class BasicSimilarityProvider implements SimilarityProvider {
+  private final Similarity sim;
+  
+  public BasicSimilarityProvider(Similarity sim) {
+    this.sim = sim;
   }
   
-  /** Sets the {@code Similarity} returned by {@link #get}. */
-  public void set(BM25Similarity sim) {
-    impl = sim;
+  @Override
+  public float coord(int overlap, int maxOverlap) {
+    return 1f;
+  }
+
+  @Override
+  public float queryNorm(float sumOfSquaredWeights) {
+    return 1f;
+  }
+
+  @Override
+  public Similarity get(String field) {
+    return sim;
   }
 }

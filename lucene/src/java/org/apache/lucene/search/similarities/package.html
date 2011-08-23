@@ -74,9 +74,10 @@ optimizations can always be implemented in subclasses; see
 <p>{@link org.apache.lucene.search.similarities.SimilarityProvider}s instantiate
 Similarities and compute the normalization value for the query.
 {@link org.apache.lucene.search.similarities.DefaultSimilarityProvider} is used
-by both {@link org.apache.lucene.search.similarities.DefaultSimilarity} and
-(indirectly) by {@link org.apache.lucene.search.similarities.BM25Similarity},
-and the query norm is defined as <code>1 / (numTerms in field)^0.5</code>.</p>
+by {@link org.apache.lucene.search.similarities.DefaultSimilarity}, while
+{@link org.apache.lucene.search.similarities.BasicSimilarityProvider} can return
+an arbitrary {@link org.apache.lucene.search.similarities.Similarity}. In
+either, the query norm is defined as <code>1 / (numTerms in field)^0.5</code>.</p>
 
 
 <a name="changingSimilarity"></a>
@@ -100,8 +101,9 @@ and the query norm is defined as <code>1 / (numTerms in field)^0.5</code>.</p>
     you'll want to simply subclass an existing method, be it
     {@link org.apache.lucene.search.similarities.DefaultSimilarity} or a descendant of
     {@link org.apache.lucene.search.similarities.EasySimilarity}) and
-    {@link org.apache.lucene.search.similarities.SimilarityProvider}, and then
-    use the new class by calling
+    {@link org.apache.lucene.search.similarities.SimilarityProvider} (or use
+    {@link org.apache.lucene.search.similarities.BasicSimilarityProvider}), and
+    then register the new class by calling
     {@link org.apache.lucene.index.IndexWriterConfig#setSimilarityProvider(SimilarityProvider)}
     before indexing and
     {@link org.apache.lucene.search.IndexSearcher#setSimilarityProvider(SimilarityProvider)}
