@@ -451,7 +451,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     
     // Wait longer than the autocommit time
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
 
     
@@ -472,7 +472,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
     
     req.setContentStreams( toContentStreams(
@@ -485,14 +485,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         || softCommitCnt == 3);
     
     // depending on timing, you might see 1 or 2 hard commits
-    assertTrue(hardTrigger.waitForNewSearcher(15000));
+    assertTrue(hardTrigger.waitForNewSearcher(30000));
     hardTrigger.reset();
     
     int hardCommitCnt = hardTracker.getCommitCount();
     assertTrue("commit cnt:" + hardCommitCnt, hardCommitCnt == 1
         || hardCommitCnt == 2);
     
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
     
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
