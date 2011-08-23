@@ -450,7 +450,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     
-    // Wait longer than the autocommit time - wait twice to ensure latest is picked up
+    // Wait longer than the autocommit time
     assertTrue(softTrigger.waitForNewSearcher(15000));
     softTrigger.reset();
 
