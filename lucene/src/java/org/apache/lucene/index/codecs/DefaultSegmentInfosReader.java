@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -68,13 +69,13 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
           Directory dir = directory;
           if (si.getDocStoreOffset() != -1) {
             if (si.getDocStoreIsCompoundFile()) {
-              dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
+              dir = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
                   si.getDocStoreSegment(), "",
-                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context);
+                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION), context, false);
             }
           } else if (si.getUseCompoundFile()) {
-            dir = dir.openCompoundInput(IndexFileNames.segmentFileName(
-                si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context);
+            dir = new CompoundFileDirectory(dir,IndexFileNames.segmentFileName(
+                si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
           }
 
           try {

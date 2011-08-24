@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -247,7 +248,7 @@ public final class SegmentInfo implements Cloneable {
       }
       final Directory dirToTest;
       if (isCompoundFile) {
-        dirToTest = dir.openCompoundInput(IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE);
+        dirToTest = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(storesSegment, "", ext), IOContext.READONCE, false);
       } else {
         dirToTest = dir;
       }
@@ -265,8 +266,8 @@ public final class SegmentInfo implements Cloneable {
     if (fieldInfos == null) {
       Directory dir0 = dir;
       if (isCompoundFile && checkCompoundFile) {
-        dir0 = dir.openCompoundInput(IndexFileNames.segmentFileName(name,
-            "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE);
+        dir0 = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(name,
+            "", IndexFileNames.COMPOUND_FILE_EXTENSION), IOContext.READONCE, false);
       }
       try {
         fieldInfos = new FieldInfos(dir0, IndexFileNames.segmentFileName(name,
@@ -619,7 +620,7 @@ public final class SegmentInfo implements Cloneable {
 
     if (useCompoundFile) {
       fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
-      if (version != null && StringHelper.getVersionComparator().compare("3.4", version) <= 0) {
+      if (version != null && StringHelper.getVersionComparator().compare("4.0", version) <= 0) {
         fileSet.add(IndexFileNames.segmentFileName(name, "",
             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
       }

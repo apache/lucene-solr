@@ -24,8 +24,7 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
 
-import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
-import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput.Descriptor;
 
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
@@ -81,45 +80,29 @@ public class NIOFSDirectory extends FSDirectory {
     return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
   }
   
-  @Override
-  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    return new NIOFSCompoundFileDirectory(name, context);
-  }
+  public IndexInputSlicer createSlicer(final String name,
+      final IOContext context) throws IOException {
+    ensureOpen();
+    final File file = new File(getDirectory(), name);
+    final Descriptor descriptor = new Descriptor(file, "r");
+    return new Directory.IndexInputSlicer() {
 
-  private final class NIOFSCompoundFileDirectory extends CompoundFileDirectory {
-    private SimpleFSIndexInput.Descriptor fd;
-    private FileChannel fc;
-
-    public NIOFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
-      super(NIOFSDirectory.this, fileName, context);
-      IndexInput stream = null;
-      try {
-        File f = new File(NIOFSDirectory.this.getDirectory(), fileName);
-        fd = new SimpleFSIndexInput.Descriptor(f, "r");
-        fc = fd.getChannel();
-        stream = new NIOFSIndexInput(fd, fc, 0, fd.length, readBufferSize,
-            getReadChunkSize());
-        initForRead(CompoundFileDirectory.readEntries(stream, NIOFSDirectory.this, fileName));
-        stream.close();
-      } catch (IOException e) {
-        // throw our original exception
-        IOUtils.closeSafely(e, fc, fd, stream);
+      @Override
+      public void close() throws IOException {
+        descriptor.close();
       }
-    }
-    
-    @Override
-    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
-      return new NIOFSIndexInput(fd, fc, offset, length, readBufferSize, getReadChunkSize());
-    }
 
-    @Override
-    public synchronized void close() throws IOException {
-      try {
-        IOUtils.closeSafely(false, fc, fd);
-      } finally {
-        super.close();
+      @Override
+      public IndexInput openSlice(long offset, long length) throws IOException {
+        return new NIOFSIndexInput(descriptor, descriptor.getChannel(), offset,
+            length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
-    }
+
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        return openSlice(0, descriptor.length);
+      }
+    };
   }
 
   protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {

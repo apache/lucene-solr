@@ -91,7 +91,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // figure out which field number corresponds to
     // "content", and then set our expected file names below
     // accordingly:
-    CompoundFileDirectory cfsReader = dir.openCompoundInput("_2.cfs", newIOContext(random));
+    CompoundFileDirectory cfsReader = new CompoundFileDirectory(dir, "_2.cfs", newIOContext(random), false);
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
     for (FieldInfo fi : fieldInfos) {

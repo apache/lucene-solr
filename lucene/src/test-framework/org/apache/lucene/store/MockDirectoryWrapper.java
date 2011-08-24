@@ -377,7 +377,7 @@ public class MockDirectoryWrapper extends Directory {
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState)), name);
-    addFileHandle(io, name, false);
+    addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
@@ -391,8 +391,12 @@ public class MockDirectoryWrapper extends Directory {
       return io;
     }
   }
+  
+  private static enum Handle {
+    Input, Output, Slice
+  }
 
-  synchronized void addFileHandle(Closeable c, String name, boolean input) {
+  synchronized void addFileHandle(Closeable c, String name, Handle handle) {
     Integer v = openFiles.get(name);
     if (v != null) {
       v = Integer.valueOf(v.intValue()+1);
@@ -401,7 +405,7 @@ public class MockDirectoryWrapper extends Directory {
       openFiles.put(name, Integer.valueOf(1));
     }
     
-    openFileHandles.put(c, new RuntimeException("unclosed Index" + (input ? "Input" : "Output") + ": " + name));
+    openFileHandles.put(c, new RuntimeException("unclosed Index" + handle.name() + ": " + name));
   }
   
   @Override
@@ -417,22 +421,10 @@ public class MockDirectoryWrapper extends Directory {
     }
 
     IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState)));
-    addFileHandle(ii, name, true);
+    addFileHandle(ii, name, Handle.Input);
     return ii;
   }
   
-  @Override
-  public synchronized CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    maybeYield();
-    return new MockCompoundFileDirectoryWrapper(name, this, delegate.openCompoundInput(name, context), false);
-  }
-   
-  @Override
-  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
-    maybeYield();
-    return new MockCompoundFileDirectoryWrapper(name, this, delegate.createCompoundOutput(name, context), true);
-  }
-
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
   public synchronized final long getRecomputedSizeInBytes() throws IOException {
     if (!(delegate instanceof RAMDirectory))
@@ -658,5 +650,50 @@ public class MockDirectoryWrapper extends Directory {
     // randomize the IOContext here?
     delegate.copy(to, src, dest, context);
   }
-  
+
+  @Override
+  public IndexInputSlicer createSlicer(final String name, IOContext context)
+      throws IOException {
+    maybeYield();
+    if (!delegate.fileExists(name))
+      throw new FileNotFoundException(name);
+    // cannot open a file for input if it's still open for
+    // output, except for segments.gen and segments_N
+    if (openFilesForWrite.contains(name) && !name.startsWith("segments")) {
+      throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
+    }
+    
+    final IndexInputSlicer delegateHandle = delegate.createSlicer(name, context);
+    final IndexInputSlicer handle = new IndexInputSlicer() {
+      
+      private boolean isClosed;
+      @Override
+      public void close() throws IOException {
+        if (!isClosed) {
+          delegateHandle.close();
+          MockDirectoryWrapper.this.removeOpenFile(this, name);
+          isClosed = true;
+        }
+      }
+
+      @Override
+      public IndexInput openSlice(long offset, long length) throws IOException {
+        maybeYield();
+        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openSlice(offset, length));
+        addFileHandle(ii, name, Handle.Input);
+        return ii;
+      }
+
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        maybeYield();
+        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openFullSlice());
+        addFileHandle(ii, name, Handle.Input);
+        return ii;
+      }
+      
+    };
+    addFileHandle(handle, name, Handle.Slice);
+    return handle;
+  }
 }

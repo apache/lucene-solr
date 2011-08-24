@@ -34,7 +34,7 @@ import java.io.IOException;
  * Directory methods that would normally modify data throw an exception.
  * @lucene.experimental
  */
-public abstract class CompoundFileDirectory extends Directory {
+public final class CompoundFileDirectory extends Directory {
   
   /** Offset/Length for a slice inside of a compound file */
   public static final class FileEntry {
@@ -45,68 +45,86 @@ public abstract class CompoundFileDirectory extends Directory {
   private final Directory directory;
   private final String fileName;
   protected final int readBufferSize;  
-  private Map<String,FileEntry> entries;
-  private boolean openForWrite;
+  private final Map<String,FileEntry> entries;
+  private final boolean openForWrite;
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
-  private CompoundFileWriter writer;
+  private final CompoundFileWriter writer;
+  private final IndexInputSlicer handle;
   
   /**
    * Create a new CompoundFileDirectory.
    * <p>
    * NOTE: subclasses must call {@link #initForRead(Map)} before the directory can be used.
    */
-  public CompoundFileDirectory(Directory directory, String fileName, IOContext context) throws IOException {
-
+  public CompoundFileDirectory(Directory directory, String fileName, IOContext context, boolean openForWrite) throws IOException {
     this.directory = directory;
     this.fileName = fileName;
     this.readBufferSize = BufferedIndexInput.bufferSize(context);
     this.isOpen = false;
+    this.openForWrite = openForWrite;
+    if (!openForWrite) {
+      boolean success = false;
+      handle = directory.createSlicer(fileName, context);
+      try {
+        this.entries = readEntries(handle, directory, fileName);
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeSafely(true, handle);
+        }
+      }
+      this.isOpen = true;
+      writer = null;
+    } else {
+      assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
+      this.entries = SENTINEL;
+      this.isOpen = true;
+      writer = new CompoundFileWriter(directory, fileName);
+      handle = null;
+    }
   }
-  
-  /** Initialize with a map of filename->slices */
-  protected final void initForRead(Map<String,FileEntry> entries) {
-    this.entries = entries;
-    this.isOpen = true;
-    this.openForWrite = false;
-  }
-  
-  protected final void initForWrite() throws IOException {
-    assert !(directory instanceof CompoundFileDirectory) : "compound file inside of compound file: " + fileName;
-    this.entries = SENTINEL;
-    this.openForWrite = true;
-    this.isOpen = true;
-    writer = new CompoundFileWriter(directory, fileName);
-  }
-  
+
   /** Helper method that reads CFS entries from an input stream */
-  public static final Map<String,FileEntry> readEntries(IndexInput stream, Directory dir, String name) throws IOException {
+  private static final Map<String, FileEntry> readEntries(
+      IndexInputSlicer handle, Directory dir, String name) throws IOException {
     // read the first VInt. If it is negative, it's the version number
     // otherwise it's the count (pre-3.1 indexes)
-    final int firstInt = stream.readVInt();
-    if (firstInt == CompoundFileWriter.FORMAT_CURRENT) {
-      IndexInput input = null;
-      try {
-        input = dir.openInput(IndexFileNames.segmentFileName(IndexFileNames.stripExtension(name), "",
-            IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION), IOContext.READONCE);
-        final int readInt = input.readInt(); // unused right now
-        assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
-        final int numEntries = input.readVInt();
-        final Map<String, FileEntry> mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
-            numEntries);
-        for (int i = 0; i < numEntries; i++) {
-          final FileEntry fileEntry = new FileEntry();
-          mapping.put(input.readString(), fileEntry);
-          fileEntry.offset = input.readLong();
-          fileEntry.length = input.readLong();
+    final IndexInput stream = handle.openFullSlice();
+    final Map<String, FileEntry> mapping;
+    boolean success = false;
+    try {
+      final int firstInt = stream.readVInt();
+      if (firstInt == CompoundFileWriter.FORMAT_CURRENT) {
+        IndexInput input = null;
+        try {
+          input = dir.openInput(IndexFileNames.segmentFileName(
+              IndexFileNames.stripExtension(name), "",
+              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION),
+              IOContext.READONCE);
+          final int readInt = input.readInt(); // unused right now
+          assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
+          final int numEntries = input.readVInt();
+          mapping = new HashMap<String, CompoundFileDirectory.FileEntry>(
+              numEntries);
+          for (int i = 0; i < numEntries; i++) {
+            final FileEntry fileEntry = new FileEntry();
+            mapping.put(input.readString(), fileEntry);
+            fileEntry.offset = input.readLong();
+            fileEntry.length = input.readLong();
+          }
+          return mapping;
+        } finally {
+          IOUtils.closeSafely(true, input);
         }
-        return mapping;
-      } finally {
-        IOUtils.closeSafely(true, input);
+      } else {
+        // TODO remove once 3.x is not supported anymore
+        mapping = readLegacyEntries(stream, firstInt);
       }
+      success = true;
+      return mapping;
+    } finally {
+      IOUtils.closeSafely(!success, stream);
     }
-    
-    // TODO remove once 3.x is not supported anymore
-    return readLegacyEntries(stream, firstInt);
   }
 
   private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
@@ -173,31 +191,28 @@ public abstract class CompoundFileDirectory extends Directory {
   public synchronized void close() throws IOException {
     if (!isOpen) {
       // allow double close - usually to be consistent with other closeables
-      assert entries == null; 
       return; // already closed
      }
-    entries = null;
     isOpen = false;
     if (writer != null) {
       assert openForWrite;
       writer.close();
+    } else {
+      IOUtils.closeSafely(false, handle);
     }
   }
   
   @Override
-  public synchronized IndexInput openInput(String fileName, IOContext context) throws IOException {
+  public synchronized IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     assert !openForWrite;
-    final String id = IndexFileNames.stripSegmentName(fileName);
+    final String id = IndexFileNames.stripSegmentName(name);
     final FileEntry entry = entries.get(id);
     if (entry == null) {
-      throw new IOException("No sub-file with id " + id + " found (fileName=" + fileName + " files: " + entries.keySet() + ")");
+      throw new IOException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
     }
-    return openInputSlice(id, entry.offset, entry.length, readBufferSize);
+    return handle.openSlice(entry.offset, entry.length);
   }
-  
-  /** Return an IndexInput that represents a "slice" or portion of the CFS file. */
-  public abstract IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException;
   
   /** Returns an array of strings, one for each file in the directory. */
   @Override
@@ -279,51 +294,31 @@ public abstract class CompoundFileDirectory extends Directory {
   public Lock makeLock(String name) {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
-  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    FileEntry fileEntry = this.entries.get(IndexFileNames.stripSegmentName(name));
-    if (fileEntry == null) {
-      throw new FileNotFoundException("file " + name + " does not exists in this CFS");
-    }
-    return new NestedCompoundFileDirectory(name, context, fileEntry.offset, fileEntry.length);
-  }
-  
-  /** Not implemented
-  * @throws UnsupportedOperationException */
-  @Override
-  public CompoundFileDirectory createCompoundOutput(String name, IOContext context)
+  public IndexInputSlicer createSlicer(final String name, IOContext context)
       throws IOException {
-    throw new UnsupportedOperationException("can not create nested CFS, create seperately and use Directory.copy instead");
-  }
-   
-  private class NestedCompoundFileDirectory extends CompoundFileDirectory {
-
-    private final long cfsOffset;
-    private final long cfsLength;
-
-    public NestedCompoundFileDirectory(String fileName, IOContext context, long offset, long length)
-        throws IOException {
-      super(directory, fileName, context);
-      this.cfsOffset = offset;
-      this.cfsLength = length;
-      IndexInput input = null;
-      try {
-        input = CompoundFileDirectory.this.openInput(fileName, IOContext.READONCE);
-        initForRead(CompoundFileDirectory.readEntries(input,
-            CompoundFileDirectory.this, fileName));
-      } finally {
-        IOUtils.closeSafely(false, input);
+    ensureOpen();
+    assert !openForWrite;
+    final String id = IndexFileNames.stripSegmentName(name);
+    final FileEntry entry = entries.get(id);
+    if (entry == null) {
+      throw new IOException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
+    }
+    return new IndexInputSlicer() {
+      @Override
+      public void close() throws IOException {
       }
-    }
+      
+      @Override
+      public IndexInput openSlice(long offset, long length) throws IOException {
+        return handle.openSlice(entry.offset + offset, length);
+      }
 
-    @Override
-    public IndexInput openInputSlice(String id, long offset, long length,
-        int readBufferSize) throws IOException {
-      assert offset + length <= cfsLength; 
-      return CompoundFileDirectory.this.openInputSlice(id, cfsOffset + offset, length, readBufferSize);
-    }
-    
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        return openSlice(0, entry.length);
+      }
+    };
   }
-  
 }

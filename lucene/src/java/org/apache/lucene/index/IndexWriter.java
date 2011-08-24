@@ -2262,7 +2262,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
         message("creating compound file " + compoundFileName);
         // Now build compound file
-        final Directory cfsDir = directory.createCompoundOutput(compoundFileName, context);
+        final Directory cfsDir = new CompoundFileDirectory(directory, compoundFileName, context, true);
         IOException prior = null;
         try {
           for(String fileName : newSegment.files()) {
@@ -2594,7 +2594,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private void copySegmentIntoCFS(SegmentInfo info, String segName, IOContext context) throws IOException {
     String segFileName = IndexFileNames.segmentFileName(segName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
     Collection<String> files = info.files();
-    final CompoundFileDirectory cfsdir = directory.createCompoundOutput(segFileName, context);
+    final CompoundFileDirectory cfsdir = new CompoundFileDirectory(directory, segFileName, context, true);
     try {
       for (String file : files) {
         String newFileName = segName + IndexFileNames.stripSegmentName(file);

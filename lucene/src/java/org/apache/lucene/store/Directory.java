@@ -112,30 +112,6 @@ public abstract class Directory implements Closeable {
   */
   public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
   
-  /** 
-   * Returns a {@link CompoundFileDirectory} capable of
-   * reading the Lucene compound file format.  
-   * <p>
-   * The default implementation returns 
-   * {@link DefaultCompoundFileDirectory}.
-   * @lucene.experimental
-   */
-  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    return new DefaultCompoundFileDirectory(this, name, context, false);
-  }
-  
-  /** 
-   * Returns a {@link CompoundFileDirectory} capable of
-   * writing the Lucene compound file format.  
-   * <p>
-   * The default implementation returns 
-   * {@link DefaultCompoundFileDirectory}.
-   * @lucene.experimental
-   */
-  public CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
-    return new DefaultCompoundFileDirectory(this, name, context, true);
-  }
-
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */
@@ -233,10 +209,140 @@ public abstract class Directory implements Closeable {
   }
 
   /**
+   * Creates an {@link IndexInputSlicer} for the given file name.
+   * IndexInputSlicer allows other {@link Directory} implementations to
+   * efficiently open one or more sliced {@link IndexInput} instances from a
+   * single file handle. The underlying file handle is kept open until the
+   * {@link IndexInputSlicer} is closed.
+   *
+   * @throws IOException
+   *           if an {@link IOException} occurs
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
+    ensureOpen();
+    return new IndexInputSlicer() {
+      private final IndexInput base = Directory.this.openInput(name, context);
+      @Override
+      public IndexInput openSlice(long offset, long length) {
+        return new SlicedIndexInput(base, offset, length);
+      }
+      @Override
+      public void close() throws IOException {
+        base.close();
+      }
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        return (IndexInput) base.clone();
+      }
+    };
+  }
+
+  /**
    * @throws AlreadyClosedException if this Directory is closed
    */
   protected final void ensureOpen() throws AlreadyClosedException {
     if (!isOpen)
       throw new AlreadyClosedException("this Directory is closed");
+  }
+  
+  /**
+   * Allows to create one or more sliced {@link IndexInput} instances from a single 
+   * file handle. Some {@link Directory} implementations may be able to efficiently map slices of a file
+   * into memory when only certain parts of a file are required.   
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public abstract class IndexInputSlicer implements Closeable {
+    /**
+     * Returns an {@link IndexInput} slice starting at the given offset with the given length.
+     */
+    public abstract IndexInput openSlice(long offset, long length) throws IOException;
+
+    /**
+     * Returns an {@link IndexInput} slice starting at offset <i>0</i> with a
+     * length equal to the length of the underlying file
+     */
+    public abstract IndexInput openFullSlice() throws IOException;
+  }
+  
+  /** Implementation of an IndexInput that reads from a portion of
+   *  a file.
+   */
+  private static final class SlicedIndexInput extends BufferedIndexInput {
+    IndexInput base;
+    long fileOffset;
+    long length;
+    
+    SlicedIndexInput(final IndexInput base, final long fileOffset, final long length) {
+      this(base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
+    }
+    
+    SlicedIndexInput(final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
+      super(readBufferSize);
+      this.base = (IndexInput) base.clone();
+      this.fileOffset = fileOffset;
+      this.length = length;
+    }
+    
+    @Override
+    public Object clone() {
+      SlicedIndexInput clone = (SlicedIndexInput)super.clone();
+      clone.base = (IndexInput)base.clone();
+      clone.fileOffset = fileOffset;
+      clone.length = length;
+      return clone;
+    }
+    
+    /** Expert: implements buffer refill.  Reads bytes from the current
+     *  position in the input.
+     * @param b the array to read bytes into
+     * @param offset the offset in the array to start storing bytes
+     * @param len the number of bytes to read
+     */
+    @Override
+    protected void readInternal(byte[] b, int offset, int len) throws IOException {
+      long start = getFilePointer();
+      if(start + len > length)
+        throw new IOException("read past EOF");
+      base.seek(fileOffset + start);
+      base.readBytes(b, offset, len, false);
+    }
+    
+    /** Expert: implements seek.  Sets current position in this file, where
+     *  the next {@link #readInternal(byte[],int,int)} will occur.
+     * @see #readInternal(byte[],int,int)
+     */
+    @Override
+    protected void seekInternal(long pos) {}
+    
+    /** Closes the stream to further operations. */
+    @Override
+    public void close() throws IOException {
+      base.close();
+    }
+    
+    @Override
+    public long length() {
+      return length;
+    }
+    
+    @Override
+    public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+      // Copy first whatever is in the buffer
+      numBytes -= flushBuffer(out, numBytes);
+      
+      // If there are more bytes left to copy, delegate the copy task to the
+      // base IndexInput, in case it can do an optimized copy.
+      if (numBytes > 0) {
+        long start = getFilePointer();
+        if (start + numBytes > length) {
+          throw new IOException("read past EOF");
+        }
+        base.seek(fileOffset + start);
+        base.copyBytes(out, numBytes);
+      }
+    }
   }
 }

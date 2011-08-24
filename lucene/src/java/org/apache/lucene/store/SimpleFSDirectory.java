@@ -21,8 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import org.apache.lucene.util.IOUtils;
-
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput.Descriptor;
 
 /** A straightforward implementation of {@link FSDirectory}
  *  using java.io.RandomAccessFile.  However, this class has
@@ -59,44 +58,33 @@ public class SimpleFSDirectory extends FSDirectory {
     return new SimpleFSIndexInput(new File(directory, name), context, getReadChunkSize());
   }
   
-  @Override
-  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    return new SimpleFSCompoundFileDirectory(name, context);
+  
+
+  public IndexInputSlicer createSlicer(final String name,
+      final IOContext context) throws IOException {
+    ensureOpen();
+    final File file = new File(getDirectory(), name);
+    final Descriptor descriptor = new Descriptor(file, "r");
+    return new IndexInputSlicer() {
+
+      @Override
+      public void close() throws IOException {
+        descriptor.close();
+      }
+
+      @Override
+      public IndexInput openSlice(long offset, long length) throws IOException {
+        return new SimpleFSIndexInput(descriptor, offset,
+            length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
+      }
+
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        return openSlice(0, descriptor.length);
+      }
+    };
   }
 
-  private final class SimpleFSCompoundFileDirectory extends CompoundFileDirectory {
-    private SimpleFSIndexInput.Descriptor fd;
-
-    public SimpleFSCompoundFileDirectory(String fileName, IOContext context) throws IOException {
-      super(SimpleFSDirectory.this, fileName, context);
-      IndexInput stream = null;
-      try {
-        final File f = new File(SimpleFSDirectory.this.getDirectory(), fileName);
-        fd = new SimpleFSIndexInput.Descriptor(f, "r");
-        stream = new SimpleFSIndexInput(fd, 0, fd.length, readBufferSize,
-            getReadChunkSize());
-        initForRead(CompoundFileDirectory.readEntries(stream, SimpleFSDirectory.this, fileName));
-        stream.close();
-      } catch (IOException e) {
-        // throw our original exception
-        IOUtils.closeSafely(e, fd, stream);
-      }
-    }
-
-    @Override
-    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
-      return new SimpleFSIndexInput(fd, offset, length, readBufferSize, getReadChunkSize());
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-      try {
-        fd.close();
-      } finally {
-        super.close();
-      }
-    }
-  }
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
   

@@ -228,22 +228,21 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
-  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    return super.openCompoundInput(name, context);
+  public IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
+    ensureOpen();
+    if (VERBOSE) {
+      System.out.println("nrtdir.openInput name=" + name);
+    }
+    if (cache.fileExists(name)) {
+      if (VERBOSE) {
+        System.out.println("  from cache");
+      }
+      return cache.createSlicer(name, context);
+    } else {
+      return delegate.createSlicer(name, context);
+    }
   }
   
-  // final due to LUCENE-3382: currently CFS backdoors the directory to create CFE
-  // by using the basic implementation and not delegating, we ensure that all 
-  // openInput/createOutput requests come thru NRTCachingDirectory.
-  @Override
-  public final CompoundFileDirectory createCompoundOutput(String name, IOContext context) throws IOException {
-    return super.createCompoundOutput(name, context);
-  }
-
   /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */
   @Override
