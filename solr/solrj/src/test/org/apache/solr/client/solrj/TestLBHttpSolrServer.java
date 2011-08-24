@@ -162,8 +162,8 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
     HttpClient myHttpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
 
-    myHttpClient.getParams().setParameter("http.connection.timeout", new Integer(100));
-    myHttpClient.getParams().setParameter("http.socket.timeout", new Integer(100));
+    myHttpClient.getParams().setParameter("http.connection.timeout", new Integer(250));
+    myHttpClient.getParams().setParameter("http.socket.timeout", new Integer(250));
     LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(myHttpClient, s);
     lbHttpSolrServer.setAliveCheckInterval(500);
 
