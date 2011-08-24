@@ -235,7 +235,6 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertEquals( 3, tracker.getCommitCount() );
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
-    assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
   }
 
   public void testSoftCommitMaxDocs() throws Exception {
@@ -402,10 +401,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     core.registerNewSearcherListener(hardTrigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     
-    updater.registerCommitCallback(softTrigger);
     updater.registerSoftCommitCallback(softTrigger);
     updater.registerCommitCallback(hardTrigger);
-    updater.registerSoftCommitCallback(hardTrigger);
     
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
