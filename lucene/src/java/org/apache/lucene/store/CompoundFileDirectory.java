@@ -53,8 +53,6 @@ public final class CompoundFileDirectory extends Directory {
   
   /**
    * Create a new CompoundFileDirectory.
-   * <p>
-   * NOTE: subclasses must call {@link #initForRead(Map)} before the directory can be used.
    */
   public CompoundFileDirectory(Directory directory, String fileName, IOContext context, boolean openForWrite) throws IOException {
     this.directory = directory;
