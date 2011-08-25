@@ -41,6 +41,9 @@ API Changes
    it has been deprecated and will be removed soon. 
    (Phillipe Ramalho via Adriano Crestani)
 
+ * LUCENE-3400: Deprecated DutchAnalyzer.setStemDictionary since it prevents
+   TokenStream reuse (Chris Male)
+
 Optimizations
 
  * LUCENE-3306: Disabled indexing of positions for spellchecker n-gram

@@ -220,7 +220,10 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    * Reads a stemdictionary file , that overrules the stemming algorithm
    * This is a textfile that contains per line
    * <tt>word<b>\t</b>stem</tt>, i.e: two tab seperated words
+   * @deprecated This prevents reuse of TokenStreams.  If you wish to use a custom
+   * stem dictionary, create your own Analyzer with {@link StemmerOverrideFilter}
    */
+  @Deprecated
   public void setStemDictionary(File stemdictFile) {
     try {
       stemdict = WordlistLoader.getStemDict(stemdictFile);
