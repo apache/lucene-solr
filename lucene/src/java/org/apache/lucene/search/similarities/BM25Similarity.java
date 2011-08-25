@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
@@ -36,13 +37,14 @@ import org.apache.lucene.util.TermContext;
 public class BM25Similarity extends Similarity {
   private final float k1;
   private final float b;
-  
+  // TODO: should we add a delta like sifaka.cs.uiuc.edu/~ylv2/pub/sigir11-bm25l.pdf ?
+
   public BM25Similarity(float k1, float b) {
     this.k1 = k1;
     this.b  = b;
   }
   
-  /** Sets the default values for BM25:
+  /** BM25 with these default values:
    * <ul>
    *   <li>{@code k1 = 1.2},
    *   <li>{@code b = 0.75}.</li>
@@ -54,39 +56,61 @@ public class BM25Similarity extends Similarity {
   }
   
   /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
-  public float idf(int docFreq, int numDocs) {
-    return (float) Math.log(1 + ((numDocs - docFreq + 0.5D)/(docFreq + 0.5D)));
+  protected float idf(int docFreq, int numDocs) {
+    return (float) Math.log(1 + (numDocs - docFreq + 0.5D)/(docFreq + 0.5D));
   }
   
   /** Implemented as <code>1 / (distance + 1)</code>. */
-  public float sloppyFreq(int distance) {
+  protected float sloppyFreq(int distance) {
     return 1.0f / (distance + 1);
   }
   
   /** The default implementation returns <code>1</code> */
-  public float scorePayload(int doc, int start, int end, BytesRef payload) {
+  protected float scorePayload(int doc, int start, int end, BytesRef payload) {
     return 1;
   }
   
-  /** return avg doc length across the field (or 1 if the codec does not store sumTotalTermFreq) */
-  public float avgFieldLength(IndexSearcher searcher, String field) throws IOException {
-    long sumTotalTermFreq = MultiFields.getTerms(searcher.getIndexReader(), field).getSumTotalTermFreq();
-    long maxdoc = searcher.getIndexReader().maxDoc();
+  /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
+   * or returns <code>1</code> if the index does not store sumTotalTermFreq (Lucene 3.x indexes
+   * or any field that omits frequency information). */
+  protected float avgFieldLength(IndexSearcher searcher, String field) throws IOException {
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
+    if (terms == null) {
+      // field does not exist;
+      return 1f;
+    }
+    long sumTotalTermFreq = terms.getSumTotalTermFreq();
+    long maxdoc = searcher.maxDoc();
     return sumTotalTermFreq == -1 ? 1f : (float) (sumTotalTermFreq / (double) maxdoc);
   }
-
-  @Override
-  public byte computeNorm(FieldInvertState state) {
-    final int numTerms = state.getLength() - state.getNumOverlap();
-    return encodeNormValue(state.getBoost() / (float) Math.sqrt(numTerms));
-  }
   
-  public float decodeNormValue(byte b) {
+  /** The default implementation encodes <code>boost / sqrt(length)</code>
+   * with {@link SmallFloat#floatToByte315(float)}.  This is compatible with 
+   * Lucene's default implementation.  If you change this, then you should 
+   * change {@link #decodeNormValue(byte)} to match. */
+  protected byte encodeNormValue(float boost, int fieldLength) {
+    return SmallFloat.floatToByte315(boost / (float) Math.sqrt(fieldLength));
+  }
+
+  /** The default implementation returns <code>1 / f<sup>2</sup></code>
+   * where <code>f</code> is {@link SmallFloat#byte315ToFloat(byte)}. */
+  protected float decodeNormValue(byte b) {
     return NORM_TABLE[b & 0xFF];
   }
+  
+  // Default true
+  protected boolean discountOverlaps = true;
 
-  public byte encodeNormValue(float f) {
-    return SmallFloat.floatToByte315(f);
+  /** Determines whether overlap tokens (Tokens with 0 position increment) are 
+   *  ignored when computing norm.  By default this is true, meaning overlap
+   *  tokens do not count when computing norms. */
+  public void setDiscountOverlaps(boolean v) {
+    discountOverlaps = v;
+  }
+
+  /** @see #setDiscountOverlaps */
+  public boolean getDiscountOverlaps() {
+    return discountOverlaps;
   }
   
   /** Cache of decoded bytes. */
@@ -100,20 +124,40 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
+  public final byte computeNorm(FieldInvertState state) {
+    final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
+    return encodeNormValue(state.getBoost(), numTerms);
+  }
+
+  @Override
+  public final Stats computeStats(IndexSearcher searcher, String fieldName, float queryBoost, TermContext... termStats) throws IOException {
     float value = 0.0f;
     final int max = searcher.maxDoc();
     
     for (final TermContext stat : termStats ) {
       value += idf(stat.docFreq(), max);
     }
-    
-    return new BM25Stats(value, queryBoost, avgFieldLength(searcher, fieldName));
+
+    float avgdl = avgFieldLength(searcher, fieldName);
+
+    // compute freq-independent part of bm25 equation across all norm values
+    float cache[] = null;
+    if (searcher.getIndexReader().hasNorms(fieldName)) {
+      cache = new float[256];
+
+      for (int i = 0; i < cache.length; i++) {
+        cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
+      }
+    }
+    return new BM25Stats(value, queryBoost, avgdl, cache);
   }
 
   @Override
   public final ExactDocScorer exactDocScorer(Stats stats, String fieldName, AtomicReaderContext context) throws IOException {
-    return new ExactBM25DocScorer((BM25Stats) stats, context.reader.norms(fieldName));
+    final byte[] norms = context.reader.norms(fieldName);
+    return norms == null 
+      ? new ExactBM25DocScorerNoNorms((BM25Stats)stats)
+      : new ExactBM25DocScorer((BM25Stats)stats, norms);
   }
 
   @Override
@@ -124,40 +168,60 @@ public class BM25Similarity extends Similarity {
   private class ExactBM25DocScorer extends ExactDocScorer {
     private final float weightValue;
     private final byte[] norms;
-    private final float avgdl;
+    private final float[] cache;
     
     ExactBM25DocScorer(BM25Stats stats, byte norms[]) {
-      this.weightValue = stats.weight;
-      this.avgdl = stats.avgdl;
+      assert stats.cache != null;
+      assert norms != null;
+      this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
+      this.cache = stats.cache;
       this.norms = norms;
     }
     
-    // todo: optimize
     @Override
     public float score(int doc, int freq) {
-      // if there are no norms, we act as if b=0
-      float norm = norms == null ? k1 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
-      return weightValue * (freq * (k1 + 1)) / (freq + norm);
+      return weightValue * freq / (freq + cache[norms[doc] & 0xFF]);
+    }
+  }
+  
+  /** there are no norms, we act as if b=0 */
+  private class ExactBM25DocScorerNoNorms extends ExactDocScorer {
+    private final float weightValue;
+    private static final int SCORE_CACHE_SIZE = 32;
+    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
+
+    ExactBM25DocScorerNoNorms(BM25Stats stats) {
+      assert stats.cache == null;
+      this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
+      for (int i = 0; i < SCORE_CACHE_SIZE; i++)
+        scoreCache[i] = weightValue * i / (i + k1);
+    }
+    
+    @Override
+    public float score(int doc, int freq) {
+      // TODO: maybe score cache is more trouble than its worth?
+      return freq < SCORE_CACHE_SIZE        // check cache
+        ? scoreCache[freq]                  // cache hit
+        : weightValue * freq / (freq + k1); // cache miss
     }
   }
   
   private class SloppyBM25DocScorer extends SloppyDocScorer {
-    private final float weightValue;
+    private final float weightValue; // boost * idf * (k1 + 1)
     private final byte[] norms;
-    private final float avgdl;
+    private final float[] cache;
     
     SloppyBM25DocScorer(BM25Stats stats, byte norms[]) {
-      this.weightValue = stats.weight;
-      this.avgdl = stats.avgdl;
+      this.weightValue = stats.weight * (k1 + 1);
+      this.cache = stats.cache;
       this.norms = norms;
     }
     
-    // todo: optimize
     @Override
     public float score(int doc, float freq) {
       // if there are no norms, we act as if b=0
-      float norm = norms == null ? k1 : k1 * ((1 - b) + b * (decodeNormValue(norms[doc])) / (avgdl));
-      return weightValue * (freq * (k1 + 1)) / (freq + norm);
+      float norm = norms == null ? k1 : cache[norms[doc] & 0xFF];
+      return weightValue * freq / (freq + norm);
     }
 
     @Override
@@ -181,11 +245,14 @@ public class BM25Similarity extends Similarity {
     private final float queryBoost;
     /** weight (idf * boost) */
     private float weight;
+    /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
+    private final float cache[];
 
-    BM25Stats(float idf, float queryBoost, float avgdl) {
+    BM25Stats(float idf, float queryBoost, float avgdl, float cache[]) {
       this.idf = idf;
       this.queryBoost = queryBoost;
       this.avgdl = avgdl;
+      this.cache = cache;
     }
 
     @Override
