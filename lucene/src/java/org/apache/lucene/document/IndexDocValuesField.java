@@ -52,15 +52,13 @@ import org.apache.lucene.util.BytesRef;
  * 
  * <p>
  * If doc values are stored in addition to an indexed ({@link FieldType#setIndexed(boolean)}) or stored
- * ({@link FieldType#setStored(boolean)}) value it's recommended to use the {@link IndexDocValuesField}'s
- * {@link #set(Field)} API:
+ * ({@link FieldType#setStored(boolean)}) value it's recommended to pass the appropriate {@link FieldType}
+ * when creating the field:
  * 
  * <pre>
- *  IndexDocValuesField field = new IndexDocValuesField(name);
- *  Field indexedField = new Field(name, stringValue, Stored.NO, Indexed.ANALYZED);
+ *  IndexDocValuesField field = new IndexDocValuesField(name, StringField.TYPE_STORED);
  *  Document document = new Document();
- *  document.add(indexedField);
- *  field.set(indexedField);
+ *  document.add(field);
  *  for(all documents) {
  *    ...
  *    field.setInt(value)

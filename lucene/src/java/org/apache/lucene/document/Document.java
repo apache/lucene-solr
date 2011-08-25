@@ -181,7 +181,7 @@ public final class Document implements Iterable<IndexableField> {
   }
 
   /**
-   * Returns an array of {@link IndexablField}s with the given name.
+   * Returns an array of {@link IndexableField}s with the given name.
    * This method returns an empty array when there are no
    * matching fields.  It never returns null.
    *
