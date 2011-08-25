@@ -440,7 +440,7 @@ public class TestPayloads extends LuceneTestCase {
         private byte[] data;
         private int length;
         private int offset;
-        Payload payload = new Payload();
+        private int startOffset;
         PayloadAttribute payloadAtt;
         
         public PayloadFilter(TokenStream in, byte[] data, int offset, int length) {
@@ -448,6 +448,7 @@ public class TestPayloads extends LuceneTestCase {
             this.data = data;
             this.length = length;
             this.offset = offset;
+            this.startOffset = offset;
             payloadAtt = addAttribute(PayloadAttribute.class);
         }
         
@@ -467,6 +468,12 @@ public class TestPayloads extends LuceneTestCase {
             
             return hasNext;
         }
+
+      @Override
+      public void reset() throws IOException {
+        super.reset();
+        this.offset = startOffset;
+      }
     }
     
     public void testThreadSafety() throws Exception {

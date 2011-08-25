@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -35,7 +37,6 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
   /**
    * Attempt to reproduce an assertion error that happens
    * only with the trunk version around April 2011.
-   * @param args
    */
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -72,16 +73,16 @@ final class BugReproAnalyzer extends Analyzer{
   }
 }
 
-final class BugReproAnalyzerTokenizer extends TokenStream {
+final class BugReproAnalyzerTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-  int tokenCount = 4;
-  int nextTokenIndex = 0;
-  String terms[] = new String[]{"six", "six", "drunken", "drunken"};
-  int starts[] = new int[]{0, 0, 4, 4};
-  int ends[] = new int[]{3, 3, 11, 11};
-  int incs[] = new int[]{1, 0, 1, 0};
+  private final int tokenCount = 4;
+  private int nextTokenIndex = 0;
+  private final String terms[] = new String[]{"six", "six", "drunken", "drunken"};
+  private final int starts[] = new int[]{0, 0, 4, 4};
+  private final int ends[] = new int[]{3, 3, 11, 11};
+  private final int incs[] = new int[]{1, 0, 1, 0};
 
   @Override
   public boolean incrementToken() throws IOException {
@@ -94,5 +95,11 @@ final class BugReproAnalyzerTokenizer extends TokenStream {
     } else {
       return false;
     }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    this.nextTokenIndex = 0;
   }
 }

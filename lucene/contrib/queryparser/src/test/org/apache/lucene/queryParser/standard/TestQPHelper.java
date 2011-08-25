@@ -40,6 +40,7 @@ import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -101,8 +102,9 @@ public class TestQPHelper extends LuceneTestCase {
       super(in);
     }
 
-    boolean inPhrase = false;
-    int savedStart = 0, savedEnd = 0;
+    private boolean inPhrase = false;
+    private int savedStart = 0;
+    private int savedEnd = 0;
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -125,6 +127,14 @@ public class TestQPHelper extends LuceneTestCase {
             return true;
         }
       return false;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.inPhrase = false;
+      this.savedStart = 0;
+      this.savedEnd = 0;
     }
   }
 
@@ -1203,10 +1213,11 @@ public class TestQPHelper extends LuceneTestCase {
     super.tearDown();
   }
 
-  private class CannedTokenStream extends TokenStream {
+  private class CannedTokenStream extends Tokenizer {
     private int upto = 0;
-    final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
-    final CharTermAttribute term = addAttribute(CharTermAttribute.class);
+    private final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
+    private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
+    
     @Override
     public boolean incrementToken() {
       clearAttributes();
@@ -1228,6 +1239,12 @@ public class TestQPHelper extends LuceneTestCase {
       }
       upto++;
       return true;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.upto = 0;
     }
   }
 

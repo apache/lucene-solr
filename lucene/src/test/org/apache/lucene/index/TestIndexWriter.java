@@ -159,46 +159,6 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
 
-    static final class StringSplitAnalyzer extends Analyzer {
-      @Override
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new StringSplitTokenizer(reader);
-      }
-    }
-
-    private static class StringSplitTokenizer extends Tokenizer {
-      private final String[] tokens;
-      private int upto = 0;
-      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-      public StringSplitTokenizer(Reader r) {
-        try {
-          final StringBuilder b = new StringBuilder();
-          final char[] buffer = new char[1024];
-          int n;
-          while((n = r.read(buffer)) != -1) {
-            b.append(buffer, 0, n);
-          }
-          tokens = b.toString().split(" ");
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-      }
-
-      @Override
-      public final boolean incrementToken() throws IOException {
-        clearAttributes();      
-        if (upto < tokens.length) {
-          termAtt.setEmpty();
-          termAtt.append(tokens[upto]);
-          upto++;
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-
     /**
      * Make sure we skip wicked long terms.
     */
@@ -1889,6 +1849,52 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     dir.close();
+  }
+
+  static final class StringSplitAnalyzer extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new StringSplitTokenizer(reader);
+    }
+  }
+
+  private static class StringSplitTokenizer extends Tokenizer {
+    private String[] tokens;
+    private int upto;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+    public StringSplitTokenizer(Reader r) {
+      try {
+        reset(r);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      clearAttributes();      
+      if (upto < tokens.length) {
+        termAtt.setEmpty();
+        termAtt.append(tokens[upto]);
+        upto++;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void reset(Reader input) throws IOException {
+       this.upto = 0;
+       final StringBuilder b = new StringBuilder();
+       final char[] buffer = new char[1024];
+       int n;
+       while ((n = input.read(buffer)) != -1) {
+         b.append(buffer, 0, n);
+       }
+       this.tokens = b.toString().split(" ");
+    }
   }
 
   // LUCENE-3183

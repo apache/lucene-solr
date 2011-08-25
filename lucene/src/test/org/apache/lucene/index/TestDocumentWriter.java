@@ -146,7 +146,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader)) {
-          boolean first=true;
+          boolean first = true;
           AttributeSource.State state;
 
           @Override
@@ -177,9 +177,16 @@ public class TestDocumentWriter extends LuceneTestCase {
 
           }
 
-          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-          PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
-          PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);          
+          @Override
+          public void reset() throws IOException {
+            super.reset();
+            first = true;
+            state = null;
+          }
+
+          final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+          final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+          final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
         };
       }
     };

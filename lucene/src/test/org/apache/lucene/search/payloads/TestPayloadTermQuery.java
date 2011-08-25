@@ -72,10 +72,10 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   private class PayloadFilter extends TokenFilter {
-    String fieldName;
-    int numSeen = 0;
+    private final String fieldName;
+    private int numSeen = 0;
     
-    PayloadAttribute payloadAtt;    
+    private final PayloadAttribute payloadAtt;
     
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
@@ -101,6 +101,12 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       } else {
         return false;
       }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.numSeen = 0;
     }
   }
 

@@ -81,13 +81,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
       super(in);
     }
 
-    boolean inPhrase = false;
+    private boolean inPhrase = false;
 
-    int savedStart = 0, savedEnd = 0;
+    private int savedStart = 0;
+    private int savedEnd = 0;
 
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -108,6 +109,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
           } else if (!termAtt.toString().equals("stop"))
             return true;
       return false;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.inPhrase = false;
+      this.savedStart = 0;
+      this.savedEnd = 0;
     }
   }
 

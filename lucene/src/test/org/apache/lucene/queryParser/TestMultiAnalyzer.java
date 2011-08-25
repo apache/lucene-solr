@@ -17,9 +17,11 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,7 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
 /**
@@ -148,10 +149,10 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     private int prevStartOffset;
     private int prevEndOffset;
     
-    CharTermAttribute termAtt;
-    PositionIncrementAttribute posIncrAtt;
-    OffsetAttribute offsetAtt;
-    TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt;
+    private final PositionIncrementAttribute posIncrAtt;
+    private final OffsetAttribute offsetAtt;
+    private final TypeAttribute typeAtt;
     
     public TestFilter(TokenStream in) {
       super(in);
@@ -172,7 +173,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         return true;
       } else {
         boolean next = input.incrementToken();
-        if (next == false) {
+        if (!next) {
           return false;
         }
         prevType = typeAtt.type();
@@ -189,6 +190,13 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
           return true;
         }
       }
+    }
+
+    public void reset() throws IOException {
+      super.reset();
+      this.prevType = null;
+      this.prevStartOffset = 0;
+      this.prevEndOffset = 0;
     }
   }
 

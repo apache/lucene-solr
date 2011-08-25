@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -81,6 +82,12 @@ public class TestPositionIncrement extends LuceneTestCase {
             posIncrAtt.setPositionIncrement(INCREMENTS[i]);
             i++;
             return true;
+          }
+
+          @Override
+          public void reset() throws IOException {
+            super.reset();
+            this.i = 0;
           }
         };
       }

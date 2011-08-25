@@ -17,6 +17,7 @@ package org.apache.lucene.queryParser.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -186,7 +187,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
         return true;
       } else {
         boolean next = input.incrementToken();
-        if (next == false) {
+        if (!next) {
           return false;
         }
         prevType = typeAtt.type();
@@ -205,6 +206,13 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
       }
     }
 
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.prevType = null;
+      this.prevStartOffset = 0;
+      this.prevEndOffset = 0;
+    }
   }
 
   /**
