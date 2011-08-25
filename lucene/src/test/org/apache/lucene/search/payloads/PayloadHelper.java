@@ -57,7 +57,6 @@ public class PayloadHelper {
   public final class PayloadAnalyzer extends Analyzer {
 
 
-
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
@@ -67,9 +66,9 @@ public class PayloadHelper {
   }
 
   public final class PayloadFilter extends TokenFilter {
-    String fieldName;
-    int numSeen = 0;
-    PayloadAttribute payloadAtt;
+    private final String fieldName;
+    private int numSeen = 0;
+    private final PayloadAttribute payloadAtt;
     
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
@@ -81,18 +80,13 @@ public class PayloadHelper {
     public boolean incrementToken() throws IOException {
       
       if (input.incrementToken()) {
-        if (fieldName.equals(FIELD))
-        {
+        if (fieldName.equals(FIELD)) {
           payloadAtt.setPayload(new Payload(payloadField));
-        }
-        else if (fieldName.equals(MULTI_FIELD))
-        {
-          if (numSeen  % 2 == 0)
-          {
+        } else if (fieldName.equals(MULTI_FIELD)) {
+          if (numSeen  % 2 == 0) {
             payloadAtt.setPayload(new Payload(payloadMultiField1));
           }
-          else
-          {
+          else {
             payloadAtt.setPayload(new Payload(payloadMultiField2));
           }
           numSeen++;
@@ -100,6 +94,12 @@ public class PayloadHelper {
         return true;
       }
       return false;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.numSeen = 0;
     }
   }
 

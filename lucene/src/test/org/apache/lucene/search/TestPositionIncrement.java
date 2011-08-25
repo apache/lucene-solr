@@ -17,15 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockPayloadAnalyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -81,6 +78,12 @@ public class TestPositionIncrement extends LuceneTestCase {
             posIncrAtt.setPositionIncrement(INCREMENTS[i]);
             i++;
             return true;
+          }
+
+          @Override
+          public void reset() throws IOException {
+            super.reset();
+            this.i = 0;
           }
         };
       }

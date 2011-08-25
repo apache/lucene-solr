@@ -31,14 +31,7 @@ import java.util.StringTokenizer;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenFilter;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -1842,18 +1835,18 @@ final class SynonymAnalyzer extends Analyzer {
  *
  */
 final class SynonymTokenizer extends TokenStream {
-  private TokenStream realStream;
+  private final TokenStream realStream;
   private Token currentRealToken = null;
-  private Map<String,String> synonyms;
-  StringTokenizer st = null;
-  private CharTermAttribute realTermAtt;
-  private PositionIncrementAttribute realPosIncrAtt;
-  private OffsetAttribute realOffsetAtt;
-  private CharTermAttribute termAtt;
-  private PositionIncrementAttribute posIncrAtt;
-  private OffsetAttribute offsetAtt;
+  private final Map<String, String> synonyms;
+  private StringTokenizer st = null;
+  private final CharTermAttribute realTermAtt;
+  private final PositionIncrementAttribute realPosIncrAtt;
+  private final OffsetAttribute realOffsetAtt;
+  private final CharTermAttribute termAtt;
+  private final PositionIncrementAttribute posIncrAtt;
+  private final OffsetAttribute offsetAtt;
 
-  public SynonymTokenizer(TokenStream realStream, Map<String,String> synonyms) {
+  public SynonymTokenizer(TokenStream realStream, Map<String, String> synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
     realTermAtt = realStream.addAttribute(CharTermAttribute.class);
@@ -1903,6 +1896,13 @@ final class SynonymTokenizer extends TokenStream {
       return true;
     }
     
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    this.currentRealToken = null;
+    this.st = null;
   }
 
   static abstract class TestHighlightRunner {

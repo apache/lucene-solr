@@ -378,6 +378,13 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
         return false;
       }
     }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.upto = 0;
+      this.lastPos = 0;
+    }
   }
 
   public void testZeroPosIncr() throws IOException {

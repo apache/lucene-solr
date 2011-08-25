@@ -16,6 +16,7 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.English;
@@ -33,10 +34,6 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -78,10 +75,10 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   private static class PayloadFilter extends TokenFilter {
-    String fieldName;
-    int numSeen = 0;
+    private final String fieldName;
+    private int numSeen = 0;
     
-    PayloadAttribute payloadAtt;    
+    private final PayloadAttribute payloadAtt;
     
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
@@ -107,6 +104,12 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       } else {
         return false;
       }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.numSeen = 0;
     }
   }
 

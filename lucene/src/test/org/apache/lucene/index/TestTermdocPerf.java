@@ -22,7 +22,9 @@ import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,13 +33,20 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
-class RepeatingTokenStream extends TokenStream {
-  public int num;
+class RepeatingTokenStream extends Tokenizer {
+  
+  private final Random random;
+  private final float percentDocs;
+  private final int maxTF;
+  private int num;
   CharTermAttribute termAtt;
   String value;
 
-   public RepeatingTokenStream(String val) {
+   public RepeatingTokenStream(String val, Random random, float percentDocs, int maxTF) {
      this.value = val;
+     this.random = random;
+     this.percentDocs = percentDocs;
+     this.maxTF = maxTF;
      this.termAtt = addAttribute(CharTermAttribute.class);
    }
 
@@ -51,19 +60,27 @@ class RepeatingTokenStream extends TokenStream {
      }
      return false;
    }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    if (random.nextFloat() < percentDocs) {
+      num = random.nextInt(maxTF) + 1;
+    } else {
+      num = 0;
+    }
+  }
 }
 
 
 public class TestTermdocPerf extends LuceneTestCase {
 
   void addDocs(final Random random, Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
-    final RepeatingTokenStream ts = new RepeatingTokenStream(val);
+    final RepeatingTokenStream ts = new RepeatingTokenStream(val, random, percentDocs, maxTF);
 
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        if (random.nextFloat() < percentDocs) ts.num = random.nextInt(maxTF)+1;
-        else ts.num=0;
         return ts;
       }
     };

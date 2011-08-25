@@ -1660,21 +1660,15 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   private static class StringSplitTokenizer extends Tokenizer {
-    private final String[] tokens;
-    private int upto = 0;
+    private String[] tokens;
+    private int upto;
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public StringSplitTokenizer(Reader r) {
       try {
-        final StringBuilder b = new StringBuilder();
-        final char[] buffer = new char[1024];
-        int n;
-        while((n = r.read(buffer)) != -1) {
-          b.append(buffer, 0, n);
-        }
-        tokens = b.toString().split(" ");
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
+        reset(r);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
 
@@ -1689,6 +1683,18 @@ public class TestIndexWriter extends LuceneTestCase {
       } else {
         return false;
       }
+    }
+
+    @Override
+    public void reset(Reader input) throws IOException {
+       this.upto = 0;
+       final StringBuilder b = new StringBuilder();
+       final char[] buffer = new char[1024];
+       int n;
+       while ((n = input.read(buffer)) != -1) {
+         b.append(buffer, 0, n);
+       }
+       this.tokens = b.toString().split(" ");
     }
   }
 
