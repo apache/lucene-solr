@@ -105,7 +105,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
    */
   private Set<?> excltable = Collections.emptySet();
 
-  private Map<String, String> stemdict = new HashMap<String, String>();
+  private final Map<String, String> stemdict = new HashMap<String, String>();
   private final Version matchVersion;
 
   /**
@@ -130,23 +130,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
     excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
     this.matchVersion = matchVersion;
   }
-
-  /**
-   * Reads a stemdictionary file , that overrules the stemming algorithm
-   * This is a textfile that contains per line
-   * <tt>word<b>\t</b>stem</tt>, i.e: two tab seperated words
-   */
-  public void setStemDictionary(File stemdictFile) {
-    try {
-      stemdict = WordlistLoader.getStemDict(stemdictFile);
-      setPreviousTokenStream(null); // force a new stemmer to be created
-    } catch (IOException e) {
-      // TODO: throw IOException
-      throw new RuntimeException(e);
-    }
-  }
-
-
+  
   /**
    * Returns a (possibly reused) {@link TokenStream} which tokenizes all the 
    * text in the provided {@link Reader}.

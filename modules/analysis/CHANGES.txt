@@ -31,6 +31,8 @@ API Changes
  * LUCENE-2514, LUCENE-2551: JDK and ICU CollationKeyAnalyzers were changed to
    use pure byte keys when Version >= 4.0. This cuts sort key size approximately
    in half. (Robert Muir)
+
+ * LUCENE-3400: Removed DutchAnalyzer.setStemDictionary (Chris Male)
    
 New Features
 
