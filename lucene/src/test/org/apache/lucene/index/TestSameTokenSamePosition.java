@@ -43,9 +43,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new BugReproAnalyzer()));
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(new Field("eng", customType, "Six drunken" /*This shouldn't matter. */));
+    doc.add(new Field("eng", TextField.TYPE_STORED, "Six drunken" /*This shouldn't matter. */));
     riw.addDocument(doc);
     riw.close();
     dir.close();

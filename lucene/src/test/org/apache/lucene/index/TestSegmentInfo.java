@@ -33,9 +33,7 @@ public class TestSegmentInfo extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(new Field("a", customType, "value"));
+    doc.add(new Field("a", TextField.TYPE_STORED, "value"));
     writer.addDocument(doc);
     writer.close();
     

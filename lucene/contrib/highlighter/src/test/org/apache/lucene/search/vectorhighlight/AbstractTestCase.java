@@ -359,11 +359,10 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
-    customType.setStored(true);
     for( String value: values ) {
       doc.add( new Field( F, customType, value ) );
     }

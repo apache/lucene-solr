@@ -140,8 +140,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    FieldType storedTextType = new FieldType(TextField.TYPE_UNSTORED);
-    storedTextType.setStored(true);
+    FieldType storedTextType = new FieldType(TextField.TYPE_STORED);
     storedTextType.setStoreTermVectors(true);
     storedTextType.setStoreTermVectorPositions(true);
     storedTextType.setStoreTermVectorOffsets(true);

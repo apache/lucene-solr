@@ -86,8 +86,6 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 setMaxBufferedDocs(10).
                 setMergePolicy(newLogMergePolicy(false))
         );
-        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-        customType.setStored(true);
         
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
@@ -103,7 +101,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 content = this.term3 + " " + this.term2;
             }
 
-            doc.add(newField(this.field, content, customType));
+            doc.add(newField(this.field, content, TextField.TYPE_STORED));
             writer.addDocument(doc);
         }
         
@@ -150,11 +148,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     public void testSeek() throws IOException {
         Directory directory = newDirectory();
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-        customType.setStored(true);
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
-            doc.add(newField(this.field, "a b", customType));
+            doc.add(newField(this.field, "a b", TextField.TYPE_STORED));
             writer.addDocument(doc);
         }
         

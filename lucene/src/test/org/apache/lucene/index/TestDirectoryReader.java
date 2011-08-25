@@ -204,9 +204,7 @@ public class TestDirectoryReader extends LuceneTestCase {
         new MockAnalyzer(random)).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(false);
-    doc.add(newField("body", s, customType));
+    doc.add(newField("body", s, TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
     iw.close();
   }

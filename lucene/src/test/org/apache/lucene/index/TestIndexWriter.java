@@ -464,8 +464,7 @@ public class TestIndexWriter extends LuceneTestCase {
       MockDirectoryWrapper dir = newDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(10));
       // Enable norms for only 1 doc, pre flush
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setOmitNorms(true);
       for(int j=0;j<10;j++) {
         Document doc = new Document();
@@ -528,8 +527,7 @@ public class TestIndexWriter extends LuceneTestCase {
         b.append(" a a a a a a a a");
       }
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
@@ -601,8 +599,7 @@ public class TestIndexWriter extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(10))
       );
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
@@ -626,8 +623,7 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       writer.setInfoStream(VERBOSE ? System.out : null);
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
@@ -707,8 +703,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Document doc = new Document();
       String contents = "aa bb cc dd ee ff gg hh ii jj kk";
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       FieldType type = null;
       if (i == 7) {
         // Add empty docs here
@@ -747,8 +742,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory directory = newDirectory();
 
     final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
 
     Field idField = newField("id", "", customType);
@@ -907,8 +901,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("field", "a field", customType));
     w.addDocument(doc);
     w.commit();
@@ -1069,8 +1062,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     Document doc = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
@@ -1249,8 +1241,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Field f = new Field("binary", customType, b, 10, 17);
     f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
 
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     
     Field f2 = newField("string", "value", customType2);
     f2.setTokenStream(new MockTokenizer(new StringReader("doc1field2"), MockTokenizer.WHITESPACE, false));
@@ -1463,8 +1454,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // First commit
     Document doc = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
@@ -1526,8 +1516,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
@@ -1561,8 +1550,7 @@ public class TestIndexWriter extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
@@ -1593,8 +1581,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     final List<Integer> fieldIDs = new ArrayList<Integer>();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     Field idField = newField("id", "", customType);
 
@@ -1690,14 +1677,11 @@ public class TestIndexWriter extends LuceneTestCase {
     String BIG="alskjhlaksjghlaksjfhalksvjepgjioefgjnsdfjgefgjhelkgjhqewlrkhgwlekgrhwelkgjhwelkgrhwlkejg";
     BIG=BIG+BIG+BIG+BIG;
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setOmitNorms(true);
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setTokenized(false);
-    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
-    customType3.setStored(true);
+    FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setTokenized(false);
     customType3.setOmitNorms(true);
     

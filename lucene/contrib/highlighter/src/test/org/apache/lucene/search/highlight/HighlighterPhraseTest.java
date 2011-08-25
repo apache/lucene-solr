@@ -230,8 +230,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
     try {
       final Document document = new Document();
 
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectorOffsets(true);
       customType.setStoreTermVectors(true);
       document.add(new Field(FIELD, customType, TEXT));

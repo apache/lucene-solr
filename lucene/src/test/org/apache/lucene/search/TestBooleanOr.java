@@ -140,16 +140,14 @@ public class TestBooleanOr extends LuceneTestCase {
 
     //
     Document d = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     d.add(newField(
         FIELD_T,
         "Optimize not deleting all files",
-        customType));
+        TextField.TYPE_STORED));
     d.add(newField(
         FIELD_C,
         "Deleted When I run an optimize in our production environment.",
-        customType));
+        TextField.TYPE_STORED));
 
     //
     writer.addDocument(d);

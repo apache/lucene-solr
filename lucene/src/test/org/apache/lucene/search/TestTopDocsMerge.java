@@ -92,7 +92,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
         final Document doc = new Document();
-        doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), StringField.TYPE_STORED));
+        doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), StringField.TYPE_UNSTORED));
         doc.add(newField("text", content[random.nextInt(content.length)], TextField.TYPE_UNSTORED));
         doc.add(new NumericField("float").setFloatValue(random.nextFloat()));
         final int intValue;

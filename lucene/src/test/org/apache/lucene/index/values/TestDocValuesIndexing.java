@@ -486,16 +486,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     final boolean isNumeric = NUMERICS.contains(value);
     FixedBitSet deleted = new FixedBitSet(numValues);
     Document doc = new Document();
-    FieldType ft = new FieldType();
-    ft.setIndexed(random.nextBoolean());
-    if (ft.indexed()) {
-      ft.setTokenized(random.nextBoolean());
-      ft.setOmitNorms(random.nextBoolean());
-    }
-    else {
-      ft.setStored(true);
-    }
-    
     IndexDocValuesField valField = new IndexDocValuesField(value.name());
     doc.add(valField);
     final BytesRef bytesRef = new BytesRef();

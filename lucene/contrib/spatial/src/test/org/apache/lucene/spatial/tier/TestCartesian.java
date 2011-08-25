@@ -26,9 +26,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -96,29 +97,21 @@ public class TestCartesian extends LuceneTestCase {
     
     Document doc = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField("name", name, customType));
+    doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    FieldType customType2 = new FieldType(NumericField.TYPE_UNSTORED);
-    customType2.setStored(true);
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, customType2).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE, customType2).setDoubleValue(lng));
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(newField("metafile", "doc", customType));
+    doc.add(newField("metafile", "doc", TextField.TYPE_STORED));
     
     int ctpsize = ctps.size();
-    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
-    customType3.setStored(true);
-    customType3.setTokenized(false);
-    customType3.setOmitNorms(true);
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, customType).setDoubleValue(ctp.getTierBoxId(lat,lng)));
+      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, TextField.TYPE_STORED).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
-      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), customType3));
+      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), StringField.TYPE_STORED));
     }
     writer.addDocument(doc);
     

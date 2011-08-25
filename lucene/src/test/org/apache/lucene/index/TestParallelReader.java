@@ -97,9 +97,7 @@ public class TestParallelReader extends LuceneTestCase {
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d3 = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    d3.add(newField("f3", "v1", customType));
+    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
     w2.addDocument(d3);
     w2.close();
     
@@ -157,9 +155,7 @@ public class TestParallelReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document d = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    d.add(newField("f1", "v1", customType));
+    d.add(newField("f1", "v1", TextField.TYPE_STORED));
     modifier.addDocument(d);
     modifier.close();
 
@@ -169,7 +165,7 @@ public class TestParallelReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     d = new Document();
-    d.add(newField("f2", "v2", customType));
+    d.add(newField("f2", "v2", TextField.TYPE_STORED));
     modifier.addDocument(d);
     modifier.close();
 
@@ -226,18 +222,16 @@ public class TestParallelReader extends LuceneTestCase {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    d1.add(newField("f1", "v1", customType));
-    d1.add(newField("f2", "v1", customType));
-    d1.add(newField("f3", "v1", customType));
-    d1.add(newField("f4", "v1", customType));
+    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f3", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f4", "v1", TextField.TYPE_STORED));
     w.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", customType));
-    d2.add(newField("f2", "v2", customType));
-    d2.add(newField("f3", "v2", customType));
-    d2.add(newField("f4", "v2", customType));
+    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f3", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f4", "v2", TextField.TYPE_STORED));
     w.addDocument(d2);
     w.close();
 
@@ -258,14 +252,12 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    d1.add(newField("f1", "v1", customType));
-    d1.add(newField("f2", "v1", customType));
+    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
     w1.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", customType));
-    d2.add(newField("f2", "v2", customType));
+    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
     w1.addDocument(d2);
     w1.close();
     return dir1;
@@ -273,16 +265,14 @@ public class TestParallelReader extends LuceneTestCase {
 
   private Directory getDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d3 = new Document();
-    d3.add(newField("f3", "v1", customType));
-    d3.add(newField("f4", "v1", customType));
+    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
+    d3.add(newField("f4", "v1", TextField.TYPE_STORED));
     w2.addDocument(d3);
     Document d4 = new Document();
-    d4.add(newField("f3", "v2", customType));
-    d4.add(newField("f4", "v2", customType));
+    d4.add(newField("f3", "v2", TextField.TYPE_STORED));
+    d4.add(newField("f4", "v2", TextField.TYPE_STORED));
     w2.addDocument(d4);
     w2.close();
     return dir2;

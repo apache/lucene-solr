@@ -556,7 +556,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
     SolrCore core = h.getCore();
    
-    SolrQueryRequest req = req("q", "title:keyword" , "fl", "id,title,test_hlt");
+    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
@@ -586,7 +586,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocIterator di = dl.iterator();    
     Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy
-    System.out.println(d.getField("test_hlt").getClass());
     assertTrue( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
     assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
     req.close();

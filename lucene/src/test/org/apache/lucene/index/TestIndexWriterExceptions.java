@@ -65,7 +65,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     private static final FieldType custom2 = new FieldType();
     private static final FieldType custom3 = new FieldType();
     private static final FieldType custom4 = new FieldType(StringField.TYPE_UNSTORED);
-    private static final FieldType custom5 = new FieldType(TextField.TYPE_UNSTORED);
+    private static final FieldType custom5 = new FieldType(TextField.TYPE_STORED);
     
     static {
 
@@ -82,7 +82,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       custom4.setStoreTermVectorPositions(true);
       custom4.setStoreTermVectorOffsets(true);
       
-      custom5.setStored(true);
       custom5.setStoreTermVectors(true);
       custom5.setStoreTermVectorPositions(true);
       custom5.setStoreTermVectorOffsets(true);

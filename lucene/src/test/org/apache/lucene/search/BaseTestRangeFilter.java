@@ -118,10 +118,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     /* build an index */
     
     Document doc = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-    customType.setStored(true);
-    Field idField = newField(random, "id", "", customType);
-    Field randField = newField(random, "rand", "", customType);
+    Field idField = newField(random, "id", "", StringField.TYPE_STORED);
+    Field randField = newField(random, "rand", "", StringField.TYPE_STORED);
     Field bodyField = newField(random, "body", "", StringField.TYPE_UNSTORED);
     doc.add(idField);
     doc.add(randField);

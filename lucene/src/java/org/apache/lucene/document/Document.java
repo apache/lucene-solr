@@ -214,7 +214,7 @@ public final class Document implements Iterable<IndexableField> {
    * method returns the first value added. If only binary fields with this name
    * exist, returns null.
    * For {@link NumericField} it returns the string value of the number. If you want
-   * the actual {@code NumericField} instance back, use {@link #getFieldable}.
+   * the actual {@code NumericField} instance back, use {@link #getField}.
    */
   public final String get(String name) {
     for (IndexableField field : fields) {

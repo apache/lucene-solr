@@ -114,9 +114,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField(PayloadHelper.FIELD, "one two three one four three", customType));
+    doc.add(newField(PayloadHelper.FIELD, "one two three one four three", TextField.TYPE_STORED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -381,9 +379,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", customType));
+    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", TextField.TYPE_STORED));
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
@@ -444,12 +440,10 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
 
     Document doc = null;
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for(int i = 0; i < docs.length; i++) {
       doc = new Document();
       String docText = docs[i];
-      doc.add(newField(PayloadHelper.FIELD,docText, customType));
+      doc.add(newField(PayloadHelper.FIELD,docText, TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
 

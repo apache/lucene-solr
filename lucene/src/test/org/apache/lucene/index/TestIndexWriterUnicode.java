@@ -255,12 +255,9 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new TestIndexWriter.StringSplitAnalyzer()));
     Document doc = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++)
-      doc.add(newField("f" + i, utf8Data[2*i], customType));
+      doc.add(newField("f" + i, utf8Data[2*i], TextField.TYPE_STORED));
     w.addDocument(doc);
     w.close();
 

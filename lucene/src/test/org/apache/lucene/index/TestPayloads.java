@@ -607,16 +607,14 @@ public class TestPayloads extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
                                                      new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(new Field("hasMaybepayload", customType, "here we go"));
+    doc.add(new Field("hasMaybepayload", TextField.TYPE_STORED, "here we go"));
     writer.addDocument(doc);
     writer.close();
 
     writer = new RandomIndexWriter(random, dir,
                                    new MockAnalyzer(random, MockTokenizer.WHITESPACE, true));
     doc = new Document();
-    doc.add(new Field("hasMaybepayload2", customType, "here we go"));
+    doc.add(new Field("hasMaybepayload2", TextField.TYPE_STORED, "here we go"));
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.optimize();

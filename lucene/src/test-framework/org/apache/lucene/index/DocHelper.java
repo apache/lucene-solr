@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -74,15 +75,11 @@ class DocHelper {
     textField3 = new Field(TEXT_FIELD_3_KEY, customType3, FIELD_3_TEXT);
   }
 
-  public static final FieldType customType4;
   public static final String KEYWORD_TEXT = "Keyword";
   public static final String KEYWORD_FIELD_KEY = "keyField";
   public static Field keyField;
   static {
-    customType4 = new FieldType(TextField.TYPE_UNSTORED);
-    customType4.setStored(true);
-    customType4.setTokenized(false);
-    keyField = new Field(KEYWORD_FIELD_KEY, customType4,  KEYWORD_TEXT);
+    keyField = new Field(KEYWORD_FIELD_KEY, StringField.TYPE_STORED,  KEYWORD_TEXT);
   }
 
   public static final FieldType customType5;
@@ -90,9 +87,8 @@ class DocHelper {
   public static final String NO_NORMS_KEY = "omitNorms";
   public static Field noNormsField;
   static {
-    customType5 = new FieldType(TextField.TYPE_UNSTORED);
+    customType5 = new FieldType(TextField.TYPE_STORED);
     customType5.setOmitNorms(true);
-    customType5.setStored(true);
     customType5.setTokenized(false);
     noNormsField = new Field(NO_NORMS_KEY, customType5, NO_NORMS_TEXT);
   }
@@ -102,9 +98,8 @@ class DocHelper {
   public static final String NO_TF_KEY = "omitTermFreqAndPositions";
   public static Field noTFField;
   static {
-    customType6 = new FieldType(TextField.TYPE_UNSTORED);
+    customType6 = new FieldType(TextField.TYPE_STORED);
     customType6.setIndexOptions(IndexOptions.DOCS_ONLY);
-    customType6.setStored(true);
     noTFField = new Field(NO_TF_KEY, customType6, NO_TF_TEXT);
   }
 

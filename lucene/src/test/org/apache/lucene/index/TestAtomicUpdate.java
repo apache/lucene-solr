@@ -93,11 +93,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
     @Override
     public void doWork() throws Exception {
       // Update all 100 docs...
-      FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-      customType.setStored(true);
       for(int i=0; i<100; i++) {
         Document d = new Document();
-        d.add(new Field("id", customType, Integer.toString(i)));
+        d.add(new Field("id", StringField.TYPE_STORED, Integer.toString(i)));
         d.add(new TextField("contents", English.intToEnglish(i+10*count)));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
       }
@@ -136,11 +134,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
     writer.setInfoStream(VERBOSE ? System.out : null);
 
     // Establish a base index of 100 docs:
-    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-    customType.setStored(true);
     for(int i=0;i<100;i++) {
       Document d = new Document();
-      d.add(newField("id", Integer.toString(i), customType));
+      d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
       d.add(newField("contents", English.intToEnglish(i), TextField.TYPE_UNSTORED));
       if ((i-1)%7 == 0) {
         writer.commit();

@@ -23,9 +23,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
+import org.apache.lucene.index.CheckIndex.Status;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
@@ -78,12 +79,10 @@ public class TestPerFieldCodecSupport extends LuceneTestCase {
   }
 
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newField("content", "ccc", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, customType));
+      doc.add(newField("id", "" + i, StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
   }

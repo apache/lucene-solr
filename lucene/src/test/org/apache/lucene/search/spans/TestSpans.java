@@ -58,11 +58,9 @@ public class TestSpans extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], customType));
+      doc.add(newField(field, docFields[i], TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -456,12 +454,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    FieldType customType2 = new FieldType(StringField.TYPE_UNSTORED);
-    customType2.setStored(true);
-    doc.add( newField("id", id, customType2) );
-    doc.add( newField("text", text, customType) );
+    doc.add( newField("id", id, StringField.TYPE_STORED) );
+    doc.add( newField("text", text, TextField.TYPE_STORED) );
     writer.addDocument(doc);
   }
 

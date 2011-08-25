@@ -136,11 +136,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return o1.name().compareTo(o2.name());
     }
   };
-  static Comparator<IndexableField> fieldNameComparator2 = new Comparator<IndexableField>() {
-    public int compare(IndexableField o1, IndexableField o2) {
-      return o1.name().compareTo(o2.name());
-    }
-  };
 
   // This test avoids using any extra synchronization in the multiple
   // indexing threads to test that IndexWriter does correctly synchronize
@@ -258,7 +253,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       ArrayList<IndexableField> fields = new ArrayList<IndexableField>();
       fields.addAll(d.getFields());
       // put fields in same order each time
-      Collections.sort(fields, fieldNameComparator2);
+      Collections.sort(fields, fieldNameComparator);
       
       Document d1 = new Document();
       for (int i=0; i<fields.size(); i++) {
@@ -729,7 +724,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
 
       if (sameFieldOrder) {
-        Collections.sort(fields, fieldNameComparator2);
+        Collections.sort(fields, fieldNameComparator);
       } else {
         // random placement of id field also
         Collections.swap(fields,nextInt(fields.size()), 0);

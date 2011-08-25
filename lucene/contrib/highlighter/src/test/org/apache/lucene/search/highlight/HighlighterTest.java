@@ -1637,9 +1637,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add( new Field( f, customType, v));
+    doc.add( new Field( f, TextField.TYPE_STORED, v));
     return doc;
   }
   
@@ -1754,23 +1752,21 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       addDoc(writer, text);
     }
     Document doc = new Document();
-    FieldType storedNumericType = new FieldType(NumericField.TYPE_UNSTORED);
-    storedNumericType.setStored(true);
-    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
     nfield.setIntValue(1);
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
     nfield.setIntValue(3);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
     nfield.setIntValue(5);
     doc = new Document();
     doc.add(nfield);
     writer.addDocument(doc, analyzer);
-    nfield = new NumericField(NUMERIC_FIELD_NAME, storedNumericType);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, NumericField.TYPE_STORED);
     nfield.setIntValue(7);
     doc = new Document();
     doc.add(nfield);
@@ -1792,9 +1788,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
 
-    FieldType storedType = new FieldType(TextField.TYPE_UNSTORED);
-    storedType.setStored(true);
-    Field f = new Field(FIELD_NAME, storedType, text);
+    Field f = new Field(FIELD_NAME, TextField.TYPE_STORED, text);
     d.add(f);
     writer.addDocument(d);
 

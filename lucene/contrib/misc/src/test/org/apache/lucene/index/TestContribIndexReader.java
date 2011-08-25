@@ -30,6 +30,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorVisitor;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -52,17 +53,10 @@ public class TestContribIndexReader extends LuceneTestCase {
   static void addDocumentWithFields(IndexWriter writer) throws IOException {
     Document doc = new Document();
         
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
-
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
-    doc.add(newField("keyword", "test1", customType));
-    doc.add(newField("text", "test1", customType2));
+    doc.add(newField("keyword", "test1", StringField.TYPE_STORED));
+    doc.add(newField("text", "test1", TextField.TYPE_STORED));
     doc.add(newField("unindexed", "test1", customType3));
     doc.add(new TextField("unstored","test1"));
     writer.addDocument(doc);
@@ -72,17 +66,10 @@ public class TestContribIndexReader extends LuceneTestCase {
   static void addDocumentWithDifferentFields(IndexWriter writer) throws IOException {
     Document doc = new Document();
       
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
-
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
-    doc.add(newField("keyword2", "test1", customType));
-    doc.add(newField("text2", "test1", customType2));
+    doc.add(newField("keyword2", "test1", StringField.TYPE_STORED));
+    doc.add(newField("text2", "test1", TextField.TYPE_STORED));
     doc.add(newField("unindexed2", "test1", customType3));
     doc.add(new TextField("unstored2","test1"));
     writer.addDocument(doc);
@@ -90,25 +77,19 @@ public class TestContribIndexReader extends LuceneTestCase {
 
   static void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException {
     Document doc = new Document();
-    FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
-    customType4.setStored(true);
-    FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
-    customType5.setStored(true);
+    FieldType customType5 = new FieldType(TextField.TYPE_STORED);
     customType5.setStoreTermVectors(true);
-    FieldType customType6 = new FieldType(TextField.TYPE_UNSTORED);
-    customType6.setStored(true);
+    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
     customType6.setStoreTermVectors(true);
     customType6.setStoreTermVectorOffsets(true);
-    FieldType customType7 = new FieldType(TextField.TYPE_UNSTORED);
-    customType7.setStored(true);
+    FieldType customType7 = new FieldType(TextField.TYPE_STORED);
     customType7.setStoreTermVectors(true);
     customType7.setStoreTermVectorPositions(true);
-    FieldType customType8 = new FieldType(TextField.TYPE_UNSTORED);
-    customType8.setStored(true);
+    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
     customType8.setStoreTermVectors(true);
     customType8.setStoreTermVectorOffsets(true);
     customType8.setStoreTermVectorPositions(true);
-    doc.add(newField("tvnot","tvnot",customType4));
+    doc.add(newField("tvnot","tvnot",TextField.TYPE_STORED));
     doc.add(newField("termvector","termvector",customType5));
     doc.add(newField("tvoffset","tvoffset", customType6));
     doc.add(newField("tvposition","tvposition", customType7));

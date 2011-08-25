@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -52,23 +53,18 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index);
     RandomGen random = new RandomGen(this.random);
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up
       Document doc = new Document();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
-        doc.add(newField("publicationDate_", random.getLuceneDate(), customType));
+        doc.add(newField("publicationDate_", random.getLuceneDate(), StringField.TYPE_STORED));
       }
       if ((i % 7) == 0) { // some documents to match the query (see below)
-        doc.add(newField("content", "test", customType2));
+        doc.add(newField("content", "test", TextField.TYPE_STORED));
       }
       // every document has a defined 'mandant' field
-      doc.add(newField("mandant", Integer.toString(i % 3), customType));
+      doc.add(newField("mandant", Integer.toString(i % 3), StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

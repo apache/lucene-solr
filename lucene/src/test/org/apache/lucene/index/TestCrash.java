@@ -45,10 +45,8 @@ public class TestCrash extends LuceneTestCase {
     }
     
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(false);
-    doc.add(newField("content", "aaa", customType));
-    doc.add(newField("id", "0", customType));
+    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+    doc.add(newField("id", "0", TextField.TYPE_UNSTORED));
     for(int i=0;i<157;i++)
       writer.addDocument(doc);
 

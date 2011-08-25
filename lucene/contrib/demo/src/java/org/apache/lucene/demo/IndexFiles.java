@@ -176,8 +176,6 @@ public class IndexFiles {
           // field that is indexed (i.e. searchable), but don't tokenize 
           // the field into separate words and don't index term frequency
           // or positional information:
-          FieldType ft = new FieldType(TextField.TYPE_STORED);
-          ft.setIndexOptions(IndexOptions.DOCS_ONLY);
           Field pathField = new Field("path", StringField.TYPE_STORED, file.getPath());
           doc.add(pathField);
 

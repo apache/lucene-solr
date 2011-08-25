@@ -501,9 +501,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField("field", "yes it's stored", customType));
+    doc.add(newField("field", "yes it's stored", TextField.TYPE_STORED));
     w.addDocument(doc);
     w.close();
     IndexReader r1 = IndexReader.open(dir, false);

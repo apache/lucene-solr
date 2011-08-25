@@ -149,18 +149,12 @@ public class TestIndexReader extends LuceneTestCase
         );
 
         Document doc = new Document();
-        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-        customType.setStored(true);
-        customType.setTokenized(false);
-
-        FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-        customType2.setStored(true);
 
         FieldType customType3 = new FieldType();
         customType3.setStored(true);
         
-        doc.add(new Field("keyword",customType,"test1"));
-        doc.add(new Field("text",customType2,"test1"));
+        doc.add(new Field("keyword",StringField.TYPE_STORED,"test1"));
+        doc.add(new Field("text",TextField.TYPE_STORED,"test1"));
         doc.add(new Field("unindexed",customType3,"test1"));
         doc.add(new TextField("unstored","test1"));
         writer.addDocument(doc);
@@ -185,8 +179,8 @@ public class TestIndexReader extends LuceneTestCase
         int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
         for (int i = 0; i < 5*mergeFactor; i++) {
           doc = new Document();
-          doc.add(new Field("keyword",customType,"test1"));
-          doc.add(new Field("text",customType2, "test1"));
+          doc.add(new Field("keyword",StringField.TYPE_STORED,"test1"));
+          doc.add(new Field("text",TextField.TYPE_STORED, "test1"));
           doc.add(new Field("unindexed",customType3,"test1"));
           doc.add(new TextField("unstored","test1"));
           writer.addDocument(doc);
@@ -194,36 +188,30 @@ public class TestIndexReader extends LuceneTestCase
         // new fields are in some different segments (we hope)
         for (int i = 0; i < 5*mergeFactor; i++) {
           doc = new Document();
-          doc.add(new Field("keyword2",customType,"test1"));
-          doc.add(new Field("text2",customType2, "test1"));
+          doc.add(new Field("keyword2",StringField.TYPE_STORED,"test1"));
+          doc.add(new Field("text2",TextField.TYPE_STORED, "test1"));
           doc.add(new Field("unindexed2",customType3,"test1"));
           doc.add(new TextField("unstored2","test1"));
           writer.addDocument(doc);
         }
         // new termvector fields
 
-        FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
-        customType4.setStored(true);
-        FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
-        customType5.setStored(true);
+        FieldType customType5 = new FieldType(TextField.TYPE_STORED);
         customType5.setStoreTermVectors(true);
-        FieldType customType6 = new FieldType(TextField.TYPE_UNSTORED);
-        customType6.setStored(true);
+        FieldType customType6 = new FieldType(TextField.TYPE_STORED);
         customType6.setStoreTermVectors(true);
         customType6.setStoreTermVectorOffsets(true);
-        FieldType customType7 = new FieldType(TextField.TYPE_UNSTORED);
-        customType7.setStored(true);
+        FieldType customType7 = new FieldType(TextField.TYPE_STORED);
         customType7.setStoreTermVectors(true);
         customType7.setStoreTermVectorPositions(true);
-        FieldType customType8 = new FieldType(TextField.TYPE_UNSTORED);
-        customType8.setStored(true);
+        FieldType customType8 = new FieldType(TextField.TYPE_STORED);
         customType8.setStoreTermVectors(true);
         customType8.setStoreTermVectorOffsets(true);
         customType8.setStoreTermVectorPositions(true);
         
         for (int i = 0; i < 5*mergeFactor; i++) {
           doc = new Document();
-          doc.add(new Field("tvnot",customType4,"tvnot"));
+          doc.add(new Field("tvnot",TextField.TYPE_STORED,"tvnot"));
           doc.add(new Field("termvector",customType5,"termvector"));
           doc.add(new Field("tvoffset",customType6,"tvoffset"));
           doc.add(new Field("tvposition",customType7,"tvposition"));
@@ -302,27 +290,21 @@ public class TestIndexReader extends LuceneTestCase
     // want to get some more segments here
     // new termvector fields
     int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
-    FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
-    customType4.setStored(true);
-    FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
-    customType5.setStored(true);
+    FieldType customType5 = new FieldType(TextField.TYPE_STORED);
     customType5.setStoreTermVectors(true);
-    FieldType customType6 = new FieldType(TextField.TYPE_UNSTORED);
-    customType6.setStored(true);
+    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
     customType6.setStoreTermVectors(true);
     customType6.setStoreTermVectorOffsets(true);
-    FieldType customType7 = new FieldType(TextField.TYPE_UNSTORED);
-    customType7.setStored(true);
+    FieldType customType7 = new FieldType(TextField.TYPE_STORED);
     customType7.setStoreTermVectors(true);
     customType7.setStoreTermVectorPositions(true);
-    FieldType customType8 = new FieldType(TextField.TYPE_UNSTORED);
-    customType8.setStored(true);
+    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
     customType8.setStoreTermVectors(true);
     customType8.setStoreTermVectorOffsets(true);
     customType8.setStoreTermVectorPositions(true);
     for (int i = 0; i < 5 * mergeFactor; i++) {
       Document doc = new Document();
-        doc.add(new Field("tvnot",customType4,"one two two three three three"));
+        doc.add(new Field("tvnot",TextField.TYPE_STORED,"one two two three three three"));
         doc.add(new Field("termvector",customType5,"one two two three three three"));
         doc.add(new Field("tvoffset",customType6,"one two two three three three"));
         doc.add(new Field("tvposition",customType7,"one two two three three three"));
@@ -807,17 +789,10 @@ public class TestIndexReader extends LuceneTestCase
     {
         Document doc = new Document();
         
-        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-        customType.setStored(true);
-        customType.setTokenized(false);
-
-        FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-        customType2.setStored(true);
-
         FieldType customType3 = new FieldType();
         customType3.setStored(true);
-        doc.add(newField("keyword", "test1", customType));
-        doc.add(newField("text", "test1", customType2));
+        doc.add(newField("keyword", "test1", StringField.TYPE_STORED));
+        doc.add(newField("text", "test1", TextField.TYPE_STORED));
         doc.add(newField("unindexed", "test1", customType3));
         doc.add(new TextField("unstored","test1"));
         writer.addDocument(doc);
@@ -827,17 +802,10 @@ public class TestIndexReader extends LuceneTestCase
     {
       Document doc = new Document();
       
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
-      customType.setTokenized(false);
-
-      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-      customType2.setStored(true);
-
       FieldType customType3 = new FieldType();
       customType3.setStored(true);
-      doc.add(newField("keyword2", "test1", customType));
-      doc.add(newField("text2", "test1", customType2));
+      doc.add(newField("keyword2", "test1", StringField.TYPE_STORED));
+      doc.add(newField("text2", "test1", TextField.TYPE_STORED));
       doc.add(newField("unindexed2", "test1", customType3));
       doc.add(new TextField("unstored2","test1"));
       writer.addDocument(doc);
@@ -846,25 +814,19 @@ public class TestIndexReader extends LuceneTestCase
     static void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
-        customType4.setStored(true);
-        FieldType customType5 = new FieldType(TextField.TYPE_UNSTORED);
-        customType5.setStored(true);
+        FieldType customType5 = new FieldType(TextField.TYPE_STORED);
         customType5.setStoreTermVectors(true);
-        FieldType customType6 = new FieldType(TextField.TYPE_UNSTORED);
-        customType6.setStored(true);
+        FieldType customType6 = new FieldType(TextField.TYPE_STORED);
         customType6.setStoreTermVectors(true);
         customType6.setStoreTermVectorOffsets(true);
-        FieldType customType7 = new FieldType(TextField.TYPE_UNSTORED);
-        customType7.setStored(true);
+        FieldType customType7 = new FieldType(TextField.TYPE_STORED);
         customType7.setStoreTermVectors(true);
         customType7.setStoreTermVectorPositions(true);
-        FieldType customType8 = new FieldType(TextField.TYPE_UNSTORED);
-        customType8.setStored(true);
+        FieldType customType8 = new FieldType(TextField.TYPE_STORED);
         customType8.setStoreTermVectors(true);
         customType8.setStoreTermVectorOffsets(true);
         customType8.setStoreTermVectorPositions(true);
-        doc.add(newField("tvnot","tvnot",customType4));
+        doc.add(newField("tvnot","tvnot",TextField.TYPE_STORED));
         doc.add(newField("termvector","termvector",customType5));
         doc.add(newField("tvoffset","tvoffset", customType6));
         doc.add(newField("tvposition","tvposition", customType7));
@@ -1113,8 +1075,7 @@ public class TestIndexReader extends LuceneTestCase
 
   static Document createDocument(String id) {
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     customType.setOmitNorms(true);
     

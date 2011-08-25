@@ -36,7 +36,7 @@ public final class BinaryField extends Field {
   }
 
   public BinaryField(String name, BytesRef bytes) {
-    super(name, BinaryField.TYPE_STORED, bytes.bytes, bytes.offset, bytes.length);
+    super(name, BinaryField.TYPE_STORED, bytes);
   }
   
   public BinaryField(String name, FieldType custom, byte[] value) {

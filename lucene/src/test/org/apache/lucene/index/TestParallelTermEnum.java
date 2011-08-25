@@ -41,10 +41,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
         IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
         doc = new Document();
-        FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-        customType.setStored(true);
-        doc.add(newField("field1", "the quick brown fox jumps", customType));
-        doc.add(newField("field2", "the quick brown fox jumps", customType));
+        doc.add(newField("field1", "the quick brown fox jumps", TextField.TYPE_STORED));
+        doc.add(newField("field2", "the quick brown fox jumps", TextField.TYPE_STORED));
         doc.add(newField("field4", "", TextField.TYPE_UNSTORED));
         iw1.addDocument(doc);
 
@@ -54,8 +52,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         doc = new Document();
         doc.add(newField("field0", "", TextField.TYPE_UNSTORED));
-        doc.add(newField("field1", "the fox jumps over the lazy dog", customType));
-        doc.add(newField("field3", "the fox jumps over the lazy dog", customType));
+        doc.add(newField("field1", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
+        doc.add(newField("field3", "the fox jumps over the lazy dog", TextField.TYPE_STORED));
         iw2.addDocument(doc);
 
         iw2.close();

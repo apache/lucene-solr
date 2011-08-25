@@ -165,11 +165,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setTokenized(false);
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), customType));
+      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
       doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -202,11 +200,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setTokenized(false);
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), customType));
+      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
       doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -242,11 +238,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setTokenized(false);
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("id", "" + (i % 10), customType));
+      doc.add(newField("id", "" + (i % 10), StringField.TYPE_UNSTORED));
       doc.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -584,8 +578,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setMaxBufferedDocs(5).setMergePolicy(lmp));
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
@@ -977,10 +970,8 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocs3(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
       doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-      doc.add(newField("id", "" + i, customType));
+      doc.add(newField("id", "" + i, TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
   }
@@ -1067,8 +1058,7 @@ public class TestAddIndexes extends LuceneTestCase {
       dirs[i] = new RAMDirectory();
       IndexWriter w = new IndexWriter(dirs[i], new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document d = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
       d.add(new Field("c", customType, "v"));
       w.addDocument(d);
@@ -1108,9 +1098,7 @@ public class TestAddIndexes extends LuceneTestCase {
         new MockAnalyzer(random)).setMergePolicy(lmp2);
     IndexWriter w2 = new IndexWriter(src, conf2);
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(new Field("c", customType, "some text"));
+    doc.add(new Field("c", TextField.TYPE_STORED, "some text"));
     w2.addDocument(doc);
     doc = new Document();
     doc.add(new StringField("d", "delete"));

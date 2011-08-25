@@ -43,9 +43,7 @@ public class TestIsCurrent extends LuceneTestCase {
 
     // write document
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField("UUID", "1", customType));
+    doc.add(newField("UUID", "1", TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.commit();
   }

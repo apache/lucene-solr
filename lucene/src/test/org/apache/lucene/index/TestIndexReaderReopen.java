@@ -169,11 +169,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     IndexReader reader = IndexReader.open(dir, false);
     try {
       int M = 3;
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setTokenized(false);
-      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-      customType2.setStored(true);
+      FieldType customType2 = new FieldType(TextField.TYPE_STORED);
       customType2.setTokenized(false);
       customType2.setOmitNorms(true);
       FieldType customType3 = new FieldType();
@@ -967,21 +965,18 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     Document doc = new Document();
     sb.append("a");
     sb.append(n);
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setTokenized(false);
     customType2.setOmitNorms(true);
     FieldType customType3 = new FieldType();
     customType3.setStored(true);
-    doc.add(new Field("field1", customType, sb.toString()));
+    doc.add(new Field("field1", TextField.TYPE_STORED, sb.toString()));
     doc.add(new Field("fielda", customType2, sb.toString()));
     doc.add(new Field("fieldb", customType3, sb.toString()));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i+1), customType, sb.toString()));
+      doc.add(new Field("field" + (i+1), TextField.TYPE_STORED, sb.toString()));
     }
     return doc;
   }

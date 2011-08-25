@@ -22,6 +22,7 @@ import java.util.GregorianCalendar;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -30,10 +31,10 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
@@ -63,12 +64,9 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
-      customType.setTokenized(false);
-      doc.add(newField("key", "" + (i + 1), customType));
-      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", customType));
-      doc.add(newField("date", cal.getTime().toString(), customType));
+      doc.add(newField("key", "" + (i + 1), StringField.TYPE_STORED));
+      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", StringField.TYPE_STORED));
+      doc.add(newField("date", cal.getTime().toString(), StringField.TYPE_STORED));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);

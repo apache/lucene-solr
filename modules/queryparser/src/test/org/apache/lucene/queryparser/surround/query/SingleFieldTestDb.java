@@ -45,7 +45,7 @@ public class SingleFieldTestDb {
           new MockAnalyzer(random)));
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(new Field(fieldName, TextField.TYPE_UNSTORED, docs[j]));
+        d.add(new TextField(fieldName, docs[j]));
         writer.addDocument(d);
       }
       writer.close();

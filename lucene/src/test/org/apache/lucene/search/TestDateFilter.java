@@ -23,6 +23,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -49,13 +50,10 @@ public class TestDateFilter extends LuceneTestCase {
     
     Document doc = new Document();
     // add time that is in the past
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("datefield", DateTools.timeToString(now - 1000,
-        DateTools.Resolution.MILLISECOND), customType));
+        DateTools.Resolution.MILLISECOND), StringField.TYPE_STORED));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        customType2));
+        TextField.TYPE_STORED));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -118,13 +116,10 @@ public class TestDateFilter extends LuceneTestCase {
     
     Document doc = new Document();
     // add time that is in the future
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setTokenized(false);
-    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("datefield", DateTools.timeToString(now + 888888,
-        DateTools.Resolution.MILLISECOND), customType));
+        DateTools.Resolution.MILLISECOND), StringField.TYPE_STORED));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        customType2));
+                     TextField.TYPE_STORED));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();

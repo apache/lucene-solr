@@ -63,8 +63,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
-      final FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-      customType.setStored(true);
+      final FieldType customType = new FieldType(StringField.TYPE_STORED);
       customType.setOmitNorms(true);
       
       for(int i=0;i<200;i++) {

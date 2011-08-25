@@ -133,8 +133,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     Field f;
     int scoreAndID = i + 1;
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     customType.setOmitNorms(true);
     

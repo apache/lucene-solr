@@ -710,7 +710,10 @@ public final class MoreLikeThis {
         IndexableField fields[] = d.getFields(fieldName);
         if (fields != null) {
           for (int j = 0; j < fields.length; j++) {
-            addTermFrequencies(new StringReader(fields[j].stringValue()), termFreqMap, fieldName);
+            final String stringValue = fields[j].stringValue();
+            if (stringValue != null) {
+              addTermFrequencies(new StringReader(stringValue), termFreqMap, fieldName);
+            }
           }
         }
       } else {

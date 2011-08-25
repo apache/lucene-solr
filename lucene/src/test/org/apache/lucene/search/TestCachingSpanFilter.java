@@ -57,8 +57,7 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     doc.add(newField("id", "1", customType));
     writer.addDocument(doc);

@@ -53,8 +53,7 @@ public class TestRegexpRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setOmitNorms(true);
     Field field = newField("field", "", customType);
     doc.add(field);

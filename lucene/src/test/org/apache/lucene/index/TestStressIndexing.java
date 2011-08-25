@@ -75,12 +75,10 @@ public class TestStressIndexing extends LuceneTestCase {
     @Override
     public void doWork() throws Exception {
       // Add 10 docs:
-      FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-      customType.setStored(true);
       for(int j=0; j<10; j++) {
         Document d = new Document();
         int n = random.nextInt();
-        d.add(newField("id", Integer.toString(nextID++), customType));
+        d.add(newField("id", Integer.toString(nextID++), StringField.TYPE_STORED));
         d.add(newField("contents", English.intToEnglish(n), TextField.TYPE_UNSTORED));
         writer.addDocument(d);
       }

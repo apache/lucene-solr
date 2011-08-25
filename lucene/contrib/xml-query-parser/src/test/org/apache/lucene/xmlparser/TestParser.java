@@ -59,16 +59,14 @@ public class TestParser extends LuceneTestCase {
       dir=newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_40, analyzer));
       String line = d.readLine();   
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
       while(line!=null)
       {
         int endOfDate=line.indexOf('\t');
         String date=line.substring(0,endOfDate).trim();
         String content=line.substring(endOfDate).trim();
         Document doc = new Document();
-        doc.add(newField("date",date,customType));
-        doc.add(newField("contents",content,customType));
+        doc.add(newField("date",date,TextField.TYPE_STORED));
+        doc.add(newField("contents",content,TextField.TYPE_STORED));
         NumericField numericField = new NumericField("date2");
         numericField.setIntValue(Integer.valueOf(date));
         doc.add(numericField);

@@ -42,7 +42,6 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     //writer.setUseCompoundFile(false);
     //writer.infoStream = System.out;
     FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStored(true);
     customType.setTokenized(false);
     customType.setStoreTermVectors(true);
     for (int i = 0; i < numDocs; i++) {

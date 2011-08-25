@@ -57,17 +57,12 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         index = newDirectory();
         RandomIndexWriter w = new RandomIndexWriter(random, index);
 
-        FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-        customType.setStored(true);
-        FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-        customType2.setStored(true);
-        
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(newField("id", String.valueOf(i), customType));//Field.Keyword("id",String.valueOf(i)));
-            doc.add(newField("all", "all", customType));//Field.Keyword("all","all"));
+            doc.add(newField("id", String.valueOf(i), StringField.TYPE_STORED));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(newField("all", "all", StringField.TYPE_STORED));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(newField("data", data[i], customType2));//Field.Text("data",data[i]));
+                doc.add(newField("data", data[i], TextField.TYPE_STORED));//Field.Text("data",data[i]));
             }
             w.addDocument(doc);
         }

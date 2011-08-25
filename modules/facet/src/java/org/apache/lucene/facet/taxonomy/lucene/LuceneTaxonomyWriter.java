@@ -183,9 +183,7 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
     ft.setOmitNorms(true);
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, ft, parentStream);
-    FieldType ft2 = new FieldType(StringField.TYPE_STORED);
-    ft2.setIndexOptions(IndexOptions.DOCS_ONLY);
-    fullPathField = new Field(Consts.FULL, ft2, "");
+    fullPathField = new Field(Consts.FULL, StringField.TYPE_STORED, "");
 
     this.nextID = indexWriter.maxDoc();
 

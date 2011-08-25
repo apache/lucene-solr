@@ -107,12 +107,10 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(2))
     );
 
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     for (int i = start; i < (start + numDocs); i++)
     {
       Document temp = new Document();
-      temp.add(newField("count", (""+i), custom));
+      temp.add(newField("count", (""+i), StringField.TYPE_STORED));
 
       writer.addDocument(temp);
     }

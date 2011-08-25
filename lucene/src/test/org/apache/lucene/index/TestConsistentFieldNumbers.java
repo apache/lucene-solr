@@ -24,6 +24,7 @@ import org.apache.lucene.document.BinaryField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,11 +39,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
       Document d1 = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-      customType.setStored(true);
-      customType.setTokenized(false);
-      d1.add(new Field("f1", customType, "first field"));
-      d1.add(new Field("f2", customType, "second field"));
+      d1.add(new Field("f1", StringField.TYPE_STORED, "first field"));
+      d1.add(new Field("f2", StringField.TYPE_STORED, "second field"));
       writer.addDocument(d1);
 
       if (i == 1) {
@@ -53,8 +51,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       }
 
       Document d2 = new Document();
-      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-      customType2.setStored(true);
+      FieldType customType2 = new FieldType(TextField.TYPE_STORED);
       customType2.setStoreTermVectors(true);
       d2.add(new TextField("f2", "second field"));
       d2.add(new Field("f1", customType2, "first field"));
@@ -105,23 +102,20 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
     Document d1 = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    d1.add(new Field("f1", customType, "first field"));
-    d1.add(new Field("f2", customType, "second field"));
+    d1.add(new Field("f1", TextField.TYPE_STORED, "first field"));
+    d1.add(new Field("f2", TextField.TYPE_STORED, "second field"));
     writer.addDocument(d1);
 
     writer.close();
     writer = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
     Document d2 = new Document();
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setStoreTermVectors(true);
-    d2.add(new Field("f2", customType, "second field"));
+    d2.add(new Field("f2", TextField.TYPE_STORED, "second field"));
     d2.add(new Field("f1", customType2, "first field"));
-    d2.add(new Field("f3", customType, "third field"));
-    d2.add(new Field("f4", customType, "fourth field"));
+    d2.add(new Field("f3", TextField.TYPE_STORED, "third field"));
+    d2.add(new Field("f4", TextField.TYPE_STORED, "fourth field"));
     writer.addDocument(d2);
 
     writer.close();
@@ -167,8 +161,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
   
   public void testFieldNumberGaps() throws IOException {
     int numIters = atLeast(13);
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < numIters; i++) {
       Directory dir = newDirectory();
       {
@@ -176,8 +168,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(
             NoMergePolicy.NO_COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", customType, "d1 first field"));
-        d.add(new Field("f2", customType, "d1 second field"));
+        d.add(new Field("f1", TextField.TYPE_STORED, "d1 first field"));
+        d.add(new Field("f2", TextField.TYPE_STORED, "d1 second field"));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = new SegmentInfos();
@@ -196,7 +188,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
                 : NoMergePolicy.COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", customType, "d2 first field"));
+        d.add(new Field("f1", TextField.TYPE_STORED, "d2 first field"));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3 }));
         writer.addDocument(d);
         writer.close();
@@ -220,8 +212,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
             random.nextBoolean() ? NoMergePolicy.NO_COMPOUND_FILES
                 : NoMergePolicy.COMPOUND_FILES));
         Document d = new Document();
-        d.add(new Field("f1", customType, "d3 first field"));
-        d.add(new Field("f2", customType, "d3 second field"));
+        d.add(new Field("f1", TextField.TYPE_STORED, "d3 first field"));
+        d.add(new Field("f2", TextField.TYPE_STORED, "d3 second field"));
         d.add(new BinaryField("f3", new byte[] { 1, 2, 3, 4, 5 }));
         writer.addDocument(d);
         writer.close();
@@ -324,11 +316,9 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
   private Field getField(int number) {
     int mode = number % 16;
     String fieldName = "" + number;
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     
-    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-    customType2.setStored(true);
+    FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setTokenized(false);
     
     FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
@@ -336,7 +326,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     
     FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
     customType4.setTokenized(false);
-    customType4.setStored(false);
     customType4.setStoreTermVectors(true);
     customType4.setStoreTermVectorOffsets(true);
     
@@ -344,9 +333,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType5.setStoreTermVectors(true);
     customType5.setStoreTermVectorOffsets(true);
 
-    FieldType customType6 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType6 = new FieldType(TextField.TYPE_STORED);
     customType6.setTokenized(false);
-    customType6.setStored(true);
     customType6.setStoreTermVectors(true);
     customType6.setStoreTermVectorOffsets(true);
 
@@ -355,9 +343,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType7.setStoreTermVectors(true);
     customType7.setStoreTermVectorOffsets(true);
 
-    FieldType customType8 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType8 = new FieldType(TextField.TYPE_STORED);
     customType8.setTokenized(false);
-    customType8.setStored(true);
     customType8.setStoreTermVectors(true);
     customType8.setStoreTermVectorPositions(true);
 
@@ -365,9 +352,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType9.setStoreTermVectors(true);
     customType9.setStoreTermVectorPositions(true);
 
-    FieldType customType10 = new FieldType(TextField.TYPE_UNSTORED);
+    FieldType customType10 = new FieldType(TextField.TYPE_STORED);
     customType10.setTokenized(false);
-    customType10.setStored(true);
     customType10.setStoreTermVectors(true);
     customType10.setStoreTermVectorPositions(true);
 
@@ -376,8 +362,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType11.setStoreTermVectors(true);
     customType11.setStoreTermVectorPositions(true);
 
-    FieldType customType12 = new FieldType(TextField.TYPE_UNSTORED);
-    customType12.setStored(true);
+    FieldType customType12 = new FieldType(TextField.TYPE_STORED);
     customType12.setStoreTermVectors(true);
     customType12.setStoreTermVectorOffsets(true);
     customType12.setStoreTermVectorPositions(true);
@@ -387,8 +372,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType13.setStoreTermVectorOffsets(true);
     customType13.setStoreTermVectorPositions(true);
 
-    FieldType customType14 = new FieldType(TextField.TYPE_UNSTORED);
-    customType14.setStored(true);
+    FieldType customType14 = new FieldType(TextField.TYPE_STORED);
     customType14.setTokenized(false);
     customType14.setStoreTermVectors(true);
     customType14.setStoreTermVectorOffsets(true);

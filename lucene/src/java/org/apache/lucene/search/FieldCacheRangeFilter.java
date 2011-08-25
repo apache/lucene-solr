@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.NumericField; // for javadocs
 
 /**
  * A range filter built on top of a cached single term field (in {@link FieldCache}).

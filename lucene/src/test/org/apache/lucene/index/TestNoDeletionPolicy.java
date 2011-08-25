@@ -72,11 +72,9 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(newField("c", "a" + i, customType));
+      doc.add(newField("c", "a" + i, TextField.TYPE_STORED));
       writer.addDocument(doc);
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());

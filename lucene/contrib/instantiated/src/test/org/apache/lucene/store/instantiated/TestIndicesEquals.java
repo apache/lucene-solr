@@ -206,8 +206,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   private void assembleDocument(Document document, int i) {
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
@@ -218,8 +217,7 @@ public class TestIndicesEquals extends LuceneTestCase {
       document.add(new Field("b0", customType, i + " All work and no play makes Jack a dull boy"));
 
       //document.add(new Field("b1", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO));
-      FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
-      customType2.setStored(true);
+      FieldType customType2 = new FieldType(TextField.TYPE_STORED);
       customType2.setTokenized(false);
       customType2.setOmitNorms(true);
       document.add(new Field("b1", customType2, i + " All work and no play makes Jack a dull boy"));
@@ -230,8 +228,7 @@ public class TestIndicesEquals extends LuceneTestCase {
       document.add(new Field("b1", customType3, i + " All work and no play makes Jack a dull boy"));
       
       //document.add(new Field("b3", i + " All work and no play makes Jack a dull boy", Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
-      FieldType customType4 = new FieldType(TextField.TYPE_UNSTORED);
-      customType4.setStored(true);
+      FieldType customType4 = new FieldType(TextField.TYPE_STORED);
       customType4.setIndexed(false);
       customType4.setTokenized(false);
       document.add(new Field("b1", customType4, i + " All work and no play makes Jack a dull boy"));

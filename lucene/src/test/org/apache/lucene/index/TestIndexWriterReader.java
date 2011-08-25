@@ -580,14 +580,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public static Document createDocument(int n, String indexName, int numFields) {
     StringBuilder sb = new StringBuilder();
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);
 
-    FieldType customType1 = new FieldType(StringField.TYPE_UNSTORED);
-    customType1.setStored(true);
+    FieldType customType1 = new FieldType(StringField.TYPE_STORED);
     customType1.setStoreTermVectors(true);
     customType1.setStoreTermVectorPositions(true);
     customType1.setStoreTermVectorOffsets(true);
@@ -1008,9 +1006,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     );
 
     Document doc = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-    customType.setStored(false);
-    doc.add(newField("foo", "bar", customType));
+    doc.add(newField("foo", "bar", StringField.TYPE_UNSTORED));
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
     }

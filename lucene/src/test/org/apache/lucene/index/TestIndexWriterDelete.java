@@ -58,18 +58,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(1));
 
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     FieldType custom1 = new FieldType();
     custom1.setStored(true);
-    FieldType custom2 = new FieldType(TextField.TYPE_UNSTORED);
-    custom2.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], custom));
+      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
       doc.add(newField("country", unindexed[i], custom1));
       doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], custom2));
+      doc.add(newField("city", text[i], TextField.TYPE_STORED));
       modifier.addDocument(doc);
     }
     modifier.optimize();
@@ -387,10 +383,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void updateDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-    doc.add(newField("id", String.valueOf(id), custom));
+    doc.add(newField("id", String.valueOf(id), StringField.TYPE_STORED));
     doc.add(newField("value", String.valueOf(value), StringField.TYPE_UNSTORED));
     modifier.updateDocument(new Term("id", String.valueOf(id)), doc);
   }
@@ -399,10 +393,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
-    doc.add(newField("id", String.valueOf(id), custom));
+    doc.add(newField("id", String.valueOf(id), StringField.TYPE_STORED));
     doc.add(newField("value", String.valueOf(value), StringField.TYPE_UNSTORED));
     modifier.addDocument(doc);
   }
@@ -437,11 +429,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // TODO: find the resource leak that only occurs sometimes here.
     startDir.setNoDeleteOpenFile(false);
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     for (int i = 0; i < 157; i++) {
       Document d = new Document();
-      d.add(newField("id", Integer.toString(i), custom));
+      d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
       d.add(newField("content", "aaa " + i, TextField.TYPE_UNSTORED));
       writer.addDocument(d);
     }
@@ -520,7 +510,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             for (int i = 0; i < 13; i++) {
               if (updates) {
                 Document d = new Document();
-                d.add(newField("id", Integer.toString(i), custom));
+                d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
                 d.add(newField("content", "bbb " + i, TextField.TYPE_UNSTORED));
                 modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
               } else { // deletes
@@ -710,18 +700,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     dir.failOn(failure.reset());
 
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     FieldType custom1 = new FieldType();
     custom1.setStored(true);
-    FieldType custom2 = new FieldType(TextField.TYPE_UNSTORED);
-    custom2.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], StringField.TYPE_UNSTORED));
+      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
       doc.add(newField("country", unindexed[i], custom1));
       doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], custom2));
+      doc.add(newField("city", text[i], TextField.TYPE_STORED));
       modifier.addDocument(doc);
     }
     // flush (and commit if ac)
@@ -835,18 +821,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.commit();
     dir.failOn(failure.reset());
 
-    FieldType custom = new FieldType(StringField.TYPE_UNSTORED);
-    custom.setStored(true);
     FieldType custom1 = new FieldType();
     custom1.setStored(true);
-    FieldType custom2 = new FieldType(TextField.TYPE_UNSTORED);
-    custom2.setStored(true);
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", keywords[i], custom));
+      doc.add(newField("id", keywords[i], StringField.TYPE_STORED));
       doc.add(newField("country", unindexed[i], custom1));
       doc.add(newField("contents", unstored[i], TextField.TYPE_UNSTORED));
-      doc.add(newField("city", text[i], custom2));
+      doc.add(newField("city", text[i], TextField.TYPE_STORED));
       try {
         modifier.addDocument(doc);
       } catch (IOException io) {

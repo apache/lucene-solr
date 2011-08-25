@@ -36,11 +36,9 @@ public class TestStressAdvance extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random, dir);
       final Set<Integer> aDocs = new HashSet<Integer>();
       final Document doc = new Document();
-      FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-      customType.setStored(true);
       final Field f = newField("field", "", StringField.TYPE_UNSTORED);
       doc.add(f);
-      final Field idField = newField("id", "", customType);
+      final Field idField = newField("id", "", StringField.TYPE_STORED);
       doc.add(idField);
       int num = atLeast(4097);
       for(int id=0;id<num;id++) {

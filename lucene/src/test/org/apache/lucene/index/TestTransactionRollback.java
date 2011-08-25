@@ -130,11 +130,9 @@ public class TestTransactionRollback extends LuceneTestCase {
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
     IndexWriter w=new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(sdp));
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
-      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,customType));
+      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,TextField.TYPE_STORED));
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {

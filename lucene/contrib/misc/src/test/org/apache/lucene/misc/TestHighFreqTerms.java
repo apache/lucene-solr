@@ -201,15 +201,13 @@ public class TestHighFreqTerms extends LuceneTestCase {
     /**
      * Generate 10 documents where term n  has a docFreq of n and a totalTermFreq of n*2 (squared). 
      */
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 1; i <= 10; i++) {
       Document doc = new Document();
       String content = getContent(i);
     
-      doc.add(newField(random, "FIELD_1", content, customType));
+      doc.add(newField(random, "FIELD_1", content, TextField.TYPE_STORED));
       //add a different field
-      doc.add(newField(random, "different_field", "diff", customType));
+      doc.add(newField(random, "different_field", "diff", TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     
@@ -217,7 +215,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     //highest freq terms for a specific field.
     for (int i = 1; i <= 10; i++) {
       Document doc = new Document();
-      doc.add(newField(random, "different_field", "diff", customType));
+      doc.add(newField(random, "different_field", "diff", TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     // add some docs where tf < df so we can see if sorting works
@@ -228,7 +226,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     for (int i = 0; i < highTF; i++) {
       content += "highTF ";
     }
-    doc.add(newField(random, "FIELD_1", content, customType));
+    doc.add(newField(random, "FIELD_1", content, TextField.TYPE_STORED));
     writer.addDocument(doc);
     // highTF medium df =5
     int medium_df = 5;
@@ -239,7 +237,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
       for (int j = 0; j < tf; j++) {
         newcontent += "highTFmedDF ";
       }
-      newdoc.add(newField(random, "FIELD_1", newcontent, customType));
+      newdoc.add(newField(random, "FIELD_1", newcontent, TextField.TYPE_STORED));
       writer.addDocument(newdoc);
     }
     // add a doc with high tf in field different_field
@@ -249,7 +247,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     for (int i = 0; i < targetTF; i++) {
       content += "TF150 ";
     }
-    doc.add(newField(random, "different_field", content, customType));
+    doc.add(newField(random, "different_field", content, TextField.TYPE_STORED));
     writer.addDocument(doc);
     writer.close();
     

@@ -42,11 +42,9 @@ public class TestBooleanScorer extends LuceneTestCase
     String[] values = new String[] { "1", "2", "3", "4" };
 
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
-    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc.add(newField(FIELD, values[i], customType));
+      doc.add(newField(FIELD, values[i], StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();

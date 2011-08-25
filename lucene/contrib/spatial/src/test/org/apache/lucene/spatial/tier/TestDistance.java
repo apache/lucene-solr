@@ -65,18 +65,14 @@ public class TestDistance extends LuceneTestCase {
     
     Document doc = new Document();
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(newField("name", name, customType));
+    doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    FieldType customType2 = new FieldType(NumericField.TYPE_UNSTORED);
-    customType.setStored(true);
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, customType2).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE, customType2).setDoubleValue(lng));
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(newField("metafile", "doc", customType));
+    doc.add(newField("metafile", "doc", TextField.TYPE_STORED));
     writer.addDocument(doc);
     
   }

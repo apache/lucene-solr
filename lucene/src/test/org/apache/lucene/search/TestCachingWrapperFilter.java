@@ -177,10 +177,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
-    FieldType customType = new FieldType(StringField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-    doc.add(newField("id", "1", customType));
+    doc.add(newField("id", "1", StringField.TYPE_STORED));
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

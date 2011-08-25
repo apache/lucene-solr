@@ -92,12 +92,8 @@ public class TestSpansAdvanced extends LuceneTestCase {
       final String text) throws IOException {
     
     final Document document = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    FieldType customType2 = new FieldType(StringField.TYPE_UNSTORED);
-    customType2.setStored(true);
-    document.add(newField(FIELD_ID, id, customType2));
-    document.add(newField(FIELD_TEXT, text, customType));
+    document.add(newField(FIELD_ID, id, StringField.TYPE_STORED));
+    document.add(newField(FIELD_TEXT, text, TextField.TYPE_STORED));
     writer.addDocument(document);
   }
   

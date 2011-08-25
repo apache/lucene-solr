@@ -116,8 +116,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
         @Override
         public void run() {
           Document doc = new Document();
-          FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-          customType.setStored(true);
+          FieldType customType = new FieldType(TextField.TYPE_STORED);
           customType.setStoreTermVectors(true);
           customType.setStoreTermVectorPositions(true);
           customType.setStoreTermVectorOffsets(true);
@@ -162,8 +161,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // final segment, so deletion policy has a chance to
     // delete again:
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorPositions(true);
     customType.setStoreTermVectorOffsets(true);

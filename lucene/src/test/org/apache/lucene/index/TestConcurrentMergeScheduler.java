@@ -17,16 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.MockDirectoryWrapper;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import java.io.IOException;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -77,10 +78,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     writer.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-    Field idField = newField("id", "", customType);
+    Field idField = newField("id", "", StringField.TYPE_STORED);
     doc.add(idField);
     int extraCount = 0;
 
@@ -140,10 +138,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     writer.setInfoStream(VERBOSE ? System.out : null);
 
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-    Field idField = newField("id", "", customType);
+    Field idField = newField("id", "", StringField.TYPE_STORED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       if (VERBOSE) {
@@ -210,10 +205,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testNoWaitClose() throws IOException {
     MockDirectoryWrapper directory = newDirectory();
     Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
-    customType.setTokenized(false);
-    Field idField = newField("id", "", customType);
+    Field idField = newField("id", "", StringField.TYPE_STORED);
     doc.add(idField);
 
     IndexWriter writer = new IndexWriter(

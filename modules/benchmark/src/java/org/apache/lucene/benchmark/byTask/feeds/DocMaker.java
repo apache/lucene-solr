@@ -179,8 +179,8 @@ public class DocMaker {
 
   protected Config config;
 
-  protected FieldType valType;
-  protected FieldType bodyValType;
+  protected final FieldType valType;
+  protected final FieldType bodyValType;
     
   protected ContentSource source;
   protected boolean reuseFields;

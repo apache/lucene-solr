@@ -129,18 +129,16 @@ public class TestFilterIndexReader extends LuceneTestCase {
     Directory directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
 
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     Document d1 = new Document();
-    d1.add(newField("default","one two", customType));
+    d1.add(newField("default","one two", TextField.TYPE_STORED));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(newField("default","one three", customType));
+    d2.add(newField("default","one three", TextField.TYPE_STORED));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(newField("default","two four", customType));
+    d3.add(newField("default","two four", TextField.TYPE_STORED));
     writer.addDocument(d3);
 
     writer.close();

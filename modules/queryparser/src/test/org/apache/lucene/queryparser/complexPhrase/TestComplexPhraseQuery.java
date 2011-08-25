@@ -114,12 +114,10 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     super.setUp();
     rd = newDirectory();
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
-      doc.add(newField("name", docsContent[i].name, customType));
-      doc.add(newField("id", docsContent[i].id, customType));
+      doc.add(newField("name", docsContent[i].name, TextField.TYPE_STORED));
+      doc.add(newField("id", docsContent[i].id, TextField.TYPE_STORED));
       w.addDocument(doc);
     }
     w.close();

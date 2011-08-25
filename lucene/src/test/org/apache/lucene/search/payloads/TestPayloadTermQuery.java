@@ -119,15 +119,13 @@ public class TestPayloadTermQuery extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
                                                      .setSimilarityProvider(similarityProvider).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
-    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
-    customType.setStored(true);
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), customType);
+      Field noPayloadField = newField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), TextField.TYPE_STORED);
       //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
-      doc.add(newField("field", English.intToEnglish(i), customType));
-      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), customType));
+      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
+      doc.add(newField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
