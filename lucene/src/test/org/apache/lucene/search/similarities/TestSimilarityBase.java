@@ -69,36 +69,28 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** The tolerance range for float equality. */
   private static float FLOAT_EPSILON = 1e-5f;
   /** The DFR basic models to test. */
-  private static BasicModel[] BASIC_MODELS;
+  static BasicModel[] BASIC_MODELS = {
+    new BasicModelBE(), new BasicModelD(), new BasicModelG(),
+    new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
+    new BasicModelP()
+  };
   /** The DFR aftereffects to test. */
-  private static AfterEffect[] AFTER_EFFECTS;
+  static AfterEffect[] AFTER_EFFECTS = {
+    new AfterEffectB(), new AfterEffectL(), new AfterEffect.NoAfterEffect()
+  };
   /** The DFR normalizations to test. */
-  private static Normalization[] NORMALIZATIONS;
+  static Normalization[] NORMALIZATIONS = {
+    new NormalizationH1(), new NormalizationH2(),
+    new Normalization.NoNormalization()
+  };
   /** The distributions for IB. */
-  private static Distribution[] DISTRIBUTIONS;
+  static Distribution[] DISTRIBUTIONS = {
+    new DistributionLL(), new DistributionSPL()
+  };
   /** Lambdas for IB. */
-  private static Lambda[] LAMBDAS;
-  
-  static {
-    BASIC_MODELS = new BasicModel[] {
-        new BasicModelBE(), new BasicModelD(), new BasicModelG(),
-        new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
-        new BasicModelP()
-    };
-    AFTER_EFFECTS = new AfterEffect[] {
-        new AfterEffectB(), new AfterEffectL(), new AfterEffect.NoAfterEffect()
-    };
-    NORMALIZATIONS = new Normalization[] {
-        new NormalizationH1(), new NormalizationH2(),
-        new Normalization.NoNormalization()
-    };
-    DISTRIBUTIONS = new Distribution[] {
-        new DistributionLL(), new DistributionSPL()
-    };
-    LAMBDAS = new Lambda[] {
-        new LambdaDF(), new LambdaTTF()
-    };
-  }
+  static Lambda[] LAMBDAS = {
+    new LambdaDF(), new LambdaTTF()
+  };
   
   private IndexSearcher searcher;
   private Directory dir;

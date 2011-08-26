@@ -23,6 +23,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
@@ -82,9 +83,6 @@ public abstract class SimilarityBase extends Similarity {
       String fieldName, TermContext... termContexts) throws IOException {
     IndexReader reader = searcher.getIndexReader();
     int numberOfDocuments = reader.maxDoc();
-    long numberOfFieldTokens = MultiFields.getTerms(searcher.getIndexReader(),
-        fieldName).getSumTotalTermFreq();
-    float avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
     
     // nocommit Take the minimum of term frequencies for phrases. This is not
     // correct though, we'll need something like a scorePhrase(MultiStats ...)
@@ -94,18 +92,35 @@ public abstract class SimilarityBase extends Similarity {
       docFreq = Math.min(docFreq, context.docFreq());
       totalTermFreq = Math.min(totalTermFreq, context.totalTermFreq());
     }
-    
-    // We have to provide something if codec doesnt supply these measures,
-    // or if someone omitted frequencies for the field... negative values cause
-    // NaN/Inf for some scorers.
-    if (numberOfFieldTokens == -1) {
-      numberOfFieldTokens = docFreq;
-      avgFieldLength = 1;
-    }
+
+    // codec does not supply totalTermFreq: substitute docFreq
     if (totalTermFreq == -1) {
       totalTermFreq = docFreq;
     }
+
+    final long numberOfFieldTokens;
+    final float avgFieldLength;
     
+    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), fieldName);
+    if (terms == null) {
+      // field does not exist;
+      numberOfFieldTokens = 0;
+      avgFieldLength = 1;
+    } else {
+      long sumTotalTermFreq = terms.getSumTotalTermFreq();
+
+      // We have to provide something if codec doesnt supply these measures,
+      // or if someone omitted frequencies for the field... negative values cause
+      // NaN/Inf for some scorers.
+      if (sumTotalTermFreq == -1) {
+        numberOfFieldTokens = docFreq;
+        avgFieldLength = 1;
+      } else {
+        numberOfFieldTokens = sumTotalTermFreq;
+        avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
+      }
+    }
+ 
     stats.setNumberOfDocuments(numberOfDocuments);
     stats.setNumberOfFieldTokens(numberOfFieldTokens);
     stats.setAvgFieldLength(avgFieldLength);
