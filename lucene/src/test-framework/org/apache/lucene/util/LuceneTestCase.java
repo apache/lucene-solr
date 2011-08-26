@@ -164,7 +164,7 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("tests.multiplier", "1"));
 
-  private int savedBoolMaxClauseCount;
+  private int savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
 
@@ -648,10 +648,7 @@ public abstract class LuceneTestCase extends Assert {
       if (problem == null) problem = t;
     }
 
-    // if you didn't call super.setUp, you can get a confusing IAE here.
-    if (problem != null) {
-      BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    }
+    BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
 
     // this won't throw any exceptions or fail the test
     // if we change this, then change this logic
