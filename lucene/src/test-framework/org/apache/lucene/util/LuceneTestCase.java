@@ -104,7 +104,7 @@ import org.junit.runners.model.InitializationError;
  * @see #assertSaneFieldCaches(String)
  */
 
-@RunWith(LuceneTestCase.LuceneTestCaseRunner.class)
+@RunWith(LuceneTestCaseRunner.class)
 public abstract class LuceneTestCase extends Assert {
 
   /**
@@ -318,30 +318,9 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static class ThreeLongs {
-    public final long l1, l2, l3;
-
-    public ThreeLongs(long l1, long l2, long l3) {
-      this.l1 = l1;
-      this.l2 = l2;
-      this.l3 = l3;
-    }
-
-    @Override
-    public String toString() {
-      return Long.toString(l1, 16) + ":" + Long.toString(l2, 16) + ":" + Long.toString(l3, 16);
-    }
-
-    public static ThreeLongs fromString(String s) {
-      String parts[] = s.split(":");
-      assert parts.length == 3;
-      return new ThreeLongs(Long.parseLong(parts[0], 16), Long.parseLong(parts[1], 16), Long.parseLong(parts[2], 16));
-    }
-  }
-
   /** @deprecated (4.0) until we fix no-fork problems in solr tests */
   @Deprecated
-  private static List<String> testClassesRun = new ArrayList<String>();
+  static List<String> testClassesRun = new ArrayList<String>();
 
   private static void initRandom() {
     assert !random.initialized;
@@ -519,7 +498,7 @@ public abstract class LuceneTestCase extends Assert {
     random.initialized = false;
   }
 
-  private static boolean testsFailed; /* true if any tests failed */
+  protected static boolean testsFailed; /* true if any tests failed */
 
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
@@ -1388,7 +1367,7 @@ public abstract class LuceneTestCase extends Assert {
   // seed for individual test methods, changed in @before
   private long seed;
 
-  private static final Random seedRand = new Random();
+  static final Random seedRand = new Random();
   protected static final SmartRandom random = new SmartRandom(0);
   
   public static class SmartRandom extends Random {
@@ -1419,136 +1398,6 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Nightly {}
-
-  /** optionally filters the tests to be run by TEST_METHOD */
-  public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
-    private List<FrameworkMethod> testMethods;
-    private static final long runnerSeed;
-    static {
-      runnerSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l3;
-    }
-
-    @Override
-    protected List<FrameworkMethod> computeTestMethods() {
-      if (testMethods != null)
-        return testMethods;
-      
-      Random r = new Random(runnerSeed);
-
-      testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
-      testMethods = new ArrayList<FrameworkMethod>();
-      for (Method m : getTestClass().getJavaClass().getMethods()) {
-        // check if the current test's class has methods annotated with @Ignore
-        final Ignore ignored = m.getAnnotation(Ignore.class);
-        if (ignored != null && !m.getName().equals("alwaysIgnoredTestMethod")) {
-          System.err.println("NOTE: Ignoring test method '" + m.getName() + "': " + ignored.value());
-        }
-        // add methods starting with "test"
-        final int mod = m.getModifiers();
-        if (m.getAnnotation(Test.class) != null ||
-            (m.getName().startsWith("test") &&
-            !Modifier.isAbstract(mod) &&
-            m.getParameterTypes().length == 0 &&
-            m.getReturnType() == Void.TYPE))
-        {
-          if (Modifier.isStatic(mod))
-            throw new RuntimeException("Test methods must not be static.");
-          testMethods.add(new FrameworkMethod(m));
-        }
-      }
-
-      if (testMethods.isEmpty()) {
-        throw new RuntimeException("No runnable methods!");
-      }
-
-      if (TEST_NIGHTLY == false) {
-        if (getTestClass().getJavaClass().isAnnotationPresent(Nightly.class)) {
-          /* the test class is annotated with nightly, remove all methods */
-          String className = getTestClass().getJavaClass().getSimpleName();
-          System.err.println("NOTE: Ignoring nightly-only test class '" + className + "'");
-          testMethods.clear();
-        } else {
-          /* remove all nightly-only methods */
-          for (int i = 0; i < testMethods.size(); i++) {
-            final FrameworkMethod m = testMethods.get(i);
-            if (m.getAnnotation(Nightly.class) != null) {
-              System.err.println("NOTE: Ignoring nightly-only test method '" + m.getName() + "'");
-              testMethods.remove(i--);
-            }
-          }
-        }
-        /* dodge a possible "no-runnable methods" exception by adding a fake ignored test */
-        if (testMethods.isEmpty()) {
-          try {
-            testMethods.add(new FrameworkMethod(LuceneTestCase.class.getMethod("alwaysIgnoredTestMethod")));
-          } catch (Exception e) { throw new RuntimeException(e); }
-        }
-      }
-      // sort the test methods first before shuffling them, so that the shuffle is consistent
-      // across different implementations that might order the methods different originally.
-      Collections.sort(testMethods, new Comparator<FrameworkMethod>() {
-        @Override
-        public int compare(FrameworkMethod f1, FrameworkMethod f2) {
-          return f1.getName().compareTo(f2.getName());
-        }
-      });
-      Collections.shuffle(testMethods, r);
-      return testMethods;
-    }
-
-    @Override
-    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      if (VERBOSE) {
-        System.out.println("\nNOTE: running test " + arg0.getName());
-      }
-      
-      // only print iteration info if the user requested more than one iterations
-      final boolean verbose = VERBOSE && TEST_ITER > 1;
-      
-      final int currentIter[] = new int[1];
-      arg1.addListener(new RunListener() {
-        @Override
-        public void testFailure(Failure failure) throws Exception {
-          if (verbose) {
-            System.out.println("\nNOTE: iteration " + currentIter[0] + " failed! ");
-          }
-        }
-      });
-      for (int i = 0; i < TEST_ITER; i++) {
-        currentIter[0] = i;
-        if (verbose) {
-          System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
-        }
-        super.runChild(arg0, arg1);
-        if (testsFailed) {
-          if (i >= TEST_ITER_MIN - 1) { // XXX is this still off-by-one?
-            break;
-          }
-        }
-      }
-    }
-
-    public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
-      super(clazz);
-      // evil we cannot init our random here, because super() calls computeTestMethods!!!!;
-      Filter f = new Filter() {
-
-        @Override
-        public String describe() { return "filters according to TEST_METHOD"; }
-
-        @Override
-        public boolean shouldRun(Description d) {
-          return TEST_METHOD == null || d.getMethodName().equals(TEST_METHOD);
-        }
-      };
-
-      try {
-        f.apply(this);
-      } catch (NoTestsRemainException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
 
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}
