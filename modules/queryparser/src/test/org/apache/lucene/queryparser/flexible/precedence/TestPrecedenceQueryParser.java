@@ -26,12 +26,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockTokenFilter;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateTools;
@@ -78,13 +73,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
       super(in);
     }
 
-    boolean inPhrase = false;
+    private boolean inPhrase = false;
 
-    int savedStart = 0, savedEnd = 0;
+    private int savedStart = 0;
+    private int savedEnd = 0;
 
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -105,6 +101,14 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
           } else if (!termAtt.toString().equals("stop"))
             return true;
       return false;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.inPhrase = false;
+      this.savedStart = 0;
+      this.savedEnd = 0;
     }
   }
 

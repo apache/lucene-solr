@@ -32,7 +32,6 @@ import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
@@ -220,42 +219,26 @@ public class MMapDirectory extends FSDirectory {
     }
   }
   
-  @Override
-  public CompoundFileDirectory openCompoundInput(String name, IOContext context) throws IOException {
-    return new MMapCompoundFileDirectory(name, context);
-  }
-  
-  private final class MMapCompoundFileDirectory extends CompoundFileDirectory {
-    private RandomAccessFile raf = null;
-
-    public MMapCompoundFileDirectory(String fileName, IOContext context) throws IOException {
-      super(MMapDirectory.this, fileName, context);
-      IndexInput stream = null;
-      try {
-        File f = new File(MMapDirectory.this.getDirectory(), fileName);
-        raf = new RandomAccessFile(f, "r");
-        stream = new MMapIndexInput(raf, 0, raf.length(), chunkSizePower);
-        initForRead(CompoundFileDirectory.readEntries(stream, MMapDirectory.this, fileName));
-        stream.close();
-      } catch (IOException e) {
-        // throw our original exception
-        IOUtils.closeSafely(e, raf, stream);
-      }
-    }
-
-    @Override
-    public IndexInput openInputSlice(String id, long offset, long length, int readBufferSize) throws IOException {
-      return new MMapIndexInput(raf, offset, length, chunkSizePower);
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-      try {
+  public IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
+    ensureOpen();
+    File f = new File(getDirectory(), name);
+    final RandomAccessFile raf = new RandomAccessFile(f, "r");
+    return new IndexInputSlicer() {
+      @Override
+      public void close() throws IOException {
         raf.close();
-      } finally {
-        super.close();
       }
-    }
+
+      @Override
+      public IndexInput openSlice(long offset, long length) throws IOException {
+        return new MMapIndexInput(raf, offset, length, chunkSizePower);
+      }
+
+      @Override
+      public IndexInput openFullSlice() throws IOException {
+        return openSlice(0, raf.length());
+      }
+    };
   }
 
   // Because Java's ByteBuffer uses an int to address the

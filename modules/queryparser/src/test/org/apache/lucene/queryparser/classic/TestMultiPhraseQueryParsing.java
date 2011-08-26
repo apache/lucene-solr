@@ -79,6 +79,13 @@ public class TestMultiPhraseQueryParsing extends LuceneTestCase {
         return false;
       }
     }
+
+    @Override
+    public void reset(Reader reader) throws IOException {
+      super.reset(reader);
+      this.upto = 0;
+      this.lastPos = 0;
+    }
   }
 
   public void testMultiPhraseQueryParsing() throws Exception {

@@ -190,6 +190,7 @@ final class CompoundFileWriter implements Closeable{
   private final long copyFileEntry(IndexOutput dataOut, FileEntry fileEntry)
       throws IOException, MergeAbortedException {
     final IndexInput is = fileEntry.dir.openInput(fileEntry.file, IOContext.READONCE);
+    boolean success = false;
     try {
       final long startPtr = dataOut.getFilePointer();
       final long length = fileEntry.length;
@@ -201,11 +202,14 @@ final class CompoundFileWriter implements Closeable{
         throw new IOException("Difference in the output file offsets " + diff
             + " does not match the original file length " + length);
       fileEntry.offset = startPtr;
-      // copy successful - delete file
-      fileEntry.dir.deleteFile(fileEntry.file);
+      success = true;
       return length;
     } finally {
-      is.close();
+      IOUtils.closeSafely(!success, is);
+      if (success) {
+        // copy successful - delete file
+        fileEntry.dir.deleteFile(fileEntry.file);
+      }
     }
 
   }

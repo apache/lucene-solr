@@ -187,7 +187,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     if (commitTracker.getTimeUpperBound() > 0) {
       commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
-    } else if (softCommitTracker.getTimeUpperBound() > 0) {
+    } 
+    
+    if (softCommitTracker.getTimeUpperBound() > 0) {
       softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
     }
   }
@@ -219,7 +221,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       
       if (commitTracker.getTimeUpperBound() > 0) {
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
-      } else if (softCommitTracker.getTimeUpperBound()> 0) {
+      } 
+      
+      if (softCommitTracker.getTimeUpperBound()> 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
       }
       

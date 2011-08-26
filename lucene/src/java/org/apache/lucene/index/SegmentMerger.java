@@ -153,7 +153,7 @@ final class SegmentMerger {
 
     // Now merge all added files
     Collection<String> files = info.files();
-    CompoundFileDirectory cfsDir = directory.createCompoundOutput(fileName, context);
+    CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
     try {
       for (String file : files) {
         assert !IndexFileNames.matchesExtension(file, IndexFileNames.DELETES_EXTENSION) 

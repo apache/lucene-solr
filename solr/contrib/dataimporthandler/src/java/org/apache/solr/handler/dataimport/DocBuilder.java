@@ -305,7 +305,7 @@ public class DocBuilder {
         LOG.info("running multithreaded full-import");
         new EntityRunner(root,null).run(null,Context.FULL_DUMP,null);
       } catch (Exception e) {
-        LOG.error("error in import", e);
+        throw new RuntimeException("Error in multi-threaded import", e);
       }
     } else {
       buildDocument(getVariableResolver(), null, null, root, true, null);

@@ -447,6 +447,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             }
             return input.incrementToken();
           }
+
+          @Override
+          public void reset() throws IOException {
+            super.reset();
+            this.count = 0;
+          }
         };
       }
 

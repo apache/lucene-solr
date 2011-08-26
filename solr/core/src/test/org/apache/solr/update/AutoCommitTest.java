@@ -235,7 +235,6 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertEquals( 3, tracker.getCommitCount() );
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
-    assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
   }
 
   public void testSoftCommitMaxDocs() throws Exception {
@@ -402,10 +401,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     core.registerNewSearcherListener(hardTrigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     
-    updater.registerCommitCallback(softTrigger);
     updater.registerSoftCommitCallback(softTrigger);
     updater.registerCommitCallback(hardTrigger);
-    updater.registerSoftCommitCallback(hardTrigger);
     
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;
@@ -450,8 +447,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     
-    // Wait longer than the autocommit time - wait twice to ensure latest is picked up
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    // Wait longer than the autocommit time
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
 
     
@@ -472,7 +469,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
     
     req.setContentStreams( toContentStreams(
@@ -485,14 +482,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         || softCommitCnt == 3);
     
     // depending on timing, you might see 1 or 2 hard commits
-    assertTrue(hardTrigger.waitForNewSearcher(15000));
+    assertTrue(hardTrigger.waitForNewSearcher(30000));
     hardTrigger.reset();
     
     int hardCommitCnt = hardTracker.getCommitCount();
     assertTrue("commit cnt:" + hardCommitCnt, hardCommitCnt == 1
         || hardCommitCnt == 2);
     
-    assertTrue(softTrigger.waitForNewSearcher(15000));
+    assertTrue(softTrigger.waitForNewSearcher(30000));
     softTrigger.reset();
     
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );

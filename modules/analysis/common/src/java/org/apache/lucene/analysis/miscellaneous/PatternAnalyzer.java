@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -220,10 +221,6 @@ public final class PatternAnalyzer extends Analyzer {
    */
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    if (reader instanceof FastStringReader) { // fast path
-      return tokenStream(fieldName, ((FastStringReader)reader).getString());
-    }
-    
     try {
       String text = toString(reader);
       return tokenStream(fieldName, text);
@@ -290,6 +287,10 @@ public final class PatternAnalyzer extends Analyzer {
    * @throws IOException if an I/O error occurs while reading the stream
    */
   private static String toString(Reader input) throws IOException {
+    if (input instanceof FastStringReader) { // fast path
+      return ((FastStringReader) input).getString();
+    }
+
     try {
       int len = 256;
       char[] buffer = new char[len];
@@ -324,9 +325,9 @@ public final class PatternAnalyzer extends Analyzer {
    * The work horse; performance isn't fantastic, but it's not nearly as bad
    * as one might think - kudos to the Sun regex developers.
    */
-  private static final class PatternTokenizer extends TokenStream {
+  private static final class PatternTokenizer extends Tokenizer {
     
-    private final String str;
+    private String str;
     private final boolean toLowerCase;
     private Matcher matcher;
     private int pos = 0;
@@ -372,8 +373,20 @@ public final class PatternAnalyzer extends Analyzer {
       // set final offset
       final int finalOffset = str.length();
     	this.offsetAtt.setOffset(finalOffset, finalOffset);
-    }    
-  } 
+    }
+
+    @Override
+    public void reset(Reader input) throws IOException {
+      super.reset(input);
+      this.str = PatternAnalyzer.toString(input);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.pos = 0;
+    }
+  }
   
   
   ///////////////////////////////////////////////////////////////////////////////
@@ -383,9 +396,9 @@ public final class PatternAnalyzer extends Analyzer {
    * Special-case class for best performance in common cases; this class is
    * otherwise unnecessary.
    */
-  private static final class FastStringTokenizer extends TokenStream {
+  private static final class FastStringTokenizer extends Tokenizer {
     
-    private final String str;
+    private String str;
     private int pos;
     private final boolean isLetter;
     private final boolean toLowerCase;
@@ -464,7 +477,17 @@ public final class PatternAnalyzer extends Analyzer {
     private boolean isStopWord(String text) {
       return stopWords != null && stopWords.contains(text);
     }
-    
+
+    @Override
+    public void reset(Reader input) throws IOException {
+      this.str = PatternAnalyzer.toString(input);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.pos = 0;
+    }
   }
 
   

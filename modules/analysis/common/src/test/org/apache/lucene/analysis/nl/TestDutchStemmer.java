@@ -150,18 +150,6 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
 
   }
   
-  /* 
-   * Test that changes to the dictionary stemming table are applied immediately
-   * when using reusable token streams.
-   */
-  public void testStemDictionaryReuse() throws Exception {
-    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "lichamelijk", "licham");
-    File customDictFile = getDataFile("customStemDict.txt");
-    a.setStemDictionary(customDictFile);
-    checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
-  }
-  
   /**
    * Prior to 3.1, this analyzer had no lowercase filter.
    * stopwords were case sensitive. Preserve this for back compat.

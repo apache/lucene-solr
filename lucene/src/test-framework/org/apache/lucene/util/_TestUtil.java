@@ -518,4 +518,9 @@ public class _TestUtil {
 
     return doc2;
   }
+  
+  public static Codec randomizeCodec(Random random, Codec codec) {
+    codec.setDocValuesUseCFS(random.nextBoolean());
+    return codec;
+  }
 }

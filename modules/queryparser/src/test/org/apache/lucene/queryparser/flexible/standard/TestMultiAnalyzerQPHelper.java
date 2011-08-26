@@ -17,12 +17,10 @@ package org.apache.lucene.queryparser.flexible.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -184,7 +182,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
         return true;
       } else {
         boolean next = input.incrementToken();
-        if (next == false) {
+        if (!next) {
           return false;
         }
         prevType = typeAtt.type();
@@ -203,6 +201,13 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
       }
     }
 
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.prevType = null;
+      this.prevStartOffset = 0;
+      this.prevEndOffset = 0;
+    }
   }
 
   /**

@@ -311,6 +311,12 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
           tokens[p++].copyTo(reusableToken);
           return true;
         }
+
+        @Override
+        public void reset() throws IOException {
+          super.reset();
+          this.p = 0;
+        }
       };
       return ts;
     }

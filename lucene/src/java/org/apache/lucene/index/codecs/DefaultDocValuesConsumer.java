@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PerDocWriteState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.values.Writer;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -51,9 +52,9 @@ public class DefaultDocValuesConsumer extends PerDocConsumer {
     this.bytesUsed = state.bytesUsed;
     this.context = state.context;
     //TODO maybe we should enable a global CFS that all codecs can pull on demand to further reduce the number of files?
-    this.directory = useCompoundFile ? state.directory.createCompoundOutput(
+    this.directory = useCompoundFile ? new CompoundFileDirectory(state.directory,
         IndexFileNames.segmentFileName(segmentName, codecId,
-            IndexFileNames.COMPOUND_FILE_EXTENSION), context) : state.directory;
+            IndexFileNames.COMPOUND_FILE_EXTENSION), context, true) : state.directory;
     this.comparator = comparator;
     this.useCompoundFile = useCompoundFile;
   }

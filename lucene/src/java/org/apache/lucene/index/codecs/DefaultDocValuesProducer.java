@@ -32,6 +32,7 @@ import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Ints;
 import org.apache.lucene.index.values.ValueType;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
@@ -78,7 +79,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
     this.sortComparator = sortComparator;
     final Directory directory;
     if (useCompoundFile) {
-      cfs = directory = dir.openCompoundInput(IndexFileNames.segmentFileName(si.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION), context);
+      cfs = directory = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(si.name, codecId, IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
     } else {
       cfs = null;
       directory = dir;

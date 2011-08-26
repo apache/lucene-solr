@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -60,6 +60,8 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
     DemoProcessor.entitiesInitied = 0;
     DemoEvaluator.evaluated = 0;
     MockDataSource.clearCache();
+    assertU(delQ("*:*"));
+    assertU(commit());
     super.tearDown();
   }
 
@@ -85,6 +87,23 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
     runFullImport(twoEntitiesWithEvaluatorProcessor);
     assertEquals("Evaluator was invoked less times than the number of rows",
         4, DemoEvaluator.evaluated);
+  }
+  @Test 
+  public void testContinue() throws Exception {
+    runFullImport(twoEntitiesWithFailingProcessor);
+    assertQ(req("*:*"), "//*[@numFound='0']"); // should rollback
+  }
+  
+  @Test
+  public void testContinueThreaded() throws Exception {
+    runFullImport(twoThreadedEntitiesWithFailingProcessor);
+    assertQ(req("*:*"), "//*[@numFound='0']"); // should rollback
+  }
+
+  @Test
+  public void testFailingTransformerContinueThreaded() throws Exception {
+    runFullImport(twoThreadedEntitiesWithFailingTransformer);
+    assertQ(req("*:*"), "//*[@numFound='4']");
   }
 
   @SuppressWarnings("unchecked")
@@ -116,8 +135,7 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
           "</entity>" +
           "</document>" +
           "</dataConfig>";
-
-  private final String twoEntitiesWithProcessor =
+	private final String twoEntitiesWithProcessor =
 
       "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
           "<document>" +
@@ -138,7 +156,7 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
           "</entity>" +
           "</document>" +
           "</dataConfig>";
-
+          
   private final String twoEntitiesWithEvaluatorProcessor =
 
       "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
@@ -164,6 +182,89 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
           "</dataConfig>";
 
 
+  private final String twoThreadedEntitiesWithFailingProcessor =
+  
+        "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
+            "<document>" +
+            "<entity name=\"job\" processor=\"TestDocBuilderThreaded$DemoProcessor\" \n" +
+            " threads=\"1\" " +
+            " query=\"select * from y\"" +
+            " pk=\"id\" \n" +
+            " worker=\"id\" \n" +
+            " onError=\"continue\" " +
+            ">" +
+            "<field column=\"id\" />\n" +
+            "<entity name=\"details\" processor=\"TestDocBuilderThreaded$FailingProcessor\" \n" +
+            "worker=\"${job.worker}\" \n" +
+            "query=\"${job.worker}\" \n" +
+            "transformer=\"TemplateTransformer\" " +
+            "onError=\"continue\" " +
+            "fail=\"yes\" " +
+            " >" +
+            "<field column=\"author_s\" />" +
+            "<field column=\"title_s\" />" +
+            " <field column=\"text_s\" />" +
+            " <field column=\"generated_id_s\" template=\"generated_${job.id}\" />" +
+            "</entity>" +
+            "</entity>" +
+            "</document>" +
+            "</dataConfig>";
+  
+  private final String twoEntitiesWithFailingProcessor =
+    
+    "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
+        "<document>" +
+        "<entity name=\"job\" processor=\"TestDocBuilderThreaded$DemoProcessor\" \n" +
+        " query=\"select * from y\"" +
+        " pk=\"id\" \n" +
+        " worker=\"id\" \n" +
+        " onError=\"continue\" " +
+        ">" +
+        "<field column=\"id\" />\n" +
+        "<entity name=\"details\" processor=\"TestDocBuilderThreaded$FailingProcessor\" \n" +
+        "worker=\"${job.worker}\" \n" +
+        "query=\"${job.worker}\" \n" +
+        "transformer=\"TemplateTransformer\" " +
+        "onError=\"continue\" " +
+        "fail=\"yes\" " +
+        " >" +
+        "<field column=\"author_s\" />" +
+        "<field column=\"title_s\" />" +
+        " <field column=\"text_s\" />" +
+        " <field column=\"generated_id_s\" template=\"generated_${job.id}\" />" +
+        "</entity>" +
+        "</entity>" +
+        "</document>" +
+        "</dataConfig>";
+
+  private final String twoThreadedEntitiesWithFailingTransformer =
+
+    "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
+        "<document>" +
+        "<entity name=\"job\" processor=\"TestDocBuilderThreaded$DemoProcessor\" \n" +
+        " threads=\"1\" " +
+        " query=\"select * from y\"" +
+        " pk=\"id\" \n" +
+        " worker=\"id\" \n" +
+        " onError=\"continue\" " +
+        ">" +
+        "<field column=\"id\" />\n" +
+        "<entity name=\"details\" \n" +
+        "worker=\"${job.worker}\" \n" +
+        "query=\"${job.worker}\" \n" +
+        "transformer=\"TestDocBuilderThreaded$FailingTransformer\" " +
+        "onError=\"continue\" " +
+        " >" +
+        "<field column=\"author_s\" />" +
+        "<field column=\"title_s\" />" +
+        " <field column=\"text_s\" />" +
+        " <field column=\"generated_id_s\" template=\"generated_${job.id}\" />" +
+        "</entity>" +
+        "</entity>" +
+        "</document>" +
+        "</dataConfig>";
+
+
   public static class DemoProcessor extends SqlEntityProcessor {
 
     public static int entitiesInitied = 0;
@@ -175,6 +276,23 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
       if (result == null || result.trim().length() == 0) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Could not resolve entity attribute");
       } else entitiesInitied++;
+    }
+  }
+  public static class FailingProcessor extends SqlEntityProcessor {
+    @Override
+    public void init(Context context) {
+      super.init(context);
+      String fail = context.getResolvedEntityAttribute("fail");
+      if (fail != null && fail.equalsIgnoreCase("yes")) {
+        throw new NullPointerException("I was told to");
+      }      
+    }
+  }
+
+  public static class FailingTransformer extends Transformer  {
+    @Override
+    public Object transformRow(Map<String, Object> row, Context context) {
+      throw new RuntimeException("Always fail");
     }
   }
 
@@ -196,4 +314,5 @@ public class TestDocBuilderThreaded extends AbstractDataImportHandlerTestCase {
       return result.toString();
     }
   }
+  
 }

@@ -18,10 +18,7 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -68,9 +65,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   private static class PayloadFilter extends TokenFilter {
-    String fieldName;
-    int numSeen = 0;
-    protected PayloadAttribute payAtt;
+    private final String fieldName;
+    private int numSeen = 0;
+    private final PayloadAttribute payAtt;
 
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
@@ -81,7 +78,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       boolean result = false;
-      if (input.incrementToken() == true){
+      if (input.incrementToken()) {
         if (numSeen % 2 == 0) {
           payAtt.setPayload(new Payload(payload2));
         } else {
@@ -91,6 +88,12 @@ public class TestPayloadNearQuery extends LuceneTestCase {
         result = true;
       }
       return result;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.numSeen = 0;
     }
   }
   

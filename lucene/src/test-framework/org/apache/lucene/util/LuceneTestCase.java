@@ -25,8 +25,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -50,9 +48,6 @@ import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -69,16 +64,8 @@ import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
 import org.junit.rules.TestWatchman;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
-import org.junit.runner.manipulation.Filter;
-import org.junit.runner.manipulation.NoTestsRemainException;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -107,7 +94,7 @@ import org.junit.runners.model.InitializationError;
  * @see #assertSaneFieldCaches(String)
  */
 
-@RunWith(LuceneTestCase.LuceneTestCaseRunner.class)
+@RunWith(LuceneTestCaseRunner.class)
 public abstract class LuceneTestCase extends Assert {
 
   /**
@@ -242,7 +229,7 @@ public abstract class LuceneTestCase extends Assert {
     if (prior != null) {
       cp.unregister(prior);
     }
-    cp.register(randomizCodec(random, c));
+    cp.register(_TestUtil.randomizeCodec(random, c));
   }
 
   // returns current default codec
@@ -293,11 +280,6 @@ public abstract class LuceneTestCase extends Assert {
     return cp.lookup(codec);
   }
   
-  public static Codec randomizCodec(Random random, Codec codec) {
-    codec.setDocValuesUseCFS(random.nextBoolean());
-    return codec;
-  }
-
   // returns current PreFlex codec
   static void removeTestCodecs(Codec codec, CodecProvider cp) {
     if (codec.name.equals("PreFlex")) {
@@ -326,30 +308,9 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
-  private static class ThreeLongs {
-    public final long l1, l2, l3;
-
-    public ThreeLongs(long l1, long l2, long l3) {
-      this.l1 = l1;
-      this.l2 = l2;
-      this.l3 = l3;
-    }
-
-    @Override
-    public String toString() {
-      return Long.toString(l1, 16) + ":" + Long.toString(l2, 16) + ":" + Long.toString(l3, 16);
-    }
-
-    public static ThreeLongs fromString(String s) {
-      String parts[] = s.split(":");
-      assert parts.length == 3;
-      return new ThreeLongs(Long.parseLong(parts[0], 16), Long.parseLong(parts[1], 16), Long.parseLong(parts[2], 16));
-    }
-  }
-
   /** @deprecated (4.0) until we fix no-fork problems in solr tests */
   @Deprecated
-  private static List<String> testClassesRun = new ArrayList<String>();
+  static List<String> testClassesRun = new ArrayList<String>();
 
   private static void initRandom() {
     assert !random.initialized;
@@ -527,7 +488,7 @@ public abstract class LuceneTestCase extends Assert {
     random.initialized = false;
   }
 
-  private static boolean testsFailed; /* true if any tests failed */
+  protected static boolean testsFailed; /* true if any tests failed */
 
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
@@ -540,7 +501,7 @@ public abstract class LuceneTestCase extends Assert {
       // org.junit.internal.AssumptionViolatedException in older releases
       // org.junit.Assume.AssumptionViolatedException in recent ones
       if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
-        if (e.getCause() instanceof TestIgnoredException)
+        if (e.getCause() instanceof _TestIgnoredException)
           e = e.getCause();
         System.err.print("NOTE: Assume failed in '" + method.getName() + "' (ignored):");
         if (VERBOSE) {
@@ -837,39 +798,8 @@ public abstract class LuceneTestCase extends Assert {
     assertEquals(message, Float.valueOf(expected), Float.valueOf(actual));
   }
 
-  // Replacement for Assume jUnit class, so we can add a message with explanation:
-
-  private static final class TestIgnoredException extends RuntimeException {
-    TestIgnoredException(String msg) {
-      super(msg);
-    }
-
-    TestIgnoredException(String msg, Throwable t) {
-      super(msg, t);
-    }
-
-    @Override
-    public String getMessage() {
-      StringBuilder sb = new StringBuilder(super.getMessage());
-      if (getCause() != null)
-        sb.append(" - ").append(getCause());
-      return sb.toString();
-    }
-
-    // only this one is called by our code, exception is not used outside this class:
-    @Override
-    public void printStackTrace(PrintStream s) {
-      if (getCause() != null) {
-        s.println(super.toString() + " - Caused by:");
-        getCause().printStackTrace(s);
-      } else {
-        super.printStackTrace(s);
-      }
-    }
-  }
-
   public static void assumeTrue(String msg, boolean b) {
-    Assume.assumeNoException(b ? null : new TestIgnoredException(msg));
+    Assume.assumeNoException(b ? null : new _TestIgnoredException(msg));
   }
 
   public static void assumeFalse(String msg, boolean b) {
@@ -877,7 +807,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static void assumeNoException(String msg, Exception e) {
-    Assume.assumeNoException(e == null ? null : new TestIgnoredException(msg, e));
+    Assume.assumeNoException(e == null ? null : new _TestIgnoredException(msg, e));
   }
 
   public static <T> Set<T> asSet(T... args) {
@@ -938,7 +868,7 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
-        c.setTermIndexInterval(random.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
+        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
       } else {
         // reasonable value
         c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
@@ -1396,28 +1326,9 @@ public abstract class LuceneTestCase extends Assert {
   // seed for individual test methods, changed in @before
   private long seed;
 
-  private static final Random seedRand = new Random();
+  static final Random seedRand = new Random();
   protected static final SmartRandom random = new SmartRandom(0);
   
-  public static class SmartRandom extends Random {
-    boolean initialized;
-    
-    SmartRandom(long seed) {
-      super(seed);
-    }
-    
-    @Override
-    protected int next(int bits) {
-      if (!initialized) {
-        System.err.println("!!! WARNING: test is using random from static initializer !!!");
-        Thread.dumpStack();
-        // I wish, but it causes JRE crashes
-        // throw new IllegalStateException("you cannot use this random from a static initializer in your test");
-      }
-      return super.next(bits);
-    }
-  }
-
   private String name = "<unknown>";
 
   /**
@@ -1427,197 +1338,6 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Nightly {}
-
-  /** optionally filters the tests to be run by TEST_METHOD */
-  public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
-    private List<FrameworkMethod> testMethods;
-    private static final long runnerSeed;
-    static {
-      runnerSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : ThreeLongs.fromString(TEST_SEED).l3;
-    }
-
-    @Override
-    protected List<FrameworkMethod> computeTestMethods() {
-      if (testMethods != null)
-        return testMethods;
-      
-      Random r = new Random(runnerSeed);
-
-      testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
-      testMethods = new ArrayList<FrameworkMethod>();
-      for (Method m : getTestClass().getJavaClass().getMethods()) {
-        // check if the current test's class has methods annotated with @Ignore
-        final Ignore ignored = m.getAnnotation(Ignore.class);
-        if (ignored != null && !m.getName().equals("alwaysIgnoredTestMethod")) {
-          System.err.println("NOTE: Ignoring test method '" + m.getName() + "': " + ignored.value());
-        }
-        // add methods starting with "test"
-        final int mod = m.getModifiers();
-        if (m.getAnnotation(Test.class) != null ||
-            (m.getName().startsWith("test") &&
-            !Modifier.isAbstract(mod) &&
-            m.getParameterTypes().length == 0 &&
-            m.getReturnType() == Void.TYPE))
-        {
-          if (Modifier.isStatic(mod))
-            throw new RuntimeException("Test methods must not be static.");
-          testMethods.add(new FrameworkMethod(m));
-        }
-      }
-
-      if (testMethods.isEmpty()) {
-        throw new RuntimeException("No runnable methods!");
-      }
-
-      if (TEST_NIGHTLY == false) {
-        if (getTestClass().getJavaClass().isAnnotationPresent(Nightly.class)) {
-          /* the test class is annotated with nightly, remove all methods */
-          String className = getTestClass().getJavaClass().getSimpleName();
-          System.err.println("NOTE: Ignoring nightly-only test class '" + className + "'");
-          testMethods.clear();
-        } else {
-          /* remove all nightly-only methods */
-          for (int i = 0; i < testMethods.size(); i++) {
-            final FrameworkMethod m = testMethods.get(i);
-            if (m.getAnnotation(Nightly.class) != null) {
-              System.err.println("NOTE: Ignoring nightly-only test method '" + m.getName() + "'");
-              testMethods.remove(i--);
-            }
-          }
-        }
-        /* dodge a possible "no-runnable methods" exception by adding a fake ignored test */
-        if (testMethods.isEmpty()) {
-          try {
-            testMethods.add(new FrameworkMethod(LuceneTestCase.class.getMethod("alwaysIgnoredTestMethod")));
-          } catch (Exception e) { throw new RuntimeException(e); }
-        }
-      }
-      // sort the test methods first before shuffling them, so that the shuffle is consistent
-      // across different implementations that might order the methods different originally.
-      Collections.sort(testMethods, new Comparator<FrameworkMethod>() {
-        @Override
-        public int compare(FrameworkMethod f1, FrameworkMethod f2) {
-          return f1.getName().compareTo(f2.getName());
-        }
-      });
-      Collections.shuffle(testMethods, r);
-      return testMethods;
-    }
-
-    @Override
-    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      if (VERBOSE) {
-        System.out.println("\nNOTE: running test " + arg0.getName());
-      }
-      
-      // only print iteration info if the user requested more than one iterations
-      final boolean verbose = VERBOSE && TEST_ITER > 1;
-      
-      final int currentIter[] = new int[1];
-      arg1.addListener(new RunListener() {
-        @Override
-        public void testFailure(Failure failure) throws Exception {
-          if (verbose) {
-            System.out.println("\nNOTE: iteration " + currentIter[0] + " failed! ");
-          }
-        }
-      });
-      for (int i = 0; i < TEST_ITER; i++) {
-        currentIter[0] = i;
-        if (verbose) {
-          System.out.println("\nNOTE: running iter=" + (1+i) + " of " + TEST_ITER);
-        }
-        super.runChild(arg0, arg1);
-        if (testsFailed) {
-          if (i >= TEST_ITER_MIN - 1) { // XXX is this still off-by-one?
-            break;
-          }
-        }
-      }
-    }
-
-    public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
-      super(clazz);
-      // evil we cannot init our random here, because super() calls computeTestMethods!!!!;
-      Filter f = new Filter() {
-
-        @Override
-        public String describe() { return "filters according to TEST_METHOD"; }
-
-        @Override
-        public boolean shouldRun(Description d) {
-          return TEST_METHOD == null || d.getMethodName().equals(TEST_METHOD);
-        }
-      };
-
-      try {
-        f.apply(this);
-      } catch (NoTestsRemainException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  private static class RandomCodecProvider extends CodecProvider {
-    private List<Codec> knownCodecs = new ArrayList<Codec>();
-    private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
-    private final int perFieldSeed;
-
-    RandomCodecProvider(Random random) {
-      this.perFieldSeed = random.nextInt();
-      // TODO: make it possible to specify min/max iterms per
-      // block via CL:
-      int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-      int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-      register(randomizCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
-      register(randomizCodec(random, new PreFlexCodec()));
-      // TODO: make it possible to specify min/max iterms per
-      // block via CL:
-      minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-      maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
-      register(randomizCodec(random, new SimpleTextCodec()));
-      register(randomizCodec(random, new MemoryCodec()));
-      Collections.shuffle(knownCodecs, random);
-    }
-
-    @Override
-    public synchronized void register(Codec codec) {
-      if (!codec.name.equals("PreFlex"))
-        knownCodecs.add(codec);
-      super.register(codec);
-    }
-
-    @Override
-    public synchronized void unregister(Codec codec) {
-      knownCodecs.remove(codec);
-      super.unregister(codec);
-    }
-
-    @Override
-    public synchronized String getFieldCodec(String name) {
-      Codec codec = previousMappings.get(name);
-      if (codec == null) {
-        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
-        if (codec instanceof SimpleTextCodec && perFieldSeed % 5 != 0) {
-          // make simpletext rarer, choose again
-          codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
-        }
-        previousMappings.put(name, codec);
-      }
-      return codec.name;
-    }
-
-    @Override
-    public synchronized boolean hasFieldCodec(String name) {
-      return true; // we have a codec for every field
-    }
-
-    @Override
-    public synchronized String toString() {
-      return "RandomCodecProvider: " + previousMappings.toString();
-    }
-  }
 
   @Ignore("just a hack")
   public final void alwaysIgnoredTestMethod() {}

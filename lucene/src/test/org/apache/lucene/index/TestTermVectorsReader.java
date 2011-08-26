@@ -24,8 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -131,11 +130,11 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   private class MyTokenStream extends TokenStream {
-    int tokenUpto;
+    private int tokenUpto;
     
-    CharTermAttribute termAtt;
-    PositionIncrementAttribute posIncrAtt;
-    OffsetAttribute offsetAtt;
+    private final CharTermAttribute termAtt;
+    private final PositionIncrementAttribute posIncrAtt;
+    private final OffsetAttribute offsetAtt;
     
     public MyTokenStream() {
       termAtt = addAttribute(CharTermAttribute.class);
@@ -159,6 +158,12 @@ public class TestTermVectorsReader extends LuceneTestCase {
         }
         return true;
       }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.tokenUpto = 0;
     }
   }
 
