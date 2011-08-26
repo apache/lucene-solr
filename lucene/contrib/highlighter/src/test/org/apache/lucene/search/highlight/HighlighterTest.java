@@ -1821,11 +1821,6 @@ final class SynonymAnalyzer extends Analyzer {
     stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
-    try {
-      stream.reset();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
     return new SynonymTokenizer(stream, synonyms);
   }
 }
@@ -1901,6 +1896,7 @@ final class SynonymTokenizer extends TokenStream {
   @Override
   public void reset() throws IOException {
     super.reset();
+    this.realStream.reset();
     this.currentRealToken = null;
     this.st = null;
   }
