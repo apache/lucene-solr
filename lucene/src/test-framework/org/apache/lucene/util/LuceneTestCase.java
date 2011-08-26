@@ -50,9 +50,6 @@ import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.index.codecs.memory.MemoryCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -242,7 +239,7 @@ public abstract class LuceneTestCase extends Assert {
     if (prior != null) {
       cp.unregister(prior);
     }
-    cp.register(randomizCodec(random, c));
+    cp.register(_TestUtil.randomizeCodec(random, c));
   }
 
   // returns current default codec
@@ -293,11 +290,6 @@ public abstract class LuceneTestCase extends Assert {
     return cp.lookup(codec);
   }
   
-  public static Codec randomizCodec(Random random, Codec codec) {
-    codec.setDocValuesUseCFS(random.nextBoolean());
-    return codec;
-  }
-
   // returns current PreFlex codec
   static void removeTestCodecs(Codec codec, CodecProvider cp) {
     if (codec.name.equals("PreFlex")) {
@@ -1555,67 +1547,6 @@ public abstract class LuceneTestCase extends Assert {
       } catch (NoTestsRemainException e) {
         throw new RuntimeException(e);
       }
-    }
-  }
-
-  private static class RandomCodecProvider extends CodecProvider {
-    private List<Codec> knownCodecs = new ArrayList<Codec>();
-    private Map<String,Codec> previousMappings = new HashMap<String,Codec>();
-    private final int perFieldSeed;
-
-    RandomCodecProvider(Random random) {
-      this.perFieldSeed = random.nextInt();
-      // TODO: make it possible to specify min/max iterms per
-      // block via CL:
-      int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-      int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-      register(randomizCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
-      register(randomizCodec(random, new PreFlexCodec()));
-      // TODO: make it possible to specify min/max iterms per
-      // block via CL:
-      minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
-      maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-      register(randomizCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
-      register(randomizCodec(random, new SimpleTextCodec()));
-      register(randomizCodec(random, new MemoryCodec()));
-      Collections.shuffle(knownCodecs, random);
-    }
-
-    @Override
-    public synchronized void register(Codec codec) {
-      if (!codec.name.equals("PreFlex"))
-        knownCodecs.add(codec);
-      super.register(codec);
-    }
-
-    @Override
-    public synchronized void unregister(Codec codec) {
-      knownCodecs.remove(codec);
-      super.unregister(codec);
-    }
-
-    @Override
-    public synchronized String getFieldCodec(String name) {
-      Codec codec = previousMappings.get(name);
-      if (codec == null) {
-        codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.hashCode()) % knownCodecs.size());
-        if (codec instanceof SimpleTextCodec && perFieldSeed % 5 != 0) {
-          // make simpletext rarer, choose again
-          codec = knownCodecs.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ENGLISH).hashCode()) % knownCodecs.size());
-        }
-        previousMappings.put(name, codec);
-      }
-      return codec.name;
-    }
-
-    @Override
-    public synchronized boolean hasFieldCodec(String name) {
-      return true; // we have a codec for every field
-    }
-
-    @Override
-    public synchronized String toString() {
-      return "RandomCodecProvider: " + previousMappings.toString();
     }
   }
 
