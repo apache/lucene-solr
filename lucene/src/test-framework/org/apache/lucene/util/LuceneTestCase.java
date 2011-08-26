@@ -501,7 +501,7 @@ public abstract class LuceneTestCase extends Assert {
       // org.junit.internal.AssumptionViolatedException in older releases
       // org.junit.Assume.AssumptionViolatedException in recent ones
       if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
-        if (e.getCause() instanceof TestIgnoredException)
+        if (e.getCause() instanceof _TestIgnoredException)
           e = e.getCause();
         System.err.print("NOTE: Assume failed in '" + method.getName() + "' (ignored):");
         if (VERBOSE) {
@@ -798,39 +798,8 @@ public abstract class LuceneTestCase extends Assert {
     assertEquals(message, Float.valueOf(expected), Float.valueOf(actual));
   }
 
-  // Replacement for Assume jUnit class, so we can add a message with explanation:
-
-  private static final class TestIgnoredException extends RuntimeException {
-    TestIgnoredException(String msg) {
-      super(msg);
-    }
-
-    TestIgnoredException(String msg, Throwable t) {
-      super(msg, t);
-    }
-
-    @Override
-    public String getMessage() {
-      StringBuilder sb = new StringBuilder(super.getMessage());
-      if (getCause() != null)
-        sb.append(" - ").append(getCause());
-      return sb.toString();
-    }
-
-    // only this one is called by our code, exception is not used outside this class:
-    @Override
-    public void printStackTrace(PrintStream s) {
-      if (getCause() != null) {
-        s.println(super.toString() + " - Caused by:");
-        getCause().printStackTrace(s);
-      } else {
-        super.printStackTrace(s);
-      }
-    }
-  }
-
   public static void assumeTrue(String msg, boolean b) {
-    Assume.assumeNoException(b ? null : new TestIgnoredException(msg));
+    Assume.assumeNoException(b ? null : new _TestIgnoredException(msg));
   }
 
   public static void assumeFalse(String msg, boolean b) {
@@ -838,7 +807,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static void assumeNoException(String msg, Exception e) {
-    Assume.assumeNoException(e == null ? null : new TestIgnoredException(msg, e));
+    Assume.assumeNoException(e == null ? null : new _TestIgnoredException(msg, e));
   }
 
   public static <T> Set<T> asSet(T... args) {
@@ -1360,25 +1329,6 @@ public abstract class LuceneTestCase extends Assert {
   static final Random seedRand = new Random();
   protected static final SmartRandom random = new SmartRandom(0);
   
-  public static class SmartRandom extends Random {
-    boolean initialized;
-    
-    SmartRandom(long seed) {
-      super(seed);
-    }
-    
-    @Override
-    protected int next(int bits) {
-      if (!initialized) {
-        System.err.println("!!! WARNING: test is using random from static initializer !!!");
-        Thread.dumpStack();
-        // I wish, but it causes JRE crashes
-        // throw new IllegalStateException("you cannot use this random from a static initializer in your test");
-      }
-      return super.next(bits);
-    }
-  }
-
   private String name = "<unknown>";
 
   /**
