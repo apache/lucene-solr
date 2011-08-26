@@ -101,15 +101,15 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       final Document doc = new Document();
 
-      doc.add(newField("content1", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField("content6", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-      doc.add(newField("content2", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(newField("content3", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NO));
+      doc.add(newField(r, "content1", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(r, "content6", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField(r, "content2", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(r, "content3", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NO));
 
-      doc.add(newField("content4", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(newField("content5", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField(r, "content4", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(r, "content5", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED));
 
-      doc.add(newField("content7", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField(r, "content7", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
 
       final Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
       doc.add(idField);
