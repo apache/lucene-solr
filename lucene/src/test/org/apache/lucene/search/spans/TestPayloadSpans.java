@@ -492,7 +492,6 @@ public class TestPayloadSpans extends LuceneTestCase {
 
   final class PayloadFilter extends TokenFilter {
     String fieldName;
-    int numSeen = 0;
     Set<String> entities = new HashSet<String>();
     Set<String> nopayload = new HashSet<String>();
     int pos;
@@ -529,6 +528,12 @@ public class TestPayloadSpans extends LuceneTestCase {
         return true;
       }
       return false;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      this.pos = 0;
     }
   }
   
