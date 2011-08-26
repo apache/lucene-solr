@@ -868,7 +868,7 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
-        c.setTermIndexInterval(random.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
+        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
       } else {
         // reasonable value
         c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
