@@ -280,7 +280,7 @@ public class NRTCachingDirectory extends Directory {
         in = cache.openInput(fileName, context);
         in.copyBytes(out, in.length());
       } finally {
-        IOUtils.closeSafely(false, in, out);
+        IOUtils.close(in, out);
       }
       synchronized(this) {
         cache.deleteFile(fileName);

@@ -174,9 +174,9 @@ public final class FieldsReader implements Cloneable, Closeable {
   public final void close() throws IOException {
     if (!closed) {
       if (isOriginal) {
-        IOUtils.closeSafely(false, fieldsStream, indexStream, fieldsStreamTL, cloneableFieldsStream, cloneableIndexStream);
+        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL, cloneableFieldsStream, cloneableIndexStream);
       } else {
-        IOUtils.closeSafely(false, fieldsStream, indexStream, fieldsStreamTL);
+        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL);
       }
       closed = true;
     }

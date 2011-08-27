@@ -184,7 +184,11 @@ class VarDerefBytesImpl {
         success = true;
       } finally {
         hash.close();
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
       }
       
       final IndexOutput idxOut = getIndexOut();
@@ -211,7 +215,11 @@ class VarDerefBytesImpl {
         w.finish();
         success = true;
       } finally {
-        IOUtils.closeSafely(!success,idxOut);
+        if (success) {
+          IOUtils.close(idxOut);
+        } else {
+          IOUtils.closeWhileHandlingException(idxOut);
+        }
         bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
             * (-docToAddress.length));
         docToAddress = null;

@@ -105,7 +105,11 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       }
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, consumer);
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);
+      }
     }
   }
 

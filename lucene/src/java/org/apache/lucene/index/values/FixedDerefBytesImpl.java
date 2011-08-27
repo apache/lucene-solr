@@ -112,7 +112,11 @@ class FixedDerefBytesImpl {
         }
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
         hash.close();
       }
       success = false;
@@ -134,7 +138,11 @@ class FixedDerefBytesImpl {
         w.finish();
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, idxOut);
+        if (success) {
+          IOUtils.close(idxOut);
+        } else {
+          IOUtils.closeWhileHandlingException(idxOut);
+        }
         bytesUsed
             .addAndGet((-docToID.length) * RamUsageEstimator.NUM_BYTES_INT);
         docToID = null;

@@ -152,7 +152,7 @@ public class MultiPerDocValues extends PerDocValues {
   }
 
   public void close() throws IOException {
-    IOUtils.closeSafely(false, this.subs);
+    IOUtils.close(this.subs);
   }
 
   @Override

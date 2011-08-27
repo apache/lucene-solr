@@ -123,7 +123,7 @@ class FixedStraightBytesImpl {
           try {
             datOut.copyBytes(cloneData, size * maxDocs);
           } finally {
-            IOUtils.closeSafely(false, cloneData);  
+            IOUtils.close(cloneData);  
           }
         
           lastDocID += maxDocs;
@@ -133,7 +133,7 @@ class FixedStraightBytesImpl {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(!success, datOut);
+          IOUtils.closeWhileHandlingException(datOut);
         }
       }
     }
@@ -194,7 +194,11 @@ class FixedStraightBytesImpl {
         success = true;
       } finally {
         pool.dropBuffersAndReset();
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
       }
     }
   }
@@ -231,7 +235,7 @@ class FixedStraightBytesImpl {
           data = new byte[maxDoc];
           datIn.readBytes(data, 0, data.length, false);
         } finally {
-          IOUtils.closeSafely(false, datIn);
+          IOUtils.close(datIn);
         }
 
       }

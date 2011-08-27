@@ -368,7 +368,7 @@ public final class Bytes {
           success = true;
         } finally {
           if (!success) {
-            IOUtils.closeSafely(true, datOut);
+            IOUtils.closeWhileHandlingException(datOut);
           }
         }
       }
@@ -386,7 +386,7 @@ public final class Bytes {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, idxOut);
+          IOUtils.closeWhileHandlingException(idxOut);
         }
       }
       return idxOut;

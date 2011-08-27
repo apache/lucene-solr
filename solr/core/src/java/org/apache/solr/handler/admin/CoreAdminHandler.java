@@ -247,7 +247,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
             if (solrCore != null) solrCore.close();
           }
         }
-        if (readersToBeClosed != null) IOUtils.closeSafely(true, readersToBeClosed);
+        if (readersToBeClosed != null) IOUtils.closeWhileHandlingException(readersToBeClosed);
         if (dirsToBeReleased != null) {
           for (Directory dir : dirsToBeReleased) {
             DirectoryFactory dirFactory = core.getDirectoryFactory();

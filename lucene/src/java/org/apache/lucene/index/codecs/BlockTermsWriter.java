@@ -88,7 +88,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }
@@ -138,7 +138,7 @@ public class BlockTermsWriter extends FieldsConsumer {
       }
       writeTrailer(dirStart);
     } finally {
-      IOUtils.closeSafely(false, out, postingsWriter, termsIndexWriter);
+      IOUtils.close(out, postingsWriter, termsIndexWriter);
     }
   }
 

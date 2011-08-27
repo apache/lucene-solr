@@ -45,7 +45,7 @@ final class TermVectorsWriter {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, tvx, tvd, tvf);
+        IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
       }
     }
 
@@ -194,6 +194,6 @@ final class TermVectorsWriter {
   final void close() throws IOException {
     // make an effort to close all streams we can but remember and re-throw
     // the first exception encountered in this process
-    IOUtils.closeSafely(false, tvx, tvd, tvf);
+    IOUtils.close(tvx, tvd, tvf);
   }
 }

@@ -49,7 +49,7 @@ public final class IOUtils {
    * @param priorException  <tt>null</tt> or an exception that will be rethrown after method completion
    * @param objects         objects to call <tt>close()</tt> on
    */
-  public static <E extends Exception> void closeSafely(E priorException, Closeable... objects) throws E, IOException {
+  public static <E extends Exception> void closeWhileHandlingException(E priorException, Closeable... objects) throws E, IOException {
     Throwable th = null;
 
     for (Closeable object : objects) {
@@ -76,7 +76,7 @@ public final class IOUtils {
   }
 
   /** @see #closeSafely(Exception, Closeable...) */
-  public static <E extends Exception> void closeSafely(E priorException, Iterable<Closeable> objects) throws E, IOException {
+  public static <E extends Exception> void closeWhileHandlingException(E priorException, Iterable<Closeable> objects) throws E, IOException {
     Throwable th = null;
 
     for (Closeable object : objects) {
@@ -103,18 +103,16 @@ public final class IOUtils {
   }
 
   /**
-   * Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions.
-   * Some of the <tt>Closeable</tt>s may be null, they are ignored. After
-   * everything is closed, and if {@code suppressExceptions} is {@code false},
-   * method either throws the first of suppressed exceptions, or completes
-   * normally.
+   * Closes all given <tt>Closeable</tt>s.  Some of the
+   * <tt>Closeable</tt>s may be null; they are
+   * ignored.  After everything is closed, the method either
+   * throws the first exception it hit while closing, or
+   * completes normally if there were no exceptions.
    * 
-   * @param suppressExceptions
-   *          if true then exceptions that occur during close() are suppressed
    * @param objects
    *          objects to call <tt>close()</tt> on
    */
-  public static void closeSafely(boolean suppressExceptions, Closeable... objects) throws IOException {
+  public static void close(Closeable... objects) throws IOException {
     Throwable th = null;
 
     for (Closeable object : objects) {
@@ -124,12 +122,13 @@ public final class IOUtils {
         }
       } catch (Throwable t) {
         addSuppressed(th, t);
-        if (th == null)
+        if (th == null) {
           th = t;
+        }
       }
     }
 
-    if (th != null && !suppressExceptions) {
+    if (th != null) {
       if (th instanceof IOException) throw (IOException) th;
       if (th instanceof RuntimeException) throw (RuntimeException) th;
       if (th instanceof Error) throw (Error) th;
@@ -138,9 +137,9 @@ public final class IOUtils {
   }
   
   /**
-   * @see #closeSafely(boolean, Closeable...)
+   * @see #close(Closeable...)
    */
-  public static void closeSafely(boolean suppressExceptions, Iterable<? extends Closeable> objects) throws IOException {
+  public static void close(Iterable<? extends Closeable> objects) throws IOException {
     Throwable th = null;
 
     for (Closeable object : objects) {
@@ -150,16 +149,49 @@ public final class IOUtils {
         }
       } catch (Throwable t) {
         addSuppressed(th, t);
-        if (th == null)
+        if (th == null) {
           th = t;
+        }
       }
     }
 
-    if (th != null && !suppressExceptions) {
+    if (th != null) {
       if (th instanceof IOException) throw (IOException) th;
       if (th instanceof RuntimeException) throw (RuntimeException) th;
       if (th instanceof Error) throw (Error) th;
       throw new RuntimeException(th);
+    }
+  }
+
+  /**
+   * Closes all given <tt>Closeable</tt>s, suppressing all thrown exceptions.
+   * Some of the <tt>Closeable</tt>s may be null, they are ignored.
+   * 
+   * @param objects
+   *          objects to call <tt>close()</tt> on
+   */
+  public static void closeWhileHandlingException(Closeable... objects) throws IOException {
+    for (Closeable object : objects) {
+      try {
+        if (object != null) {
+          object.close();
+        }
+      } catch (Throwable t) {
+      }
+    }
+  }
+  
+  /**
+   * @see #closeSafely(boolean, Closeable...)
+   */
+  public static void closeWhileHandlingException(Iterable<? extends Closeable> objects) throws IOException {
+    for (Closeable object : objects) {
+      try {
+        if (object != null) {
+          object.close();
+        }
+      } catch (Throwable t) {
+      }
     }
   }
   

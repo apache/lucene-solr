@@ -87,7 +87,7 @@ final class DocFieldProcessor extends DocConsumer {
       consumers.finish(state.numDocs);
     };
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.closeSafely(false, perDocConsumers.values());
+    IOUtils.close(perDocConsumers.values());
   }
 
   @Override
@@ -108,7 +108,7 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     try {
-      IOUtils.closeSafely(true, perDocConsumers.values());
+      IOUtils.closeWhileHandlingException(perDocConsumers.values());
       // TODO add abort to PerDocConsumer!
     } catch (IOException e) {
       // ignore on abort!

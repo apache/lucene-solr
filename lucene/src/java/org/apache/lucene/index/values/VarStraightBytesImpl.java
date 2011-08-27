@@ -128,13 +128,13 @@ class VarStraightBytesImpl {
             address += numDataBytes; // this is the address after all addr pointers are updated
             iter.close();
           } finally {
-            IOUtils.closeSafely(false, cloneIdx);
+            IOUtils.close(cloneIdx);
           }
           final IndexInput cloneData = reader.cloneData();
           try {
             datOut.copyBytes(cloneData, numDataBytes);
           } finally {
-            IOUtils.closeSafely(false, cloneData);  
+            IOUtils.close(cloneData);  
           }
         } else {
           super.merge(state);
@@ -142,7 +142,7 @@ class VarStraightBytesImpl {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(!success, datOut);
+          IOUtils.closeWhileHandlingException(datOut);
         }
       }
     }
@@ -174,7 +174,11 @@ class VarStraightBytesImpl {
         }
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, datOut); 
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
         pool.dropBuffersAndReset();
       }
 
@@ -204,7 +208,11 @@ class VarStraightBytesImpl {
         bytesUsed.addAndGet(-(docToAddress.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToAddress = null;
-        IOUtils.closeSafely(!success, idxOut);
+        if (success) {
+          IOUtils.close(idxOut);
+        } else {
+          IOUtils.closeWhileHandlingException(idxOut);
+        }
       }
     }
 

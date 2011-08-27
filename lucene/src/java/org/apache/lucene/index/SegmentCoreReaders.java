@@ -122,7 +122,7 @@ final class SegmentCoreReaders {
   
   synchronized void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      IOUtils.closeSafely(false, fields, perDocProducer, termVectorsReaderOrig,
+      IOUtils.close(fields, perDocProducer, termVectorsReaderOrig,
           fieldsReaderOrig, cfsReader, storeCFSReader);
       // Now, notify any ReaderFinished listeners:
       if (owner != null) {

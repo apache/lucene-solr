@@ -111,7 +111,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       }
       success = true;
     } finally {
-      if (!success) IOUtils.closeSafely(true, in);
+      if (!success) {
+        IOUtils.closeWhileHandlingException(in);
+      }
       if (indexDivisor > 0) {
         in.close();
         in = null;

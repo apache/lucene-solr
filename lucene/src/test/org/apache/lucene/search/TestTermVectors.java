@@ -541,7 +541,7 @@ public class TestTermVectors extends LuceneTestCase {
 
     verifyIndex(target);
 
-    IOUtils.closeSafely(false, target, input[0], input[1]);
+    IOUtils.close(target, input[0], input[1]);
   }
   
   public void testOptimizeAddIndexesReader() throws Exception {
@@ -562,7 +562,7 @@ public class TestTermVectors extends LuceneTestCase {
     writer.close();
     
     verifyIndex(target);
-    IOUtils.closeSafely(false, target, input[0], input[1]);
+    IOUtils.close(target, input[0], input[1]);
   }
 
 }

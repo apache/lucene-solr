@@ -189,7 +189,7 @@ public class DefaultDocValuesProducer extends PerDocValues {
     } else {
       toClose = closeables;
     } 
-    IOUtils.closeSafely(false, toClose);
+    IOUtils.close(toClose);
   }
 
   @Override

@@ -68,7 +68,7 @@ public final class CompoundFileDirectory extends Directory {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, handle);
+          IOUtils.closeWhileHandlingException(handle);
         }
       }
       this.isOpen = true;
@@ -112,7 +112,7 @@ public final class CompoundFileDirectory extends Directory {
           }
           return mapping;
         } finally {
-          IOUtils.closeSafely(false, input);
+          IOUtils.close(input);
         }
       } else {
         // TODO remove once 3.x is not supported anymore
@@ -121,7 +121,11 @@ public final class CompoundFileDirectory extends Directory {
       success = true;
       return mapping;
     } finally {
-      IOUtils.closeSafely(!success, stream);
+      if (success) {
+        IOUtils.close(stream);
+      } else {
+        IOUtils.closeWhileHandlingException(stream);
+      }
     }
   }
 
@@ -196,7 +200,7 @@ public final class CompoundFileDirectory extends Directory {
       assert openForWrite;
       writer.close();
     } else {
-      IOUtils.closeSafely(false, handle);
+      IOUtils.close(handle);
     }
   }
   

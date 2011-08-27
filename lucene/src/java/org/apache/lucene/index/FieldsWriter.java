@@ -111,7 +111,7 @@ final class FieldsWriter {
   void close() throws IOException {
     if (directory != null) {
       try {
-        IOUtils.closeSafely(false, fieldsStream, indexStream);
+        IOUtils.close(fieldsStream, indexStream);
       } finally {
         fieldsStream = indexStream = null;
       }

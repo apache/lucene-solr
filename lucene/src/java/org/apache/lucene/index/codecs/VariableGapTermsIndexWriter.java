@@ -168,7 +168,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }

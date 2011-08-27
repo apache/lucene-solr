@@ -573,7 +573,11 @@ final class SegmentMerger {
                                      slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, consumer);
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);
+      }
     }
   }
 
@@ -602,7 +606,11 @@ final class SegmentMerger {
         docsConsumer.merge(mergeState, multiPerDocValues);
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, docsConsumer);
+        if (success) {
+          IOUtils.close(docsConsumer);
+        } else {
+          IOUtils.closeWhileHandlingException(docsConsumer);
+        }
       }
     }
     /* don't close the perDocProducers here since they are private segment producers
@@ -654,7 +662,11 @@ final class SegmentMerger {
       }
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, output);
+      if (success) {
+        IOUtils.close(output);
+      } else {
+        IOUtils.closeWhileHandlingException(output);
+      }
     }
   }
 }

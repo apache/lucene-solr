@@ -2270,7 +2270,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         } catch(IOException ex) {
           prior = ex;
         } finally {
-          IOUtils.closeSafely(prior, cfsDir);
+          IOUtils.closeWhileHandlingException(prior, cfsDir);
         }
         // Perform the merge
         
@@ -2606,7 +2606,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
     } finally {
-      IOUtils.closeSafely(false, cfsdir);
+      IOUtils.close(cfsdir);
     }
     
     info.dir = directory;
