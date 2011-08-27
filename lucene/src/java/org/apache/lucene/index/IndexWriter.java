@@ -4209,8 +4209,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     merge.readers = new ArrayList<SegmentReader>();
     merge.readerClones = new ArrayList<SegmentReader>();
 
-    merge.info.setHasVectors(merger.fieldInfos().hasVectors());
-
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -4249,6 +4247,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       // This is where all the work happens:
       mergedDocCount = merge.info.docCount = merger.merge();
+
+      // LUCENE-3403: set hasVectors after merge(), so that it is properly set.
+      merge.info.setHasVectors(merger.fieldInfos().hasVectors());
 
       assert mergedDocCount == totDocCount;
 
