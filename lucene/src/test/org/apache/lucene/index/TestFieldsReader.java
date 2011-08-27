@@ -24,7 +24,9 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
@@ -294,5 +296,21 @@ public class TestFieldsReader extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
+  public void testIndexedBit() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
+    Document doc = new Document();
+    FieldType onlyStored = new FieldType();
+    onlyStored.setStored(true);
+    doc.add(new Field("field", onlyStored, "value"));
+    doc.add(new Field("field2", StringField.TYPE_STORED, "value"));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+    assertFalse(r.document(0).getField("field").indexed());
+    assertTrue(r.document(0).getField("field2").indexed());
+    r.close();
+    dir.close();
+  }
 }

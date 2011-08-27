@@ -76,11 +76,12 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     if (accept(fieldInfo)) {
       final byte[] b = new byte[numUTF8Bytes];
       in.readBytes(b, 0, b.length);
-      FieldType ft = new FieldType(TextField.TYPE_STORED);
+      final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
       ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
       ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
       ft.setStoreTermVectors(fieldInfo.storeTermVector);
+      ft.setIndexed(fieldInfo.isIndexed);
       ft.setOmitNorms(fieldInfo.omitNorms);
       ft.setIndexOptions(fieldInfo.indexOptions);
       doc.add(new Field(fieldInfo.name,
