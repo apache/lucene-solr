@@ -52,7 +52,7 @@ final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, termsOut, termsWriter);
+        IOUtils.closeWhileHandlingException(termsOut, termsWriter);
       }
     }
   }
@@ -67,6 +67,6 @@ final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
   /** Called when we are done adding everything. */
   @Override
   void finish() throws IOException {
-    IOUtils.closeSafely(false, termsOut, termsWriter);
+    IOUtils.close(termsOut, termsWriter);
   }
 }

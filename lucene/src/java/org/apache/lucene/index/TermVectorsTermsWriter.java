@@ -53,7 +53,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     if (tvx != null) {
       // At least one doc in this run had term vectors enabled
       fill(state.numDocs);
-      IOUtils.closeSafely(false, tvx, tvf, tvd);
+      IOUtils.close(tvx, tvf, tvd);
       tvx = tvd = tvf = null;
       assert state.segmentName != null;
       String idxName = IndexFileNames.segmentFileName(state.segmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
@@ -129,7 +129,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, tvx, tvd, tvf);
+          IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
         }
       }
       lastDocID = 0;
@@ -176,7 +176,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   public void abort() {
     hasVectors = false;
     try {
-      IOUtils.closeSafely(true, tvx, tvd, tvf);
+      IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
     } catch (IOException e) {
       // cannot happen since we suppress exceptions
       throw new RuntimeException(e);

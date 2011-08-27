@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.zip.DataFormatException;
@@ -35,13 +36,14 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Class responsible for access to stored document fields.
  * <p/>
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
  */
-final class FieldsReader implements Cloneable {
+final class FieldsReader implements Cloneable, Closeable {
   private final FieldInfos fieldInfos;
 
   // The main fieldStream, used only for cloning.
@@ -197,23 +199,13 @@ final class FieldsReader implements Cloneable {
    *
    * @throws IOException
    */
-  final void close() throws IOException {
+  public final void close() throws IOException {
     if (!closed) {
-      if (fieldsStream != null) {
-        fieldsStream.close();
-      }
       if (isOriginal) {
-        if (cloneableFieldsStream != null) {
-          cloneableFieldsStream.close();
-        }
-        if (cloneableIndexStream != null) {
-          cloneableIndexStream.close();
-        }
+        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL, cloneableFieldsStream, cloneableIndexStream);
+      } else {
+        IOUtils.close(fieldsStream, indexStream, fieldsStreamTL);
       }
-      if (indexStream != null) {
-        indexStream.close();
-      }
-      fieldsStreamTL.close();
       closed = true;
     }
   }

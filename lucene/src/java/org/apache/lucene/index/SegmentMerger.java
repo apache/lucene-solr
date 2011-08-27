@@ -578,6 +578,7 @@ final class SegmentMerger {
       if (smi.dirPayloadProcessor != null) {
         payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
       }
+
       while (postings.next()) {
         df++;
         int doc = postings.doc();
@@ -660,7 +661,11 @@ final class SegmentMerger {
       }
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, output);
+      if (success) {
+        IOUtils.close(output);
+      } else {
+        IOUtils.closeWhileHandlingException(output);
+      }
     }
   }
 

@@ -58,7 +58,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }
@@ -131,6 +131,6 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer implemen
   }
 
   public void close() throws IOException {
-    IOUtils.closeSafely(false, out, posWriter);
+    IOUtils.close(out, posWriter);
   }
 }

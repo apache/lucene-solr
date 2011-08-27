@@ -59,7 +59,7 @@ public class TestIOUtils extends LuceneTestCase {
     // test with prior exception
     try {
       final TestException t = new TestException();
-      IOUtils.closeSafely(t, new BrokenCloseable(1), new BrokenCloseable(2));
+      IOUtils.closeWhileHandlingException(t, new BrokenCloseable(1), new BrokenCloseable(2));
     } catch (TestException e1) {
       assertEquals("BASE-EXCEPTION", e1.getMessage());
       final StringWriter sw = new StringWriter();
@@ -83,7 +83,7 @@ public class TestIOUtils extends LuceneTestCase {
     
     // test without prior exception
     try {
-      IOUtils.closeSafely((TestException) null, new BrokenCloseable(1), new BrokenCloseable(2));
+      IOUtils.closeWhileHandlingException((TestException) null, new BrokenCloseable(1), new BrokenCloseable(2));
     } catch (TestException e1) {
       fail("TestException should not be thrown here");
     } catch (IOException e2) {

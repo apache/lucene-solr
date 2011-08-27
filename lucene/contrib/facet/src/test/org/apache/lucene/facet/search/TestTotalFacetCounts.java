@@ -109,7 +109,7 @@ public class TestTotalFacetCounts extends LuceneTestCase {
       ++partition;
     }
     readers[0].close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
     tmpFile.delete();
   }
 

@@ -96,7 +96,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     searcher.close();
     iw.close();
     tw.close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   @Test
@@ -137,7 +137,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     searcher.close();
     iw.close();
     tw.close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   @Test
@@ -181,7 +181,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     searcher.close();
     iw.close();
     tw.close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   private void assertPostingListExists(String field, String text, IndexReader ir) throws IOException {
@@ -229,7 +229,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     searcher.close();
     iw.close();
     tw.close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   @Test
@@ -274,7 +274,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     searcher.close();
     iw.close();
     tw.close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   private Directory[][] getDirs() throws IOException {

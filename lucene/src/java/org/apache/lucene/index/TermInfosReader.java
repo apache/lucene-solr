@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
  * Directory.  Pairs are accessed either by Term or by ordinal position the
  * set.  */
 
-final class TermInfosReader {
+final class TermInfosReader implements Closeable {
   private final Directory directory;
   private final String segment;
   private final FieldInfos fieldInfos;
@@ -158,7 +159,7 @@ final class TermInfosReader {
     return origEnum.maxSkipLevels;
   }
 
-  final void close() throws IOException {
+  public final void close() throws IOException {
     if (origEnum != null)
       origEnum.close();
     threadResources.close();

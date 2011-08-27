@@ -168,7 +168,11 @@ final class NormsWriter extends InvertedDocEndConsumer {
       }
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, normsOut);
+      if (success) {
+        IOUtils.close(normsOut);
+      } else {
+        IOUtils.closeWhileHandlingException(normsOut);
+      }
     }
   }
 }

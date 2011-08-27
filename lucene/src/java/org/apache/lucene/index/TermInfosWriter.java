@@ -92,7 +92,7 @@ final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, output, other);
+        IOUtils.closeWhileHandlingException(output, other);
       }
     }
   }
@@ -119,7 +119,7 @@ final class TermInfosWriter implements Closeable {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, output);
+        IOUtils.closeWhileHandlingException(output);
       }
     }
   }

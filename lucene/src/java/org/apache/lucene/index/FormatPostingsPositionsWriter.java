@@ -84,6 +84,6 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   }
 
   public void close() throws IOException {
-    IOUtils.closeSafely(false, out);
+    IOUtils.close(out);
   }
 }

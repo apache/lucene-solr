@@ -339,7 +339,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     readers[0].close();
     r2.close();
     outputFile.delete();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   private int assertReadFromDisc(TotalFacetCounts totalCounts, int prevGen, String errMsg) {
@@ -405,7 +405,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     outputFile.delete();
     writers[0].close();
     readers[0].close();
-    IOUtils.closeSafely(false, dirs[0]);
+    IOUtils.close(dirs[0]);
   }
 
   /**
@@ -535,7 +535,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     readers[0].close();
     readers[1].close();
     for (Directory[] dirset : dirs) {
-      IOUtils.closeSafely(false, dirset);
+      IOUtils.close(dirset);
     }
   }
 

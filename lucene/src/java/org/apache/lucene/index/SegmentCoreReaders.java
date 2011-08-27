@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.IOUtils;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -159,42 +160,9 @@ final class SegmentCoreReaders {
   synchronized void decRef() throws IOException {
 
     if (ref.decrementAndGet() == 0) {
-
-      // close everything, nothing is shared anymore with other readers
-      if (tis != null) {
-        tis.close();
-        // null so if an app hangs on to us we still free most ram
-        tis = null;
-      }
-      
-      if (tisNoIndex != null) {
-        tisNoIndex.close();
-      }
-      
-      if (freqStream != null) {
-        freqStream.close();
-      }
-
-      if (proxStream != null) {
-        proxStream.close();
-      }
-
-      if (termVectorsReaderOrig != null) {
-        termVectorsReaderOrig.close();
-      }
-
-      if (fieldsReaderOrig != null) {
-        fieldsReaderOrig.close();
-      }
-
-      if (cfsReader != null) {
-        cfsReader.close();
-      }
-
-      if (storeCFSReader != null) {
-        storeCFSReader.close();
-      }
-
+      IOUtils.close(tis, tisNoIndex, freqStream, proxStream, termVectorsReaderOrig,
+                    fieldsReaderOrig, cfsReader, storeCFSReader);
+      tis = null;
       // Now, notify any ReaderFinished listeners:
       if (owner != null) {
         owner.notifyReaderFinishedListeners();
