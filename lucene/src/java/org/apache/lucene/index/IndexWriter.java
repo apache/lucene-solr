@@ -2606,7 +2606,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
     } finally {
-      IOUtils.closeSafely(true, cfsdir);
+      IOUtils.closeSafely(false, cfsdir);
     }
     
     info.dir = directory;

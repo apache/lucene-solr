@@ -128,13 +128,13 @@ class VarStraightBytesImpl {
             address += numDataBytes; // this is the address after all addr pointers are updated
             iter.close();
           } finally {
-            IOUtils.closeSafely(true, cloneIdx);
+            IOUtils.closeSafely(false, cloneIdx);
           }
           final IndexInput cloneData = reader.cloneData();
           try {
             datOut.copyBytes(cloneData, numDataBytes);
           } finally {
-            IOUtils.closeSafely(true, cloneData);  
+            IOUtils.closeSafely(false, cloneData);  
           }
         } else {
           super.merge(state);

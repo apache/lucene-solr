@@ -132,7 +132,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       }
     }
   }
-  
+
+  // TODO: make @Nightly variant that provokes more disk
+  // fulls
+
+  // TODO: have test fail if on any given top
+  // iter there was not a single IOE hit
+
   /*
   Test: make sure when we run out of disk space or hit
   random IOExceptions in any of the addIndexes(*) calls

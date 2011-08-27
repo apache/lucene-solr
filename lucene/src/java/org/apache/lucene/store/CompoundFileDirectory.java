@@ -95,10 +95,10 @@ public final class CompoundFileDirectory extends Directory {
       if (firstInt == CompoundFileWriter.FORMAT_CURRENT) {
         IndexInput input = null;
         try {
-          input = dir.openInput(IndexFileNames.segmentFileName(
-              IndexFileNames.stripExtension(name), "",
-              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION),
-              IOContext.READONCE);
+          final String entriesFileName = IndexFileNames.segmentFileName(
+                                                IndexFileNames.stripExtension(name), "",
+                                                IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+          input = dir.openInput(entriesFileName, IOContext.READONCE);
           final int readInt = input.readInt(); // unused right now
           assert readInt == CompoundFileWriter.ENTRY_FORMAT_CURRENT;
           final int numEntries = input.readVInt();
@@ -112,7 +112,7 @@ public final class CompoundFileDirectory extends Directory {
           }
           return mapping;
         } finally {
-          IOUtils.closeSafely(true, input);
+          IOUtils.closeSafely(false, input);
         }
       } else {
         // TODO remove once 3.x is not supported anymore

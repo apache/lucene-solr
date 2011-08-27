@@ -104,41 +104,39 @@ class FixedStraightBytesImpl {
       datOut = getDataOut();
       boolean success = false;
       try {
-      if (state.liveDocs == null && state.reader instanceof Reader) {
-        Reader reader = (Reader) state.reader;
-        final int maxDocs = reader.maxDoc;
-        if (maxDocs == 0) {
-          return;
-        }
-        if (size == -1) {
-          size = reader.size;
-          datOut.writeInt(size);
-        }
-        if (lastDocID+1 < state.docBase) {
-          fill(datOut, state.docBase);
-          lastDocID = state.docBase-1;
-        }
-        // TODO should we add a transfer to API to each reader?
-        final IndexInput cloneData = reader.cloneData();
-        try {
-          datOut.copyBytes(cloneData, size * maxDocs);
-        } finally {
-          IOUtils.closeSafely(true, cloneData);  
-        }
+        if (state.liveDocs == null && state.reader instanceof Reader) {
+          Reader reader = (Reader) state.reader;
+          final int maxDocs = reader.maxDoc;
+          if (maxDocs == 0) {
+            return;
+          }
+          if (size == -1) {
+            size = reader.size;
+            datOut.writeInt(size);
+          }
+          if (lastDocID+1 < state.docBase) {
+            fill(datOut, state.docBase);
+            lastDocID = state.docBase-1;
+          }
+          // TODO should we add a transfer to API to each reader?
+          final IndexInput cloneData = reader.cloneData();
+          try {
+            datOut.copyBytes(cloneData, size * maxDocs);
+          } finally {
+            IOUtils.closeSafely(false, cloneData);  
+          }
         
-        lastDocID += maxDocs;
-      } else {
-        super.merge(state);
-      }
-      success = true;
+          lastDocID += maxDocs;
+        } else {
+          super.merge(state);
+        }
+        success = true;
       } finally {
         if (!success) {
           IOUtils.closeSafely(!success, datOut);
         }
       }
     }
-    
-    
 
     @Override
     protected void mergeDoc(int docID) throws IOException {

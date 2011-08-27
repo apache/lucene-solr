@@ -153,7 +153,10 @@ public class MockDirectoryWrapper extends Directory {
   
   @Override
   public String toString() {
-    maybeYield();
+    // NOTE: do not maybeYield here, since it consumes
+    // randomness and can thus (unexpectedly during
+    // debugging) change the behavior of a seed
+    // maybeYield();
     return "MockDirWrapper(" + delegate + ")";
   }
 
