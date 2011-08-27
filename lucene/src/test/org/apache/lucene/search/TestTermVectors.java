@@ -18,11 +18,15 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -456,4 +460,86 @@ public class TestTermVectors extends LuceneTestCase {
 
     }
   }
+
+  private IndexWriter createWriter(Directory dir) throws IOException {
+    return new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random)).setMaxBufferedDocs(2));
+  }
+
+  private void createDir(Directory dir) throws IOException {
+    IndexWriter writer = createWriter(dir);
+    writer.addDocument(createDoc());
+    writer.close();
+  }
+
+  private Document createDoc() {
+    Document doc = new Document();
+    doc.add(new Field("c", "aaa", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    return doc;
+  }
+
+  private void verifyIndex(Directory dir) throws IOException {
+    IndexReader r = IndexReader.open(dir);
+    int numDocs = r.numDocs();
+    for (int i = 0; i < numDocs; i++) {
+      TermFreqVector tfv = r.getTermFreqVector(i, "c");
+      assertNotNull("term vectors should not have been null for document " + i, tfv);
+    }
+    r.close();
+  }
+  
+  public void testOptimizeAddDocs() throws Exception {
+    Directory target = newDirectory();
+    IndexWriter writer = createWriter(target);
+    // with maxBufferedDocs=2, this results in two segments, so that optimize
+    // actually does something.
+    for (int i = 0; i < 4; i++) {
+      writer.addDocument(createDoc());
+    }
+    writer.optimize();
+    writer.close();
+    
+    verifyIndex(target);
+    target.close();
+  }
+
+  public void testOptimizeAddIndexesDir() throws Exception {
+    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory target = newDirectory();
+    
+    for (Directory dir : input) {
+      createDir(dir);
+    }
+    
+    IndexWriter writer = createWriter(target);
+    writer.addIndexes(input);
+    writer.optimize();
+    writer.close();
+
+    verifyIndex(target);
+
+    IOUtils.closeSafely(false, target, input[0], input[1]);
+  }
+  
+  public void testOptimizeAddIndexesReader() throws Exception {
+    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory target = newDirectory();
+    
+    for (Directory dir : input) {
+      createDir(dir);
+    }
+    
+    IndexWriter writer = createWriter(target);
+    for (Directory dir : input) {
+      IndexReader r = IndexReader.open(dir);
+      writer.addIndexes(r);
+      r.close();
+    }
+    writer.optimize();
+    writer.close();
+    
+    verifyIndex(target);
+    IOUtils.closeSafely(false, target, input[0], input[1]);
+  }
+
 }
