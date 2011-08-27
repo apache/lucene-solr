@@ -75,7 +75,7 @@ public final class IOUtils {
     }
   }
 
-  /** @see #closeSafely(Exception, Closeable...) */
+  /** @see #closeWhileHandlingException(Exception, Closeable...) */
   public static <E extends Exception> void closeWhileHandlingException(E priorException, Iterable<Closeable> objects) throws E, IOException {
     Throwable th = null;
 
@@ -182,7 +182,7 @@ public final class IOUtils {
   }
   
   /**
-   * @see #closeSafely(boolean, Closeable...)
+   * @see #closeWhileHandlingException(Closeable...)
    */
   public static void closeWhileHandlingException(Iterable<? extends Closeable> objects) throws IOException {
     for (Closeable object : objects) {
