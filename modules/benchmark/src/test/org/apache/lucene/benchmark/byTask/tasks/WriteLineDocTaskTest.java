@@ -33,9 +33,7 @@ import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils.Type;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 
 /** Tests the functionality of {@link WriteLineDocTask}. */
 public class WriteLineDocTaskTest extends BenchmarkTestCase {
@@ -46,9 +44,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(TITLE_FIELD, "title", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(BODY_FIELD, "body"));
+      doc.add(new StringField(TITLE_FIELD, "title"));
+      doc.add(new StringField(DATE_FIELD, "date"));
       return doc;
     }
     
@@ -60,9 +58,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(BODY_FIELD, "body\r\ntext\ttwo", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(TITLE_FIELD, "title\r\ntext", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(DATE_FIELD, "date\r\ntext", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(BODY_FIELD, "body\r\ntext\ttwo"));
+      doc.add(new StringField(TITLE_FIELD, "title\r\ntext"));
+      doc.add(new StringField(DATE_FIELD, "date\r\ntext"));
       return doc;
     }
     
@@ -73,8 +71,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(TITLE_FIELD, "title", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(TITLE_FIELD, "title"));
+      doc.add(new StringField(DATE_FIELD, "date"));
       return doc;
     }
   }
@@ -84,8 +82,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(BODY_FIELD, "body"));
+      doc.add(new StringField(DATE_FIELD, "date"));
       return doc;
     }
   }
@@ -95,7 +93,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(DATE_FIELD, "date"));
       return doc;
     }
   }
@@ -106,7 +104,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
-      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(DATE_FIELD, "date"));
       return doc;
     }
   }
@@ -126,9 +124,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       String name = Thread.currentThread().getName();
-      doc.add(new Field(BODY_FIELD, "body_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(TITLE_FIELD, "title_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field(DATE_FIELD, "date_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField(BODY_FIELD, "body_" + name));
+      doc.add(new StringField(TITLE_FIELD, "title_" + name));
+      doc.add(new StringField(DATE_FIELD, "date_" + name));
       return doc;
     }
     

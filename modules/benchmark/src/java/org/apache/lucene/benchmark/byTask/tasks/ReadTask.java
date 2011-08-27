@@ -28,8 +28,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopDocs;
@@ -300,10 +300,10 @@ public abstract class ReadTask extends PerfTask {
    * @return A Collection of Field names (Strings)
    */
   protected Collection<String> getFieldsToHighlight(Document document) {
-    List<Fieldable> fieldables = document.getFields();
-    Set<String> result = new HashSet<String>(fieldables.size());
-    for (final Fieldable fieldable : fieldables) {
-      result.add(fieldable.name());
+    List<IndexableField> fields = document.getFields();
+    Set<String> result = new HashSet<String>(fields.size());
+    for (final IndexableField f : fields) {
+      result.add(f.name());
     }
     return result;
   }

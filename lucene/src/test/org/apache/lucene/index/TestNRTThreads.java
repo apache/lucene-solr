@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -163,7 +165,7 @@ public class TestNRTThreads extends LuceneTestCase {
                 final String addedField;
                 if (random.nextBoolean()) {
                   addedField = "extra" + random.nextInt(10);
-                  doc.add(new Field(addedField, "a random field", Field.Store.NO, Field.Index.ANALYZED));
+                  doc.add(new TextField(addedField, "a random field"));
                 } else {
                   addedField = null;
                 }
@@ -188,7 +190,7 @@ public class TestNRTThreads extends LuceneTestCase {
                       packID = packCount.getAndIncrement() + "";
                     }
 
-                    final Field packIDField = newField("packID", packID, Field.Store.YES, Field.Index.NOT_ANALYZED);
+                    final Field packIDField = newField("packID", packID, StringField.TYPE_STORED);
                     final List<String> docIDs = new ArrayList<String>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
                     final List<Document> docsList = new ArrayList<Document>();

@@ -25,7 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 
 /**
  * @since 2009-mar-30 13:15:49
@@ -66,7 +66,7 @@ public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
 
   private void addDocument(IndexWriter iw, String text) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("field", text, Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("field", text));
     iw.addDocument(doc);
   }
 }

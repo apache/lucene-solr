@@ -25,9 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.codecs.CodecProvider;
-import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -178,9 +176,11 @@ public class Test2BTerms extends LuceneTestCase {
 
       Document doc = new Document();
       final MyTokenStream ts = new MyTokenStream(random, TERMS_PER_DOC);
-      Field field = new Field("field", ts);
-      field.setIndexOptions(IndexOptions.DOCS_ONLY);
-      field.setOmitNorms(true);
+
+      FieldType customType = new FieldType(TextField.TYPE_STORED);
+      customType.setIndexOptions(IndexOptions.DOCS_ONLY);
+      customType.setOmitNorms(true);
+      Field field = new Field("field", customType, ts);
       doc.add(field);
       //w.setInfoStream(System.out);
       final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);

@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -302,10 +302,10 @@ class JSONWriter extends TextResponseWriter {
 
   protected static class MultiValueField {
     final SchemaField sfield;
-    final ArrayList<Fieldable> fields;
-    MultiValueField(SchemaField sfield, Fieldable firstVal) {
+    final ArrayList<IndexableField> fields;
+    MultiValueField(SchemaField sfield, IndexableField firstVal) {
       this.sfield = sfield;
-      this.fields = new ArrayList<Fieldable>(4);
+      this.fields = new ArrayList<IndexableField>(4);
       this.fields.add(firstVal);
     }
   }

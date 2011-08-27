@@ -23,7 +23,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -50,7 +50,7 @@ public class IntField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -75,7 +75,7 @@ public class IntField extends FieldType {
   }
 
   @Override
-  public Integer toObject(Fieldable f) {
+  public Integer toObject(IndexableField f) {
     return Integer.valueOf( toExternal(f) );
   }
 }

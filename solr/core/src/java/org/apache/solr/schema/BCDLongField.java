@@ -17,13 +17,13 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 /**
  *
  */
 public class BCDLongField extends BCDIntField {
   @Override
-  public Long toObject(Fieldable f) {
+  public Long toObject(IndexableField f) {
     return Long.valueOf( toExternal(f) );
   }
 }

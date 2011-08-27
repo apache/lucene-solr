@@ -1,14 +1,22 @@
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.SetBasedFieldSelector;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -25,15 +33,6 @@ import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -194,8 +193,42 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     if (keyField != null) {
       uniqFieldName = keyField.getName();
     }
-    //Only load the id field to get the uniqueKey of that field
-    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.<String>emptySet());
+    //Only load the id field to get the uniqueKey of that
+    //field
+
+    final String finalUniqFieldName = uniqFieldName;
+
+    final List<String> uniqValues = new ArrayList<String>();
+    final StoredFieldVisitor getUniqValue = new StoredFieldVisitor() {
+      @Override 
+      public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
+        if (fieldInfo.name.equals(finalUniqFieldName)) {
+          final byte[] b = new byte[numUTF8Bytes];
+          in.readBytes(b, 0, b.length);
+          uniqValues.add(new String(b, "UTF-8"));
+        } else {
+          in.seek(in.getFilePointer() + numUTF8Bytes);
+        }
+        return false;
+      }
+
+      @Override 
+      public boolean intField(FieldInfo fieldInfo, int value) throws IOException {
+        if (fieldInfo.name.equals(finalUniqFieldName)) {
+          uniqValues.add(Integer.toString(value));
+        }
+        return false;
+      }
+
+      @Override 
+      public boolean longField(FieldInfo fieldInfo, long value) throws IOException {
+        if (fieldInfo.name.equals(finalUniqFieldName)) {
+          uniqValues.add(Long.toString(value));
+        }
+        return false;
+      }
+    };
+
     TVMapper mapper = new TVMapper(reader);
     mapper.fieldOptions = allFields; //this will only stay set if fieldOptions.isEmpty() (in other words, only if the user didn't set any fields)
     while (iter.hasNext()) {
@@ -205,13 +238,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       termVectors.add("doc-" + docId, docNL);
 
       if (keyField != null) {
-        Document document = reader.document(docId, fieldSelector);
-        Fieldable uniqId = document.getFieldable(uniqFieldName);
+        reader.document(docId, getUniqValue);
         String uniqVal = null;
-        if (uniqId != null) {
-          uniqVal = keyField.getType().storedToReadable(uniqId);          
-        }
-        if (uniqVal != null) {
+        if (uniqValues.size() != 0) {
+          uniqVal = uniqValues.get(0);
+          uniqValues.clear();
           docNL.add("uniqueKey", uniqVal);
           termVectors.add("uniqueKeyFieldName", uniqFieldName);
         }

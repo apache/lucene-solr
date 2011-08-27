@@ -20,16 +20,13 @@ import java.io.Reader;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.ValueType;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * This class provides a {@link AbstractField} that enables storing of typed
+ * This class provides a {@link Field} that enables storing of typed
  * per-document values for scoring, sorting or value retrieval. Here's an
  * example usage, adding an int value:
  * 
@@ -54,16 +51,14 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * <p>
- * If doc values are stored in addition to an indexed ({@link Index}) or stored
- * ({@link Store}) value it's recommended to use the {@link IndexDocValuesField}'s
- * {@link #set(AbstractField)} API:
+ * If doc values are stored in addition to an indexed ({@link FieldType#setIndexed(boolean)}) or stored
+ * ({@link FieldType#setStored(boolean)}) value it's recommended to pass the appropriate {@link FieldType}
+ * when creating the field:
  * 
  * <pre>
- *  IndexDocValuesField field = new IndexDocValuesField(name);
- *  Field indexedField = new Field(name, stringValue, Stored.NO, Indexed.ANALYZED);
+ *  IndexDocValuesField field = new IndexDocValuesField(name, StringField.TYPE_STORED);
  *  Document document = new Document();
- *  document.add(indexedField);
- *  field.set(indexedField);
+ *  document.add(field);
  *  for(all documents) {
  *    ...
  *    field.setInt(value)
@@ -73,7 +68,8 @@ import org.apache.lucene.util.BytesRef;
  * </pre>
  * 
  * */
-public class IndexDocValuesField extends AbstractField implements PerDocFieldValues {
+// TODO: maybe rename to DocValuesField?
+public class IndexDocValuesField extends Field implements PerDocFieldValues {
 
   protected BytesRef bytes;
   protected double doubleValue;
@@ -85,21 +81,27 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
    * Creates a new {@link IndexDocValuesField} with the given name.
    */
   public IndexDocValuesField(String name) {
-    super(name, Store.NO, Index.NO, TermVector.NO);
-    setDocValues(this);
+    this(name, new FieldType());
   }
 
-  /**
-   * Creates a {@link IndexDocValuesField} prototype
-   */
-  IndexDocValuesField() {
-    this("");
+  public IndexDocValuesField(String name, FieldType type) {
+    this(name, type, null);
+  }
+
+  public IndexDocValuesField(String name, FieldType type, String value) {
+    super(name, type);
+    fieldsData = value;
+  }
+
+  @Override
+  public PerDocFieldValues docValues() {
+    return this;
   }
 
   /**
    * Sets the given <code>long</code> value and sets the field's {@link ValueType} to
    * {@link ValueType#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setType(ValueType)}.
+   * default type use {@link #setDocValuesType(ValueType)}.
    */
   public void setInt(long value) {
     setInt(value, false);
@@ -124,7 +126,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the given <code>int</code> value and sets the field's {@link ValueType} to
    * {@link ValueType#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setType(ValueType)}.
+   * default type use {@link #setDocValuesType(ValueType)}.
    */
   public void setInt(int value) {
     setInt(value, false);
@@ -149,7 +151,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the given <code>short</code> value and sets the field's {@link ValueType} to
    * {@link ValueType#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setType(ValueType)}.
+   * default type use {@link #setDocValuesType(ValueType)}.
    */
   public void setInt(short value) {
     setInt(value, false);
@@ -174,11 +176,12 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the given <code>byte</code> value and sets the field's {@link ValueType} to
    * {@link ValueType#VAR_INTS} unless already set. If you want to change the
-   * default type use {@link #setType(ValueType)}.
+   * default type use {@link #setDocValuesType(ValueType)}.
    */
   public void setInt(byte value) {
     setInt(value, false);
   }
+
   /**
    * Sets the given <code>byte</code> value as a 8 bit signed integer.
    * 
@@ -198,7 +201,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the given <code>float</code> value and sets the field's {@link ValueType}
    * to {@link ValueType#FLOAT_32} unless already set. If you want to
-   * change the type use {@link #setType(ValueType)}.
+   * change the type use {@link #setDocValuesType(ValueType)}.
    */
   public void setFloat(float value) {
     if (type == null) {
@@ -210,7 +213,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the given <code>double</code> value and sets the field's {@link ValueType}
    * to {@link ValueType#FLOAT_64} unless already set. If you want to
-   * change the default type use {@link #setType(ValueType)}.
+   * change the default type use {@link #setDocValuesType(ValueType)}.
    */
   public void setFloat(double value) {
     if (type == null) {
@@ -241,7 +244,7 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
     if (value == null) {
       throw new IllegalArgumentException("value must not be null");
     }
-    setType(type);
+    setDocValuesType(type);
     if (bytes == null) {
       bytes = new BytesRef(value);
     } else {
@@ -289,18 +292,11 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Sets the {@link ValueType} for this field.
    */
-  public void setType(ValueType type) {
+  public void setDocValuesType(ValueType type) {
     if (type == null) {
       throw new IllegalArgumentException("Type must not be null");
     }
     this.type = type;
-  }
-
-  /**
-   * Returns the field's {@link ValueType}
-   */
-  public ValueType type() {
-    return type;
   }
 
   /**
@@ -313,36 +309,18 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
   /**
    * Returns always <code>null</code>
    */
-  public String stringValue() {
-    return null;
-  }
-
-  /**
-   * Returns always <code>null</code>
-   */
   public TokenStream tokenStreamValue() {
     return null;
   }
 
-  /**
-   * Sets this {@link IndexDocValuesField} to the given {@link AbstractField} and
-   * returns the given field. Any modifications to this instance will be visible
-   * to the given field.
-   */
-  public <T extends AbstractField> T set(T field) {
-    field.setDocValues(this);
-    return field;
+  @Override
+  public ValueType docValuesType() {
+    return type;
   }
 
-  /**
-   * Sets a new {@link PerDocFieldValues} instance on the given field with the
-   * given type and returns it.
-   * 
-   */
-  public static <T extends AbstractField> T set(T field, ValueType type) {
-    if (field instanceof IndexDocValuesField)
-      return field;
-    final IndexDocValuesField valField = new IndexDocValuesField();
+  @Override
+  public String toString() {
+    final String value;
     switch (type) {
     case BYTES_FIXED_DEREF:
     case BYTES_FIXED_SORTED:
@@ -350,9 +328,43 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
     case BYTES_VAR_DEREF:
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
-      BytesRef ref = field.isBinary() ? new BytesRef(field.getBinaryValue(),
-          field.getBinaryOffset(), field.getBinaryLength()) : new BytesRef(
-          field.stringValue());
+      value = "bytes:bytes.utf8ToString();";
+      break;
+    case VAR_INTS:
+      value = "int:" + longValue;
+      break;
+    case FLOAT_32:
+      value = "float32:" + doubleValue;
+      break;
+    case FLOAT_64:
+      value = "float64:" + doubleValue;
+      break;
+    default:
+      throw new IllegalArgumentException("unknown type: " + type);
+    }
+    return "<" + name() + ": IndexDocValuesField " + value + ">";
+  }
+
+  /**
+   * Returns an IndexDocValuesField holding the value from
+   * the provided string field, as the specified type.  The
+   * incoming field must have a string value.  The name, {@link
+   * FieldType} and string value are carried over from the
+   * incoming Field.
+   */
+  public static IndexDocValuesField build(Field field, ValueType type) {
+    if (field instanceof IndexDocValuesField) {
+      return (IndexDocValuesField) field;
+    }
+    final IndexDocValuesField valField = new IndexDocValuesField(field.name(), field.getFieldType(), field.stringValue());
+    switch (type) {
+    case BYTES_FIXED_DEREF:
+    case BYTES_FIXED_SORTED:
+    case BYTES_FIXED_STRAIGHT:
+    case BYTES_VAR_DEREF:
+    case BYTES_VAR_SORTED:
+    case BYTES_VAR_STRAIGHT:
+      BytesRef ref = field.isBinary() ? field.binaryValue() : new BytesRef(field.stringValue());
       valField.setBytes(ref, type);
       break;
     case VAR_INTS:
@@ -367,7 +379,6 @@ public class IndexDocValuesField extends AbstractField implements PerDocFieldVal
     default:
       throw new IllegalArgumentException("unknown type: " + type);
     }
-    return valField.set(field);
+    return valField;
   }
-
 }

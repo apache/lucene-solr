@@ -24,6 +24,7 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
@@ -122,9 +123,9 @@ public class PayloadHelper {
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field(FIELD, TextField.TYPE_STORED, English.intToEnglish(i)));
+      doc.add(new Field(MULTI_FIELD, TextField.TYPE_STORED, English.intToEnglish(i) + "  " + English.intToEnglish(i)));
+      doc.add(new Field(NO_PAYLOAD_FIELD, TextField.TYPE_STORED, English.intToEnglish(i)));
       writer.addDocument(doc);
     }
     reader = IndexReader.open(writer, true);

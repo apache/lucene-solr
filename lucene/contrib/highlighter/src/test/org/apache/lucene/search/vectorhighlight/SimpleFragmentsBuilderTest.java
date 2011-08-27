@@ -19,9 +19,8 @@ package org.apache.lucene.search.vectorhighlight;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -139,7 +138,12 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzerW).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
-    doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorOffsets(true);
+    customType.setStoreTermVectorPositions(true);
+    doc.add( new Field( F, customType, "aaa" ) );
+    //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
     if (reader != null) reader.close();
@@ -155,9 +159,8 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    // '/' separator doesn't effect the snippet because of NOT_ANALYZED field
     sfb.setMultiValuedSeparator( '/' );
-    assertEquals( "abc<b>defg</b>hijkl", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "abc/<b>defg</b>/hijkl/", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void testMVSeparator() throws Exception {

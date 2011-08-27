@@ -6,12 +6,9 @@ import java.util.ArrayList;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,7 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -84,10 +80,10 @@ public class DrillDownTest extends LuceneTestCase {
       ArrayList<CategoryPath> paths = new ArrayList<CategoryPath>();
       Document doc = new Document();
       if (i % 2 == 0) { // 50
-        doc.add(new Field("content", "foo", Store.NO, Index.ANALYZED));
+        doc.add(new TextField("content", "foo"));
       }
       if (i % 3 == 0) { // 33
-        doc.add(new Field("content", "bar", Store.NO, Index.ANALYZED));
+        doc.add(new TextField("content", "bar"));
       }
       if (i % 4 == 0) { // 25
         paths.add(new CategoryPath("a"));

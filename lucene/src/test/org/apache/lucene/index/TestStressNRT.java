@@ -28,7 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -80,6 +81,9 @@ public class TestStressNRT extends LuceneTestCase {
 
     final int nReadThreads = _TestUtil.nextInt(random, 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);
+
+    final FieldType storedOnlyType = new FieldType();
+    storedOnlyType.setStored(true);
 
     if (VERBOSE) {
       System.out.println("\n");
@@ -228,8 +232,8 @@ public class TestStressNRT extends LuceneTestCase {
                     // add tombstone first
                     if (tombstones) {
                       Document d = new Document();
-                      d.add(new Field("id","-"+Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-                      d.add(new Field(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
+                      d.add(newField("id", "-"+Integer.toString(id), StringField.TYPE_STORED));
+                      d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -244,8 +248,8 @@ public class TestStressNRT extends LuceneTestCase {
                     // add tombstone first
                     if (tombstones) {
                       Document d = new Document();
-                      d.add(new Field("id","-"+Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-                      d.add(new Field(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
+                      d.add(newField("id", "-"+Integer.toString(id), StringField.TYPE_STORED));
+                      d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                       writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                     }
 
@@ -257,8 +261,8 @@ public class TestStressNRT extends LuceneTestCase {
                   } else {
                     // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                     Document d = new Document();
-                    d.add(newField("id",Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-                    d.add(newField(field, Long.toString(nextVal), Field.Store.YES, Field.Index.NO));
+                    d.add(newField("id", Integer.toString(id), StringField.TYPE_STORED));
+                    d.add(newField(field, Long.toString(nextVal), storedOnlyType));
                     if (VERBOSE) {
                       System.out.println("TEST: " + Thread.currentThread().getName() + ": u id:" + id + " val=" + nextVal);
                     }

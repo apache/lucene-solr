@@ -28,7 +28,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -107,8 +108,10 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
-          TermVector.WITH_OFFSETS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorOffsets(true);
+      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -153,8 +156,11 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorOffsets(true);
+      customType.setStoreTermVectorPositions(true);
+      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -199,8 +205,10 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
-          TermVector.WITH_OFFSETS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorOffsets(true);
+      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();
@@ -246,8 +254,10 @@ public class TokenSourcesTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new OverlapAnalyzer()));
     try {
       final Document document = new Document();
-      document.add(new Field(FIELD, new TokenStreamOverlap(),
-          TermVector.WITH_POSITIONS_OFFSETS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorOffsets(true);
+      document.add(new Field(FIELD, customType, new TokenStreamOverlap()));
       indexWriter.addDocument(document);
     } finally {
       indexWriter.close();

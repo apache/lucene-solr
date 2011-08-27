@@ -21,7 +21,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -48,10 +49,9 @@ public class TestDateFilter extends LuceneTestCase {
     Document doc = new Document();
     // add time that is in the past
     doc.add(newField("datefield", DateTools.timeToString(now - 1000,
-        DateTools.Resolution.MILLISECOND), Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
+        DateTools.Resolution.MILLISECOND), StringField.TYPE_STORED));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        Field.Store.YES, Field.Index.ANALYZED));
+        TextField.TYPE_STORED));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -115,10 +115,9 @@ public class TestDateFilter extends LuceneTestCase {
     Document doc = new Document();
     // add time that is in the future
     doc.add(newField("datefield", DateTools.timeToString(now + 888888,
-        DateTools.Resolution.MILLISECOND), Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
+        DateTools.Resolution.MILLISECOND), StringField.TYPE_STORED));
     doc.add(newField("body", "Today is a very sunny day in New York City",
-        Field.Store.YES, Field.Index.ANALYZED));
+                     TextField.TYPE_STORED));
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();

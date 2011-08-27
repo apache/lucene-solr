@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -124,7 +124,7 @@ public class TestElevationComparator extends LuceneTestCase {
  private Document adoc(String[] vals) {
    Document doc = new Document();
    for (int i = 0; i < vals.length - 2; i += 2) {
-     doc.add(newField(vals[i], vals[i + 1], Field.Store.YES, Field.Index.ANALYZED));
+     doc.add(newField(vals[i], vals[i + 1], TextField.TYPE_STORED));
    }
    return doc;
  }

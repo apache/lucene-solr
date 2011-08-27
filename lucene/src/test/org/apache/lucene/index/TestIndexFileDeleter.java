@@ -17,20 +17,21 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.*;
+import java.util.*;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-
-import java.io.*;
-import java.util.*;
+import org.apache.lucene.util.LuceneTestCase;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -229,8 +230,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   private void addDoc(IndexWriter writer, int id) throws IOException
   {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(newField("id", Integer.toString(id), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
+    doc.add(newField("id", Integer.toString(id), StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
   }
 }

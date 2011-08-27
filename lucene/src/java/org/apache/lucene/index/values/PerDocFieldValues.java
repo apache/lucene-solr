@@ -19,14 +19,12 @@ package org.apache.lucene.index.values;
 import java.util.Comparator;
 
 import org.apache.lucene.document.IndexDocValuesField;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Per document and field values consumed by {@link DocValuesConsumer}. 
  * @see IndexDocValuesField
- * @see Fieldable#setDocValues(PerDocFieldValues)
  * 
  * @lucene.experimental
  */
@@ -91,11 +89,10 @@ public interface PerDocFieldValues {
   /**
    * Sets the {@link ValueType}
    */
-  public void setType(ValueType type);
+  public void setDocValuesType(ValueType type);
 
   /**
   * Returns the {@link ValueType}
   */
-  public ValueType type();
-
+  public ValueType docValuesType();
 }

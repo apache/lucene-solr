@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -116,7 +115,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private boolean doNextCall;
 
   @Override
-  void start(Fieldable f) {
+  void start(IndexableField f) {
     termAtt = fieldState.attributeSource.getAttribute(TermToBytesRefAttribute.class);
     termBytesRef = termAtt.getBytesRef();
     consumer.start(f);
@@ -126,11 +125,12 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   @Override
-  boolean start(Fieldable[] fields, int count) throws IOException {
+  boolean start(IndexableField[] fields, int count) throws IOException {
     doCall = consumer.start(fields, count);
     bytesHash.reinit();
-    if (nextPerField != null)
+    if (nextPerField != null) {
       doNextCall = nextPerField.start(fields, count);
+    }
     return doCall || doNextCall;
   }
 

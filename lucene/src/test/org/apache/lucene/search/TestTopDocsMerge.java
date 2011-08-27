@@ -22,8 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -90,8 +91,8 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
         final Document doc = new Document();
-        doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), Field.Index.NOT_ANALYZED));
-        doc.add(newField("text", content[random.nextInt(content.length)], Field.Index.ANALYZED));
+        doc.add(newField("string", _TestUtil.randomRealisticUnicodeString(random), StringField.TYPE_UNSTORED));
+        doc.add(newField("text", content[random.nextInt(content.length)], TextField.TYPE_UNSTORED));
         doc.add(new NumericField("float").setFloatValue(random.nextFloat()));
         final int intValue;
         if (random.nextInt(100) == 17) {

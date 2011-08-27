@@ -353,7 +353,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       realMLTQuery = new BooleanQuery();
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
       realMLTQuery.add(
-          new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getFieldable(uniqueKeyField.getName())))), 
+          new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getField(uniqueKeyField.getName())))), 
             BooleanClause.Occur.MUST_NOT);
       
       DocListAndSet results = new DocListAndSet();

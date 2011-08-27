@@ -35,23 +35,24 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
-import org.apache.lucene.index.OrdTermState;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldsEnum;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader.ReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.OrdTermState;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermVectorMapper;
-import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.codecs.PerDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -60,8 +61,8 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants; // for javadocs
 
 /**
@@ -240,11 +241,8 @@ public class MemoryIndex {
   /**
    * Convenience method; Tokenizes the given field text and adds the resulting
    * terms to the index; Equivalent to adding an indexed non-keyword Lucene
-   * {@link org.apache.lucene.document.Field} that is
-   * {@link org.apache.lucene.document.Field.Index#ANALYZED tokenized},
-   * {@link org.apache.lucene.document.Field.Store#NO not stored},
-   * {@link org.apache.lucene.document.Field.TermVector#WITH_POSITIONS termVectorStored with positions} (or
-   * {@link org.apache.lucene.document.Field.TermVector#WITH_POSITIONS termVectorStored with positions and offsets}),
+   * {@link org.apache.lucene.document.Field} that is tokenized, not stored,
+   * termVectorStored with positions (or termVectorStored with positions and offsets),
    * 
    * @param fieldName
    *            a name to be associated with the text
@@ -1237,18 +1235,11 @@ public class MemoryIndex {
     }
   
     @Override
-    public Document document(int n) {
+    public void document(int docID, StoredFieldVisitor visitor) {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
-      return new Document(); // there are no stored fields
+      // no-op: there are no stored fields
     }
-
-    //When we convert to JDK 1.5 make this Set<String>
-    @Override
-    public Document document(int n, FieldSelector fieldSelector) throws IOException {
-      if (DEBUG) System.err.println("MemoryIndexReader.document");
-      return new Document(); // there are no stored fields
-    }
-
+    
     @Override
     public boolean hasDeletions() {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");

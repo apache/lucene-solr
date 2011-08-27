@@ -19,7 +19,8 @@ package org.apache.lucene.sandbox.queries;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -74,9 +75,9 @@ public class DuplicateFilterTest extends LuceneTestCase {
 
   private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException {
     Document doc = new Document();
-    doc.add(newField(KEY_FIELD, url, Field.Store.YES, Field.Index.NOT_ANALYZED));
-    doc.add(newField("text", text, Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField("date", date, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(KEY_FIELD, url, StringField.TYPE_STORED));
+    doc.add(newField("text", text, TextField.TYPE_STORED));
+    doc.add(newField("date", date, TextField.TYPE_STORED));
     writer.addDocument(doc);
   }
 

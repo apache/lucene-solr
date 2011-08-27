@@ -92,8 +92,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
-        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
-        d.add(newField(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField(PRIORITY_FIELD, HIGH_PRIORITY, TextField.TYPE_STORED));
+        d.add(newField(ID_FIELD, Integer.toString(j), TextField.TYPE_STORED));
         writer.addDocument(d);
       }
       writer.close();

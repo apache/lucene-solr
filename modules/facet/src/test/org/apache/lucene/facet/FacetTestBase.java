@@ -15,9 +15,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -247,7 +245,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
     builder.setCategoryPaths(categories);
     builder.build(d);
-    d.add(new Field("content", content, Store.YES, Index.ANALYZED, TermVector.NO));
+    d.add(new Field("content", TextField.TYPE_STORED, content));
     iw.addDocument(d);
   }
   

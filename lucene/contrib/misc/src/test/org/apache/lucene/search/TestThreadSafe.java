@@ -22,11 +22,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 
 import java.util.Random;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.IOException;
 
@@ -48,16 +48,16 @@ public class TestThreadSafe extends LuceneTestCase {
     }
 
     @Override
-    public void run() {
+      public void run() {
       try {
         for (int i=0; i<iter; i++) {
           /*** future
            // pick a random index reader... a shared one, or create your own
            IndexReader ir;
-           ***/
+          ***/
 
           switch(rand.nextInt(1)) {
-            case 0: loadDoc(ir1); break;
+          case 0: loadDoc(ir1); break;
           }
 
         }
@@ -68,23 +68,28 @@ public class TestThreadSafe extends LuceneTestCase {
     }
 
 
+    private Document getDocument(IndexReader ir, int docID, FieldSelector selector) throws IOException {
+      final FieldSelectorVisitor visitor = new FieldSelectorVisitor(selector);
+      ir.document(docID, visitor);
+      return visitor.getDocument();
+    }
+
     void loadDoc(IndexReader ir) throws IOException {
       // beware of deleted docs in the future
-      Document doc = ir.document(rand.nextInt(ir.maxDoc()),
-                new FieldSelector() {
-                  public FieldSelectorResult accept(String fieldName) {
-                    switch(rand.nextInt(2)) {
-                      case 0: return FieldSelectorResult.LAZY_LOAD;
-                      case 1: return FieldSelectorResult.LOAD;
-                      // TODO: add other options
-                      default: return FieldSelectorResult.LOAD;
-                    }
-                  }
-                }
-              );
+      Document doc = getDocument(ir, rand.nextInt(ir.maxDoc()),
+                                                            new FieldSelector() {
+                                                              public FieldSelectorResult accept(String fieldName) {
+                                                                switch(rand.nextInt(2)) {
+                                                                case 0: return FieldSelectorResult.LAZY_LOAD;
+                                                                case 1: return FieldSelectorResult.LOAD;
+                                                                  // TODO: add other options
+                                                                default: return FieldSelectorResult.LOAD;
+                                                                }
+                                                              }
+                                                            }
+                                                            );
 
-      List<Fieldable> fields = doc.getFields();
-      for (final Fieldable f : fields ) {
+      for (final IndexableField f : doc ) {
         validateField(f);
       }
 
@@ -93,7 +98,7 @@ public class TestThreadSafe extends LuceneTestCase {
   }
 
 
-  void validateField(Fieldable f) {
+  void validateField(IndexableField f) {
     String val = f.stringValue();
     if (!val.startsWith("^") || !val.endsWith("$")) {
       throw new RuntimeException("Invalid field:" + f.toString() + " val=" +val);
@@ -104,7 +109,7 @@ public class TestThreadSafe extends LuceneTestCase {
 
   void buildDir(Directory dir, int nDocs, int maxFields, int maxFieldLen) throws IOException {
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
+                                                                TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     for (int j=0; j<nDocs; j++) {
       Document d = new Document();
       int nFields = random.nextInt(maxFields);
@@ -113,9 +118,7 @@ public class TestThreadSafe extends LuceneTestCase {
         StringBuilder sb = new StringBuilder("^ ");
         while (sb.length() < flen) sb.append(' ').append(words[random.nextInt(words.length)]);
         sb.append(" $");
-        Field.Store store = Field.Store.YES;  // make random later
-        Field.Index index = Field.Index.ANALYZED;  // make random later
-        d.add(newField("f"+i, sb.toString(), store, index));
+        d.add(newField("f"+i, sb.toString(), TextField.TYPE_STORED));
       }
       iw.addDocument(d);
     }

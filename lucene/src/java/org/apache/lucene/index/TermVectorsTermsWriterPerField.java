@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -55,17 +54,17 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   }
 
   @Override
-  boolean start(Fieldable[] fields, int count) {
+  boolean start(IndexableField[] fields, int count) {
     doVectors = false;
     doVectorPositions = false;
     doVectorOffsets = false;
 
     for(int i=0;i<count;i++) {
-      Fieldable field = fields[i];
-      if (field.isIndexed() && field.isTermVectorStored()) {
+      IndexableField field = fields[i];
+      if (field.indexed() && field.storeTermVectors()) {
         doVectors = true;
-        doVectorPositions |= field.isStorePositionWithTermVector();
-        doVectorOffsets |= field.isStoreOffsetWithTermVector();
+        doVectorPositions |= field.storeTermVectorPositions();
+        doVectorOffsets |= field.storeTermVectorOffsets();
       }
     }
 
@@ -188,7 +187,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   }
 
   @Override
-  void start(Fieldable f) {
+  void start(IndexableField f) {
     if (doVectorOffsets) {
       offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
     } else {

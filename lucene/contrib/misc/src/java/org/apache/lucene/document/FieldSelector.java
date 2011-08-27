@@ -1,5 +1,6 @@
 package org.apache.lucene.document;
 
+
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -18,7 +19,7 @@ package org.apache.lucene.document;
 
 /**
  * Similar to a {@link java.io.FileFilter}, the FieldSelector allows one to make decisions about
- * what Fields get loaded on a {@link Document} by {@link org.apache.lucene.index.IndexReader#document(int,org.apache.lucene.document.FieldSelector)}
+ * what Fields get loaded on a {@link Document} by {@link FieldSelectorVisitor}
  *
  **/
 public interface FieldSelector {

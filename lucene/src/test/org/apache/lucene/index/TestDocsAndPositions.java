@@ -22,7 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
 import org.apache.lucene.store.Directory;
@@ -49,9 +50,11 @@ public class TestDocsAndPositions extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setOmitNorms(true);
       doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
           + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
-          + "1 2 3 4 5 6 7 8 9 10", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+          + "1 2 3 4 5 6 7 8 9 10", customType));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -117,6 +120,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int max = 1051;
     int term = random.nextInt(max);
     Integer[][] positionsInDoc = new Integer[numDocs][];
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       ArrayList<Integer> positions = new ArrayList<Integer>();
@@ -133,8 +138,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
         builder.append(term);
         positions.add(num);
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
-          Field.Index.ANALYZED_NO_NORMS));
+      doc.add(newField(fieldName, builder.toString(), customType));
       positionsInDoc[i] = positions.toArray(new Integer[0]);
       writer.addDocument(doc);
     }
@@ -200,6 +204,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int max = 15678;
     int term = random.nextInt(max);
     int[] freqInDoc = new int[numDocs];
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       StringBuilder builder = new StringBuilder();
@@ -210,8 +216,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
           freqInDoc[i]++;
         }
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
-          Field.Index.ANALYZED_NO_NORMS));
+      doc.add(newField(fieldName, builder.toString(), customType));
       writer.addDocument(doc);
     }
 
@@ -276,6 +281,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     int howMany = 1000;
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
       StringBuilder builder = new StringBuilder();
@@ -286,8 +293,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
           builder.append("odd ");
         }
       }
-      doc.add(newField(fieldName, builder.toString(), Field.Store.NO,
-          Field.Index.ANALYZED_NO_NORMS));
+      doc.add(newField(fieldName, builder.toString(), customType));
       writer.addDocument(doc);
     }
 

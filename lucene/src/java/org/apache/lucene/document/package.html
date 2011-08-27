@@ -22,16 +22,16 @@
 <body>
 <p>The logical representation of a {@link org.apache.lucene.document.Document} for indexing and searching.</p>
 <p>The document package provides the user level logical representation of content to be indexed and searched.  The
-package also provides utilities for working with {@link org.apache.lucene.document.Document}s and {@link org.apache.lucene.document.Fieldable}s.</p>
-<h2>Document and Fieldable</h2>
-<p>A {@link org.apache.lucene.document.Document} is a collection of {@link org.apache.lucene.document.Fieldable}s.  A
-  {@link org.apache.lucene.document.Fieldable} is a logical representation of a user's content that needs to be indexed or stored.
-  {@link org.apache.lucene.document.Fieldable}s have a number of properties that tell Lucene how to treat the content (like indexed, tokenized,
-  stored, etc.)  See the {@link org.apache.lucene.document.Field} implementation of {@link org.apache.lucene.document.Fieldable}
+package also provides utilities for working with {@link org.apache.lucene.document.Document}s and {@link org.apache.lucene.index.IndexableField}s.</p>
+<h2>Document and IndexableField</h2>
+<p>A {@link org.apache.lucene.document.Document} is a collection of {@link org.apache.lucene.index.IndexableField}s.  A
+  {@link org.apache.lucene.index.IndexableField} is a logical representation of a user's content that needs to be indexed or stored.
+  {@link org.apache.lucene.index.IndexableField}s have a number of properties that tell Lucene how to treat the content (like indexed, tokenized,
+  stored, etc.)  See the {@link org.apache.lucene.document.Field} implementation of {@link org.apache.lucene.index.IndexableField}
   for specifics on these properties.
 </p>
 <p>Note: it is common to refer to {@link org.apache.lucene.document.Document}s having {@link org.apache.lucene.document.Field}s, even though technically they have
-{@link org.apache.lucene.document.Fieldable}s.</p>
+{@link org.apache.lucene.index.IndexableField}s.</p>
 <h2>Working with Documents</h2>
 <p>First and foremost, a {@link org.apache.lucene.document.Document} is something created by the user application.  It is your job
   to create Documents based on the content of the files you are working with in your application (Word, txt, PDF, Excel or any other format.)
@@ -45,7 +45,7 @@ package also provides utilities for working with {@link org.apache.lucene.docume
 to simplify indexing of numeric values (and also dates) for fast range range queries with {@link org.apache.lucene.search.NumericRangeQuery}
 (using a special sortable string representation of numeric values).</p>
 <p>The {@link org.apache.lucene.document.FieldSelector} class provides a mechanism to tell Lucene how to load Documents from
-storage.  If no FieldSelector is used, all Fieldables on a Document will be loaded.  As an example of the FieldSelector usage, consider
+storage.  If no FieldSelector is used, all IndexableFields on a Document will be loaded.  As an example of the FieldSelector usage, consider
   the common use case of
 displaying search results on a web page and then having users click through to see the full document.  In this scenario, it is often
   the case that there are many small fields and one or two large fields (containing the contents of the original file). Before the FieldSelector,

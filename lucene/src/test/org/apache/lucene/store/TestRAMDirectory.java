@@ -19,15 +19,12 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -59,7 +56,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
       doc = new Document();
-      doc.add(newField("content", English.intToEnglish(i).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", English.intToEnglish(i).trim(), StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
@@ -119,7 +116,7 @@ public class TestRAMDirectory extends LuceneTestCase {
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
             Document doc = new Document();
-            doc.add(newField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+            doc.add(newField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), StringField.TYPE_STORED));
             try {
               writer.addDocument(doc);
             } catch (IOException e) {

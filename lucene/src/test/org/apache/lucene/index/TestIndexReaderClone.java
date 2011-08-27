@@ -17,12 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.SegmentNorms;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
@@ -500,7 +498,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(false))
     );
     Document doc = new Document();
-    doc.add(newField("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "yes it's stored", TextField.TYPE_STORED));
     w.addDocument(doc);
     w.close();
     IndexReader r1 = IndexReader.open(dir, false);

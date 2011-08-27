@@ -22,9 +22,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -141,7 +140,11 @@ public class TestAppendingCodec extends LuceneTestCase {
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    doc.add(newField("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType storedTextType = new FieldType(TextField.TYPE_STORED);
+    storedTextType.setStoreTermVectors(true);
+    storedTextType.setStoreTermVectorPositions(true);
+    storedTextType.setStoreTermVectorOffsets(true);
+    doc.add(newField("f", text, storedTextType));
     writer.addDocument(doc);
     writer.commit();
     writer.addDocument(doc);
@@ -149,8 +152,8 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.close();
     IndexReader reader = IndexReader.open(dir, null, true, 1, new AppendingCodecProvider());
     assertEquals(2, reader.numDocs());
-    doc = reader.document(0);
-    assertEquals(text, doc.get("f"));
+    Document doc2 = reader.document(0);
+    assertEquals(text, doc2.get("f"));
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");
     assertNotNull(terms);

@@ -21,15 +21,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.MapFieldSelector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.search.highlight.DefaultEncoder;
 import org.apache.lucene.search.highlight.Encoder;
-import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
+import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
+import org.apache.lucene.store.IndexInput;
 
 public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
@@ -107,10 +110,27 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragments.toArray( new String[fragments.size()] );
   }
   
-  protected Field[] getFields( IndexReader reader, int docId, String fieldName) throws IOException {
+  protected Field[] getFields( IndexReader reader, int docId, final String fieldName) throws IOException {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
-    Document doc = reader.document( docId, new MapFieldSelector(fieldName) );
-    return doc.getFields( fieldName ); // according to Document class javadoc, this never returns null
+    final List<Field> fields = new ArrayList<Field>();
+    reader.document(docId, new StoredFieldVisitor() {
+        @Override
+        public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
+          if (fieldInfo.name.equals(fieldName)) {
+            final byte[] b = new byte[numUTF8Bytes];
+            in.readBytes(b, 0, b.length);
+            FieldType ft = new FieldType(TextField.TYPE_STORED);
+            ft.setStoreTermVectors(fieldInfo.storeTermVector);
+            ft.setStoreTermVectorOffsets(fieldInfo.storeOffsetWithTermVector);
+            ft.setStoreTermVectorPositions(fieldInfo.storePositionWithTermVector);
+            fields.add(new Field(fieldInfo.name, ft, new String(b, "UTF-8")));
+          } else {
+            in.seek(in.getFilePointer() + numUTF8Bytes);
+          }
+          return false;
+        }
+      });
+    return fields.toArray(new Field[fields.size()]);
   }
 
   protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
@@ -142,8 +162,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       buffer.append( values[index[0]].stringValue() );
-      if( values[index[0]].isTokenized() )
-        buffer.append( multiValuedSeparator );
+      buffer.append( multiValuedSeparator );
       index[0]++;
     }
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;

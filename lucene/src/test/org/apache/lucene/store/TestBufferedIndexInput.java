@@ -28,7 +28,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -251,8 +251,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         );
         for(int i=0;i<37;i++) {
           Document doc = new Document();
-          doc.add(newField("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
-          doc.add(newField("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(newField("content", "aaa bbb ccc ddd" + i, TextField.TYPE_STORED));
+          doc.add(newField("id", "" + i, TextField.TYPE_STORED));
           writer.addDocument(doc);
         }
         writer.close();

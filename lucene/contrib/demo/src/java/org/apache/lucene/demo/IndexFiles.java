@@ -22,7 +22,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -173,8 +174,7 @@ public class IndexFiles {
           // field that is indexed (i.e. searchable), but don't tokenize 
           // the field into separate words and don't index term frequency
           // or positional information:
-          Field pathField = new Field("path", file.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
-          pathField.setIndexOptions(IndexOptions.DOCS_ONLY);
+          Field pathField = new Field("path", StringField.TYPE_STORED, file.getPath());
           doc.add(pathField);
 
           // Add the last modified date of the file a field named "modified".
@@ -192,7 +192,7 @@ public class IndexFiles {
           // so that the text of the file is tokenized and indexed, but not stored.
           // Note that FileReader expects the file to be in UTF-8 encoding.
           // If that's not the case searching for special characters will fail.
-          doc.add(new Field("contents", new BufferedReader(new InputStreamReader(fis, "UTF-8"))));
+          doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(fis, "UTF-8"))));
 
           if (writer.getConfig().getOpenMode() == OpenMode.CREATE) {
             // New index, so we just add the document (no old document can be there):

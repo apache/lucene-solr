@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -44,7 +44,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
     // TODO: replace w/ the @nightly test data; make this
     // into an optional @nightly stress test
     final Document doc = new Document();
-    final Field body = newField("body", "", Field.Index.ANALYZED);
+    final Field body = newField("body", "", TextField.TYPE_UNSTORED);
     doc.add(body);
     final StringBuilder sb = new StringBuilder();
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {

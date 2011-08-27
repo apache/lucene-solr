@@ -18,7 +18,6 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;

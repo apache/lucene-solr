@@ -22,11 +22,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.Directory;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
@@ -137,8 +137,9 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static Document makeDocument(String docText) {
     Document doc = new Document();
-    Field f = new Field("f", docText, Field.Store.NO, Field.Index.ANALYZED);
-    f.setOmitNorms(true);
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setOmitNorms(true);
+    Field f = new Field("f", customType, docText);
     doc.add(f);
     return doc;
   }

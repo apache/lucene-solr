@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumberBiMap;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -74,10 +73,10 @@ import org.apache.lucene.util.TwoPhaseCommit;
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
-  <p>In either case, documents are added with {@link #addDocument(Document)
+  <p>In either case, documents are added with {@link #addDocument(Iterable)
   addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
   #deleteDocuments(Query)}. A document can be updated with {@link
-  #updateDocument(Term, Document) updateDocument} (which just deletes
+  #updateDocument(Term, Iterable) updateDocument} (which just deletes
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
@@ -1281,7 +1280,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc) throws CorruptIndexException, IOException {
+  public void addDocument(Iterable<? extends IndexableField> doc) throws CorruptIndexException, IOException {
     addDocument(doc, analyzer);
   }
 
@@ -1289,7 +1288,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Adds a document to this index, using the provided analyzer instead of the
    * value of {@link #getAnalyzer()}.
    *
-   * <p>See {@link #addDocument(Document)} for details on
+   * <p>See {@link #addDocument(Iterable)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1300,7 +1299,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
+  public void addDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     updateDocument(null, doc, analyzer);
   }
 
@@ -1318,7 +1317,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * compression), in which case you may need to fully
    * re-index your documents at that time.
    *
-   * <p>See {@link #addDocument(Document)} for details on
+   * <p>See {@link #addDocument(Iterable)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1338,7 +1337,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<Document> docs) throws CorruptIndexException, IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws CorruptIndexException, IOException {
     addDocuments(docs, analyzer);
   }
 
@@ -1353,7 +1352,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
     updateDocuments(null, docs, analyzer);
   }
 
@@ -1370,7 +1369,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<Document> docs) throws CorruptIndexException, IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws CorruptIndexException, IOException {
     updateDocuments(delTerm, docs, analyzer);
   }
 
@@ -1388,7 +1387,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<Document> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
       boolean success = false;
@@ -1511,7 +1510,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Document doc) throws CorruptIndexException, IOException {
+  public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws CorruptIndexException, IOException {
     ensureOpen();
     updateDocument(term, doc, getAnalyzer());
   }
@@ -1534,7 +1533,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Document doc, Analyzer analyzer)
+  public void updateDocument(Term term, Iterable<? extends IndexableField> doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
     try {
@@ -3034,7 +3033,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   DocumentsWriter getDocsWriter() {
     boolean test = false;
     assert test = true;
-    return test?docWriter: null;
+    return test ? docWriter : null;
   }
 
   /** Expert:  Return the number of documents currently

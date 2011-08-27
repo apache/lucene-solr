@@ -30,9 +30,9 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -100,16 +100,24 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     Document doc = new Document();
     for(int i=0;i<testFields.length;i++) {
-      final Field.TermVector tv;
-      if (testFieldsStorePos[i] && testFieldsStoreOff[i])
-        tv = Field.TermVector.WITH_POSITIONS_OFFSETS;
-      else if (testFieldsStorePos[i] && !testFieldsStoreOff[i])
-        tv = Field.TermVector.WITH_POSITIONS;
-      else if (!testFieldsStorePos[i] && testFieldsStoreOff[i])
-        tv = Field.TermVector.WITH_OFFSETS;
-      else
-        tv = Field.TermVector.YES;
-      doc.add(new Field(testFields[i], "", Field.Store.NO, Field.Index.ANALYZED, tv));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      if (testFieldsStorePos[i] && testFieldsStoreOff[i]) {
+        customType.setStoreTermVectors(true);
+        customType.setStoreTermVectorPositions(true);
+        customType.setStoreTermVectorOffsets(true);
+      }
+      else if (testFieldsStorePos[i] && !testFieldsStoreOff[i]) {
+        customType.setStoreTermVectors(true);
+        customType.setStoreTermVectorPositions(true);
+      }
+      else if (!testFieldsStorePos[i] && testFieldsStoreOff[i]) {
+        customType.setStoreTermVectors(true);
+        customType.setStoreTermVectorOffsets(true);
+      }
+      else {
+        customType.setStoreTermVectors(true);
+      }
+      doc.add(new Field(testFields[i], customType, ""));
     }
 
     //Create 5 documents for testing, they all have the same

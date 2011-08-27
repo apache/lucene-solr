@@ -17,8 +17,10 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.util.HashSet;
+
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -28,8 +30,6 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.HashSet;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -57,7 +57,7 @@ public class TermsFilterTest extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
-      doc.add(newField(fieldName, "" + term, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(fieldName, "" + term, StringField.TYPE_STORED));
       w.addDocument(doc);
     }
     IndexReader reader = new SlowMultiReaderWrapper(w.getReader());

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -39,7 +39,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
     w.setInfoStream(VERBOSE ? System.out : null);
     for(int i=0;i<80;i++) {
       Document doc = new Document();
-      doc.add(newField("content", "aaa " + (i%4), Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa " + (i%4), TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
     assertEquals(80, w.maxDoc());
@@ -86,7 +86,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       final int numDocs = _TestUtil.nextInt(random, 20, 100);
       for(int i=0;i<numDocs;i++) {
         Document doc = new Document();
-        doc.add(newField("content", "aaa " + (i%4), Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", "aaa " + (i%4), TextField.TYPE_UNSTORED));
         w.addDocument(doc);
         int count = w.getSegmentCount();
         maxCount = Math.max(count, maxCount);

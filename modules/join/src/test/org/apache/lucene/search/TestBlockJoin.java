@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -42,16 +43,16 @@ public class TestBlockJoin extends LuceneTestCase {
   // One resume...
   private Document makeResume(String name, String country) {
     Document resume = new Document();
-    resume.add(newField("docType", "resume", Field.Index.NOT_ANALYZED));
-    resume.add(newField("name", name, Field.Store.YES, Field.Index.NOT_ANALYZED));
-    resume.add(newField("country", country, Field.Index.NOT_ANALYZED));
+    resume.add(newField("docType", "resume", StringField.TYPE_UNSTORED));
+    resume.add(newField("name", name, StringField.TYPE_STORED));
+    resume.add(newField("country", country, StringField.TYPE_UNSTORED));
     return resume;
   }
 
   // ... has multiple jobs
   private Document makeJob(String skill, int year) {
     Document job = new Document();
-    job.add(newField("skill", skill, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    job.add(newField("skill", skill, StringField.TYPE_STORED));
     job.add(new NumericField("year").setIntValue(year));
     return job;
   }
@@ -188,15 +189,15 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
       Document parentDoc = new Document();
       Document parentJoinDoc = new Document();
-      Field id = newField("parentID", ""+parentDocID, Field.Store.YES, Field.Index.NOT_ANALYZED);
+      Field id = newField("parentID", ""+parentDocID, StringField.TYPE_STORED);
       parentDoc.add(id);
       parentJoinDoc.add(id);
-      parentJoinDoc.add(newField("isParent", "x", Field.Index.NOT_ANALYZED));
+      parentJoinDoc.add(newField("isParent", "x", StringField.TYPE_UNSTORED));
       for(int field=0;field<parentFields.length;field++) {
         if (random.nextDouble() < 0.9) {
           Field f = newField("parent" + field,
                              parentFields[field][random.nextInt(parentFields[field].length)],
-                             Field.Index.NOT_ANALYZED);
+                             StringField.TYPE_UNSTORED);
           parentDoc.add(f);
           parentJoinDoc.add(f);
         }
@@ -215,7 +216,7 @@ public class TestBlockJoin extends LuceneTestCase {
         Document joinChildDoc = new Document();
         joinDocs.add(joinChildDoc);
 
-        Field childID = newField("childID", ""+childDocID, Field.Store.YES, Field.Index.NOT_ANALYZED);
+        Field childID = newField("childID", ""+childDocID, StringField.TYPE_STORED);
         childDoc.add(childID);
         joinChildDoc.add(childID);
 
@@ -223,7 +224,7 @@ public class TestBlockJoin extends LuceneTestCase {
           if (random.nextDouble() < 0.9) {
             Field f = newField("child" + childFieldID,
                                childFields[childFieldID][random.nextInt(childFields[childFieldID].length)],
-                               Field.Index.NOT_ANALYZED);
+                               StringField.TYPE_UNSTORED);
             childDoc.add(f);
             joinChildDoc.add(f);
           }

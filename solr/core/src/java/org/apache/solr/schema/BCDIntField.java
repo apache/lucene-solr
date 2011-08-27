@@ -20,7 +20,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.BCDUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -51,13 +51,13 @@ public class BCDIntField extends FieldType {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
   
   // Note, this can't return type 'Integer' because BCDStrField and BCDLong extend it
   @Override
-  public Object toObject(Fieldable f) {
+  public Object toObject(IndexableField f) {
     return Integer.valueOf( toExternal(f) );
   }
 
@@ -67,7 +67,7 @@ public class BCDIntField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeInt(name,toExternal(f));
   }
 }

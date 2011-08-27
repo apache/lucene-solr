@@ -36,9 +36,9 @@ public class TestStressAdvance extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random, dir);
       final Set<Integer> aDocs = new HashSet<Integer>();
       final Document doc = new Document();
-      final Field f = newField("field", "", Field.Index.NOT_ANALYZED_NO_NORMS);
+      final Field f = newField("field", "", StringField.TYPE_UNSTORED);
       doc.add(f);
-      final Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      final Field idField = newField("id", "", StringField.TYPE_STORED);
       doc.add(idField);
       int num = atLeast(4097);
       for(int id=0;id<num;id++) {

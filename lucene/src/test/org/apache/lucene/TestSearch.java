@@ -93,8 +93,8 @@ public class TestSearch extends LuceneTestCase {
       };
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(newField("contents", docs[j], Field.Store.YES, Field.Index.ANALYZED));
-        d.add(newField("id", ""+j, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("contents", docs[j], TextField.TYPE_STORED));
+        d.add(newField("id", ""+j, StringField.TYPE_UNSTORED));
         writer.addDocument(d);
       }
       writer.close();

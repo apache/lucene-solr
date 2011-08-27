@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
@@ -58,15 +57,15 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
-    
+  
     NumericField
-      field8 = new NumericField("field8", 8, Field.Store.YES, true),
-      field4 = new NumericField("field4", 4, Field.Store.YES, true),
-      field2 = new NumericField("field2", 2, Field.Store.YES, true),
-      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? Field.Store.YES : Field.Store.NO, true),
-      ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
-      ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
-      ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
+	    field8 = new NumericField("field8", 8, NumericField.TYPE_STORED),
+	    field4 = new NumericField("field4", 4, NumericField.TYPE_STORED),
+	    field2 = new NumericField("field2", 2, NumericField.TYPE_STORED),
+	    fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, rarely() ? NumericField.TYPE_STORED : NumericField.TYPE_UNSTORED),
+	    ascfield8 = new NumericField("ascfield8", 8, NumericField.TYPE_UNSTORED),
+	    ascfield4 = new NumericField("ascfield4", 4, NumericField.TYPE_UNSTORED),
+	    ascfield2 = new NumericField("ascfield2", 2, NumericField.TYPE_UNSTORED);
     
     Document doc = new Document();
     // add fields, that have a distance to test general functionality

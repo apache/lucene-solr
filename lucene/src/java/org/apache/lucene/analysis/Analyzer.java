@@ -22,10 +22,9 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.lang.reflect.Modifier;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.store.AlreadyClosedException;
-
-import org.apache.lucene.document.Fieldable;
 
 /** An Analyzer builds TokenStreams, which analyze text.  It thus represents a
  *  policy for extracting index terms from text.
@@ -111,16 +110,16 @@ public abstract class Analyzer implements Closeable {
   }
 
   /**
-   * Invoked before indexing a Fieldable instance if
+   * Invoked before indexing a IndexableField instance if
    * terms have already been added to that field.  This allows custom
    * analyzers to place an automatic position increment gap between
-   * Fieldable instances using the same field name.  The default value
+   * IndexbleField instances using the same field name.  The default value
    * position increment gap is 0.  With a 0 position increment gap and
    * the typical default token position increment of 1, all terms in a field,
-   * including across Fieldable instances, are in successive positions, allowing
-   * exact PhraseQuery matches, for instance, across Fieldable instance boundaries.
+   * including across IndexableField instances, are in successive positions, allowing
+   * exact PhraseQuery matches, for instance, across IndexableField instance boundaries.
    *
-   * @param fieldName Fieldable name being indexed.
+   * @param fieldName IndexableField name being indexed.
    * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
   public int getPositionIncrementGap(String fieldName) {
@@ -138,11 +137,12 @@ public abstract class Analyzer implements Closeable {
    * @param field the field just indexed
    * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
-  public int getOffsetGap(Fieldable field) {
-    if (field.isTokenized())
+  public int getOffsetGap(IndexableField field) {
+    if (field.tokenized()) {
       return 1;
-    else
+    } else {
       return 0;
+    }
   }
 
   /** Frees persistent resources used by this Analyzer */

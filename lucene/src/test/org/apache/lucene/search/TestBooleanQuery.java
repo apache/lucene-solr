@@ -21,9 +21,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -68,7 +67,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(newField("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a b c d", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();
@@ -129,7 +128,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir1 = newDirectory();
     RandomIndexWriter iw1 = new RandomIndexWriter(random, dir1);
     Document doc1 = new Document();
-    doc1.add(newField("field", "foo bar", Field.Index.ANALYZED));
+    doc1.add(newField("field", "foo bar", TextField.TYPE_UNSTORED));
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
     iw1.close();
@@ -137,7 +136,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random, dir2);
     Document doc2 = new Document();
-    doc2.add(newField("field", "foo baz", Field.Index.ANALYZED));
+    doc2.add(newField("field", "foo baz", TextField.TYPE_UNSTORED));
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
     iw2.close();

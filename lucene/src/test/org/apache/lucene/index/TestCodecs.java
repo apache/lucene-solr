@@ -23,9 +23,9 @@ import java.util.HashSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
@@ -340,7 +340,9 @@ public class TestCodecs extends LuceneTestCase {
       pq.add(new Term("content", "ccc"));
 
       final Document doc = new Document();
-      doc.add(newField("content", "aaa bbb ccc ddd", Store.NO, Field.Index.ANALYZED_NO_NORMS));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setOmitNorms(true);
+      doc.add(newField("content", "aaa bbb ccc ddd", customType));
 
       // add document and force commit for creating a first segment
       writer.addDocument(doc);

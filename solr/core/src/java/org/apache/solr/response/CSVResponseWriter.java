@@ -19,8 +19,7 @@ package org.apache.solr.response;
 
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVStrategy;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -32,10 +31,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.CharArrayWriter;
 import java.io.IOException;
@@ -146,7 +143,7 @@ class CSVWriter extends TextResponseWriter {
     CSVSharedBufPrinter mvPrinter;  // printer used to encode multiple values in a single CSV value
 
     // used to collect values
-    List<Fieldable> values = new ArrayList<Fieldable>(1);  // low starting amount in case there are many fields
+    List<IndexableField> values = new ArrayList<IndexableField>(1);  // low starting amount in case there are many fields
     int tmp;
   }
 

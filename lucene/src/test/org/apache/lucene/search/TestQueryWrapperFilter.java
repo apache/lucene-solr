@@ -18,8 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -33,7 +32,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(newField("field", "value", Store.NO, Index.ANALYZED));
+    doc.add(newField("field", "value", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

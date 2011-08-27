@@ -27,8 +27,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiNorms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
@@ -190,16 +190,16 @@ public class InstantiatedIndex
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
         Document sourceDocument = sourceIndexReader.document(i);
-        for (Fieldable field : sourceDocument.getFields()) {
+        for (IndexableField field : sourceDocument) {
           if (fields == null || fields.contains(field.name())) {
             document.getDocument().add(field);
           }
         }
         document.setDocumentNumber(i);
         documentsByNumber[i] = document;
-        for (Fieldable field : document.getDocument().getFields()) {
+        for (IndexableField field : document.getDocument()) {
           if (fields == null || fields.contains(field.name())) {
-            if (field.isTermVectorStored()) {
+            if (field.storeTermVectors()) {
               if (document.getVectorSpace() == null) {
                 document.setVectorSpace(new HashMap<String, List<InstantiatedTermDocumentInformation>>());
               }
@@ -290,8 +290,8 @@ public class InstantiatedIndex
       if (document == null) {
         continue; // deleted
       }
-      for (Fieldable field : document.getDocument().getFields()) {
-        if (field.isTermVectorStored() && field.isStoreOffsetWithTermVector()) {
+      for (IndexableField field : document.getDocument()) {
+        if (field.storeTermVectors() && field.storeTermVectorOffsets()) {
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
           if (termPositionVector != null) {
             for (int i = 0; i < termPositionVector.getTerms().length; i++) {

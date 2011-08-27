@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -56,7 +56,7 @@ public class DocumentBuilder {
     // might actually want to map it to something.  If createField()
     // returns null, then we don't store the field.
     if (sfield.isPolyField()) {
-      Fieldable[] fields = sfield.createFields(val, boost);
+      IndexableField[] fields = sfield.createFields(val, boost);
       if (fields.length > 0) {
         if (!sfield.multiValued()) {
           String oldValue = map.put(sfield.getName(), val);
@@ -66,12 +66,12 @@ public class DocumentBuilder {
           }
         }
         // Add each field
-        for (Fieldable field : fields) {
+        for (IndexableField field : fields) {
           doc.add(field);
         }
       }
     } else {
-      Fieldable field = sfield.createField(val, boost);
+      IndexableField field = sfield.createField(val, boost);
       if (field != null) {
         if (!sfield.multiValued()) {
           String oldValue = map.put(sfield.getName(), val);
@@ -145,10 +145,6 @@ public class DocumentBuilder {
     }
   }
 
-  public void setBoost(float boost) {
-    doc.setBoost(boost);
-  }
-
   public void endDoc() {
   }
 
@@ -159,7 +155,7 @@ public class DocumentBuilder {
     // default value are defacto 'required' fields.  
     List<String> missingFields = null;
     for (SchemaField field : schema.getRequiredFields()) {
-      if (doc.getFieldable(field.getName() ) == null) {
+      if (doc.getField(field.getName() ) == null) {
         if (field.getDefaultValue() != null) {
           addField(doc, field, field.getDefaultValue(), 1.0f);
         } else {
@@ -176,7 +172,7 @@ public class DocumentBuilder {
       // add the uniqueKey if possible
       if( schema.getUniqueKeyField() != null ) {
         String n = schema.getUniqueKeyField().getName();
-        String v = doc.get( n );
+        String v = doc.getField( n ).stringValue();
         builder.append( "Document ["+n+"="+v+"] " );
       }
       builder.append("missing required fields: " );
@@ -194,12 +190,12 @@ public class DocumentBuilder {
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
     if (field.isPolyField()) {
-      Fieldable[] farr = field.getType().createFields(field, val, boost);
-      for (Fieldable f : farr) {
+      IndexableField[] farr = field.getType().createFields(field, val, boost);
+      for (IndexableField f : farr) {
         if (f != null) doc.add(f); // null fields are not added
       }
     } else {
-      Fieldable f = field.createField(val, boost);
+      IndexableField f = field.createField(val, boost);
       if (f != null) doc.add(f);  // null fields are not added
     }
   }
@@ -231,7 +227,7 @@ public class DocumentBuilder {
   public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
   { 
     Document out = new Document();
-    out.setBoost( doc.getDocumentBoost() );
+    final float docBoost = doc.getDocumentBoost();
     
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
@@ -258,7 +254,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, boost);
+            addField(out, sfield, v, docBoost*boost);
           }
   
           // Check if we should copy this field to any other fields.
@@ -267,7 +263,7 @@ public class DocumentBuilder {
           for (CopyField cf : copyFields) {
             SchemaField destinationField = cf.getDestination();
             // check if the copy field is a multivalued or not
-            if (!destinationField.multiValued() && out.getFieldable(destinationField.getName()) != null) {
+            if (!destinationField.multiValued() && out.getField(destinationField.getName()) != null) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                       "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
                               destinationField.getName() + ": " + v);
@@ -281,9 +277,9 @@ public class DocumentBuilder {
               val = cf.getLimitedValue((String)val);
             }
             
-            Fieldable [] fields = destinationField.createFields(val, boost);
+            IndexableField [] fields = destinationField.createFields(val, docBoost*boost);
             if (fields != null) { // null fields are not added
-              for (Fieldable f : fields) {
+              for (IndexableField f : fields) {
                 if(f != null) out.add(f);
               }
             }
@@ -293,7 +289,7 @@ public class DocumentBuilder {
           // document boost and *all* boosts on values of that field. 
           // For multi-valued fields, we only want to set the boost on the
           // first field.
-          boost = 1.0f; 
+          boost = docBoost;
         }
       }
       catch( Exception ex ) {
@@ -313,7 +309,7 @@ public class DocumentBuilder {
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
     for (SchemaField field : schema.getRequiredFields()) {
-      if (out.getFieldable(field.getName() ) == null) {
+      if (out.getField(field.getName() ) == null) {
         if (field.getDefaultValue() != null) {
           addField(out, field, field.getDefaultValue(), 1.0f);
         } 
@@ -339,8 +335,8 @@ public class DocumentBuilder {
    */
   public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
   {
-    for( Fieldable field : luceneDoc.getFields() ) {
-      if( field.isStored() ) {
+    for( IndexableField field : luceneDoc) {
+      if( field.stored() ) {
         SchemaField sf = schema.getField( field.name() );
         if( !schema.isCopyFieldTarget( sf ) ) {
           doc.addField( field.name(), sf.getType().toObject( field ) );

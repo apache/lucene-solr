@@ -255,6 +255,11 @@ Changes in Runtime Behavior
 
 * LUCENE-3146: IndexReader.setNorm throws IllegalStateException if the field
   does not store norms. (Shai Erera, Mike McCandless)
+
+* LUCENE-3309: Stored fields no longer record whether they were
+  tokenized or not.  In general you should not rely on stored fields
+  to record any "metadata" from indexing (tokenized, omitNorms,
+  IndexOptions, boost, etc.)  (Mike McCandless)
   
 API Changes
 

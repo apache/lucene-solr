@@ -19,9 +19,8 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.SimilarityProvider;
 import org.apache.lucene.util.Version;
@@ -34,7 +33,6 @@ import org.apache.solr.common.util.SystemIdResolver;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SolrSimilarityProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.*;
@@ -43,8 +41,6 @@ import org.xml.sax.InputSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.*;
@@ -258,8 +254,8 @@ public final class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public Fieldable getUniqueKeyField(org.apache.lucene.document.Document doc) {
-    return doc.getFieldable(uniqueKeyFieldName);  // this should return null if name is null
+  public IndexableField getUniqueKeyField(org.apache.lucene.document.Document doc) {
+    return doc.getField(uniqueKeyFieldName);  // this should return null if name is null
   }
 
   /**
@@ -268,8 +264,8 @@ public final class IndexSchema {
    * @return null if this schema has no unique key field
    */
   public String printableUniqueKey(org.apache.lucene.document.Document doc) {
-     Fieldable f = doc.getFieldable(uniqueKeyFieldName);
-     return f==null ? null : uniqueKeyFieldType.toExternal(f);
+    IndexableField f = doc.getField(uniqueKeyFieldName);
+    return f==null ? null : uniqueKeyFieldType.toExternal(f);
   }
 
   private SchemaField getIndexedField(String fname) {

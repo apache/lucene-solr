@@ -1,7 +1,10 @@
 package org.apache.lucene.facet.taxonomy.lucene;
 
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,17 +34,26 @@ abstract class Consts {
   static final char[] PAYLOAD_PARENT_CHARS = PAYLOAD_PARENT.toCharArray();
 
   /**
-   * The following is a "field selector", an object which tells Lucene to
-   * extract only a single field rather than a whole document.
+   * The following is a "stored field visitor", an object
+   * which tells Lucene to extract only a single field
+   * rather than a whole document.
    */
-  public static final FieldSelector fullPathSelector = new FieldSelector() {
-    public FieldSelectorResult accept(String fieldName) {
-      if (fieldName.equals(FULL)) {
-        return FieldSelectorResult.LOAD_AND_BREAK;
-      }
-      return FieldSelectorResult.NO_LOAD;
-    }  
-  };
+  public static final class LoadFullPathOnly extends StoredFieldVisitor {
+    private String fullPath;
+
+    public boolean stringField(FieldInfo fieldInfo, IndexInput in, int numUTF8Bytes) throws IOException {
+      final byte[] bytes = new byte[numUTF8Bytes];
+      in.readBytes(bytes, 0, bytes.length);
+      fullPath = new String(bytes, "UTF-8");
+
+      // Stop loading:
+      return true;
+    }
+
+    public String getFullPath() {
+      return fullPath;
+    }
+  }
 
   /**
    * Delimiter used for creating the full path of a category from the list of

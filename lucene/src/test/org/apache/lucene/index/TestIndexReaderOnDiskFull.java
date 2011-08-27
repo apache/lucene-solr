@@ -21,11 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -52,8 +52,8 @@ public class TestIndexReaderOnDiskFull extends LuceneTestCase {
     }
     for(int i=0;i<157;i++) {
       Document d = new Document();
-      d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      d.add(newField("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
+      d.add(newField("id", Integer.toString(i), StringField.TYPE_STORED));
+      d.add(newField("content", "aaa " + i, TextField.TYPE_UNSTORED));
       writer.addDocument(d);
       if (0==i%10)
         writer.commit();

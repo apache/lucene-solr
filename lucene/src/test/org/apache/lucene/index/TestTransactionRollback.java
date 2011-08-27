@@ -29,7 +29,7 @@ import java.util.HashMap;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
@@ -128,9 +128,10 @@ public class TestTransactionRollback extends LuceneTestCase {
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
     IndexWriter w=new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setIndexDeletionPolicy(sdp));
+
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
-      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
+      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,TextField.TYPE_STORED));
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {

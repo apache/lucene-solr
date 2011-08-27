@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -21,6 +20,7 @@ import org.apache.lucene.store.FSDirectory;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.lucene.Consts.LoadFullPathOnly;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.collections.LRUHashMap;
@@ -295,8 +295,9 @@ public class LuceneTaxonomyReader implements TaxonomyReader {
       if (catID<0 || catID>=indexReader.maxDoc()) {
         return null;
       }
-      ret = indexReader.document(catID, Consts.fullPathSelector)
-      .get(Consts.FULL);
+      final LoadFullPathOnly loader = new LoadFullPathOnly();
+      indexReader.document(catID, loader);
+      ret = loader.getFullPath();
     } finally {
       indexReaderLock.readLock().unlock();
     }

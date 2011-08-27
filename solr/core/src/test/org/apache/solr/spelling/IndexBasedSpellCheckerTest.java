@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -289,7 +290,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     );
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("title", ALT_DOCS[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field("title", TextField.TYPE_STORED, ALT_DOCS[i]));
       iw.addDocument(doc);
     }
     iw.optimize();

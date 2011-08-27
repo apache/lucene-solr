@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -37,8 +38,8 @@ public class TestSumDocFreq extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();
-    Field field1 = newField("foo", "", Field.Index.ANALYZED);
-    Field field2 = newField("bar", "", Field.Index.ANALYZED);
+    Field field1 = newField("foo", "", TextField.TYPE_UNSTORED);
+    Field field2 = newField("bar", "", TextField.TYPE_UNSTORED);
     doc.add(field1);
     doc.add(field2);
     for (int i = 0; i < numDocs; i++) {

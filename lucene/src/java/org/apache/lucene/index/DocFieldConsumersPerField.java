@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Fieldable;
 
 final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
 
@@ -35,7 +34,7 @@ final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
   }
 
   @Override
-  public void processFields(Fieldable[] fields, int count) throws IOException {
+  public void processFields(IndexableField[] fields, int count) throws IOException {
     one.processFields(fields, count);
     two.processFields(fields, count);
   }

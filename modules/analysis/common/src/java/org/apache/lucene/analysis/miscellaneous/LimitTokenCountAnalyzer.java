@@ -17,9 +17,9 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.IndexableField;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public final class LimitTokenCountAnalyzer extends Analyzer {
   }
 
   @Override
-  public int getOffsetGap(Fieldable field) {
+  public int getOffsetGap(IndexableField field) {
     return delegate.getOffsetGap(field);
   }
   

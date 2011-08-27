@@ -7,8 +7,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -134,7 +134,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         int docNum = it.getDocID();
         assertNull(
             "Deleted docs must not appear in the allDocsScoredDocIds set: " + docNum, 
-            reader.document(docNum).getFieldable("del"));
+            reader.document(docNum).getField("del"));
       }
 
       assertEquals("Wrong number of (live) documents", allDocs.size(), numIteratedDocs);
@@ -166,7 +166,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
             live != null && !live.get(docNum));
         assertNull(
             "Complement-Set must not contain docs from the original set (doc="+ docNum+")",
-            reader.document(docNum).getFieldable("del"));
+            reader.document(docNum).getField("del"));
         assertFalse(
             "Complement-Set must not contain docs from the original set (doc="+docNum+")",
             resultSet.fastGet(docNum));
@@ -189,8 +189,8 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
     protected final static String delTxt = "delete";
     protected final static String alphaTxt = "alpha";
     
-    private final static Field deletionMark = new Field(field, delTxt, Store.NO, Index.NOT_ANALYZED_NO_NORMS);
-    private final static Field alphaContent = new Field(field, alphaTxt, Store.NO, Index.NOT_ANALYZED_NO_NORMS);
+    private final static Field deletionMark = new StringField(field, delTxt);
+    private final static Field alphaContent = new StringField(field, alphaTxt);
     
     protected final int numDocs;
     
@@ -208,7 +208,9 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         doc.add(deletionMark);
         // Add a special field for docs that are marked for deletion. Later we
         // assert that those docs are not returned by all-scored-doc-IDs.
-        doc.add(new Field("del", Integer.toString(docNum), Store.YES, Index.NO));
+        FieldType ft = new FieldType();
+        ft.setStored(true);
+        doc.add(new Field("del", ft, Integer.toString(docNum)));
       }
 
       if (haveAlpha(docNum)) {

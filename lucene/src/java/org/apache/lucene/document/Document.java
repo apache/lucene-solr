@@ -17,61 +17,55 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.util.*;             // for javadoc
+import java.util.*;
+
+import org.apache.lucene.index.IndexReader;  // for javadoc
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
-import org.apache.lucene.index.IndexReader;  // for javadoc
+import org.apache.lucene.util.BytesRef;
 
 /** Documents are the unit of indexing and search.
  *
  * A Document is a set of fields.  Each field has a name and a textual value.
- * A field may be {@link Fieldable#isStored() stored} with the document, in which
+ * A field may be {@link IndexableField#stored() stored} with the document, in which
  * case it is returned with search hits on the document.  Thus each document
  * should typically contain one or more stored fields which uniquely identify
  * it.
  *
- * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
+ * <p>Note that fields which are <i>not</i> {@link IndexableField#stored() stored} are
  * <i>not</i> available in documents retrieved from the index, e.g. with {@link
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
-public final class Document {
-  List<Fieldable> fields = new ArrayList<Fieldable>();
-  private float boost = 1.0f;
+public final class Document implements Iterable<IndexableField> {
+
+  private final List<IndexableField> fields = new ArrayList<IndexableField>();
 
   /** Constructs a new document with no fields. */
   public Document() {}
 
+  @Override
+  public Iterator<IndexableField> iterator() {
 
-  /** Sets a boost factor for hits on any field of this document.  This value
-   * will be multiplied into the score of all hits on this document.
-   *
-   * <p>The default value is 1.0.
-   * 
-   * <p>Values are multiplied into the value of {@link Fieldable#getBoost()} of
-   * each field in this document.  Thus, this method in effect sets a default
-   * boost for the fields of this document.
-   *
-   * @see Fieldable#setBoost(float)
-   */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
+    return new Iterator<IndexableField>() {
+      private int fieldUpto = 0;
+      
+      @Override
+      public boolean hasNext() {
+        return fieldUpto < fields.size();
+      }
 
-  /** Returns, at indexing time, the boost factor as set by {@link #setBoost(float)}. 
-   *
-   * <p>Note that once a document is indexed this value is no longer available
-   * from the index.  At search time, for retrieved documents, this method always 
-   * returns 1. This however does not mean that the boost value set at  indexing 
-   * time was ignored - it was just combined with other indexing time factors and 
-   * stored elsewhere, for better indexing and search performance. (For more 
-   * information see the "norm(t,d)" part of the scoring formula in 
-   * {@link org.apache.lucene.search.Similarity Similarity}.)
-   *
-   * @see #setBoost(float)
-   */
-  public float getBoost() {
-    return boost;
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public IndexableField next() {
+        return fields.get(fieldUpto++);
+      }
+    };
   }
 
   /**
@@ -84,7 +78,7 @@ public final class Document {
    * a document has to be deleted from an index and a new changed version of that
    * document has to be added.</p>
    */
-  public final void add(Fieldable field) {
+  public final void add(IndexableField field) {
     fields.add(field);
   }
   
@@ -99,9 +93,9 @@ public final class Document {
    * document has to be added.</p>
    */
   public final void removeField(String name) {
-    Iterator<Fieldable> it = fields.iterator();
+    Iterator<IndexableField> it = fields.iterator();
     while (it.hasNext()) {
-      Fieldable field = it.next();
+      IndexableField field = it.next();
       if (field.name().equals(name)) {
         it.remove();
         return;
@@ -119,148 +113,15 @@ public final class Document {
    * document has to be added.</p>
    */
   public final void removeFields(String name) {
-    Iterator<Fieldable> it = fields.iterator();
+    Iterator<IndexableField> it = fields.iterator();
     while (it.hasNext()) {
-      Fieldable field = it.next();
+      IndexableField field = it.next();
       if (field.name().equals(name)) {
         it.remove();
       }
     }
   }
 
-  /** Returns a field with the given name if any exist in this document, or
-   * null.  If multiple fields exists with this name, this method returns the
-   * first value added.
-   * Do not use this method with lazy loaded fields or {@link NumericField}.
-   * @deprecated use {@link #getFieldable} instead and cast depending on
-   * data type.
-   * @throws ClassCastException if you try to retrieve a numerical or
-   * lazy loaded field.
-   */
-  @Deprecated
-  public final Field getField(String name) {
-    return (Field) getFieldable(name);
-  }
-
-
- /** Returns a field with the given name if any exist in this document, or
-   * null.  If multiple fields exists with this name, this method returns the
-   * first value added.
-   */
- public Fieldable getFieldable(String name) {
-   for (Fieldable field : fields) {
-     if (field.name().equals(name))
-       return field;
-   }
-   return null;
- }
-
-  /** Returns the string value of the field with the given name if any exist in
-   * this document, or null.  If multiple fields exist with this name, this
-   * method returns the first value added. If only binary fields with this name
-   * exist, returns null.
-   * For {@link NumericField} it returns the string value of the number. If you want
-   * the actual {@code NumericField} instance back, use {@link #getFieldable}.
-   */
-  public final String get(String name) {
-   for (Fieldable field : fields) {
-      if (field.name().equals(name) && (!field.isBinary()))
-        return field.stringValue();
-    }
-    return null;
-  }
-
-  /** Returns a List of all the fields in a document.
-   * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
-   * <i>not</i> available in documents retrieved from the
-   * index, e.g. {@link IndexSearcher#doc(int)} or {@link
-   * IndexReader#document(int)}.
-   */
-  public final List<Fieldable> getFields() {
-    return fields;
-  }
-
-  private final static Field[] NO_FIELDS = new Field[0];
-  
-  /**
-   * Returns an array of {@link Field}s with the given name.
-   * This method returns an empty array when there are no
-   * matching fields.  It never returns null.
-   * Do not use this method with lazy loaded fields or {@link NumericField}.
-   *
-   * @param name the name of the field
-   * @return a <code>Field[]</code> array
-   * @deprecated use {@link #getFieldable} instead and cast depending on
-   * data type.
-   * @throws ClassCastException if you try to retrieve a numerical or
-   * lazy loaded field.
-   */
-   @Deprecated
-   public final Field[] getFields(String name) {
-     List<Field> result = new ArrayList<Field>();
-     for (Fieldable field : fields) {
-       if (field.name().equals(name)) {
-         result.add((Field) field);
-       }
-     }
-
-     if (result.size() == 0)
-       return NO_FIELDS;
-
-     return result.toArray(new Field[result.size()]);
-   }
-
-
-   private final static Fieldable[] NO_FIELDABLES = new Fieldable[0];
-
-   /**
-   * Returns an array of {@link Fieldable}s with the given name.
-   * This method returns an empty array when there are no
-   * matching fields.  It never returns null.
-   *
-   * @param name the name of the field
-   * @return a <code>Fieldable[]</code> array
-   */
-   public Fieldable[] getFieldables(String name) {
-     List<Fieldable> result = new ArrayList<Fieldable>();
-     for (Fieldable field : fields) {
-       if (field.name().equals(name)) {
-         result.add(field);
-       }
-     }
-
-     if (result.size() == 0)
-       return NO_FIELDABLES;
-
-     return result.toArray(new Fieldable[result.size()]);
-   }
-
-
-   private final static String[] NO_STRINGS = new String[0];
-
-  /**
-   * Returns an array of values of the field specified as the method parameter.
-   * This method returns an empty array when there are no
-   * matching fields.  It never returns null.
-   * For {@link NumericField}s it returns the string value of the number. If you want
-   * the actual {@code NumericField} instances back, use {@link #getFieldables}.
-   * @param name the name of the field
-   * @return a <code>String[]</code> of field values
-   */
-  public final String[] getValues(String name) {
-    List<String> result = new ArrayList<String>();
-    for (Fieldable field : fields) {
-      if (field.name().equals(name) && (!field.isBinary()))
-        result.add(field.stringValue());
-    }
-    
-    if (result.size() == 0)
-      return NO_STRINGS;
-    
-    return result.toArray(new String[result.size()]);
-  }
-
-  private final static byte[][] NO_BYTES = new byte[0][];
 
   /**
   * Returns an array of byte arrays for of the fields that have the name specified
@@ -271,17 +132,18 @@ public final class Document {
   * @param name the name of the field
   * @return a <code>byte[][]</code> of binary field values
   */
-  public final byte[][] getBinaryValues(String name) {
-    List<byte[]> result = new ArrayList<byte[]>();
-    for (Fieldable field : fields) {
-      if (field.name().equals(name) && (field.isBinary()))
-        result.add(field.getBinaryValue());
+  public final BytesRef[] getBinaryValues(String name) {
+    final List<BytesRef> result = new ArrayList<BytesRef>();
+    for (IndexableField field : fields) {
+      if (field.name().equals(name)) {
+        final BytesRef bytes = field.binaryValue();
+        if (bytes != null) {
+          result.add(bytes);
+        }
+      }
     }
   
-    if (result.size() == 0)
-      return NO_BYTES;
-  
-    return result.toArray(new byte[result.size()][]);
+    return result.toArray(new BytesRef[result.size()]);
   }
   
   /**
@@ -293,10 +155,72 @@ public final class Document {
   * @param name the name of the field.
   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
-  public final byte[] getBinaryValue(String name) {
-    for (Fieldable field : fields) {
-      if (field.name().equals(name) && (field.isBinary()))
-        return field.getBinaryValue();
+  public final BytesRef getBinaryValue(String name) {
+    for (IndexableField field : fields) {
+      if (field.name().equals(name)) {
+        final BytesRef bytes = field.binaryValue();
+        if (bytes != null) {
+          return bytes;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Returns a field with the given name if any exist in this document, or
+   * null.  If multiple fields exists with this name, this method returns the
+   * first value added.
+   */
+  public final IndexableField getField(String name) {
+    for (IndexableField field : fields) {
+      if (field.name().equals(name)) {
+        return field;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Returns an array of {@link IndexableField}s with the given name.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
+   *
+   * @param name the name of the field
+   * @return a <code>Fieldable[]</code> array
+   */
+  public IndexableField[] getFields(String name) {
+    List<IndexableField> result = new ArrayList<IndexableField>();
+    for (IndexableField field : fields) {
+      if (field.name().equals(name)) {
+        result.add(field);
+      }
+    }
+
+    return result.toArray(new IndexableField[result.size()]);
+  }
+  
+  /** Returns a List of all the fields in a document.
+   * <p>Note that fields which are <i>not</i> stored are
+   * <i>not</i> available in documents retrieved from the
+   * index, e.g. {@link IndexSearcher#doc(int)} or {@link
+   * IndexReader#document(int)}.
+   */
+  public final List<IndexableField> getFields() {
+    return fields;
+  }
+  
+  /** Returns the string value of the field with the given name if any exist in
+   * this document, or null.  If multiple fields exist with this name, this
+   * method returns the first value added. If only binary fields with this name
+   * exist, returns null.
+   * For {@link NumericField} it returns the string value of the number. If you want
+   * the actual {@code NumericField} instance back, use {@link #getField}.
+   */
+  public final String get(String name) {
+    for (IndexableField field : fields) {
+      if (field.name().equals(name) && field.stringValue() != null) {
+        return field.stringValue();
+      }
     }
     return null;
   }
@@ -307,7 +231,7 @@ public final class Document {
     StringBuilder buffer = new StringBuilder();
     buffer.append("Document<");
     for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = fields.get(i);
+      IndexableField field = fields.get(i);
       buffer.append(field.toString());
       if (i != fields.size()-1)
         buffer.append(" ");

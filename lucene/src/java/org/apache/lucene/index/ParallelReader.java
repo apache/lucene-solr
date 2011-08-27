@@ -17,10 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.codecs.PerDocValues;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.util.Bits;
@@ -351,30 +347,12 @@ public class ParallelReader extends IndexReader {
     hasDeletions = false;
   }
 
-  // append fields from storedFieldReaders
   @Override
-  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+  public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     ensureOpen();
-    Document result = new Document();
     for (final IndexReader reader: storedFieldReaders) {
-
-      boolean include = (fieldSelector==null);
-      if (!include) {
-        Collection<String> fields = readerToFields.get(reader);
-        for (final String field : fields)
-          if (fieldSelector.accept(field) != FieldSelectorResult.NO_LOAD) {
-            include = true;
-            break;
-          }
-      }
-      if (include) {
-        List<Fieldable> fields = reader.document(n, fieldSelector).getFields();
-        for (Fieldable field : fields) {
-          result.add(field);
-        }
-      }
+      reader.document(docID, visitor);
     }
-    return result;
   }
 
   // get all vectors

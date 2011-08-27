@@ -22,15 +22,13 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.codecs.Codec;
-import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.index.codecs.DocValuesConsumer;
+import org.apache.lucene.index.codecs.PerDocConsumer;
+import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 
@@ -199,22 +197,16 @@ final class DocFieldProcessor extends DocConsumer {
     consumer.startDocument();
     fieldsWriter.startDocument();
 
-    final Document doc = docState.doc;
-
     fieldCount = 0;
 
     final int thisFieldGen = fieldGen++;
-
-    final List<Fieldable> docFields = doc.getFields();
-    final int numDocFields = docFields.size();
 
     // Absorb any new fields first seen in this document.
     // Also absorb any changes to fields we had already
     // seen before (eg suddenly turning on norms or
     // vectors, etc.):
 
-    for(int i=0;i<numDocFields;i++) {
-      Fieldable field = docFields.get(i);
+    for(IndexableField field : docState.doc) {
       final String fieldName = field.name();
 
       // Make sure we have a PerField allocated
@@ -231,21 +223,22 @@ final class DocFieldProcessor extends DocConsumer {
         // needs to be more "pluggable" such that if I want
         // to have a new "thing" my Fields can do, I can
         // easily add it
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.isIndexed(), field.isTermVectorStored(),
-                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
+        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.indexed(), field.storeTermVectors(),
+                                              field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
+                                              field.omitNorms(), false, field.indexOptions(), field.docValuesType());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
         fieldHash[hashPos] = fp;
         totalFieldCount++;
 
-        if (totalFieldCount >= fieldHash.length/2)
+        if (totalFieldCount >= fieldHash.length/2) {
           rehash();
+        }
       } else {
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.isIndexed(), field.isTermVectorStored(),
-                            field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getIndexOptions(), field.docValuesType());
+        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.indexed(), field.storeTermVectors(),
+                               field.storeTermVectorPositions(), field.storeTermVectorOffsets(),
+                               field.omitNorms(), false, field.indexOptions(), field.docValuesType());
       }
 
       if (thisFieldGen != fp.lastGen) {
@@ -266,12 +259,12 @@ final class DocFieldProcessor extends DocConsumer {
 
       fp.addField(field);
 
-      if (field.isStored()) {
+      if (field.stored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
-      if (field.hasDocValues()) {
-        final DocValuesConsumer docValuesConsumer = docValuesConsumer(docState, fp.fieldInfo);
-        docValuesConsumer.add(docState.docID, field.getDocValues());
+      final PerDocFieldValues docValues = field.docValues();
+      if (docValues != null) {
+        docValuesConsumer(docState, fp.fieldInfo).add(docState.docID, docValues);
       }
     }
 
@@ -339,5 +332,4 @@ final class DocFieldProcessor extends DocConsumer {
     docValues.put(fieldInfo.name, docValuesConsumer);
     return docValuesConsumer;
   }
-
 }

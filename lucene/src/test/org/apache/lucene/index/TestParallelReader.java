@@ -18,14 +18,12 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.MapFieldSelector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
@@ -89,30 +87,6 @@ public class TestParallelReader extends LuceneTestCase {
     dir2.close();
   }
   
-  public void testDocument() throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1, false));
-    pr.add(IndexReader.open(dir2, false));
-
-    Document doc11 = pr.document(0, new MapFieldSelector("f1"));
-    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList("f4")));
-    Document doc223 = pr.document(1, new MapFieldSelector("f2", "f3"));
-    
-    assertEquals(1, doc11.getFields().size());
-    assertEquals(1, doc24.getFields().size());
-    assertEquals(2, doc223.getFields().size());
-    
-    assertEquals("v1", doc11.get("f1"));
-    assertEquals("v2", doc24.get("f4"));
-    assertEquals("v2", doc223.get("f2"));
-    assertEquals("v2", doc223.get("f3"));
-    pr.close();
-    dir1.close();
-    dir2.close();
-  }
-  
   public void testIncompatibleIndexes() throws IOException {
     // two documents:
     Directory dir1 = getDir1(random);
@@ -121,7 +95,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d3 = new Document();
-    d3.add(newField("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
+
+    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
     w2.addDocument(d3);
     w2.close();
     
@@ -179,7 +154,7 @@ public class TestParallelReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     Document d = new Document();
-    d.add(newField("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField("f1", "v1", TextField.TYPE_STORED));
     modifier.addDocument(d);
     modifier.close();
 
@@ -189,7 +164,7 @@ public class TestParallelReader extends LuceneTestCase {
             setMergePolicy(newLogMergePolicy(10))
     );
     d = new Document();
-    d.add(newField("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField("f2", "v2", TextField.TYPE_STORED));
     modifier.addDocument(d);
     modifier.close();
 
@@ -246,16 +221,16 @@ public class TestParallelReader extends LuceneTestCase {
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    d1.add(newField("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    d1.add(newField("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    d1.add(newField("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    d1.add(newField("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f3", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f4", "v1", TextField.TYPE_STORED));
     w.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    d2.add(newField("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    d2.add(newField("f3", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    d2.add(newField("f4", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f3", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f4", "v2", TextField.TYPE_STORED));
     w.addDocument(d2);
     w.close();
 
@@ -276,12 +251,12 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d1 = new Document();
-    d1.add(newField("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    d1.add(newField("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("f1", "v1", TextField.TYPE_STORED));
+    d1.add(newField("f2", "v1", TextField.TYPE_STORED));
     w1.addDocument(d1);
     Document d2 = new Document();
-    d2.add(newField("f1", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    d2.add(newField("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("f1", "v2", TextField.TYPE_STORED));
+    d2.add(newField("f2", "v2", TextField.TYPE_STORED));
     w1.addDocument(d2);
     w1.close();
     return dir1;
@@ -291,12 +266,12 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = newDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     Document d3 = new Document();
-    d3.add(newField("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
-    d3.add(newField("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d3.add(newField("f3", "v1", TextField.TYPE_STORED));
+    d3.add(newField("f4", "v1", TextField.TYPE_STORED));
     w2.addDocument(d3);
     Document d4 = new Document();
-    d4.add(newField("f3", "v2", Field.Store.YES, Field.Index.ANALYZED));
-    d4.add(newField("f4", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d4.add(newField("f3", "v2", TextField.TYPE_STORED));
+    d4.add(newField("f4", "v2", TextField.TYPE_STORED));
     w2.addDocument(d4);
     w2.close();
     return dir2;

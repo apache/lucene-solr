@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -34,17 +33,17 @@ final class DocFieldProcessorPerField {
   int lastGen = -1;
 
   int fieldCount;
-  Fieldable[] fields = new Fieldable[1];
+  IndexableField[] fields = new IndexableField[1];
 
   public DocFieldProcessorPerField(final DocFieldProcessor docFieldProcessor, final FieldInfo fieldInfo) {
     this.consumer = docFieldProcessor.consumer.addField(fieldInfo);
     this.fieldInfo = fieldInfo;
   }
 
-  public void addField(Fieldable field) {
+  public void addField(IndexableField field) {
     if (fieldCount == fields.length) {
       int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-      Fieldable[] newArray = new Fieldable[newSize];
+      IndexableField[] newArray = new IndexableField[newSize];
       System.arraycopy(fields, 0, newArray, 0, fieldCount);
       fields = newArray;
     }

@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -415,7 +415,7 @@ public class TestLockFactory extends LuceneTestCase {
 
     private void addDoc(IndexWriter writer) throws IOException {
         Document doc = new Document();
-        doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
         writer.addDocument(doc);
     }
 }

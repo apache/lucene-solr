@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.*;
@@ -55,7 +54,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       } else {
         id++;
       }
-      doc.getField("docid").setValue(myID);
+      ((Field) doc.getField("docid")).setValue(myID);
       w.updateDocument(new Term("docid", myID), doc);
 
       if (docIter >= SIZE && random.nextInt(50) == 17) {
@@ -130,7 +129,7 @@ public class TestRollingUpdates extends LuceneTestCase {
         IndexReader open = null;
         for (int i = 0; i < num; i++) {
           Document doc = new Document();// docs.nextDoc();
-          doc.add(newField("id", "test", Index.NOT_ANALYZED));
+          doc.add(newField("id", "test", StringField.TYPE_UNSTORED));
           writer.updateDocument(new Term("id", "test"), doc);
           if (random.nextInt(3) == 0) {
             if (open == null) {

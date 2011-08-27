@@ -21,7 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.IndexSearcher;
@@ -475,7 +476,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     _TestUtil.keepFullyDeletedSegments(w);
 
     Document doc = new Document();
-    doc.add(newField("f", "doctor who", Field.Store.YES, Field.Index.ANALYZED));
+
+    doc.add(newField("f", "doctor who", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     w.commit();
 
@@ -511,7 +513,10 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
     dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
-    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
     try {
       writer.addDocument(doc);
       fail("did not hit disk full");
@@ -541,15 +546,15 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   private void addDoc(IndexWriter writer) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
   }
   
   private void addDocWithIndex(IndexWriter writer, int index) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa " + index, Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField("id", "" + index, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa " + index, TextField.TYPE_UNSTORED));
+      doc.add(newField("id", "" + index, TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
   }
 }

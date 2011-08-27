@@ -35,5 +35,4 @@ public class TestQueryParser extends QueryParserTestBase {
     qp.setDefaultOperator(QueryParser.OR_OPERATOR);
     return qp;
   }
-  
 }

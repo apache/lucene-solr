@@ -16,9 +16,8 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.queries.function.DocValues;
@@ -55,10 +54,10 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public Fieldable[] createFields(SchemaField field, Object value, float boost) {
+  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     //we could have tileDiff + 3 fields (two for the lat/lon, one for storage)
-    Fieldable[] f = new Fieldable[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
+    IndexableField[] f = new IndexableField[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
     if (field.indexed()) {
       int i = 0;
       double[] latLon = new double[0];
@@ -76,9 +75,9 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     }
 
     if (field.stored()) {
-      f[f.length - 1] = createField(field.getName(), externalVal,
-              getFieldStore(field, externalVal), Field.Index.NO, Field.TermVector.NO,
-              false, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, boost);
+      FieldType customType = new FieldType();
+      customType.setStored(true);
+      f[f.length - 1] = createField(field.getName(), externalVal, customType, boost);
     }
     return f;
   }
@@ -268,7 +267,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), false);
   }
 
@@ -282,7 +281,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public Fieldable createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 

@@ -6,8 +6,7 @@ import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -174,8 +173,8 @@ public class MultiCLIndexer {
       // create a plain Lucene document and add some regular Lucene fields
       // to it
       Document doc = new Document();
-      doc.add(new Field(SimpleUtils.TITLE, docTitles[docNum], Store.YES, Index.ANALYZED));
-      doc.add(new Field(SimpleUtils.TEXT, docTexts[docNum], Store.NO, Index.ANALYZED));
+      doc.add(new Field(SimpleUtils.TITLE, TextField.TYPE_STORED, docTitles[docNum]));
+      doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum]));
 
       // finally add the document to the index
       categoryDocBuilder.build(doc);

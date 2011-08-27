@@ -16,9 +16,9 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ByteFieldSource;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.ByteValuesCreator;
 import org.apache.lucene.search.cache.CachedArrayCreator;
@@ -52,7 +52,7 @@ public class ByteField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -77,7 +77,7 @@ public class ByteField extends FieldType {
   }
 
   @Override
-  public Byte toObject(Fieldable f) {
+  public Byte toObject(IndexableField f) {
     return Byte.valueOf(toExternal(f));
   }
 }

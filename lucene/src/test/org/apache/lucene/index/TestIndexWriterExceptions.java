@@ -34,12 +34,14 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -54,6 +56,35 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   private static class DocCopyIterator implements Iterable<Document> {
     private final Document doc;
     private final int count;
+    
+    /* private field types */
+    /* private field types */
+
+    private static final FieldType custom1 = new FieldType(TextField.TYPE_UNSTORED);
+    private static final FieldType custom2 = new FieldType();
+    private static final FieldType custom3 = new FieldType();
+    private static final FieldType custom4 = new FieldType(StringField.TYPE_UNSTORED);
+    private static final FieldType custom5 = new FieldType(TextField.TYPE_STORED);
+    
+    static {
+
+      custom1.setStoreTermVectors(true);
+      custom1.setStoreTermVectorPositions(true);
+      custom1.setStoreTermVectorOffsets(true);
+      
+      custom2.setStored(true);
+      custom2.setIndexed(true);
+      
+      custom3.setStored(true);
+
+      custom4.setStoreTermVectors(true);
+      custom4.setStoreTermVectorPositions(true);
+      custom4.setStoreTermVectorOffsets(true);
+      
+      custom5.setStoreTermVectors(true);
+      custom5.setStoreTermVectorPositions(true);
+      custom5.setStoreTermVectorOffsets(true);
+    }
 
     public DocCopyIterator(Document doc, int count) {
       this.count = count;
@@ -101,17 +132,17 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       final Document doc = new Document();
 
-      doc.add(newField(r, "content1", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField(r, "content6", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-      doc.add(newField(r, "content2", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(newField(r, "content3", "aaa bbb ccc ddd", Field.Store.YES, Field.Index.NO));
+      doc.add(newField(r, "content1", "aaa bbb ccc ddd", TextField.TYPE_STORED));
+      doc.add(newField(r, "content6", "aaa bbb ccc ddd", DocCopyIterator.custom1));
+      doc.add(newField(r, "content2", "aaa bbb ccc ddd", DocCopyIterator.custom2));
+      doc.add(newField(r, "content3", "aaa bbb ccc ddd", DocCopyIterator.custom3));
 
-      doc.add(newField(r, "content4", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.ANALYZED));
-      doc.add(newField(r, "content5", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField(r, "content4", "aaa bbb ccc ddd", TextField.TYPE_UNSTORED));
+      doc.add(newField(r, "content5", "aaa bbb ccc ddd", StringField.TYPE_UNSTORED));
 
-      doc.add(newField(r, "content7", "aaa bbb ccc ddd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField(r, "content7", "aaa bbb ccc ddd", DocCopyIterator.custom4));
 
-      final Field idField = newField(r, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+      final Field idField = newField(r, "id", "", DocCopyIterator.custom2);
       doc.add(idField);
 
       final long stopTime = System.currentTimeMillis() + 500;
@@ -337,8 +368,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter2 w = new MockIndexWriter2(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(newField("field", "a field", Field.Store.YES,
-                      Field.Index.ANALYZED));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
     w.doFail = true;
     try {
@@ -357,8 +387,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(newField("field", "a field", Field.Store.YES,
-                      Field.Index.ANALYZED));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     w.addDocument(doc);
 
     Analyzer analyzer = new Analyzer() {
@@ -371,8 +400,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     Document crashDoc = new Document();
-    crashDoc.add(newField("crash", "do it on token 4", Field.Store.YES,
-                           Field.Index.ANALYZED));
+    crashDoc.add(newField("crash", "do it on token 4", TextField.TYPE_STORED));
     try {
       w.addDocument(crashDoc, analyzer);
       fail("did not hit expected exception");
@@ -413,8 +441,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
     w.doFail = true;
     Document doc = new Document();
-    doc.add(newField("field", "a field", Field.Store.YES,
-                      Field.Index.ANALYZED));
+    doc.add(newField("field", "a field", TextField.TYPE_STORED));
     for(int i=0;i<10;i++)
       try {
         w.addDocument(doc);
@@ -463,8 +490,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     Document doc = new Document();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
-    doc.add(newField("content", contents, Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("content", contents, TextField.TYPE_UNSTORED));
     try {
       writer.addDocument(doc);
       fail("did not hit expected exception");
@@ -473,14 +499,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     // Make sure we can add another normal document
     doc = new Document();
-    doc.add(newField("content", "aa bb cc dd", Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("content", "aa bb cc dd", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
 
     // Make sure we can add another normal document
     doc = new Document();
-    doc.add(newField("content", "aa bb cc dd", Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("content", "aa bb cc dd", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
 
     writer.close();
@@ -551,8 +575,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2));
     Document doc = new Document();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
-    doc.add(newField("content", contents, Field.Store.NO,
-        Field.Index.ANALYZED));
+    doc.add(newField("content", contents, TextField.TYPE_UNSTORED));
     boolean hitError = false;
     for(int i=0;i<200;i++) {
       try {
@@ -595,14 +618,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       lmp.setMergeFactor(Math.max(lmp.getMergeFactor(), 5));
 
       Document doc = new Document();
-      doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       writer.addDocument(doc);
       writer.addDocument(doc);
-      doc.add(newField("crash", "this should crash after 4 terms", Field.Store.YES,
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-      doc.add(newField("other", "this will not get indexed", Field.Store.YES,
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
+      doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
       try {
         writer.addDocument(doc);
         fail("did not hit expected exception");
@@ -615,8 +635,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       if (0 == i) {
         doc = new Document();
-        doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                          Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
         writer.addDocument(doc);
         writer.addDocument(doc);
       }
@@ -648,8 +667,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
           analyzer).setMaxBufferedDocs(10));
       doc = new Document();
-      doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
       writer.optimize();
@@ -705,14 +723,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
                 try {
                   for(int iter=0;iter<NUM_ITER;iter++) {
                     Document doc = new Document();
-                    doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                    doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
                     writer.addDocument(doc);
                     writer.addDocument(doc);
-                    doc.add(newField("crash", "this should crash after 4 terms", Field.Store.YES,
-                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-                    doc.add(newField("other", "this will not get indexed", Field.Store.YES,
-                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                    doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
+                    doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
                     try {
                       writer.addDocument(doc);
                       fail("did not hit expected exception");
@@ -721,8 +736,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
                     if (0 == finalI) {
                       doc = new Document();
-                      doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
                       writer.addDocument(doc);
                       writer.addDocument(doc);
                     }
@@ -767,8 +781,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(10));
       Document doc = new Document();
-      doc.add(newField("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
       writer.optimize();
@@ -811,7 +824,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   private void addDoc(IndexWriter writer) throws IOException
   {
       Document doc = new Document();
-      doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
   }
 
@@ -907,8 +920,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
-      doc.add(newField("field", "a field", Field.Store.YES,
-          Field.Index.ANALYZED));
+      doc.add(newField("field", "a field", TextField.TYPE_STORED));
       w.addDocument(doc);
       dir.failOn(failure);
       try {
@@ -1240,13 +1252,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         int numDocs = 10 + random.nextInt(30);
         for (int i = 0; i < numDocs; i++) {
           Document doc = new Document();
-          Field field = newField(random, "field", "a field", Field.Store.YES,
-              Field.Index.ANALYZED);
+          Field field = newField(random, "field", "a field", TextField.TYPE_STORED);
           doc.add(field);
           // random TV
           try {
             w.addDocument(doc);
-            assertFalse(field.isTermVectorStored());
+            assertFalse(field.storeTermVectors());
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
           }
@@ -1257,19 +1268,17 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             
         }
         Document document = new Document();
-        document.add(new Field("field", "a field", Field.Store.YES,
-            Field.Index.ANALYZED));
+        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
         w.addDocument(document);
 
         for (int i = 0; i < numDocs; i++) {
           Document doc = new Document();
-          Field field = newField(random, "field", "a field", Field.Store.YES,
-              Field.Index.ANALYZED);
+          Field field = newField(random, "field", "a field", TextField.TYPE_STORED);
           doc.add(field);
           // random TV
           try {
             w.addDocument(doc);
-            assertFalse(field.isTermVectorStored());
+            assertFalse(field.storeTermVectors());
           } catch (RuntimeException e) {
             assertTrue(e.getMessage().startsWith(FailOnTermVectors.EXC_MSG));
           }
@@ -1279,8 +1288,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
         }
         document = new Document();
-        document.add(new Field("field", "a field", Field.Store.YES,
-            Field.Index.ANALYZED));
+        document.add(new Field("field", TextField.TYPE_STORED, "a field"));
         w.addDocument(document);
         w.close();
         IndexReader reader = IndexReader.open(dir);
@@ -1334,7 +1342,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final int numDocs1 = random.nextInt(25);
     for(int docCount=0;docCount<numDocs1;docCount++) {
       Document doc = new Document();
-      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      doc.add(newField("content", "good content", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
     
@@ -1342,10 +1350,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     for(int docCount=0;docCount<7;docCount++) {
       Document doc = new Document();
       docs.add(doc);
-      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
-      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+      doc.add(newField("id", docCount+"", StringField.TYPE_UNSTORED));
+      doc.add(newField("content", "silly content " + docCount, TextField.TYPE_UNSTORED));
       if (docCount == 4) {
-        Field f = newField("crash", "", Field.Index.ANALYZED);
+        Field f = newField("crash", "", TextField.TYPE_UNSTORED);
         doc.add(f);
         MockTokenizer tokenizer = new MockTokenizer(new StringReader("crash me on the 4th token"), MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
@@ -1364,7 +1372,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final int numDocs2 = random.nextInt(25);
     for(int docCount=0;docCount<numDocs2;docCount++) {
       Document doc = new Document();
-      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      doc.add(newField("content", "good content", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
 
@@ -1392,7 +1400,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final int numDocs1 = random.nextInt(25);
     for(int docCount=0;docCount<numDocs1;docCount++) {
       Document doc = new Document();
-      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      doc.add(newField("content", "good content", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
 
@@ -1402,16 +1410,16 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     for(int docCount=0;docCount<numDocs2;docCount++) {
       Document doc = new Document();
       docs.add(doc);
-      doc.add(newField("subid", "subs", Field.Index.NOT_ANALYZED));
-      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
-      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+      doc.add(newField("subid", "subs", StringField.TYPE_UNSTORED));
+      doc.add(newField("id", docCount+"", StringField.TYPE_UNSTORED));
+      doc.add(newField("content", "silly content " + docCount, TextField.TYPE_UNSTORED));
     }
     w.addDocuments(docs);
 
     final int numDocs3 = random.nextInt(25);
     for(int docCount=0;docCount<numDocs3;docCount++) {
       Document doc = new Document();
-      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      doc.add(newField("content", "good content", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
 
@@ -1421,10 +1429,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     for(int docCount=0;docCount<limit;docCount++) {
       Document doc = new Document();
       docs.add(doc);
-      doc.add(newField("id", docCount+"", Field.Index.NOT_ANALYZED));
-      doc.add(newField("content", "silly content " + docCount, Field.Index.ANALYZED));
+      doc.add(newField("id", docCount+"", StringField.TYPE_UNSTORED));
+      doc.add(newField("content", "silly content " + docCount, TextField.TYPE_UNSTORED));
       if (docCount == crashAt) {
-        Field f = newField("crash", "", Field.Index.ANALYZED);
+        Field f = newField("crash", "", TextField.TYPE_UNSTORED);
         doc.add(f);
         MockTokenizer tokenizer = new MockTokenizer(new StringReader("crash me on the 4th token"), MockTokenizer.WHITESPACE, false);
         tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
@@ -1444,7 +1452,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     final int numDocs4 = random.nextInt(25);
     for(int docCount=0;docCount<numDocs4;docCount++) {
       Document doc = new Document();
-      doc.add(newField("content", "good content", Field.Index.ANALYZED));
+      doc.add(newField("content", "good content", TextField.TYPE_UNSTORED));
       w.addDocument(doc);
     }
 

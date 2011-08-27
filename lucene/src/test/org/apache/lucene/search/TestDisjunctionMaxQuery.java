@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
@@ -83,6 +84,11 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   public IndexReader r;
   public IndexSearcher s;
   
+  private static final FieldType nonAnalyzedType = new FieldType(TextField.TYPE_STORED);
+  static {
+    nonAnalyzedType.setTokenized(false);
+  }
+  
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -97,57 +103,51 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     // d1 is an "ok" match for: albino elephant
     {
       Document d1 = new Document();
-      d1.add(newField("id", "d1", Field.Store.YES, Field.Index.NOT_ANALYZED));// Field.Keyword("id",
+      d1.add(newField("id", "d1", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d1"));
       d1
-          .add(newField("hed", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("hed", "elephant"));
+          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
       d1
-          .add(newField("dek", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("dek", "elephant"));
+          .add(newField("dek", "elephant", TextField.TYPE_STORED));// Field.Text("dek", "elephant"));
       writer.addDocument(d1);
     }
     
     // d2 is a "good" match for: albino elephant
     {
       Document d2 = new Document();
-      d2.add(newField("id", "d2", Field.Store.YES, Field.Index.NOT_ANALYZED));// Field.Keyword("id",
+      d2.add(newField("id", "d2", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d2"));
       d2
-          .add(newField("hed", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("hed", "elephant"));
-      d2.add(newField("dek", "albino", Field.Store.YES, Field.Index.ANALYZED));// Field.Text("dek",
+          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
+      d2.add(newField("dek", "albino", TextField.TYPE_STORED));// Field.Text("dek",
                                                                                 // "albino"));
       d2
-          .add(newField("dek", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("dek", "elephant"));
+          .add(newField("dek", "elephant", TextField.TYPE_STORED));// Field.Text("dek", "elephant"));
       writer.addDocument(d2);
     }
     
     // d3 is a "better" match for: albino elephant
     {
       Document d3 = new Document();
-      d3.add(newField("id", "d3", Field.Store.YES, Field.Index.NOT_ANALYZED));// Field.Keyword("id",
+      d3.add(newField("id", "d3", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d3"));
-      d3.add(newField("hed", "albino", Field.Store.YES, Field.Index.ANALYZED));// Field.Text("hed",
+      d3.add(newField("hed", "albino", TextField.TYPE_STORED));// Field.Text("hed",
                                                                                 // "albino"));
       d3
-          .add(newField("hed", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("hed", "elephant"));
+          .add(newField("hed", "elephant", TextField.TYPE_STORED));// Field.Text("hed", "elephant"));
       writer.addDocument(d3);
     }
     
     // d4 is the "best" match for: albino elephant
     {
       Document d4 = new Document();
-      d4.add(newField("id", "d4", Field.Store.YES, Field.Index.NOT_ANALYZED));// Field.Keyword("id",
+      d4.add(newField("id", "d4", nonAnalyzedType));// Field.Keyword("id",
                                                                                // "d4"));
-      d4.add(newField("hed", "albino", Field.Store.YES, Field.Index.ANALYZED));// Field.Text("hed",
+      d4.add(newField("hed", "albino", TextField.TYPE_STORED));// Field.Text("hed",
                                                                                 // "albino"));
       d4
-          .add(newField("hed", "elephant", Field.Store.YES,
-              Field.Index.ANALYZED));// Field.Text("hed", "elephant"));
-      d4.add(newField("dek", "albino", Field.Store.YES, Field.Index.ANALYZED));// Field.Text("dek",
+          .add(newField("hed", "elephant", nonAnalyzedType));// Field.Text("hed", "elephant"));
+      d4.add(newField("dek", "albino", TextField.TYPE_STORED));// Field.Text("dek",
                                                                                 // "albino"));
       writer.addDocument(d4);
     }

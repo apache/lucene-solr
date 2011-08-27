@@ -2,7 +2,8 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -30,33 +31,42 @@ public class TestTermVectorAccessor extends LuceneTestCase {
     Document doc;
 
     doc = new Document();
-    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", customType));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", customType));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", customType));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    FieldType customType2 = new FieldType(TextField.TYPE_UNSTORED);
+    customType2.setStoreTermVectors(true);
+    customType2.setStoreTermVectorPositions(true);
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", customType2));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", customType2));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", customType2));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    FieldType customType3 = new FieldType(TextField.TYPE_UNSTORED);
+    customType3.setStoreTermVectors(true);
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", customType3));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", customType3));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", customType3));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", TextField.TYPE_UNSTORED));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", TextField.TYPE_UNSTORED));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(newField("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(newField("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(newField("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(newField("a", "a b a c a d a e a f a g a h a", customType));
+    doc.add(newField("b", "a b c b d b e b f b g b h b", TextField.TYPE_UNSTORED));
+    doc.add(newField("c", "a c b c d c e c f c g c h c", customType3));
     iw.addDocument(doc);
 
     iw.close();

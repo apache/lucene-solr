@@ -31,7 +31,7 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -45,6 +45,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -1428,7 +1429,7 @@ public class TestFSTs extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random, dir,
                                                   newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       Document doc = new Document();
-      Field idField = newField("id", "", Field.Index.NOT_ANALYZED);
+      Field idField = newField("id", "", StringField.TYPE_UNSTORED);
       doc.add(idField);
       
       final int NUM_IDS = (int) (1000*RANDOM_MULTIPLIER*(1.0+random.nextDouble()));
@@ -1565,7 +1566,7 @@ public class TestFSTs extends LuceneTestCase {
     w.w.setInfoStream(VERBOSE ? System.out : null);
 
     Document doc = new Document();
-    Field f = newField("field", "", Field.Index.NOT_ANALYZED);
+    Field f = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(f);
       
     final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random.nextDouble()));

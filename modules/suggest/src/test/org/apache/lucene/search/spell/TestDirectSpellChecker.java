@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -39,7 +39,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
 
@@ -73,7 +73,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     // add some more documents
     for (int i = 1000; i < 1100; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
 
@@ -96,13 +96,13 @@ public class TestDirectSpellChecker extends LuceneTestCase {
         new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
 
     Document doc = new Document();
-    doc.add(newField("text", "foobar", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("text", "foobar", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    doc.add(newField("text", "foobar", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("text", "foobar", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    doc.add(newField("text", "foobaz", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("text", "foobaz", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
-    doc.add(newField("text", "fobar", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("text", "fobar", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
    
     IndexReader ir = writer.getReader();
@@ -150,7 +150,7 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(newField("numbers", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("numbers", English.intToEnglish(i), TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
 

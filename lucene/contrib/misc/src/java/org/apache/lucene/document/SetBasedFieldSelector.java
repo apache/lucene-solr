@@ -1,6 +1,5 @@
 package org.apache.lucene.document;
 
-import java.util.Set;
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -17,10 +16,14 @@ import java.util.Set;
  * limitations under the License.
  */
 
+import java.util.Set;
+
+
 /**
  * Declare what fields to load normally and what fields to load lazily
  *
  **/
+
 public class SetBasedFieldSelector implements FieldSelector {
   
   private Set<String> fieldsToLoad;

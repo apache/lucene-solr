@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -41,12 +40,12 @@ final class StoredFieldsWriter {
   }
 
   private int numStoredFields;
-  private Fieldable[] storedFields;
+  private IndexableField[] storedFields;
   private int[] fieldNumbers;
 
   public void reset() {
     numStoredFields = 0;
-    storedFields = new Fieldable[1];
+    storedFields = new IndexableField[1];
     fieldNumbers = new int[1];
   }
 
@@ -123,10 +122,10 @@ final class StoredFieldsWriter {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
-  public void addField(Fieldable field, FieldInfo fieldInfo) throws IOException {
+  public void addField(IndexableField field, FieldInfo fieldInfo) throws IOException {
     if (numStoredFields == storedFields.length) {
       int newSize = ArrayUtil.oversize(numStoredFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-      Fieldable[] newArray = new Fieldable[newSize];
+      IndexableField[] newArray = new IndexableField[newSize];
       System.arraycopy(storedFields, 0, newArray, 0, numStoredFields);
       storedFields = newArray;
     }

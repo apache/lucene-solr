@@ -18,7 +18,7 @@ package org.apache.lucene.util;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -54,12 +54,12 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     float theFloat = Float.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(newField("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("theDouble", String.valueOf(theDouble--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("theByte", String.valueOf(theByte--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("theShort", String.valueOf(theShort--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("theInt", String.valueOf(theInt--), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("theFloat", String.valueOf(theFloat--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("theLong", String.valueOf(theLong--), StringField.TYPE_UNSTORED));
+      doc.add(newField("theDouble", String.valueOf(theDouble--), StringField.TYPE_UNSTORED));
+      doc.add(newField("theByte", String.valueOf(theByte--), StringField.TYPE_UNSTORED));
+      doc.add(newField("theShort", String.valueOf(theShort--), StringField.TYPE_UNSTORED));
+      doc.add(newField("theInt", String.valueOf(theInt--), StringField.TYPE_UNSTORED));
+      doc.add(newField("theFloat", String.valueOf(theFloat--), StringField.TYPE_UNSTORED));
       if (0 == i % 3) {
         wA.addDocument(doc);
       } else {
