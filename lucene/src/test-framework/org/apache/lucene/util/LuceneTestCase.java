@@ -43,6 +43,7 @@ import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.mockrandom.MockRandomCodec;
+import org.apache.lucene.index.codecs.mockrandom.MockRandomDocValuesCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
@@ -227,7 +228,7 @@ public abstract class LuceneTestCase extends Assert {
     if (prior != null) {
       cp.unregister(prior);
     }
-    cp.register(_TestUtil.randomizeCodec(random, c));
+    cp.register(c);
   }
 
   // returns current default codec
@@ -274,6 +275,8 @@ public abstract class LuceneTestCase extends Assert {
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)), cp);
     swapCodec(new MockRandomCodec(random), cp);
+    // give docvalues non-cfs testcoverage
+    swapCodec(new MockRandomDocValuesCodec(random), cp);
 
     return cp.lookup(codec);
   }

@@ -80,7 +80,12 @@ public class MockRandomCodec extends Codec {
   private final String SEED_EXT = "sd";
   
   public MockRandomCodec(Random random) {
-    super("MockRandom");
+    this(random, "MockRandom", true);
+    
+  }
+  
+  protected MockRandomCodec(Random random, String name, boolean docValuesUseCompoundFile) {
+    super(name, docValuesUseCompoundFile);
     this.seedRandom = new Random(random.nextLong());
   }
 

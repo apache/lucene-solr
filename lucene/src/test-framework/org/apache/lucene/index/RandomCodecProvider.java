@@ -54,15 +54,15 @@ public class RandomCodecProvider extends CodecProvider {
     // block via CL:
     int minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
-    register(_TestUtil.randomizeCodec(random, new StandardCodec(minItemsPerBlock, maxItemsPerBlock)));
-    register(_TestUtil.randomizeCodec(random, new PreFlexCodec()));
+    register(new StandardCodec(minItemsPerBlock, maxItemsPerBlock));
+    register(new PreFlexCodec());
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     minItemsPerBlock = _TestUtil.nextInt(random, 2, 100);
     maxItemsPerBlock = 2*(Math.max(1, minItemsPerBlock-1)) + random.nextInt(100);
-    register(_TestUtil.randomizeCodec(random, new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock)));
-    register(_TestUtil.randomizeCodec(random, new SimpleTextCodec()));
-    register(_TestUtil.randomizeCodec(random, new MemoryCodec()));
+    register(new PulsingCodec( 1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock));
+    register(new SimpleTextCodec());
+    register(new MemoryCodec());
     Collections.shuffle(knownCodecs, random);
   }
   
