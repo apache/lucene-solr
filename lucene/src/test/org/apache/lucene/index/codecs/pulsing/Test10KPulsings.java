@@ -49,7 +49,6 @@ import org.junit.Ignore;
  * @lucene.experimental
  */
 public class Test10KPulsings extends LuceneTestCase {
-  /** creates a broken index with ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kPulsed -Dtests.seed=2835406743900800199:-6668246351730332054!!!! */
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
     CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
@@ -99,8 +98,6 @@ public class Test10KPulsings extends LuceneTestCase {
   }
   
   /** a variant, that uses pulsing, but uses a high TF to force pass thru to the underlying codec
-   * creates a broken index (triggers a different assert) than test10kPulsed, with this:
-   * ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kNotPulsed -Dtests.seed=7065174228571869719:2545882165086224608!!!!
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
