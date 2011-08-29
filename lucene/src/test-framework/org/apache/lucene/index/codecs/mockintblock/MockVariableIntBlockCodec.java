@@ -142,7 +142,7 @@ public class MockVariableIntBlockCodec extends Codec {
         return ret;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, out);
+          IOUtils.closeWhileHandlingException(out);
         }
       }
     }

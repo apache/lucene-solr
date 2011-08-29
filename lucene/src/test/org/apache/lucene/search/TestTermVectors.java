@@ -18,11 +18,14 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -47,26 +50,25 @@ public class TestTermVectors extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field.TermVector termVector;
+      FieldType ft = new FieldType(TextField.TYPE_STORED);
       int mod3 = i % 3;
       int mod2 = i % 2;
-      if (mod2 == 0 && mod3 == 0){
-        termVector = Field.TermVector.WITH_POSITIONS_OFFSETS;
+      if (mod2 == 0 && mod3 == 0) {
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorOffsets(true);
+        ft.setStoreTermVectorPositions(true);
+      } else if (mod2 == 0) {
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorPositions(true);
+      } else if (mod3 == 0) {
+        ft.setStoreTermVectors(true);
+        ft.setStoreTermVectorOffsets(true);
+      } else {
+        ft.setStoreTermVectors(true);
       }
-      else if (mod2 == 0){
-        termVector = Field.TermVector.WITH_POSITIONS;
-      }
-      else if (mod3 == 0){
-        termVector = Field.TermVector.WITH_OFFSETS;
-      }
-      else {
-        termVector = Field.TermVector.YES;
-      }
-      doc.add(new Field("field", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.ANALYZED, termVector));
+      doc.add(new Field("field", ft, English.intToEnglish(i)));
       //test no term vectors too
-      doc.add(new Field("noTV", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field("noTV", TextField.TYPE_STORED, English.intToEnglish(i)));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -91,11 +93,10 @@ public class TestTermVectors extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(100, hits.length);
       
-    for (int i = 0; i < hits.length; i++)
-    {
+    for (int i = 0; i < hits.length; i++) {
       TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
       assertTrue(vector != null);
-      assertTrue(vector.length == 1);
+      assertEquals("doc=" + hits[i].doc + " tv=" + vector, 1, vector.length);
     }
     TermFreqVector vector;
     vector = searcher.reader.getTermFreqVector(hits[0].doc, "noTV");
@@ -109,11 +110,15 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(random, MockTokenizer.SIMPLE, true));
-    Document doc = new Document();
-    doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    Document doc = new Document();;
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    doc.add(newField("c", "some content here", ft));
+    doc.add(newField("a", "some content here", ft));
+    doc.add(newField("b", "some content here", ft));
+    doc.add(newField("x", "some content here", ft));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -341,10 +346,14 @@ public class TestTermVectors extends LuceneTestCase {
   
   private void setupDoc(Document doc, String text)
   {
-    doc.add(new Field("field2", text, Field.Store.YES,
-        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("field", text, Field.Store.YES,
-        Field.Index.ANALYZED, Field.TermVector.YES));
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    FieldType ft2 = new FieldType(TextField.TYPE_STORED);
+    ft2.setStoreTermVectors(true);
+    doc.add(newField("field2", text, ft));
+    doc.add(newField("field", text, ft2));
     //System.out.println("Document: " + doc);
   }
 
@@ -359,17 +368,19 @@ public class TestTermVectors extends LuceneTestCase {
     }
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(i),
-                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+      doc.add(newField("field", English.intToEnglish(i), TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
     if (VERBOSE) {
       System.out.println("TEST: now add vectors");
     }
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
     for(int i=0;i<10;i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(100+i),
-                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(newField("field", English.intToEnglish(100+i), ft));
       writer.addDocument(doc);
     }
 
@@ -400,16 +411,28 @@ public class TestTermVectors extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random, MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
-    doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    
+    FieldType ft2 = new FieldType(TextField.TYPE_STORED);
+    ft2.setStoreTermVectors(true);
+    
+    FieldType ft3 = new FieldType(TextField.TYPE_STORED);
+    ft3.setStoreTermVectors(true);
+    ft3.setStoreTermVectorPositions(true);
+    
+    FieldType ft4 = new FieldType(TextField.TYPE_STORED);
+    ft4.setStoreTermVectors(true);
+    ft4.setStoreTermVectorOffsets(true);
+    
+    FieldType ft5 = new FieldType(TextField.TYPE_STORED);
+    ft5.setStoreTermVectors(true);
+    ft5.setStoreTermVectorOffsets(true);
+    ft5.setStoreTermVectorPositions(true);
+    
+    doc.add(newField("field", "one", TextField.TYPE_STORED));
+    doc.add(newField("field", "one", ft2));
+    doc.add(newField("field", "one", ft3));
+    doc.add(newField("field", "one", ft4));
+    doc.add(newField("field", "one", ft5));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -456,4 +479,90 @@ public class TestTermVectors extends LuceneTestCase {
 
     }
   }
+
+  private IndexWriter createWriter(Directory dir) throws IOException {
+    return new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
+        new MockAnalyzer(random)).setMaxBufferedDocs(2));
+  }
+
+  private void createDir(Directory dir) throws IOException {
+    IndexWriter writer = createWriter(dir);
+    writer.addDocument(createDoc());
+    writer.close();
+  }
+
+  private Document createDoc() {
+    Document doc = new Document();
+    final FieldType ft = new FieldType(TextField.TYPE_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorOffsets(true);
+    ft.setStoreTermVectorPositions(true);
+    doc.add(newField("c", "aaa", ft));
+    return doc;
+  }
+
+  private void verifyIndex(Directory dir) throws IOException {
+    IndexReader r = IndexReader.open(dir);
+    int numDocs = r.numDocs();
+    for (int i = 0; i < numDocs; i++) {
+      TermFreqVector tfv = r.getTermFreqVector(i, "c");
+      assertNotNull("term vectors should not have been null for document " + i, tfv);
+    }
+    r.close();
+  }
+  
+  public void testOptimizeAddDocs() throws Exception {
+    Directory target = newDirectory();
+    IndexWriter writer = createWriter(target);
+    // with maxBufferedDocs=2, this results in two segments, so that optimize
+    // actually does something.
+    for (int i = 0; i < 4; i++) {
+      writer.addDocument(createDoc());
+    }
+    writer.optimize();
+    writer.close();
+    
+    verifyIndex(target);
+    target.close();
+  }
+
+  public void testOptimizeAddIndexesDir() throws Exception {
+    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory target = newDirectory();
+    
+    for (Directory dir : input) {
+      createDir(dir);
+    }
+    
+    IndexWriter writer = createWriter(target);
+    writer.addIndexes(input);
+    writer.optimize();
+    writer.close();
+
+    verifyIndex(target);
+
+    IOUtils.close(target, input[0], input[1]);
+  }
+  
+  public void testOptimizeAddIndexesReader() throws Exception {
+    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory target = newDirectory();
+    
+    for (Directory dir : input) {
+      createDir(dir);
+    }
+    
+    IndexWriter writer = createWriter(target);
+    for (Directory dir : input) {
+      IndexReader r = IndexReader.open(dir);
+      writer.addIndexes(r);
+      r.close();
+    }
+    writer.optimize();
+    writer.close();
+    
+    verifyIndex(target);
+    IOUtils.close(target, input[0], input[1]);
+  }
+
 }

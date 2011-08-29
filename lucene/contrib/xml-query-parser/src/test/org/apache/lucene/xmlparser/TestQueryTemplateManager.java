@@ -1,24 +1,5 @@
 package org.apache.lucene.xmlparser;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.StringTokenizer;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -35,6 +16,26 @@ import java.util.StringTokenizer;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+import java.io.IOException;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.StringTokenizer;
+
 
 /**
  * This class illustrates how form input (such as from a web page or Swing gui) can be
@@ -125,7 +126,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
       String name = st.nextToken().trim();
       if (st.hasMoreTokens()) {
         String value = st.nextToken().trim();
-        result.add(newField(name, value, Field.Store.YES, Field.Index.ANALYZED));
+        result.add(newField(name, value, TextField.TYPE_STORED));
       }
     }
     return result;

@@ -160,7 +160,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, indexIn, this);
+        IOUtils.closeWhileHandlingException(indexIn, this);
       } else if (indexDivisor != -1) {
         indexIn.close();
       }
@@ -194,7 +194,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.closeSafely(false, in, postingsReader);
+      IOUtils.close(in, postingsReader);
     } finally { 
       for(FieldReader field : fields.values()) {
         field.close();

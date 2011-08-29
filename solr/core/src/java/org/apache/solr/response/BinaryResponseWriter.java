@@ -16,13 +16,16 @@
  */
 package org.apache.solr.response;
 
+import java.io.*;
+import java.util.*;
+
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformContext;
@@ -32,9 +35,6 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.util.*;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
@@ -159,7 +159,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (Fieldable f : doc.getFields()) {
+      for (IndexableField f : doc) {
         String fieldName = f.name();
         if( !returnFields.wantsField(fieldName) ) 
           continue;
@@ -168,8 +168,16 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         if(sf != null) ft =sf.getType();
         Object val;
         if (ft == null) {  // handle fields not in the schema
-          if (f.isBinary()) val = f.getBinaryValue();
-          else val = f.stringValue();
+          BytesRef bytesRef = f.binaryValue();
+          if (bytesRef != null) {
+            if (bytesRef.offset == 0 && bytesRef.length == bytesRef.bytes.length) {
+              val = bytesRef.bytes;
+            } else {
+              final byte[] bytes = new byte[bytesRef.length];
+              val = bytes;
+              System.arraycopy(bytesRef.bytes, bytesRef.offset, bytes, 0, bytesRef.length);
+            }
+          } else val = f.stringValue();
         } else {
           try {
             if (useFieldObjects && KNOWN_TYPES.contains(ft.getClass())) {

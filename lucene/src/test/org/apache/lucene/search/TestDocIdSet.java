@@ -25,8 +25,7 @@ import java.util.Iterator;
 import junit.framework.Assert;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -103,7 +102,7 @@ public class TestDocIdSet extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(newField("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("c", "val", StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

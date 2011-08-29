@@ -171,6 +171,3 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     optimizeCallbacks.add( listener );
   }
 }
-
-
-

@@ -16,9 +16,9 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ShortFieldSource;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.cache.CachedArrayCreator;
 import org.apache.lucene.search.cache.ShortValuesCreator;
@@ -55,7 +55,7 @@ public class ShortField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -80,7 +80,7 @@ public class ShortField extends FieldType {
   }
 
   @Override
-  public Short toObject(Fieldable f) {
+  public Short toObject(IndexableField f) {
     return Short.valueOf(toExternal(f));
   }
 

@@ -4,6 +4,14 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Trunk (not yet released) =======================
+  
+Changes in Runtime Behavior
+
+ * LUCENE-3309: Fast vector highlighter now inserts the
+   MultiValuedSeparator for NOT_ANALYZED fields (in addition to
+   ANALYZED fields).  To ensure your offsets are correct you should
+   provide an analyzer that returns 1 from the offsetGap method.
+   (Mike McCandless)
 
 Build
 

@@ -34,10 +34,10 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 
 /**
  * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
@@ -94,7 +94,7 @@ public class DocMaker {
     final Document doc;
     DocData docData = new DocData();
     
-    public DocState(boolean reuseFields, Store store, Store bodyStore, Index index, Index bodyIndex, TermVector termVector) {
+    public DocState(boolean reuseFields, FieldType ft, FieldType bodyFt) {
 
       this.reuseFields = reuseFields;
       
@@ -103,11 +103,11 @@ public class DocMaker {
         numericFields = new HashMap<String,NumericField>();
         
         // Initialize the map with the default fields.
-        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyStore, bodyIndex, termVector));
-        fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", store, index, termVector));
-        fields.put(DATE_FIELD, new Field(DATE_FIELD, "", store, index, termVector));
-        fields.put(ID_FIELD, new Field(ID_FIELD, "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-        fields.put(NAME_FIELD, new Field(NAME_FIELD, "", store, index, termVector));
+        fields.put(BODY_FIELD, new Field(BODY_FIELD, bodyFt, ""));
+        fields.put(TITLE_FIELD, new Field(TITLE_FIELD, ft, ""));
+        fields.put(DATE_FIELD, new Field(DATE_FIELD, ft, ""));
+        fields.put(ID_FIELD, new Field(ID_FIELD, StringField.TYPE_STORED, ""));
+        fields.put(NAME_FIELD, new Field(NAME_FIELD, ft, ""));
 
         numericFields.put(DATE_MSEC_FIELD, new NumericField(DATE_MSEC_FIELD));
         numericFields.put(TIME_SEC_FIELD, new NumericField(TIME_SEC_FIELD));
@@ -125,14 +125,14 @@ public class DocMaker {
      * <code>reuseFields</code> was set to true, then it attempts to reuse a
      * Field instance. If such a field does not exist, it creates a new one.
      */
-    Field getField(String name, Store store, Index index, TermVector termVector) {
+    Field getField(String name, FieldType ft) {
       if (!reuseFields) {
-        return new Field(name, "", store, index, termVector);
+        return new Field(name, ft, "");
       }
       
       Field f = fields.get(name);
       if (f == null) {
-        f = new Field(name, "", store, index, termVector);
+        f = new Field(name, ft, "");
         fields.put(name, f);
       }
       return f;
@@ -179,12 +179,9 @@ public class DocMaker {
 
   protected Config config;
 
-  protected Store storeVal = Store.NO;
-  protected Store bodyStoreVal = Store.NO;
-  protected Index indexVal = Index.ANALYZED_NO_NORMS;
-  protected Index bodyIndexVal = Index.ANALYZED;
-  protected TermVector termVecVal = TermVector.NO;
-  
+  protected final FieldType valType;
+  protected final FieldType bodyValType;
+    
   protected ContentSource source;
   protected boolean reuseFields;
   protected boolean indexProperties;
@@ -196,6 +193,13 @@ public class DocMaker {
 
   private int printNum = 0;
 
+  public DocMaker() {
+    valType = new FieldType(TextField.TYPE_UNSTORED);
+    valType.setOmitNorms(true);
+    
+    bodyValType = new FieldType(TextField.TYPE_UNSTORED);
+  }
+  
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
@@ -206,7 +210,10 @@ public class DocMaker {
     doc.getFields().clear();
     
     // Set ID_FIELD
-    Field idField = ds.getField(ID_FIELD, storeVal, Index.NOT_ANALYZED_NO_NORMS, termVecVal);
+    FieldType ft = new FieldType(valType);
+    ft.setIndexed(true);
+
+    Field idField = ds.getField(ID_FIELD, ft);
     int id;
     if (r != null) {
       id = r.nextInt(updateDocIDLimit);
@@ -223,7 +230,7 @@ public class DocMaker {
     String name = docData.getName();
     if (name == null) name = "";
     name = cnt < 0 ? name : name + "_" + cnt;
-    Field nameField = ds.getField(NAME_FIELD, storeVal, indexVal, termVecVal);
+    Field nameField = ds.getField(NAME_FIELD, valType);
     nameField.setValue(name);
     doc.add(nameField);
     
@@ -242,7 +249,7 @@ public class DocMaker {
     } else {
       dateString = "";
     }
-    Field dateStringField = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
+    Field dateStringField = ds.getField(DATE_FIELD, valType);
     dateStringField.setValue(dateString);
     doc.add(dateStringField);
 
@@ -264,7 +271,7 @@ public class DocMaker {
     
     // Set TITLE_FIELD
     String title = docData.getTitle();
-    Field titleField = ds.getField(TITLE_FIELD, storeVal, indexVal, termVecVal);
+    Field titleField = ds.getField(TITLE_FIELD, valType);
     titleField.setValue(title == null ? "" : title);
     doc.add(titleField);
     
@@ -285,12 +292,12 @@ public class DocMaker {
         bdy = body.substring(0, size); // use part
         docData.setBody(body.substring(size)); // some left
       }
-      Field bodyField = ds.getField(BODY_FIELD, bodyStoreVal, bodyIndexVal, termVecVal);
+      Field bodyField = ds.getField(BODY_FIELD, bodyValType);
       bodyField.setValue(bdy);
       doc.add(bodyField);
       
       if (storeBytes) {
-        Field bytesField = ds.getField(BYTES_FIELD, Store.YES, Index.NOT_ANALYZED_NO_NORMS, TermVector.NO);
+        Field bytesField = ds.getField(BYTES_FIELD, StringField.TYPE_STORED);
         bytesField.setValue(bdy.getBytes("UTF-8"));
         doc.add(bytesField);
       }
@@ -300,7 +307,7 @@ public class DocMaker {
       Properties props = docData.getProps();
       if (props != null) {
         for (final Map.Entry<Object,Object> entry : props.entrySet()) {
-          Field f = ds.getField((String) entry.getKey(), storeVal, indexVal, termVecVal);
+          Field f = ds.getField((String) entry.getKey(), valType);
           f.setValue((String) entry.getValue());
           doc.add(f);
         }
@@ -319,7 +326,7 @@ public class DocMaker {
   protected DocState getDocState() {
     DocState ds = docState.get();
     if (ds == null) {
-      ds = new DocState(reuseFields, storeVal, bodyStoreVal, indexVal, bodyIndexVal, termVecVal);
+      ds = new DocState(reuseFields, valType, bodyValType);
       docState.set(ds);
     }
     return ds;
@@ -455,33 +462,23 @@ public class DocMaker {
     boolean norms = config.get("doc.tokenized.norms", false);
     boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
     boolean termVec = config.get("doc.term.vector", false);
-    storeVal = (stored ? Field.Store.YES : Field.Store.NO);
-    bodyStoreVal = (bodyStored ? Field.Store.YES : Field.Store.NO);
-    if (tokenized) {
-      indexVal = norms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
-    } else {
-      indexVal = norms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
-    }
-
-    if (bodyTokenized) {
-      bodyIndexVal = bodyNorms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
-    } else {
-      bodyIndexVal = bodyNorms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
-    }
-
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
-    if (termVecPositions && termVecOffsets) {
-      termVecVal = TermVector.WITH_POSITIONS_OFFSETS;
-    } else if (termVecPositions) {
-      termVecVal = TermVector.WITH_POSITIONS;
-    } else if (termVecOffsets) {
-      termVecVal = TermVector.WITH_OFFSETS;
-    } else if (termVec) {
-      termVecVal = TermVector.YES;
-    } else {
-      termVecVal = TermVector.NO;
-    }
+    
+    valType.setStored(stored);
+    bodyValType.setStored(bodyStored);
+    valType.setTokenized(tokenized);
+    valType.setOmitNorms(!norms);
+    bodyValType.setTokenized(bodyTokenized);
+    bodyValType.setOmitNorms(!bodyNorms);
+
+    valType.setStoreTermVectors(termVec);
+    valType.setStoreTermVectorPositions(termVecPositions);
+    valType.setStoreTermVectorOffsets(termVecOffsets);
+    bodyValType.setStoreTermVectors(termVec);
+    bodyValType.setStoreTermVectorPositions(termVecPositions);
+    bodyValType.setStoreTermVectorOffsets(termVecOffsets);
+    
     storeBytes = config.get("doc.store.body.bytes", false);
     
     reuseFields = config.get("doc.reuse.fields", true);

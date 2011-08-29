@@ -18,8 +18,8 @@
 package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -752,7 +752,7 @@ public class Grouping {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           String readableValue = fieldType.indexedToReadable(group.groupValue.utf8ToString());
-          Fieldable field = schemaField.createField(readableValue, 0.0f);
+          IndexableField field = schemaField.createField(readableValue, 0.0f);
           nl.add("groupValue", fieldType.toObject(field));
         } else {
           nl.add("groupValue", null);

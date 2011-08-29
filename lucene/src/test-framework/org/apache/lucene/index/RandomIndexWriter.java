@@ -120,23 +120,22 @@ public class RandomIndexWriter implements Closeable {
   
   /**
    * Adds a Document.
-   * @see IndexWriter#addDocument(Document)
+   * @see IndexWriter#addDocument(Iterable)
    */
-  public void addDocument(final Document doc) throws IOException {
-    if (doDocValues) {
-      randomPerDocFieldValues(r, doc);
+  public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
+    if (doDocValues && doc instanceof Document) {
+      randomPerDocFieldValues(r, (Document) doc);
     }
-
     if (r.nextInt(5) == 3) {
       // TODO: maybe, we should simply buffer up added docs
       // (but we need to clone them), and only when
       // getReader, commit, etc. are called, we do an
       // addDocuments?  Would be better testing.
-      w.addDocuments(new Iterable<Document>() {
+      w.addDocuments(new Iterable<Iterable<T>>() {
 
         @Override
-        public Iterator<Document> iterator() {
-          return new Iterator<Document>() {
+        public Iterator<Iterable<T>> iterator() {
+          return new Iterator<Iterable<T>>() {
             boolean done;
             
             @Override
@@ -150,7 +149,7 @@ public class RandomIndexWriter implements Closeable {
             }
 
             @Override
-            public Document next() {
+            public Iterable<T> next() {
               if (done) {
                 throw new IllegalStateException();
               }
@@ -172,7 +171,7 @@ public class RandomIndexWriter implements Closeable {
     ValueType[] values = ValueType.values();
     ValueType type = values[random.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
-    if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getFieldable(name) != null)
+    if ("PreFlex".equals(codecProvider.getFieldCodec(name)) || doc.getField(name) != null)
         return;
     IndexDocValuesField docValuesField = new IndexDocValuesField(name);
     switch (type) {
@@ -238,31 +237,30 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
-  public void addDocuments(Iterable<Document> docs) throws IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     w.addDocuments(docs);
     maybeCommit();
   }
 
-  public void updateDocuments(Term delTerm, Iterable<Document> docs) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     w.updateDocuments(delTerm, docs);
     maybeCommit();
   }
 
   /**
    * Updates a document.
-   * @see IndexWriter#updateDocument(Term, Document)
+   * @see IndexWriter#updateDocument(Term, Iterable)
    */
-  public void updateDocument(final Term t, final Document doc) throws IOException {
+  public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
     if (doDocValues) {
-      randomPerDocFieldValues(r, doc);
+      randomPerDocFieldValues(r, (Document) doc);
     }
-    
     if (r.nextInt(5) == 3) {
-      w.updateDocuments(t, new Iterable<Document>() {
+      w.updateDocuments(t, new Iterable<Iterable<T>>() {
 
         @Override
-        public Iterator<Document> iterator() {
-          return new Iterator<Document>() {
+        public Iterator<Iterable<T>> iterator() {
+          return new Iterator<Iterable<T>>() {
             boolean done;
             
             @Override
@@ -276,7 +274,7 @@ public class RandomIndexWriter implements Closeable {
             }
 
             @Override
-            public Document next() {
+            public Iterable<T> next() {
               if (done) {
                 throw new IllegalStateException();
               }

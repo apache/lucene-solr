@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -202,7 +202,7 @@ public class TestDirectoryReader extends LuceneTestCase {
         new MockAnalyzer(random)).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
-    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("body", s, TextField.TYPE_UNSTORED));
     iw.addDocument(doc);
     iw.close();
   }

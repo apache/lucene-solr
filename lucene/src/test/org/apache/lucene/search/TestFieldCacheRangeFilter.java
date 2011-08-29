@@ -25,7 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
@@ -535,8 +535,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
-      doc.add(newField("id",Integer.toString(d), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(newField("body","body", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("id",Integer.toString(d), StringField.TYPE_UNSTORED));
+      doc.add(newField("body","body", StringField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
     

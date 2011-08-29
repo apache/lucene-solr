@@ -331,7 +331,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfo> {
       if (!success) {
         // We hit an exception above; try to close the file
         // but suppress any exception:
-        IOUtils.closeSafely(true, segnOutput);
+        IOUtils.closeWhileHandlingException(segnOutput);
         try {
           // Try not to leave a truncated segments_N file in
           // the index:

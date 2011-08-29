@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -165,7 +167,7 @@ public class TestTermsEnum extends LuceneTestCase {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }
     for (String s2 : terms) {
-      doc.add(newField("f", s2, Field.Index.NOT_ANALYZED));
+      doc.add(newField("f", s2, StringField.TYPE_UNSTORED));
       termToID.put(new BytesRef(s2), id);
     }
     w.addDocument(doc);
@@ -365,7 +367,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.w.setInfoStream(VERBOSE ? System.out : null);
     for(String term : terms) {
       Document doc = new Document();
-      Field f = newField(FIELD, term, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field f = newField(FIELD, term, StringField.TYPE_UNSTORED);
       doc.add(f);
       w.addDocument(doc);
     }
@@ -506,9 +508,9 @@ public class TestTermsEnum extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random, d);
     w.w.setInfoStream(VERBOSE ? System.out : null);
     Document doc = new Document();
-    doc.add(newField("field", "one two three", Field.Index.ANALYZED));
+    doc.add(newField("field", "one two three", TextField.TYPE_UNSTORED));
     doc = new Document();
-    doc.add(newField("field2", "one two three", Field.Index.ANALYZED));
+    doc.add(newField("field2", "one two three", TextField.TYPE_UNSTORED));
     w.addDocument(doc);
     w.commit();
     w.deleteDocuments(new Term("field", "one"));

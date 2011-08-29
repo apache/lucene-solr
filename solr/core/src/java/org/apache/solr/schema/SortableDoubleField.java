@@ -27,8 +27,8 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -62,12 +62,12 @@ public class SortableDoubleField extends FieldType {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
 
   @Override
-  public Double toObject(Fieldable f) {
+  public Double toObject(IndexableField f) {
     return NumberUtils.SortableStr2double(f.stringValue());
   }
   
@@ -86,7 +86,7 @@ public class SortableDoubleField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     String sval = f.stringValue();
     writer.writeDouble(name, NumberUtils.SortableStr2double(sval));
   }

@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -37,8 +39,9 @@ public class TestOmitPositions extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    Field f = newField("foo", "this is a test test", Field.Index.ANALYZED);
-    f.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    Field f = newField("foo", "this is a test test", ft);
     doc.add(f);
     for (int i = 0; i < 100; i++) {
       w.addDocument(doc);
@@ -67,42 +70,42 @@ public class TestOmitPositions extends LuceneTestCase {
     Document d = new Document();
         
     // f1,f2,f3: docs only
-    Field f1 = newField("f1", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    
+    Field f1 = newField("f1", "This field has docs only", ft);
     d.add(f1);
        
-    Field f2 = newField("f2", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setIndexOptions(IndexOptions.DOCS_ONLY);
+    Field f2 = newField("f2", "This field has docs only", ft);
     d.add(f2);
     
-    Field f3 = newField("f3", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f3.setIndexOptions(IndexOptions.DOCS_ONLY);
+    Field f3 = newField("f3", "This field has docs only", ft);
     d.add(f3);
+
+    FieldType ft2 = new FieldType(TextField.TYPE_UNSTORED);
+    ft2.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     
     // f4,f5,f6 docs and freqs
-    Field f4 = newField("f4", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f4.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    Field f4 = newField("f4", "This field has docs and freqs", ft2);
     d.add(f4);
        
-    Field f5 = newField("f5", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f5.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    Field f5 = newField("f5", "This field has docs and freqs", ft2);
     d.add(f5);
     
-    Field f6 = newField("f6", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f6.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    Field f6 = newField("f6", "This field has docs and freqs", ft2);
     d.add(f6);
     
+    FieldType ft3 = new FieldType(TextField.TYPE_UNSTORED);
+    ft3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    
     // f7,f8,f9 docs/freqs/positions
-    Field f7 = newField("f7", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f7.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    Field f7 = newField("f7", "This field has docs and freqs and positions", ft3);
     d.add(f7);
        
-    Field f8 = newField("f8", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f8.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    Field f8 = newField("f8", "This field has docs and freqs and positions", ft3);
     d.add(f8);
     
-    Field f9 = newField("f9", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f9.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    Field f9 = newField("f9", "This field has docs and freqs and positions", ft3);
     d.add(f9);
         
     writer.addDocument(d);
@@ -113,42 +116,33 @@ public class TestOmitPositions extends LuceneTestCase {
     d = new Document();
     
     // f1,f4,f7: docs only
-    f1 = newField("f1", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setIndexOptions(IndexOptions.DOCS_ONLY);
+    f1 = newField("f1", "This field has docs only", ft);
     d.add(f1);
     
-    f4 = newField("f4", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f4.setIndexOptions(IndexOptions.DOCS_ONLY);
+    f4 = newField("f4", "This field has docs only", ft);
     d.add(f4);
     
-    f7 = newField("f7", "This field has docs only", Field.Store.NO, Field.Index.ANALYZED);
-    f7.setIndexOptions(IndexOptions.DOCS_ONLY);
+    f7 = newField("f7", "This field has docs only", ft);
     d.add(f7);
 
     // f2, f5, f8: docs and freqs
-    f2 = newField("f2", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    f2 = newField("f2", "This field has docs and freqs", ft2);
     d.add(f2);
     
-    f5 = newField("f5", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f5.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    f5 = newField("f5", "This field has docs and freqs", ft2);
     d.add(f5);
     
-    f8 = newField("f8", "This field has docs and freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f8.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    f8 = newField("f8", "This field has docs and freqs", ft2);
     d.add(f8);
     
     // f3, f6, f9: docs and freqs and positions
-    f3 = newField("f3", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    f3 = newField("f3", "This field has docs and freqs and positions", ft3);
     d.add(f3);     
     
-    f6 = newField("f6", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f6.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    f6 = newField("f6", "This field has docs and freqs and positions", ft3);
     d.add(f6);
     
-    f9 = newField("f9", "This field has docs and freqs and positions", Field.Store.NO, Field.Index.ANALYZED);
-    f9.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    f9 = newField("f9", "This field has docs and freqs and positions", ft3);
     d.add(f9);
         
     writer.addDocument(d);
@@ -201,9 +195,10 @@ public class TestOmitPositions extends LuceneTestCase {
     lmp.setMergeFactor(2);
     lmp.setUseCompoundFile(false);
     Document d = new Document();
-        
-    Field f1 = newField("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    Field f1 = newField("f1", "This field has term freqs", ft);
     d.add(f1);
 
     for(int i=0;i<30;i++)
@@ -215,7 +210,7 @@ public class TestOmitPositions extends LuceneTestCase {
     
     // now add some documents with positions, and check there is no prox after optimization
     d = new Document();
-    f1 = newField("f1", "This field has positions", Field.Store.NO, Field.Index.ANALYZED);
+    f1 = newField("f1", "This field has positions", TextField.TYPE_UNSTORED);
     d.add(f1);
     
     for(int i=0;i<30;i++)

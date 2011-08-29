@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -93,26 +93,22 @@ public class TestCartesian extends LuceneTestCase {
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
     Document doc = new Document();
-    
-    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
+
+    doc.add(newField("name", name, TextField.TYPE_STORED));
     
     // convert the lat / long to lucene fields
-    doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
-    doc.add(new NumericField(lngField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lng));
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, NumericField.TYPE_STORED).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc", TextField.TYPE_STORED));
     
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, 
-          Field.Store.YES, 
-          true).setDoubleValue(ctp.getTierBoxId(lat,lng)));
+      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, TextField.TYPE_STORED).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
-      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
-    		  Field.Store.YES, 
-    		  Field.Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), StringField.TYPE_STORED));
     }
     writer.addDocument(doc);
     

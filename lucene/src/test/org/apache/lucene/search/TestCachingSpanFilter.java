@@ -21,7 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -54,7 +55,9 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
-    doc.add(newField("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setTokenized(false);
+    doc.add(newField("id", "1", customType));
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

@@ -21,13 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 /**
@@ -77,11 +75,11 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random)));
       Document doc = new Document();
-      doc.add(newField("test", "", Store.NO, Index.ANALYZED,
-                        TermVector.YES));
+      FieldType customType = new FieldType(TextField.TYPE_UNSTORED);
+      customType.setStoreTermVectors(true);
+      doc.add(newField("test", "", customType));
       iw.addDocument(doc);
-      doc.add(newField("test", "", Store.NO, Index.ANALYZED,
-                        TermVector.NO));
+      doc.add(newField("test", "", TextField.TYPE_UNSTORED));
       iw.addDocument(doc);
       iw.close();
 

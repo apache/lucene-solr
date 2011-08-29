@@ -67,7 +67,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }
@@ -240,7 +240,11 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       writeTrailer(dirStart);
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, out);
+      if (success) {
+        IOUtils.close(out);
+      } else {
+        IOUtils.closeWhileHandlingException(out);
+      }
     }
   }
 

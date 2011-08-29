@@ -23,12 +23,11 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.Terms;
@@ -114,9 +113,7 @@ public class SpoofIndexSearcher extends IndexSearcher {
     }
 
     @Override
-    public Document document(int n, FieldSelector fieldSelector)
-        throws CorruptIndexException, IOException {
-      return null;
+    public void document(int docID, StoredFieldVisitor visitor) throws CorruptIndexException, IOException {
     }
 
     @Override

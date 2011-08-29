@@ -171,7 +171,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out, indexOut);
+        IOUtils.closeWhileHandlingException(out, indexOut);
       }
     }
     this.indexOut = indexOut;
@@ -937,7 +937,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     } catch (IOException ioe2) {
       ioe = ioe2;
     } finally {
-      IOUtils.closeSafely(ioe, out, indexOut, postingsWriter);
+      IOUtils.closeWhileHandlingException(ioe, out, indexOut, postingsWriter);
     }
   }
 }

@@ -117,7 +117,7 @@ final class CompoundFileWriter implements Closeable{
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, dataOut);
+        IOUtils.closeWhileHandlingException(dataOut);
       }
     }
   }
@@ -157,7 +157,7 @@ final class CompoundFileWriter implements Closeable{
     } catch (IOException e) {
       priorException = e;
     } finally {
-      IOUtils.closeSafely(priorException, dataOut);
+      IOUtils.closeWhileHandlingException(priorException, dataOut);
     }
     try {
       entryTableOut = directory.createOutput(entryTableName, IOContext.DEFAULT);
@@ -165,7 +165,7 @@ final class CompoundFileWriter implements Closeable{
     } catch (IOException e) {
       priorException = e;
     } finally {
-      IOUtils.closeSafely(priorException, entryTableOut);
+      IOUtils.closeWhileHandlingException(priorException, entryTableOut);
     }
   }
 
@@ -205,13 +205,14 @@ final class CompoundFileWriter implements Closeable{
       success = true;
       return length;
     } finally {
-      IOUtils.closeSafely(!success, is);
       if (success) {
+        IOUtils.close(is);
         // copy successful - delete file
         fileEntry.dir.deleteFile(fileEntry.file);
+      } else {
+        IOUtils.closeWhileHandlingException(is);
       }
     }
-
   }
 
   protected void writeEntryTable(Collection<FileEntry> entries,

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 
@@ -220,7 +220,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   private void addDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("content", "aaa", TextField.TYPE_UNSTORED));
     writer.addDocument(doc);
   }
 

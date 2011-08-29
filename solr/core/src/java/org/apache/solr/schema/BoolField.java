@@ -18,13 +18,14 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queries.function.DocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
@@ -33,7 +34,6 @@ import org.apache.solr.search.function.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 
@@ -117,12 +117,12 @@ public class BoolField extends FieldType {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
 
   @Override
-  public Boolean toObject(Fieldable f) {
+  public Boolean toObject(IndexableField f) {
     return Boolean.valueOf( toExternal(f) );
   }
 
@@ -151,7 +151,7 @@ public class BoolField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeBool(name, f.stringValue().charAt(0) == 'T');
   }
 }

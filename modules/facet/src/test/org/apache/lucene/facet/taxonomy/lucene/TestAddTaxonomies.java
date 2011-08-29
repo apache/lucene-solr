@@ -247,8 +247,8 @@ public class TestAddTaxonomies extends LuceneTestCase {
     }
 
     main.close();
-    IOUtils.closeSafely(false, dirs);
-    IOUtils.closeSafely(false, copydirs);
+    IOUtils.close(dirs);
+    IOUtils.close(copydirs);
   }
 
 }

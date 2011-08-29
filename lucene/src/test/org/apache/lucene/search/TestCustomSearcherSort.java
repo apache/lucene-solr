@@ -25,7 +25,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -56,16 +57,13 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       Document doc = new Document();
       if ((i % 5) != 0) { // some documents must not have an entry in the first
                           // sort field
-        doc.add(newField("publicationDate_", random.getLuceneDate(),
-            Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField("publicationDate_", random.getLuceneDate(), StringField.TYPE_STORED));
       }
       if ((i % 7) == 0) { // some documents to match the query (see below)
-        doc.add(newField("content", "test", Field.Store.YES,
-            Field.Index.ANALYZED));
+        doc.add(newField("content", "test", TextField.TYPE_STORED));
       }
       // every document has a defined 'mandant' field
-      doc.add(newField("mandant", Integer.toString(i % 3), Field.Store.YES,
-          Field.Index.NOT_ANALYZED));
+      doc.add(newField("mandant", Integer.toString(i % 3), StringField.TYPE_STORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

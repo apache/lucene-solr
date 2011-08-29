@@ -68,7 +68,6 @@ public class InstantiatedDocument {
     return document;
   }
 
-
   @Override
   public String toString() {
     return document.toString();

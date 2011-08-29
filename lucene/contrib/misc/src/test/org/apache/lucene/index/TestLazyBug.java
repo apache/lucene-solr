@@ -22,7 +22,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.FieldSelectorVisitor;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -87,8 +91,7 @@ public class TestLazyBug extends LuceneTestCase {
           doc.add(newField("f"+f,
                             data[f % data.length]
                             + '#' + data[random.nextInt(data.length)],
-                            Field.Store.NO,
-                            Field.Index.ANALYZED));
+                            TextField.TYPE_UNSTORED));
         }
         writer.addDocument(doc);
       }
@@ -102,12 +105,14 @@ public class TestLazyBug extends LuceneTestCase {
   public void doTest(int[] docs) throws Exception {
     IndexReader reader = IndexReader.open(directory, true);
     for (int i = 0; i < docs.length; i++) {
-      Document d = reader.document(docs[i], SELECTOR);
+      final FieldSelectorVisitor visitor = new FieldSelectorVisitor(SELECTOR);
+      reader.document(docs[i], visitor);
+      Document d = visitor.getDocument();
       d.get(MAGIC_FIELD);
 
-      List<Fieldable> fields = d.getFields();
-      for (Iterator<Fieldable> fi = fields.iterator(); fi.hasNext(); ) {
-        Fieldable f=null;
+      List<IndexableField> fields = d.getFields();
+      for (Iterator<IndexableField> fi = fields.iterator(); fi.hasNext(); ) {
+        IndexableField f=null;
         try {
           f =  fi.next();
           String fname = f.name();
@@ -136,5 +141,4 @@ public class TestLazyBug extends LuceneTestCase {
   public void testLazyBroken() throws Exception {
     doTest(new int[] { NUM_DOCS/2, NUM_DOCS-1 });
   }
-
 }

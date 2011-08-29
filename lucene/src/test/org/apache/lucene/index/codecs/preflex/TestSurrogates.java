@@ -303,7 +303,7 @@ public class TestSurrogates extends LuceneTestCase {
         uniqueTerms.add(term);
         fieldTerms.add(new Term(field, term));
         Document doc = new Document();
-        doc.add(newField(field, term, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add(newField(field, term, StringField.TYPE_UNSTORED));
         w.addDocument(doc);
       }
       uniqueTermCount += uniqueTerms.size();

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.IndexDocValuesArray;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.index.values.IndexDocValues.SourceEnum;
 import org.apache.lucene.index.values.IndexDocValuesArray.ByteValues;
@@ -132,7 +131,7 @@ class IntsImpl {
 
         } finally {
           if (!success) {
-            IOUtils.closeSafely(true, datOut);
+            IOUtils.closeWhileHandlingException(datOut);
           }
         }
       }
@@ -153,7 +152,11 @@ class IntsImpl {
         }
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
         array.clear();
       }
     }
@@ -287,7 +290,7 @@ class IntsImpl {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, datIn);
+          IOUtils.closeWhileHandlingException(datIn);
         }
       }
     }
@@ -302,7 +305,11 @@ class IntsImpl {
         datOut.copyBytes(indexInput, bytesPerValue(type) * numDocs);
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, indexInput);
+        if (success) {
+          IOUtils.close(indexInput);
+        } else {
+          IOUtils.closeWhileHandlingException(indexInput);
+        }
       }
       return numDocs;
     }
@@ -319,12 +326,12 @@ class IntsImpl {
       try {
         input = (IndexInput) datIn.clone();
         input.seek(CodecUtil.headerLength(CODEC_NAME) + 1);
-        source  = loadFixedSource(type, input, numDocs);
+        source = loadFixedSource(type, input, numDocs);
         success = true;
         return source;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, input, datIn);
+          IOUtils.closeWhileHandlingException(input, datIn);
         }
       }
     }
@@ -346,7 +353,7 @@ class IntsImpl {
         return inst;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, input);
+          IOUtils.closeWhileHandlingException(input);
         }
       }
     }

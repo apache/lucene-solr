@@ -102,7 +102,7 @@ public class Floats {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, datOut);
+          IOUtils.closeWhileHandlingException(datOut);
         }
       }
     }
@@ -214,11 +214,13 @@ public class Floats {
         bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_INT
             * ((values.length))));
         values = null;
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
       }
     }
-
-    
   }
 
   // Writes 8 bytes (double) per value
@@ -275,7 +277,11 @@ public class Floats {
         bytesUsed.addAndGet(-(RamUsageEstimator.NUM_BYTES_LONG
             * ((values.length))));
         values = null;
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
       }
     }
   }

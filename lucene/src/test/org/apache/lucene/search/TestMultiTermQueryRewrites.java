@@ -19,8 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -53,7 +52,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
 
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(newField("data", Integer.toString(i), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("data", Integer.toString(i), StringField.TYPE_UNSTORED));
       writer.addDocument(doc);
       ((i % 2 == 0) ? swriter1 : swriter2).addDocument(doc);
     }
@@ -200,7 +199,7 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   private void checkMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
-    // default gets restored automatically by LuceneTestCase:
+    int savedMaxClauseCount = BooleanQuery.getMaxClauseCount();
     BooleanQuery.setMaxClauseCount(3);
     
     final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
@@ -212,16 +211,22 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
       //  Maybe remove this assert in later versions, when internal API changes:
       assertEquals("Should throw BooleanQuery.TooManyClauses with a stacktrace containing checkMaxClauseCount()",
         "checkMaxClauseCount", e.getStackTrace()[0].getMethodName());
+    } finally {
+      BooleanQuery.setMaxClauseCount(savedMaxClauseCount);
     }
   }
   
   private void checkNoMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
-    // default gets restored automatically by LuceneTestCase:
+    int savedMaxClauseCount = BooleanQuery.getMaxClauseCount();
     BooleanQuery.setMaxClauseCount(3);
     
     final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
-    multiSearcherDupls.rewrite(mtq);
+    try {
+      multiSearcherDupls.rewrite(mtq);
+    } finally {
+      BooleanQuery.setMaxClauseCount(savedMaxClauseCount);
+    }
   }
   
   public void testMaxClauseLimitations() throws Exception {

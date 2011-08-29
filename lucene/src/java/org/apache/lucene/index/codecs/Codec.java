@@ -34,12 +34,22 @@ public abstract class Codec {
   /** Unique name that's used to retrieve this codec when
    *  reading the index */
   public final String name;
-  private boolean dvUseCompoundFile = true;
-  private Comparator<BytesRef> docValuesSortComparator = BytesRef
-      .getUTF8SortedAsUnicodeComparator();
+  protected final boolean dvUseCompoundFile;
+  protected final Comparator<BytesRef> docValuesSortComparator;
   
   protected Codec(String name) {
+    this(name, true);
+  }
+  
+  protected Codec(String name, boolean docValuesUseCompoundFile) {
+    this(name, docValuesUseCompoundFile, BytesRef.getUTF8SortedAsUnicodeComparator());
+  }
+
+  protected Codec(String name, boolean docValuesUseCompoundFile,
+      Comparator<BytesRef> docValuesSortComparator) {
     this.name = name;
+    this.dvUseCompoundFile = docValuesUseCompoundFile;
+    this.docValuesSortComparator = docValuesSortComparator;
   }
 
   /** Writes a new segment */
@@ -77,43 +87,34 @@ public abstract class Codec {
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);
-  
-
-  /**
-   * If set to <code>true</code> this codec will use a compound file for
-   * IndexDocValues, otherwise each IndexDocValues field will create up to 2
-   * files per segment.
-   * <p>
-   * NOTE: The default values is <code>true</code>.
-   */
-  public void setDocValuesUseCFS(boolean docValuesUseCFS) {
-    this.dvUseCompoundFile = docValuesUseCFS;
-  }
 
   /**
    * Returns <code>true</code> iff compound file should be used for
-   * IndexDocValues, otherwise <code>false</code>.
+   * IndexDocValues, otherwise <code>false</code>. The default is
+   * <code>true</code>.
+   * <p>
+   * NOTE: To change the default value you need to subclass a {@link Codec} with
+   * a distinct name since this value is final and should not be changed to
+   * prevent the risk of a index corruption. This setting is private to a
+   * {@link Codec}. If you intend to change this value on an existing
+   * {@link Codec} re-indexing is required.
    * 
-   * @see #setDocValuesUseCFS(boolean)
    * @return <code>true</code> iff compound file should be used for
    *         IndexDocValues, otherwise <code>false</code>.
    */
   public boolean getDocValuesUseCFS() {
     return dvUseCompoundFile;
   }
-  
-  /**
-   * Sets the {@link BytesRef} comparator for sorted IndexDocValue variants. The
-   * default is {@link BytesRef#getUTF8SortedAsUnicodeComparator()}. *
-   */
-  public void setDocValuesSortComparator(
-      Comparator<BytesRef> docValuesSortComparator) {
-    this.docValuesSortComparator = docValuesSortComparator;
-  }
 
   /**
    * Returns the {@link BytesRef} comparator for sorted IndexDocValue variants.
    * The default is {@link BytesRef#getUTF8SortedAsUnicodeComparator()}.
+   * <p>
+   * NOTE: To change the default value you need to subclass a {@link Codec} with
+   * a distinct name since this value is final and should not be changed to
+   * prevent the risk of a index corruption. This setting is private to a
+   * {@link Codec}. If you intend to change this value on an existing
+   * {@link Codec} re-indexing is required.
    */
   public Comparator<BytesRef> getDocValuesSortComparator() {
     return docValuesSortComparator;

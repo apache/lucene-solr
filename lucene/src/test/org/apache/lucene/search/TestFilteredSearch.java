@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexWriter;
@@ -64,7 +64,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
-        doc.add(newField(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField(FIELD, Integer.toString(i), StringField.TYPE_STORED));
         writer.addDocument(doc);
       }
       if(optimize)

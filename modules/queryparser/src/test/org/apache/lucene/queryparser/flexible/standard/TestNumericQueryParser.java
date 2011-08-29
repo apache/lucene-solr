@@ -33,7 +33,6 @@ import java.util.TimeZone;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -194,8 +193,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
       
-      NumericField field = new NumericField(type.name(), PRECISION_STEP,
-          Field.Store.YES, true);
+      NumericField field = new NumericField(type.name(), PRECISION_STEP, NumericField.TYPE_STORED);
       
       numericFieldMap.put(type.name(), field);
       doc.add(field);
@@ -204,8 +202,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
         DATE_FORMAT, NumericField.DataType.LONG));
-    NumericField dateField = new NumericField(DATE_FIELD_NAME, PRECISION_STEP,
-        Field.Store.YES, true);
+    NumericField dateField = new NumericField(DATE_FIELD_NAME, PRECISION_STEP, NumericField.TYPE_STORED);
     numericFieldMap.put(DATE_FIELD_NAME, dateField);
     doc.add(dateField);
     

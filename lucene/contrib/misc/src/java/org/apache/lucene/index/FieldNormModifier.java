@@ -35,7 +35,7 @@ import org.apache.lucene.util.ReaderUtil;
  * 
  * If Similarity class is specified, uses its computeNorm method to set norms.
  * If -n command line argument is used, removed field norms, as if 
- * {@link org.apache.lucene.document.Field.Index}.NO_NORMS was used.
+ * {@link org.apache.lucene.document.FieldType#setOmitNorms(boolean)} was used.
  *
  * <p>
  * NOTE: This will overwrite any length normalization or field/document boosts.

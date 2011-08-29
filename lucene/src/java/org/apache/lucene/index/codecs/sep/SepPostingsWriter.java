@@ -150,7 +150,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, docOut, skipOut, freqOut, posOut, payloadOut);
+        IOUtils.closeWhileHandlingException(docOut, skipOut, freqOut, posOut, payloadOut);
       }
 
     }
@@ -389,7 +389,7 @@ public final class SepPostingsWriter extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
-    IOUtils.closeSafely(false, docOut, skipOut, freqOut, posOut, payloadOut);
+    IOUtils.close(docOut, skipOut, freqOut, posOut, payloadOut);
   }
 
   public static void getExtensions(Set<String> extensions) {

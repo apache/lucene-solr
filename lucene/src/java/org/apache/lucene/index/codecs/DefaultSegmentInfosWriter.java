@@ -74,7 +74,7 @@ public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
       return out;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }

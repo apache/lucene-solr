@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -108,8 +109,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
-    Field field1 = newField("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
-    Field field2 = newField("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    Field field1 = newField("foo", fooField.toString(), TextField.TYPE_UNSTORED);
+    Field field2 = newField("term", termField.toString(), TextField.TYPE_UNSTORED);
     doc.add(field1);
     doc.add(field2);
     writer.addDocument(doc);

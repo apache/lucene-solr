@@ -7,9 +7,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -24,11 +22,6 @@ import org.junit.Test;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.FloatArrayAllocator;
-import org.apache.lucene.facet.search.IntArrayAllocator;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
@@ -335,7 +328,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
     cps.add(cp);
     Document d = new Document();
     new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
-    d.add(new Field("content", "alpha", Store.YES, Index.ANALYZED, TermVector.NO));
+    d.add(new Field("content", TextField.TYPE_STORED, "alpha"));
     iw.addDocument(d);
   }
 

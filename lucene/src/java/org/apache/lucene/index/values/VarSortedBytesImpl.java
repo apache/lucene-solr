@@ -124,7 +124,11 @@ class VarSortedBytesImpl {
         }
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
         hash.close();
       }
       final IndexOutput idxOut = getIndexOut();
@@ -161,7 +165,11 @@ class VarSortedBytesImpl {
         bytesUsed.addAndGet((-docToEntry.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToEntry = null;
-        IOUtils.closeSafely(!success, idxOut);
+        if (success) {
+          IOUtils.close(idxOut);
+        } else {
+          IOUtils.closeWhileHandlingException(idxOut);
+        }
       }
     }
   }

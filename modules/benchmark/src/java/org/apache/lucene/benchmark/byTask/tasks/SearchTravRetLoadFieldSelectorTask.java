@@ -16,20 +16,19 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.IndexReader;
 
-import java.util.StringTokenizer;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
-import java.io.IOException;
-
 /**
- * Search and Traverse and Retrieve docs task using a SetBasedFieldSelector.
+ * Search and Traverse and Retrieve docs task using a
+ * FieldVisitor loading only the requested fields.
  *
  * <p>Note: This task reuses the reader if it is already open.
  * Otherwise a reader is opened at start and closed at the end.
@@ -41,7 +40,8 @@ import java.io.IOException;
  */
 public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
 
-  protected FieldSelector fieldSelector;
+  protected Set<String> fieldsToLoad;
+
   public SearchTravRetLoadFieldSelectorTask(PerfRunData runData) {
     super(runData);
     
@@ -55,18 +55,23 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
 
   @Override
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
-    return ir.document(id, fieldSelector);
+    if (fieldsToLoad == null) {
+      return ir.document(id);
+    } else {
+      DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
+      ir.document(id, visitor);
+      return visitor.getDocument();
+    }
   }
 
   @Override
   public void setParams(String params) {
     this.params = params; // cannot just call super.setParams(), b/c it's params differ.
-    Set<String> fieldsToLoad = new HashSet<String>();
+    fieldsToLoad = new HashSet<String>();
     for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
       String s = tokenizer.nextToken();
       fieldsToLoad.add(s);
     }
-    fieldSelector = new SetBasedFieldSelector(fieldsToLoad, Collections.<String> emptySet());
   }
 
 

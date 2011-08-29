@@ -17,24 +17,25 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.common.util.Base64;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.search.SortField;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.response.TextResponseWriter;
 
 
 public class BinaryField extends FieldType  {
 
-  private String  toBase64String(ByteBuffer buf) {
+  private String toBase64String(ByteBuffer buf) {
     return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toBase64String(toObject(f)), false);
   }
 
@@ -45,17 +46,18 @@ public class BinaryField extends FieldType  {
 
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return toBase64String(toObject(f));
-  }
-  
-  @Override
-  public ByteBuffer toObject(Fieldable f) {
-    return  ByteBuffer.wrap(f.getBinaryValue(), f.getBinaryOffset(), f.getBinaryLength() ) ;
   }
 
   @Override
-  public Fieldable createField(SchemaField field, Object val, float boost) {
+  public ByteBuffer toObject(IndexableField f) {
+    BytesRef bytes = f.binaryValue();
+    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+  }
+
+  @Override
+  public IndexableField createField(SchemaField field, Object val, float boost) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: " + field);
@@ -79,7 +81,7 @@ public class BinaryField extends FieldType  {
       len = buf.length;
     }
 
-    Field f = new Field(field.getName(), buf, offset, len);
+    Field f = new org.apache.lucene.document.BinaryField(field.getName(), buf, offset, len);
     f.setBoost(boost);
     return f;
   }

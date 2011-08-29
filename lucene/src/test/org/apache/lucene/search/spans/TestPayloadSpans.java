@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
@@ -113,8 +113,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
 
     Document doc = new Document();
-    doc.add(newField(PayloadHelper.FIELD, "one two three one four three",
-        Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(PayloadHelper.FIELD, "one two three one four three", TextField.TYPE_STORED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -261,7 +260,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new Field("content", new StringReader("a b c d e f g h i j a k")));
+    doc.add(new TextField("content", new StringReader("a b c d e f g h i j a k")));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();
@@ -300,7 +299,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new Field("content", new StringReader("a b a d k f a h i k a k")));
+    doc.add(new TextField("content", new StringReader("a b a d k f a h i k a k")));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
@@ -337,7 +336,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
     Document doc = new Document();
-    doc.add(new Field("content", new StringReader("j k a l f k k p a t a k l k t a")));
+    doc.add(new TextField("content", new StringReader("j k a l f k k p a t a k l k t a")));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
@@ -379,7 +378,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarityProvider(similarity));
 
     Document doc = new Document();
-    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", TextField.TYPE_STORED));
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
@@ -443,7 +442,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     for(int i = 0; i < docs.length; i++) {
       doc = new Document();
       String docText = docs[i];
-      doc.add(newField(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(PayloadHelper.FIELD,docText, TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
 

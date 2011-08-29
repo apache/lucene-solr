@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -47,12 +48,9 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    Field titleField = newField("title", "some title", Field.Store.NO,
-        Field.Index.ANALYZED);
-    Field field = newField(FN, "", Field.Store.NO,
-        Field.Index.ANALYZED);
-    Field footerField = newField("footer", "a footer", Field.Store.NO,
-        Field.Index.ANALYZED);
+    Field titleField = newField("title", "some title", TextField.TYPE_UNSTORED);
+    Field field = newField(FN, "", TextField.TYPE_UNSTORED);
+    Field footerField = newField("footer", "a footer", TextField.TYPE_UNSTORED);
     doc.add(titleField);
     doc.add(field);
     doc.add(footerField);

@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
@@ -416,7 +417,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // END: Hack
     
     SolrParams params = req.getParams(); 
-    String[] docTexts = doc.getValues(fieldName);
+    IndexableField[] docFields = doc.getFields(fieldName);
+    List<String> listFields = new ArrayList<String>();
+    for (IndexableField field : docFields) {
+      listFields.add(field.stringValue());
+    }
+
+    String[] docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
+   
     // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
     if (docTexts.length == 0) return;
     
@@ -537,7 +545,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private void alternateField( NamedList docSummaries, SolrParams params, Document doc, String fieldName ){
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
-      String[] altTexts = doc.getValues(alternateField);
+      IndexableField[] docFields = doc.getFields(alternateField);
+      List<String> listFields = new ArrayList<String>();
+      for (IndexableField field : docFields) {
+        if (field.binaryValue() == null)
+          listFields.add(field.stringValue());
+      }
+
+      String[] altTexts = listFields.toArray(new String[listFields.size()]);
+
       if (altTexts != null && altTexts.length > 0){
         int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
         if( alternateFieldLen <= 0 ){

@@ -25,6 +25,8 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -51,7 +53,9 @@ public class TestRegexpRandom extends LuceneTestCase {
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED_NO_NORMS);
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setOmitNorms(true);
+    Field field = newField("field", "", customType);
     doc.add(field);
     
     NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ENGLISH));

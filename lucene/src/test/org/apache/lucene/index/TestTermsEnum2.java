@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.AutomatonQuery;
@@ -63,7 +64,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
             new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
             .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field field = newField("field", "", StringField.TYPE_STORED);
     doc.add(field);
     terms = new TreeSet<BytesRef>();
  

@@ -23,9 +23,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 
 /** Similarity unit test.
  *
@@ -38,7 +37,7 @@ public class TestNot extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
     Document d1 = new Document();
-    d1.add(newField("field", "a b", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("field", "a b", TextField.TYPE_STORED));
 
     writer.addDocument(d1);
     IndexReader reader = writer.getReader();

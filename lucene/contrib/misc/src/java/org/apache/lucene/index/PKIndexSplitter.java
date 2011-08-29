@@ -89,7 +89,11 @@ public class PKIndexSplitter {
       createIndex(config2, dir2, reader, docsInFirstIndex, true);
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, reader);
+      if (success) {
+        IOUtils.close(reader);
+      } else {
+        IOUtils.closeWhileHandlingException(reader);
+      }
     }
   }
   
@@ -100,7 +104,11 @@ public class PKIndexSplitter {
       w.addIndexes(new DocumentFilteredIndexReader(reader, preserveFilter, negateFilter));
       success = true;
     } finally {
-      IOUtils.closeSafely(!success, w);
+      if (success) {
+        IOUtils.close(w);
+      } else {
+        IOUtils.closeWhileHandlingException(w);
+      }
     }
   }
     

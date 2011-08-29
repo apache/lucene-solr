@@ -26,10 +26,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IOContext.Context;
 
 public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
@@ -68,8 +66,8 @@ public class TestSegmentReader extends LuceneTestCase {
     //There are 2 unstored fields on the document that are not preserved across writing
     assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
-    List<Fieldable> fields = result.getFields();
-    for (final Fieldable field : fields ) { 
+    List<IndexableField> fields = result.getFields();
+    for (final IndexableField field : fields ) { 
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }
@@ -176,9 +174,9 @@ public class TestSegmentReader extends LuceneTestCase {
   public static void checkNorms(IndexReader reader) throws IOException {
         // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
-      Fieldable f = DocHelper.fields[i];
-      if (f.isIndexed()) {
-        assertEquals(reader.hasNorms(f.name()), !f.getOmitNorms());
+      IndexableField f = DocHelper.fields[i];
+      if (f.indexed()) {
+        assertEquals(reader.hasNorms(f.name()), !f.omitNorms());
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
         if (!reader.hasNorms(f.name())) {
           // test for norms of null

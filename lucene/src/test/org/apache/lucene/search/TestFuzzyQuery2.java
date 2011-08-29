@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -90,7 +91,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     writer.w.setInfoStream(VERBOSE ? System.out : null);
     
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", TextField.TYPE_UNSTORED);
     doc.add(field);
     
     for (int i = 0; i < terms; i++) {

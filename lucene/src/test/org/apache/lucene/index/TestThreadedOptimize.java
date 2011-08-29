@@ -22,7 +22,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.English;
 
@@ -62,10 +63,13 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
+      final FieldType customType = new FieldType(StringField.TYPE_STORED);
+      customType.setOmitNorms(true);
+      
       for(int i=0;i<200;i++) {
         Document d = new Document();
-        d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-        d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+        d.add(newField("id", Integer.toString(i), customType));
+        d.add(newField("contents", English.intToEnglish(i), customType));
         writer.addDocument(d);
       }
 
@@ -85,8 +89,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
                 writerFinal.optimize(false);
                 for(int k=0;k<17*(1+iFinal);k++) {
                   Document d = new Document();
-                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, customType));
+                  d.add(newField("contents", English.intToEnglish(iFinal+k), customType));
                   writerFinal.addDocument(d);
                 }
                 for(int k=0;k<9*(1+iFinal);k++)

@@ -24,7 +24,7 @@ import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -84,7 +84,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     for(int dx = 0; dx < num; dx ++) {
       String f = randomField();
       Document doc = new Document();
-      doc.add(newField("data", f, Field.Store.YES, Field.Index.ANALYZED));	
+      doc.add(newField("data", f, TextField.TYPE_STORED));	
       writer.addDocument(doc);
     }
     

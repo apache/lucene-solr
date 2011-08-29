@@ -1,6 +1,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -8,6 +9,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -37,22 +39,24 @@ public class TestDocument extends LuceneTestCase {
   
   public void testBinaryField() throws Exception {
     Document doc = new Document();
-    Fieldable stringFld = new Field("string", binaryVal, Field.Store.YES,
-        Field.Index.NO);
-    Fieldable binaryFld = new Field("binary", binaryVal.getBytes());
-    Fieldable binaryFld2 = new Field("binary", binaryVal2.getBytes());
+    
+    FieldType ft = new FieldType();
+    ft.setStored(true);
+    IndexableField stringFld = new Field("string", ft, binaryVal);
+    IndexableField binaryFld = new BinaryField("binary", binaryVal.getBytes());
+    IndexableField binaryFld2 = new BinaryField("binary", binaryVal2.getBytes());
     
     doc.add(stringFld);
     doc.add(binaryFld);
     
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     
-    assertTrue(binaryFld.isBinary());
-    assertTrue(binaryFld.isStored());
-    assertFalse(binaryFld.isIndexed());
-    assertFalse(binaryFld.isTokenized());
+    assertTrue(binaryFld.binaryValue() != null);
+    assertTrue(binaryFld.stored());
+    assertFalse(binaryFld.indexed());
+    assertFalse(binaryFld.tokenized());
     
-    String binaryTest = new String(doc.getBinaryValue("binary"));
+    String binaryTest = doc.getBinaryValue("binary").utf8ToString();
     assertTrue(binaryTest.equals(binaryVal));
     
     String stringTest = doc.get("string");
@@ -60,14 +64,14 @@ public class TestDocument extends LuceneTestCase {
     
     doc.add(binaryFld2);
     
-    assertEquals(3, doc.fields.size());
+    assertEquals(3, doc.getFields().size());
     
-    byte[][] binaryTests = doc.getBinaryValues("binary");
+    BytesRef[] binaryTests = doc.getBinaryValues("binary");
     
     assertEquals(2, binaryTests.length);
     
-    binaryTest = new String(binaryTests[0]);
-    String binaryTest2 = new String(binaryTests[1]);
+    binaryTest = binaryTests[0].utf8ToString();
+    String binaryTest2 = binaryTests[1].utf8ToString();
     
     assertFalse(binaryTest.equals(binaryTest2));
     
@@ -75,10 +79,10 @@ public class TestDocument extends LuceneTestCase {
     assertTrue(binaryTest2.equals(binaryVal2));
     
     doc.removeField("string");
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     
     doc.removeFields("binary");
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
   }
   
   /**
@@ -89,45 +93,48 @@ public class TestDocument extends LuceneTestCase {
    */
   public void testRemoveForNewDocument() throws Exception {
     Document doc = makeDocumentWithFields();
-    assertEquals(8, doc.fields.size());
+    assertEquals(8, doc.getFields().size());
     doc.removeFields("keyword");
-    assertEquals(6, doc.fields.size());
+    assertEquals(6, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
     doc.removeFields("keyword"); // removing a field more than once
-    assertEquals(6, doc.fields.size());
+    assertEquals(6, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(5, doc.fields.size());
+    assertEquals(5, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeField("doesnotexists"); // removing non-existing fields is
                                       // siltenlty ignored
-    assertEquals(4, doc.fields.size());
+    assertEquals(4, doc.getFields().size());
     doc.removeFields("unindexed");
-    assertEquals(2, doc.fields.size());
+    assertEquals(2, doc.getFields().size());
     doc.removeFields("unstored");
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
-    assertEquals(0, doc.fields.size());
+    assertEquals(0, doc.getFields().size());
   }
   
   public void testConstructorExceptions() {
-    new Field("name", "value", Field.Store.YES, Field.Index.NO); // okay
-    new Field("name", "value", Field.Store.NO, Field.Index.NOT_ANALYZED); // okay
+    FieldType ft = new FieldType();
+    ft.setStored(true);
+    new Field("name", ft, "value"); // okay
+    new StringField("name", "value"); // okay
     try {
-      new Field("name", "value", Field.Store.NO, Field.Index.NO);
+      new Field("name", new FieldType(), "value");
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
     }
-    new Field("name", "value", Field.Store.YES, Field.Index.NO,
-        Field.TermVector.NO); // okay
+    new Field("name", ft, "value"); // okay
     try {
-      new Field("name", "value", Field.Store.YES, Field.Index.NO,
-          Field.TermVector.YES);
+      FieldType ft2 = new FieldType();
+      ft2.setStored(true);
+      ft2.setStoreTermVectors(true);
+      new Field("name", ft2, "value");
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -174,28 +181,26 @@ public class TestDocument extends LuceneTestCase {
   
   private Document makeDocumentWithFields() {
     Document doc = new Document();
-    doc.add(new Field("keyword", "test1", Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
-    doc.add(new Field("keyword", "test2", Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
-    doc.add(new Field("text", "test1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("text", "test2", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("unindexed", "test1", Field.Store.YES, Field.Index.NO));
-    doc.add(new Field("unindexed", "test2", Field.Store.YES, Field.Index.NO));
+    FieldType stored = new FieldType();
+    stored.setStored(true);
+    doc.add(new Field("keyword", StringField.TYPE_STORED, "test1"));
+    doc.add(new Field("keyword", StringField.TYPE_STORED, "test2"));
+    doc.add(new Field("text", TextField.TYPE_STORED, "test1"));
+    doc.add(new Field("text", TextField.TYPE_STORED, "test2"));
+    doc.add(new Field("unindexed", stored, "test1"));
+    doc.add(new Field("unindexed", stored, "test2"));
     doc
-        .add(new Field("unstored", "test1", Field.Store.NO,
-            Field.Index.ANALYZED));
+        .add(new TextField("unstored", "test1"));
     doc
-        .add(new Field("unstored", "test2", Field.Store.NO,
-            Field.Index.ANALYZED));
+        .add(new TextField("unstored", "test2"));
     return doc;
   }
   
   private void doAssert(Document doc, boolean fromIndex) {
-    String[] keywordFieldValues = doc.getValues("keyword");
-    String[] textFieldValues = doc.getValues("text");
-    String[] unindexedFieldValues = doc.getValues("unindexed");
-    String[] unstoredFieldValues = doc.getValues("unstored");
+    IndexableField[] keywordFieldValues = doc.getFields("keyword");
+    IndexableField[] textFieldValues = doc.getFields("text");
+    IndexableField[] unindexedFieldValues = doc.getFields("unindexed");
+    IndexableField[] unstoredFieldValues = doc.getFields("unstored");
     
     assertTrue(keywordFieldValues.length == 2);
     assertTrue(textFieldValues.length == 2);
@@ -206,28 +211,26 @@ public class TestDocument extends LuceneTestCase {
       assertTrue(unstoredFieldValues.length == 2);
     }
     
-    assertTrue(keywordFieldValues[0].equals("test1"));
-    assertTrue(keywordFieldValues[1].equals("test2"));
-    assertTrue(textFieldValues[0].equals("test1"));
-    assertTrue(textFieldValues[1].equals("test2"));
-    assertTrue(unindexedFieldValues[0].equals("test1"));
-    assertTrue(unindexedFieldValues[1].equals("test2"));
+    assertTrue(keywordFieldValues[0].stringValue().equals("test1"));
+    assertTrue(keywordFieldValues[1].stringValue().equals("test2"));
+    assertTrue(textFieldValues[0].stringValue().equals("test1"));
+    assertTrue(textFieldValues[1].stringValue().equals("test2"));
+    assertTrue(unindexedFieldValues[0].stringValue().equals("test1"));
+    assertTrue(unindexedFieldValues[1].stringValue().equals("test2"));
     // this test cannot work for documents retrieved from the index
     // since unstored fields will obviously not be returned
     if (!fromIndex) {
-      assertTrue(unstoredFieldValues[0].equals("test1"));
-      assertTrue(unstoredFieldValues[1].equals("test2"));
+      assertTrue(unstoredFieldValues[0].stringValue().equals("test1"));
+      assertTrue(unstoredFieldValues[1].stringValue().equals("test2"));
     }
   }
   
   public void testFieldSetValue() throws Exception {
     
-    Field field = new Field("id", "id1", Field.Store.YES,
-        Field.Index.NOT_ANALYZED);
+    Field field = new Field("id", StringField.TYPE_STORED, "id1");
     Document doc = new Document();
     doc.add(field);
-    doc.add(new Field("keyword", "test", Field.Store.YES,
-        Field.Index.NOT_ANALYZED));
+    doc.add(new Field("keyword", StringField.TYPE_STORED, "test"));
     
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
@@ -248,7 +251,7 @@ public class TestDocument extends LuceneTestCase {
     int result = 0;
     for (int i = 0; i < 3; i++) {
       Document doc2 = searcher.doc(hits[i].doc);
-      Field f = doc2.getField("id");
+      Field f = (Field) doc2.getField("id");
       if (f.stringValue().equals("id1")) result |= 1;
       else if (f.stringValue().equals("id2")) result |= 2;
       else if (f.stringValue().equals("id3")) result |= 4;
@@ -262,9 +265,8 @@ public class TestDocument extends LuceneTestCase {
   }
   
   public void testFieldSetValueChangeBinary() {
-    Field field1 = new Field("field1", new byte[0]);
-    Field field2 = new Field("field2", "", Field.Store.YES,
-        Field.Index.ANALYZED);
+    Field field1 = new BinaryField("field1", new byte[0]);
+    Field field2 = new Field("field2", TextField.TYPE_STORED, "");
     try {
       field1.setValue("abc");
       fail("did not hit expected exception");

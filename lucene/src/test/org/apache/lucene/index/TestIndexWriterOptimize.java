@@ -21,10 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -37,7 +34,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("content", "aaa", StringField.TYPE_UNSTORED));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
     for(int numDocs=10;numDocs<500;numDocs += _TestUtil.nextInt(random, incrMin, 5*incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
@@ -78,7 +75,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
     MockDirectoryWrapper dir = newDirectory();
 
     final Document doc = new Document();
-    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("content", "aaa", StringField.TYPE_UNSTORED));
 
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
@@ -183,7 +180,7 @@ public class TestIndexWriterOptimize extends LuceneTestCase {
               setMergePolicy(newLogMergePolicy(51))
       );
       Document doc = new Document();
-      doc.add(newField("field", "aaa", Store.NO, Index.NOT_ANALYZED));
+      doc.add(newField("field", "aaa", StringField.TYPE_UNSTORED));
       for(int i=0;i<100;i++)
         writer.addDocument(doc);
       writer.optimize(false);

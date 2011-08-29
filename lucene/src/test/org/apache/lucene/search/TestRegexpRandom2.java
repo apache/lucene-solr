@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -62,7 +63,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field field = newField("field", "", StringField.TYPE_UNSTORED);
     doc.add(field);
     List<String> terms = new ArrayList<String>();
     int num = atLeast(200);

@@ -75,7 +75,7 @@ final class PerFieldCodecWrapper extends Codec {
           success = true;
         } finally {
           if (!success) {
-            IOUtils.closeSafely(true, consumers);
+            IOUtils.closeWhileHandlingException(consumers);
           }
         }
       }
@@ -90,7 +90,7 @@ final class PerFieldCodecWrapper extends Codec {
 
     @Override
     public void close() throws IOException {
-      IOUtils.closeSafely(false, consumers);
+      IOUtils.close(consumers);
     }
   }
 
@@ -123,7 +123,7 @@ final class PerFieldCodecWrapper extends Codec {
           // If we hit exception (eg, IOE because writer was
           // committing, or, for any other reason) we must
           // go back and close all FieldsProducers we opened:
-          IOUtils.closeSafely(true, producers.values());
+          IOUtils.closeWhileHandlingException(producers.values());
         }
       }
     }
@@ -172,7 +172,7 @@ final class PerFieldCodecWrapper extends Codec {
     
     @Override
     public void close() throws IOException {
-      IOUtils.closeSafely(false, codecs.values());
+      IOUtils.close(codecs.values());
     }
   }
 
@@ -230,7 +230,7 @@ final class PerFieldCodecWrapper extends Codec {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, producers.values());
+          IOUtils.closeWhileHandlingException(producers.values());
         }
       }
     }
@@ -249,7 +249,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
     
     public void close() throws IOException {
-      IOUtils.closeSafely(false, codecs.values());
+      IOUtils.close(codecs.values());
     }
   }
   
@@ -266,7 +266,7 @@ final class PerFieldCodecWrapper extends Codec {
     }
 
     public void close() throws IOException {
-      IOUtils.closeSafely(false, consumers);
+      IOUtils.close(consumers);
     }
 
     @Override

@@ -193,7 +193,7 @@ class TermVectorsReader implements Cloneable, Closeable {
   }
 
   public void close() throws IOException {
-    IOUtils.closeSafely(false, tvx, tvd, tvf);
+    IOUtils.close(tvx, tvd, tvf);
   }
 
   /**

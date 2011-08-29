@@ -23,8 +23,11 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -47,6 +50,9 @@ public class TestGrouping extends LuceneTestCase {
 
     final String groupField = "author";
 
+    FieldType customType = new FieldType();
+    customType.setStored(true);
+    
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
                                random,
@@ -55,50 +61,50 @@ public class TestGrouping extends LuceneTestCase {
                                                     new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     // 0
     Document doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "1", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "random text"));
+    doc.add(new Field("id", customType, "1"));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text"));
+    doc.add(new Field("id", customType, "2"));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random textual data", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "3", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random textual data"));
+    doc.add(new Field("id", customType, "3"));
     w.addDocument(doc);
 
     // 3
     doc = new Document();
-    doc.add(new Field(groupField, "author2", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "4", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author2"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some random text"));
+    doc.add(new Field("id", customType, "4"));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "5", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text"));
+    doc.add(new Field("id", customType, "5"));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "random"));
+    doc.add(new Field("id", customType, "6"));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field("content", TextField.TYPE_STORED,  "random word stuck in alot of other text"));
+    doc.add(new Field("id", customType, "6"));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
@@ -386,18 +392,19 @@ public class TestGrouping extends LuceneTestCase {
         Document doc = new Document();
         docs.add(doc);
         if (groupValue.group != null) {
-          doc.add(newField("group", groupValue.group.utf8ToString(), Field.Index.NOT_ANALYZED));
+          doc.add(newField("group", groupValue.group.utf8ToString(), StringField.TYPE_UNSTORED));
         }
-        doc.add(newField("sort1", groupValue.sort1.utf8ToString(), Field.Index.NOT_ANALYZED));
-        doc.add(newField("sort2", groupValue.sort2.utf8ToString(), Field.Index.NOT_ANALYZED));
+        doc.add(newField("sort1", groupValue.sort1.utf8ToString(), StringField.TYPE_UNSTORED));
+        doc.add(newField("sort2", groupValue.sort2.utf8ToString(), StringField.TYPE_UNSTORED));
         doc.add(new NumericField("id").setIntValue(groupValue.id));
-        doc.add(newField("content", groupValue.content, Field.Index.ANALYZED));
+        doc.add(newField("content", groupValue.content, TextField.TYPE_UNSTORED));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
       // So we can pull filter marking last doc in block:
-      final Field groupEnd = newField("groupend", "x", Field.Index.NOT_ANALYZED);
-      groupEnd.setIndexOptions(IndexOptions.DOCS_ONLY);
-      groupEnd.setOmitNorms(true);
+      FieldType ft = new FieldType(StringField.TYPE_UNSTORED);
+      ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+      ft.setOmitNorms(true);
+      final Field groupEnd = newField("groupend", "x", ft);
       docs.get(docs.size()-1).add(groupEnd);
       // Add as a doc block:
       w.addDocuments(docs);
@@ -497,15 +504,15 @@ public class TestGrouping extends LuceneTestCase {
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      Field group = newField("group", "", Field.Index.NOT_ANALYZED);
+      Field group = newField("group", "", StringField.TYPE_UNSTORED);
       doc.add(group);
-      Field sort1 = newField("sort1", "", Field.Index.NOT_ANALYZED);
+      Field sort1 = newField("sort1", "", StringField.TYPE_UNSTORED);
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newField("sort2", "", Field.Index.NOT_ANALYZED);
+      Field sort2 = newField("sort2", "", StringField.TYPE_UNSTORED);
       doc.add(sort2);
       docNoGroup.add(sort2);
-      Field content = newField("content", "", Field.Index.ANALYZED);
+      Field content = newField("content", "", TextField.TYPE_UNSTORED);
       doc.add(content);
       docNoGroup.add(content);
       NumericField id = new NumericField("id");

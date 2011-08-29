@@ -44,7 +44,7 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeSafely(true, out);
+        IOUtils.closeWhileHandlingException(out);
       }
     }
   }

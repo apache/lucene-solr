@@ -20,7 +20,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -45,7 +45,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public Date toObject(Fieldable f) {
+  public Date toObject(IndexableField f) {
     return (Date) wrappedField.toObject(f);
   }
 
@@ -73,7 +73,7 @@ public class TrieDateField extends DateField {
 
 
   @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     wrappedField.write(writer, name, f);
   }
 
@@ -88,7 +88,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public String storedToReadable(Fieldable f) {
+  public String storedToReadable(IndexableField f) {
     return wrappedField.storedToReadable(f);
   }
 
@@ -103,7 +103,7 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public String toExternal(Fieldable f) {
+  public String toExternal(IndexableField f) {
     return wrappedField.toExternal(f);
   }
 
@@ -118,12 +118,12 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public String storedToIndexed(Fieldable f) {
+  public String storedToIndexed(IndexableField f) {
     return wrappedField.storedToIndexed(f);
   }
 
   @Override
-  public Fieldable createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     return wrappedField.createField(field, value, boost);
   }
 

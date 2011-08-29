@@ -4,7 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -261,12 +261,12 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // This produces a too-long term:
     String contents = "abc xyz x" + bigTerm + " another term";
-    doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("content", contents));
     writer.addDocument(doc);
 
     // Make sure we can add another normal document
     doc = new Document();
-    doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("content", "abc bbb ccc"));
     writer.addDocument(doc);
     writer.close();
 
@@ -297,7 +297,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     // Make sure we can add a document with exactly the
     // maximum length term, and search on that term:
     doc = new Document();
-    doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("content", bigTerm));
     ClassicAnalyzer sa = new ClassicAnalyzer(TEST_VERSION_CURRENT);
     sa.setMaxTokenLength(100000);
     writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));

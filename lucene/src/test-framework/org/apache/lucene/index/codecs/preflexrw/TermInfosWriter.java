@@ -98,7 +98,7 @@ final class TermInfosWriter implements Closeable {
     } finally {
       if (!success) {
         try {
-          IOUtils.closeSafely(true, output);
+          IOUtils.closeWhileHandlingException(output);
         } catch (IOException e) {
           // cannot happen since we suppress exceptions
           throw new RuntimeException(e);
@@ -139,7 +139,7 @@ final class TermInfosWriter implements Closeable {
     } finally {
       if (!success) {
         try {
-          IOUtils.closeSafely(true, output);
+          IOUtils.closeWhileHandlingException(output);
         } catch (IOException e) {
           // cannot happen since we suppress exceptions
           throw new RuntimeException(e);

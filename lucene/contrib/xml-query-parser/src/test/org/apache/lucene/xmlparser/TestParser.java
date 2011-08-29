@@ -1,11 +1,29 @@
 package org.apache.lucene.xmlparser;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -24,22 +42,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 public class TestParser extends LuceneTestCase {
 
@@ -63,9 +65,9 @@ public class TestParser extends LuceneTestCase {
       int endOfDate = line.indexOf('\t');
       String date = line.substring(0, endOfDate).trim();
       String content = line.substring(endOfDate).trim();
-      org.apache.lucene.document.Document doc = new org.apache.lucene.document.Document();
-      doc.add(newField("date", date, Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(newField("contents", content, Field.Store.YES, Field.Index.ANALYZED));
+      Document doc = new Document();
+      doc.add(newField("date", date, TextField.TYPE_STORED));
+      doc.add(newField("contents", content, TextField.TYPE_STORED));
       NumericField numericField = new NumericField("date2");
       numericField.setIntValue(Integer.valueOf(date));
       doc.add(numericField);
@@ -217,7 +219,7 @@ public class TestParser extends LuceneTestCase {
       System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
-        org.apache.lucene.document.Document ldoc = searcher.doc(scoreDocs[i].doc);
+        Document ldoc = searcher.doc(scoreDocs[i].doc);
         System.out.println("[" + ldoc.get("date") + "]" + ldoc.get("contents"));
       }
       System.out.println();

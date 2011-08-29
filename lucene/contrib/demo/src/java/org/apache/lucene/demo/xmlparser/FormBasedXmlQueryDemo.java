@@ -17,10 +17,26 @@
 
 package org.apache.lucene.demo.xmlparser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.StringTokenizer;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -32,20 +48,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.xmlparser.CorePlusExtensionsParser;
 import org.apache.lucene.xmlparser.QueryTemplateManager;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.StringTokenizer;
 
 public class FormBasedXmlQueryDemo extends HttpServlet {
 
@@ -124,20 +126,18 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
     InputStream dataIn = getServletContext().getResourceAsStream("/WEB-INF/data.tsv");
     BufferedReader br = new BufferedReader(new InputStreamReader(dataIn));
     String line = br.readLine();
+    final FieldType textNoNorms = new FieldType(TextField.TYPE_STORED);
+    textNoNorms.setOmitNorms(true);
     while (line != null) {
       line = line.trim();
       if (line.length() > 0) {
         //parse row and create a document
         StringTokenizer st = new StringTokenizer(line, "\t");
         Document doc = new Document();
-        doc.add(new Field("location", st.nextToken(), Field.Store.YES,
-            Field.Index.ANALYZED_NO_NORMS));
-        doc.add(new Field("salary", st.nextToken(), Field.Store.YES,
-            Field.Index.ANALYZED_NO_NORMS));
-        doc.add(new Field("type", st.nextToken(), Field.Store.YES,
-            Field.Index.ANALYZED_NO_NORMS));
-        doc.add(new Field("description", st.nextToken(), Field.Store.YES,
-            Field.Index.ANALYZED));
+        doc.add(new Field("location", textNoNorms, st.nextToken()));
+        doc.add(new Field("salary", textNoNorms, st.nextToken()));
+        doc.add(new Field("type", textNoNorms, st.nextToken()));
+        doc.add(new Field("description", textNoNorms, st.nextToken()));
         writer.addDocument(doc);
       }
       line = br.readLine();

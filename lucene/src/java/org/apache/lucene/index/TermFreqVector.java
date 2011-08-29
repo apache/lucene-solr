@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  */
 public interface TermFreqVector {
   /**
-   * The {@link org.apache.lucene.document.Fieldable} name. 
+   * The {@link org.apache.lucene.index.IndexableField} name. 
    * @return The name of the field this vector is associated with.
    * 
    */ 

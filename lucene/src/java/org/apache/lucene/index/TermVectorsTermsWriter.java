@@ -57,7 +57,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       fill(state.numDocs);
       assert state.segmentName != null;
       String idxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      IOUtils.closeSafely(false, tvx, tvf, tvd);
+      IOUtils.close(tvx, tvf, tvd);
       tvx = tvd = tvf = null;
       if (4+((long) state.numDocs)*16 != state.directory.fileLength(idxName)) {
         throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
@@ -107,7 +107,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.closeSafely(true, tvx, tvd, tvf);
+          IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
         }
       }
 
@@ -161,7 +161,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   public void abort() {
     hasVectors = false;
     try {
-      IOUtils.closeSafely(true, tvx, tvd, tvf);
+      IOUtils.closeWhileHandlingException(tvx, tvd, tvf);
     } catch (IOException e) {
       // cannot happen since we suppress exceptions
       throw new RuntimeException(e);

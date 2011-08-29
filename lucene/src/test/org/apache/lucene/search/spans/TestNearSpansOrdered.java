@@ -19,7 +19,7 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader.ReaderContext;
@@ -57,7 +57,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random, directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(FIELD, docFields[i], TextField.TYPE_UNSTORED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

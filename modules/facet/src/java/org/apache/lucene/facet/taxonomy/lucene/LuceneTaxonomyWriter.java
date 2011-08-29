@@ -17,11 +17,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -179,10 +179,10 @@ public class LuceneTaxonomyWriter implements TaxonomyWriter {
     openLuceneIndex(directory, openMode);
     reader = null;
 
-    parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream);
-    parentStreamField.setOmitNorms(true);
-    fullPathField = new Field(Consts.FULL, "", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
-    fullPathField.setIndexOptions(IndexOptions.DOCS_ONLY);
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setOmitNorms(true);
+    parentStreamField = new Field(Consts.FIELD_PAYLOADS, ft, parentStream);
+    fullPathField = new Field(Consts.FULL, StringField.TYPE_STORED, "");
 
     this.nextID = indexWriter.maxDoc();
 

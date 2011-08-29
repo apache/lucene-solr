@@ -126,7 +126,11 @@ class FixedSortedBytesImpl {
         }
         success = true;
       } finally {
-        IOUtils.closeSafely(!success, datOut);
+        if (success) {
+          IOUtils.close(datOut);
+        } else {
+          IOUtils.closeWhileHandlingException(datOut);
+        }
         hash.close();
       }
       final IndexOutput idxOut = getIndexOut();
@@ -159,7 +163,11 @@ class FixedSortedBytesImpl {
         }
         w.finish();
       } finally {
-        IOUtils.closeSafely(!success, idxOut);
+        if (success) {
+          IOUtils.close(idxOut);
+        } else {
+          IOUtils.closeWhileHandlingException(idxOut);
+        }
         bytesUsed.addAndGet((-docToEntry.length)
             * RamUsageEstimator.NUM_BYTES_INT);
         docToEntry = null;

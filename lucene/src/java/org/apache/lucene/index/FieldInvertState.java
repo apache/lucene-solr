@@ -50,14 +50,14 @@ public final class FieldInvertState {
    * Re-initialize the state, using this boost value.
    * @param docBoost boost value to use.
    */
-  void reset(float docBoost) {
+  void reset() {
     position = 0;
     length = 0;
     numOverlap = 0;
     offset = 0;
     maxTermFrequency = 0;
     uniqueTermCount = 0;
-    boost = docBoost;
+    boost = 1.0f;
     attributeSource = null;
   }
 

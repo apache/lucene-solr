@@ -120,7 +120,7 @@ There are many post tokenization steps that can be done, including (but not limi
   Applications usually do not invoke analysis &ndash; Lucene does it for them:
   <ul>
     <li>At indexing, as a consequence of 
-        {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document) addDocument(doc)},
+        {@link org.apache.lucene.index.IndexWriter#addDocument(Iterable) addDocument(doc)},
         the Analyzer in effect for indexing is invoked for each indexed field of the added document.
     </li>
     <li>At search, a QueryParser may invoke the Analyzer during parsing.  Note that for some queries, analysis does not
@@ -170,7 +170,7 @@ the source code of any one of the many samples located in this package.
 </p>
 <h3>Field Section Boundaries</h3>
 <p>
-  When {@link org.apache.lucene.document.Document#add(org.apache.lucene.document.Fieldable) document.add(field)}
+  When {@link org.apache.lucene.document.Document#add(org.apache.lucene.index.IndexableField) document.add(field)}
   is called multiple times for the same field name, we could say that each such call creates a new 
   section for that field in that document. 
   In fact, a separate call to 

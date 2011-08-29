@@ -5,7 +5,7 @@ package org.apache.lucene.search.grouping;
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
+ * (the "License")); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -20,6 +20,8 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -32,6 +34,8 @@ public class TermAllGroupsCollectorTest extends LuceneTestCase {
   public void testTotalGroupCount() throws Exception {
 
     final String groupField = "author";
+    FieldType customType = new FieldType();
+    customType.setStored(true);
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
@@ -41,51 +45,51 @@ public class TermAllGroupsCollectorTest extends LuceneTestCase {
                                                     new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     // 0
     Document doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "1", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "random text"));
+    doc.add(new Field("id", customType, "1"));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text blob", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text blob"));
+    doc.add(new Field("id", customType, "2"));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
-    doc.add(new Field(groupField, "author1", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random textual data", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "3", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author1"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random textual data"));
+    doc.add(new Field("id", customType, "3"));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
     // 3
     doc = new Document();
-    doc.add(new Field(groupField, "author2", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "4", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author2"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some random text"));
+    doc.add(new Field("id", customType, "4"));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "some more random text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "5", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "some more random text"));
+    doc.add(new Field("id", customType, "5"));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
-    doc.add(new Field(groupField, "author3", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("content", "random blob", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field(groupField, TextField.TYPE_STORED, "author3"));
+    doc.add(new Field("content", TextField.TYPE_STORED, "random blob"));
+    doc.add(new Field("id", customType, "6"));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new Field("content", "random word stuck in alot of other text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("id", "6", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field("content", TextField.TYPE_STORED, "random word stuck in alot of other text"));
+    doc.add(new Field("id", customType, "6"));
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());

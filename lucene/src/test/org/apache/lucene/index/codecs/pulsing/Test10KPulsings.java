@@ -26,6 +26,8 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -46,9 +48,7 @@ import org.junit.Ignore;
  * 
  * @lucene.experimental
  */
-@Ignore("not yet")
 public class Test10KPulsings extends LuceneTestCase {
-  /** creates a broken index with ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kPulsed -Dtests.seed=2835406743900800199:-6668246351730332054!!!! */
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
     CodecProvider cp = _TestUtil.alwaysCodec(new PulsingCodec(1));
@@ -60,14 +60,15 @@ public class Test10KPulsings extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
     
     Document document = new Document();
-    Field field = newField("field", "", Field.Store.YES, Field.Index.ANALYZED);
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
     
     switch(_TestUtil.nextInt(random, 0, 2)) {
-      case 0: field.setIndexOptions(IndexOptions.DOCS_ONLY); break;
-      case 1: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
-      default: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
+      case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+      case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
+      default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
     }
 
+    Field field = newField("field", "", ft);
     document.add(field);
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -97,8 +98,6 @@ public class Test10KPulsings extends LuceneTestCase {
   }
   
   /** a variant, that uses pulsing, but uses a high TF to force pass thru to the underlying codec
-   * creates a broken index (triggers a different assert) than test10kPulsed, with this:
-   * ant test -Dtestcase=Test10KPulsings -Dtestmethod=test10kNotPulsed -Dtests.seed=7065174228571869719:2545882165086224608!!!!
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
@@ -111,14 +110,15 @@ public class Test10KPulsings extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setCodecProvider(cp));
     
     Document document = new Document();
-    Field field = newField("field", "", Field.Store.YES, Field.Index.ANALYZED);
+    FieldType ft = new FieldType(TextField.TYPE_STORED);
     
     switch(_TestUtil.nextInt(random, 0, 2)) {
-      case 0: field.setIndexOptions(IndexOptions.DOCS_ONLY); break;
-      case 1: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
-      default: field.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
+      case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
+      case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
+      default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
     }
 
+    Field field = newField("field", "", ft);
     document.add(field);
     
     NumberFormat df = new DecimalFormat("00000", new DecimalFormatSymbols(Locale.ENGLISH));

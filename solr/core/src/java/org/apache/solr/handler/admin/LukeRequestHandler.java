@@ -34,9 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
@@ -163,21 +163,21 @@ public class LukeRequestHandler extends RequestHandlerBase
   
 
   /**
-   * @return a string representing a Fieldable's flags.  
+   * @return a string representing a IndexableField's flags.  
    */
-  private static String getFieldFlags( Fieldable f )
+  private static String getFieldFlags( IndexableField f )
   {
     StringBuilder flags = new StringBuilder();
-    flags.append( (f != null && f.isIndexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isTokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.indexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.tokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.stored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' ); // SchemaField Specific
-    flags.append( (f != null && f.isTermVectorStored())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStoreOffsetWithTermVector())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isStorePositionWithTermVector()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
-    flags.append( (f != null && f.getOmitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isLazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isBinary())                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectors())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectorOffsets())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVectorPositions()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
+    flags.append( (f != null && f.omitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
+    flags.append( (f != null && f.getClass().getSimpleName().equals("LazyField")) ? FieldFlag.LAZY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.binaryValue()!=null)                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
@@ -239,34 +239,34 @@ public class LukeRequestHandler extends RequestHandlerBase
     final CharsRef spare = new CharsRef();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for( Object o : doc.getFields() ) {
-      Fieldable fieldable = (Fieldable)o;
+      Field field = (Field)o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
       
-      SchemaField sfield = schema.getFieldOrNull( fieldable.name() );
+      SchemaField sfield = schema.getFieldOrNull( field.name() );
       FieldType ftype = (sfield==null)?null:sfield.getType();
 
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
-      f.add( "flags", getFieldFlags( fieldable ) );
+      f.add( "flags", getFieldFlags( field ) );
 
-      Term t = new Term(fieldable.name(), ftype!=null ? ftype.storedToIndexed(fieldable) : fieldable.stringValue());
+      Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
 
-      f.add( "value", (ftype==null)?null:ftype.toExternal( fieldable ) );
+      f.add( "value", (ftype==null)?null:ftype.toExternal( field ) );
 
       // TODO: this really should be "stored"
-      f.add( "internal", fieldable.stringValue() );  // may be a binary number
+      f.add( "internal", field.stringValue() );  // may be a binary number
 
-      byte[] arr = fieldable.getBinaryValue();
-      if (arr != null) {
-        f.add( "binary", Base64.byteArrayToBase64(arr, 0, arr.length));
+      BytesRef bytes = field.binaryValue();
+      if (bytes != null) {
+        f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      f.add( "boost", fieldable.getBoost() );
+      f.add( "boost", field.boost() );
       f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
             
       // If we have a term vector, return that
-      if( fieldable.isTermVectorStored() ) {
+      if( field.storeTermVectors() ) {
         try {
-          TermFreqVector v = reader.getTermFreqVector( docId, fieldable.name() );
+          TermFreqVector v = reader.getTermFreqVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
             for( int i=0; i<v.size(); i++ ) {
@@ -280,7 +280,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         }
       }
       
-      finfo.add( fieldable.name(), f );
+      finfo.add( field.name(), f );
     }
     return finfo;
   }
@@ -324,7 +324,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           // Find a document with this field
           try {
             Document doc = searcher.doc( top.scoreDocs[0].doc );
-            Fieldable fld = doc.getFieldable( fieldName );
+            IndexableField fld = doc.getField( fieldName );
             if( fld != null ) {
               f.add( "index", getFieldFlags( fld ) );
             }

@@ -18,8 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 
@@ -99,11 +98,11 @@ public final class SchemaField extends FieldProperties {
   boolean isBinary() { return (properties & BINARY)!=0; }
 
 
-  public Fieldable createField(Object val, float boost) {
+  public IndexableField createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }
   
-  public Fieldable[] createFields(Object val, float boost) {
+  public IndexableField[] createFields(Object val, float boost) {
     return type.createFields(this,val,boost);
   }
 
@@ -125,7 +124,7 @@ public final class SchemaField extends FieldProperties {
       + "}";
   }
 
-  public void write(TextResponseWriter writer, String name, Fieldable val) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField val) throws IOException {
     // name is passed in because it may be null if name should not be used.
     type.write(writer,name,val);
   }

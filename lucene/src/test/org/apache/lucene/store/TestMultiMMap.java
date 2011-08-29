@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -123,8 +124,8 @@ public class TestMultiMMap extends LuceneTestCase {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random, mmapDir);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
-    Field docid = newField("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
-    Field junk = newField("junk", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field docid = newField("docid", "0", StringField.TYPE_STORED);
+    Field junk = newField("junk", "", StringField.TYPE_STORED);
     doc.add(docid);
     doc.add(junk);
     

@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.*;
@@ -49,8 +49,7 @@ public class TestDemo extends LuceneTestCase {
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
-    doc.add(newField("fieldname", text, Field.Store.YES,
-        Field.Index.ANALYZED));
+    doc.add(newField("fieldname", text, TextField.TYPE_STORED));
     iwriter.addDocument(doc);
     iwriter.close();
     

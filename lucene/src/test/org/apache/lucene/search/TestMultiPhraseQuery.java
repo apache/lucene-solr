@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -167,7 +169,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   private void add(String s, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("body", s, TextField.TYPE_STORED));
     writer.addDocument(doc);
   }
   
@@ -290,8 +292,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   private void add(String s, String type, RandomIndexWriter writer)
       throws IOException {
     Document doc = new Document();
-    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("body", s, TextField.TYPE_STORED));
+    doc.add(newField("type", type, StringField.TYPE_UNSTORED));
     writer.addDocument(doc);
   }
   
@@ -399,7 +401,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
 
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new CannedAnalyzer(tokens));
     Document doc = new Document();
-    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("field", ""));
     writer.addDocument(doc);
     writer.addDocument(doc);
     IndexReader r = writer.getReader();
@@ -491,7 +493,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer(INCR_0_DOC_TOKENS));
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new TextField("field", ""));
     writer.addDocument(doc);
     IndexReader r = IndexReader.open(writer,false);
     writer.close();

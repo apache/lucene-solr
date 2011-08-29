@@ -92,16 +92,24 @@ public class CompressionTools {
     return compress(result.bytes, 0, result.length, compressionLevel);
   }
 
+  public static byte[] decompress(BytesRef bytes) throws DataFormatException {
+    return decompress(bytes.bytes, bytes.offset, bytes.length);
+  }
+
+  public static byte[] decompress(byte[] value) throws DataFormatException {
+    return decompress(value, 0, value.length);
+  }
+
   /** Decompress the byte array previously returned by
    *  compress */
-  public static byte[] decompress(byte[] value) throws DataFormatException {
+  public static byte[] decompress(byte[] value, int offset, int length) throws DataFormatException {
     // Create an expandable byte array to hold the decompressed data
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(value.length);
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
 
     Inflater decompressor = new Inflater();
 
     try {
-      decompressor.setInput(value);
+      decompressor.setInput(value, offset, length);
 
       // Decompress the data
       final byte[] buf = new byte[1024];
@@ -119,9 +127,17 @@ public class CompressionTools {
   /** Decompress the byte array previously returned by
    *  compressString back into a String */
   public static String decompressString(byte[] value) throws DataFormatException {
-    final byte[] bytes = decompress(value);
+    return decompressString(value, 0, value.length);
+  }
+
+  public static String decompressString(byte[] value, int offset, int length) throws DataFormatException {
+    final byte[] bytes = decompress(value, offset, length);
     CharsRef result = new CharsRef(bytes.length);
     UnicodeUtil.UTF8toUTF16(bytes, 0, bytes.length, result);
     return new String(result.chars, 0, result.length);
+  }
+
+  public static String decompressString(BytesRef bytes) throws DataFormatException {
+    return decompressString(bytes.bytes, bytes.offset, bytes.length);
   }
 }

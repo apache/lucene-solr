@@ -13,7 +13,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -64,7 +64,7 @@ public class TestScorerPerf extends LuceneTestCase {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
         if (random.nextInt(freq[j]) == 0) {
-          d.add(newField("f", terms[j].text(), Field.Store.NO, Field.Index.NOT_ANALYZED));
+          d.add(newField("f", terms[j].text(), StringField.TYPE_UNSTORED));
           //System.out.println(d);
         }
       }
