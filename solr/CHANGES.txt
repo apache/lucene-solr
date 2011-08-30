@@ -382,6 +382,10 @@ New Features
   specified when CREATEing a new SolrCore using property.* request
   params.  (Yury Kats, hossman)
 
+* SOLR-2714: JSON update format - "null" field values are now dropped
+  instead of causing an exception. (Trygve Laugstøl, yonik)
+
+
 Optimizations
 ----------------------
 
