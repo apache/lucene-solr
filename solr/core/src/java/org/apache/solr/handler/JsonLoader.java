@@ -132,6 +132,7 @@ class JsonLoader extends ContentStreamLoader {
       case JSONParser.NUMBER:
       case JSONParser.BIGNUMBER:
       case JSONParser.BOOLEAN:
+      case JSONParser.NULL:
         log.info( "can't have a value here! "
             +JSONParser.getEventString(ev)+" "+parser.getPosition() );
         
@@ -328,7 +329,7 @@ class JsonLoader extends ContentStreamLoader {
     Stack<Object> stack = new Stack<Object>();
     Object obj = null;
     boolean inArray = false;
-    
+
     if( ev != JSONParser.OBJECT_START ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "object should already be started" );
     }
@@ -350,7 +351,7 @@ class JsonLoader extends ContentStreamLoader {
                     ev != JSONParser.BIGNUMBER ) {
                   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "boost should have number! "+JSONParser.getEventString(ev) );
                 }
-                field.setBoost( Float.valueOf( parser.getNumberChars().toString() ) );
+                field.setBoost((float)parser.getDouble());
               }
               else if( "value".equals( v  ) ) {
                 // nothing special...
@@ -387,7 +388,25 @@ class JsonLoader extends ContentStreamLoader {
         case JSONParser.BOOLEAN:
           addValToField(stack, parser.getBoolean(),inArray, parser);
           break;
-          
+
+        case JSONParser.NULL:
+          parser.getNull();
+          /*** if we wanted to remove the field from the document now...
+          if (!inArray) {
+            Object o = stack.peek();
+            // if null was only value in the field, then remove the field
+            if (o instanceof SolrInputField) {
+              SolrInputField sif = (SolrInputField)o;
+              if (sif.getValueCount() == 0) {
+                sdoc.remove(sif.getName());
+              }
+            }
+          }
+          ***/
+
+          addValToField(stack, null, inArray, parser);
+          break;
+
         case JSONParser.OBJECT_START:
           if( stack.isEmpty() ) {
             stack.push( new SolrInputDocument() );
@@ -402,7 +421,6 @@ class JsonLoader extends ContentStreamLoader {
             }
           }
           break;
-          
         case JSONParser.OBJECT_END:
           obj = stack.pop();
           if( obj instanceof SolrInputDocument ) {
@@ -443,11 +461,13 @@ class JsonLoader extends ContentStreamLoader {
     if( !(obj instanceof SolrInputField) ) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "hymmm ["+parser.getPosition()+"]" );
     }
-    
+
     SolrInputField f = inArray
       ? (SolrInputField)obj
       : (SolrInputField)stack.pop();
-   
+
+    if (val == null) return;
+
     float boost = (f.getValue()==null)?f.getBoost():1.0f;
     f.addValue( val,boost );
   }
