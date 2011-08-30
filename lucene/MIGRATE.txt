@@ -407,3 +407,115 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   - o.a.l.queryParser.QueryParserTokenManager -> o.a.l.queryparser.classic.QueryParserTokenManager
   - o.a.l.queryParser.QueryParserToken -> o.a.l.queryparser.classic.Token
   - o.a.l.queryParser.QueryParserTokenMgrError -> o.a.l.queryparser.classic.TokenMgrError
+
+
+
+* LUCENE-2308: Separate FieldType from Field instances
+
+With this change, the indexing details (indexed, tokenized, norms,
+indexOptions, stored, etc.) are moved into a separate FieldType
+instance (rather than being stored directly on the Field).
+
+This means you can create the FieldType instance once, up front, for a
+given field, and then re-use that instance whenever you instantiate
+the Field.
+
+Certain field types are pre-defined since they are common cases:
+
+  * StringField: indexes a String value as a single token (ie, does
+    not tokenize).  This field turns off norms and indexes only doc
+    IDS (does not index term frequency nor positions).  This field
+    does not store its value, but exposes TYPE_STORED as well.
+
+  * BinaryField: a byte[] value that's only stored.
+
+  * TextField: indexes and tokenizes a String, Reader or TokenStream
+    value, without term vectors.  This field does not store its value,
+    but exposes TYPE_STORED as well.
+
+If your usage fits one of those common cases you can simply
+instantiate the above class.  To use the TYPE_STORED variant, do this
+instead:
+
+  Field f = new Field("field", StringField.TYPE_STORED, "value");
+
+Alternatively, if an existing type is close to what you want but you
+need to make a few changes, you can copy that type and make changes:
+
+  FieldType bodyType = new FieldType(TextField.TYPE_STORED);
+  bodyType.setStoreTermVectors(true);
+
+
+You can of course also create your own FieldType from scratch:
+
+  FieldType t = new FieldType();
+  t.setIndexed(true);
+  t.setStored(true);
+  t.setOmitNorms(true);
+  t.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+
+FieldType has a freeze() method to prevent further changes.  Note that
+once a FieldType is bound to a Field, it's frozen, to help prevent
+confusing bugs.
+
+When migrating from the 3.x API, if you did this before:
+
+  new Field("field", "value", Field.Store.NO, Field.Indexed.NOT_ANALYZED_NO_NORMS)
+
+you can now do this:
+
+  new StringField("field", "value")
+
+(though note that StringField indexes DOCS_ONLY).
+
+If instead the value was stored:
+
+  new Field("field", "value", Field.Store.YES, Field.Indexed.NOT_ANALYZED_NO_NORMS)
+
+you can now do this:
+
+  new Field("field", StringField.TYPE_STORED, "value")
+
+If you didn't omit norms:
+
+  new Field("field", "value", Field.Store.YES, Field.Indexed.NOT_ANALYZED)
+
+you can now do this:
+
+  FieldType ft = new FieldType(StringField.TYPE_STORED);
+  ft.setOmitNorms(false);
+  new Field("field", ft, "value")
+
+If you did this before (value can be String or Reader):
+
+  new Field("field", value, Field.Store.NO, Field.Indexed.ANALYZED)
+
+you can now do this:
+
+  new TextField("field", value)
+
+If instead the value was stored:
+
+  new Field("field", value, Field.Store.YES, Field.Indexed.ANALYZED)
+
+you can now do this:
+
+  new Field("field", TextField.TYPE_STORED, value)
+
+If in addition you omit norms:
+
+  new Field("field", value, Field.Store.YES, Field.Indexed.ANALYZED_NO_NORMS)
+
+you can now do this:
+
+  FieldType ft = new FieldType(TextField.TYPE_STORED);
+  ft.setOmitNorms(true);
+  new Field("field", ft, value)
+
+If you did this before (bytes is a byte[]):
+
+  new Field("field", bytes)
+
+you can now do this:
+
+  new BinaryField("field", bytes)

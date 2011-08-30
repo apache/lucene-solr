@@ -209,7 +209,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long totalTermFreq() {
-      return totalTermFreq;
+      return indexOptions == IndexOptions.DOCS_ONLY ? -1 : totalTermFreq;
     }
  
     @Override
@@ -559,7 +559,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long getSumTotalTermFreq() {
-      return sumTotalTermFreq;
+      return indexOptions == IndexOptions.DOCS_ONLY ? -1 : sumTotalTermFreq;
     }
 
     @Override

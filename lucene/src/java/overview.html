@@ -56,8 +56,7 @@ to check if the results are what we expect):</p>
                                           new IndexWriter.MaxFieldLength(25000));
     Document doc = new Document();
     String text = "This is the text to be indexed.";
-    doc.add(new Field("fieldname", text, Field.Store.YES,
-        Field.Index.ANALYZED));
+    doc.add(new Field("fieldname", TextField.TYPE_STORED, text));
     iwriter.addDocument(doc);
     iwriter.close();
     

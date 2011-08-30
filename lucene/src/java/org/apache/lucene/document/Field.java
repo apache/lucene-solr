@@ -50,6 +50,7 @@ public class Field implements IndexableField {
   public Field(String name, FieldType type) {
     this.name = name;
     this.type = type;
+    type.freeze();
   }
   
   public Field(String name, FieldType type, Reader reader) {
@@ -63,6 +64,7 @@ public class Field implements IndexableField {
     this.name = name;
     this.fieldsData = reader;
     this.type = type;
+    type.freeze();
   }
   
   public Field(String name, FieldType type, TokenStream tokenStream) {
@@ -77,6 +79,7 @@ public class Field implements IndexableField {
     this.fieldsData = null;
     this.tokenStream = tokenStream;
     this.type = type;
+    type.freeze();
   }
   
   public Field(String name, FieldType type, byte[] value) {
@@ -87,12 +90,14 @@ public class Field implements IndexableField {
     this.fieldsData = new BytesRef(value, offset, length);
     this.type = type;
     this.name = name;
+    type.freeze();
   }
 
   public Field(String name, FieldType type, BytesRef bytes) {
     this.fieldsData = bytes;
     this.type = type;
     this.name = name;
+    type.freeze();
   }
   
   public Field(String name, FieldType type, String value) {
@@ -114,6 +119,7 @@ public class Field implements IndexableField {
     this.type = type;
     this.name = name;
     this.fieldsData = value;
+    type.freeze();
   }
 
   /**
@@ -193,22 +199,6 @@ public class Field implements IndexableField {
     }
     fieldsData = new BytesRef(value);
   }
-  
-  /**
-   * Expert: change the value of this field. See <a
-   * href="#setValue(java.lang.String)">setValue(String)</a>.
-   */
-  /*
-  public void setValue(byte[] value, int offset, int length) {
-    if (!isBinary) {
-      throw new IllegalArgumentException(
-          "cannot set a byte[] value on a non-binary field");
-    }
-    fieldsData = value;
-    binaryLength = length;
-    binaryOffset = offset;
-  }
-  */
   
   /**
    * Expert: sets the token stream to be used for indexing and causes
@@ -316,7 +306,7 @@ public class Field implements IndexableField {
     result.append(name);
     result.append(':');
 
-    if (fieldsData != null && type.lazy() == false) {
+    if (fieldsData != null) {
       result.append(fieldsData);
     }
 
