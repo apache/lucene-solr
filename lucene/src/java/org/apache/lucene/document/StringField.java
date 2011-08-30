@@ -26,7 +26,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  *  or access through the field cache.
  *
  *  <p/>This field's value is not stored by default; use the
- *  {@link TYPE_STORED} type (pass it to <code>new
+ *  {@link StringField#TYPE_STORED} type (pass it to <code>new
  *  Field</code>) to store the value. */
 
 public final class StringField extends Field {

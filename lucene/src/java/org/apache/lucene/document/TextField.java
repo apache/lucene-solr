@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
  *  field, that contains the bulk of a document's text.
  * 
  *  This field's value is not stored by default; use the
- *  {@link TYPE_STORED} type (pass it to <code>new
+ *  {@link TextField#TYPE_STORED} type (pass it to <code>new
  *  Field</code>) to store the value. */
 
 public final class TextField extends Field {
