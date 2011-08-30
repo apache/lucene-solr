@@ -20,7 +20,7 @@ package org.apache.lucene.search.similarities;
 import org.apache.lucene.search.Explanation;
 
 /**
- * Model of the information gain based on the ration of two Bernoulli processes.
+ * Model of the information gain based on the ratio of two Bernoulli processes.
  * @lucene.experimental
  */
 public class AfterEffectB extends AfterEffect {

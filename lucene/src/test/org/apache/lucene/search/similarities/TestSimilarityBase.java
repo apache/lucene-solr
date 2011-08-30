@@ -409,7 +409,7 @@ public class TestSimilarityBase extends LuceneTestCase {
    * no normalization.
    */
   public void testLLForIB() throws IOException {
-    SimilarityBase sim = new IBSimilarity(new DistributionLL(), new LambdaDF());
+    SimilarityBase sim = new IBSimilarity(new DistributionLL(), new LambdaDF(), new Normalization.NoNormalization());
     correctnessTestCore(sim, 4.26267987704f);
   }
   
@@ -419,7 +419,7 @@ public class TestSimilarityBase extends LuceneTestCase {
    */
   public void testSPLForIB() throws IOException {
     SimilarityBase sim =
-      new IBSimilarity(new DistributionSPL(), new LambdaTTF());
+      new IBSimilarity(new DistributionSPL(), new LambdaTTF(), new Normalization.NoNormalization());
     correctnessTestCore(sim, 2.24069910825f);
   }
   
@@ -475,7 +475,7 @@ public class TestSimilarityBase extends LuceneTestCase {
 
   /** Correctness test for the D DFR model (basic model only). */
   public void testD() throws IOException {
-    SimilarityBase sim = new DFRSimilarity(new BasicModelD());
+    SimilarityBase sim = new DFRSimilarity(new BasicModelD(), new AfterEffect.NoAfterEffect(), new Normalization.NoNormalization());
     double p = 1.0 / (NUMBER_OF_DOCUMENTS + 1);                // 0.009900990099
     double phi = FREQ / TOTAL_TERM_FREQ;                       // 0.1
     double D = phi * SimilarityBase.log2(phi / p) +            // 0.209745318365
@@ -488,7 +488,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** Correctness test for the In2 DFR model with no aftereffect. */
   public void testIn2() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
-        new BasicModelIn(), new NormalizationH2());
+        new BasicModelIn(), new AfterEffect.NoAfterEffect(), new NormalizationH2());
     float tfn = (float)(FREQ * SimilarityBase.log2(            // 8.1894750101
                 1 + AVG_FIELD_LENGTH / DOC_LEN));
     float gold = (float)(tfn * SimilarityBase.log2(            // 26.7459577898
@@ -499,7 +499,7 @@ public class TestSimilarityBase extends LuceneTestCase {
   /** Correctness test for the IFB DFR model with no normalization. */
   public void testIFB() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
-        new BasicModelIF(), new AfterEffectB());
+        new BasicModelIF(), new AfterEffectB(), new Normalization.NoNormalization());
     float B = (TOTAL_TERM_FREQ + 1) / (DOC_FREQ * (FREQ + 1)); // 0.8875
     float IF = (float)(FREQ * SimilarityBase.log2(             // 8.97759389642
                1 + (NUMBER_OF_DOCUMENTS + 1) / (TOTAL_TERM_FREQ + 0.5)));

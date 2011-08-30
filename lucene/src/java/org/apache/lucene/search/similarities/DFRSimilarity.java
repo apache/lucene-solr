@@ -33,7 +33,7 @@ import org.apache.lucene.search.Explanation;
  * their counterparts in the Terrier IR engine.</p>
  * <p>Note that <em>qtf</em>, the multiplicity of term-occurrence in the query,
  * is not handled by this implementation.</p>
- * 
+ * <p>Note: DFR models currently do not support index-time boosting.
  * @see BasicModel
  * @see AfterEffect
  * @see Normalization
@@ -58,30 +58,16 @@ public class DFRSimilarity extends SimilarityBase {
     this.normalization = normalization;
   }
 
-  /** Creates a DFR model with no normalization. */
-  public DFRSimilarity(BasicModel basicModel,
-                       AfterEffect afterEffect) {
-    this(basicModel, afterEffect, new Normalization.NoNormalization());
-  }
-  
-  /** Creates a DFR model with no aftereffect. */
-  public DFRSimilarity(BasicModel basicModel,
-                       Normalization normalization) {
-    this(basicModel, new AfterEffect.NoAfterEffect(), normalization);
-  }
-  
-  /** Creates a DFR model with only a basic model. */
-  public DFRSimilarity(BasicModel basicModel) {
-    this(basicModel,
-         new AfterEffect.NoAfterEffect(),
-         new Normalization.NoNormalization());
-  }
-  
   @Override
   protected float score(BasicStats stats, float freq, float docLen) {
     float tfn = normalization.tfn(stats, freq, docLen);
     return stats.getTotalBoost() *
         basicModel.score(stats, tfn) * afterEffect.score(stats, tfn);
+  }
+  
+  @Override
+  protected boolean supportsIndexTimeBoost() {
+    return false;
   }
 
   @Override

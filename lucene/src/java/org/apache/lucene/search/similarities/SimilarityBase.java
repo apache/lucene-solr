@@ -66,6 +66,20 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   /**
+   * True if this implementation supports index-time boosting.
+   * <p> 
+   * Note: although subclasses use the same length normalization encoding as 
+   * Lucene's DefaultSimilarity, index-time boosting does not always work well: some
+   * implementing models may have more sophisticated normalizations (e.g. bernoulli
+   * aftereffect) that cannot be 'outsmarted' by making a document's length appear shorter.
+   * In these cases boosting a document higher may actually have the reverse effect,
+   * so subclasses can return false here so that the user will get an error instead.
+   */
+  protected boolean supportsIndexTimeBoost() {
+    return true;
+  }
+  
+  /**
    * Calls {@link #fillBasicStats(BasicStats, IndexSearcher, String, TermContext...)}.
    * Subclasses that override this method may invoke {@code fillStats} with any
    * subclass of {@code BasicStats}.
@@ -223,6 +237,9 @@ public abstract class SimilarityBase extends Similarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength() / state.getBoost();
+    if (!supportsIndexTimeBoost() && state.getBoost() != 1F) {
+      throw new UnsupportedOperationException("index-time boosting is not supported");
+    }
     return encodeNormValue(state.getBoost(), numTerms);
   }
   
@@ -267,13 +284,13 @@ public abstract class SimilarityBase extends Similarity {
     public float score(int doc, int freq) {
       // We have to supply something in case norms are omitted
       return SimilarityBase.this.score(stats, freq,
-          norms == null ? freq : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue(norms[doc]));
     }
     
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? freq.getValue() : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue(norms[doc]));
     }
   }
   
@@ -296,12 +313,12 @@ public abstract class SimilarityBase extends Similarity {
     public float score(int doc, float freq) {
       // We have to supply something in case norms are omitted
       return SimilarityBase.this.score(stats, freq,
-          norms == null ? freq : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue(norms[doc]));
     }
     @Override
     public Explanation explain(int doc, Explanation freq) {
       return SimilarityBase.this.explain(stats, doc, freq,
-          norms == null ? freq.getValue() : decodeNormValue(norms[doc]));
+          norms == null ? 1F : decodeNormValue(norms[doc]));
     }
 
     @Override

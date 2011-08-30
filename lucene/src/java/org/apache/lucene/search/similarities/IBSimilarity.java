@@ -57,11 +57,6 @@ public class IBSimilarity extends SimilarityBase {
     this.normalization = normalization;
   }
   
-  /** Creates an instance with no normalization. */
-  public IBSimilarity(Distribution distribution, Lambda lambda) {
-    this(distribution, lambda, new Normalization.NoNormalization());
-  }
-  
   @Override
   protected float score(BasicStats stats, float freq, float docLen) {
     return stats.getTotalBoost() *

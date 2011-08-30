@@ -56,7 +56,8 @@ public class TestDocBoost extends LuceneTestCase {
 
     final float[] scores = new float[4];
 
-    newSearcher(reader).search
+    IndexSearcher searcher = newSearcher(reader);
+    searcher.search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;
@@ -82,7 +83,10 @@ public class TestDocBoost extends LuceneTestCase {
     float lastScore = 0.0f;
 
     for (int i = 0; i < 2; i++) {
-      assertTrue(scores[i] > lastScore);
+      if (VERBOSE) {
+        System.out.println(searcher.explain(new TermQuery(new Term("field", "word")), i));
+      }
+      assertTrue("score: " + scores[i] + " should be > lastScore: " + lastScore, scores[i] > lastScore);
       lastScore = scores[i];
     }
     

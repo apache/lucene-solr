@@ -111,7 +111,9 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {
     new NormalizationH1(), new NormalizationH2(),
-    new Normalization.NoNormalization()
+    // TODO: if we enable NoNormalization, we have to deal with
+    // a couple tests (e.g. TestDocBoost, TestSort) that expect length normalization
+    // new Normalization.NoNormalization()
   };
   /** The distributions for IB. */
   static Distribution[] DISTRIBUTIONS = {
@@ -126,13 +128,14 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
     allSims = new ArrayList<Similarity>();
     allSims.add(new DefaultSimilarity());
     allSims.add(new BM25Similarity());
-    /* TODO: enable all sims: for (BasicModel basicModel : BASIC_MODELS) {
+    /* TODO: enable DFR sims
+    for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {
           allSims.add(new DFRSimilarity(basicModel, afterEffect, normalization));
         }
       }
-    }
+    } */
     for (Distribution distribution : DISTRIBUTIONS) {
       for (Lambda lambda : LAMBDAS) {
         for (Normalization normalization : NORMALIZATIONS) {
@@ -140,9 +143,11 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
         }
       }
     }
+    /* TODO: enable LM sims
     allSims.add(new LMDirichletSimilarity());
     allSims.add(new LMJelinekMercerSimilarity(0.1f));
-    allSims.add(new LMJelinekMercerSimilarity(0.7f)); */
+    allSims.add(new LMJelinekMercerSimilarity(0.7f));
+    */
   }
   
   @Override

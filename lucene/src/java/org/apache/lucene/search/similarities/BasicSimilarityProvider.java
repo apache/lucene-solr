@@ -45,4 +45,9 @@ public class BasicSimilarityProvider implements SimilarityProvider {
   public Similarity get(String field) {
     return sim;
   }
+
+  @Override
+  public String toString() {
+    return "BasicSimilarityProvider(" + sim + ")";
+  }
 }
