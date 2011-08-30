@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.store.Directory;
 
 /*******************************************************************************
@@ -57,10 +58,10 @@ public class TestSpansAdvanced extends LuceneTestCase {
     super.setUp();
     // create test index
     mDirectory = newDirectory();
-    final RandomIndexWriter writer = new RandomIndexWriter(random,
-                                                           mDirectory, newIndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                                            new MockAnalyzer(random, MockTokenizer.SIMPLE, true,
-                                                                                                             MockTokenFilter.ENGLISH_STOPSET, true)).setMergePolicy(newLogMergePolicy()));
+    final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, 
+            new MockAnalyzer(random, MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
+            .setMergePolicy(newLogMergePolicy()).setSimilarityProvider(new DefaultSimilarityProvider()));
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");
     addDocument(writer, "3", "I think it should work.");
@@ -68,6 +69,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);
+    searcher.setSimilarityProvider(new DefaultSimilarityProvider());
   }
   
   @Override

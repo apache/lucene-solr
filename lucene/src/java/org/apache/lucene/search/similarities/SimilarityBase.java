@@ -223,7 +223,7 @@ public abstract class SimilarityBase extends Similarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength() / state.getBoost();
-    return encodeNormValue(numTerms);
+    return encodeNormValue(state.getBoost(), numTerms);
   }
   
   /** Decodes a normalization factor (document length) stored in an index.
@@ -234,8 +234,8 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   /** Encodes the length to a byte via SmallFloat. */
-  protected byte encodeNormValue(float length) {
-    return SmallFloat.floatToByte315((float)(1.0 / Math.sqrt(length)));
+  protected byte encodeNormValue(float boost, float length) {
+    return SmallFloat.floatToByte315((boost / (float) Math.sqrt(length)));
   }
   
   // ----------------------------- Static methods ------------------------------

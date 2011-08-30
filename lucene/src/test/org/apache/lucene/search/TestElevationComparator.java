@@ -23,6 +23,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.AtomicReaderContext;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.similarities.DefaultSimilarityProvider;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
@@ -41,7 +42,8 @@ public class TestElevationComparator extends LuceneTestCase {
         directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).
             setMaxBufferedDocs(2).
-            setMergePolicy(newLogMergePolicy(1000))
+            setMergePolicy(newLogMergePolicy(1000)).
+            setSimilarityProvider(new DefaultSimilarityProvider())
     );
     writer.addDocument(adoc(new String[] {"id", "a", "title", "ipod", "str_s", "a"}));
     writer.addDocument(adoc(new String[] {"id", "b", "title", "ipod ipod", "str_s", "b"}));
@@ -54,6 +56,7 @@ public class TestElevationComparator extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(r);
+    searcher.setSimilarityProvider(new DefaultSimilarityProvider());
 
     runTest(searcher, true);
     runTest(searcher, false);

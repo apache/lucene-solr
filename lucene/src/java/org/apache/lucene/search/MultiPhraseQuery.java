@@ -165,8 +165,7 @@ public class MultiPhraseQuery extends Query {
 
     @Override
     public Scorer scorer(AtomicReaderContext context, ScorerContext scorerContext) throws IOException {
-      if (termArrays.size() == 0)                  // optimize zero-term case
-        return null;
+      assert !termArrays.isEmpty();
       final IndexReader reader = context.reader;
       final Bits liveDocs = reader.getLiveDocs();
       
@@ -250,7 +249,11 @@ public class MultiPhraseQuery extends Query {
 
   @Override
   public Query rewrite(IndexReader reader) {
-    if (termArrays.size() == 1) {                 // optimize one-term case
+    if (termArrays.isEmpty()) {
+      BooleanQuery bq = new BooleanQuery();
+      bq.setBoost(getBoost());
+      return bq;
+    } else if (termArrays.size() == 1) {                 // optimize one-term case
       Term[] terms = termArrays.get(0);
       BooleanQuery boq = new BooleanQuery(true);
       for (int i=0; i<terms.length; i++) {

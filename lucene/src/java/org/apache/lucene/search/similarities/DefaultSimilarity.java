@@ -85,4 +85,9 @@ public class DefaultSimilarity extends TFIDFSimilarity {
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
   }
+
+  @Override
+  public String toString() {
+    return "DefaultSimilarity";
+  }
 }

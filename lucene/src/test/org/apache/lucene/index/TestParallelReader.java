@@ -235,7 +235,8 @@ public class TestParallelReader extends LuceneTestCase {
     w.addDocument(d2);
     w.close();
 
-    return new IndexSearcher(dir, false);
+    IndexReader ir = IndexReader.open(dir, false);
+    return newSearcher(ir);
   }
 
   // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:

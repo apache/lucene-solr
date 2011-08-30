@@ -141,13 +141,9 @@ public class BM25Similarity extends Similarity {
     float avgdl = avgFieldLength(searcher, fieldName);
 
     // compute freq-independent part of bm25 equation across all norm values
-    float cache[] = null;
-    if (searcher.getIndexReader().hasNorms(fieldName)) {
-      cache = new float[256];
-
-      for (int i = 0; i < cache.length; i++) {
-        cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
-      }
+    float cache[] = new float[256];
+    for (int i = 0; i < cache.length; i++) {
+      cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
     }
     return new BM25Stats(value, queryBoost, avgdl, cache);
   }
@@ -171,7 +167,6 @@ public class BM25Similarity extends Similarity {
     private final float[] cache;
     
     ExactBM25DocScorer(BM25Stats stats, byte norms[]) {
-      assert stats.cache != null;
       assert norms != null;
       this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
       this.cache = stats.cache;
@@ -191,7 +186,6 @@ public class BM25Similarity extends Similarity {
     private float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
     ExactBM25DocScorerNoNorms(BM25Stats stats) {
-      assert stats.cache == null;
       this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
       for (int i = 0; i < SCORE_CACHE_SIZE; i++)
         scoreCache[i] = weightValue * i / (i + k1);
@@ -267,5 +261,10 @@ public class BM25Similarity extends Similarity {
       // we don't normalize with queryNorm at all, we just capture the top-level boost
       this.weight = idf * queryBoost * topLevelBoost;
     } 
+  }
+
+  @Override
+  public String toString() {
+    return "BM25(k1=" + k1 + ",b=" + b + ")";
   }
 }
