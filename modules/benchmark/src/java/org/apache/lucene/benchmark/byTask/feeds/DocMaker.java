@@ -179,8 +179,8 @@ public class DocMaker {
 
   protected Config config;
 
-  protected final FieldType valType;
-  protected final FieldType bodyValType;
+  protected FieldType valType;
+  protected FieldType bodyValType;
     
   protected ContentSource source;
   protected boolean reuseFields;
@@ -194,10 +194,6 @@ public class DocMaker {
   private int printNum = 0;
 
   public DocMaker() {
-    valType = new FieldType(TextField.TYPE_UNSTORED);
-    valType.setOmitNorms(true);
-    
-    bodyValType = new FieldType(TextField.TYPE_UNSTORED);
   }
   
   // create a doc
@@ -465,20 +461,24 @@ public class DocMaker {
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
     
+    valType = new FieldType(TextField.TYPE_UNSTORED);
     valType.setStored(stored);
-    bodyValType.setStored(bodyStored);
     valType.setTokenized(tokenized);
     valType.setOmitNorms(!norms);
-    bodyValType.setTokenized(bodyTokenized);
-    bodyValType.setOmitNorms(!bodyNorms);
-
     valType.setStoreTermVectors(termVec);
     valType.setStoreTermVectorPositions(termVecPositions);
     valType.setStoreTermVectorOffsets(termVecOffsets);
+    valType.freeze();
+
+    bodyValType = new FieldType(TextField.TYPE_UNSTORED);
+    bodyValType.setStored(bodyStored);
+    bodyValType.setTokenized(bodyTokenized);
+    bodyValType.setOmitNorms(!bodyNorms);
     bodyValType.setStoreTermVectors(termVec);
     bodyValType.setStoreTermVectorPositions(termVecPositions);
     bodyValType.setStoreTermVectorOffsets(termVecOffsets);
-    
+    bodyValType.freeze();
+
     storeBytes = config.get("doc.store.body.bytes", false);
     
     reuseFields = config.get("doc.reuse.fields", true);

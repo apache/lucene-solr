@@ -19,10 +19,26 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
  * limitations under the License.
  */
 
+/** A field that is indexed but not tokenized: the entire
+ *  String value is indexed as a single token.  For example
+ *  this might be used for a 'country' field or an 'id'
+ *  field, or any field that you intend to use for sorting
+ *  or access through the field cache.
+ *
+ *  <p/>This field's value is not stored by default; use the
+ *  {@link TYPE_STORED} type (pass it to <code>new
+ *  Field</code>) to store the value. */
+
 public final class StringField extends Field {
 
+  /** Indexed, not tokenized, omits norms, indexes
+   *  DOCS_ONLY, not stored. */
   public static final FieldType TYPE_UNSTORED = new FieldType();
+
+  /** Indexed, not tokenized, omits norms, indexes
+   *  DOCS_ONLY, stored */
   public static final FieldType TYPE_STORED = new FieldType();
+
   static {
     TYPE_UNSTORED.setIndexed(true);
     TYPE_UNSTORED.setOmitNorms(true);
@@ -36,6 +52,7 @@ public final class StringField extends Field {
     TYPE_STORED.freeze();
   }
   
+  /** Creates a new un-stored StringField */
   public StringField(String name, String value) {
     super(name, TYPE_UNSTORED, value);
   }
@@ -44,8 +61,4 @@ public final class StringField extends Field {
   public String stringValue() {
     return (fieldsData == null) ? null : fieldsData.toString();
   }
-  
-  public boolean isNumeric() {
-    return false;
-  }  
 }

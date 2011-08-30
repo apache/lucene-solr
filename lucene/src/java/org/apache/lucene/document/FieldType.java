@@ -29,7 +29,6 @@ public class FieldType {
   private boolean storeTermVectorPositions;
   private boolean omitNorms;
   private IndexOptions indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-  private boolean lazy;
   private boolean frozen;
 
   public FieldType(FieldType ref) {
@@ -41,7 +40,7 @@ public class FieldType {
     this.storeTermVectorPositions = ref.storeTermVectorPositions();
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
-    this.lazy = ref.lazy();
+    // Do not copy frozen!
   }
   
   public FieldType() {
@@ -52,7 +51,9 @@ public class FieldType {
       throw new IllegalStateException();
     }
   }
-  
+
+  /** Prevents future changes.  Note that when a FieldType
+   *  is first bound to a Field instance, it is frozen. */
   public void freeze() {
     this.frozen = true;
   }
@@ -129,15 +130,6 @@ public class FieldType {
     this.indexOptions = value;
   }
 
-  public boolean lazy() {
-    return this.lazy;
-  }
-  
-  public void setLazy(boolean value) {
-    checkIfFrozen();
-    this.lazy = value;
-  }
-
   /** Prints a Field for human consumption. */
   @Override
   public final String toString() {
@@ -176,9 +168,6 @@ public class FieldType {
     if (indexOptions != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       result.append(",indexOptions=");
       result.append(indexOptions);
-    }
-    if (lazy()){
-      result.append(",lazy");
     }
     
     return result.toString();

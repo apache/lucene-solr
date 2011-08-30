@@ -174,7 +174,6 @@ public class FieldSelectorVisitor extends StoredFieldVisitor {
     ft.setStored(true);
     ft.setOmitNorms(fi.omitNorms);
     ft.setIndexOptions(fi.indexOptions);
-    ft.setLazy(true);
     
     if (binary) {
       f = new LazyField(in, fi.name, ft, numBytes, pointer, binary, cacheResult);

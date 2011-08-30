@@ -19,6 +19,8 @@ import org.apache.lucene.util.BytesRef;
  * limitations under the License.
  */
 
+/** A field with byte[] value that is only stored. */
+
 public final class BinaryField extends Field {
 
   public static final FieldType TYPE_STORED = new FieldType();
@@ -27,23 +29,18 @@ public final class BinaryField extends Field {
     TYPE_STORED.freeze();
   }
 
+  /** Creates a new BinaryField */
   public BinaryField(String name, byte[] value) {
     super(name, BinaryField.TYPE_STORED, value);
   }
   
+  /** Creates a new BinaryField */
   public BinaryField(String name, byte[] value, int offset, int length) {
     super(name, BinaryField.TYPE_STORED, value, offset, length);
   }
 
+  /** Creates a new BinaryField */
   public BinaryField(String name, BytesRef bytes) {
     super(name, BinaryField.TYPE_STORED, bytes);
   }
-  
-  public BinaryField(String name, FieldType custom, byte[] value) {
-    super(name, custom, value);
-  }
-    
-  public boolean isNumeric() {
-    return false;
-  }  
 }
