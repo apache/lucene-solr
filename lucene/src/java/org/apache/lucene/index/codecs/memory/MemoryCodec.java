@@ -554,7 +554,7 @@ public class MemoryCodec extends Codec {
         if (field.indexOptions != IndexOptions.DOCS_ONLY) {
           totalTermFreq = docFreq + buffer.readVLong();
         } else {
-          totalTermFreq = 0;
+          totalTermFreq = -1;
         }
         current.output.offset = buffer.getPosition();
         if (VERBOSE) System.out.println("  df=" + docFreq + " totTF=" + totalTermFreq + " offset=" + buffer.getPosition() + " len=" + current.output.length);
@@ -692,7 +692,7 @@ public class MemoryCodec extends Codec {
       if (field.indexOptions != IndexOptions.DOCS_ONLY) {
         sumTotalTermFreq = in.readVLong();
       } else {
-        sumTotalTermFreq = 0;
+        sumTotalTermFreq = -1;
       }
       sumDocFreq = in.readVLong();
       

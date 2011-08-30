@@ -428,4 +428,25 @@ public class TestOmitTf extends LuceneTestCase {
       return true;
     }
   }
+  
+  /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are -1 */
+  public void testStats() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_UNSTORED);
+    ft.setIndexOptions(IndexOptions.DOCS_ONLY);
+    ft.freeze();
+    Field f = newField("foo", "bar", ft);
+    doc.add(f);
+    iw.addDocument(doc);
+    IndexReader ir = iw.getReader();
+    iw.close();
+    Terms terms = MultiFields.getTerms(ir, "foo");
+    assertEquals(-1, terms.totalTermFreq(new BytesRef("bar")));
+    assertEquals(-1, terms.getSumTotalTermFreq());
+    ir.close();
+    dir.close();
+  }
 }
