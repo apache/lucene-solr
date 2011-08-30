@@ -143,11 +143,10 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
         }
       }
     }
-    /* TODO: enable LM sims
-    allSims.add(new LMDirichletSimilarity());
+    /* TODO: enable Dirichlet 
+    allSims.add(new LMDirichletSimilarity()); */
     allSims.add(new LMJelinekMercerSimilarity(0.1f));
     allSims.add(new LMJelinekMercerSimilarity(0.7f));
-    */
   }
   
   @Override
