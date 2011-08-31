@@ -320,12 +320,12 @@
                   excludes="build ${package.dir}/** ${dist}/**
                             example/webapps/*.war example/exampledocs/post.jar
                             lib/README.committers.txt **/data/ **/logs/*
-                            **/*.sh **/bin/ src/scripts/ site-src/build/
+                            **/*.sh **/bin/ scripts/ site-src/build/
                             .idea/ **/*.iml **/pom.xml" />
       <tarfileset dir="." prefix="${fullnamever}/solr"
                   includes="core/src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
       <tarfileset dir="." filemode="755" prefix="${fullnamever}/solr"
-                  includes="**/*.sh **/bin/ core/src/scripts/"
+                  includes="**/*.sh **/bin/ scripts/"
                   excludes="build/**"/>
       <tarfileset dir="../lucene" prefix="${fullnamever}/lucene">
         <patternset refid="lucene.local.src.package.patterns"/>
