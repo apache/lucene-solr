@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -601,20 +600,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     public synchronized void dropAll() throws IOException {
-      Iterator<Map.Entry<SegmentCacheKey,SegmentReader>> iter = readerMap.entrySet().iterator();
-      while (iter.hasNext()) {
-
-        final Map.Entry<SegmentCacheKey,SegmentReader> ent = iter.next();
-
-        SegmentReader sr = ent.getValue();
-        sr.hasChanges = false;
-        iter.remove();
+      for(SegmentReader reader : readerMap.values()) {
+        reader.hasChanges = false;
 
         // NOTE: it is allowed that this decRef does not
         // actually close the SR; this can happen when a
         // near real-time reader using this SR is still open
-        sr.decRef();
+        reader.decRef();
       }
+      readerMap.clear();
     }
 
     public synchronized void drop(SegmentInfo info, IOContext.Context context) throws IOException {
@@ -633,10 +627,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // sync'd on IW:
       assert Thread.holdsLock(IndexWriter.this);
 
-      Iterator<Map.Entry<SegmentCacheKey,SegmentReader>> iter = readerMap.entrySet().iterator();
-      while (iter.hasNext()) {
-
-        Map.Entry<SegmentCacheKey,SegmentReader> ent = iter.next();
+      for(Map.Entry<SegmentCacheKey,SegmentReader> ent : readerMap.entrySet()) {
 
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
@@ -649,14 +640,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           deleter.checkpoint(segmentInfos, false);
         }
 
-        iter.remove();
-
         // NOTE: it is allowed that this decRef does not
         // actually close the SR; this can happen when a
         // near real-time reader is kept open after the
         // IndexWriter instance is closed
         sr.decRef();
       }
+
+      readerMap.clear();
     }
 
     /**
