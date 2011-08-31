@@ -18,7 +18,6 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.Source;
@@ -33,6 +32,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
@@ -70,7 +70,7 @@ class IntsImpl {
     private final IOContext context;
     
 
-    protected IntsWriter(Directory dir, String id, AtomicLong bytesUsed,
+    protected IntsWriter(Directory dir, String id, Counter bytesUsed,
         ValueType valueType, IOContext context) throws IOException {
       super(bytesUsed);
       this.context = context;
@@ -367,13 +367,13 @@ class IntsImpl {
   private static ValuesEnum directEnum(byte ord, AttributeSource attrSource, IndexInput input, int numDocs) throws IOException {
     switch (ord) {
     case FIXED_16:
-      return new ShortValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
+      return new ShortValues((Counter)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_32:
-      return new IntValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
+      return new IntValues((Counter)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_64:
-      return new LongValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
+      return new LongValues((Counter)null).getDirectEnum(attrSource, input, numDocs);
     case FIXED_8:
-      return new ByteValues((AtomicLong)null).getDirectEnum(attrSource, input, numDocs);
+      return new ByteValues((Counter)null).getDirectEnum(attrSource, input, numDocs);
     case PACKED:
       return new PackedIntsEnumImpl(attrSource, input);
     default:

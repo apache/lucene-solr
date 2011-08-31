@@ -22,7 +22,7 @@ import org.apache.lucene.util.ByteBlockPool.Allocator;
  */
 
 /**
- * A {@link ByteBlockPool.Allocator} implementation that recycles unused byte
+ * A threadsafe {@link ByteBlockPool.Allocator} implementation that recycles unused byte
  * blocks in a buffer and reuses them in subsequent calls to
  * {@link #getByteBlock()}.
  * 
@@ -122,7 +122,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
   /**
    * @return the number of bytes currently allocated by this {@link Allocator}
    */
-  public long bytesUsed() {
+  public synchronized long bytesUsed() {
     return bytesUsed.get();
   }
 

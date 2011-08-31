@@ -16,11 +16,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.codecs.PerDocConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Counter;
 
 /**
  * Encapsulates all necessary state to initiate a {@link PerDocConsumer} and
@@ -33,13 +33,13 @@ public class PerDocWriteState {
   public final Directory directory;
   public final String segmentName;
   public final FieldInfos fieldInfos;
-  public final AtomicLong bytesUsed;
+  public final Counter bytesUsed;
   public final SegmentCodecs segmentCodecs;
   public final int codecId;
   public final IOContext context;
 
   PerDocWriteState(PrintStream infoStream, Directory directory,
-      String segmentName, FieldInfos fieldInfos, AtomicLong bytesUsed,
+      String segmentName, FieldInfos fieldInfos, Counter bytesUsed,
       int codecId, IOContext context) {
     this.infoStream = infoStream;
     this.directory = directory;
@@ -58,7 +58,7 @@ public class PerDocWriteState {
     segmentName = state.segmentName;
     fieldInfos = state.fieldInfos;
     codecId = state.codecId;
-    bytesUsed = new AtomicLong(0);
+    bytesUsed = Counter.newCounter();
     context = state.context;
   }
 

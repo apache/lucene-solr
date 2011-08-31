@@ -23,7 +23,6 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
@@ -32,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -155,7 +155,7 @@ public class DocumentsWriterPerThread {
   final Directory directory;
   final DocState docState;
   final DocConsumer consumer;
-  final AtomicLong bytesUsed;
+  final Counter bytesUsed;
   
   SegmentWriteState flushState;
   //Deletes for our still-in-RAM (to be flushed next) segment
@@ -184,7 +184,7 @@ public class DocumentsWriterPerThread {
     this.docState = new DocState(this);
     this.docState.similarityProvider = parent.indexWriter.getConfig()
         .getSimilarityProvider();
-    bytesUsed = new AtomicLong(0);
+    bytesUsed = Counter.newCounter();
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
     consumer = indexingChain.getChain(this);
     pendingDeletes = new BufferedDeletes();

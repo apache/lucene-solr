@@ -19,12 +19,12 @@ package org.apache.lucene.index.values;
 
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.IndexDocValues.SortedSource;
 import org.apache.lucene.index.values.IndexDocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +60,7 @@ public class TestDocValues extends LuceneTestCase {
         .getUTF8SortedAsUnicodeComparator() : null;
 
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Bytes.getWriter(dir, "test", mode, comp, fixedSize, trackBytes, newIOContext(random));
     int maxDoc = 220;
     final String[] values = new String[maxDoc];
@@ -182,7 +182,7 @@ public class TestDocValues extends LuceneTestCase {
         ValueType.VAR_INTS, };
     for (int i = 0; i < minMax.length; i++) {
       Directory dir = newDirectory();
-      final AtomicLong trackBytes = new AtomicLong(0);
+      final Counter trackBytes = Counter.newCounter();
       Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.VAR_INTS, newIOContext(random));
       w.add(0, minMax[i][0]);
       w.add(1, minMax[i][1]);
@@ -223,7 +223,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetInt8Array() throws IOException {
     byte[] sourceArray = new byte[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_8, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
@@ -244,7 +244,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetInt16Array() throws IOException {
     short[] sourceArray = new short[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_16, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
@@ -265,7 +265,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetInt64Array() throws IOException {
     long[] sourceArray = new long[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_64, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
@@ -286,7 +286,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetInt32Array() throws IOException {
     int[] sourceArray = new int[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Ints.getWriter(dir, "test", trackBytes, ValueType.FIXED_INTS_32, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, (long) sourceArray[i]);
@@ -307,7 +307,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetFloat32Array() throws IOException {
     float[] sourceArray = new float[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Floats.getWriter(dir, "test", 4, trackBytes, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
@@ -328,7 +328,7 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetFloat64Array() throws IOException {
     double[] sourceArray = new double[] {1,2,3};
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Floats.getWriter(dir, "test", 8, trackBytes, newIOContext(random));
     for (int i = 0; i < sourceArray.length; i++) {
       w.add(i, sourceArray[i]);
@@ -352,7 +352,7 @@ public class TestDocValues extends LuceneTestCase {
     final long[] values = new long[NUM_VALUES];
     for (int rx = 1; rx < maxBit; rx++, maxV *= 2) {
       Directory dir = newDirectory();
-      final AtomicLong trackBytes = new AtomicLong(0);
+      final Counter trackBytes = Counter.newCounter();
       Writer w = Ints.getWriter(dir, "test", trackBytes, type, newIOContext(random));
       for (int i = 0; i < NUM_VALUES; i++) {
         final long v = random.nextLong() % (1 + maxV);
@@ -415,7 +415,7 @@ public class TestDocValues extends LuceneTestCase {
 
   private void runTestFloats(int precision, double delta) throws IOException {
     Directory dir = newDirectory();
-    final AtomicLong trackBytes = new AtomicLong(0);
+    final Counter trackBytes = Counter.newCounter();
     Writer w = Floats.getWriter(dir, "test", precision, trackBytes, newIOContext(random));
     final int NUM_VALUES = 777 + random.nextInt(777);;
     final double[] values = new double[NUM_VALUES];

@@ -18,12 +18,12 @@ package org.apache.lucene.index.values;
  */
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.values.IntsImpl.IntsReader;
 import org.apache.lucene.index.values.IntsImpl.IntsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Counter;
 
 /**
  * @lucene.experimental
@@ -35,7 +35,7 @@ public class Ints {
   }
 
   public static Writer getWriter(Directory dir, String id,
-      AtomicLong bytesUsed, ValueType type, IOContext context) throws IOException {
+      Counter bytesUsed, ValueType type, IOContext context) throws IOException {
     return new IntsWriter(dir, id, bytesUsed, type, context);
   }
 

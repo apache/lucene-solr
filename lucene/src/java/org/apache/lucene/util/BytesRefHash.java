@@ -60,7 +60,7 @@ public final class BytesRefHash {
   private int lastCount = -1;
   private int[] ords;
   private final BytesStartArray bytesStartArray;
-  private AtomicLong bytesUsed;
+  private Counter bytesUsed;
 
   /**
    * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a
@@ -90,7 +90,7 @@ public final class BytesRefHash {
     Arrays.fill(ords, -1);
     this.bytesStartArray = bytesStartArray;
     bytesStart = bytesStartArray.init();
-    bytesUsed = bytesStartArray.bytesUsed() == null? new AtomicLong(0) : bytesStartArray.bytesUsed();;
+    bytesUsed = bytesStartArray.bytesUsed() == null? Counter.newCounter() : bytesStartArray.bytesUsed();
     bytesUsed.addAndGet(hashSize * RamUsageEstimator.NUM_BYTES_INT);
   }
 
@@ -523,25 +523,25 @@ public final class BytesRefHash {
     public abstract int[] clear();
 
     /**
-     * A {@link AtomicLong} reference holding the number of bytes used by this
+     * A {@link Counter} reference holding the number of bytes used by this
      * {@link BytesStartArray}. The {@link BytesRefHash} uses this reference to
      * track it memory usage
      * 
      * @return a {@link AtomicLong} reference holding the number of bytes used
      *         by this {@link BytesStartArray}.
      */
-    public abstract AtomicLong bytesUsed();
+    public abstract Counter bytesUsed();
   }
   
   /**
-   * A direct {@link BytesStartArray} that tracks all memory allocation using an {@link AtomicLong} instance.
+   * A direct {@link BytesStartArray} that tracks all memory allocation using an {@link Counter} instance.
    */
   public static class TrackingDirectBytesStartArray extends BytesStartArray {
     protected final int initSize;
     private int[] bytesStart;
-    protected final AtomicLong bytesUsed;
+    protected final Counter bytesUsed;
     
-    public TrackingDirectBytesStartArray(int initSize, AtomicLong bytesUsed) {
+    public TrackingDirectBytesStartArray(int initSize, Counter bytesUsed) {
       this.initSize = initSize;
       this.bytesUsed = bytesUsed;
     }
@@ -572,7 +572,7 @@ public final class BytesRefHash {
     }
 
     @Override
-    public AtomicLong bytesUsed() {
+    public Counter bytesUsed() {
       return bytesUsed;
     }
   }
@@ -580,10 +580,10 @@ public final class BytesRefHash {
   public static class DirectBytesStartArray extends BytesStartArray {
     protected final int initSize;
     private int[] bytesStart;
-    private final AtomicLong bytesUsed;
+    private final Counter bytesUsed;
     
     public DirectBytesStartArray(int initSize) {
-      this.bytesUsed = new AtomicLong(0);
+      this.bytesUsed = Counter.newCounter();
       this.initSize = initSize;
     }
 
@@ -606,7 +606,7 @@ public final class BytesRefHash {
     }
 
     @Override
-    public AtomicLong bytesUsed() {
+    public Counter bytesUsed() {
       return bytesUsed;
     }
   }

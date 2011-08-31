@@ -18,13 +18,13 @@ package org.apache.lucene.index.codecs;
  */
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.values.IndexDocValues;
 import org.apache.lucene.index.values.PerDocFieldValues;
 import org.apache.lucene.index.values.Writer;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Counter;
 
 /**
  * Abstract API that consumes {@link PerDocFieldValues}.
@@ -37,7 +37,7 @@ import org.apache.lucene.util.Bits;
  */
 public abstract class DocValuesConsumer {
 
-  protected final AtomicLong bytesUsed;
+  protected final Counter bytesUsed;
 
   /**
    * Creates a new {@link DocValuesConsumer}.
@@ -47,8 +47,8 @@ public abstract class DocValuesConsumer {
    *          internally allocated memory. All tracked bytes must be released
    *          once {@link #finish(int)} has been called.
    */
-  protected DocValuesConsumer(AtomicLong bytesUsed) {
-    this.bytesUsed = bytesUsed == null ? new AtomicLong(0) : bytesUsed;
+  protected DocValuesConsumer(Counter bytesUsed) {
+    this.bytesUsed = bytesUsed == null ? Counter.newCounter() : bytesUsed;
   }
 
   /**

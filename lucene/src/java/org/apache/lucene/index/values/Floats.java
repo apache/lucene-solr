@@ -18,7 +18,6 @@ package org.apache.lucene.index.values;
  */
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.values.IndexDocValues.Source;
@@ -29,6 +28,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -50,7 +50,7 @@ public class Floats {
   private static final byte[] DEFAULTS = new byte[] {0,0,0,0,0,0,0,0};
   
   public static Writer getWriter(Directory dir, String id, int precisionBytes,
-      AtomicLong bytesUsed, IOContext context) throws IOException {
+      Counter bytesUsed, IOContext context) throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
       throw new IllegalArgumentException("precisionBytes must be 4 or 8; got "
           + precisionBytes);
@@ -77,7 +77,7 @@ public class Floats {
     private final IOContext context; 
 
     protected FloatsWriter(Directory dir, String id, int precision,
-        AtomicLong bytesUsed, IOContext context) throws IOException {
+        Counter bytesUsed, IOContext context) throws IOException {
       super(bytesUsed);
       this.id = id;
       this.precision = (byte) precision;
@@ -161,7 +161,7 @@ public class Floats {
   // Writes 4 bytes (float) per value
   static final class Float4Writer extends FloatsWriter {
     private int[] values;
-    protected Float4Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
+    protected Float4Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
       super(dir, id, 4, bytesUsed, context);
       values = new int[1];
@@ -226,7 +226,7 @@ public class Floats {
   // Writes 8 bytes (double) per value
   static final class Float8Writer extends FloatsWriter {
     private long[] values;
-    protected Float8Writer(Directory dir, String id, AtomicLong bytesUsed, IOContext context)
+    protected Float8Writer(Directory dir, String id, Counter bytesUsed, IOContext context)
         throws IOException {
       super(dir, id, 8, bytesUsed, context);
       values = new long[1];

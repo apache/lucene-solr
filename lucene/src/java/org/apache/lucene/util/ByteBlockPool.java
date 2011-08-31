@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.DataOutput;
 
@@ -85,13 +84,13 @@ public final class ByteBlockPool {
   }
   
   public static class DirectTrackingAllocator extends Allocator {
-    private final AtomicLong bytesUsed;
+    private final Counter bytesUsed;
     
-    public DirectTrackingAllocator(AtomicLong bytesUsed) {
+    public DirectTrackingAllocator(Counter bytesUsed) {
       this(BYTE_BLOCK_SIZE, bytesUsed);
     }
 
-    public DirectTrackingAllocator(int blockSize, AtomicLong bytesUsed) {
+    public DirectTrackingAllocator(int blockSize, Counter bytesUsed) {
       super(blockSize);
       this.bytesUsed = bytesUsed;
     }
