@@ -103,6 +103,12 @@ customization is required.
   in your distribution package!</p>
 </section>
 <section>
+   <title>22 July 2011 - Solr 3.1 cookbook published!</title>
+   <p><img src="images/solr_31_cookbook.jpg" class="float-right" alt="Solr Cookbook cover" />Rafał Kuć is proud to introduce a new book on Solr, <a title="PACKT:Apache Solr 3.1 Cookbook" href="http://www.packtpub.com/solr-3-1-enterprise-search-server-cookbook/book">"Apache Solr 3.1 Cookbook"</a> from Packt Publishing.</p>
+   <p>The Solr 3.1 Cookbook will make your everyday work easier by using real-life examples that show you how to deal with the most common problems that can arise while using the Apache Solr search engine.</p>
+   <p>This cookbook will show you how to get the most out of your search engine. Each chapter covers a different aspect of working with Solr from analyzing your text data through querying, performance improvement, and developing your own modules. The practical recipes will help you to quickly solve common problems with data analysis, show you how to use faceting to collect data and to speed up the performance of Solr. You will learn about functionalities that most newbies are unaware of, such as sorting results by a function value, highlighting matched words, and computing statistics to make your work with Solr easy and stress free.</p>
+</section>     
+<section>
    <title>July 2011 - Solr 3.3 Released</title>
   <p>The Lucene PMC is pleased to announce the release of <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr">Apache Solr 3.3</a>!
   </p> 
