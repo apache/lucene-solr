@@ -600,6 +600,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       drop(info, IOContext.Context.MERGE);
     }
 
+    public synchronized void dropAll() throws IOException {
+      Iterator<Map.Entry<SegmentCacheKey,SegmentReader>> iter = readerMap.entrySet().iterator();
+      while (iter.hasNext()) {
+
+        final Map.Entry<SegmentCacheKey,SegmentReader> ent = iter.next();
+
+        SegmentReader sr = ent.getValue();
+        sr.hasChanges = false;
+        iter.remove();
+
+        // NOTE: it is allowed that this decRef does not
+        // actually close the SR; this can happen when a
+        // near real-time reader using this SR is still open
+        sr.decRef();
+      }
+    }
+
     public synchronized void drop(SegmentInfo info, IOContext.Context context) throws IOException {
       final SegmentReader sr;
       if ((sr = readerMap.remove(new SegmentCacheKey(info, context))) != null) {
@@ -2141,7 +2158,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       deleter.refresh();
 
       // Don't bother saving any changes in our segmentInfos
-      readerPool.clear(null);
+      readerPool.dropAll();
 
       // Mark that the index has changed
       ++changeCount;
@@ -3698,7 +3715,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
             synchronized(this) {
               deleter.deleteFile(compoundFileName);
-              
               deleter.deleteFile(IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
               deleter.deleteNewFiles(merge.info.files());
             }

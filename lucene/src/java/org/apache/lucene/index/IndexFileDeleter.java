@@ -374,6 +374,10 @@ final class IndexFileDeleter {
   }
 
   public void refresh() throws IOException {
+    // Set to null so that we regenerate the list of pending
+    // files; else we can accumulate same file more than
+    // once
+    deletable = null;
     refresh(null);
   }
 

@@ -577,6 +577,10 @@ Bug fixes
   throw NoSuchDirectoryException when all files written so far have been
   written to one directory, but the other still has not yet been created on the
   filesystem.  (Robert Muir)
+
+* LUCENE-3409: IndexWriter.deleteAll was failing to close pooled NRT
+  SegmentReaders, leading to unused files accumulating in the
+  Directory.  (tal steier via Mike McCandless)
   
 New Features
 
