@@ -388,7 +388,6 @@ public class QueryComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       mergeIds(rb, sreq);
-      mergeGroupCounts(rb, sreq);
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
@@ -658,42 +657,6 @@ public class QueryComponent extends SearchComponent
           rb._responseDocs.set(sdoc.positionInResponse, doc);
         }
       }      
-    }
-  }
-
-  /**
-   * Merges the collapse responses from the shards into one distributed collapse response.
-   *
-   * @param rb   The response builder
-   * @param sreq The shard request
-   */
-  private void mergeGroupCounts(ResponseBuilder rb, ShardRequest sreq) {
-    NamedList combinedGroupCounts = new NamedList<Object>();
-
-    for (ShardResponse srsp : sreq.responses) {
-      //check if the namelist is null or not (if a shard crashed)
-      if (srsp.getSolrResponse().getResponse() == null) {
-        continue;
-      }
-
-      NamedList groupCounts = (NamedList<Object>) srsp.getSolrResponse().getResponse().get("groupCount");
-      /*for (Object o : rb.resultIds.keySet()) {
-        String id = (String) o;
-      }*/
-
-      if (groupCounts != null) {
-        for (int i = 0; i < groupCounts.size(); i++) {
-          String groupGroupId = groupCounts.getName(i);
-          ShardDoc sdoc = rb.resultIds.get(groupGroupId);
-          if (sdoc != null) {
-            combinedGroupCounts.add(groupGroupId, groupCounts.getVal(i));
-          }
-        }
-      }
-    }
-
-    if (combinedGroupCounts.size() > 0) {
-      rb.rsp.add("groupCount", combinedGroupCounts);
     }
   }
 
