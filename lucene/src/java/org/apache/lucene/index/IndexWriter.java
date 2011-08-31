@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -594,6 +593,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
     
+    public synchronized void dropAll() throws IOException {
+      for(SegmentReader reader : readerMap.values()) {
+        reader.hasChanges = false;
+
+        // NOTE: it is allowed that this decRef does not
+        // actually close the SR; this can happen when a
+        // near real-time reader using this SR is still open
+        reader.decRef();
+      }
+      readerMap.clear();
+    }
+
     /** Remove all our references to readers, and commits
      *  any pending changes. */
     synchronized void close() throws IOException {
@@ -601,11 +612,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // sync'd on IW:
       assert Thread.holdsLock(IndexWriter.this);
 
-      Iterator<Map.Entry<SegmentInfo,SegmentReader>> iter = readerMap.entrySet().iterator();
-      while (iter.hasNext()) {
+      for(Map.Entry<SegmentInfo,SegmentReader> ent : readerMap.entrySet()) {
         
-        Map.Entry<SegmentInfo,SegmentReader> ent = iter.next();
-
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo());
@@ -617,14 +625,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           deleter.checkpoint(segmentInfos, false);
         }
 
-        iter.remove();
-
         // NOTE: it is allowed that this decRef does not
         // actually close the SR; this can happen when a
         // near real-time reader is kept open after the
         // IndexWriter instance is closed
         sr.decRef();
       }
+
+      readerMap.clear();
     }
     
     /**
@@ -2909,7 +2917,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       deleter.refresh();
 
       // Don't bother saving any changes in our segmentInfos
-      readerPool.clear(null);      
+      readerPool.dropAll();
 
       // Mark that the index has changed
       ++changeCount;

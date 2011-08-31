@@ -54,6 +54,10 @@ Bug fixes
 * LUCENE-3402: term vectors disappeared from the index if optimize() was called
   following addIndexes(). (Shai Erera)
      
+* LUCENE-3409: IndexWriter.deleteAll was failing to close pooled NRT
+  SegmentReaders, leading to unused files accumulating in the
+  Directory.  (tal steier via Mike McCandless)
+  
 New Features
 
 * LUCENE-3290: Added FieldInvertState.numUniqueTerms 

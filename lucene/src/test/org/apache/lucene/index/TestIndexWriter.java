@@ -30,12 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -66,7 +64,6 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -1915,5 +1912,29 @@ public class TestIndexWriter extends LuceneTestCase {
     r.terms(new Term("", ""));
     r.close();
     dir.close();
+  }
+
+  public void testDeleteAllNRTLeftoverFiles() throws Exception {
+
+    Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    Document doc = new Document();
+    for(int i = 0; i < 20; i++) {
+      for(int j = 0; j < 100; ++j) {
+        w.addDocument(doc);
+      }
+      w.commit();
+      IndexReader.open(w, true).close();
+
+      w.deleteAll();
+      w.commit();
+
+      // Make sure we accumulate no files except for empty
+      // segments_N and segments.gen:
+      assertTrue(d.listAll().length <= 2);
+    }
+
+    w.close();
+    d.close();
   }
 }
