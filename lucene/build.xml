@@ -382,6 +382,22 @@
   </target>
 
   <!-- ================================================================== -->
+  <!-- Packages the sources from local working copy with tar-gzip     -->
+  <!-- ================================================================== -->
+  <target name="package-local-src-tgz" depends="init, init-dist"
+    description="--> Packages the Lucene source from the local working copy">
+    <mkdir dir="${common.dir}/build"/>
+    <property name="source.package.file"
+              value="${common.dir}/build/lucene-${version}-src.tgz"/>
+    <delete file="${source.package.file}"/>
+    <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir=".">
+        <patternset refid="lucene.local.src.package.patterns"/>
+      </tarfileset>
+    </tar>
+  </target>
+
+  <!-- ================================================================== -->
   <!-- same as package-tgz-src. it is just here for compatibility.        -->
   <!-- ================================================================== -->
   <target name="dist-src" depends="package-tgz-src"/>

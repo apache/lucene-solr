@@ -301,7 +301,7 @@ Other Changes
 * SOLR-2654: The same Directory instance is now always used across a SolrCore so that
   it's easier to add other DirectoryFactory's without static caching hacks.
   (Mark Miller)
-  
+
 Documentation
 ----------------------
 
@@ -480,6 +480,10 @@ Build
     tasks (via <ant dir="internal-module-dir"> calls) to these
     modules' build.xml files.
   (Steve Rowe, Robert Muir)
+
+* LUCENE-3406: Add ant target 'package-local-src-tgz' to Lucene and Solr
+  to package sources from the local working copy.
+  (Seung-Yeoul Yang via Steve Rowe)
 
 Documentation
 ----------------------

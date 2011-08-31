@@ -623,6 +623,13 @@ Test Cases
 * LUCENE-3327: Fix AIOOBE when TestFSTs is run with
   -Dtests.verbose=true (James Dyer via Mike McCandless)
 
+Build
+
+* LUCENE-3406: Add ant target 'package-local-src-tgz' to Lucene and Solr
+  to package sources from the local working copy.
+  (Seung-Yeoul Yang via Steve Rowe)
+
+
 ======================= Lucene 3.3.0 =======================
 
 Changes in backwards compatibility policy

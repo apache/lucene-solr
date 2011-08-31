@@ -304,7 +304,35 @@
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
-  
+ 
+  <target name="package-local-src-tgz"
+          description="Packages the Solr and Lucene sources from the local working copy">
+    <mkdir dir="${common-solr.dir}/build"/>
+    <property name="source.package.file"
+              value="${common-solr.dir}/build/${fullnamever}-src.tgz"/>
+    <delete file="${source.package.file}" failonerror="false" />
+
+    <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset dir="../modules" prefix="${fullnamever}/modules" excludes="**/build/" />
+      <tarfileset dir=".." prefix="${fullnamever}" includes="*.txt *.xml dev-tools/" />
+      <tarfileset dir="." prefix="${fullnamever}" includes="LICENSE.txt NOTICE.txt"/>
+      <tarfileset dir="." prefix="${fullnamever}/solr"
+                  excludes="build ${package.dir}/** ${dist}/**
+                            example/webapps/*.war example/exampledocs/post.jar
+                            lib/README.committers.txt **/data/ **/logs/*
+                            **/*.sh **/bin/ src/scripts/ site-src/build/
+                            .idea/ **/*.iml **/pom.xml" />
+      <tarfileset dir="." prefix="${fullnamever}/solr"
+                  includes="core/src/test-files/solr/lib/classes/empty-file-main-lib.txt" />
+      <tarfileset dir="." filemode="755" prefix="${fullnamever}/solr"
+                  includes="**/*.sh **/bin/ core/src/scripts/"
+                  excludes="build/**"/>
+      <tarfileset dir="../lucene" prefix="${fullnamever}/lucene">
+        <patternset refid="lucene.local.src.package.patterns"/>
+      </tarfileset>
+    </tar>
+  </target>
+
   <target name="create-package"
           description="Packages the Solr Binary Distribution"
           depends="init-dist, dist, example, javadocs">
