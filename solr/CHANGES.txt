@@ -200,6 +200,10 @@ Build
     modules' build.xml files.
   (Steve Rowe, Robert Muir)
 
+* LUCENE-3406: Add ant target 'package-local-src-tgz' to Lucene and Solr
+  to package sources from the local working copy.
+  (Seung-Yeoul Yang via Steve Rowe)
+
 Documentation
 ----------------------
 
