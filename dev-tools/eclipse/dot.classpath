@@ -28,6 +28,8 @@
 	<classpathentry kind="src" path="lucene/contrib/icu/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/instantiated/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/instantiated/src/test"/>
+	<classpathentry kind="src" path="lucene/contrib/join/src/java"/>
+	<classpathentry kind="src" path="lucene/contrib/join/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/memory/src/java"/>
 	<classpathentry kind="src" path="lucene/contrib/memory/src/test"/>
 	<classpathentry kind="src" path="lucene/contrib/misc/src/java"/>
