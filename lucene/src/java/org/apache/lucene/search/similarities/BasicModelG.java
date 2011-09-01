@@ -26,7 +26,8 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 public class BasicModelG extends BasicModel {
   @Override
   public final float score(BasicStats stats, float tfn) {
-    double lambda = stats.getTotalTermFreq() / (double) stats.getNumberOfDocuments();
+    // just like in BE, approximation only holds true when F << N, so we use lambda = F / (N + F)
+    double lambda = stats.getTotalTermFreq() / (double) (stats.getNumberOfDocuments() + stats.getTotalTermFreq());
     // -log(1 / (lambda + 1)) -> log(lambda + 1)
     return (float)(log2(lambda + 1) + tfn * log2((1 + lambda) / lambda));
   }

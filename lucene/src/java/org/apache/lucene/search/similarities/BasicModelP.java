@@ -29,14 +29,12 @@ public class BasicModelP extends BasicModel {
   
   @Override
   public final float score(BasicStats stats, float tfn) {
+    // nocommit: we need a better fix here when F >= N: using lambda = F / (N + F) still 
+    // suffers with problems if you use AfterEffectB, but PL2 seems ok (http://dl.acm.org/citation.cfm?id=1672962)
     float lambda = (float)stats.getTotalTermFreq() / stats.getNumberOfDocuments();
-//    System.out.printf("tfn=%f, lambda=%f, log1=%f, log2=%f%n", tfn, lambda,
-//        tfn / lambda, 2 * Math.PI * tfn);
-    // nocommit
-    float score = (float)(tfn * log2(tfn / lambda)
+    return (float)(tfn * log2(tfn / lambda)
         + (lambda + 1 / (12 * tfn) - tfn) * LOG2_E
         + 0.5 * log2(2 * Math.PI * tfn));
-    return score > 0.0f ? score : 0.0f;
   }
 
   @Override

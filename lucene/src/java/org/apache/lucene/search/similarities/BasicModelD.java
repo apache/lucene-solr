@@ -24,19 +24,22 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * for DFR. The formula used in Lucene differs slightly from the one in the
  * original paper: to avoid underflow for small values of {@code N} and
  * {@code F}, {@code N} is increased by {@code 1} and
- * {@code F} is ensured to be at least {@code tfn + 1}.
+ * {@code F} is always increased by {@code tfn}.
  * @lucene.experimental
  */
 public class BasicModelD extends BasicModel {
   @Override
   public final float score(BasicStats stats, float tfn) {
-    long F = Math.max(stats.getTotalTermFreq(), (long)(tfn + 0.5) + 1);
-//    long F = stats.getTotalTermFreq() + 1;
+    // we have to ensure phi is always < 1 for tiny TTF values, otherwise nphi can go negative,
+    // resulting in NaN. cleanest way is to unconditionally always add tfn to totalTermFreq
+    // to create a 'normalized' F.
+    // nocommit: we need a better fix here when F >= N: using lambda = F / (N + F) still 
+    // suffers with problems if you use AfterEffectB, but DL2 seems ok (http://dl.acm.org/citation.cfm?id=1672962
+    double F = stats.getTotalTermFreq() + tfn;
     double phi = (double)tfn / F;
     double nphi = 1 - phi;
     double p = 1.0 / (stats.getNumberOfDocuments() + 1);
     double D = phi * log2(phi / p) + nphi * log2(nphi / (1 - p));
-    // nocommit return (float)(D * F + 0.5 * log2(2 * Math.PI * tfn * nphi));
     return (float)(D * F + 0.5 * log2(1 + 2 * Math.PI * tfn * nphi));
   }
   

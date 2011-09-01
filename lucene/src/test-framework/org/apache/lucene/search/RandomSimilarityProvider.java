@@ -100,9 +100,9 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   // all the similarities that we rotate through
   /** The DFR basic models to test. */
   static BasicModel[] BASIC_MODELS = {
-    new BasicModelBE(), new BasicModelD(), new BasicModelG(),
+    new BasicModelBE(), /* TODO: enable new BasicModelD(), */ new BasicModelG(),
     new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
-    new BasicModelP()
+    /* TODO: enable new BasicModelP() */
   };
   /** The DFR aftereffects to test. */
   static AfterEffect[] AFTER_EFFECTS = {
@@ -128,14 +128,13 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
     allSims = new ArrayList<Similarity>();
     allSims.add(new DefaultSimilarity());
     allSims.add(new BM25Similarity());
-    /* TODO: enable DFR sims
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {
           allSims.add(new DFRSimilarity(basicModel, afterEffect, normalization));
         }
       }
-    } */
+    }
     for (Distribution distribution : DISTRIBUTIONS) {
       for (Lambda lambda : LAMBDAS) {
         for (Normalization normalization : NORMALIZATIONS) {
