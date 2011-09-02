@@ -196,7 +196,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
-    if (dbg == true) {
+    if (dbg) {
       try {
         NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList);
         if (null != dbgInfo) {
@@ -208,7 +208,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             }
             dbgInfo.add("parsed_filter_queries",fqs);
           }
-          rsp.add("debug", dbg);
+          rsp.add("debug", dbgInfo);
         }
       } catch (Exception e) {
         SolrException.logOnce(SolrCore.log, "Exception during debug", e);
