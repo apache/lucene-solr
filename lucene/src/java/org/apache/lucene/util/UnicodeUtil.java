@@ -104,10 +104,6 @@ public final class UnicodeUtil {
       new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
   ); // TODO this is unrelated here find a better place for it
   
-  public static void main(String[] args) {
-    System.out.println(Character.toChars(0x10FFFF + 1));
-  }
-
   private UnicodeUtil() {} // no instance
 
   public static final int UNI_SUR_HIGH_START = 0xD800;
