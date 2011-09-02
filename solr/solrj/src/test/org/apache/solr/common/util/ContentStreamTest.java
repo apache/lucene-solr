@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.net.ConnectException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -67,17 +68,20 @@ public class ContentStreamTest extends LuceneTestCase
     byte[] content = null;
     String contentType = null;
     URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
-    InputStream in = url.openStream();
+    InputStream in = null;
     try {
       URLConnection conn = url.openConnection();
       in = conn.getInputStream();
       contentType = conn.getContentType();
       content = IOUtils.toByteArray(in);
-    } 
-    finally {
-      IOUtils.closeQuietly(in);
+    } catch (ConnectException ex) {
+      assumeNoException("Unable to connect to " + url + " to run the test.", ex);
+    }finally {
+      if (in != null) {
+        IOUtils.closeQuietly(in);
+      }
     }
-    
+
     assertTrue( content.length > 10 ); // found something...
     
     ContentStreamBase stream = new ContentStreamBase.URLStream( url );
