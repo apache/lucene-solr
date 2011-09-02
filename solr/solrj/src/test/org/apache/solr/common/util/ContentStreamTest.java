@@ -74,7 +74,11 @@ public class ContentStreamTest extends LuceneTestCase
       in = conn.getInputStream();
       contentType = conn.getContentType();
       content = IOUtils.toByteArray(in);
-    } catch (ConnectException ex) {
+
+      assumeTrue("not enough content for test to be useful",
+                 content.length > 10 ); 
+
+    } catch (IOException ex) {
       assumeNoException("Unable to connect to " + url + " to run the test.", ex);
     }finally {
       if (in != null) {
@@ -82,7 +86,6 @@ public class ContentStreamTest extends LuceneTestCase
       }
     }
     
-    assertTrue( content.length > 10 ); // found something...
     
     ContentStreamBase stream = new ContentStreamBase.URLStream( url );
     assertEquals( content.length, stream.getSize().intValue() );
