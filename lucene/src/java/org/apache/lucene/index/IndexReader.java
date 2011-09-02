@@ -834,6 +834,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public Document document(int n) throws CorruptIndexException, IOException {
     ensureOpen();
+    if (n < 0 || n >= maxDoc()) {
+      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + n + ")");
+    }
     return document(n, null);
   }
 

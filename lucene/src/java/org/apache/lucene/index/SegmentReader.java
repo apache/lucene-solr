@@ -469,6 +469,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
+    if (n < 0 || n >= maxDoc()) {       
+      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + n + ")");
+    }
     return getFieldsReader().doc(n, fieldSelector);
   }
 
