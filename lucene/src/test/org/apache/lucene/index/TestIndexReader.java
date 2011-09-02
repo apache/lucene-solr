@@ -1388,4 +1388,21 @@ public class TestIndexReader extends LuceneTestCase
     assertEquals(3, closeCount[0]);
     dir.close();
   }
+
+  public void testOOBDocID() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    writer.addDocument(new Document());
+    IndexReader r = writer.getReader();
+    writer.close();
+    r.document(0);
+    try {
+      r.document(1);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    r.close();
+    dir.close();
+  }
 }
