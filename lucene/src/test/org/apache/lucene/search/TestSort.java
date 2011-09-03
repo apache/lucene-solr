@@ -68,6 +68,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Query queryE;
   private Query queryF;
   private Query queryG;
+  private Query queryM;
   private Sort sort;
 
   @BeforeClass
@@ -82,22 +83,28 @@ public class TestSort extends LuceneTestCase implements Serializable {
   // the string field to sort by string
     // the i18n field includes accented characters for testing locale-specific sorting
   private String[][] data = new String[][] {
-  // tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte, 'custom parser encoding'
-  {   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126", "J"},//A, x
-  {   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1", "I"},//B, y
-  {   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999",   "40.00002343", "125", "15", "H"},//C, x
-  {   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",             String.valueOf(Long.MAX_VALUE),           String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
-  {   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach",           String.valueOf(Long.MIN_VALUE),           String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
-  {   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",           "343.034435444", "-3", "0", "E"},//F,y
-  {   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544", "5", "100", "D"},//G,x
-  {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545", "10", "-50", "C"},//H,y
-  {   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546", "-340", "51", "B"},//I,x
-  {   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343", "300", "2", "A"},//J,y
+  // tracer  contents         int            float           string   custom   i18n               long            double,          short,     byte, 'custom parser encoding'
+  {   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0",            "3",    "126", "J"},//A, x
+  {   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000",   "40.0",           "24",      "1", "I"},//B, y
+  {   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999","40.00002343",        "125",     "15", "H"},//C, x
+  {   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",   String.valueOf(Long.MAX_VALUE),String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
+  {   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach", String.valueOf(Long.MIN_VALUE),String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
+  {   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",          "343.034435444",  "-3",      "0", "E"},//F,y
+  {   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544",        "5",    "100", "D"},//G,x
+  {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545",       "10",    "-50", "C"},//H,y
+  {   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546",     "-340",     "51", "B"},//I,x
+  {   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343",  "300",      "2", "A"},//J,y
   {   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null, null},
   {   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null, null},
   {   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
-  {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
-  };
+  {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null},
+  
+  // Sort Missing first/last
+  {   "a",   "m",            null,          null,           null,    null,    null,              null,           null, null, null, null},
+  {   "b",   "m",            "4",           "4.0",           "4",    null,    null,              "4",           "4", "4", "4", null},
+  {   "c",   "m",            "5",           "5.0",           "5",    null,    null,              "5",           "5", "5", "5", null},
+  {   "d",   "m",            null,          null,           null,    null,    null,              null,           null, null, null, null}
+  }; 
   
   // the sort order of Ø versus U depends on the version of the rules being used
   // for the inherited root locale: Ø's order isnt specified in Locale.US since 
@@ -224,6 +231,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     queryE = new TermQuery (new Term ("contents", "e"));
     queryF = new TermQuery (new Term ("contents", "f"));
     queryG = new TermQuery (new Term ("contents", "g"));
+    queryM = new TermQuery (new Term ("contents", "m"));
     sort = new Sort();
   }
   
@@ -282,6 +290,68 @@ public class TestSort extends LuceneTestCase implements Serializable {
     sort.setSort (new SortField ("string", SortField.STRING), SortField.FIELD_DOC );
     assertMatches (full, queryX, sort, "AIGEC");
     assertMatches (full, queryY, sort, "DJHFB");
+  }
+  
+  private static class SortMissingLastTestHelper {
+    final SortField sortField;
+    final Object min;
+    final Object max;
+    
+    SortMissingLastTestHelper( SortField sortField, Object min, Object max ) {
+      this.sortField = sortField;
+      this.min = min;
+      this.max = max;
+    }
+  }
+
+  // test sorts where the type of field is specified
+  public void testSortMissingLast() throws Exception {
+    
+    @SuppressWarnings("boxing")
+    SortMissingLastTestHelper[] ascendTesters = new SortMissingLastTestHelper[] {
+        new SortMissingLastTestHelper( new SortField(   "byte",   SortField.BYTE ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
+        new SortMissingLastTestHelper( new SortField(  "short",  SortField.SHORT ), Short.MIN_VALUE,   Short.MAX_VALUE ),
+        new SortMissingLastTestHelper( new SortField(    "int",    SortField.INT ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
+        new SortMissingLastTestHelper( new SortField(   "long",   SortField.LONG ), Long.MIN_VALUE,    Long.MAX_VALUE ),
+        new SortMissingLastTestHelper( new SortField(  "float",  SortField.FLOAT ), Float.MIN_VALUE,   Float.MAX_VALUE ),
+        new SortMissingLastTestHelper( new SortField( "double", SortField.DOUBLE ), Double.MIN_VALUE,  Double.MAX_VALUE ),
+    };
+    
+    @SuppressWarnings("boxing")
+    SortMissingLastTestHelper[] descendTesters = new SortMissingLastTestHelper[] {
+      new SortMissingLastTestHelper( new SortField(   "byte",   SortField.BYTE, true ), Byte.MIN_VALUE,    Byte.MAX_VALUE ),
+      new SortMissingLastTestHelper( new SortField(  "short",  SortField.SHORT, true ), Short.MIN_VALUE,   Short.MAX_VALUE ),
+      new SortMissingLastTestHelper( new SortField(    "int",    SortField.INT, true ), Integer.MIN_VALUE, Integer.MAX_VALUE ),
+      new SortMissingLastTestHelper( new SortField(   "long",   SortField.LONG, true ), Long.MIN_VALUE,    Long.MAX_VALUE ),
+      new SortMissingLastTestHelper( new SortField(  "float",  SortField.FLOAT, true ), Float.MIN_VALUE,   Float.MAX_VALUE ),
+      new SortMissingLastTestHelper( new SortField( "double", SortField.DOUBLE, true ), Double.MIN_VALUE,  Double.MAX_VALUE ),
+    };
+    
+    // Default order: ascending
+    for( SortMissingLastTestHelper t : ascendTesters ) {
+      sort.setSort (t.sortField, SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc" );
+
+      sort.setSort (t.sortField.setMissingValue( t.max ), SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "bcad" );
+
+      sort.setSort (t.sortField.setMissingValue( t.min ), SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adbc" );
+    }
+    
+    // Reverse order: descending (Note: Order for un-valued documents remains the same due to tie breaker: a,d)
+    for( SortMissingLastTestHelper t : descendTesters ) {
+      sort.setSort (t.sortField, SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad" );
+      
+      sort.setSort (t.sortField.setMissingValue( t.max ), SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "adcb" );
+      
+      sort.setSort (t.sortField.setMissingValue( t.min ), SortField.FIELD_DOC );
+      assertMatches("sortField:"+t.sortField, full, queryM, sort, "cbad" );
+    }
+    
+    
   }
   
   /**
@@ -1056,13 +1126,17 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   }
 
+  private void assertMatches(Searcher searcher, Query query, Sort sort, String expectedResult) throws IOException {
+    assertMatches( null, searcher, query, sort, expectedResult );
+  }
+
   // make sure the documents returned by the search match the expected list
-  private void assertMatches(Searcher searcher, Query query, Sort sort,
+  private void assertMatches(String msg, Searcher searcher, Query query, Sort sort,
       String expectedResult) throws IOException {
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
     TopDocs hits = searcher.search (query, null, Math.max(1, expectedResult.length()), sort);
     ScoreDoc[] result = hits.scoreDocs;
-    assertEquals(hits.totalHits, expectedResult.length());
+    assertEquals(expectedResult.length(),hits.totalHits);
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i=0; i<n; ++i) {
@@ -1072,7 +1146,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
         buff.append (v[j]);
       }
     }
-    assertEquals (expectedResult, buff.toString());
+    assertEquals (msg, expectedResult, buff.toString());
   }
 
   private HashMap<String,Float> getScores (ScoreDoc[] hits, Searcher searcher)

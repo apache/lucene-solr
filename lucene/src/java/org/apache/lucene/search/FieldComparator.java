@@ -29,6 +29,7 @@ import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
 import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.search.FieldCache.StringIndex;
+import org.apache.lucene.util.OpenBitSet;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -83,6 +84,14 @@ import org.apache.lucene.search.FieldCache.StringIndex;
  */
 public abstract class FieldComparator<T> {
 
+  protected T missingValue = null;
+  
+  /** Set a default sorting value for documents which lacks one */
+  public FieldComparator<T> setMissingValue(T missingValue) {
+    this.missingValue = missingValue;
+    return this;
+  }
+  
   /**
    * Compare hit at slot1 with hit at slot2.
    * 
@@ -205,6 +214,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getBytes(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final byte byteValue = missingValue.byteValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = byteValue;
+        }
+      }
     }
     
     @Override
@@ -312,6 +328,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getDoubles(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final double doubleValue = missingValue.doubleValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = doubleValue;
+        }
+      }
     }
     
     @Override
@@ -377,6 +400,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getFloats(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final float floatValue = missingValue.floatValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = floatValue;
+        }
+      }
     }
     
     @Override
@@ -446,6 +476,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getInts(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final int intValue = missingValue.intValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = intValue;
+        }
+      }
     }
     
     @Override
@@ -511,6 +548,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getLongs(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final long longValue = missingValue.longValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = longValue;
+        }
+      }
     }
     
     @Override
@@ -625,6 +669,13 @@ public abstract class FieldComparator<T> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getShorts(reader, field, parser);
+      if (missingValue != null) {
+        DocIdSetIterator iterator = FieldCache.DEFAULT.getUnValuedDocs(reader, field).iterator();
+        final short shortValue = missingValue.shortValue();
+        for (int doc=iterator.nextDoc(); doc!=DocIdSetIterator.NO_MORE_DOCS; doc=iterator.nextDoc()) {
+          currentReaderValues[doc] = shortValue;
+        }
+      }
     }
     
     @Override

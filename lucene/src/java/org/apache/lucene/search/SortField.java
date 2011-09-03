@@ -102,6 +102,8 @@ implements Serializable {
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
 
+  private Object missingValue;
+
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
    * @param field  Name of field to sort by.  Can be <code>null</code> if
@@ -204,6 +206,16 @@ implements Serializable {
     this.comparatorSource = comparator;
   }
 
+  /** Set a default sorting value for documents which lacks one */
+  public SortField setMissingValue(Object missingValue) {
+    if (type != BYTE && type != SHORT && type != INT && type != FLOAT && type != LONG && type != DOUBLE) {
+      throw new IllegalArgumentException( "Missing value only works for numeric types" );
+    }
+    this.missingValue = missingValue;
+    
+    return this;
+  }
+  
   // Sets field & type, and ensures field is not NULL unless
   // type is SCORE or DOC
   private void initFieldType(String field, int type) {
@@ -391,22 +403,22 @@ implements Serializable {
       return new FieldComparator.DocComparator(numHits);
 
     case SortField.INT:
-      return new FieldComparator.IntComparator(numHits, field, parser);
+      return new FieldComparator.IntComparator(numHits, field, parser).setMissingValue((Integer) missingValue);
 
     case SortField.FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, parser);
+      return new FieldComparator.FloatComparator(numHits, field, parser).setMissingValue((Float) missingValue);
 
     case SortField.LONG:
-      return new FieldComparator.LongComparator(numHits, field, parser);
+      return new FieldComparator.LongComparator(numHits, field, parser).setMissingValue((Long) missingValue);
 
     case SortField.DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, parser);
+      return new FieldComparator.DoubleComparator(numHits, field, parser).setMissingValue((Double) missingValue);
 
     case SortField.BYTE:
-      return new FieldComparator.ByteComparator(numHits, field, parser);
+      return new FieldComparator.ByteComparator(numHits, field, parser).setMissingValue((Byte) missingValue);
 
     case SortField.SHORT:
-      return new FieldComparator.ShortComparator(numHits, field, parser);
+      return new FieldComparator.ShortComparator(numHits, field, parser).setMissingValue((Short) missingValue);
 
     case SortField.CUSTOM:
       assert comparatorSource != null;

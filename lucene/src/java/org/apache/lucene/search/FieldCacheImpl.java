@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.FieldCacheSanityChecker;
 
@@ -47,7 +51,7 @@ class FieldCacheImpl implements FieldCache {
     init();
   }
   private synchronized void init() {
-    caches = new HashMap<Class<?>,Cache>(7);
+    caches = new HashMap<Class<?>,Cache>(9);
     caches.put(Byte.TYPE, new ByteCache(this));
     caches.put(Short.TYPE, new ShortCache(this));
     caches.put(Integer.TYPE, new IntCache(this));
@@ -56,6 +60,7 @@ class FieldCacheImpl implements FieldCache {
     caches.put(Double.TYPE, new DoubleCache(this));
     caches.put(String.class, new StringCache(this));
     caches.put(StringIndex.class, new StringIndexCache(this));
+    caches.put(UnValuedDocsCache.class, new UnValuedDocsCache(this));
   }
 
   public synchronized void purgeAllCaches() {
@@ -409,6 +414,42 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  static final class UnValuedDocsCache extends Cache {
+    UnValuedDocsCache(FieldCache wrapper) {
+      super(wrapper);
+    }
+    
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey)
+    throws IOException {
+      Entry entry = entryKey;
+      String field = entry.field;
+      
+      if (reader.maxDoc() == reader.docFreq(new Term(field))) {
+        return DocIdSet.EMPTY_DOCIDSET;
+      }
+      
+      OpenBitSet res = new OpenBitSet(reader.maxDoc());
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            res.fastSet(termDocs.doc());
+          }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      res.flip(0, reader.maxDoc());
+      return res;
+    }
+  }
+  
 
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
@@ -471,7 +512,7 @@ class FieldCacheImpl implements FieldCache {
   public long[] getLongs(IndexReader reader, String field) throws IOException {
     return getLongs(reader, field, null);
   }
-
+  
   // inherit javadocs
   public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser)
       throws IOException {
@@ -694,6 +735,11 @@ class FieldCacheImpl implements FieldCache {
 
   public PrintStream getInfoStream() {
     return infoStream;
+  }
+  
+  public DocIdSet getUnValuedDocs(IndexReader reader, String field)
+      throws IOException {
+    return (DocIdSet) caches.get(UnValuedDocsCache.class).get(reader, new Entry(field, null));  
   }
 }
 

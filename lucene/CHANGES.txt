@@ -57,6 +57,10 @@ Bug fixes
 * LUCENE-3409: IndexWriter.deleteAll was failing to close pooled NRT
   SegmentReaders, leading to unused files accumulating in the
   Directory.  (tal steier via Mike McCandless)
+     
+* LUCENE-3390: Added SortField.setMissingValue(v) to enable well defined
+  sorting behavior for documents that do not include the given field.
+  (Gilad Barkai via Doron Cohen)
   
 New Features
 

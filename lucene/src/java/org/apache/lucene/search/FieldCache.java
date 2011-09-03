@@ -309,6 +309,14 @@ public interface FieldCache {
       return FieldCache.class.getName()+".NUMERIC_UTILS_DOUBLE_PARSER"; 
     }
   };
+
+  /** Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> and returns a bit set at the size of
+   * <code>reader.maxDoc()</code>, with turned on bits for each docid that 
+   * does not have a value for this field.
+   */
+  public DocIdSet getUnValuedDocs (IndexReader reader, String field) 
+  throws IOException;
   
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as a single byte and returns an array
