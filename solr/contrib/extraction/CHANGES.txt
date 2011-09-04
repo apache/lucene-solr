@@ -30,7 +30,7 @@ $Id$
 
 ================== Release 3.4.0-dev ==============
 
-(No Changes) 
+* SOLR-2743: Remove commons logging. (koji)
 
 ================== Release 3.3.0 ==================
 
