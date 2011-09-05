@@ -33,11 +33,10 @@
 	 <pathelement path="${analyzers-common.jar}"/>
    <pathelement path="${queryparser.jar}"/>
    <pathelement path="${lucene-core.jar}"/>
-   <pathelement path="${xml-query-parser.jar}"/>
    <pathelement location="lib/servlet-api-2.4.jar"/>
   </path>
 
-  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,jar-xml-query-parser,common.compile-core" />
+  <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,common.compile-core" />
 
   <target name="default" depends="jar-core,build-web-demo"/>
 
@@ -52,6 +51,7 @@
         <include name="${final.name}.jar"/>
       </lib>
       <lib file="${queries.jar}"/>
+      <lib file="${queryparser.jar}"/>
       <lib file="${lucene-core.jar}"/>
     </war>
   </target>

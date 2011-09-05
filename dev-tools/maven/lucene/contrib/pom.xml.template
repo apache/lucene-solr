@@ -38,7 +38,6 @@
     <module>misc</module>
     <module>sandbox</module>
     <module>spatial</module>
-    <module>xml-query-parser</module>
   </modules>
   <build>
     <directory>build/lucene-contrib-aggregator</directory>

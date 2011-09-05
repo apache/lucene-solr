@@ -302,6 +302,9 @@ Other Changes
   it's easier to add other DirectoryFactory's without static caching hacks.
   (Mark Miller)
 
+* LUCENE-3286: 'luke' ant target has been disabled due to incompatibilities with XML
+  queryparser location (Chris Male)
+
 Documentation
 ----------------------
 

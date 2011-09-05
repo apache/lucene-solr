@@ -30,6 +30,9 @@ Build
    FuzzyLikeThisQuery and SlowCollated* into contrib/sandbox.
    Removed contrib/queries.
 
+ * LUCENE-3286: Moved remainder of contrib/xml-query-parser to module/queryparser.
+   Classes now found at org.apache.lucene.queryparser.xml.*
+
 New Features
 
  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.

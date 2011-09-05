@@ -29,7 +29,7 @@
     <echo message="Use 'ant javadocs' to build javadocs under build/docs/api" />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
-    <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
+    <!--<echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />-->
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -87,10 +87,11 @@
   <target name="proxy.setup" if="proxy.specified">
     <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
   </target>
- 
 
+  <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
+  when it comes to incompatible changes.  Update when Luke has updated.
   <target name="compile-xml-query-parser">
-  	<ant dir="${common.dir}/contrib/xml-query-parser" target="compile-core" inheritAll="false">
+  	<ant dir="${common.dir}/../modules/queryparser" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -104,7 +105,7 @@
   </target>
   <path id="luke.classpath">
     <pathelement location="${common.dir}/build/classes/java" />
-    <pathelement location="${common.dir}/build/contrib/xml-query-parser/classes/java" />
+    <pathelement location="${common.dir}/../modules/queryparser/build/classes/java" />
   </path>
   <target name="luke" depends="luke-download">
     <java fork="true"
@@ -120,7 +121,7 @@
         <path refid="test.classpath"/>
       </classpath>
     </java>
-  </target>
+  </target>-->
   
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->

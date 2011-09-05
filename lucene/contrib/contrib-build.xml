@@ -283,15 +283,4 @@
     </ant>
     <property name="suggest.uptodate" value="true"/>
   </target>
-
-  <property name="xml-query-parser.jar" value="${common.dir}/build/contrib/xml-query-parser/lucene-xml-query-parser-${version}.jar"/>
-  <target name="check-xml-query-parser-uptodate" unless="xml-query-parser.uptodate">
-    <contrib-uptodate name="xml-query-parser" jarfile="${xml-query-parser.jar}" property="xml-query-parser.uptodate"/>
-  </target>
-  <target name="jar-xml-query-parser" unless="xml-query-parser.uptodate" depends="check-xml-query-parser-uptodate">
-    <ant dir="${common.dir}/contrib/xml-query-parser" target="jar-core" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <property name="xml-query-parser.uptodate" value="true"/>
-  </target>
 </project>
