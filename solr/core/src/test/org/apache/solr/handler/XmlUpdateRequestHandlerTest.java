@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler;
 
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.AbstractSolrTestCase;
 import java.io.StringReader;
 import java.util.Collection;
@@ -24,6 +27,8 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.junit.Test;
 
 public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase 
 {
@@ -79,4 +84,29 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
     assertEquals( 3, out.size() );
     assertEquals( "[aaa, bbb, bbb]", out.toString() );
   }
+
+  @Test
+  public void testCommitWithin() throws Exception
+  {
+    String xml = 
+      "<add>" +
+      "  <doc>" +
+      "    <field name=\"id\">12345</field>" +
+      "    <field name=\"name\">kitten</field>" +
+      "  </doc>" +
+      "</add>";
+
+    SolrQueryRequest req = req("commitWithin","100");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+
+    XMLLoader loader = new XMLLoader(p, inputFactory);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml));
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals(add.commitWithin, 100);
+
+    req.close();
+  }
+
 }

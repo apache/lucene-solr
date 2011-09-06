@@ -114,6 +114,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
       templateAdd.overwriteCommitted = false;
       templateAdd.overwritePending = false;
     }
+    
+    templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    
     //this is lightweight
     autoDetectParser = new AutoDetectParser(config);
     this.factory = factory;

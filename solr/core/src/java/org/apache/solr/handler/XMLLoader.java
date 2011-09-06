@@ -28,6 +28,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.commons.io.IOUtils;
 
@@ -74,7 +76,7 @@ class XMLLoader extends ContentStreamLoader {
       }
       parser = (charset == null) ?
         inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
-      this.processUpdate(processor, parser);
+        this.processUpdate(req, processor, parser);
     } catch (XMLStreamException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
@@ -83,17 +85,21 @@ class XMLLoader extends ContentStreamLoader {
     }
   }
 
-
-
+  /* Support legacy Update signature */
+  void processUpdate(UpdateRequestProcessor processor, XMLStreamReader parser) throws TransformerConfigurationException, XMLStreamException, IOException, FactoryConfigurationError, InstantiationException, IllegalAccessException {
+    processUpdate(null, processor, parser);
+  }
 
   /**
    * @since solr 1.2
    */
-  void processUpdate(UpdateRequestProcessor processor, XMLStreamReader parser)
+  void processUpdate(SolrQueryRequest req, UpdateRequestProcessor processor, XMLStreamReader parser)
           throws XMLStreamException, IOException, FactoryConfigurationError,
           InstantiationException, IllegalAccessException,
           TransformerConfigurationException {
     AddUpdateCommand addCmd = null;
+    // Need to instansiate a SolrParams, even if req is null, for backward compat with legacyUpdate
+    SolrParams params = (req != null) ? req.getParams() : new ModifiableSolrParams();
     while (true) {
       int event = parser.next();
       switch (event) {
@@ -107,6 +113,10 @@ class XMLLoader extends ContentStreamLoader {
             XmlUpdateRequestHandler.log.trace("SolrCore.update(add)");
 
             addCmd = new AddUpdateCommand();
+
+            // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
+            addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+            
             boolean overwrite = true;  // the default
 
             Boolean overwritePending = null;
@@ -141,10 +151,14 @@ class XMLLoader extends ContentStreamLoader {
             addCmd.overwritePending = overwrite;
             addCmd.allowDups = !overwrite;
           } else if ("doc".equals(currTag)) {
-            XmlUpdateRequestHandler.log.trace("adding doc...");
-            addCmd.clear();
-            addCmd.solrDoc = readDoc(parser);
-            processor.processAdd(addCmd);
+//            if(addCmd != null) {
+              XmlUpdateRequestHandler.log.trace("adding doc...");
+              addCmd.clear();
+              addCmd.solrDoc = readDoc(parser);
+              processor.processAdd(addCmd);
+//            } else {
+//              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");
+//            }
           } else if (XmlUpdateRequestHandler.COMMIT.equals(currTag) || XmlUpdateRequestHandler.OPTIMIZE.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing " + currTag);
 
@@ -325,5 +339,6 @@ class XMLLoader extends ContentStreamLoader {
       }
     }
   }
+
 
 }
