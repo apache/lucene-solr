@@ -61,6 +61,10 @@ Bug fixes
 * LUCENE-3390: Added SortField.setMissingValue(v) to enable well defined
   sorting behavior for documents that do not include the given field.
   (Gilad Barkai via Doron Cohen)
+
+* LUCENE-3418: Lucene was failing to fsync index files on commit,
+  meaning a crash or power loss could easily corrupt the index (Mark
+  Miller, Robert Muir, Mike McCandless)
   
 New Features
 
