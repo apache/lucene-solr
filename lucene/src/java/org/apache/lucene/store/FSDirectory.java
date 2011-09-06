@@ -457,6 +457,7 @@ public abstract class FSDirectory extends Directory {
     
     @Override
     public void close() throws IOException {
+      parent.onIndexOutputClosed(this);
       // only close the file if it has not been closed yet
       if (isOpen) {
         boolean success = false;
@@ -468,12 +469,12 @@ public abstract class FSDirectory extends Directory {
           if (!success) {
             try {
               file.close();
-              parent.onIndexOutputClosed(this);
             } catch (Throwable t) {
               // Suppress so we don't mask original exception
             }
-          } else
+          } else {
             file.close();
+          }
         }
       }
     }

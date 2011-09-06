@@ -581,6 +581,10 @@ Bug fixes
 * LUCENE-3409: IndexWriter.deleteAll was failing to close pooled NRT
   SegmentReaders, leading to unused files accumulating in the
   Directory.  (tal steier via Mike McCandless)
+
+* LUCENE-3418: Lucene was failing to fsync index files on commit,
+  meaning a crash or power loss could easily corrupt the index (Mark
+  Miller, Robert Muir, Mike McCandless)
   
 New Features
 
