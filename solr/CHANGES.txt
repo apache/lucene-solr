@@ -51,6 +51,10 @@ Upgrading from Solr 3.3
 New Features
 ----------------------
 
+* SOLR-2383: /browse improvements: generalize range and date facet display
+  Backported from trunk. Removed facet.date support in Velocity, since this is 
+  deprecated in favor of facet.range (gsingers, janhoy)
+
 * SOLR-2458: post.jar enhanced to handle JSON, CSV and <optimize> (janhoy)
 
 * LUCENE-3234: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.

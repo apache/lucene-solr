@@ -809,11 +809,15 @@
        <str name="facet.query">GB</str>
        <str name="facet.mincount">1</str>
        <str name="facet.pivot">cat,inStock</str>
+       <str name="facet.range.other">after</str>
        <str name="facet.range">price</str>
        <int name="f.price.facet.range.start">0</int>
        <int name="f.price.facet.range.end">600</int>
        <int name="f.price.facet.range.gap">50</int>
-       <str name="f.price.facet.range.other">after</str>
+       <str name="facet.range">popularity</str>
+       <int name="f.popularity.facet.range.start">0</int>
+       <int name="f.popularity.facet.range.end">10</int>
+       <int name="f.popularity.facet.range.gap">3</int>
        <str name="facet.range">manufacturedate_dt</str>
        <str name="f.manufacturedate_dt.facet.range.start">NOW/YEAR-10YEARS</str>
        <str name="f.manufacturedate_dt.facet.range.end">NOW</str>
