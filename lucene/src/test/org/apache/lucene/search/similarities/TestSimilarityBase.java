@@ -83,8 +83,8 @@ public class TestSimilarityBase extends LuceneTestCase {
   };
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {
-    new NormalizationH1(), new NormalizationH2(),
-    new Normalization.NoNormalization()
+    new NormalizationH1(), new NormalizationH2(), new NormalizationH3(),
+    new NormalizationZ(), new Normalization.NoNormalization()
   };
   /** The distributions for IB. */
   static Distribution[] DISTRIBUTIONS = {

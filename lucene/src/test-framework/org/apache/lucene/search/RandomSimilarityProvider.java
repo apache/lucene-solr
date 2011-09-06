@@ -51,6 +51,8 @@ import org.apache.lucene.search.similarities.LambdaTTF;
 import org.apache.lucene.search.similarities.Normalization;
 import org.apache.lucene.search.similarities.NormalizationH1;
 import org.apache.lucene.search.similarities.NormalizationH2;
+import org.apache.lucene.search.similarities.NormalizationH3;
+import org.apache.lucene.search.similarities.NormalizationZ;
 import org.apache.lucene.search.similarities.Similarity;
 
 public class RandomSimilarityProvider extends DefaultSimilarityProvider {
@@ -111,6 +113,7 @@ public class RandomSimilarityProvider extends DefaultSimilarityProvider {
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {
     new NormalizationH1(), new NormalizationH2(),
+    new NormalizationH3(), new NormalizationZ()
     // TODO: if we enable NoNormalization, we have to deal with
     // a couple tests (e.g. TestDocBoost, TestSort) that expect length normalization
     // new Normalization.NoNormalization()
