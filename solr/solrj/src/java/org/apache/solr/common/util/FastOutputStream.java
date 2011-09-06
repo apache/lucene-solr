@@ -181,9 +181,11 @@ public class FastOutputStream extends OutputStream implements DataOutput {
    * underlying stream.
    */
   public void flushBuffer() throws IOException {
-    out.write(buf, 0, pos);
-    written += pos;
-    pos=0;
+    if (pos > 0) {
+      out.write(buf, 0, pos);
+      written += pos;
+      pos=0;
+    }
   }
 
   public long size() {

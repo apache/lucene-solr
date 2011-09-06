@@ -16,24 +16,79 @@
  */
 package org.apache.solr.search;
 
+
 import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema12.xml");
+    initCore("solrconfig-tlog.xml","schema12.xml");
   }
+
+  @Test
+  public void testGetRealtime() throws Exception {
+    clearIndex();
+    assertU(commit());
+
+    assertU(adoc("id","1"));
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==0"
+    );
+    assertJQ(req("qt","/get","id","1")
+        ,"=={'doc':{'id':'1'}}"
+    );
+    assertJQ(req("qt","/get","ids","1")
+        ,"=={" +
+        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "      {" +
+        "        'id':'1'}]" +
+        "  }}}"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==1"
+    );
+    assertJQ(req("qt","/get","id","1")
+        ,"=={'doc':{'id':'1'}}"
+    );
+    assertJQ(req("qt","/get","ids","1")
+        ,"=={" +
+        "  'response':{'numFound':1,'start':0,'docs':[" +
+        "      {" +
+        "        'id':'1'}]" +
+        "  }}}"
+    );
+
+    assertU(delI("1"));
+
+    assertJQ(req("q","id:1")
+        ,"/response/numFound==1"
+    );
+    assertJQ(req("qt","/get","id","1")
+        ,"=={'doc':null}"
+    );
+    assertJQ(req("qt","/get","ids","1")
+        ,"=={'response':{'numFound':0,'start':0,'docs':[]}}"
+    );
+
+  }
+
 
   /***
   @Test
@@ -69,6 +124,19 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
   ***/
 
 
+  public static void verbose(Object... args) {
+    if (!VERBOSE) return;
+    StringBuilder sb = new StringBuilder("TEST:");
+    sb.append(Thread.currentThread().getName());
+    sb.append(':');
+    for (Object o : args) {
+      sb.append(' ');
+      sb.append(o.toString());
+    }
+    System.out.println(sb.toString());
+  }
+
+
   final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
   Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
   long snapshotCount;
@@ -94,20 +162,24 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
   @Test
   public void testStressGetRealtime() throws Exception {
-    // update variables
-    final int commitPercent = 10;
-    final int softCommitPercent = 50; // what percent of the commits are soft
-    final int deletePercent = 8;
-    final int deleteByQueryPercent = 4;
-    final int ndocs = 100;
-    int nWriteThreads = 10;
+    clearIndex();
+    assertU(commit());
+
+    final int commitPercent = 5 + random.nextInt(20);
+    final int softCommitPercent = 30+random.nextInt(60); // what percent of the commits are soft
+    final int deletePercent = 4+random.nextInt(25);
+    final int deleteByQueryPercent = 0;  // real-time get isn't currently supported with delete-by-query
+    final int ndocs = 5 + (random.nextBoolean() ? random.nextInt(25) : random.nextInt(200));
+    int nWriteThreads = 5 + random.nextInt(25);
 
     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
 
-    // query variables
-    final int percentRealtimeQuery = 0;   // realtime get is not implemented yet
-    final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
-    int nReadThreads = 10;
+        // query variables
+    final int percentRealtimeQuery = 60;
+    final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
+    int nReadThreads = 5 + random.nextInt(25);
+
+
 
     initModel(ndocs);
 
@@ -121,6 +193,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
 
         @Override
         public void run() {
+          try {
           while (operations.get() > 0) {
             int oper = rand.nextInt(100);
 
@@ -134,14 +207,22 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                   version = snapshotCount++;
                 }
 
-                if (rand.nextInt(100) < softCommitPercent)
+                if (rand.nextInt(100) < softCommitPercent) {
+                  verbose("softCommit start");
                   assertU(h.commit("softCommit","true"));
-                else
+                  verbose("softCommit end");
+                } else {
+                  verbose("commit start");
                   assertU(commit());
+                  verbose("commit end");
+                }
 
                 synchronized(TestRealTimeGet.this) {
-                  // install this snapshot only if it's newer than the current one
+                  // install this model snapshot only if it's newer than the current one
                   if (version >= committedModelClock) {
+                    if (VERBOSE) {
+                      verbose("installing new committedModel version="+committedModelClock);
+                    }
                     committedModel = newCommittedModel;
                     committedModelClock = version;
                   }
@@ -169,14 +250,37 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               long nextVal = Math.abs(val)+1;
 
               if (oper < commitPercent + deletePercent) {
+                if (VERBOSE) {
+                  verbose("deleting id",id,"val=",nextVal);
+                }
+
                 assertU("<delete><id>" + id + "</id></delete>");
                 model.put(id, -nextVal);
+                if (VERBOSE) {
+                  verbose("deleting id", id, "val=",nextVal,"DONE");
+                }
               } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
+                if (VERBOSE) {
+                  verbose("deleteByQuery id ",id, "val=",nextVal);
+                }
+
                 assertU("<delete><query>id:" + id + "</query></delete>");
                 model.put(id, -nextVal);
+                if (VERBOSE) {
+                  verbose("deleteByQuery id",id, "val=",nextVal,"DONE");
+                }
               } else {
+                if (VERBOSE) {
+                  verbose("adding id", id, "val=", nextVal);
+                }
+
                 assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                 model.put(id, nextVal);
+
+                if (VERBOSE) {
+                  verbose("adding id", id, "val=", nextVal,"DONE");
+                }
+
               }
             }
 
@@ -184,6 +288,11 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               lastId = id;
             }
           }
+        } catch (Throwable e) {
+          operations.set(-1L);
+          SolrException.log(log, e);
+          fail(e.getMessage());
+        }
         }
       };
 
@@ -199,7 +308,6 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
         public void run() {
           try {
             while (operations.decrementAndGet() >= 0) {
-              int oper = rand.nextInt(100);
               // bias toward a recently changed doc
               int id = rand.nextInt(100) < 25 ? lastId : rand.nextInt(ndocs);
 
@@ -217,6 +325,9 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
                 }
               }
 
+              if (VERBOSE) {
+                verbose("querying id", id);
+              }
               SolrQueryRequest sreq;
               if (realTime) {
                 sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
@@ -232,14 +343,17 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
               } else {
                 assertEquals(1, doclist.size());
                 long foundVal = (Long)(((Map)doclist.get(0)).get(field));
-                assertTrue(foundVal >= Math.abs(val));
+                if (foundVal < Math.abs(val)) {
+                  verbose("ERROR, id=", id, "foundVal=",foundVal,"model val=",val);
+                  assertTrue(foundVal >= Math.abs(val));
+                }
               }
             }
           }
           catch (Throwable e) {
             operations.set(-1L);
-            SolrException.log(log,e);
-            fail(e.toString());
+            SolrException.log(log, e);
+            fail(e.getMessage());
           }
         }
       };
@@ -255,5 +369,7 @@ public class TestRealTimeGet extends SolrTestCaseJ4 {
     for (Thread thread : threads) {
       thread.join();
     }
+
   }
+
 }

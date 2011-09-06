@@ -343,6 +343,17 @@
          <arr name="env"> <str>MYVAR=val1</str> </arr>
        </listener>
       -->
+
+    <!-- Enables a transaction log, currently used for real-time get.
+         "dir" - the target directory for transaction logs, defaults to the
+            solr data directory.  --> 
+    <!--
+    <updateLog class="solr.FSUpdateLog">
+      <str name="dir">${solr.data.dir:}</str>
+    </updateLog>
+    -->
+   
+
   </updateHandler>
   
   <!-- IndexReaderFactory
@@ -773,6 +784,17 @@
       -->
     </requestHandler>
 
+
+  <!-- realtime get handler, guaranteed to return the latest stored fields of
+       any document, without the need to commit or open a new searcher.  The
+       current implementation relies on the updateLog feature being enabled. -->
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+     <lst name="defaults">
+       <str name="omitHeader">true</str>
+     </lst>
+  </requestHandler>
+
+ 
   <!-- A Robust Example 
        
        This example SearchHandler declaration shows off usage of the

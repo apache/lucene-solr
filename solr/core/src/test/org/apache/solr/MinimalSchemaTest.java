@@ -116,8 +116,10 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
 
         assertQ("failure w/handler: '" + handler + "'",
                 req("qt", handler,
-                    // this should be fairly innoculous for any type of query
-                    "q", "foo:bar")
+                    // this should be fairly innocuous for any type of query
+                    "q", "foo:bar",
+                    "omitHeader", "false"
+                )
                 ,"//lst[@name='responseHeader']"
                 );
       } catch (Exception e) {

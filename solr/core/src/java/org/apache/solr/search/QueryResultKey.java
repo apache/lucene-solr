@@ -46,7 +46,10 @@ public final class QueryResultKey {
 
     int h = query.hashCode();
 
-    if (filters != null) h ^= filters.hashCode();
+    if (filters != null) {
+      for (Query filt : filters)
+        h += filters.hashCode();
+    }
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
     for (SortField sf : sfields) {

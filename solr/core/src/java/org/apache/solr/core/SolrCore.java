@@ -889,6 +889,7 @@ public final class SolrCore implements SolrInfoMBean {
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
     addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
+    addIfNotPresent(components,RealTimeGetComponent.COMPONENT_NAME,RealTimeGetComponent.class);
     return components;
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){

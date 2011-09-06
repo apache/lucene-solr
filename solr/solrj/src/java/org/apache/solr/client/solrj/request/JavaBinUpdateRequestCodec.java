@@ -66,16 +66,8 @@ public class JavaBinUpdateRequestCodec {
     nl.add("delById", updateRequest.getDeleteById());
     nl.add("delByQ", updateRequest.getDeleteQuery());
     nl.add("docs", docIter);
-    new JavaBinCodec(){
-      @Override
-      public void writeMap(Map val) throws IOException {
-        if (val instanceof SolrInputDocument) {
-          writeVal(solrInputDocumentToList((SolrInputDocument) val));
-        } else {
-          super.writeMap(val);
-        }
-      }
-    }.marshal(nl, os);
+    JavaBinCodec codec = new JavaBinCodec();
+    codec.marshal(nl, os);
   }
 
   /**
@@ -136,20 +128,23 @@ public class JavaBinUpdateRequestCodec {
         while (true) {
           Object o = readVal(fis);
           if (o == END_OBJ) break;
-          handler.document(listToSolrInputDocument((List<NamedList>) o), updateRequest);
+          SolrInputDocument sdoc = (SolrInputDocument)o;
+          handler.document(sdoc, updateRequest);
         }
         return Collections.EMPTY_LIST;
       }
     };
+
+
     codec.unmarshal(is);
     delById = (List<String>) namedList[0].get("delById");
     delByQ = (List<String>) namedList[0].get("delByQ");
-    doclist = (List<List<NamedList>>) namedList[0].get("docs");
+    doclist = (List) namedList[0].get("docs");
 
     if (doclist != null && !doclist.isEmpty()) {
       List<SolrInputDocument> solrInputDocs = new ArrayList<SolrInputDocument>();
-      for (List<NamedList> n : doclist) {
-        solrInputDocs.add(listToSolrInputDocument(n));
+      for (Object o : doclist) {
+        solrInputDocs.add((SolrInputDocument)o);
       }
       updateRequest.add(solrInputDocs);
     }
@@ -167,37 +162,6 @@ public class JavaBinUpdateRequestCodec {
 
   }
 
-  private List<NamedList> solrInputDocumentToList(SolrInputDocument doc) {
-    List<NamedList> l = new ArrayList<NamedList>();
-    NamedList nl = new NamedList();
-    nl.add("boost", doc.getDocumentBoost() == 1.0f ? null : doc.getDocumentBoost());
-    l.add(nl);
-    Iterator<SolrInputField> it = doc.iterator();
-    while (it.hasNext()) {
-      nl = new NamedList();
-      SolrInputField field = it.next();
-      nl.add("name", field.getName());
-      nl.add("val", field.getValue());
-      nl.add("boost", field.getBoost() == 1.0f ? null : field.getBoost());
-      l.add(nl);
-    }
-    return l;
-  }
-
-  private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
-    SolrInputDocument doc = new SolrInputDocument();
-    for (int i = 0; i < namedList.size(); i++) {
-      NamedList nl = namedList.get(i);
-      if (i == 0) {
-        doc.setDocumentBoost(nl.getVal(0) == null ? 1.0f : (Float) nl.getVal(0));
-      } else {
-        doc.addField((String) nl.getVal(0),
-                nl.getVal(1),
-                nl.getVal(2) == null ? 1.0f : (Float) nl.getVal(2));
-      }
-    }
-    return doc;
-  }
 
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
