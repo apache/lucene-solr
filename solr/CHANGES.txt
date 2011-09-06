@@ -62,7 +62,7 @@ Detailed Change List
 
 New Features
 ----------------------
-  
+
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
@@ -199,6 +199,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+
+* SOLR-2741: Bugs in facet range display in trunk (janhoy)
 
 * SOLR-1908: Fixed SignatureUpdateProcessor to fail to initialize on
   invalid config.  Specifically: a signatureField that does not exist,
