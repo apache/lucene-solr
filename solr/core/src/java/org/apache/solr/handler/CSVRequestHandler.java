@@ -22,6 +22,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.schema.IndexSchema;
@@ -202,7 +203,8 @@ abstract class CSVLoader extends ContentStreamLoader {
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
-
+    templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    
     strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
     String sep = params.get(SEPARATOR);
     if (sep!=null) {

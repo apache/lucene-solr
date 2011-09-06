@@ -26,6 +26,7 @@ import org.apache.noggit.JSONParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -54,8 +55,8 @@ class JsonLoader extends ContentStreamLoader {
     this.processor = processor;
     this.req = req;
 
-    commitWithin = req.getParams().getInt(XmlUpdateRequestHandler.COMMIT_WITHIN, -1);
-    overwrite = req.getParams().getBool(XmlUpdateRequestHandler.OVERWRITE, true);
+    commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
+    overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);  
   }
 
   @Override

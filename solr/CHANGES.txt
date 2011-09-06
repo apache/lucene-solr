@@ -340,6 +340,9 @@ Upgrading from Solr 3.3
 New Features
 ----------------------
 
+* SOLR-2540: CommitWithin as an Update Request parameter
+  You can now specify &commitWithin=N (ms) on the update request (janhoy)
+
 * SOLR-2458: post.jar enhanced to handle JSON, CSV and <optimize> (janhoy)
 
 * LUCENE-3234: add a new parameter hl.phraseLimit for FastVectorHighlighter speed up.

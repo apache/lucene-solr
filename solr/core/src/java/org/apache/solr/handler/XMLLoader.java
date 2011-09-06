@@ -28,6 +28,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.commons.io.IOUtils;
 
@@ -94,6 +95,7 @@ class XMLLoader extends ContentStreamLoader {
           InstantiationException, IllegalAccessException,
           TransformerConfigurationException {
     AddUpdateCommand addCmd = null;
+    SolrParams params = req.getParams();
     while (true) {
       int event = parser.next();
       switch (event) {
@@ -108,6 +110,9 @@ class XMLLoader extends ContentStreamLoader {
 
             addCmd = new AddUpdateCommand(req);
 
+            // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
+            addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+            
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
@@ -121,10 +126,14 @@ class XMLLoader extends ContentStreamLoader {
             }
 
           } else if ("doc".equals(currTag)) {
-            XmlUpdateRequestHandler.log.trace("adding doc...");
-            addCmd.clear();
-            addCmd.solrDoc = readDoc(parser);
-            processor.processAdd(addCmd);
+            if(addCmd != null) {
+              XmlUpdateRequestHandler.log.trace("adding doc...");
+              addCmd.clear();
+              addCmd.solrDoc = readDoc(parser);
+              processor.processAdd(addCmd);
+            } else {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");
+            }
           } else if (XmlUpdateRequestHandler.COMMIT.equals(currTag) || XmlUpdateRequestHandler.OPTIMIZE.equals(currTag)) {
             XmlUpdateRequestHandler.log.trace("parsing " + currTag);
 

@@ -30,6 +30,9 @@ $Id$
 
 ================== Release 3.4.0-dev ==============
 
+* SOLR-2540: CommitWithin as an Update Request parameter
+  You can now specify &commitWithin=N (ms) on the update request (janhoy)
+
 * SOLR-2743: Remove commons logging. (koji)
 
 ================== Release 3.3.0 ==================
