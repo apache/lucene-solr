@@ -64,7 +64,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
 
-public class SpanNearClauseFactory {
+public class SpanNearClauseFactory { // FIXME: rename to SpanClauseFactory
   public SpanNearClauseFactory(IndexReader reader, String fieldName, BasicQueryFactory qf) {
     this.reader = reader;
     this.fieldName = fieldName;
@@ -100,17 +100,16 @@ public class SpanNearClauseFactory {
     /* CHECKME: wrap in Hashable...? */
     addSpanQueryWeighted(stq, weight);
   }
-  
-  public void addSpanNearQuery(Query q) {
+
+  public void addSpanQuery(Query q) {
     if (q == SrndQuery.theEmptyLcnQuery)
       return;
-    if (! (q instanceof SpanNearQuery))
-      throw new AssertionError("Expected SpanNearQuery: " + q.toString(getFieldName()));
-    /* CHECKME: wrap in Hashable...? */
-    addSpanQueryWeighted((SpanNearQuery)q, q.getBoost());
+    if (! (q instanceof SpanQuery))
+      throw new AssertionError("Expected SpanQuery: " + q.toString(getFieldName()));
+    addSpanQueryWeighted((SpanQuery)q, q.getBoost());
   }
-  
-  public SpanQuery makeSpanNearClause() {
+
+  public SpanQuery makeSpanClause() {
     SpanQuery [] spanQueries = new SpanQuery[size()];
     Iterator<SpanQuery> sqi = weightBySpanQuery.keySet().iterator();
     int i = 0;

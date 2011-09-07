@@ -529,6 +529,9 @@ Bug fixes
 * LUCENE-3348: Fix thread safety hazards in IndexWriter that could
   rarely cause deletions to be incorrectly applied.  (Yonik Seeley,
   Simon Willnauer, Mike McCandless)
+  
+* LUCENE-2945: Fix hashCode/equals for surround query parser generated queries.
+  (Paul Elschot, Simon Rosenthal, gsingers via ehatcher)
 
 ======================= Lucene 3.x (not yet released) ================
 
