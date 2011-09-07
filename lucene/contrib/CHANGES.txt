@@ -99,11 +99,37 @@ New Features
    during indexing or querying (with parsers for wordnet and solr formats).
    Removed contrib/wordnet.  (Simon Rosenthal, Robert Muir, Mike McCandless)
 
+ * LUCENE-1768: added support for numeric ranges in contrib query parser;
+   added support for simple numeric queries, such as <age:4>, in contrib
+   query parser (Vinicius Barros via Uwe Schindler)
+
+Changes in runtime behavior:
+
+ * LUCENE-1768: StandardQueryConfigHandler now uses NumericFieldConfigListener
+   to set a NumericConfig to its corresponding FieldConfig;
+   StandardQueryTreeBuilder now uses DummyQueryNodeBuilder for
+   NumericQueryNodes and uses NumericRangeQueryNodeBuilder for
+   NumericRangeQueryNodes; StandardQueryNodeProcessorPipeline now executes
+   NumericQueryNodeProcessor followed by NumericRangeQueryNodeProcessor
+   right after LowercaseExpandedTermsQueryNodeProcessor
+   (Vinicius Barros via Uwe Schindler)
+
 API Changes
 
  * LUCENE-3296: PKIndexSplitter & MultiPassIndexSplitter now have version
    constructors. PKIndexSplitter accepts a IndexWriterConfig for each of 
    the target indexes. (Simon Willnauer, Jason Rutherglen)
+
+ * LUCENE-1768: setNumericConfigMap and getNumericConfigMap were added
+   to StandardQueryParser; ParametricRangeQueryNode and
+   oal.queryParser.standard.nodes.RangeQueryNode now implement
+   oal.queryParser.core.nodes.RangeQueryNode;
+   oal.queryParser.core.nodes.RangeQueryNode was deprecated and now extends
+   TermRangeQueryNode, which extends AbstractRangeQueryNode;
+   ParametricQueryNode was deprecated; FieldQueryNode now implements the
+   new FieldValueQueryNode<CharSequence>, which this last one implements
+   FieldableQueryNode and thew new ValueQueryNode
+   (Vinicius Barros via Uwe Schindler)
 
 Optimizations
 

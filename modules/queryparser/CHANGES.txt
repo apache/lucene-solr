@@ -1,0 +1,20 @@
+QueryParser Module Change Log
+
+For more information on past and future Lucene versions, please see:
+http://s.apache.org/luceneversions
+
+======================= Trunk (not yet released) =======================
+   
+Changes in runtime behavior
+
+ * LUCENE-1768: StandardQueryTreeBuilder uses RangeQueryNodeBuilder for
+   RangeQueryNodes, since theses two classes were removed;
+   ParametricRangeQueryNodeProcessor now creates TermRangeQueryNode,
+   instead of RangeQueryNode, from ParametricRangeQueryNode
+   (Vinicius Barros via Uwe Schindler)
+
+API Changes
+
+ * LUCENE-1768: ParametricRangeQueryNode now implements
+   RangeQueryNode<FieldQueryNode> instead of
+   RangeQueryNode<ParametricQueryNode>  (Vinicius Barros via Uwe Schindler)
