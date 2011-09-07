@@ -583,8 +583,9 @@ Bug fixes
   Directory.  (tal steier via Mike McCandless)
 
 * LUCENE-3418: Lucene was failing to fsync index files on commit,
-  meaning a crash or power loss could easily corrupt the index (Mark
-  Miller, Robert Muir, Mike McCandless)
+  meaning an operating system or hardware crash, or power loss, could
+  easily corrupt the index.  (Mark Miller, Robert Muir, Mike
+  McCandless)
   
 New Features
 
