@@ -168,7 +168,8 @@ New Features
 * SOLR-2656: realtime-get, efficiently retrieves the latest stored fields for specified
   documents, even if they are not yet searchable (i.e. without reopening a searcher)
   (yonik)
-
+  
+* SOLR-2703: Added support for Lucene's "surround" query parser. (Simon Rosenthal, ehatcher)
 
 
 Optimizations
