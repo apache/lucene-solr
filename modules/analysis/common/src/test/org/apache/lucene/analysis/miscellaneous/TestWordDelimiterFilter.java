@@ -36,6 +36,9 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
+
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  * TODO: should explicitly test things like protWords and not rely on
@@ -63,17 +66,17 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testOffsets() throws IOException {
-
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     // test that subwords and catenated subwords have
     // the correct offsets.
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 12)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 12)), DEFAULT_WORD_DELIM_TABLE, flags, null);
 
     assertTokenStreamContents(wdf, 
         new String[] { "foo", "bar", "foobar" },
         new int[] { 5, 9, 5 }, 
         new int[] { 8, 12, 12 });
 
-    wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 6)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+    wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar" },
@@ -82,9 +85,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
   
   @Test
-  public void testOffsetChange() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+  public void testOffsetChange() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -93,9 +96,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
   
   @Test
-  public void testOffsetChange2() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+  public void testOffsetChange2() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -104,9 +107,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
   
   @Test
-  public void testOffsetChange3() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+  public void testOffsetChange3() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -115,9 +118,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
   
   @Test
-  public void testOffsetChange4() throws Exception
-  {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 1, 1, 0, 1, 1, null);
+  public void testOffsetChange4() throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foo", "bar", "foobar"},
@@ -126,8 +129,9 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
 
   public void doSplit(final String input, String... output) throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
-                new StringReader(input), MockTokenizer.KEYWORD, false), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, 1, 1, 0, 0, 0, 1, 0, 1, 1, null);
+                new StringReader(input), MockTokenizer.KEYWORD, false), WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf, output);
   }
@@ -168,8 +172,10 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   }
   
   public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
+    int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS;
+    flags |= (stemPossessive == 1) ? STEM_ENGLISH_POSSESSIVE : 0;
     WordDelimiterFilter wdf = new WordDelimiterFilter(new MockTokenizer(
-        new StringReader(input), MockTokenizer.KEYWORD, false), 1,1,0,0,0,1,0,1,stemPossessive, null);
+        new StringReader(input), MockTokenizer.KEYWORD, false), flags, null);
 
     assertTokenStreamContents(wdf, output);
   }
@@ -208,6 +214,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   
   @Test
   public void testPositionIncrements() throws Exception {
+    final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
@@ -216,7 +223,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false),
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+            flags, protWords);
       }
     };
 
@@ -244,7 +251,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)),
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+            flags, protWords);
       }
     };
     
@@ -277,8 +284,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
             new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), StandardAnalyzer.STOP_WORDS_SET);
         filter.setEnablePositionIncrements(true);
-        return new WordDelimiterFilter(filter, 
-            1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
+        return new WordDelimiterFilter(filter, flags, protWords);
       }
     };
 
