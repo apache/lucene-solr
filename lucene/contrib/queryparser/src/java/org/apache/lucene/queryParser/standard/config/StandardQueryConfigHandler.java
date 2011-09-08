@@ -220,22 +220,26 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     addFieldConfigListener(new FieldDateResolutionFCListener(this));
     addFieldConfigListener(new NumericFieldConfigListener(this));
 
-    // Default Values
-    set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, false); // default in 2.9
-    set(ConfigurationKeys.ANALYZER, null); // default value 2.4
-    set(ConfigurationKeys.DEFAULT_OPERATOR, Operator.OR);
-    set(ConfigurationKeys.PHRASE_SLOP, 0); // default value 2.4
-    set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true); // default value 2.4
-    set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false); // default value
-                                                              // 2.4
-    set(ConfigurationKeys.FIELD_BOOST_MAP, new LinkedHashMap<String, Float>());
-    set(ConfigurationKeys.FUZZY_CONFIG, new FuzzyConfig());
-    set(ConfigurationKeys.LOCALE, Locale.getDefault());
-    set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD,
-        MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-    set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP,
-        new HashMap<CharSequence, DateTools.Resolution>());
-    
+    // uncomment code below when deprecated query parser attributes are removed
+    // // Default Values
+    // set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, false); // default in 2.9
+    // set(ConfigurationKeys.ANALYZER, null); // default value 2.4
+    // set(ConfigurationKeys.DEFAULT_OPERATOR, Operator.OR);
+    // set(ConfigurationKeys.PHRASE_SLOP, 0); // default value 2.4
+    // set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, true); // default value
+    // 2.4
+    // set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, false); // default
+    // value
+    // // 2.4
+    // set(ConfigurationKeys.FIELD_BOOST_MAP, new LinkedHashMap<String,
+    // Float>());
+    // set(ConfigurationKeys.FUZZY_CONFIG, new FuzzyConfig());
+    // set(ConfigurationKeys.LOCALE, Locale.getDefault());
+    // set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD,
+    // MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    // set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP,
+    // new HashMap<CharSequence, DateTools.Resolution>());
+
     // still add old attributes
     addAttribute(RangeCollatorAttribute.class);
     addAttribute(DefaultOperatorAttribute.class);
@@ -248,6 +252,7 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     addAttribute(LocaleAttribute.class);
     addAttribute(DefaultPhraseSlopAttribute.class);
     addAttribute(MultiTermRewriteMethodAttribute.class);   
+    addAttribute(FieldBoostMapAttribute.class);   
 
   }
 

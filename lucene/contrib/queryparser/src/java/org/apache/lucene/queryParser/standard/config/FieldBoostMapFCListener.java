@@ -52,7 +52,12 @@ public class FieldBoostMapFCListener implements FieldConfigListener {
       Float boost = fieldBoostMap.get(fieldConfig.getField());
 
       if (boost != null) {
-        fieldConfig.set(ConfigurationKeys.BOOST, boost);
+        
+        fieldConfig.addAttribute(BoostAttribute.class).setBoost(boost);
+        
+        // uncomment code below when deprecated query parser attributes are removed
+        // fieldConfig.set(ConfigurationKeys.BOOST, boost);
+        
       }
 
     }
