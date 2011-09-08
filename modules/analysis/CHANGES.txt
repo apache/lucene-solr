@@ -34,10 +34,6 @@ API Changes
 
  * LUCENE-3400: Removed DutchAnalyzer.setStemDictionary (Chris Male)
 
- * LUCENE-3410: Deprecated the WordDelimterFilter constructors accepting multiple
-   ints masquerading as booleans.  Preferred constructor now accepts a single int
-   bitfield (Chris Male)
-   
 New Features
 
  * LUCENE-2341: A new analyzer/ filter: Morfologik - a dictionary-driven lemmatizer 

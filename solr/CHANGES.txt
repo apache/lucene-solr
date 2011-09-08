@@ -321,7 +321,12 @@ Documentation
 
 ==================  3.5.0  ==================
 
-(No Changes)
+ Other Changes
+----------------------
+
+* LUCENE-3410: Deprecated the WordDelimiterFilter constructors accepting multiple
+  ints masquerading as booleans.  Preferred constructor now accepts a single int
+  bitfield (Chris Male)
 
 ==================  3.4.0  ==================
 
